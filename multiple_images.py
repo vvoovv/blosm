@@ -3,7 +3,7 @@
 import bpy, mathutils
 import math, os
 
-class SeparateObjects():
+class MultipleImages():
 	
 	angleX = 45
 	angleY = 45
@@ -26,7 +26,7 @@ class SeparateObjects():
 	zoomMin = 17
 	zoomMax = 19
 	
-	blenderBaseFile = "separate_objects.blend" 
+	blenderBaseFile = "initial.blend" 
 	blenderFilesDir = "."
 	outputImagesDir = "models"
 	csvFileDir = "."
