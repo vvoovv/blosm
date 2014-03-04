@@ -20,16 +20,16 @@ class SeparateObjects():
 	latitude = 0
 	longitude = 0
 	heading = 0
-	# multiplier is equal to
+	# multiplier is equal to 256/(2*math.pi*6378137*math.cos(math.radians(self.latitude)))
 	multiplier = 0
 
 	zoomMin = 17
 	zoomMax = 19
 	
 	blenderBaseFile = "separate_objects.blend" 
-	blenderFilesDir = ""
-	outputDir = ""
-	imagesDir = "models"
+	blenderFilesDir = "."
+	outputImagesDir = "models"
+	csvFileDir = "."
 	csvFile = "models.csv"
 	csvFileHandle = None
 
@@ -38,14 +38,18 @@ class SeparateObjects():
 	def __init__(self, **kwargs):
 		for k in kwargs:
 			setattr(self, k, kwargs[k])
-		# check if imagesDir exists
-		imagesDir = os.path.join(self.outputDir, self.imagesDir)
-		if not os.path.exists(imagesDir):
-			os.makedirs(imagesDir)
+		# check if outputImagesDir exists
+		if not os.path.exists(self.outputImagesDir):
+			os.makedirs(self.outputImagesDir)
+		print(self.outputImagesDir)
+		print(self.csvFileDir)
+		# check if csvFileDir exists
+		if not os.path.exists(self.csvFileDir):
+			os.makedirs(self.csvFileDir)
 
 	def render(self):
 		# start csvFile
-		self.csvFileHandle = open(os.path.join(self.outputDir, self.csvFile), "w")
+		self.csvFileHandle = open(os.path.join(self.csvFileDir, self.csvFile), "w")
 		# compose headers, i.e. the first line in the csvFile
 		self.csvFileHandle.write("modelId,lat,lon")
 		for z in range(self.zoomMin, self.zoomMax+1):
@@ -55,10 +59,9 @@ class SeparateObjects():
 			# self.blenderBaseFile is located next to this script
 			bpy.ops.wm.open_mainfile(filepath=os.path.join(os.path.dirname(os.path.realpath(__file__)), self.blenderBaseFile))
 			self.camera = bpy.data.objects["Camera"]
-			# adding a dummy object at (0,0,0); it will help to perform transformations later in the code
+			# setting the dummy object; it will help to perform transformations later in the code
 			# setting pivot_point doesn't work if done from a python script
-			bpy.ops.object.empty_add()
-			self.dummyObject = bpy.context.active_object
+			self.dummyObject = bpy.data.objects["Empty"]
 	
 			bpy.ops.object.select_all(action="DESELECT")
 			bpy.context.scene.cursor_location = (0, 0, 0)
@@ -99,7 +102,7 @@ class SeparateObjects():
 		self.latitude = scene["latitude"]
 		self.longitude = scene["longitude"]
 		self.heading = math.radians(scene["heading"])
-		# calcualte multiplier
+		# calculate multiplier
 		self.multiplier = 256/(2*math.pi*6378137*math.cos(math.radians(self.latitude)))
 		# clean up
 		bpy.data.scenes.remove(scene)
@@ -160,7 +163,7 @@ class SeparateObjects():
 		render.resolution_y = imageHeight
 		# image name
 		imageFile = self.getImageName(zoom)
-		render.filepath = os.path.join(self.outputDir, self.imagesDir, imageFile)
+		render.filepath = os.path.join(self.outputImagesDir, imageFile)
 		bpy.ops.render.render(write_still=True)
 		# shift between image center and object center (in pixels)
 		dx = imageWidth * (bb["xmin"]+bb["xmax"]) / (2*width)

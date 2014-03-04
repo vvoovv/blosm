@@ -2,6 +2,6 @@
 
 from separate_objects import SeparateObjects
 
-files = ["untitled4.blend", "untitled4.blend"]
-manager = SeparateObjects(files=files, blenderFilesDir="../")
+files = ["untitled4.blend", "church.blend"]
+manager = SeparateObjects(files=files, blenderFilesDir="../models", outputImagesDir="C:/Users/vvoovv/Documents/MapBox/project/tula/models")
 manager.render()
