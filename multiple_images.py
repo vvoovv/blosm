@@ -3,19 +3,9 @@
 import bpy, mathutils
 import math, os
 
-class MultipleImages():
-	
-	angleX = 45
-	angleY = 45
-	
-	files = None
-	camera = None
-	dummyObject = None
-	lattice = None
-	zAxis = (0,0,1)
-	
-	# number of extra pixels to the left, top, right, bottom 
-	extraPixels = 2
+from map_25d import Map25D
+
+class MultipleImages(Map25D):
 
 	latitude = 0
 	longitude = 0
@@ -23,11 +13,6 @@ class MultipleImages():
 	# multiplier is equal to 256/(2*math.pi*6378137*math.cos(math.radians(self.latitude)))
 	multiplier = 0
 
-	zoomMin = 17
-	zoomMax = 19
-	
-	blenderBaseFile = "initial.blend" 
-	blenderFilesDir = "."
 	outputImagesDir = "models"
 	csvFileDir = "."
 	csvFile = "models.csv"
@@ -36,8 +21,7 @@ class MultipleImages():
 	fileCounter = 0
 	
 	def __init__(self, **kwargs):
-		for k in kwargs:
-			setattr(self, k, kwargs[k])
+		super().__init__(**kwargs)
 		# check if outputImagesDir exists
 		if not os.path.exists(self.outputImagesDir):
 			os.makedirs(self.outputImagesDir)
@@ -78,13 +62,8 @@ class MultipleImages():
 		# now apply heading
 		bpy.ops.transform.rotate(value=self.heading, axis=self.zAxis)
 		bpy.ops.transform.translate(value=-self.dummyObject.location)
-		# add lattice
-		self.createLattice()
 		# apply lattice modidier to all mesh and curve objects
-		for o in bpy.context.scene.objects:
-			if o.type == "MESH" or o.type == "CURVE":
-				modifier = o.modifiers.new(name="Lattice", type="LATTICE")
-				modifier.object = self.lattice
+		self.applyLatticeModifier()
 		# render images
 		zoomInfo = [] # used to compose self.csvFile
 		self.renderImages(zoomInfo)
@@ -111,22 +90,6 @@ class MultipleImages():
 			if o.type == "MESH" or o.type == "CURVE":
 				bpy.context.scene.objects.link(o)
 				o.select = True
-
-	def createLattice(self):
-		bpy.ops.object.select_all(action="DESELECT")
-		bpy.ops.object.add(type="LATTICE")
-		lattice = bpy.context.active_object
-		lattice.data.points_u = 1
-		lattice.data.points_v = 1
-		bpy.ops.transform.resize(value=(100, 100, 100))
-		# deform the lattice
-		bpy.ops.object.mode_set(mode="EDIT")
-		bpy.ops.lattice.select_all(action="SELECT")
-		rotationMatrix = mathutils.Matrix.Rotation(math.radians(self.angleY), 4, "Y") * mathutils.Matrix.Rotation(math.radians(self.angleX), 4, "X")
-		for p in lattice.data.points:
-			p.co_deform = rotationMatrix * p.co_deform
-		bpy.ops.object.mode_set(mode="OBJECT")
-		self.lattice = lattice
 
 	def renderImages(self, zoomInfo):
 		# calculating scene bounding box
@@ -172,20 +135,3 @@ class MultipleImages():
 
 	def getImageName(self, zoom):
 		return "%s_%s" % (self.fileCounter, zoom)
-
-	def getBoundingBox(self):
-		# perform context.scene.update(), otherwise o.matrix_world or o.bound_box are incorrect
-		bpy.context.scene.update()
-		xmin = float("inf")
-		ymin = float("inf")
-		xmax = float("-inf")
-		ymax = float("-inf")
-		for o in bpy.context.scene.objects:
-			if o.type == "MESH" or o.type == "CURVE":
-				for v in o.bound_box:
-					(x,y,z) = o.matrix_world * mathutils.Vector(v)
-					if x<xmin: xmin = x
-					elif x>xmax: xmax = x
-					if y<ymin: ymin = y
-					elif y>ymax: ymax = y
-		return{"xmin": xmin, "ymin": ymin, "xmax": xmax, "ymax": ymax}
