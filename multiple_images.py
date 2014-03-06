@@ -25,8 +25,6 @@ class MultipleImages(Map25D):
 		# check if outputImagesDir exists
 		if not os.path.exists(self.outputImagesDir):
 			os.makedirs(self.outputImagesDir)
-		print(self.outputImagesDir)
-		print(self.csvFileDir)
 		# check if csvFileDir exists
 		if not os.path.exists(self.csvFileDir):
 			os.makedirs(self.csvFileDir)

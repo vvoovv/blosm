@@ -14,24 +14,22 @@ class CommonImage(Map25D):
 	# the Blender zero point is set to the first object
 	zeroPointSet = False
 
-	outputDir = "models"
+	outputImagesDir = "."
 	
 	projection = SphericalMercator()
-
-	fileCounter = 0
 	
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
-		# check if outputDir exists
-		if not os.path.exists(self.outputDir):
-			os.makedirs(self.outputDir)
+		# check if outputImagesDir exists
+		if not os.path.exists(self.outputImagesDir):
+			os.makedirs(self.outputImagesDir)
 
 	def render(self):
 		for z in range(self.zoomMin, self.zoomMax+1):
 			pass
 
 		# self.blenderBaseFile is located next to this script
-		#bpy.ops.wm.open_mainfile(filepath=os.path.join(os.path.dirname(os.path.realpath(__file__)), self.blenderBaseFile))
+		bpy.ops.wm.open_mainfile(filepath=os.path.join(os.path.dirname(os.path.realpath(__file__)), self.blenderBaseFile))
 		self.camera = bpy.data.objects["Camera"]
 		# setting the dummy object; it will help to perform transformations later in the code
 		# setting pivot_point doesn't work if done from a python script
@@ -44,12 +42,46 @@ class CommonImage(Map25D):
 			self.addFile(filename)
 		# apply lattice modidier to all mesh and curve objects
 		self.applyLatticeModifier()
-		# calculating scene bounding box
-		bb = self.getBoundingBox()
-		print(bb)
+		# calculating scene bounding box in local coordinates, "l" stands for "local"
+		lbb = self.getBoundingBox()
+		# place camera at the center of bbox
+		self.camera.location.x = (lbb["xmin"]+lbb["xmax"])/2
+		self.camera.location.y = (lbb["ymin"]+lbb["ymax"])/2
+		# render resolution
+		bpy.context.scene.render.resolution_percentage = 100
+		# converting lbb to spherical Mercator coordinates, "m" stands for Mercator
+		mbb = {
+			"xmin": lbb["xmin"] + self.x,
+			"ymin": lbb["ymin"] + self.y,
+			"xmax": lbb["xmax"] + self.x,
+			"ymax": lbb["ymax"] + self.y
+		}
+		render = bpy.context.scene.render
+		for z in range(self.zoomMin, self.zoomMax+1):
+			# adding self.extraPixels
+			multiplier = 256*math.pow(2, z) / (2*math.pi*self.radius)
+			bb = {
+				"xmin": mbb["xmin"] - self.extraPixels/multiplier,
+				"ymin": mbb["ymin"] - self.extraPixels/multiplier,
+				"xmax": mbb["xmax"] + self.extraPixels/multiplier,
+				"ymax": mbb["ymax"] + self.extraPixels/multiplier
+			}
+			# bbox dimensions
+			width = bb["xmax"]-bb["xmin"]
+			height = bb["ymax"]-bb["ymin"]
+			# camera's ortho_scale property
+			self.camera.data.ortho_scale = width if width > height else height
+			# image width and height
+			imageWidth = multiplier * width
+			imageHeight = multiplier * height
+			render.resolution_x = imageWidth
+			render.resolution_y = imageHeight
+			# image name
+			imageFile = self.getImageName(z)
+			render.filepath = os.path.join(self.outputImagesDir, imageFile)
+			bpy.ops.render.render(write_still=True)
 
 	def addFile(self, filename):
-		self.fileCounter += 1
 		# latitude and longitude in degrees, heading in radians
 		(latitude, longitude, heading) = self.loadFile(os.path.join(self.blenderFilesDir, filename))
 		self.dummyObject.select = True
@@ -87,47 +119,5 @@ class CommonImage(Map25D):
 				o.select = True
 		return (latitude, longitude, heading)
 
-	def renderImages(self, zoomInfo):
-		# calculating scene bounding box
-		bb = self.getBoundingBox()
-		# place camera at the center of bbox
-		self.camera.location.x = (bb["xmin"]+bb["xmax"])/2
-		self.camera.location.y = (bb["ymin"]+bb["ymax"])/2
-		# render resolution
-		bpy.context.scene.render.resolution_percentage = 100
-		for z in range(self.zoomMin, self.zoomMax+1):
-			self.renderImage(z, bb, zoomInfo)
-
-	def renderImage(self, zoom, bbox, zoomInfo):
-		multiplier = self.multiplier * math.pow(2, zoom)
-
-		# correcting bbox, taking into account self.extraPixels
-		bb = {}
-		extraMeters = self.extraPixels/multiplier
-		bb["xmin"] = bbox["xmin"] - extraMeters
-		bb["ymin"] = bbox["ymin"] - extraMeters
-		bb["xmax"] = bbox["xmax"] + extraMeters
-		bb["ymax"] = bbox["ymax"] + extraMeters
-		# setting resulting image size
-		render = bpy.context.scene.render
-		# bbox dimensions
-		width = bb["xmax"]-bb["xmin"]
-		height = bb["ymax"]-bb["ymin"]
-		# camera's ortho_scale property
-		self.camera.data.ortho_scale = width if width > height else height
-		# image width and height
-		imageWidth = multiplier * width
-		imageHeight = multiplier * height
-		render.resolution_x = imageWidth
-		render.resolution_y = imageHeight
-		# image name
-		imageFile = self.getImageName(zoom)
-		render.filepath = os.path.join(self.outputImagesDir, imageFile)
-		bpy.ops.render.render(write_still=True)
-		# shift between image center and object center (in pixels)
-		dx = imageWidth * (bb["xmin"]+bb["xmax"]) / (2*width)
-		dy = -imageHeight * (bb["ymin"]+bb["ymax"]) / (2*height)
-		zoomInfo.append((imageFile, round(dx,2), round(dy,2)))
-
 	def getImageName(self, zoom):
-		return "%s_%s" % (self.fileCounter, zoom)
+		return "raster_%s.png" % zoom
