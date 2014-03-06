@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 
 import bpy, mathutils
-import math, os
+import math, os, subprocess
 from spherical_mercator import SphericalMercator
 
 from map_25d import Map25D
 
 class CommonImage(Map25D):
 
+	outputImagesDir = "."
+
+	gdalDir = "."
+
 	# position of the Blender zero point in the Mercator projection 
 	x = 0
 	y = 0
 	# the Blender zero point is set to the first object
 	zeroPointSet = False
-
-	outputImagesDir = "."
 	
 	projection = SphericalMercator()
 	
@@ -66,8 +68,18 @@ class CommonImage(Map25D):
 				"xmax": mbb["xmax"] + self.extraPixels/multiplier,
 				"ymax": mbb["ymax"] + self.extraPixels/multiplier
 			}
-			self.setSizes(bb, zoom, multiplier)
+			(imageWidth, imageHeight, width, height, imageFile) = self.setSizes(bb, zoom, multiplier)
 			bpy.ops.render.render(write_still=True)
+			# perform georeferencing with gdal_translate
+			imageFile = os.path.join(self.outputImagesDir, imageFile)
+			subprocess.call([
+				os.path.join(self.gdalDir, "gdal_translate"),
+				"-a_ullr", str(bb["xmin"]), str(bb["ymax"]), str(bb["xmax"]), str(bb["ymin"]),
+				imageFile,
+				os.path.join(self.outputImagesDir, imageFile[0:imageFile.rfind(".")]+".tif") # TIFF file
+			])
+			# get rid of the imageFile
+			os.remove(imageFile)
 
 	def addFile(self, filename):
 		# latitude and longitude in degrees, heading in radians
