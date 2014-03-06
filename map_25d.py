@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import bpy, mathutils
-import math
+import math, os
 
 from render_manager import RenderManager
 
@@ -47,3 +47,21 @@ class Map25D(RenderManager):
 			if o.type == "MESH" or o.type == "CURVE":
 				modifier = o.modifiers.new(name="Lattice", type="LATTICE")
 				modifier.object = self.lattice
+
+	def setSizes(self, bbox, zoom, multiplier):
+		# setting resulting image size
+		render = bpy.context.scene.render
+		# bbox dimensions
+		width = bbox["xmax"]-bbox["xmin"]
+		height = bbox["ymax"]-bbox["ymin"]
+		# camera's ortho_scale property
+		self.camera.data.ortho_scale = width if width > height else height
+		# image width and height
+		imageWidth = multiplier * width
+		imageHeight = multiplier * height
+		render.resolution_x = imageWidth
+		render.resolution_y = imageHeight
+		# image name
+		imageFile = self.getImageName(zoom)
+		render.filepath = os.path.join(self.outputImagesDir, imageFile)
+		return (imageWidth, imageHeight, width, height, imageFile)
