@@ -11,6 +11,8 @@ class RenderManager():
 
 	blenderFilesDir = "."
 	
+	radius = 6378137
+	
 	def __init__(self, **kwargs):
 		for k in kwargs:
 			setattr(self, k, kwargs[k])

@@ -10,7 +10,7 @@ class MultipleImages(Map25D):
 	latitude = 0
 	longitude = 0
 	heading = 0
-	# multiplier is equal to 256/(2*math.pi*6378137*math.cos(math.radians(self.latitude)))
+	# multiplier is equal to 256/(2*math.pi*self.radius*math.cos(math.radians(self.latitude)))
 	multiplier = 0
 
 	outputImagesDir = "models"
@@ -82,7 +82,7 @@ class MultipleImages(Map25D):
 		self.longitude = scene["longitude"]
 		self.heading = math.radians(scene["heading"])
 		# calculate multiplier
-		self.multiplier = 256/(2*math.pi*6378137*math.cos(math.radians(self.latitude)))
+		self.multiplier = 256/(2*math.pi*self.radius*math.cos(math.radians(self.latitude)))
 		# clean up
 		bpy.data.scenes.remove(scene)
 		# adding objects and curves to the scene
@@ -106,12 +106,13 @@ class MultipleImages(Map25D):
 		multiplier = self.multiplier * math.pow(2, zoom)
 
 		# correcting bbox, taking into account self.extraPixels
-		bb = {}
 		extraMeters = self.extraPixels/multiplier
-		bb["xmin"] = bbox["xmin"] - extraMeters
-		bb["ymin"] = bbox["ymin"] - extraMeters
-		bb["xmax"] = bbox["xmax"] + extraMeters
-		bb["ymax"] = bbox["ymax"] + extraMeters
+		bb = {
+			"xmin": bbox["xmin"] - extraMeters,
+			"ymin": bbox["ymin"] - extraMeters,
+			"xmax": bbox["xmax"] + extraMeters,
+			"ymax": bbox["ymax"] + extraMeters
+		}
 		# setting resulting image size
 		render = bpy.context.scene.render
 		# bbox dimensions
