@@ -111,21 +111,7 @@ class MultipleImages(Map25D):
 			"xmax": bbox["xmax"] + extraMeters,
 			"ymax": bbox["ymax"] + extraMeters
 		}
-		# setting resulting image size
-		render = bpy.context.scene.render
-		# bbox dimensions
-		width = bb["xmax"]-bb["xmin"]
-		height = bb["ymax"]-bb["ymin"]
-		# camera's ortho_scale property
-		self.camera.data.ortho_scale = width if width > height else height
-		# image width and height
-		imageWidth = multiplier * width
-		imageHeight = multiplier * height
-		render.resolution_x = imageWidth
-		render.resolution_y = imageHeight
-		# image name
-		imageFile = self.getImageName(zoom)
-		render.filepath = os.path.join(self.outputImagesDir, imageFile)
+		(imageWidth, imageHeight, width, height, imageFile) = self.setSizes(bb, zoom, multiplier)
 		bpy.ops.render.render(write_still=True)
 		# shift between image center and object center (in pixels)
 		dx = imageWidth * (bb["xmin"]+bb["xmax"]) / (2*width)

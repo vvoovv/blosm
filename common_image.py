@@ -57,28 +57,16 @@ class CommonImage(Map25D):
 			"ymax": lbb["ymax"] + self.y
 		}
 		render = bpy.context.scene.render
-		for z in range(self.zoomMin, self.zoomMax+1):
+		for zoom in range(self.zoomMin, self.zoomMax+1):
 			# adding self.extraPixels
-			multiplier = 256*math.pow(2, z) / (2*math.pi*self.radius)
+			multiplier = 256*math.pow(2, zoom) / (2*math.pi*self.radius)
 			bb = {
 				"xmin": mbb["xmin"] - self.extraPixels/multiplier,
 				"ymin": mbb["ymin"] - self.extraPixels/multiplier,
 				"xmax": mbb["xmax"] + self.extraPixels/multiplier,
 				"ymax": mbb["ymax"] + self.extraPixels/multiplier
 			}
-			# bbox dimensions
-			width = bb["xmax"]-bb["xmin"]
-			height = bb["ymax"]-bb["ymin"]
-			# camera's ortho_scale property
-			self.camera.data.ortho_scale = width if width > height else height
-			# image width and height
-			imageWidth = multiplier * width
-			imageHeight = multiplier * height
-			render.resolution_x = imageWidth
-			render.resolution_y = imageHeight
-			# image name
-			imageFile = self.getImageName(z)
-			render.filepath = os.path.join(self.outputImagesDir, imageFile)
+			self.setSizes(bb, zoom, multiplier)
 			bpy.ops.render.render(write_still=True)
 
 	def addFile(self, filename):
