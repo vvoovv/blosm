@@ -32,11 +32,15 @@ class OsmGeoreferencingPanel(bpy.types.Panel):
 
 class SetMainPosition(bpy.types.Operator):
 	bl_idname = "object.set_main_position"
-	bl_label = "Active object postion"
-	bl_description = "Remember active object position"
+	bl_label = "Set original position"
+	bl_description = "Remember original position"
 
 	def execute(self, context):
-		bpy.p = bpy.context.active_object.location.copy()
+		# remember the location and orientation of the reference object
+		# take the first selected object as a reference object
+		refObject = context.selected_objects[0]
+		refObjectData = (refObject, refObject.location.copy(), refObject.rotation_euler[2])
+		bpy.refObjectData = refObjectData
 		return {"FINISHED"}
 
 class DoGeoreferencing(bpy.types.Operator):
@@ -45,13 +49,21 @@ class DoGeoreferencing(bpy.types.Operator):
 	bl_description = "Perform georeferencing"
 
 	def execute(self, context):
-		# calculationg new position of the object center
-		p = bpy.context.active_object.matrix_world * (-bpy.p)
+		refObjectData = bpy.refObjectData
+		refObject = refObjectData[0]
+		# calculationg new position of the reference object center
+		p = refObject.matrix_world * (-refObjectData[1])
 		projection = TransverseMercator(lon=bpy.longitude, lat=bpy.latitude)
 		(lat, lon) = projection.toGeographic(p[0], p[1])
-		bpy.context.scene["longitude"] = lon
-		bpy.context.scene["latitude"] = lat
-		bpy.context.scene["heading"] = bpy.context.active_object.rotation_euler[2]*180/math.pi
+		context.scene["longitude"] = lon
+		context.scene["latitude"] = lat
+		context.scene["heading"] = (refObject.rotation_euler[2]-refObjectData[2])*180/math.pi
+
+		# restoring original objects location and orientation
+		bpy.ops.transform.rotate(value=-(refObject.rotation_euler[2]-refObjectData[2]), axis=(0,0,1))
+		bpy.ops.transform.translate(value=-(refObject.location-refObjectData[1]))
+		# cleaning up
+		del bpy.refObjectData
 		return {"FINISHED"}
 
 def register():
