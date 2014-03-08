@@ -18,12 +18,12 @@ sys.path.append("D:\\projects\\blender\\blender-geo")
 
 import main, handlers, srtm
 
-def doit(**kwargs):
+def doit(osmFile, **kwargs):
 	imp.reload(main)
 	imp.reload(handlers)
 	imp.reload(srtm)
 	if "clear" in kwargs and kwargs["clear"]: delete_objects()
-	main.build_neighborhood(kwargs)
+	main.build_neighborhood(osmFile, kwargs)
 
 def delete_objects():
 	for item in bpy.data.objects:

@@ -2,10 +2,11 @@
 
 import os, math
 import bpy, bmesh
+import osm_utils
 
 def buildings(way, parser, kwargs):
 	tags = way["tags"]
-	objects = kwargs["objects"]
+	objects = kwargs["objects"] if "objects" in kwargs else None
 	if "building" in tags:
 		thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
 		osmId = way["id"]
@@ -15,7 +16,7 @@ def buildings(way, parser, kwargs):
 			name = tags["addr:street"] + ", " + tags["addr:housenumber"]
 		elif "name" in tags:
 			name = tags["name"]
-		if osmId in objects:
+		if objects and osmId in objects:
 			o = objects[osmId]
 			itemName = o["group"]
 			bpy.ops.wm.link_append(
@@ -32,6 +33,8 @@ def buildings(way, parser, kwargs):
 			obj.location = location
 			# setting rotation about z axis
 			if o["heading"] !=0: obj.rotation_euler.z = math.radians(o["heading"])
+			# assign OSM tags to the blender object
+			osm_utils.assignTags(obj, tags)
 		else:
 			wayNodes = way["nodes"]
 			bm = bmesh.new()
@@ -53,8 +56,10 @@ def buildings(way, parser, kwargs):
 			me = bpy.data.meshes.new(osmId)
 			bm.to_mesh(me)
 
-			ob = bpy.data.objects.new(name, me)
-			bpy.context.scene.objects.link(ob)
+			obj = bpy.data.objects.new(name, me)
+			bpy.context.scene.objects.link(obj)
+			# assign OSM tags to the blender object
+			osm_utils.assignTags(obj, tags)
 			bpy.context.scene.update()
 
 def highways(way, parser, kwargs):
