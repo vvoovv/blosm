@@ -583,7 +583,7 @@ class PhotoModelingToolsPanel(bpy.types.Panel):
         b.prop(scn, 'projection_method')
         #self.layout.operator("object.make_edge_x")        
         l.operator("object.set_los_scale_pivot")
-        l.operator("object.place_origin_at_cursor")
+        l.operator("object.place_vertex_at_cursor")
 
 class SetLineOfSightScalePivot(bpy.types.Operator):
     bl_idname = "object.set_los_scale_pivot"    
@@ -617,11 +617,11 @@ class SetLineOfSightScalePivot(bpy.types.Operator):
         
         return{'FINISHED'}
 
-class SetLineOfSightScalePivot(bpy.types.Operator):
-    bl_idname = "object.place_origin_at_cursor"    
-    bl_label = "Place origin at cursor"
+class PlaceVertexAtCursor(bpy.types.Operator):
+    bl_idname = "object.place_vertex_at_cursor"
+    bl_label = "Place a vertex at the cursor"
 
-    bl_description = "Place origin at cursor"
+    bl_description = "Start a new mesh object by placing a vertex at the cursor"
     
     def execute(self, context):
         # setting active a camera object if there is no active object
