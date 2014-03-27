@@ -16,47 +16,31 @@ def buildings(way, parser, kwargs):
 			name = tags["addr:street"] + ", " + tags["addr:housenumber"]
 		elif "name" in tags:
 			name = tags["name"]
-		if objects and osmId in objects:
-			o = objects[osmId]
-			itemName = o["group"]
-			bpy.ops.wm.link_append(
-				directory=os.path.join(kwargs["basepath"], o["link"]) + "\\Group\\",
-				filename=itemName,
-				link=True
-			)
-			obj = bpy.data.objects[itemName]
-			# setting object name
-			obj.name = name
-			# setting location
-			location = kwargs["projection"].fromGeographic([o["lat"], o["lon"]])
-			location.append(0) # z coord
-			obj.location = location
-			# setting rotation about z axis
-			if o["heading"] !=0: obj.rotation_euler.z = math.radians(o["heading"])
-		else:
-			wayNodes = way["nodes"]
-			bm = bmesh.new()
-			for node in range(len(wayNodes)-1): # we need to skip the last node which is the same as the first ones
-				node = parser.nodes[wayNodes[node]]
-				v = kwargs["projection"].fromGeographic([node["lat"], node["lon"]])
-				bm.verts.new((v[0], v[1], 0))
-	
-			faces = [bm.faces.new(bm.verts)]
 
-			# extrude
-			if thickness>0:
-				geom = bmesh.ops.extrude_face_region(bm, geom=faces)
-				verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
-				bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
-	
-			bm.normal_update()
-	
-			me = bpy.data.meshes.new(osmId)
-			bm.to_mesh(me)
+		wayNodes = way["nodes"]
+		bm = bmesh.new()
+		for node in range(len(wayNodes)-1): # we need to skip the last node which is the same as the first ones
+			node = parser.nodes[wayNodes[node]]
+			v = kwargs["projection"].fromGeographic([node["lat"], node["lon"]])
+			bm.verts.new((v[0], v[1], 0))
 
-			obj = bpy.data.objects.new(name, me)
-			bpy.context.scene.objects.link(obj)
-			bpy.context.scene.update()
+		faces = [bm.faces.new(bm.verts)]
+
+		# extrude
+		if thickness>0:
+			geom = bmesh.ops.extrude_face_region(bm, geom=faces)
+			verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
+			bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
+
+		bm.normal_update()
+
+		me = bpy.data.meshes.new(osmId)
+		bm.to_mesh(me)
+
+		obj = bpy.data.objects.new(name, me)
+		bpy.context.scene.objects.link(obj)
+		bpy.context.scene.update()
+
 		# final adjustments
 		obj.select = True
 		# assign OSM tags to the blender object
