@@ -15,7 +15,6 @@ bl_info = {
 import bpy
 # ImportHelper is a helper class, defines filename and invoke() function which calls the file selector
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, BoolProperty, EnumProperty
 
 import sys
 sys.path.append("D:\\projects\\blender\\blender-geo")
@@ -31,25 +30,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 	# ImportHelper mixin class uses this
 	filename_ext = ".osm"
 
-	filter_glob = StringProperty(
+	filter_glob = bpy.props.StringProperty(
 		default="*.osm",
 		options={"HIDDEN"},
 	)
 
-	# List of operator properties, the attributes will be assigned
-	# to the class instance from the operator settings before calling.
-	use_setting = BoolProperty(
-		name="Example Boolean",
-		description="Example Tooltip",
-		default=True,
-	)
-
-	type = EnumProperty(
-		name="Example Enum",
-		description="Choose between two items",
-		items=(("OPT_A", "First Option", "Description one"),
-			   ("OPT_B", "Second Option", "Description two")),
-		default="OPT_A",
+	thickness = bpy.props.FloatProperty(
+		name="Thickness",
+		description="Set some thickness to make OSM objects extruded",
+		default=0,
 	)
 
 	# empty object used to parent all imported OSM objects
@@ -90,7 +79,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		projection = TransverseMercator(lat=lat, lon=lon)
 		osm.parse(
 			projection=projection,
-			#thickness=10,
+			thickness=self.thickness,
 			# possible values for wayHandlers and nodeHandlers list elements:
 			#	1) a string name for the module containing functions (all functions from the modules will be used as handlers)
 			#	2) a python variable representing the module containing functions (all functions from the modules will be used as handlers)
@@ -120,4 +109,4 @@ if __name__ == "__main__":
 	register()
 
 	# test call
-	bpy.ops.import_scene.osm('INVOKE_DEFAULT')
+	bpy.ops.import_scene.osm("INVOKE_DEFAULT")
