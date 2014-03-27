@@ -18,7 +18,12 @@ def build_neighborhood(osmFile, kwargs):
 		projection=projection,
 		#thickness=10,
 		#objects=json.load(open(os.path.join(basepath, "objects.json"))),
-		basepath=os.path.dirname(os.path.realpath(__file__))
+		basepath=os.path.dirname(os.path.realpath(__file__)),
+		# possible values for wayHandlers and nodeHandlers list elements:
+		#	1) a string name for the module containing functions (all functions from the modules will be used as handlers)
+		#	2) a python variable representing the module containing functions (all functions from the modules will be used as handlers)
+		#	3) a python variable representing the function
+		wayHandlers = ["handlers"] #[handlers.buildings] #[handlers] #["handlers"]
 	)
 	# saving geo reference information for the scene
 	bpy.longitude = lon

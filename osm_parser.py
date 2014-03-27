@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
 
 import xml.etree.cElementTree as etree
-import inspect
+import inspect, importlib
 
-import handlers
+def prepareHandlers(kwArgs):
+	nodeHandlers = []
+	wayHandlers = []
+	# getting a dictionary with local variables
+	_locals = locals()
+	for handlers in ("nodeHandlers", "wayHandlers"):
+		if handlers in kwArgs:
+			for handler in kwArgs[handlers]:
+				if isinstance(handler, str):
+					# we've got a module name
+					handler = importlib.import_module(handler)
+				if inspect.ismodule(handler):
+					# iterate through all module functions
+					for f in inspect.getmembers(handler, inspect.isfunction):
+						_locals[handlers].append(f[1])
+				elif inspect.isfunction(handler):
+					_locals[handlers].append(handler)
+		if len(_locals[handlers])==0: _locals[handlers] = None
+	return (nodeHandlers if len(nodeHandlers) else None, wayHandlers if len(wayHandlers) else None)
 
 class OsmParser:
 	nodes = {}
@@ -68,17 +86,17 @@ class OsmParser:
 					)
 
 	def parse(self, **kwargs):
+		(nodeHandlers, wayHandlers) = prepareHandlers(kwargs)
+		print(nodeHandlers)
+		print (wayHandlers)
 		for e in self.osm: # e stands for element
 			if "action" in e.attrib and e.attrib["action"] == "delete": continue
 			if e.tag == "bounds": continue
 			attrs = e.attrib
 			_id = attrs["id"]
-			if e.tag == "node":
-				pass
-			elif e.tag == "way":
-				if _id in self.ways:
-					self.processWay(self.ways[_id], kwargs)
-
-	def processWay(self, way, kwargs):
-		for handler in inspect.getmembers(handlers, inspect.isfunction):
-			handler[1](way, self, kwargs)
+			if wayHandlers and e.tag == "way" and _id in self.ways:
+				for handler in wayHandlers:
+					handler(self.ways[_id], self, kwargs)
+			elif nodeHandlers and e.tag == "node" and _id in self.nodes:
+				for handler in nodeHandlers:
+					handler(self.nodes[_id], self, kwargs)

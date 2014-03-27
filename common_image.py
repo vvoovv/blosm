@@ -27,9 +27,6 @@ class CommonImage(Map25D):
 			os.makedirs(self.outputImagesDir)
 
 	def render(self):
-		for z in range(self.zoomMin, self.zoomMax+1):
-			pass
-
 		# self.blenderBaseFile is located next to this script
 		bpy.ops.wm.open_mainfile(filepath=os.path.join(os.path.dirname(os.path.realpath(__file__)), self.blenderBaseFile))
 		self.camera = bpy.data.objects["Camera"]

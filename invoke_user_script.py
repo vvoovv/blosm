@@ -11,7 +11,7 @@ bl_info = {
 	"tracker_url": ""
 }
 
-import sys, imp
+import sys, imp # TODO: change if for importlib when python 3.4 will be used in Blender
 import bpy
 
 sys.path.append("D:\\projects\\blender\\blender-geo")
