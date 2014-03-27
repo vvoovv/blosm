@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 
-import bpy
-import math
-from transverse_mercator import TransverseMercator
-
 bl_info = {
 	"name": "OpenStreetMap Georeferencing",
 	"author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
 	"version": (1, 0, 0),
-	"blender": (2, 6, 8),
+	"blender": (2, 6, 9),
 	"location": "View 3D > Object Mode > Tool Shelf",
 	"description" : "OpenStreetMap based object georeferencing",
 	"warning": "",
 	"wiki_url": "",
-	"tracker_url": "",
+	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "3D View",
 }
+
+import bpy
+import math
+from transverse_mercator import TransverseMercator
 
 class OsmGeoreferencingPanel(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"

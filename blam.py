@@ -624,12 +624,9 @@ class PlaceVertexAtCursor(bpy.types.Operator):
     bl_description = "Start a new mesh object by placing a vertex at the cursor"
     
     def execute(self, context):
-        # setting active a camera object if there is no active object
+        # setting active object if there is no active object
         if not context.scene.objects.active:
-            for o in bpy.context.scene.objects:
-                if o.data == bpy.data.cameras[0]:
-                    context.scene.objects.active = o
-                    break
+            context.scene.objects.active = context.scene.objects[0]
         bpy.ops.object.mode_set(mode="OBJECT")
         
         mesh = bpy.data.meshes.new("")

@@ -33,8 +33,6 @@ def buildings(way, parser, kwargs):
 			obj.location = location
 			# setting rotation about z axis
 			if o["heading"] !=0: obj.rotation_euler.z = math.radians(o["heading"])
-			# assign OSM tags to the blender object
-			osm_utils.assignTags(obj, tags)
 		else:
 			wayNodes = way["nodes"]
 			bm = bmesh.new()
@@ -58,9 +56,11 @@ def buildings(way, parser, kwargs):
 
 			obj = bpy.data.objects.new(name, me)
 			bpy.context.scene.objects.link(obj)
-			# assign OSM tags to the blender object
-			osm_utils.assignTags(obj, tags)
 			bpy.context.scene.update()
+		# final adjustments
+		obj.select = True
+		# assign OSM tags to the blender object
+		osm_utils.assignTags(obj, tags)
 
 def highways(way, parser, kwargs):
 	pass
