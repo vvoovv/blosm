@@ -87,8 +87,6 @@ class OsmParser:
 
 	def parse(self, **kwargs):
 		(nodeHandlers, wayHandlers) = prepareHandlers(kwargs)
-		print(nodeHandlers)
-		print (wayHandlers)
 		for e in self.osm: # e stands for element
 			if "action" in e.attrib and e.attrib["action"] == "delete": continue
 			if e.tag == "bounds": continue

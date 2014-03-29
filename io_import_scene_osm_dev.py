@@ -20,7 +20,7 @@ import sys
 sys.path.append("D:\\projects\\blender\\blender-geo")
 from transverse_mercator import TransverseMercator
 from osm_parser import OsmParser
-
+from osm_import_handlers import buildings
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
 	"""Import a file in the OpenStreetMap format (.osm)"""
@@ -84,7 +84,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			#	1) a string name for the module containing functions (all functions from the modules will be used as handlers)
 			#	2) a python variable representing the module containing functions (all functions from the modules will be used as handlers)
 			#	3) a python variable representing the function
-			wayHandlers = ["handlers"] #[handlers.buildings] #[handlers] #["handlers"]
+			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
 		)
 		# saving geo reference information for the scene
 		bpy.longitude = lon
