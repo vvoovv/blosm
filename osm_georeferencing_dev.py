@@ -14,7 +14,11 @@ bl_info = {
 
 import bpy
 import math
+
+import sys
+sys.path.append("D:\\projects\\blender\\blender-geo")
 from transverse_mercator import TransverseMercator
+import utils
 
 class OsmGeoreferencingPanel(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"
@@ -25,11 +29,11 @@ class OsmGeoreferencingPanel(bpy.types.Panel):
 	def draw(self, context):
 		l = self.layout
 		c = l.column()
-		c.operator("object.set_main_position")
+		c.operator("object.set_original_position")
 		c.operator("object.do_georeferencing")
 
-class SetMainPosition(bpy.types.Operator):
-	bl_idname = "object.set_main_position"
+class SetOriginalPosition(bpy.types.Operator):
+	bl_idname = "object.set_original_position"
 	bl_label = "Set original position"
 	bl_description = "Remember original position"
 
@@ -47,11 +51,22 @@ class DoGeoreferencing(bpy.types.Operator):
 	bl_description = "Perform georeferencing"
 
 	def execute(self, context):
+		# try to find an empty Blender object with "latitude" and "longitude" as custom properties
+		geoObject = utils.findEmptyGeoObject(context)
+		
+		if not geoObject:
+			self.report({"ERROR"}, "Import OpenStreetMap data first!")
+			return {"FINISHED"}
+		
+		if not hasattr(bpy, "refObjectData"):
+			self.report({"ERROR"}, "Set original position of your object first!")
+			return {"FINISHED"}
+		
 		refObjectData = bpy.refObjectData
 		refObject = refObjectData[0]
 		# calculationg new position of the reference object center
 		p = refObject.matrix_world * (-refObjectData[1])
-		projection = TransverseMercator(lon=bpy.longitude, lat=bpy.latitude)
+		projection = TransverseMercator(lat=geoObject["latitude"], lon=geoObject["longitude"])
 		(lat, lon) = projection.toGeographic(p[0], p[1])
 		context.scene["longitude"] = lon
 		context.scene["latitude"] = lat
