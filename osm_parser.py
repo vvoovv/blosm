@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import xml.etree.cElementTree as etree
 import inspect, importlib
 

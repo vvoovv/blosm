@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import bpy, bmesh
 
 bl_info = {

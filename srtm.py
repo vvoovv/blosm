@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import math, os
 
 def getNameX(x):

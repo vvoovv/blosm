@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os, math
 import bpy, bmesh
 import osm_utils

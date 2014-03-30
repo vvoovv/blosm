@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os, json
 import bpy
 from transverse_mercator import TransverseMercator

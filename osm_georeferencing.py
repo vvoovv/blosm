@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 bl_info = {
 	"name": "OpenStreetMap Georeferencing",
 	"author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
