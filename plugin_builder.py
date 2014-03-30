@@ -1,7 +1,7 @@
 import sys, os, re
 
-_reImport = re.compile("\s*import\s+([\w.]+)")
-_reFrom = re.compile("\s*from\s+([\w.]+)\s+.+")
+_reImport = re.compile(r"\s*import\s+([\w.]+)")
+_reFrom = re.compile(r"\s*from\s+([\w.]+)\s+.+")
 
 class PluginBuilder:
 	
@@ -50,7 +50,8 @@ class PluginBuilder:
 				if writeLine:
 					# remove all reference to local modules from modulesForRemoval like module.someModuleFunction(...)
 					for m in modulesForRemoval:
-						line = line.replace(m+".", "")
+						line = re.sub(r"([^\.])"+m+"\.", "\g<1>", line)
+						#line = line.sub(m+".", "")
 					self.output.write(line)
 			self.output.write(os.linesep)
 		return False
