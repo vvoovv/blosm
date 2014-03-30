@@ -16,11 +16,12 @@ import bpy
 # ImportHelper is a helper class, defines filename and invoke() function which calls the file selector
 from bpy_extras.io_utils import ImportHelper
 
-import sys
+import sys, os
 sys.path.append("D:\\projects\\blender\\blender-geo")
 from transverse_mercator import TransverseMercator
 from osm_parser import OsmParser
 from osm_import_handlers import buildings
+import utils
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
 	"""Import a file in the OpenStreetMap format (.osm)"""
@@ -37,45 +38,48 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 
 	thickness = bpy.props.FloatProperty(
 		name="Thickness",
-		description="Set some thickness to make OSM objects extruded",
+		description="Set thickness to make OSM objects extruded",
 		default=0,
 	)
-
-	# empty object used to parent all imported OSM objects
-	parentObject = None
 
 	def execute(self, context):
 		# setting active object if there is no active object
 		if not context.scene.objects.active:
 			context.scene.objects.active = context.scene.objects[0]
 		bpy.ops.object.mode_set(mode="OBJECT")
-
-		if not self.parentObject:
-			bpy.ops.object.empty_add(type="PLAIN_AXES",location=(0, 0, 0))
-			parentObject = context.active_object
-			self.parentObject = parentObject
-			parentObject.name = "OpenStreetMap data"
-			parentObject.hide = True
-			parentObject.hide_select = True
-			parentObject.hide_render = True
-
+		
 		bpy.ops.object.select_all(action="DESELECT")
-		self.read_osm_file(context)
+		
+		# try to find an empty Blender object with "latitude" and "longitude" as custom properties
+		geoObject = utils.findEmptyGeoObject(context)
+		
+		# create an empty object to parent all imported OSM objects
+		bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
+		parentObject = context.active_object
+		self.parentObject = parentObject
+		parentObject.name = os.path.basename(self.filepath)
+		#parentObject.hide = True
+		#parentObject.hide_select = True
+		parentObject.hide_render = True
+		
+		self.read_osm_file(geoObject, parentObject)
+		
 		# perform parenting
-		parentObject = self.parentObject
 		context.scene.objects.active = parentObject
-		# temporary unhiding self.parentObject, otherwise parenting doesn't work
-		parentObject.hide = False
 		bpy.ops.object.parent_set()
-		# hiding self.parentObject again
-		parentObject.hide = True
 		bpy.ops.object.select_all(action="DESELECT")
 		return {"FINISHED"}
 
-	def read_osm_file(self, context):
+	def read_osm_file(self, geoObject, parentObject):
 		osm = OsmParser(self.filepath)
-		lat = (osm.minLat + osm.maxLat)/2
-		lon = (osm.minLon + osm.maxLon)/2
+		if geoObject:
+			lat = geoObject["latitude"]
+			lon = geoObject["longitude"]
+		else:
+			lat = (osm.minLat + osm.maxLat)/2
+			lon = (osm.minLon + osm.maxLon)/2
+			parentObject["latitude"] = lat
+			parentObject["longitude"] = lon
 		projection = TransverseMercator(lat=lat, lon=lon)
 		osm.parse(
 			projection=projection,
