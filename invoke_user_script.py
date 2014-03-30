@@ -3,7 +3,7 @@ bl_info = {
 	"author": "Vladimir Elistratov",
 	"description": "Builds Neighborhood",
 	"version": (0, 1),
-	"blender": (2, 6, 8),
+	"blender": (2, 6, 9),
 	"category": "Object",
 	"location": "Object > Build Neighborhood",
 	"warning": "",

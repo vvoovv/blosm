@@ -4,7 +4,7 @@ bl_info = {
 	"name": "Target Scaling",
 	"author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
 	"version": (1, 0, 0),
-	"blender": (2, 6, 8),
+	"blender": (2, 6, 9),
 	"location": "View 3D > Edit Mode > Tool Shelf",
 	"description" : "Scale your model to the correct target size",
 	"warning": "",
