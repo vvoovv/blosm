@@ -23,7 +23,7 @@ import utils
 class OsmGeoreferencingPanel(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"
 	bl_region_type = "TOOLS"
-	#bl_context = "object"
+	bl_context = "objectmode"
 	bl_label = "Georeferencing"
 
 	def draw(self, context):
