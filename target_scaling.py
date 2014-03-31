@@ -1,5 +1,3 @@
-import bpy, bmesh
-
 bl_info = {
 	"name": "Target Scaling",
 	"author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
@@ -9,10 +7,12 @@ bl_info = {
 	"description" : "Scale your model to the correct target size",
 	"warning": "",
 	"wiki_url": "",
-	"tracker_url": "",
+	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "3D View",
 }
+
+import bpy, bmesh
 
 def getSelectedEdgeLength():
 	# getting active edge via bmesh and its select_history
@@ -30,7 +30,7 @@ class OsmToolsPanel(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"
 	bl_region_type = "TOOLS"
 	bl_context = "mesh_edit"
-	bl_label = "OpenStreetMap Tools"
+	bl_label = "Target Scaling"
 
 	def draw(self, context):
 		l = self.layout
@@ -59,7 +59,7 @@ class DoTargetScaling(bpy.types.Operator):
 	bl_description = "Perform whole mesh scaling, so the selected edge will be equal to the target one."
 
 	def execute(self, context):
-		if bpy.target_length > 0:
+		if hasattr(bpy, "target_length") and bpy.target_length > 0:
 			l = getSelectedEdgeLength()
 			if l > 0:
 				scale = bpy.target_length/l
@@ -100,7 +100,6 @@ class DoTargetScaling(bpy.types.Operator):
 		return {"FINISHED"}
 
 def register():
-	bpy.target_length = -1
 	bpy.utils.register_module(__name__)
 
 def unregister():
