@@ -10,14 +10,14 @@ A general description how to create georeferenced 3D models of neighborhoods wit
 
 ## Plugins for Blender
 
-* <code>Import OpenStreetMap (.osm)</code>
-Import a file in the OpenStreetMap format (.osm)
+* **[Import OpenStreetMap (.osm)](https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm))**
+<br>Import a file in the OpenStreetMap format (.osm)
 
-* <code>OpenStreetMap Georeferencing</code>
-OpenStreetMap based object georeferencing
+* **[OpenStreetMap Georeferencing](https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing)**
+<br>OpenStreetMap based object georeferencing
 
-* <code>Target Scaling</code>
-Scale your model to the correct target size
+* **[Target Scaling](https://github.com/vvoovv/blender-geo/wiki/Target-Scaling)**
+<br>Scale your model to the correct target size
 
-* <code>One-vertex mesh object at the cursor location</code>
-Create one-vertex mesh object at the cursor location
+* **[One-vertex mesh object at the cursor location](https://github.com/vvoovv/blender-geo/wiki/One-vertex-mesh-object-at-the-cursor-location)**
+<br>Create one-vertex mesh object at the cursor location
