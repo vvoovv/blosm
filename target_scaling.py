@@ -64,33 +64,10 @@ class DoTargetScaling(bpy.types.Operator):
 			if l > 0:
 				scale = bpy.target_length/l
 				
-				bpy.ops.object.mode_set(mode="OBJECT")
-				# save a reference to our object
-				obj = bpy.context.active_object
-				# deselect all objects
-				bpy.ops.object.select_all(action="DESELECT")
-				# select the camera
-				bpy.context.scene.camera.select = True
-				bpy.ops.view3d.snap_cursor_to_selected()
-				# deselect the camera
-				bpy.context.scene.camera.select = False
-				# select the saved object
-				obj.select = True
-				
-				bpy.ops.object.mode_set(mode="EDIT")
-				
-				space = bpy.context.area.spaces.active
-				# remember the current pivot_point
-				pivot_point = space.pivot_point
-				# set the cursor to be the pivot
-				space.pivot_point = "CURSOR"
-				
 				# do scaling
 				bpy.ops.mesh.select_all(action="SELECT")
 				bpy.ops.transform.resize(value=(scale, scale, scale))
 				
-				# return to the save pivot_point
-				space.pivot_point = pivot_point
 				# deselect everything
 				bpy.ops.mesh.select_all(action="DESELECT")
 			else:
