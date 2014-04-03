@@ -45,7 +45,7 @@ class PlaceVertexAtCursor(bpy.types.Operator):
         obj.select = True
         context.scene.objects.active = obj
         bpy.ops.object.mode_set(mode="EDIT")
-        return{'FINISHED'}
+        return {"FINISHED"}
 
 def register():
 	bpy.utils.register_module(__name__)
