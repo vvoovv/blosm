@@ -37,9 +37,9 @@ class TransverseMercator:
 			setattr(self, attr, kwargs[attr])
 		self.latInRadians = math.radians(self.lat)
 
-	def fromGeographic(self, coords):
-		lat = math.radians(coords[0])
-		lon = math.radians(coords[1]-self.lon)
+	def fromGeographic(self, lat, lon):
+		lat = math.radians(lat)
+		lon = math.radians(lon-self.lon)
 		B = math.sin(lon) * math.cos(lat)
 		x = 0.5 * self.k * self.radius * math.log((1+B)/(1-B))
 		y = self.k * self.radius * ( math.atan(math.tan(lat)/math.cos(lon)) - self.latInRadians )

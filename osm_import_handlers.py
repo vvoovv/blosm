@@ -19,7 +19,7 @@ def buildings(way, parser, kwargs):
 		bm = bmesh.new()
 		for node in range(len(wayNodes)-1): # we need to skip the last node which is the same as the first ones
 			node = parser.nodes[wayNodes[node]]
-			v = kwargs["projection"].fromGeographic([node["lat"], node["lon"]])
+			v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
 			bm.verts.new((v[0], v[1], 0))
 
 		faces = [bm.faces.new(bm.verts)]
