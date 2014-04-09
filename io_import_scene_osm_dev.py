@@ -50,8 +50,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		
 		bpy.ops.object.select_all(action="DESELECT")
 		
-		# try to find an empty Blender object with "latitude" and "longitude" as custom properties
-		geoObject = utils.findEmptyGeoObject(context)
+		# try to find a Blender object with "latitude" and "longitude" as custom properties
+		geoObject = utils.findGeoObject(context)
 		
 		# create an empty object to parent all imported OSM objects
 		bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))

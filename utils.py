@@ -1,10 +1,10 @@
 import bpy
 
-def findEmptyGeoObject(context):
+def findGeoObject(context):
 	"""
-	Find an empty Blender object with "latitude" and "longitude" as custom properties
+	Find a Blender object with "latitude" and "longitude" as custom properties
 	"""
 	for o in context.scene.objects:
-		if o.type == "EMPTY" and "latitude" in o and "longitude":
+		if "latitude" in o and "longitude" in o:
 			return o
 	return None

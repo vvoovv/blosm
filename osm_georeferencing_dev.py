@@ -51,8 +51,8 @@ class DoGeoreferencing(bpy.types.Operator):
 	bl_description = "Perform georeferencing"
 
 	def execute(self, context):
-		# try to find an empty Blender object with "latitude" and "longitude" as custom properties
-		geoObject = utils.findEmptyGeoObject(context)
+		# try to find a Blender object with "latitude" and "longitude" as custom properties
+		geoObject = utils.findGeoObject(context)
 		
 		if not geoObject:
 			self.report({"ERROR"}, "Import OpenStreetMap data first!")

@@ -57,12 +57,12 @@ class TransverseMercator:
 		return [lat, lon]
 import bpy
 
-def findEmptyGeoObject(context):
+def findGeoObject(context):
 	"""
-	Find an empty Blender object with "latitude" and "longitude" as custom properties
+	Find a Blender object with "latitude" and "longitude" as custom properties
 	"""
 	for o in context.scene.objects:
-		if o.type == "EMPTY" and "latitude" in o and "longitude":
+		if "latitude" in o and "longitude" in o:
 			return o
 	return None
 
@@ -97,8 +97,8 @@ class DoGeoreferencing(bpy.types.Operator):
 	bl_description = "Perform georeferencing"
 
 	def execute(self, context):
-		# try to find an empty Blender object with "latitude" and "longitude" as custom properties
-		geoObject = findEmptyGeoObject(context)
+		# try to find a Blender object with "latitude" and "longitude" as custom properties
+		geoObject = findGeoObject(context)
 		
 		if not geoObject:
 			self.report({"ERROR"}, "Import OpenStreetMap data first!")
