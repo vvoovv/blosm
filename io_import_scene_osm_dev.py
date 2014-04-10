@@ -6,7 +6,7 @@ bl_info = {
 	"location": "File > Import > OpenStreetMap (.osm)",
 	"description" : "Import a file in the OpenStreetMap format (.osm)",
 	"warning": "",
-	"wiki_url": "",
+	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm)",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "Import-Export",
@@ -91,23 +91,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
 		)
 
+
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
 	self.layout.operator(ImportOsm.bl_idname, text="OpenStreetMap (.osm)")
-
 
 def register():
 	bpy.utils.register_class(ImportOsm)
 	bpy.types.INFO_MT_file_import.append(menu_func_import)
 
-
 def unregister():
 	bpy.utils.unregister_class(ImportOsm)
 	bpy.types.INFO_MT_file_import.remove(menu_func_import)
-
-
-if __name__ == "__main__":
-	register()
-
-	# test call
-	bpy.ops.import_scene.osm("INVOKE_DEFAULT")
