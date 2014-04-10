@@ -284,9 +284,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			#	3) a python variable representing the function
 			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
 		)
-		# saving geo reference information for the scene
-		bpy.longitude = lon
-		bpy.latitude = lat
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
