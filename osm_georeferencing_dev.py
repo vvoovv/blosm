@@ -6,7 +6,7 @@ bl_info = {
 	"location": "View 3D > Object Mode > Tool Shelf",
 	"description" : "OpenStreetMap based object georeferencing",
 	"warning": "",
-	"wiki_url": "",
+	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "3D View",

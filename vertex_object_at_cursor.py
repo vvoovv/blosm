@@ -6,7 +6,7 @@ bl_info = {
 	"location": "View 3D > Object Mode > Tool Shelf",
 	"description" : "Create one-vertex mesh object at the cursor location",
 	"warning": "",
-	"wiki_url": "",
+	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/One-vertex-mesh-object-at-the-cursor-location",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "3D View",

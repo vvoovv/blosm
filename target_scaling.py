@@ -6,7 +6,7 @@ bl_info = {
 	"location": "View 3D > Edit Mode > Tool Shelf",
 	"description" : "Scale your model to the correct target size",
 	"warning": "",
-	"wiki_url": "",
+	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/Target-Scaling",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "3D View",
