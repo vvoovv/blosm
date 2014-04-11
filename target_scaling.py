@@ -4,7 +4,7 @@ bl_info = {
 	"version": (1, 0, 0),
 	"blender": (2, 6, 9),
 	"location": "View 3D > Edit Mode > Tool Shelf",
-	"description" : "Scale your model to the correct target size",
+	"description": "Scale your model to the correct target size",
 	"warning": "",
 	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/Target-Scaling",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
@@ -57,6 +57,7 @@ class DoTargetScaling(bpy.types.Operator):
 	bl_idname = "edit.do_target_scaling"    
 	bl_label = "Perform mesh scaling"
 	bl_description = "Perform whole mesh scaling, so the selected edge will be equal to the target one."
+	bl_options = {"UNDO"}
 
 	def execute(self, context):
 		if hasattr(bpy, "target_length") and bpy.target_length > 0:

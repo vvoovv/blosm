@@ -4,7 +4,7 @@ bl_info = {
 	"version": (1, 0, 0),
 	"blender": (2, 6, 9),
 	"location": "View 3D > Object Mode > Tool Shelf",
-	"description" : "OpenStreetMap based object georeferencing",
+	"description": "OpenStreetMap based object georeferencing",
 	"warning": "",
 	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
@@ -49,6 +49,7 @@ class DoGeoreferencing(bpy.types.Operator):
 	bl_idname = "object.do_georeferencing"    
 	bl_label = "Perform georeferencing"
 	bl_description = "Perform georeferencing"
+	bl_options = {"UNDO"}
 
 	def execute(self, context):
 		# try to find a Blender object with "latitude" and "longitude" as custom properties

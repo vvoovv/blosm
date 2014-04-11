@@ -8,7 +8,7 @@ bl_info = {
 	"version": (1, 0, 0),
 	"blender": (2, 6, 9),
 	"location": "File > Import > OpenStreetMap (.osm)",
-	"description" : "Import a file in the OpenStreetMap format (.osm)",
+	"description": "Import a file in the OpenStreetMap format (.osm)",
 	"warning": "",
 	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm)",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
@@ -221,6 +221,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 	"""Import a file in the OpenStreetMap format (.osm)"""
 	bl_idname = "import_scene.osm"  # important since its how bpy.ops.import_scene.osm is constructed
 	bl_label = "Import OpenStreetMap"
+	bl_options = {"UNDO"}
 
 	# ImportHelper mixin class uses this
 	filename_ext = ".osm"
