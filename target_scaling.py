@@ -14,9 +14,9 @@ bl_info = {
 
 import bpy, bmesh
 
-def getSelectedEdgeLength():
+def getSelectedEdgeLength(context):
 	# getting active edge via bmesh and its select_history
-	obj = bpy.context.active_object
+	obj = context.active_object
 	bm = bmesh.from_edit_mesh(obj.data)
 	edge = bm.select_history.active
 	l = -1
@@ -26,17 +26,20 @@ def getSelectedEdgeLength():
 		l = round(l.length, 5)
 	return l
 
-class OsmToolsPanel(bpy.types.Panel):
+class TargetScalingPanel(bpy.types.Panel):
 	bl_space_type = "VIEW_3D"
 	bl_region_type = "TOOLS"
 	bl_context = "mesh_edit"
 	bl_label = "Target Scaling"
 
 	def draw(self, context):
-		l = self.layout
-		c = l.column()
-		c.operator("edit.select_target_edge")
-		c.operator("edit.do_target_scaling")
+		layout = self.layout
+		
+		layout.row().operator("edit.select_target_edge")
+		row = layout.row()
+		if _.target_length <= 0:
+			row.enabled = False
+		row.operator("edit.do_target_scaling")
 
 class SelectTargetEdge(bpy.types.Operator):
 	bl_idname = "edit.select_target_edge"
@@ -45,9 +48,9 @@ class SelectTargetEdge(bpy.types.Operator):
 
 	def execute(self, context):
 		# getting active edge via bmesh and its select_history
-		l = getSelectedEdgeLength()
+		l = getSelectedEdgeLength(context)
 		if l > 0:
-			bpy.target_length = l
+			_.target_length = l
 			self.report({"INFO"}, "The target edge length is {}".format(l))
 		else:
 			self.report({"ERROR"}, "Select a single target edge!")
@@ -60,26 +63,27 @@ class DoTargetScaling(bpy.types.Operator):
 	bl_options = {"UNDO"}
 
 	def execute(self, context):
-		if hasattr(bpy, "target_length") and bpy.target_length > 0:
-			l = getSelectedEdgeLength()
-			if l > 0:
-				scale = bpy.target_length/l
-				
-				# do scaling
-				bpy.ops.mesh.select_all(action="SELECT")
-				bpy.ops.transform.resize(value=(scale, scale, scale))
-				
-				# deselect everything
-				bpy.ops.mesh.select_all(action="DESELECT")
-			else:
-				self.report({"ERROR"}, "Select a single edge for target scaling!")
+		l = getSelectedEdgeLength(context)
+		if l > 0:
+			scale = _.target_length/l
+			
+			# do scaling
+			bpy.ops.mesh.select_all(action="SELECT")
+			bpy.ops.transform.resize(value=(scale, scale, scale))
+			
+			# deselect everything
+			bpy.ops.mesh.select_all(action="DESELECT")
 		else:
-			self.report({"ERROR"}, "Select a single target edge first!")
+			self.report({"ERROR"}, "Select a single edge for target scaling!")
 		return {"FINISHED"}
+
+class _:
+	"""An auxiliary class to store plugin data"""
+	target_length = -1
+
 
 def register():
 	bpy.utils.register_module(__name__)
 
 def unregister():
-	del bpy.target_length
 	bpy.utils.unregister_module(__name__)
