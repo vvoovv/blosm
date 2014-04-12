@@ -29,11 +29,13 @@ import math
 # http://mathworld.wolfram.com/MercatorProjection.html
 class TransverseMercator:
 	radius = 6378137
-	lat = 0 # in degrees
-	lon = 0 # in degrees
-	k = 1 # scale factor
 
 	def __init__(self, **kwargs):
+		# setting default values
+		self.lat = 0 # in degrees
+		self.lon = 0 # in degrees
+		self.k = 1 # scale factor
+		
 		for attr in kwargs:
 			setattr(self, attr, kwargs[attr])
 		self.latInRadians = math.radians(self.lat)
@@ -44,7 +46,7 @@ class TransverseMercator:
 		B = math.sin(lon) * math.cos(lat)
 		x = 0.5 * self.k * self.radius * math.log((1+B)/(1-B))
 		y = self.k * self.radius * ( math.atan(math.tan(lat)/math.cos(lon)) - self.latInRadians )
-		return [x,y]
+		return (x,y)
 
 	def toGeographic(self, x, y):
 		x = x/(self.k * self.radius)
@@ -55,7 +57,7 @@ class TransverseMercator:
 
 		lon = self.lon + math.degrees(lon)
 		lat = math.degrees(lat)
-		return [lat, lon]
+		return (lat, lon)
 import xml.etree.cElementTree as etree
 import inspect, importlib
 
@@ -206,16 +208,6 @@ def buildings(way, parser, kwargs):
 def highways(way, parser, kwargs):
 	pass
 
-import bpy
-
-def findGeoObject(context):
-	"""
-	Find a Blender object with "latitude" and "longitude" as custom properties
-	"""
-	for o in context.scene.objects:
-		if "latitude" in o and "longitude" in o:
-			return o
-	return None
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
 	"""Import a file in the OpenStreetMap format (.osm)"""
@@ -229,6 +221,12 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 	filter_glob = bpy.props.StringProperty(
 		default="*.osm",
 		options={"HIDDEN"},
+	)
+
+	ignoreGeoreferencing = bpy.props.BoolProperty(
+		name="Ignore existing georeferencing",
+		description="Ignore existing georeferencing and make a new one",
+		default=False,
 	)
 
 	thickness = bpy.props.FloatProperty(
@@ -245,9 +243,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		
 		bpy.ops.object.select_all(action="DESELECT")
 		
-		# try to find a Blender object with "latitude" and "longitude" as custom properties
-		geoObject = findGeoObject(context)
-		
 		# create an empty object to parent all imported OSM objects
 		bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
 		parentObject = context.active_object
@@ -257,7 +252,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		#parentObject.hide_select = True
 		parentObject.hide_render = True
 		
-		self.read_osm_file(geoObject, parentObject)
+		self.read_osm_file(context)
 		
 		# perform parenting
 		context.scene.objects.active = parentObject
@@ -265,16 +260,17 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		bpy.ops.object.select_all(action="DESELECT")
 		return {"FINISHED"}
 
-	def read_osm_file(self, geoObject, parentObject):
+	def read_osm_file(self, context):
+		scene = context.scene
 		osm = OsmParser(self.filepath)
-		if geoObject:
-			lat = geoObject["latitude"]
-			lon = geoObject["longitude"]
+		if "latitude" in scene and "longitude" in scene and not self.ignoreGeoreferencing:
+			lat = scene["latitude"]
+			lon = scene["longitude"]
 		else:
 			lat = (osm.minLat + osm.maxLat)/2
 			lon = (osm.minLon + osm.maxLon)/2
-			parentObject["latitude"] = lat
-			parentObject["longitude"] = lon
+			scene["latitude"] = lat
+			scene["longitude"] = lon
 		projection = TransverseMercator(lat=lat, lon=lon)
 		osm.parse(
 			projection=projection,
