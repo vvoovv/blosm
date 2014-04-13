@@ -139,6 +139,9 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 		else:
 			# use extent of the self.filepath (a single .hgt file)
 			srtmFileName = os.path.basename(self.filepath)
+			if not srtmFileName:
+				self.report({"ERROR"}, "A .hgt file with SRTM data wasn't specified")
+				return {"FINISHED"}
 			prefixLat = srtmFileName[0]
 			minLat = int(srtmFileName[1:3])
 			maxLat = minLat + 1
@@ -158,6 +161,11 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 			projection=projection,
 			srtmDir=os.path.dirname(self.filepath) # directory for the .hgt files
 		)
+		missingSrtmFiles = srtm.getMissingSrtmFiles()
+		if missingSrtmFiles:
+			for missingFile in missingSrtmFiles:
+				self.report({"ERROR"}, "SRTM file %s is missing" % missingFile)
+			return {"FINISHED"}
 		verts = []
 		indices = []
 		srtm.build(verts, indices)
@@ -199,20 +207,22 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 			box.prop(self, "minLat")
 
 class Srtm:
-	
-	srtmDir = "."
-	
+
 	# SRTM3 data are sampled at three arc-seconds and contain 1201 lines and 1201 samples
 	size = 1200
-	
+
+	voidValue = -32768
+
 	def __init__(self, **kwargs):
+		self.srtmDir = "."
+		self.voidSubstitution = 0
+		
 		for key in kwargs:
 			setattr(self, key, kwargs[key])
 		
 		# we are going from top to down, that's why we call reversed()
 		self.latIntervals = list(reversed(getSrtmIntervals(self.minLat, self.maxLat)))
 		self.lonIntervals = getSrtmIntervals(self.minLon, self.maxLon)
-		self.checkSrtmFiles(self.latIntervals, self.lonIntervals)
 
 	def build(self, verts, indices):
 		"""
@@ -270,6 +280,8 @@ class Srtm:
 							buf = f.read(2)
 							# ">h" is a signed two byte integer
 							z = struct.unpack('>h', buf)[0]
+							if z==self.voidValue:
+								z = self.voidSubstitution
 							if z<minHeight:
 								minHeight = z
 							elif z>maxHeight:
@@ -317,7 +329,14 @@ class Srtm:
 		fileName = os.path.join(self.srtmDir, fileName)
 		return fileName
 
-	def checkSrtmFiles(self, latIntervals, lonIntervals):
+	def getMissingSrtmFiles(self):
+		"""
+		Returns None if all required SRTM files are found
+		Returns the list of missing SRTM file otherwise
+		"""
+		latIntervals = self.latIntervals
+		lonIntervals = self.lonIntervals
+		missingFiles = []
 		for latInterval in latIntervals:
 			# latitude of the lower-left corner of the SRTM tile
 			_lat = math.floor(latInterval[0])
@@ -327,7 +346,8 @@ class Srtm:
 				srtmFileName = self.getSrtmFileName(_lat, _lon)
 				# check if the SRTM file exists
 				if not os.path.exists(srtmFileName):
-					raise Exception("SRTM file %s is missing" % srtmFileName)
+					missingFiles.append(srtmFileName)
+		return missingFiles if len(missingFiles)>0 else None
 
 
 # Only needed if you want to add into a dynamic menu
