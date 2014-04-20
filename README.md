@@ -16,6 +16,9 @@ A general description how to create georeferenced 3D models of neighborhoods wit
 * **[OpenStreetMap Georeferencing](https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing)**
 <br>OpenStreetMap based object georeferencing
 
+* **[Import SRTM (.hgt)](https://github.com/vvoovv/blender-geo/wiki/Import-SRTM-(.hgt))**
+<br>Import digital elevation model data from files in the SRTM format (.hgt)
+
 * **[Target Scaling](https://github.com/vvoovv/blender-geo/wiki/Target-Scaling)**
 <br>Scale your model to the correct target size
 
