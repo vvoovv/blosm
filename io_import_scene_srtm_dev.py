@@ -6,7 +6,7 @@ bl_info = {
 	"location": "File > Import > SRTM (.hgt)",
 	"description" : "Import digital elevation model data from files in the SRTM format (.hgt)",
 	"warning": "",
-	"wiki_url": "",
+	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/Import-SRTM-(.hgt)",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "Import-Export",
@@ -85,6 +85,13 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 		default=False,
 	)
 	
+	primitiveType = bpy.props.EnumProperty(
+		name="Mesh primitive type: quad or triangle",
+		items=(("quad","quad","quad"),("triangle","triangle","triangle")),
+		description="Primitive type used for the terrain mesh: quad or triangle",
+		default="quad",
+	)
+	
 	useSpecificExtent = bpy.props.BoolProperty(
 		name="Use manually set extent",
 		description="Use specific extent by setting min lat, max lat, min lon, max lon",
@@ -159,7 +166,8 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 			minLon=minLon,
 			maxLon=maxLon,
 			projection=projection,
-			srtmDir=os.path.dirname(self.filepath) # directory for the .hgt files
+			srtmDir=os.path.dirname(self.filepath), # directory for the .hgt files
+			primitiveType = self.primitiveType
 		)
 		missingSrtmFiles = srtm.getMissingSrtmFiles()
 		if missingSrtmFiles:
@@ -193,6 +201,10 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 		row = layout.row()
 		if self.useSpecificExtent or self.ignoreGeoreferencing: row.enabled = False
 		row.prop(self, "useSelectionAsExtent")
+		
+		layout.label("Mesh primitive type:")
+		row = layout.row()
+		row.prop(self, "primitiveType", expand=True)
 		
 		row = layout.row()
 		if self.useSelectionAsExtent: row.enabled = False
@@ -293,20 +305,37 @@ class Srtm:
 							if not firstLatInterval and y==y2:
 								topNeighborIndex = lonIntervalVertsCounterValues[lonIntervalIndex] + x - x1
 								if x!=x1:
-									indices.append((vertsCounter-1, topNeighborIndex, topNeighborIndex-1))
-									indices.append((vertsCounter, topNeighborIndex, vertsCounter-1))
+									if self.primitiveType == "quad":
+										indices.append((vertsCounter, topNeighborIndex, topNeighborIndex-1, vertsCounter-1))
+									else: # self.primitiveType == "triangle"
+										indices.append((vertsCounter-1, topNeighborIndex, topNeighborIndex-1))
+										indices.append((vertsCounter, topNeighborIndex, vertsCounter-1))
 								elif not firstLonInterval:
 									leftNeighborIndex = prevLonIntervalVertsCounter - (y2-y1)*(prevXsize+1)
-									indices.append((leftNeighborIndex, topNeighborIndex, topNeighborIndex-prevYsize*(x2-x1+1)-1))
-									indices.append((vertsCounter, topNeighborIndex, leftNeighborIndex))
+									leftTopNeighborIndex = topNeighborIndex-prevYsize*(x2-x1+1)-1
+									if self.primitiveType == "quad":
+										indices.append((vertsCounter, topNeighborIndex, leftTopNeighborIndex, leftNeighborIndex))
+									else: # self.primitiveType == "triangle"
+										indices.append((leftNeighborIndex, topNeighborIndex, leftTopNeighborIndex))
+										indices.append((vertsCounter, topNeighborIndex, leftNeighborIndex))
 							elif not firstLonInterval and x==x1:
-								leftNeighborIndex = prevLonIntervalVertsCounter - (y-y1)*(prevXsize+1)
 								if y!=y2:
-									indices.append((leftNeighborIndex, vertsCounter-xSize-1, leftNeighborIndex-prevXsize-1))
-									indices.append((vertsCounter, vertsCounter-xSize-1, leftNeighborIndex))
+									leftNeighborIndex = prevLonIntervalVertsCounter - (y-y1)*(prevXsize+1)
+									topNeighborIndex = vertsCounter-xSize-1
+									leftTopNeighborIndex = leftNeighborIndex-prevXsize-1
+									if self.primitiveType == "quad":
+										indices.append((vertsCounter, topNeighborIndex, leftTopNeighborIndex, leftNeighborIndex))
+									else: # self.primitiveType == "triangle"
+										indices.append((leftNeighborIndex, topNeighborIndex, leftTopNeighborIndex))
+										indices.append((vertsCounter, topNeighborIndex, leftNeighborIndex))
 							elif x>x1 and y<y2:
-								indices.append((vertsCounter-1, vertsCounter-xSize-1, vertsCounter-xSize-2))
-								indices.append((vertsCounter, vertsCounter-xSize-1, vertsCounter-1))
+								topNeighborIndex = vertsCounter-xSize-1
+								leftTopNeighborIndex = vertsCounter-xSize-2
+								if self.primitiveType == "quad":
+									indices.append((vertsCounter, topNeighborIndex, leftTopNeighborIndex, vertsCounter-1))
+								else: # self.primitiveType == "triangle"
+									indices.append((vertsCounter-1, topNeighborIndex, leftTopNeighborIndex))
+									indices.append((vertsCounter, topNeighborIndex, vertsCounter-1))
 							vertsCounter += 1
 				
 				if firstLonInterval:
