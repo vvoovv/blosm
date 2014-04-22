@@ -238,7 +238,8 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 		row.prop(self, "ignoreGeoreferencing")
 		
 		row = layout.row()
-		if self.useSpecificExtent or self.ignoreGeoreferencing: row.enabled = False
+		if self.useSpecificExtent or self.ignoreGeoreferencing or not ("latitude" in context.scene and "longitude" in context.scene):
+			row.enabled = False
 		row.prop(self, "useSelectionAsExtent")
 		
 		layout.label("Mesh primitive type:")
