@@ -128,9 +128,6 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 		if "latitude" in scene and "longitude" in scene and not self.ignoreGeoreferencing:
 			projection = TransverseMercator(lat=scene["latitude"], lon=scene["longitude"])
 		if self.useSelectionAsExtent:
-			if not projection:
-				self.report({"ERROR"}, "Custom properties \"latitude\" and \"longitude\" for the active scene are required to use this option")
-				return {"FINISHED"}
 			bbox = getSelectionBoundingBox(context)
 			if not bbox or bbox["xmin"]>=bbox["xmax"] or bbox["ymin"]>=bbox["ymax"]:
 				self.report({"ERROR"}, "No objects are selected or extent of the selected objects is incorrect")
