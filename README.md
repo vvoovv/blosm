@@ -1,6 +1,6 @@
 ## Introduction
 
-In this repo you can find a number of plugins for Blender to facilitate creation of georeferenced 3D models of neghbourhoods. The list of plugin is presented below.
+In this repo you can find a number of plugins for Blender to facilitate creation of georeferenced 3D models of neighborhoods. The list of plugin is presented below.
 
 [Blender](http://www.blender.org) is a free and open source 3D platform. It supports 3D modeling and rendering as well as many advanced features like animation, simulation, compositing, motion tracking, video editing and game creation.
 [Here](https://github.com/vvoovv/blender-geo/wiki/Learning-Blender) I describe my way way to learn Blender.
