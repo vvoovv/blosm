@@ -2,10 +2,14 @@ import os, math
 import bpy, bmesh
 import osm_utils
 
-def buildings(way, parser, kwargs):
-	tags = way["tags"]
-	objects = kwargs["objects"] if "objects" in kwargs else None
-	if "building" in tags:
+class buildings:
+	@staticmethod
+	def condition(tags, way):
+		return "building" in tags
+	
+	@staticmethod
+	def handler(way, parser, kwargs):
+		tags = way["tags"]
 		thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
 		osmId = way["id"]
 		# compose object name
@@ -43,6 +47,3 @@ def buildings(way, parser, kwargs):
 		obj.select = True
 		# assign OSM tags to the blender object
 		osm_utils.assignTags(obj, tags)
-
-def highways(way, parser, kwargs):
-	pass

@@ -75,7 +75,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 
 	def read_osm_file(self, context):
 		scene = context.scene
-		osm = OsmParser(self.filepath)
+		
+		osm = OsmParser(self.filepath,
+			# possible values for wayHandlers and nodeHandlers list elements:
+			#	1) a string name for the module containing classes (all classes from the modules will be used as handlers)
+			#	2) a python variable representing the module containing classes (all classes from the modules will be used as handlers)
+			#	3) a python variable representing the class
+			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
+		)
+		
 		if "latitude" in scene and "longitude" in scene and not self.ignoreGeoreferencing:
 			lat = scene["latitude"]
 			lon = scene["longitude"]
@@ -84,15 +92,10 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			lon = (osm.minLon + osm.maxLon)/2
 			scene["latitude"] = lat
 			scene["longitude"] = lon
-		projection = TransverseMercator(lat=lat, lon=lon)
+		
 		osm.parse(
-			projection=projection,
-			thickness=self.thickness,
-			# possible values for wayHandlers and nodeHandlers list elements:
-			#	1) a string name for the module containing functions (all functions from the modules will be used as handlers)
-			#	2) a python variable representing the module containing functions (all functions from the modules will be used as handlers)
-			#	3) a python variable representing the function
-			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
+			projection = TransverseMercator(lat=lat, lon=lon),
+			thickness=self.thickness
 		)
 
 

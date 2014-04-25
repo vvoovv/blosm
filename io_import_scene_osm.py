@@ -74,9 +74,9 @@ def prepareHandlers(kwArgs):
 					handler = importlib.import_module(handler)
 				if inspect.ismodule(handler):
 					# iterate through all module functions
-					for f in inspect.getmembers(handler, inspect.isfunction):
+					for f in inspect.getmembers(handler, inspect.isclass):
 						_locals[handlers].append(f[1])
-				elif inspect.isfunction(handler):
+				elif inspect.isclass(handler):
 					_locals[handlers].append(handler)
 		if len(_locals[handlers])==0: _locals[handlers] = None
 	return (nodeHandlers if len(nodeHandlers) else None, wayHandlers if len(wayHandlers) else None)
@@ -92,7 +92,10 @@ class OsmParser:
 	minLon = 180
 	maxLon = -180
 	
-	def __init__(self, filename):
+	def __init__(self, filename, **kwargs):
+		self.kwargs = kwargs
+		(self.nodeHandlers, self.wayHandlers) = prepareHandlers(kwargs)
+		
 		self.doc = etree.parse(filename)
 		self.osm = self.doc.getroot()
 		self.prepare()
@@ -143,30 +146,49 @@ class OsmParser:
 						tags=tags
 					)
 
-	def parse(self, **kwargs):
-		(nodeHandlers, wayHandlers) = prepareHandlers(kwargs)
+	def iterate(self, wayFunction, nodeFunction):
+		nodeHandlers = self.nodeHandlers
+		wayHandlers = self.wayHandlers
+		
 		for e in self.osm: # e stands for element
 			if "action" in e.attrib and e.attrib["action"] == "delete": continue
 			if e.tag == "bounds": continue
 			attrs = e.attrib
 			_id = attrs["id"]
 			if wayHandlers and e.tag == "way" and _id in self.ways:
-				for handler in wayHandlers:
-					handler(self.ways[_id], self, kwargs)
+				way = self.ways[_id]
+				if "tags" in way:
+					for handler in wayHandlers:
+						if handler.condition(way["tags"], way):
+							wayFunction(handler, way)
+							continue
 			elif nodeHandlers and e.tag == "node" and _id in self.nodes:
-				for handler in nodeHandlers:
-					handler(self.nodes[_id], self, kwargs)
-
+				node = self.nodes[_id]
+				if "tags" in node:
+					for handler in nodeHandlers:
+						if handler.condition(node["tags"], node):
+							nodeFunction(handler, node)
+							continue
+
+	def parse(self, **kwargs):
+		def wayFunction(handler, way):
+			handler.handler(way, self, kwargs)
+		def nodeFunction(handler, node):
+			handler.handler(node, self, kwargs)
+		self.iterate(wayFunction, nodeFunction)
 import os, math
 import bpy, bmesh
 def assignTags(obj, tags):
 	for key in tags:
 		obj[key] = tags[key]
 
-def buildings(way, parser, kwargs):
-	tags = way["tags"]
-	objects = kwargs["objects"] if "objects" in kwargs else None
-	if "building" in tags:
+class buildings:
+	@staticmethod
+	def condition(tags, way):
+		return "building" in tags
+	@staticmethod
+	def handler(way, parser, kwargs):
+		tags = way["tags"]
 		thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
 		osmId = way["id"]
 		# compose object name
@@ -204,9 +226,6 @@ def buildings(way, parser, kwargs):
 		obj.select = True
 		# assign OSM tags to the blender object
 		assignTags(obj, tags)
-
-def highways(way, parser, kwargs):
-	pass
 
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
@@ -262,7 +281,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 
 	def read_osm_file(self, context):
 		scene = context.scene
-		osm = OsmParser(self.filepath)
+		
+		osm = OsmParser(self.filepath,
+			# possible values for wayHandlers and nodeHandlers list elements:
+			#	1) a string name for the module containing classes (all classes from the modules will be used as handlers)
+			#	2) a python variable representing the module containing classes (all classes from the modules will be used as handlers)
+			#	3) a python variable representing the class
+			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
+		)
+		
 		if "latitude" in scene and "longitude" in scene and not self.ignoreGeoreferencing:
 			lat = scene["latitude"]
 			lon = scene["longitude"]
@@ -271,15 +298,10 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			lon = (osm.minLon + osm.maxLon)/2
 			scene["latitude"] = lat
 			scene["longitude"] = lon
-		projection = TransverseMercator(lat=lat, lon=lon)
+		
 		osm.parse(
-			projection=projection,
-			thickness=self.thickness,
-			# possible values for wayHandlers and nodeHandlers list elements:
-			#	1) a string name for the module containing functions (all functions from the modules will be used as handlers)
-			#	2) a python variable representing the module containing functions (all functions from the modules will be used as handlers)
-			#	3) a python variable representing the function
-			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
+			projection = TransverseMercator(lat=lat, lon=lon),
+			thickness=self.thickness
 		)
 
 
