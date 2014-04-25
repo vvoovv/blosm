@@ -22,18 +22,16 @@ def prepareHandlers(kwArgs):
 	return (nodeHandlers if len(nodeHandlers) else None, wayHandlers if len(wayHandlers) else None)
 
 class OsmParser:
-	nodes = {}
-	ways = {}
-	relations = {}
-	doc = None
-	osm = None
-	minLat = 90
-	maxLat = -90
-	minLon = 180
-	maxLon = -180
 	
 	def __init__(self, filename, **kwargs):
-		self.kwargs = kwargs
+		self.nodes = {}
+		self.ways = {}
+		self.relations = {}
+		self.minLat = 90
+		self.maxLat = -90
+		self.minLon = 180
+		self.maxLon = -180
+		
 		(self.nodeHandlers, self.wayHandlers) = prepareHandlers(kwargs)
 		
 		self.doc = etree.parse(filename)
@@ -55,10 +53,11 @@ class OsmParser:
 				lat = float(attrs["lat"])
 				lon = float(attrs["lon"])
 				# calculating minLat, maxLat, minLon, maxLon
-				if lat<self.minLat: self.minLat = lat
-				elif lat>self.maxLat: self.maxLat = lat
-				if lon<self.minLon: self.minLon = lon
-				elif lon>self.maxLon: self.maxLon = lon
+				# commented out: only imported objects take part in the extent calculation
+				#if lat<self.minLat: self.minLat = lat
+				#elif lat>self.maxLat: self.maxLat = lat
+				#if lon<self.minLon: self.minLon = lon
+				#elif lon>self.maxLon: self.maxLon = lon
 				# creating entry
 				entry = dict(
 					id=_id,
@@ -85,34 +84,48 @@ class OsmParser:
 						nodes=nodes,
 						tags=tags
 					)
+		
+		self.calculateExtent()
 
 	def iterate(self, wayFunction, nodeFunction):
 		nodeHandlers = self.nodeHandlers
 		wayHandlers = self.wayHandlers
 		
-		for e in self.osm: # e stands for element
-			if "action" in e.attrib and e.attrib["action"] == "delete": continue
-			if e.tag == "bounds": continue
-			attrs = e.attrib
-			_id = attrs["id"]
-			if wayHandlers and e.tag == "way" and _id in self.ways:
+		if wayHandlers:
+			for _id in self.ways:
 				way = self.ways[_id]
 				if "tags" in way:
 					for handler in wayHandlers:
 						if handler.condition(way["tags"], way):
-							wayFunction(handler, way)
+							wayFunction(way, handler)
 							continue
-			elif nodeHandlers and e.tag == "node" and _id in self.nodes:
+		
+		if nodeHandlers:
+			for _id in self.nodes:
 				node = self.nodes[_id]
 				if "tags" in node:
 					for handler in nodeHandlers:
 						if handler.condition(node["tags"], node):
-							nodeFunction(handler, node)
+							nodeFunction(node, handler)
 							continue
 
 	def parse(self, **kwargs):
-		def wayFunction(handler, way):
+		def wayFunction(way, handler):
 			handler.handler(way, self, kwargs)
-		def nodeFunction(handler, node):
+		def nodeFunction(node, handler):
 			handler.handler(node, self, kwargs)
+		self.iterate(wayFunction, nodeFunction)
+
+	def calculateExtent(self):
+		def wayFunction(way, handler):
+			wayNodes = way["nodes"]
+			for node in range(len(wayNodes)-1): # skip the last node which is the same as the first ones
+				nodeFunction(self.nodes[wayNodes[node]])
+		def nodeFunction(node, handler=None):
+			lon = node["lon"]
+			lat = node["lat"]
+			if lat<self.minLat: self.minLat = lat
+			elif lat>self.maxLat: self.maxLat = lat
+			if lon<self.minLon: self.minLon = lon
+			elif lon>self.maxLon: self.maxLon = lon
 		self.iterate(wayFunction, nodeFunction)
