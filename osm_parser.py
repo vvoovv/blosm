@@ -40,9 +40,9 @@ class OsmParser:
 
 	def prepare(self):
 		for e in self.osm: # e stands for element
-			if "action" in e.attrib and e.attrib["action"] == "delete": continue
-			if e.tag == "bounds": continue
 			attrs = e.attrib
+			if e.tag != "node" and e.tag != "way": continue
+			if "action" in attrs and attrs["action"] == "delete": continue
 			_id = attrs["id"]
 			if e.tag == "node":
 				tags = None
