@@ -12,7 +12,7 @@ bl_info = {
 	"category": "Import-Export",
 }
 
-import bpy
+import bpy, bmesh
 # ImportHelper is a helper class, defines filename and invoke() function which calls the file selector
 from bpy_extras.io_utils import ImportHelper
 
@@ -21,6 +21,7 @@ sys.path.append("D:\\projects\\blender\\blender-geo")
 from transverse_mercator import TransverseMercator
 from osm_parser import OsmParser
 from osm_import_handlers import buildings
+import utils
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
 	"""Import a file in the OpenStreetMap format (.osm)"""
@@ -41,6 +42,12 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		description="Ignore existing georeferencing and make a new one",
 		default=False,
 	)
+	
+	singleMesh = bpy.props.BoolProperty(
+		name="Import as a single mesh",
+		description="Import OSM objects as a single mesh instead of separate Blender objects",
+		default=False,
+	)
 
 	thickness = bpy.props.FloatProperty(
 		name="Thickness",
@@ -56,20 +63,42 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		
 		bpy.ops.object.select_all(action="DESELECT")
 		
-		# create an empty object to parent all imported OSM objects
-		bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
-		parentObject = context.active_object
-		self.parentObject = parentObject
-		parentObject.name = os.path.basename(self.filepath)
-		#parentObject.hide = True
-		#parentObject.hide_select = True
-		parentObject.hide_render = True
+		name = os.path.basename(self.filepath)
+		
+		if self.singleMesh:
+			self.bm = bmesh.new()
+		else:
+			self.bm = None
+			# create an empty object to parent all imported OSM objects
+			bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
+			parentObject = context.active_object
+			self.parentObject = parentObject
+			parentObject.name = name
+			#parentObject.hide = True
+			#parentObject.hide_select = True
+			parentObject.hide_render = True
 		
 		self.read_osm_file(context)
 		
-		# perform parenting
-		context.scene.objects.active = parentObject
-		bpy.ops.object.parent_set()
+		if self.singleMesh:
+			bm = self.bm
+			# extrude
+			if self.thickness>0:
+				utils.extrudeMesh(bm, self.thickness)
+			
+			bm.normal_update()
+			
+			mesh = bpy.data.meshes.new(name)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+		else:
+			# perform parenting
+			context.scene.objects.active = parentObject
+			bpy.ops.object.parent_set()
+		
 		bpy.ops.object.select_all(action="DESELECT")
 		return {"FINISHED"}
 
@@ -95,7 +124,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		
 		osm.parse(
 			projection = TransverseMercator(lat=lat, lon=lon),
-			thickness=self.thickness
+			thickness = self.thickness,
+			bm = self.bm # if present, indicates the we need to create as single mesh
 		)
 
 

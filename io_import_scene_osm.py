@@ -16,7 +16,7 @@ bl_info = {
 	"category": "Import-Export",
 }
 
-import bpy
+import bpy, bmesh
 # ImportHelper is a helper class, defines filename and invoke() function which calls the file selector
 from bpy_extras.io_utils import ImportHelper
 
@@ -191,6 +191,15 @@ class OsmParser:
 		self.iterate(wayFunction, nodeFunction)
 import os, math
 import bpy, bmesh
+import bmesh
+
+def extrudeMesh(bm, thickness):
+	"""
+	Extrude bmesh
+	"""
+	geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+	verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
+	bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
 def assignTags(obj, tags):
 	for key in tags:
 		obj[key] = tags[key]
@@ -207,44 +216,55 @@ class buildings:
 		# a polygon must have at least 3 vertices
 		if numNodes<3: return
 		
-		tags = way["tags"]
-		thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
-		osmId = way["id"]
-		# compose object name
-		name = osmId
-		if "addr:housenumber" in tags and "addr:street" in tags:
-			name = tags["addr:street"] + ", " + tags["addr:housenumber"]
-		elif "name" in tags:
-			name = tags["name"]
+		if not kwargs["bm"]: # not a single mesh
+			tags = way["tags"]
+			thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+			osmId = way["id"]
+			# compose object name
+			name = osmId
+			if "addr:housenumber" in tags and "addr:street" in tags:
+				name = tags["addr:street"] + ", " + tags["addr:housenumber"]
+			elif "name" in tags:
+				name = tags["name"]
 		
-		bm = bmesh.new()
+		bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+		verts = []
 		for node in range(numNodes):
 			node = parser.nodes[wayNodes[node]]
 			v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
-			bm.verts.new((v[0], v[1], 0))
+			verts.append( bm.verts.new((v[0], v[1], 0)) )
 		
-		faces = [bm.faces.new(bm.verts)]
+		bm.faces.new(verts)
 		
-		# extrude
-		if thickness>0:
-			geom = bmesh.ops.extrude_face_region(bm, geom=faces)
-			verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
-			bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
-		
-		bm.normal_update()
-		
-		me = bpy.data.meshes.new(osmId)
-		bm.to_mesh(me)
-		
-		obj = bpy.data.objects.new(name, me)
-		bpy.context.scene.objects.link(obj)
-		bpy.context.scene.update()
-		
-		# final adjustments
-		obj.select = True
-		# assign OSM tags to the blender object
-		assignTags(obj, tags)
+		if not kwargs["bm"]:
+			thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+			# extrude
+			if thickness>0:
+				extrudeMesh(bm, thickness)
+			
+			bm.normal_update()
+			
+			mesh = bpy.data.meshes.new(osmId)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+			
+			# final adjustments
+			obj.select = True
+			# assign OSM tags to the blender object
+			assignTags(obj, tags)
 
+import bmesh
+
+def extrudeMesh(bm, thickness):
+	"""
+	Extrude bmesh
+	"""
+	geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+	verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
+	bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
 	"""Import a file in the OpenStreetMap format (.osm)"""
@@ -265,6 +285,12 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		description="Ignore existing georeferencing and make a new one",
 		default=False,
 	)
+	
+	singleMesh = bpy.props.BoolProperty(
+		name="Import as a single mesh",
+		description="Import OSM objects as a single mesh instead of separate Blender objects",
+		default=False,
+	)
 
 	thickness = bpy.props.FloatProperty(
 		name="Thickness",
@@ -280,20 +306,42 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		
 		bpy.ops.object.select_all(action="DESELECT")
 		
-		# create an empty object to parent all imported OSM objects
-		bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
-		parentObject = context.active_object
-		self.parentObject = parentObject
-		parentObject.name = os.path.basename(self.filepath)
-		#parentObject.hide = True
-		#parentObject.hide_select = True
-		parentObject.hide_render = True
+		name = os.path.basename(self.filepath)
+		
+		if self.singleMesh:
+			self.bm = bmesh.new()
+		else:
+			self.bm = None
+			# create an empty object to parent all imported OSM objects
+			bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
+			parentObject = context.active_object
+			self.parentObject = parentObject
+			parentObject.name = name
+			#parentObject.hide = True
+			#parentObject.hide_select = True
+			parentObject.hide_render = True
 		
 		self.read_osm_file(context)
 		
-		# perform parenting
-		context.scene.objects.active = parentObject
-		bpy.ops.object.parent_set()
+		if self.singleMesh:
+			bm = self.bm
+			# extrude
+			if self.thickness>0:
+				extrudeMesh(bm, self.thickness)
+			
+			bm.normal_update()
+			
+			mesh = bpy.data.meshes.new(name)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+		else:
+			# perform parenting
+			context.scene.objects.active = parentObject
+			bpy.ops.object.parent_set()
+		
 		bpy.ops.object.select_all(action="DESELECT")
 		return {"FINISHED"}
 
@@ -319,7 +367,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		
 		osm.parse(
 			projection = TransverseMercator(lat=lat, lon=lon),
-			thickness=self.thickness
+			thickness = self.thickness,
+			bm = self.bm # if present, indicates the we need to create as single mesh
 		)
 
 

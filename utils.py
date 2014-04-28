@@ -1,10 +1,9 @@
-import bpy
+import bmesh
 
-def findGeoObject(context):
+def extrudeMesh(bm, thickness):
 	"""
-	Find a Blender object with "latitude" and "longitude" as custom properties
+	Extrude bmesh
 	"""
-	for o in context.scene.objects:
-		if "latitude" in o and "longitude" in o:
-			return o
-	return None
+	geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+	verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
+	bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
