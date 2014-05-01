@@ -20,7 +20,8 @@ import sys, os
 sys.path.append("D:\\projects\\blender\\blender-geo")
 from transverse_mercator import TransverseMercator
 from osm_parser import OsmParser
-from osm_import_handlers import buildings
+from osm_import_handlers import *
+import osm_import_handlers
 import utils
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
@@ -49,9 +50,21 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		default=False,
 	)
 
+	importBuildings = bpy.props.BoolProperty(
+		name="Import buildings",
+		description="Import building outlines",
+		default=True,
+	)
+
+	importHighways = bpy.props.BoolProperty(
+		name="Import roads and paths",
+		description="Import roads and paths",
+		default=False,
+	)
+
 	thickness = bpy.props.FloatProperty(
 		name="Thickness",
-		description="Set thickness to make OSM objects extruded",
+		description="Set thickness to make OSM building outlines extruded",
 		default=0,
 	)
 
@@ -74,9 +87,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			parentObject = context.active_object
 			self.parentObject = parentObject
 			parentObject.name = name
-			#parentObject.hide = True
-			#parentObject.hide_select = True
-			parentObject.hide_render = True
 		
 		self.read_osm_file(context)
 		
@@ -93,6 +103,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			
 			obj = bpy.data.objects.new(name, mesh)
 			bpy.context.scene.objects.link(obj)
+			
+			# remove double vertices
+			context.scene.objects.active = obj
+			bpy.ops.object.mode_set(mode="EDIT")
+			bpy.ops.mesh.select_all(action="SELECT")
+			bpy.ops.mesh.remove_doubles()
+			bpy.ops.mesh.select_all(action="DESELECT")
+			bpy.ops.object.mode_set(mode="OBJECT")
+			
 			bpy.context.scene.update()
 		else:
 			# perform parenting
@@ -105,12 +124,21 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 	def read_osm_file(self, context):
 		scene = context.scene
 		
+		wayHandlers = []
+		if self.importBuildings: wayHandlers.append(buildings)
+		if self.importHighways: wayHandlers.append(highways)
+		
 		osm = OsmParser(self.filepath,
 			# possible values for wayHandlers and nodeHandlers list elements:
 			#	1) a string name for the module containing classes (all classes from the modules will be used as handlers)
 			#	2) a python variable representing the module containing classes (all classes from the modules will be used as handlers)
 			#	3) a python variable representing the class
-			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
+			# Examples:
+			# wayHandlers = [buildings, highways]
+			# wayHandlers = [handlers.buildings]
+			# wayHandlers = [handlers]
+			# wayHandlers = ["handlers"]
+			wayHandlers = wayHandlers
 		)
 		
 		if "latitude" in scene and "longitude" in scene and not self.ignoreGeoreferencing:

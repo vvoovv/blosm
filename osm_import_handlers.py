@@ -53,3 +53,46 @@ class buildings:
 			obj.select = True
 			# assign OSM tags to the blender object
 			osm_utils.assignTags(obj, tags)
+
+
+class highways:
+	@staticmethod
+	def condition(tags, way):
+		return "highway" in tags
+	
+	@staticmethod
+	def handler(way, parser, kwargs):
+		wayNodes = way["nodes"]
+		numNodes = len(wayNodes) # we need to skip the last node which is the same as the first ones
+		# a way must have at least 2 vertices
+		if numNodes<2: return
+		
+		if not kwargs["bm"]: # not a single mesh
+			tags = way["tags"]
+			osmId = way["id"]
+			# compose object name
+			name = tags["name"] if "name" in tags else osmId
+		
+		bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+		verts = []
+		prevVertex = None
+		for node in range(numNodes):
+			node = parser.nodes[wayNodes[node]]
+			v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
+			v = bm.verts.new((v[0], v[1], 0))
+			if prevVertex:
+				bm.edges.new([prevVertex, v])
+			prevVertex = v
+		
+		if not kwargs["bm"]:
+			mesh = bpy.data.meshes.new(osmId)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+			
+			# final adjustments
+			obj.select = True
+			# assign OSM tags to the blender object
+			osm_utils.assignTags(obj, tags)

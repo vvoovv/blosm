@@ -255,7 +255,158 @@ class buildings:
 			obj.select = True
 			# assign OSM tags to the blender object
 			assignTags(obj, tags)
-
+
+
+class highways:
+	@staticmethod
+	def condition(tags, way):
+		return "highway" in tags
+	
+	@staticmethod
+	def handler(way, parser, kwargs):
+		wayNodes = way["nodes"]
+		numNodes = len(wayNodes) # we need to skip the last node which is the same as the first ones
+		# a way must have at least 2 vertices
+		if numNodes<2: return
+		
+		if not kwargs["bm"]: # not a single mesh
+			tags = way["tags"]
+			osmId = way["id"]
+			# compose object name
+			name = tags["name"] if "name" in tags else osmId
+		
+		bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+		verts = []
+		prevVertex = None
+		for node in range(numNodes):
+			node = parser.nodes[wayNodes[node]]
+			v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
+			v = bm.verts.new((v[0], v[1], 0))
+			if prevVertex:
+				bm.edges.new([prevVertex, v])
+			prevVertex = v
+		
+		if not kwargs["bm"]:
+			mesh = bpy.data.meshes.new(osmId)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+			
+			# final adjustments
+			obj.select = True
+			# assign OSM tags to the blender object
+			assignTags(obj, tags)
+import os, math
+import bpy, bmesh
+import bmesh
+
+def extrudeMesh(bm, thickness):
+	"""
+	Extrude bmesh
+	"""
+	geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+	verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
+	bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
+def assignTags(obj, tags):
+	for key in tags:
+		obj[key] = tags[key]
+
+class buildings:
+	@staticmethod
+	def condition(tags, way):
+		return "building" in tags
+	
+	@staticmethod
+	def handler(way, parser, kwargs):
+		wayNodes = way["nodes"]
+		numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
+		# a polygon must have at least 3 vertices
+		if numNodes<3: return
+		
+		if not kwargs["bm"]: # not a single mesh
+			tags = way["tags"]
+			thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+			osmId = way["id"]
+			# compose object name
+			name = osmId
+			if "addr:housenumber" in tags and "addr:street" in tags:
+				name = tags["addr:street"] + ", " + tags["addr:housenumber"]
+			elif "name" in tags:
+				name = tags["name"]
+		
+		bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+		verts = []
+		for node in range(numNodes):
+			node = parser.nodes[wayNodes[node]]
+			v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
+			verts.append( bm.verts.new((v[0], v[1], 0)) )
+		
+		bm.faces.new(verts)
+		
+		if not kwargs["bm"]:
+			thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+			# extrude
+			if thickness>0:
+				extrudeMesh(bm, thickness)
+			
+			bm.normal_update()
+			
+			mesh = bpy.data.meshes.new(osmId)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+			
+			# final adjustments
+			obj.select = True
+			# assign OSM tags to the blender object
+			assignTags(obj, tags)
+
+
+class highways:
+	@staticmethod
+	def condition(tags, way):
+		return "highway" in tags
+	
+	@staticmethod
+	def handler(way, parser, kwargs):
+		wayNodes = way["nodes"]
+		numNodes = len(wayNodes) # we need to skip the last node which is the same as the first ones
+		# a way must have at least 2 vertices
+		if numNodes<2: return
+		
+		if not kwargs["bm"]: # not a single mesh
+			tags = way["tags"]
+			osmId = way["id"]
+			# compose object name
+			name = tags["name"] if "name" in tags else osmId
+		
+		bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+		verts = []
+		prevVertex = None
+		for node in range(numNodes):
+			node = parser.nodes[wayNodes[node]]
+			v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
+			v = bm.verts.new((v[0], v[1], 0))
+			if prevVertex:
+				bm.edges.new([prevVertex, v])
+			prevVertex = v
+		
+		if not kwargs["bm"]:
+			mesh = bpy.data.meshes.new(osmId)
+			bm.to_mesh(mesh)
+			
+			obj = bpy.data.objects.new(name, mesh)
+			bpy.context.scene.objects.link(obj)
+			bpy.context.scene.update()
+			
+			# final adjustments
+			obj.select = True
+			# assign OSM tags to the blender object
+			assignTags(obj, tags)
 import bmesh
 
 def extrudeMesh(bm, thickness):
@@ -292,9 +443,21 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 		default=False,
 	)
 
+	importBuildings = bpy.props.BoolProperty(
+		name="Import buildings",
+		description="Import building outlines",
+		default=True,
+	)
+
+	importHighways = bpy.props.BoolProperty(
+		name="Import roads and paths",
+		description="Import roads and paths",
+		default=False,
+	)
+
 	thickness = bpy.props.FloatProperty(
 		name="Thickness",
-		description="Set thickness to make OSM objects extruded",
+		description="Set thickness to make OSM building outlines extruded",
 		default=0,
 	)
 
@@ -317,9 +480,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			parentObject = context.active_object
 			self.parentObject = parentObject
 			parentObject.name = name
-			#parentObject.hide = True
-			#parentObject.hide_select = True
-			parentObject.hide_render = True
 		
 		self.read_osm_file(context)
 		
@@ -336,6 +496,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			
 			obj = bpy.data.objects.new(name, mesh)
 			bpy.context.scene.objects.link(obj)
+			
+			# remove double vertices
+			context.scene.objects.active = obj
+			bpy.ops.object.mode_set(mode="EDIT")
+			bpy.ops.mesh.select_all(action="SELECT")
+			bpy.ops.mesh.remove_doubles()
+			bpy.ops.mesh.select_all(action="DESELECT")
+			bpy.ops.object.mode_set(mode="OBJECT")
+			
 			bpy.context.scene.update()
 		else:
 			# perform parenting
@@ -348,12 +517,21 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 	def read_osm_file(self, context):
 		scene = context.scene
 		
+		wayHandlers = []
+		if self.importBuildings: wayHandlers.append(buildings)
+		if self.importHighways: wayHandlers.append(highways)
+		
 		osm = OsmParser(self.filepath,
 			# possible values for wayHandlers and nodeHandlers list elements:
 			#	1) a string name for the module containing classes (all classes from the modules will be used as handlers)
 			#	2) a python variable representing the module containing classes (all classes from the modules will be used as handlers)
 			#	3) a python variable representing the class
-			wayHandlers = [buildings] #[handlers.buildings] #[handlers] #["handlers"]
+			# Examples:
+			# wayHandlers = [buildings, highways]
+			# wayHandlers = [handlers.buildings]
+			# wayHandlers = [handlers]
+			# wayHandlers = ["handlers"]
+			wayHandlers = wayHandlers
 		)
 		
 		if "latitude" in scene and "longitude" in scene and not self.ignoreGeoreferencing:
