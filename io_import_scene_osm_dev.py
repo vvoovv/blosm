@@ -145,8 +145,17 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			lat = scene["latitude"]
 			lon = scene["longitude"]
 		else:
-			lat = (osm.minLat + osm.maxLat)/2
-			lon = (osm.minLon + osm.maxLon)/2
+			if osm.bounds and self.importHighways:
+				# If the .osm file contains the bounds tag,
+				# use its values as the extent of the imported area.
+				# Highways may go far beyond the values of the bounds tag.
+				# A user might get confused if higways are used in the calculation of the extent of the imported area.
+				bounds = osm.bounds
+				lat = (bounds["minLat"] + bounds["maxLat"])/2
+				lon = (bounds["minLon"] + bounds["maxLon"])/2
+			else:
+				lat = (osm.minLat + osm.maxLat)/2
+				lon = (osm.minLon + osm.maxLon)/2
 			scene["latitude"] = lat
 			scene["longitude"] = lon
 		

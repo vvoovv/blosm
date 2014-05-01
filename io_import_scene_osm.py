@@ -91,6 +91,8 @@ class OsmParser:
 		self.maxLat = -90
 		self.minLon = 180
 		self.maxLon = -180
+		# self.bounds contains the attributes of the bounds tag of the .osm file if available
+		self.bounds = None
 		
 		(self.nodeHandlers, self.wayHandlers) = prepareHandlers(kwargs)
 		
@@ -99,12 +101,13 @@ class OsmParser:
 		self.prepare()
 
 	def prepare(self):
+		allowedTags = set(("node", "way", "bounds"))
 		for e in self.osm: # e stands for element
 			attrs = e.attrib
-			if e.tag != "node" and e.tag != "way": continue
+			if e.tag not in allowedTags : continue
 			if "action" in attrs and attrs["action"] == "delete": continue
-			_id = attrs["id"]
 			if e.tag == "node":
+				_id = attrs["id"]
 				tags = None
 				for c in e:
 					if c.tag == "tag":
@@ -128,6 +131,7 @@ class OsmParser:
 				if tags: entry["tags"] = tags
 				self.nodes[_id] = entry
 			elif e.tag == "way":
+				_id = attrs["id"]
 				nodes = []
 				tags = None
 				for c in e:
@@ -144,6 +148,13 @@ class OsmParser:
 						nodes=nodes,
 						tags=tags
 					)
+			elif e.tag == "bounds":
+				self.bounds = {
+					"minLat": float(attrs["minlat"]),
+					"minLon": float(attrs["minlon"]),
+					"maxLat": float(attrs["maxlat"]),
+					"maxLon": float(attrs["maxlon"])
+				}
 		
 		self.calculateExtent()
 
@@ -538,8 +549,17 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 			lat = scene["latitude"]
 			lon = scene["longitude"]
 		else:
-			lat = (osm.minLat + osm.maxLat)/2
-			lon = (osm.minLon + osm.maxLon)/2
+			if osm.bounds and self.importHighways:
+				# If the .osm file contains the bounds tag,
+				# use its values as the extent of the imported area.
+				# Highways may go far beyond the values of the bounds tag.
+				# A user might get confused if higways are used in the calculation of the extent of the imported area.
+				bounds = osm.bounds
+				lat = (bounds["minLat"] + bounds["maxLat"])/2
+				lon = (bounds["minLon"] + bounds["maxLon"])/2
+			else:
+				lat = (osm.minLat + osm.maxLat)/2
+				lon = (osm.minLon + osm.maxLon)/2
 			scene["latitude"] = lat
 			scene["longitude"] = lon
 		
