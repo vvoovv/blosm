@@ -146,11 +146,13 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 			if not srtmFileName:
 				self.report({"ERROR"}, "A .hgt file with SRTM data wasn't specified")
 				return {"FINISHED"}
-			prefixLat = srtmFileName[0]
 			minLat = int(srtmFileName[1:3])
+			if srtmFileName[0]=="S":
+				minLat = -minLat
 			maxLat = minLat + 1
-			prefixLon = srtmFileName[3]
 			minLon = int(srtmFileName[4:7])
+			if srtmFileName[3]=="W":
+				minLon = -minLon
 			maxLon = minLon + 1
 		
 		# remember if we have georeferencing
