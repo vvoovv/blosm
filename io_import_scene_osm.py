@@ -474,9 +474,11 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 
 	def execute(self, context):
 		# setting active object if there is no active object
-		if not context.scene.objects.active:
-			context.scene.objects.active = context.scene.objects[0]
-		bpy.ops.object.mode_set(mode="OBJECT")
+		if context.mode != "OBJECT":
+			# if there is no object in the scene, only "OBJECT" mode is provided
+			if not context.scene.objects.active:
+				context.scene.objects.active = context.scene.objects[0]
+			bpy.ops.object.mode_set(mode="OBJECT")
 		
 		bpy.ops.object.select_all(action="DESELECT")
 		
