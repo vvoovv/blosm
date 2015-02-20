@@ -6,7 +6,7 @@ bl_info = {
 	"location": "File > Import > GPX (.gpx)",
 	"description": "Import a file in the GPX format (.gpx)",
 	"warning": "",
-	"wiki_url": "https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm)",
+	"wiki_url": "",
 	"tracker_url": "https://github.com/vvoovv/blender-geo/issues",
 	"support": "COMMUNITY",
 	"category": "Import-Export",
