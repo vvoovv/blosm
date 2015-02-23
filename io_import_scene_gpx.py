@@ -1,6 +1,6 @@
 # This is the release version of the plugin file io_import_scene_gpx_dev.py
 # If you would like to make edits, make them in the file io_import_scene_gpx_dev.py and the other related modules
-# To create the release version of io_import_scene_gpx_dev.py, executed:
+# To create the release version of io_import_scene_gpx_dev.py, execute:
 # python plugin_builder.py io_import_scene_gpx_dev.py:
 bl_info = {
 	"name": "Import GPX (.gpx)",
@@ -59,11 +59,12 @@ class TransverseMercator:
 
 		lon = self.lon + math.degrees(lon)
 		lat = math.degrees(lat)
-		return (lat, lon)
+		return (lat, lon)
+
 
 class ImportGpx(bpy.types.Operator, ImportHelper):
 	"""Import a file in the GPX format (.gpx)"""
-	bl_idname = "import_scene.gpx"  # important since its how bpy.ops.import_scene.gpx is constructed
+	bl_idname = "import_scene.gpx"  # important since it's how bpy.ops.import_scene.gpx is constructed
 	bl_label = "Import GPX"
 	bl_options = {"UNDO"}
 
@@ -193,4 +194,5 @@ def register():
 
 def unregister():
 	bpy.utils.unregister_class(ImportGpx)
-	bpy.types.INFO_MT_file_import.remove(menu_func_import)
+	bpy.types.INFO_MT_file_import.remove(menu_func_import)
+
