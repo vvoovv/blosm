@@ -19,6 +19,9 @@ A general description how to create georeferenced 3D models of neighborhoods wit
 * **[Import SRTM (.hgt)](https://github.com/vvoovv/blender-geo/wiki/Import-SRTM-(.hgt))**
 <br>Import digital elevation model data from files in the SRTM format (.hgt)
 
+* **[Import GPX (.gpx)](https://github.com/vvoovv/blender-geo/wiki/Import-GPX-(.gpx))**
+<br>Import GPS track files (.gpx)
+
 * **[Target Scaling](https://github.com/vvoovv/blender-geo/wiki/Target-Scaling)**
 <br>Scale your model to the correct target size
 
