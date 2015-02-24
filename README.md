@@ -10,15 +10,17 @@ In this repo you can find a number of addons for Blender to facilitate creation 
 
 * **[Import OpenStreetMap (.osm)](https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm))**
 <br>Import a file in the OpenStreetMap format (.osm)
-
-* **[OpenStreetMap Georeferencing](https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing)**
-<br>OpenStreetMap based object georeferencing
+<br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
 
 * **[Import SRTM (.hgt)](https://github.com/vvoovv/blender-geo/wiki/Import-SRTM-(.hgt))**
 <br>Import digital elevation model data from files in the SRTM format (.hgt)
+<br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334510-Addon-Import-SRTM-terrain-(-hgt))
 
 * **[Import GPX (.gpx)](https://github.com/vvoovv/blender-geo/wiki/Import-GPX-(.gpx))**
 <br>Import GPS track files (.gpx)
+
+* **[OpenStreetMap Georeferencing](https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing)**
+<br>OpenStreetMap based object georeferencing
 
 * **[Target Scaling](https://github.com/vvoovv/blender-geo/wiki/Target-Scaling)**
 <br>Scale your model to the correct target size
