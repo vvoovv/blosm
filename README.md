@@ -18,6 +18,7 @@ In this repo you can find a number of addons for Blender to facilitate creation 
 
 * **[Import GPX (.gpx)](https://github.com/vvoovv/blender-geo/wiki/Import-GPX-(.gpx))**
 <br>Import GPS track files (.gpx)
+<br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?363717-Import-GPX-track-(-gpx))
 
 * **[OpenStreetMap Georeferencing](https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing)**
 <br>OpenStreetMap based object georeferencing
