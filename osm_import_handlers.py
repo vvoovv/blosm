@@ -2,7 +2,7 @@ import os, math
 import bpy, bmesh
 import utils, osm_utils
 
-class buildings:
+class Buildings:
     @staticmethod
     def condition(tags, way):
         return "building" in tags
@@ -16,7 +16,6 @@ class buildings:
         
         if not kwargs["bm"]: # not a single mesh
             tags = way["tags"]
-            thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
             osmId = way["id"]
             # compose object name
             name = osmId
@@ -35,10 +34,17 @@ class buildings:
         bm.faces.new(verts)
         
         if not kwargs["bm"]:
-            thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+            tags = way["tags"]
+            thickness = 0
+            if "height" in tags:
+                # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
+                thickness,unit = parse_scalar_and_unit(tags["height"])
+            else:
+                thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+
             # extrude
             if thickness>0:
-                utils.extrudeMesh(bm, thickness)
+                extrudeMesh(bm, thickness)
             
             bm.normal_update()
             
@@ -52,10 +58,75 @@ class buildings:
             # final adjustments
             obj.select = True
             # assign OSM tags to the blender object
-            osm_utils.assignTags(obj, tags)
+            assignTags(obj, tags)
+
+            assignMaterials( obj, "roof", (1.0,0.0,0.0), [mesh.polygons[0]] )
+            assignMaterials( obj, "wall", (1,0.7,0.0), mesh.polygons[1:] )
 
 
-class highways:
+class BuildingParts:
+    @staticmethod
+    def condition(tags, way):
+        return "building:part" in tags
+    
+    @staticmethod
+    def handler(way, parser, kwargs):
+        wayNodes = way["nodes"]
+        numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
+        # a polygon must have at least 3 vertices
+        if numNodes<3: return
+        
+        tags = way["tags"]
+        if not kwargs["bm"]: # not a single mesh
+            osmId = way["id"]
+            # compose object name
+            name = osmId
+            if "addr:housenumber" in tags and "addr:street" in tags:
+                name = tags["addr:street"] + ", " + tags["addr:housenumber"]
+            elif "name" in tags:
+                name = tags["name"]
+
+        min_height = 0
+        height = 0
+        if "building:min_height" in tags:
+            # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
+            min_height,unit = parse_scalar_and_unit(tags["building:min_height"])
+
+        if "height" in tags:
+            # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
+            height,unit = parse_scalar_and_unit(tags["height"])
+
+        bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+        verts = []
+        for node in range(numNodes):
+            node = parser.nodes[wayNodes[node]]
+            v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
+            verts.append( bm.verts.new((v[0], v[1], min_height)) )
+        
+        bm.faces.new(verts)
+        
+        if not kwargs["bm"]:
+            tags = way["tags"]
+
+            # extrude
+            if (height-min_height)>0:
+                extrudeMesh(bm, (height-min_height))
+            
+            bm.normal_update()
+            
+            mesh = bpy.data.meshes.new(osmId)
+            bm.to_mesh(mesh)
+            
+            obj = bpy.data.objects.new(name, mesh)
+            bpy.context.scene.objects.link(obj)
+            bpy.context.scene.update()
+            
+            # final adjustments
+            obj.select = True
+            # assign OSM tags to the blender object
+            assignTags(obj, tags)
+
+class Highways:
     @staticmethod
     def condition(tags, way):
         return "highway" in tags
@@ -95,4 +166,65 @@ class highways:
             # final adjustments
             obj.select = True
             # assign OSM tags to the blender object
-            osm_utils.assignTags(obj, tags)
+            assignTags(obj, tags)
+class Naturals:
+    @staticmethod
+    def condition(tags, way):
+        return "natural" in tags
+    
+    @staticmethod
+    def handler(way, parser, kwargs):
+        wayNodes = way["nodes"]
+        numNodes = len(wayNodes) # we need to skip the last node which is the same as the first ones
+    
+        if numNodes == 1:
+            # This is some point "natural".
+            # which we ignore for now (trees, etc.)
+            pass
+
+        numNodes = numNodes - 1
+
+        # a polygon must have at least 3 vertices
+        if numNodes<3: return
+        
+        tags = way["tags"]
+        if not kwargs["bm"]: # not a single mesh
+            osmId = way["id"]
+            # compose object name
+            name = osmId
+            if "name" in tags:
+                name = tags["name"]
+
+        bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+        verts = []
+        for node in range(numNodes):
+            node = parser.nodes[wayNodes[node]]
+            v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
+            verts.append( bm.verts.new((v[0], v[1], 0)) )
+        
+        bm.faces.new(verts)
+        
+        if not kwargs["bm"]:
+            tags = way["tags"]
+            bm.normal_update()
+            
+            mesh = bpy.data.meshes.new(osmId)
+            bm.to_mesh(mesh)
+            
+            obj = bpy.data.objects.new(name, mesh)
+            bpy.context.scene.objects.link(obj)
+            bpy.context.scene.update()
+            
+            # final adjustments
+            obj.select = True
+            # assign OSM tags to the blender object
+            assignTags(obj, tags)
+
+            naturaltype = tags["natural"]
+            color = (0.5,0.5,0.5)
+
+            if naturaltype == "water":
+                color = (0,0,1)
+
+            assignMaterials( obj, naturaltype, color, [mesh.polygons[0]] )
+

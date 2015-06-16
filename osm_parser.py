@@ -40,6 +40,32 @@ class OsmParser:
         self.osm = self.doc.getroot()
         self.prepare()
 
+    # A 'node' in osm:  <node id="2599524395" visible="true" version="1" changeset="19695235" timestamp="2013-12-29T12:40:05Z" user="It's so funny_BAG" uid="1204291" lat="52.0096203" lon="4.3612318"/>
+    # A 'way' in osm: 
+    #  <way id="254138613" visible="true" version="1" changeset="19695235" timestamp="2013-12-29T12:58:34Z" user="It's so funny_BAG" uid="1204291">
+    #  <nd ref="2599536906"/>
+    #  <nd ref="2599537009"/>
+    #  <nd ref="2599537013"/>
+    #  <nd ref="2599537714"/>
+    #  <nd ref="2599537988"/>
+    #  <nd ref="2599537765"/>
+    #  <nd ref="2599536906"/>
+    #  <tag k="building" v="yes"/>
+    #  <tag k="ref:bag" v="503100000022259"/>
+    #  <tag k="source" v="BAG"/>
+    #  <tag k="source:date" v="2013-11-26"/>
+    #  <tag k="start_date" v="1850"/>
+    #  </way>
+    #
+    # The parser creates two dictionaries: {}
+    #   parser.nodes[ node_id ] = { "lat":lat, "lon":lon, "e":e, "_id":_id }
+    #   parser.ways[ way_id ] = { "nodes":["12312312","1312313123","345345453",etc..], "tags":{"building":"yes", etc...}, "e":e, "_id":_id }
+    # So the way data is stored can seem a little complex
+    #
+    # The parser is then passed, along with the 'way' or 'node' object of the parser
+    # to the handler functions of buildings and highways, where they are used to convert
+    # them into blender objects.
+    #
     def prepare(self):
         allowedTags = set(("node", "way", "bounds"))
         for e in self.osm: # e stands for element

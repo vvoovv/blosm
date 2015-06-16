@@ -56,6 +56,12 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         default=True,
     )
 
+    importNaturals = bpy.props.BoolProperty(
+        name="Import naturals",
+        description="Import natural outlines",
+        default=True,
+    )
+
     importHighways = bpy.props.BoolProperty(
         name="Import roads and paths",
         description="Import roads and paths",
@@ -127,7 +133,13 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         scene = context.scene
         
         wayHandlers = []
-        if self.importBuildings: wayHandlers.append(buildings)
+        if self.importBuildings:
+            wayHandlers.append(Buildings)
+            wayHandlers.append(BuildingParts)
+
+        if self.importNaturals:
+            wayHandlers.append(Naturals)
+
         if self.importHighways: wayHandlers.append(highways)
         
         osm = OsmParser(self.filepath,
@@ -179,3 +191,9 @@ def register():
 def unregister():
     bpy.utils.unregister_class(ImportOsm)
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
+
+# This allows you to run the script directly from blenders text editor
+# to test the addon without having to install it.
+if __name__ == "__main__":
+    register()
+
