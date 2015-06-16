@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
-    "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
-    "version": (1, 0, 0),
-    "blender": (2, 6, 9),
+    "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com> and gtoonstra",
+    "version": (1, 1, 0),
+    "blender": (2, 7, 4),
     "location": "File > Import > OpenStreetMap (.osm)",
     "description": "Import a file in the OpenStreetMap format (.osm)",
     "warning": "",
@@ -59,7 +59,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     importNaturals = bpy.props.BoolProperty(
         name="Import naturals",
         description="Import natural outlines",
-        default=True,
+        default=False,
     )
 
     importHighways = bpy.props.BoolProperty(
