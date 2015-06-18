@@ -1,4 +1,3 @@
-import os, math
 import bpy, bmesh
 import utils, osm_utils
 
@@ -38,13 +37,13 @@ class Buildings:
             thickness = 0
             if "height" in tags:
                 # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-                thickness,unit = parse_scalar_and_unit(tags["height"])
+                thickness,unit = osm_utils.parse_scalar_and_unit(tags["height"])
             else:
                 thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
 
             # extrude
             if thickness>0:
-                extrudeMesh(bm, thickness)
+                utils.extrudeMesh(bm, thickness)
             
             bm.normal_update()
             
@@ -58,11 +57,10 @@ class Buildings:
             # final adjustments
             obj.select = True
             # assign OSM tags to the blender object
-            assignTags(obj, tags)
+            osm_utils.assignTags(obj, tags)
 
-            assignMaterials( obj, "roof", (1.0,0.0,0.0), mesh.polygons[:2] )
-            assignMaterials( obj, "wall", (1.0,0.7,0.0), mesh.polygons[2:] )
-
+            utils.assignMaterials( obj, "roof", (1.0,0.0,0.0), [mesh.polygons[:2]] )
+            utils.assignMaterials( obj, "wall", (1,0.7,0.0), mesh.polygons[2:] )
 
 class BuildingParts:
     @staticmethod
@@ -93,11 +91,11 @@ class BuildingParts:
         height = 0
         if "building:min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            min_height,unit = parse_scalar_and_unit(tags["building:min_height"])
+            min_height,unit = osm_utils.parse_scalar_and_unit(tags["building:min_height"])
 
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            height,unit = parse_scalar_and_unit(tags["height"])
+            height,unit = osm_utils.parse_scalar_and_unit(tags["height"])
 
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         verts = []
@@ -112,7 +110,7 @@ class BuildingParts:
 
         # extrude
         if (height-min_height)>0:
-            extrudeMesh(bm, (height-min_height))
+            utils.extrudeMesh(bm, (height-min_height))
         
         bm.normal_update()
         
@@ -126,7 +124,7 @@ class BuildingParts:
         # final adjustments
         obj.select = True
         # assign OSM tags to the blender object
-        assignTags(obj, tags)
+        osm_utils.assignTags(obj, tags)
 
 class Highways:
     @staticmethod
@@ -147,7 +145,6 @@ class Highways:
             name = tags["name"] if "name" in tags else osmId
         
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
-        verts = []
         prevVertex = None
         for node in range(numNodes):
             node = parser.nodes[wayNodes[node]]
@@ -168,7 +165,7 @@ class Highways:
             # final adjustments
             obj.select = True
             # assign OSM tags to the blender object
-            assignTags(obj, tags)
+            osm_utils.assignTags(obj, tags)
 
 class Naturals:
     @staticmethod
@@ -223,13 +220,12 @@ class Naturals:
         # final adjustments
         obj.select = True
         # assign OSM tags to the blender object
-        assignTags(obj, tags)
+        osm_utils.assignTags(obj, tags)
 
         naturaltype = tags["natural"]
         color = (0.5,0.5,0.5)
 
         if naturaltype == "water":
             color = (0,0,1)
-
-        assignMaterials( obj, naturaltype, color, [mesh.polygons[0]] )
+            utils.assignMaterials( obj, naturaltype, color, [mesh.polygons[0]] )
 
