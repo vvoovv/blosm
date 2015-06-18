@@ -140,7 +140,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         if self.importNaturals:
             wayHandlers.append(Naturals)
 
-        if self.importHighways: wayHandlers.append(highways)
+        if self.importHighways: wayHandlers.append(Highways)
         
         osm = OsmParser(self.filepath,
             # possible values for wayHandlers and nodeHandlers list elements:

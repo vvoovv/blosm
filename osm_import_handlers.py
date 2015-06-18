@@ -60,8 +60,8 @@ class Buildings:
             # assign OSM tags to the blender object
             assignTags(obj, tags)
 
-            assignMaterials( obj, "roof", (1.0,0.0,0.0), [mesh.polygons[0]] )
-            assignMaterials( obj, "wall", (1,0.7,0.0), mesh.polygons[1:] )
+            assignMaterials( obj, "roof", (1.0,0.0,0.0), mesh.polygons[:2] )
+            assignMaterials( obj, "wall", (1.0,0.7,0.0), mesh.polygons[2:] )
 
 
 class BuildingParts:
@@ -71,20 +71,23 @@ class BuildingParts:
     
     @staticmethod
     def handler(way, parser, kwargs):
+        # Never add building parts when importing as single mesh.
+        if kwargs["bm"]:
+            return
+
         wayNodes = way["nodes"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
         if numNodes<3: return
         
         tags = way["tags"]
-        if not kwargs["bm"]: # not a single mesh
-            osmId = way["id"]
-            # compose object name
-            name = osmId
-            if "addr:housenumber" in tags and "addr:street" in tags:
-                name = tags["addr:street"] + ", " + tags["addr:housenumber"]
-            elif "name" in tags:
-                name = tags["name"]
+        osmId = way["id"]
+        # compose object name
+        name = osmId
+        if "addr:housenumber" in tags and "addr:street" in tags:
+            name = tags["addr:street"] + ", " + tags["addr:housenumber"]
+        elif "name" in tags:
+            name = tags["name"]
 
         min_height = 0
         height = 0
@@ -105,26 +108,25 @@ class BuildingParts:
         
         bm.faces.new(verts)
         
-        if not kwargs["bm"]:
-            tags = way["tags"]
+        tags = way["tags"]
 
-            # extrude
-            if (height-min_height)>0:
-                extrudeMesh(bm, (height-min_height))
-            
-            bm.normal_update()
-            
-            mesh = bpy.data.meshes.new(osmId)
-            bm.to_mesh(mesh)
-            
-            obj = bpy.data.objects.new(name, mesh)
-            bpy.context.scene.objects.link(obj)
-            bpy.context.scene.update()
-            
-            # final adjustments
-            obj.select = True
-            # assign OSM tags to the blender object
-            assignTags(obj, tags)
+        # extrude
+        if (height-min_height)>0:
+            extrudeMesh(bm, (height-min_height))
+        
+        bm.normal_update()
+        
+        mesh = bpy.data.meshes.new(osmId)
+        bm.to_mesh(mesh)
+        
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.objects.link(obj)
+        bpy.context.scene.update()
+        
+        # final adjustments
+        obj.select = True
+        # assign OSM tags to the blender object
+        assignTags(obj, tags)
 
 class Highways:
     @staticmethod
@@ -167,6 +169,7 @@ class Highways:
             obj.select = True
             # assign OSM tags to the blender object
             assignTags(obj, tags)
+
 class Naturals:
     @staticmethod
     def condition(tags, way):
@@ -174,11 +177,15 @@ class Naturals:
     
     @staticmethod
     def handler(way, parser, kwargs):
+        # Never import naturals when single mesh.
+        if kwargs["bm"]:
+            return
+
         wayNodes = way["nodes"]
         numNodes = len(wayNodes) # we need to skip the last node which is the same as the first ones
     
         if numNodes == 1:
-            # This is some point "natural".
+            # This is some "point natural" .
             # which we ignore for now (trees, etc.)
             pass
 
@@ -188,12 +195,11 @@ class Naturals:
         if numNodes<3: return
         
         tags = way["tags"]
-        if not kwargs["bm"]: # not a single mesh
-            osmId = way["id"]
-            # compose object name
-            name = osmId
-            if "name" in tags:
-                name = tags["name"]
+        osmId = way["id"]
+        # compose object name
+        name = osmId
+        if "name" in tags:
+            name = tags["name"]
 
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         verts = []
@@ -204,27 +210,26 @@ class Naturals:
         
         bm.faces.new(verts)
         
-        if not kwargs["bm"]:
-            tags = way["tags"]
-            bm.normal_update()
-            
-            mesh = bpy.data.meshes.new(osmId)
-            bm.to_mesh(mesh)
-            
-            obj = bpy.data.objects.new(name, mesh)
-            bpy.context.scene.objects.link(obj)
-            bpy.context.scene.update()
-            
-            # final adjustments
-            obj.select = True
-            # assign OSM tags to the blender object
-            assignTags(obj, tags)
+        tags = way["tags"]
+        bm.normal_update()
+        
+        mesh = bpy.data.meshes.new(osmId)
+        bm.to_mesh(mesh)
+        
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.objects.link(obj)
+        bpy.context.scene.update()
+        
+        # final adjustments
+        obj.select = True
+        # assign OSM tags to the blender object
+        assignTags(obj, tags)
 
-            naturaltype = tags["natural"]
-            color = (0.5,0.5,0.5)
+        naturaltype = tags["natural"]
+        color = (0.5,0.5,0.5)
 
-            if naturaltype == "water":
-                color = (0,0,1)
+        if naturaltype == "water":
+            color = (0,0,1)
 
-            assignMaterials( obj, naturaltype, color, [mesh.polygons[0]] )
+        assignMaterials( obj, naturaltype, color, [mesh.polygons[0]] )
 
