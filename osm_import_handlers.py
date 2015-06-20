@@ -1,6 +1,8 @@
 import bpy, bmesh
 import utils, osm_utils
 
+LEVEL_HEIGHT = 3.1
+
 class Buildings:
     @staticmethod
     def condition(tags, way):
@@ -9,12 +11,12 @@ class Buildings:
     @staticmethod
     def handler(way, parser, kwargs):
         wayNodes = way["nodes"]
+        tags = way["tags"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
         if numNodes<3: return
         
         if not kwargs["bm"]: # not a single mesh
-            tags = way["tags"]
             osmId = way["id"]
             # compose object name
             name = osmId
@@ -25,19 +27,28 @@ class Buildings:
         
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         verts = []
+        bottom = 0
+
+        if not kwargs["bm"]:
+            if "building:min_level" in tags:
+                bottomlevel,unit = osm_utils.parse_scalar_and_unit(tags["building:min_level"])
+                bottom = bottomlevel * LEVEL_HEIGHT
+
         for node in range(numNodes):
             node = parser.nodes[wayNodes[node]]
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
-            verts.append( bm.verts.new((v[0], v[1], 0)) )
+            verts.append( bm.verts.new((v[0], v[1], bottom)) )
         
         bm.faces.new(verts)
-        
+
         if not kwargs["bm"]:
-            tags = way["tags"]
             thickness = 0
             if "height" in tags:
                 # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
                 thickness,unit = osm_utils.parse_scalar_and_unit(tags["height"])
+            elif "building:level" in tags:
+                levels,unit = osm_utils.parse_scalar_and_unit(tags["building:level"])
+                thickness = levels * LEVEL_HEIGHT 
             else:
                 thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
 
@@ -59,7 +70,7 @@ class Buildings:
             # assign OSM tags to the blender object
             osm_utils.assignTags(obj, tags)
 
-            utils.assignMaterials( obj, "roof", (1.0,0.0,0.0), [mesh.polygons[:2]] )
+            utils.assignMaterials( obj, "roof", (1.0,0.0,0.0), mesh.polygons[:2] )
             utils.assignMaterials( obj, "wall", (1,0.7,0.0), mesh.polygons[2:] )
 
 class BuildingParts:
