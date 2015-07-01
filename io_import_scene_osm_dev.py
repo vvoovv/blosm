@@ -16,8 +16,7 @@ import bpy, bmesh
 # ImportHelper is a helper class, defines filename and invoke() function which calls the file selector
 from bpy_extras.io_utils import ImportHelper
 
-import sys, os
-sys.path.append("D:\\projects\\blender\\blender-geo")
+import os
 from transverse_mercator import TransverseMercator
 from osm_parser import OsmParser
 from osm_import_handlers import *
