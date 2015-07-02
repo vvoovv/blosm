@@ -87,9 +87,9 @@ class BuildingParts:
 
         min_height = 0
         height = 0
-        if "building:min_height" in tags:
+        if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            min_height,unit = osm_utils.parse_scalar_and_unit(tags["building:min_height"])
+            min_height,unit = osm_utils.parse_scalar_and_unit(tags["min_height"])
 
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
