@@ -20,7 +20,6 @@ import os
 from transverse_mercator import TransverseMercator
 from osm_parser import OsmParser
 from osm_import_handlers import *
-import osm_import_handlers
 import utils
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
@@ -139,7 +138,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         if self.importNaturals:
             wayHandlers.append(Naturals)
 
-        if self.importHighways: wayHandlers.append(highways)
+        if self.importHighways: wayHandlers.append(Highways)
         
         osm = OsmParser(self.filepath,
             # possible values for wayHandlers and nodeHandlers list elements:
