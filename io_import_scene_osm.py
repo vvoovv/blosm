@@ -1,7 +1,7 @@
 # This is the release version of the plugin file io_import_scene_osm_dev.py
 # If you would like to make edits, make them in the file io_import_scene_osm_dev.py and the other related modules
 # To create the release version of io_import_scene_osm_dev.py, execute:
-# python plugin_builder.py io_import_scene_osm_dev.py:
+# python plugin_builder.py io_import_scene_osm_dev.py
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com> and gtoonstra",

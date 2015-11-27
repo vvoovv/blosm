@@ -59,7 +59,7 @@ class PluginBuilder:
         print("# This is the release version of the plugin file %s" % self.pluginFileNameDev, file=self.output)
         print("# If you would like to make edits, make them in the file %s and the other related modules" % self.pluginFileNameDev, file=self.output)
         print("# To create the release version of %s, execute:" % self.pluginFileNameDev, file=self.output)
-        print("# python plugin_builder.py %s:" % self.pluginFileNameDev, file=self.output)
+        print("# python plugin_builder.py %s" % self.pluginFileNameDev, file=self.output)
     
 if __name__ == "__main__":
     PluginBuilder(sys.argv[1]).build()
