@@ -7,7 +7,8 @@ class Buildings:
         return "building" in tags
     
     @staticmethod
-    def handler(way, parser, kwargs):
+    def handler(way, parser, kwargs):        
+        heightPerLevel = 2.70 # default height per level if building height is not specified
         wayNodes = way["nodes"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
@@ -38,6 +39,9 @@ class Buildings:
             if "height" in tags:
                 # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
                 thickness,unit = osm_utils.parse_scalar_and_unit(tags["height"])
+            elif "building:levels" in tags:
+                # If no height is given, calculate height of Building from Levels
+                thickness = int(tags["building:levels"])*heightPerLevel
             else:
                 thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
 
@@ -70,6 +74,7 @@ class BuildingParts:
     
     @staticmethod
     def handler(way, parser, kwargs):
+        heightPerLevel = 2.70 # default height per level if building height is not specified
         wayNodes = way["nodes"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
@@ -90,10 +95,16 @@ class BuildingParts:
         if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             min_height,unit = osm_utils.parse_scalar_and_unit(tags["min_height"])
-
+        elif "building:min_level" in tags:
+            # If no height is given, calculate height of Building from Levels
+            min_height,unit = int(tags["building:min_level"])*heightPerLevel,""
+            
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height,unit = osm_utils.parse_scalar_and_unit(tags["height"])
+        elif "building:levels" in tags:
+            # If no height is given, calculate height of Building from Levels
+            height,unit = int(tags["building:levels"])*heightPerLevel,""
 
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         verts = []
