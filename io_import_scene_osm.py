@@ -361,20 +361,16 @@ class BuildingParts:
         if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             min_height,unit = parse_scalar_and_unit(tags["min_height"])
-
+        elif "building:min_level" in tags:
+            # If no height is given, calculate height of Building from Levels
+            min_height,unit = int(tags["building:min_level"])*heightPerLevel,""
+            
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height,unit = parse_scalar_and_unit(tags["height"])
-            
-        if "building:min_level" in tags:
+        elif "building:levels" in tags:
             # If no height is given, calculate height of Building from Levels
-            if min_height==0:                
-                min_height,unit = int(tags["building:min_level"])*heightPerLevel,""
-                
-        if "building:levels" in tags:
-            # If no height is given, calculate height of Building from Levels
-            if height==0:                
-                height,unit = int(tags["building:levels"])*heightPerLevel,""
+            height,unit = int(tags["building:levels"])*heightPerLevel,""
 
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         verts = []
