@@ -1,6 +1,7 @@
 import bpy, bmesh
 import utils, osm_utils
 
+
 class Buildings:
     @staticmethod
     def condition(tags, way):
@@ -8,12 +9,14 @@ class Buildings:
     
     @staticmethod
     def handler(way, parser, kwargs):
+        singleMesh = kwargs["bm"]
+        
         wayNodes = way["nodes"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
         if numNodes<3: return
         
-        if not kwargs["bm"]: # not a single mesh
+        if not singleMesh:
             tags = way["tags"]
             osmId = way["id"]
             # compose object name
@@ -23,30 +26,28 @@ class Buildings:
             elif "name" in tags:
                 name = tags["name"]
         
-        bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+        bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
         for node in range(numNodes):
             node = parser.nodes[wayNodes[node]]
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
             verts.append( bm.verts.new((v[0], v[1], 0)) )
         
-        bm.faces.new(verts)
+        face = bm.faces.new(verts)
         
-        if not kwargs["bm"]:
-            tags = way["tags"]
-            thickness = 0
-            if "height" in tags:
-                # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-                thickness,unit = osm_utils.parse_scalar_and_unit(tags["height"])
-            else:
-                thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0
+        tags = way["tags"]
+        if "height" in tags:
+            # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
+            thickness = osm_utils.parse_scalar_and_unit(tags["height"])
+        else:
+            thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0.
 
-            # extrude
-            if thickness>0:
-                utils.extrudeMesh(bm, thickness)
+        # extrude
+        if thickness>0:
+            utils.extrudeMesh(bm, thickness, face if singleMesh else None)
             
+        if not singleMesh:
             bm.normal_update()
-            
             mesh = bpy.data.meshes.new(osmId)
             bm.to_mesh(mesh)
             
@@ -70,13 +71,15 @@ class BuildingParts:
     
     @staticmethod
     def handler(way, parser, kwargs):
+        singleMesh = kwargs["bm"]
+        
         wayNodes = way["nodes"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
         if numNodes<3: return
         
         tags = way["tags"]
-        if not kwargs["bm"]: # not a single mesh
+        if not singleMesh:
             osmId = way["id"]
             # compose object name
             name = osmId
@@ -95,22 +98,20 @@ class BuildingParts:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height,unit = osm_utils.parse_scalar_and_unit(tags["height"])
 
-        bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
+        bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
         for node in range(numNodes):
             node = parser.nodes[wayNodes[node]]
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
             verts.append( bm.verts.new((v[0], v[1], min_height)) )
         
-        bm.faces.new(verts)
+        face = bm.faces.new(verts)
         
-        if not kwargs["bm"]:
-            tags = way["tags"]
-
-            # extrude
-            if (height-min_height)>0:
-                utils.extrudeMesh(bm, (height-min_height))
+        # extrude
+        if (height-min_height)>0:
+            utils.extrudeMesh(bm, (height-min_height), face if singleMesh else None)
             
+        if not singleMesh:
             bm.normal_update()
             
             mesh = bpy.data.meshes.new(osmId)
