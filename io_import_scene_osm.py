@@ -58,6 +58,29 @@ class TransverseMercator:
         lon = self.lon + math.degrees(lon)
         lat = math.degrees(lat)
         return (lat, lon)
+import bpy
+import webbrowser
+
+url = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NNQBWQ6TH2N7N"
+
+
+class Donate(bpy.types.Operator):
+    bl_idname = "blender_geo.donate"
+    bl_label = "Donate!"
+    bl_description = "If you like the add-on please donate"
+    bl_options = {"REGISTER"}
+    
+    def execute(self, context):
+        webbrowser.open_new_tab(url)
+        return {'FINISHED'}
+    
+    @classmethod
+    def gui(cls, layout, addonName):
+        box = layout.box()
+        box.label("If you like \'{}\' add-on".format(addonName))
+        box.label("please donate!")
+        
+        box.operator(cls.bl_idname, icon='HELP')
 import xml.etree.cElementTree as etree
 import inspect, importlib
 
@@ -673,6 +696,21 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             thickness = self.thickness,
             bm = self.bm # if present, indicates the we need to create as single mesh
         )
+    
+    def draw(self, context):
+        layout = self.layout
+        
+        Donate.gui(
+            layout,
+            self.bl_label
+        )
+        
+        layout.row().prop(self, "ignoreGeoreferencing")
+        layout.row().prop(self, "singleMesh")
+        layout.row().prop(self, "importBuildings")
+        layout.row().prop(self, "importNaturals")
+        layout.row().prop(self, "importHighways")
+        layout.row().prop(self, "thickness")
 
 
 # Only needed if you want to add into a dynamic menu

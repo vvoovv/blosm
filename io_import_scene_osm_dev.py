@@ -18,6 +18,7 @@ from bpy_extras.io_utils import ImportHelper
 
 import os
 from transverse_mercator import TransverseMercator
+from donate import Donate
 from osm_parser import OsmParser
 from osm_import_handlers import *
 import utils
@@ -176,6 +177,21 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             thickness = self.thickness,
             bm = self.bm # if present, indicates the we need to create as single mesh
         )
+    
+    def draw(self, context):
+        layout = self.layout
+        
+        Donate.gui(
+            layout,
+            self.bl_label
+        )
+        
+        layout.row().prop(self, "ignoreGeoreferencing")
+        layout.row().prop(self, "singleMesh")
+        layout.row().prop(self, "importBuildings")
+        layout.row().prop(self, "importNaturals")
+        layout.row().prop(self, "importHighways")
+        layout.row().prop(self, "thickness")
 
 
 # Only needed if you want to add into a dynamic menu

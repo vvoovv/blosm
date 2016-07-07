@@ -5,8 +5,8 @@
 bl_info = {
     "name": "Import SRTM (.hgt)",
     "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
-    "version": (1, 0, 0),
-    "blender": (2, 6, 9),
+    "version": (1, 0, 1),
+    "blender": (2, 7, 7),
     "location": "File > Import > SRTM (.hgt)",
     "description" : "Import digital elevation model data from files in the SRTM format (.hgt)",
     "warning": "",
@@ -60,6 +60,29 @@ class TransverseMercator:
         lon = self.lon + math.degrees(lon)
         lat = math.degrees(lat)
         return (lat, lon)
+import bpy
+import webbrowser
+
+url = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NNQBWQ6TH2N7N"
+
+
+class Donate(bpy.types.Operator):
+    bl_idname = "blender_geo.donate"
+    bl_label = "Donate!"
+    bl_description = "If you like the add-on please donate"
+    bl_options = {"REGISTER"}
+    
+    def execute(self, context):
+        webbrowser.open_new_tab(url)
+        return {'FINISHED'}
+    
+    @classmethod
+    def gui(cls, layout, addonName):
+        box = layout.box()
+        box.label("If you like \'{}\' add-on".format(addonName))
+        box.label("please donate!")
+        
+        box.operator(cls.bl_idname, icon='HELP')
 
 def getSrtmIntervals(x1, x2):
     """
@@ -231,6 +254,11 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 
     def draw(self, context):
         layout = self.layout
+        
+        Donate.gui(
+            layout,
+            self.bl_label
+        )
         
         row = layout.row()
         if self.useSelectionAsExtent: row.enabled = False
@@ -424,8 +452,10 @@ def menu_func_import(self, context):
 
 def register():
     bpy.utils.register_class(ImportSrtm)
+    bpy.utils.register_class(Donate)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
 def unregister():
     bpy.utils.unregister_class(ImportSrtm)
+    bpy.utils.unregister_class(Donate)
     bpy.types.INFO_MT_file_import.remove(menu_func_import)

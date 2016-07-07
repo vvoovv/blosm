@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Import SRTM (.hgt)",
     "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com>",
-    "version": (1, 0, 0),
-    "blender": (2, 6, 9),
+    "version": (1, 0, 1),
+    "blender": (2, 7, 7),
     "location": "File > Import > SRTM (.hgt)",
     "description" : "Import digital elevation model data from files in the SRTM format (.hgt)",
     "warning": "",
@@ -21,6 +21,7 @@ import struct, math, os
 import sys
 sys.path.append("D:\\projects\\blender\\blender-geo")
 from transverse_mercator import TransverseMercator
+from donate import Donate
 
 def getSrtmIntervals(x1, x2):
     """
@@ -192,6 +193,11 @@ class ImportSrtm(bpy.types.Operator, ImportHelper):
 
     def draw(self, context):
         layout = self.layout
+        
+        Donate.gui(
+            layout,
+            self.bl_label
+        )
         
         row = layout.row()
         if self.useSelectionAsExtent: row.enabled = False
@@ -385,8 +391,10 @@ def menu_func_import(self, context):
 
 def register():
     bpy.utils.register_class(ImportSrtm)
+    bpy.utils.register_class(Donate)
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
 def unregister():
     bpy.utils.unregister_class(ImportSrtm)
+    bpy.utils.unregister_class(Donate)
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
