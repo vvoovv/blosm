@@ -38,12 +38,12 @@ class Buildings:
         tags = way["tags"]
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            thickness = osm_utils.parse_scalar_and_unit(tags["height"])
+            thickness = osm_utils.parse_scalar_and_unit(tags["height"])[0]
         else:
             thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0.
 
         # extrude
-        if thickness>0:
+        if thickness > 0.:
             utils.extrudeMesh(bm, thickness, face if singleMesh else None)
             
         if not singleMesh:
@@ -92,11 +92,11 @@ class BuildingParts:
         height = 0
         if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            min_height,unit = osm_utils.parse_scalar_and_unit(tags["min_height"])
+            min_height = osm_utils.parse_scalar_and_unit(tags["min_height"])[0]
 
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            height,unit = osm_utils.parse_scalar_and_unit(tags["height"])
+            height = osm_utils.parse_scalar_and_unit(tags["height"])[0]
 
         bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
