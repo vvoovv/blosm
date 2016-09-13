@@ -329,7 +329,7 @@ class Buildings:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height = parse_scalar_and_unit(tags["height"])[0]
         elif "building:levels" in tags:
-            height = int(tags["building:levels"]) * kwargs["levelHeight"]
+            height = float(tags["building:levels"]) * kwargs["levelHeight"]
         else:
             height = kwargs["defaultHeight"]
 
@@ -385,13 +385,13 @@ class BuildingParts:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             min_height = parse_scalar_and_unit(tags["min_height"])[0]
         elif "building:min_level" in tags:
-            min_height = int(tags["building:min_level"]) * kwargs["levelHeight"]
+            min_height = float(tags["building:min_level"]) * kwargs["levelHeight"]
 
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height = parse_scalar_and_unit(tags["height"])[0]
         elif "building:levels" in tags:
-            height = int(tags["building:levels"]) * kwargs["levelHeight"]
+            height = float(tags["building:levels"]) * kwargs["levelHeight"]
         else:
             height = kwargs["defaultHeight"]
 
