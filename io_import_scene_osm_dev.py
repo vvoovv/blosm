@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com> and gtoonstra",
-    "version": (1, 1, 0),
-    "blender": (2, 7, 4),
+    "version": (1, 2, 0),
+    "blender": (2, 7, 7),
     "location": "File > Import > OpenStreetMap (.osm)",
     "description": "Import a file in the OpenStreetMap format (.osm)",
     "warning": "",
@@ -21,7 +21,7 @@ from transverse_mercator import TransverseMercator
 from donate import Donate
 from osm_parser import OsmParser
 from osm_import_handlers import *
-import utils
+
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
     """Import a file in the OpenStreetMap format (.osm)"""
@@ -46,7 +46,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     singleMesh = bpy.props.BoolProperty(
         name="Import as a single mesh",
         description="Import OSM objects as a single mesh instead of separate Blender objects",
-        default=False,
+        default=True,
     )
 
     importBuildings = bpy.props.BoolProperty(
@@ -67,10 +67,16 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         default=False,
     )
 
-    thickness = bpy.props.FloatProperty(
-        name="Thickness",
-        description="Set thickness to make OSM building outlines extruded",
-        default=0,
+    defaultHeight = bpy.props.FloatProperty(
+        name="Default height",
+        description="Default height if the building height isn't set in OSM tags",
+        default=5.,
+    )
+    
+    levelHeight = bpy.props.FloatProperty(
+        name="Level height",
+        description="Height of a level to use for OSM tags building:levels and building:min_level",
+        default=2.9
     )
 
     def execute(self, context):
@@ -99,9 +105,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         
         if self.singleMesh:
             bm = self.bm
-            # extrude
-            if self.thickness>0:
-                utils.extrudeMesh(bm, self.thickness)
             
             bm.normal_update()
             
@@ -174,7 +177,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         
         osm.parse(
             projection = TransverseMercator(lat=lat, lon=lon),
-            thickness = self.thickness,
+            defaultHeight = self.defaultHeight,
+            levelHeight = self.levelHeight,
             bm = self.bm # if present, indicates the we need to create as single mesh
         )
     
@@ -191,7 +195,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         layout.row().prop(self, "importBuildings")
         layout.row().prop(self, "importNaturals")
         layout.row().prop(self, "importHighways")
-        layout.row().prop(self, "thickness")
+        layout.row().prop(self, "defaultHeight")
+        layout.row().prop(self, "levelHeight")
 
 
 # Only needed if you want to add into a dynamic menu

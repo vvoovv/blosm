@@ -5,8 +5,8 @@
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <vladimir.elistratov@gmail.com> and gtoonstra",
-    "version": (1, 1, 0),
-    "blender": (2, 7, 4),
+    "version": (1, 2, 0),
+    "blender": (2, 7, 7),
     "location": "File > Import > OpenStreetMap (.osm)",
     "description": "Import a file in the OpenStreetMap format (.osm)",
     "warning": "",
@@ -327,13 +327,15 @@ class Buildings:
         tags = way["tags"]
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            thickness = parse_scalar_and_unit(tags["height"])[0]
+            height = parse_scalar_and_unit(tags["height"])[0]
+        elif "building:levels" in tags:
+            height = int(tags["building:levels"]) * kwargs["levelHeight"]
         else:
-            thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0.
+            height = kwargs["defaultHeight"]
 
         # extrude
-        if thickness > 0.:
-            extrudeMesh(bm, thickness, face if singleMesh else None)
+        if height > 0.:
+            extrudeMesh(bm, height, face if singleMesh else None)
             
         if not singleMesh:
             bm.normal_update()
@@ -377,15 +379,21 @@ class BuildingParts:
             elif "name" in tags:
                 name = tags["name"]
 
-        min_height = 0
-        height = 0
+        min_height = 0.
+        height = 0.
         if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             min_height = parse_scalar_and_unit(tags["min_height"])[0]
+        elif "building:min_level" in tags:
+            min_height = int(tags["building:min_level"]) * kwargs["levelHeight"]
 
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height = parse_scalar_and_unit(tags["height"])[0]
+        elif "building:levels" in tags:
+            height = int(tags["building:levels"]) * kwargs["levelHeight"]
+        else:
+            height = kwargs["defaultHeight"]
 
         bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
@@ -397,7 +405,7 @@ class BuildingParts:
         face = bm.faces.new(verts)
         
         # extrude
-        if (height-min_height)>0:
+        if (height-min_height) > 0.:
             extrudeMesh(bm, (height-min_height), face if singleMesh else None)
             
         if not singleMesh:
@@ -516,32 +524,7 @@ class Naturals:
 
             assignMaterials( obj, naturaltype, color, [mesh.polygons[0]] )
 
-import bpy, bmesh
 
-def extrudeMesh(bm, thickness, face=None):
-    """
-    Extrude bmesh
-    """
-    geom = bmesh.ops.extrude_face_region(bm, geom=(face,) if face else bm.faces)
-    verts_extruded = [v for v in geom["geom"] if isinstance(v, bmesh.types.BMVert)]
-    bmesh.ops.translate(bm, verts=verts_extruded, vec=(0, 0, thickness))
-
-
-def assignMaterials(obj, materialname, color, faces):
-    # Get material
-    if bpy.data.materials.get(materialname) is not None:
-        mat = bpy.data.materials[materialname]
-    else:
-        # create material
-        mat = bpy.data.materials.new(name=materialname)
-        mat.diffuse_color = color
-
-    # Assign it to object
-    matidx = len(obj.data.materials)
-    obj.data.materials.append(mat) 
-
-    for face in faces:
-        face.material_index = matidx
 
 class ImportOsm(bpy.types.Operator, ImportHelper):
     """Import a file in the OpenStreetMap format (.osm)"""
@@ -566,7 +549,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     singleMesh = bpy.props.BoolProperty(
         name="Import as a single mesh",
         description="Import OSM objects as a single mesh instead of separate Blender objects",
-        default=False,
+        default=True,
     )
 
     importBuildings = bpy.props.BoolProperty(
@@ -587,10 +570,16 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         default=False,
     )
 
-    thickness = bpy.props.FloatProperty(
-        name="Thickness",
-        description="Set thickness to make OSM building outlines extruded",
-        default=0,
+    defaultHeight = bpy.props.FloatProperty(
+        name="Default height",
+        description="Default height if the building height isn't set in OSM tags",
+        default=5.,
+    )
+    
+    levelHeight = bpy.props.FloatProperty(
+        name="Level height",
+        description="Height of a level to use for OSM tags building:levels and building:min_level",
+        default=2.9
     )
 
     def execute(self, context):
@@ -619,9 +608,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         
         if self.singleMesh:
             bm = self.bm
-            # extrude
-            if self.thickness>0:
-                extrudeMesh(bm, self.thickness)
             
             bm.normal_update()
             
@@ -694,7 +680,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         
         osm.parse(
             projection = TransverseMercator(lat=lat, lon=lon),
-            thickness = self.thickness,
+            defaultHeight = self.defaultHeight,
+            levelHeight = self.levelHeight,
             bm = self.bm # if present, indicates the we need to create as single mesh
         )
     
@@ -711,7 +698,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         layout.row().prop(self, "importBuildings")
         layout.row().prop(self, "importNaturals")
         layout.row().prop(self, "importHighways")
-        layout.row().prop(self, "thickness")
+        layout.row().prop(self, "defaultHeight")
+        layout.row().prop(self, "levelHeight")
 
 
 # Only needed if you want to add into a dynamic menu

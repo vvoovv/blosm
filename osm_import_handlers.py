@@ -38,13 +38,15 @@ class Buildings:
         tags = way["tags"]
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
-            thickness = osm_utils.parse_scalar_and_unit(tags["height"])[0]
+            height = osm_utils.parse_scalar_and_unit(tags["height"])[0]
+        elif "building:levels" in tags:
+            height = int(tags["building:levels"]) * kwargs["levelHeight"]
         else:
-            thickness = kwargs["thickness"] if ("thickness" in kwargs) else 0.
+            height = kwargs["defaultHeight"]
 
         # extrude
-        if thickness > 0.:
-            utils.extrudeMesh(bm, thickness, face if singleMesh else None)
+        if height > 0.:
+            utils.extrudeMesh(bm, height, face if singleMesh else None)
             
         if not singleMesh:
             bm.normal_update()
@@ -88,15 +90,21 @@ class BuildingParts:
             elif "name" in tags:
                 name = tags["name"]
 
-        min_height = 0
-        height = 0
+        min_height = 0.
+        height = 0.
         if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             min_height = osm_utils.parse_scalar_and_unit(tags["min_height"])[0]
+        elif "building:min_level" in tags:
+            min_height = int(tags["building:min_level"]) * kwargs["levelHeight"]
 
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height = osm_utils.parse_scalar_and_unit(tags["height"])[0]
+        elif "building:levels" in tags:
+            height = int(tags["building:levels"]) * kwargs["levelHeight"]
+        else:
+            height = kwargs["defaultHeight"]
 
         bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
@@ -108,7 +116,7 @@ class BuildingParts:
         face = bm.faces.new(verts)
         
         # extrude
-        if (height-min_height)>0:
+        if (height-min_height) > 0.:
             utils.extrudeMesh(bm, (height-min_height), face if singleMesh else None)
             
         if not singleMesh:
