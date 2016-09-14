@@ -106,7 +106,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         if self.singleMesh:
             bm = self.bm
             
-            bm.normal_update()
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
             
             mesh = bpy.data.meshes.new(name)
             bm.to_mesh(mesh)
@@ -190,13 +190,16 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             self.bl_label
         )
         
-        layout.row().prop(self, "ignoreGeoreferencing")
-        layout.row().prop(self, "singleMesh")
-        layout.row().prop(self, "importBuildings")
-        layout.row().prop(self, "importNaturals")
-        layout.row().prop(self, "importHighways")
-        layout.row().prop(self, "defaultHeight")
-        layout.row().prop(self, "levelHeight")
+        box = layout.box()
+        box.prop(self, "importBuildings")
+        box.prop(self, "importNaturals")
+        box.prop(self, "importHighways")
+        box = layout.box()
+        box.prop(self, "defaultHeight")
+        box.prop(self, "levelHeight")
+        box = layout.box()
+        box.prop(self, "singleMesh")
+        box.prop(self, "ignoreGeoreferencing")
 
 
 # Only needed if you want to add into a dynamic menu

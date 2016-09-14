@@ -22,7 +22,8 @@ class Buildings:
         wayNodes = way["nodes"]
         numNodes = len(wayNodes)-1 # we need to skip the last node which is the same as the first ones
         # a polygon must have at least 3 vertices
-        if numNodes<3: return
+        if numNodes<3:
+            return
         
         if not singleMesh:
             tags = way["tags"]
@@ -58,7 +59,7 @@ class Buildings:
             utils.extrudeMesh(bm, height, face if singleMesh else None)
             
         if not singleMesh:
-            bm.normal_update()
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
             mesh = bpy.data.meshes.new(osmId)
             bm.to_mesh(mesh)
             
@@ -131,7 +132,7 @@ class BuildingParts:
             utils.extrudeMesh(bm, (height-min_height), face if singleMesh else None)
             
         if not singleMesh:
-            bm.normal_update()
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
             
             mesh = bpy.data.meshes.new(osmId)
             bm.to_mesh(mesh)
@@ -224,7 +225,7 @@ class Naturals:
         
         if not kwargs["bm"]:
             tags = way["tags"]
-            bm.normal_update()
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
             
             mesh = bpy.data.meshes.new(osmId)
             bm.to_mesh(mesh)
