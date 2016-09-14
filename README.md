@@ -10,6 +10,7 @@ In this repo you can find a number of addons for Blender to facilitate creation 
 
 * **[Import OpenStreetMap (.osm)](https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm))**
 <br>Import a file in the OpenStreetMap format (.osm)
+<br>twitter: [@prokitektura](https://twitter.com/prokitektura)
 <br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
 
 * **[Import SRTM (.hgt)](https://github.com/vvoovv/blender-geo/wiki/Import-SRTM-(.hgt))**
