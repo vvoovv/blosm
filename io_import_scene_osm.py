@@ -291,6 +291,14 @@ def parse_scalar_and_unit( htag ):
 
 
 
+def getNumber(s):
+    try:
+        n = float(s)
+    except ValueError:
+        n = None
+    return n
+
+
 class Buildings:
     @staticmethod
     def condition(tags, way):
@@ -325,13 +333,14 @@ class Buildings:
         face = bm.faces.new(verts)
         
         tags = way["tags"]
+        height = kwargs["defaultHeight"]
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height = parse_scalar_and_unit(tags["height"])[0]
         elif "building:levels" in tags:
-            height = float(tags["building:levels"]) * kwargs["levelHeight"]
-        else:
-            height = kwargs["defaultHeight"]
+            numLevels = getNumber(tags["building:levels"])
+            if not numLevels is None:
+                height = numLevels * kwargs["levelHeight"]
 
         # extrude
         if height > 0.:
@@ -380,20 +389,22 @@ class BuildingParts:
                 name = tags["name"]
 
         min_height = 0.
-        height = 0.
         if "min_height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             min_height = parse_scalar_and_unit(tags["min_height"])[0]
         elif "building:min_level" in tags:
-            min_height = float(tags["building:min_level"]) * kwargs["levelHeight"]
-
+            min_level = getNumber(tags["building:min_level"])
+            if not min_level is None:
+                min_height = min_level * kwargs["levelHeight"]
+        
+        height = kwargs["defaultHeight"]
         if "height" in tags:
             # There's a height tag. It's parsed as text and could look like: 25, 25m, 25 ft, etc.
             height = parse_scalar_and_unit(tags["height"])[0]
         elif "building:levels" in tags:
-            height = float(tags["building:levels"]) * kwargs["levelHeight"]
-        else:
-            height = kwargs["defaultHeight"]
+            numLevels = getNumber(tags["building:levels"])
+            if not numLevels is None:
+                height = numLevels * kwargs["levelHeight"]
 
         bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
