@@ -240,8 +240,10 @@ class OsmParser:
         def wayFunction(way, handler):
             wayNodes = way["nodes"]
             for node in range(len(wayNodes)-1): # skip the last node which is the same as the first ones
-                nodeFunction(self.nodes[wayNodes[node]])
+                nodeFunction(self.nodes.get(wayNodes[node]))
         def nodeFunction(node, handler=None):
+            if node is None:
+                return
             lon = node["lon"]
             lat = node["lat"]
             if lat<self.minLat: self.minLat = lat
@@ -327,7 +329,10 @@ class Buildings:
         bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
         for node in range(numNodes):
-            node = parser.nodes[wayNodes[node]]
+            node = parser.nodes.get(wayNodes[node])
+            if node is None:
+                # skip that OSM way
+                return
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
             verts.append( bm.verts.new((v[0], v[1], 0)) )
         
@@ -410,7 +415,10 @@ class BuildingParts:
         bm = kwargs["bm"] if singleMesh else bmesh.new()
         verts = []
         for node in range(numNodes):
-            node = parser.nodes[wayNodes[node]]
+            node = parser.nodes.get(wayNodes[node])
+            if node is None:
+                # skip that OSM way
+                return
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
             verts.append( bm.verts.new((v[0], v[1], min_height)) )
         
@@ -456,7 +464,10 @@ class Highways:
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         prevVertex = None
         for node in range(numNodes):
-            node = parser.nodes[wayNodes[node]]
+            node = parser.nodes.get(wayNodes[node])
+            if node is None:
+                # skip that OSM way
+                return
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
             v = bm.verts.new((v[0], v[1], 0))
             if prevVertex:
@@ -506,7 +517,10 @@ class Naturals:
         bm = kwargs["bm"] if kwargs["bm"] else bmesh.new()
         verts = []
         for node in range(numNodes):
-            node = parser.nodes[wayNodes[node]]
+            node = parser.nodes.get(wayNodes[node])
+            if node is None:
+                # skip that OSM way
+                return
             v = kwargs["projection"].fromGeographic(node["lat"], node["lon"])
             verts.append( bm.verts.new((v[0], v[1], 0)) )
         

@@ -157,8 +157,10 @@ class OsmParser:
         def wayFunction(way, handler):
             wayNodes = way["nodes"]
             for node in range(len(wayNodes)-1): # skip the last node which is the same as the first ones
-                nodeFunction(self.nodes[wayNodes[node]])
+                nodeFunction(self.nodes.get(wayNodes[node]))
         def nodeFunction(node, handler=None):
+            if node is None:
+                return
             lon = node["lon"]
             lat = node["lat"]
             if lat<self.minLat: self.minLat = lat
