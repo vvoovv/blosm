@@ -1,37 +1,41 @@
+# OpenStreetMap Importer for Blender
+
+![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/import_osm.png)
+
 ## Introduction
 
-In this repo you can find a number of addons for Blender to facilitate creation of georeferenced 3D models of neighborhoods. The list of addons is presented below.
+The addon imports a file in the OpenStreetMap format (.osm).
 
-[Blender](http://www.blender.org) is a free and open source 3D platform. It supports 3D modeling and rendering as well as many advanced features like animation, simulation, compositing, motion tracking, video editing and game creation.
-[Here](https://github.com/vvoovv/blender-geo/wiki/Learning-Blender) I describe my way way to learn Blender.
+There are free and paid ([2.85$](https://gumroad.com/l/blender-osm)) versions of the addon. The only difference between them is a popup window that shows up after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
 
+By [buying](https://gumroad.com/l/blender-osm) the paid version you support the addon development.
 
-## Addons for Blender
+The following items can be imported by the addon:
+* Buildings. Building height, number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed.
+* Water objects (rivers and lakes). Imported as polygons
+* Highways, paths and railways. Imported as polygons.
+* Vegetation (forests, grass, scrubs). Imported as polygons.
 
-* **[Import OpenStreetMap (.osm)](https://github.com/vvoovv/blender-geo/wiki/Import-OpenStreetMap-(.osm))**
-<br>Import a file in the OpenStreetMap format (.osm)
-<br>twitter: [@prokitektura](https://twitter.com/prokitektura)
-<br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
+Polygons with holes are supported!
 
-* **[Import SRTM (.hgt)](https://github.com/vvoovv/blender-geo/wiki/Import-SRTM-(.hgt))**
-<br>Import digital elevation model data from files in the SRTM format (.hgt)
-<br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334510-Addon-Import-SRTM-terrain-(-hgt))
+## Installation
+[Buy](https://gumroad.com/l/blender-osm) the addon for just 2.85$ or download a free version from [here](https://github.com/vvoovv/blender-osm/archive/master.zip). In either case you will get a zip archive. Install it via the usual Blender way:
+* _File → User Preferences... → Addons → Install from File..._
+* Find the zip archive in your file system and press _Install from File..._ button
+* Enable the addon by checking the _Enable an addon_
+* Press _Save User Settings_ in the _Blender User Preferences_ window
 
-* **[Import GPX (.gpx)](https://github.com/vvoovv/blender-geo/wiki/Import-GPX-(.gpx))**
-<br>Import GPS track files (.gpx)
-<br>blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?363717-Import-GPX-track-(-gpx))
+## Usage
+* _File → Import → OpenStreetMap (.osm)_
+* Find an OpenStreetMap file in your file system
+* Press _Import OpenStreetMap_ button
+* If you have the free version, a popup window shows up after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
+* The [paid](https://gumroad.com/l/blender-osm) version doen't show you the popup and brings you directly to the imported scene.
 
-* **[OpenStreetMap Georeferencing](https://github.com/vvoovv/blender-geo/wiki/OpenStreetMap-Georeferencing)**
-<br>OpenStreetMap based object georeferencing
+For detailed instructions, limitations, tips and tricks see the [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation).
 
-* **[Target Scaling](https://github.com/vvoovv/blender-geo/wiki/Target-Scaling)**
-<br>Scale your model to the correct target size
-
-* **[One-vertex mesh object at the cursor location](https://github.com/vvoovv/blender-geo/wiki/One-vertex-mesh-object-at-the-cursor-location)**
-<br>Create one-vertex mesh object at the cursor location
-
-
-## Donations
-If you find the addons useful, please consider making a donation:
-
-[![Please donate](https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NNQBWQ6TH2N7N)
+## Links
+* [Paid version](https://gumroad.com/l/blender-osm)
+* [Documentation](https://github.com/vvoovv/blender-srtm/wiki/Documentation)
+* twitter: [@prokitektura](https://twitter.com/prokitektura)
+* blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
