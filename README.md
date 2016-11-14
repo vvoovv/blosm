@@ -30,7 +30,7 @@ Polygons with holes are supported!
 * Find an OpenStreetMap file in your file system
 * Press _Import OpenStreetMap_ button
 * If you have the free version, a popup window shows up after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
-* The [paid](https://gumroad.com/l/blender-osm) version doen't show you the popup and brings you directly to the imported scene.
+* The [paid](https://gumroad.com/l/blender-osm) version doesn't show you the popup and brings you directly to the imported scene.
 
 For detailed instructions, limitations, tips and tricks see the [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation).
 
