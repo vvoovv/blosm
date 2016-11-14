@@ -6,7 +6,7 @@
 
 The addon imports a file in the OpenStreetMap format (.osm).
 
-There are free and paid ([2.85$](https://gumroad.com/l/blender-osm)) versions of the addon. The only difference between them is a popup window that shows up after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
+There are free and [paid](https://gumroad.com/l/blender-osm) (2.85$) versions of the addon. The only difference between them is a popup window that shows up after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
 
 By [buying](https://gumroad.com/l/blender-osm) the paid version you support the addon development.
 
