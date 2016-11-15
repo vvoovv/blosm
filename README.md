@@ -19,7 +19,11 @@ The following items can be imported by the addon:
 Polygons with holes are supported!
 
 ## Installation
-[Buy](https://gumroad.com/l/blender-osm) the addon for just 2.85$ or download a free version from [here](https://github.com/vvoovv/blender-osm/archive/master.zip). In either case you will get a zip archive. Install it via the usual Blender way:
+[Buy](https://gumroad.com/l/blender-osm) the addon for just 2.85$ or download a free version from [here](https://github.com/vvoovv/blender-osm/archive/master.zip). In either case you will get a zip archive. Do not unpack it! Install it via the usual Blender way:
+* Delete the previous version of the addon if you have one:
+    * _File → User Preferences... → Addons_
+    * Type _osm_ in the search box in the top left corner of the _Addons_ tab to find the addon
+    * Press _Remove_ button in the GUI box with the header _Import-Export: Import OpenStreetMap (.osm)_
 * _File → User Preferences... → Addons → Install from File..._
 * Find the zip archive in your file system and press _Install from File..._ button
 * Enable the addon by checking the _Enable an addon_
@@ -33,6 +37,8 @@ Polygons with holes are supported!
 * The [paid](https://gumroad.com/l/blender-osm) version doesn't show you the popup and brings you directly to the imported scene.
 
 For detailed instructions, limitations, tips and tricks see the [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation).
+
+Watch this [video](https://www.youtube.com/watch?v=i4ySFm4ey9U) by _CG Geek_ to learn how to use the addon in a creative way.
 
 ## Links
 * [Paid version](https://gumroad.com/l/blender-osm)
