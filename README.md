@@ -45,3 +45,5 @@ Watch this [video](https://www.youtube.com/watch?v=i4ySFm4ey9U) by _CG Geek_ to 
 * [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation)
 * twitter: [@prokitektura](https://twitter.com/prokitektura)
 * blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
+<br>post there questions, nice renderings created with the addon and your experience with the addon
+* bugs and feature requests: [issues](https://github.com/vvoovv/blender-osm/issues)
