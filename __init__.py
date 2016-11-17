@@ -109,7 +109,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     
     layered = bpy.props.BoolProperty(
         name = "Arrange into layers",
-        description = "Arrange imported objects into layers (buildings, highways, etc)",
+        description = "Arrange imported OSM objects into layers (buildings, highways, etc)",
         default = True
     )
 
@@ -121,13 +121,13 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
 
     defaultBuildingHeight = bpy.props.FloatProperty(
         name = "Default building height",
-        description = "Default height if the building height isn't set in OSM tags",
+        description = "Default height in meters if the building height isn't set in OSM tags",
         default = 5.
     )
     
     levelHeight = bpy.props.FloatProperty(
         name = "Level height",
-        description = "Height of a level to use for OSM tags building:levels and building:min_level",
+        description = "Height of a level in meters to use for OSM tags building:levels and building:min_level",
         default = 3.
     )
 
@@ -225,7 +225,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         box = layout.box()
         box.prop(self, "singleObject")
         box.prop(self, "layered")
-        box.prop(self, "ignoreGeoreferencing")
+        layout.box().prop(self, "ignoreGeoreferencing")
 
 
 # Only needed if you want to add into a dynamic menu
