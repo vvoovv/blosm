@@ -28,6 +28,7 @@ from util.transverse_mercator import TransverseMercator
 from renderer import Renderer
 from parse import Osm
 import app
+from defs import Keys
 
 from setup import setup
 
@@ -130,6 +131,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         description = "Height of a level in meters to use for OSM tags building:levels and building:min_level",
         default = 3.
     )
+    
+    app = app.App()
 
     def execute(self, context):
         # <self.logger> may be set in <setup(..)>
@@ -146,6 +149,9 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             if not context.scene.objects.active:
                 context.scene.objects.active = context.scene.objects[0]
             bpy.ops.object.mode_set(mode="OBJECT")
+            
+        if not self.app.has(Keys.mode3d):
+            self.mode = '2D'
         
         # manager (derived from manager.Manager) performing some processing
         self.managers = []
@@ -172,7 +178,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             scene["lat"] = osm.lat
             scene["lon"] = osm.lon
         
-        bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
+        if not self.app.has(Keys.mode3d):
+            self.app.show()
         
         return {"FINISHED"}
     
@@ -211,7 +218,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
         
-        layout.prop(self, "mode", expand=True)
+        if self.app.has(Keys.mode3d):
+            layout.prop(self, "mode", expand=True)
         box = layout.box()
         box.prop(self, "buildings")
         box.prop(self, "highways")

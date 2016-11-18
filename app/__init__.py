@@ -1,46 +1,63 @@
 import bpy
-import os, webbrowser
+import os, json, webbrowser, base64
 
-licenseKey = "4fea502"
-price = 2.85
-url = "https://gumroad.com/l/blender-osm"
+import defs
 
-def hasLicenseFile():
-    # app directory
-    directory = os.path.dirname(os.path.realpath(__file__))
-    # app/..
-    directory = os.path.realpath( os.path.join(directory, os.pardir) )
-    return os.path.isfile( os.path.join(directory, licenseKey) )
+
+class App:
+    
+    def __init__(self):
+        self.load()
+    
+    def has(self, key):
+        return self.license and (self.all or key in self.keys)
+    
+    def load(self):
+        # this directory
+        directory = os.path.dirname(os.path.realpath(__file__))
+        # app/..
+        directory = os.path.realpath( os.path.join(directory, os.pardir) )
+        path = os.path.join(directory, defs.App.file)
+        self.license = os.path.isfile(path)
+        if not self.license:
+            return
+        
+        with open(path, "r", encoding="ascii") as data:
+            data = json.loads( base64.b64decode( bytes.fromhex(data.read()) ).decode('ascii') )
+        
+        self.all = data.get("all", False)
+        self.keys = set(data.get("keys", ()))
+    
+    def show(self):
+        bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
 
 
 class OperatorPopup(bpy.types.Operator):
     bl_idname = "prk.check_version_osm"
     bl_label = ""
-    bl_description = "Buy OSM importer without this popup for just {}$".format(price)
+    bl_description = defs.App.description
     bl_options = {'INTERNAL'}
     
     def invoke(self, context, event):
-        if hasLicenseFile():
-            return {'CANCELLED'}
         return context.window_manager.invoke_props_dialog(self)
     
-    def modal(self, context, event):
-        print("event")
-        return {'RUNNING_MODAL'}
-    
     def execute(self, context):
-        webbrowser.open_new_tab(url)
+        webbrowser.open_new_tab(defs.App.url)
         return {'FINISHED'}
     
     def cancel(self, context):
-        webbrowser.open_new_tab(url)
+        webbrowser.open_new_tab(defs.App.url)
     
     def draw(self, context):
         layout = self.layout
         
-        self.label("Support OSM importer!", icon='INFO')
-        self.label("Buy OSM importer without this popup")
-        self.label("for just {}$".format(price))
+        iconPlaced = False
+        for label in defs.App.popupStrings:
+            if iconPlaced:
+                self.label(label)
+            else:
+                self.label(label, icon='INFO')
+                iconPlaced = True
         
         layout.separator()
         layout.separator()
