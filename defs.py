@@ -16,7 +16,7 @@ class App:
     description = "Buy OSM importer without this popup for just {}$".format(price)
     popupStrings = (
         "Support OSM importer!",
-        "Free version is 2D only",
+        "The free version is 2D only!",
         "Buy paid version with 3D support",
         "for just {}$".format(price)
     )
