@@ -16,31 +16,46 @@ class Building(Relation):
         super().__init__()
     
     def preprocess(self, members, osm):
+        outline = None
         # the first pass: looking for a relation member with the role 'outline'
         for mType, mId, mRole in members:
             if mRole is Osm.outline:
                 if mType is Osm.way:
                     # all OSM ways are already available
                     if mId in osm.ways:
+                        # check if the candidate for a building outline has OSM tag 'building'
+                        outline = osm.ways[mId]
+                        if not (outline.tags and "building" in outline.tags):
+                            # <outline> can't serve as a building outline
+                            outline = None
+                            break
                         outline = (mId, Osm.way)
                         break
                 elif mType is Osm.relation:
                     # get either an existing relation encountered before or create an empty relation
                     outline = osm.getRelation(mId, Multipolygon)
-                    # Ensure that the OSM relation serving as outline has <b> attribute,
-                    # which will be needed later;
-                    # the attribute <b> is used to store an instance of <building.manager.Building>
-                    if not outline.tags:
+                    if outline.tags:
+                        # check if the candidate for a building outline has OSM tag 'building'
+                        if not "building" in outline.tags:
+                            # <outline> can't serve as a building outline
+                            outline = None
+                            break
+                    else:
                         # <not outline.tags> means that outline is an empty relation,
-                        # i.e. not encountered in the OSM file yet
+                        # i.e. not encountered in the OSM file yet.
+                        # Ensure that the OSM relation serving as outline has <b> attribute,
+                        # which will be needed later;
+                        # the attribute <b> is used to store an instance of <building.manager.Building>
                         outline.b = None
                     outline = (mId, Osm.relation)
                     break
+        if outline:
+            self.outline = outline
         else:
-            # a relation member with the role 'outline' not found
+            # A relation member with the role 'outline' not found or
+            # the relation member can't serve as a building outline
             self.valid = False
             return
-        self.outline = outline
     
     def process(self, members, tags, osm):
         # the first pass
