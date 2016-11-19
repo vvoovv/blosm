@@ -23,11 +23,10 @@ class Building(Relation):
                 if mType is Osm.way:
                     # all OSM ways are already available
                     if mId in osm.ways:
-                        # check if the candidate for a building outline has OSM tag 'building'
-                        outline = osm.ways[mId]
-                        if not (outline.tags and "building" in outline.tags):
+                        # Check if the candidate for a building outline has <b> attribute,
+                        # which points to an instance of <building.manager.Building>
+                        if not hasattr(osm.ways[mId], "b"):
                             # <outline> can't serve as a building outline
-                            outline = None
                             break
                         outline = (mId, Osm.way)
                         break
@@ -35,8 +34,9 @@ class Building(Relation):
                     # get either an existing relation encountered before or create an empty relation
                     outline = osm.getRelation(mId, Multipolygon)
                     if outline.tags:
-                        # check if the candidate for a building outline has OSM tag 'building'
-                        if not "building" in outline.tags:
+                        # Check if the candidate for a building outline has <b> attribute,
+                        # which points to an instance of <building.manager.Building>
+                        if not hasattr(outline, "b"):
                             # <outline> can't serve as a building outline
                             outline = None
                             break
