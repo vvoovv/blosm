@@ -1,5 +1,5 @@
 import os, bpy, bmesh
-from util import zAxis, zeroVector
+from util import zeroVec, zeroVector
 from util.blender import createEmptyObject
 from util.osm import assignTags
 
@@ -179,7 +179,7 @@ class Renderer2d(Renderer):
     def __init__(self, op):
         super().__init__(op)
         # vertical position for polygons and multipolygons
-        self.z = 0.
+        self.z = zeroVec
     
     def renderLineString(self, element, data):
         self._renderLineString(element, element.getData(data), element.isClosed())
@@ -207,7 +207,7 @@ class Renderer2d(Renderer):
     def renderPolygon(self, element, data):
         bm = self.bm
         f = bm.faces.new(
-            [bm.verts.new((coord[0], coord[1], self.z)) for coord in element.getData(data)]
+            [bm.verts.new(coord + self.z) for coord in element.getData(data)]
         )
         f.normal_update()
         if f.normal.z < 0.:
@@ -233,7 +233,7 @@ class Renderer2d(Renderer):
             # previous BMesh vertex
             _v = None
             for coord in polygon:
-                v = bm.verts.new((coord[0], coord[1], self.z))
+                v = bm.verts.new(coord + self.z)
                 if _v:
                     edges.append( bm.edges.new([_v, v]) )
                 else:
@@ -257,13 +257,12 @@ class Renderer2d(Renderer):
         return edges
 
     def reset(self):
-        self.z = 0.
+        self.z = zeroVec
 
 
 class Renderer3d(Renderer2d):
     
     def renderPolygon(self, element, data):
-        h = self.h * zAxis
         bm = self.bm
         edges = super().renderPolygon(element, data)
         materialIndex = self.getSideMaterialIndex(element)
@@ -272,12 +271,12 @@ class Renderer3d(Renderer2d):
         # each edge has exactly one BMLoop
         # initial top (suffix 't') and bottom (suffix 'b') vertices
         ut = edges[0].link_loops[0].vert
-        ub = bm.verts.new(ut.co - h)
+        ub = bm.verts.new(ut.co - self.h)
         _vt = ut
         _vb = ub
         for i in range(len(edges)-1):
             vt = edges[i].link_loops[0].link_loop_next.vert
-            vb = bm.verts.new(vt.co - h)
+            vb = bm.verts.new(vt.co - self.h)
             f = bm.faces.new((vt, _vt, _vb, vb))
             f.material_index = materialIndex
             _vt = vt
@@ -287,7 +286,6 @@ class Renderer3d(Renderer2d):
         f.material_index = materialIndex
         
     def renderMultiPolygon(self, element, data):
-        h = self.h * zAxis
         bm = self.bm
         
         # get both outer and inner polygons
@@ -309,7 +307,7 @@ class Renderer3d(Renderer2d):
             l = edges[index].link_loops[0]
             # initial top (suffix 't') and bottom (suffix 'b') vertices
             ut = l.vert
-            ub = bm.verts.new(ut.co - h)
+            ub = bm.verts.new(ut.co - self.h)
             _vt = ut
             _vb = ub
             # Walk along the closed linestring;
@@ -326,7 +324,7 @@ class Renderer3d(Renderer2d):
                     if len(l.edge.link_loops) == 2:
                         # internal edge, switch to the neighbor polygon
                         l = vt.link_loops[1] if vt.link_loops[0]==l else vt.link_loops[0]
-                    vb = bm.verts.new(vt.co - h)
+                    vb = bm.verts.new(vt.co - self.h)
                     f = bm.faces.new((vt, _vt, _vb, vb))
                     f.material_index = materialIndex
                     _vt = vt

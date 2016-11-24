@@ -1,5 +1,8 @@
 from renderer import Renderer, Renderer3d
 from manager import Manager
+from building.roof.flat import RoofFlat
+from building.roof.skillion import RoofSkillion
+from util import zAxis
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -15,6 +18,11 @@ class BuildingRenderer(Renderer3d):
     def __init__(self, op, layerId):
         super().__init__(op)
         self.layerIndex = op.layerIndices.get(layerId)
+        self.defaultRoof = RoofFlat()
+        self.roofs = {
+            'flat': self.defaultRoof,
+            'skillion': RoofSkillion()
+        }
     
     def render(self, building, osm):
         parts = building.parts
@@ -35,9 +43,13 @@ class BuildingRenderer(Renderer3d):
         self.postRender(outline)
     
     def renderElement(self, element, building, osm):
+        # get manager-renderer for the building roof
+        #roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
+        #roof.init(element)
+        #roofHeight = roof.getHeight(element)
         # set attributes used be the parent class <Renderer3d>
-        self.z = building.getHeight(element, self.op)
-        self.h = self.z - building.getMinHeight(element, self.op)
+        self.z = building.getHeight(element, self.op) * zAxis
+        self.h = self.z - building.getMinHeight(element, self.op) * zAxis
         
         if element.t is Renderer.polygon:
             self.renderPolygon(element, osm)

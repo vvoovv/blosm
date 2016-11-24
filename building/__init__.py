@@ -1,5 +1,6 @@
 from util.osm import parseNumber
 
+
 class Building:
     """
     A wrapper for a OSM building
@@ -24,8 +25,6 @@ class Building:
         tags = element.tags
         if "height" in tags:
             h = parseNumber(tags["height"], op.defaultBuildingHeight)
-            if "roof:height" in tags:
-                h -= parseNumber(tags["roof:height"], 0.)
         elif "building:levels" in tags:
             numLevels = parseNumber(tags["building:levels"])
             h = op.defaultBuildingHeight if numLevels is None else numLevels * op.levelHeight
