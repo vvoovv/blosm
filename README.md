@@ -44,7 +44,6 @@ Polygons with holes are supported!
 
 For detailed instructions, limitations, tips and tricks see the [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation).
 
-Watch this [video](https://www.youtube.com/watch?v=i4ySFm4ey9U) by _CG Geek_ to learn how to use the addon in a creative way.
 
 ## Links
 * [Paid version](https://gumroad.com/l/blender-osm)
