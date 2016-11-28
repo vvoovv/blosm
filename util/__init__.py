@@ -8,3 +8,5 @@ zeroVec = Vector((0., 0., 0.))
 
 def zeroVector():
     return Vector((0., 0., 0.))
+
+zero = .001 # 1mm

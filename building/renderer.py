@@ -2,7 +2,7 @@ from renderer import Renderer, Renderer3d
 from manager import Manager
 from building.roof.flat import RoofFlat
 from building.roof.skillion import RoofSkillion
-from util import zAxis
+from util import zero, zAxis
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -44,17 +44,39 @@ class BuildingRenderer(Renderer3d):
     
     def renderElement(self, element, building, osm):
         # get manager-renderer for the building roof
-        #roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
-        #roof.init(element)
-        #roofHeight = roof.getHeight(element)
-        # set attributes used be the parent class <Renderer3d>
-        self.z = building.getHeight(element, self.op) * zAxis
-        self.h = self.z - building.getMinHeight(element, self.op) * zAxis
+        roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
+        roof.init(element, osm)
         
-        if element.t is Renderer.polygon:
-            self.renderPolygon(element, osm)
+        z1 = building.getMinHeight(element, self.op)
+        z2 = building.getHeight(element, self.op)
+        roofHeight = roof.getHeight()
+        wallHeight = z2 - roofHeight - z1
+        # validity check
+        if wallHeight < 0.:
+            return
+        elif wallHeight < zero:
+            wallHeight = None
+        
+        if wallHeight is None:
+            pass
         else:
-            self.renderMultiPolygon(element, osm)
+            pass
+        roof.make()
+        
+        bm = self.bm
+        verts = [bm.verts.new(v) for v in roof.polygon.allVerts]
+        f = bm.faces.new(verts[i] for i in roof.polygon.indices)
+        
+        materialIndex = self.getMaterialIndex(element)
+        f.material_index = materialIndex
+        # set attributes used be the parent class <Renderer3d>
+        #self.z = building.getHeight(element, self.op) * zAxis
+        #self.h = self.z - building.getMinHeight(element, self.op) * zAxis
+        
+        #if element.t is Renderer.polygon:
+        #    self.renderPolygon(element, osm)
+        #else:
+        #    self.renderMultiPolygon(element, osm)
 
     def getMaterialIndex(self, element):
         """

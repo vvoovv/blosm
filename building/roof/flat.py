@@ -8,8 +8,8 @@ class RoofFlat:
     def init(self, element, osm):
         pass
     
-    def getHeight(self, element):
-        tags = element.tags
+    def getHeight(self):
+        tags = self.element.tags
         return parseNumber(tags["roof:height"], self.defaultHeight)\
             if "roof:height" in tags\
             else self.defaultHeight
