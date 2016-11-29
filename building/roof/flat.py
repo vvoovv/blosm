@@ -3,9 +3,9 @@ from util.osm import parseNumber
 
 class RoofFlat:
     
-    defaultHeight = 0.
+    defaultHeight = 0.5
     
-    def init(self, element, osm):
+    def init(self, element, minHeight, osm):
         pass
     
     def getHeight(self):

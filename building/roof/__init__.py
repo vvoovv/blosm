@@ -1,4 +1,6 @@
 from mathutils import Vector
+from util.polygon import Polygon
+from renderer import Renderer
 
 """
 key: a cardinal direction
@@ -45,3 +47,9 @@ class Roof:
         'NW': Vector((-0.70711, 0.70711, 0.)),
         'NNW': Vector((-0.38268, 0.92388, 0.))
     }
+    
+    def init(self, element, osm):
+        self.element = element
+        self.polygon = Polygon(
+            element.getData(osm) if element.t is Renderer.polygon else element.getOuterData(osm)
+        )

@@ -1,34 +1,32 @@
 import math
-from util import zAxis
-from util.polygon import Polygon
 from util.osm import parseNumber
-from renderer import Renderer
 from . import Roof
 
 
-class RoofSkillion:
+class RoofSkillion(Roof):
     
     defaultHeight = 2.
     
     def init(self, element, osm):
-        self.element = element
-        self.polygon = Polygon(
-            element.getData(osm) if element.t is Renderer.polygon else element.getOuterData(osm)
-        )
+        super().init(element, osm)
         # check the direction of vertices, it must be counterclockwise
         self.polygon.checkDirection()
         self.projections = None
     
-    def make(self):
+    def make(self, roofMinHeight, bldgMinHeight):
         polygon = self.polygon
         if not self.projections:
             self.processDirection()
         # update <polygon.allVerts> with vertices sheared along z-axis
         tan = self.h/self.polygonLength
-        for i in range(polygon.n):
-            _i = polygon.indices[i]
-            polygon.allVerts[_i] = polygon.allVerts[_i] + (self.maxProj - self.projections[i]) * tan * zAxis
+        for _i in range(polygon.n):
+            i = polygon.indices[_i]
+            vert = polygon.allVerts[i].copy()
+            vert.z = roofMinHeight + (self.maxProj - self.projections[_i]) * tan
+            polygon.allVerts[i] = vert
         # <polygon.normal> won't be used, so it won't be updated
+        
+        return polygon.prismSides(bldgMinHeight)
     
     def getHeight(self):
         element = self.element

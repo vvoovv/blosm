@@ -43,32 +43,36 @@ class BuildingRenderer(Renderer3d):
         self.postRender(outline)
     
     def renderElement(self, element, building, osm):
+        z1 = building.getMinHeight(element, self.op)
+        z2 = building.getHeight(element, self.op)
         # get manager-renderer for the building roof
         roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
         roof.init(element, osm)
         
-        z1 = building.getMinHeight(element, self.op)
-        z2 = building.getHeight(element, self.op)
         roofHeight = roof.getHeight()
-        wallHeight = z2 - roofHeight - z1
+        roofMinHeight = z2 - roofHeight
+        wallHeight = roofMinHeight - z1
         # validity check
         if wallHeight < 0.:
             return
         elif wallHeight < zero:
-            wallHeight = None
+            wallHeight = 0.
         
         if wallHeight is None:
             pass
         else:
             pass
-        roof.make()
+        
+        sidesIndices = roof.make(roofMinHeight, z1)
         
         bm = self.bm
         verts = [bm.verts.new(v) for v in roof.polygon.allVerts]
         f = bm.faces.new(verts[i] for i in roof.polygon.indices)
+        f.material_index = self.getMaterialIndex(element)
         
-        materialIndex = self.getMaterialIndex(element)
-        f.material_index = materialIndex
+        materialIndex = self.getSideMaterialIndex(element)
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in sidesIndices):
+            f.material_index = materialIndex
         # set attributes used be the parent class <Renderer3d>
         #self.z = building.getHeight(element, self.op) * zAxis
         #self.h = self.z - building.getMinHeight(element, self.op) * zAxis

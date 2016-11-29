@@ -1,3 +1,4 @@
+from mathutils import Vector
 from util import zAxis
 
 
@@ -50,3 +51,12 @@ class Polygon:
             v = verts[indices[i]]
             yield v - _v
             _v = v
+    
+    def prismSides(self, minLevel):
+        verts = self.allVerts
+        indices = self.indices
+        indexOffset = len(verts)
+        verts.extend(Vector((v.x, v.y, minLevel)) for v in self.verts)
+        return tuple(
+            (indices[i-1], indexOffset - 1 + (i if i else self.n), indexOffset + i, indices[i]) for i in range(self.n)
+        )
