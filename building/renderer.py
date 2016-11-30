@@ -1,8 +1,8 @@
-from renderer import Renderer, Renderer3d
+from renderer import Renderer3d
 from manager import Manager
 from building.roof.flat import RoofFlat
 from building.roof.skillion import RoofSkillion
-from util import zero, zAxis
+from util import zero
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -56,14 +56,9 @@ class BuildingRenderer(Renderer3d):
         if wallHeight < 0.:
             return
         elif wallHeight < zero:
-            wallHeight = 0.
+            wallHeight = None
         
-        if wallHeight is None:
-            pass
-        else:
-            pass
-        
-        sidesIndices = roof.make(roofMinHeight, z1)
+        sidesIndices = roof.make(roofMinHeight, None if wallHeight is None else z1)
         
         bm = self.bm
         verts = [bm.verts.new(v) for v in roof.polygon.allVerts]

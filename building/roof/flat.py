@@ -5,7 +5,7 @@ class RoofFlat:
     
     defaultHeight = 0.5
     
-    def init(self, element, minHeight, osm):
+    def init(self, element, osm):
         pass
     
     def getHeight(self):
