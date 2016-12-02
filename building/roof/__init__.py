@@ -53,3 +53,16 @@ class Roof:
         self.polygon = Polygon(
             element.getData(osm) if element.t is Renderer.polygon else element.getOuterData(osm)
         )
+        # check the direction of vertices, it must be counterclockwise
+        self.polygon.checkDirection()
+    
+    def render(self, r):
+        bm = r.bm
+        sidesIndices = self.sidesIndices
+        verts = [bm.verts.new(v) for v in self.polygon.allVerts]
+        f = bm.faces.new(verts[i] for i in self.polygon.indices)
+        f.material_index = r.getMaterialIndex(self.element)
+        
+        materialIndex = r.getSideMaterialIndex(self.element)
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in sidesIndices):
+            f.material_index = materialIndex

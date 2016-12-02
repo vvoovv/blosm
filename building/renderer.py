@@ -1,6 +1,6 @@
-from renderer import Renderer3d
+from renderer import Renderer, Renderer3d
 from manager import Manager
-from building.roof.flat import RoofFlat
+from building.roof.flat import RoofFlat, RoofFlatMulti
 from building.roof.skillion import RoofSkillion
 from util import zero
 
@@ -18,9 +18,10 @@ class BuildingRenderer(Renderer3d):
     def __init__(self, op, layerId):
         super().__init__(op)
         self.layerIndex = op.layerIndices.get(layerId)
-        self.defaultRoof = RoofFlat()
+        self.flatRoof = RoofFlat()
+        self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
-            'flat': self.defaultRoof,
+            'flat': self.flatRoof,
             'skillion': RoofSkillion()
         }
     
@@ -46,7 +47,9 @@ class BuildingRenderer(Renderer3d):
         z1 = building.getMinHeight(element, self.op)
         z2 = building.getHeight(element, self.op)
         # get manager-renderer for the building roof
-        roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
+        roof = self.roofs.get(element.tags.get("roof:shape"), self.flatRoof)
+        if not element.t is Renderer.polygon and roof is self.flatRoof:
+            roof = self.flatRoofMulti
         roof.init(element, osm)
         
         roofHeight = roof.getHeight()
@@ -58,24 +61,8 @@ class BuildingRenderer(Renderer3d):
         elif wallHeight < zero:
             wallHeight = None
         
-        sidesIndices = roof.make(roofMinHeight, None if wallHeight is None else z1)
-        
-        bm = self.bm
-        verts = [bm.verts.new(v) for v in roof.polygon.allVerts]
-        f = bm.faces.new(verts[i] for i in roof.polygon.indices)
-        f.material_index = self.getMaterialIndex(element)
-        
-        materialIndex = self.getSideMaterialIndex(element)
-        for f in (bm.faces.new(verts[i] for i in indices) for indices in sidesIndices):
-            f.material_index = materialIndex
-        # set attributes used be the parent class <Renderer3d>
-        #self.z = building.getHeight(element, self.op) * zAxis
-        #self.h = self.z - building.getMinHeight(element, self.op) * zAxis
-        
-        #if element.t is Renderer.polygon:
-        #    self.renderPolygon(element, osm)
-        #else:
-        #    self.renderMultiPolygon(element, osm)
+        if roof.make(z2, roofMinHeight, None if wallHeight is None else z1, osm):
+            roof.render(self)
 
     def getMaterialIndex(self, element):
         """

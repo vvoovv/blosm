@@ -10,11 +10,9 @@ class RoofSkillion(Roof):
     
     def init(self, element, osm):
         super().init(element, osm)
-        # check the direction of vertices, it must be counterclockwise
-        self.polygon.checkDirection()
         self.projections = None
     
-    def make(self, roofMinHeight, bldgMinHeight):
+    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         polygon = self.polygon
         if not self.projections:
             self.processDirection()
@@ -29,8 +27,9 @@ class RoofSkillion(Roof):
             polygon.allVerts[i] = vert
         # <polygon.normal> won't be used, so it won't be updated
         
-        return polygon.sidesShortestProjection(self.maxProjIndex) if bldgMinHeight is None else\
+        self.sidesIndices = polygon.sidesShortestProjection(self.maxProjIndex) if bldgMinHeight is None else\
             polygon.sidesPrism(bldgMinHeight)
+        return True
     
     def getHeight(self):
         element = self.element
@@ -54,7 +53,10 @@ class RoofSkillion(Roof):
     def processDirection(self):
         polygon = self.polygon
         # <d> stands for direction
-        d = self.element.tags.get("roof:direction")
+        d = self.element.tags.get(
+            "roof:slope:direction",
+            self.element.tags.get("roof:direction")
+        )
         # getting a direction vector with the unit length
         if d is None:
             d = self.getDefaultDirection()
