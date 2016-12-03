@@ -1,5 +1,5 @@
 from mathutils import Vector
-from util import zAxis, zero
+from util import zAxis, zero, zeroVector
 
 
 class Polygon:
@@ -57,6 +57,10 @@ class Polygon:
             v = verts[i]
             yield v - _v
             _v = v
+    
+    @property
+    def center(self):
+        return sum(tuple(self.verts), zeroVector())/self.n
     
     def sidesPrism(self, minLevel):
         verts = self.allVerts

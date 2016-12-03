@@ -1,7 +1,8 @@
 from renderer import Renderer, Renderer3d
 from manager import Manager
-from building.roof.flat import RoofFlat, RoofFlatMulti
-from building.roof.skillion import RoofSkillion
+from .roof.flat import RoofFlat, RoofFlatMulti
+from .roof.pyramidal import RoofPyramidal
+from .roof.skillion import RoofSkillion
 from util import zero
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
@@ -22,6 +23,7 @@ class BuildingRenderer(Renderer3d):
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
             'flat': self.flatRoof,
+            'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion()
         }
     
@@ -48,7 +50,7 @@ class BuildingRenderer(Renderer3d):
         z2 = building.getHeight(element, self.op)
         # get manager-renderer for the building roof
         roof = self.roofs.get(element.tags.get("roof:shape"), self.flatRoof)
-        if not element.t is Renderer.polygon and roof is self.flatRoof:
+        if element.t is Renderer.multipolygon:
             roof = self.flatRoofMulti
         roof.init(element, osm)
         

@@ -1,6 +1,5 @@
 import bmesh
 from mathutils import Vector
-from util.osm import parseNumber
 from util.polygon import Polygon
 from . import Roof
 
@@ -9,15 +8,6 @@ class RoofFlat(Roof):
     
     defaultHeight = 0.5
     
-    def init(self, element, osm):
-        super().init(element, osm)
-        
-    def getHeight(self):
-        tags = self.element.tags
-        return parseNumber(tags["roof:height"], self.defaultHeight)\
-            if "roof:height" in tags\
-            else self.defaultHeight
-
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         if bldgMinHeight is None:
             return
@@ -68,11 +58,12 @@ class RoofFlatMulti(RoofFlat):
     
     def render(self, r):
         element = self.element
+        polygons = self.polygons
         bm = r.bm
         verts = tuple( bm.verts.new(v) for v in self.allVerts )
         edges = tuple(
             bm.edges.new( (verts[polygon.indices[i-1]], verts[polygon.indices[i]]) )\
-            for polygon in self.polygons\
+            for polygon in polygons\
             for i in range(polygon.n)
         )
         
@@ -86,9 +77,44 @@ class RoofFlatMulti(RoofFlat):
                     f.normal_flip()
                 f.material_index = materialIndex
         
-        #f = bm.faces.new(verts[i] for i in self.polygon.indices)
-        #f.material_index = r.getMaterialIndex(self.element)
+        indexOffset1 = 0
+        indexOffset2 = len(verts)//2
+        sidesIndices = []
+        for polygon in polygons:
+            n = polygon.n
+            # the first edge of the polygon
+            edge = edges[indexOffset1]
+            if not edge.link_loops:
+                # something wrong with the topology of the related OSM multipolygon
+                # update index offsets to switch to the next polygon (i.e. a closed linestring)
+                indexOffset1 += n
+                indexOffset2 += n
+                # skip that polygon
+                continue
+            # a BMLoop for <edge>
+            l = edge.link_loops[0]
+            keepDirection = l.link_loop_next.vert == verts[indexOffset1]
+            
+            sidesIndices.extend(
+                (
+                    indexOffset1 - 1 + (i if i else n),
+                    indexOffset2 - 1 + (i if i else n),
+                    indexOffset2 + i, 
+                    indexOffset1 + i
+                )\
+                if keepDirection else\
+                (
+                    indexOffset1 - 1 + (i if i else n),
+                    indexOffset1 + i,
+                    indexOffset2 + i,
+                    indexOffset2 - 1 + (i if i else n)
+                )\
+                for i in range(n)
+            )
+            
+            indexOffset1 += n
+            indexOffset2 += n
         
-        #materialIndex = r.getSideMaterialIndex(self.element)
-        #for f in (bm.faces.new(verts[i] for i in indices) for indices in sidesIndices):
-        #    f.material_index = materialIndex
+        materialIndex = r.getSideMaterialIndex(element)
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in sidesIndices):
+            f.material_index = materialIndex

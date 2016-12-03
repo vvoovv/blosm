@@ -1,4 +1,5 @@
 from mathutils import Vector
+from util.osm import parseNumber
 from util.polygon import Polygon
 from renderer import Renderer
 
@@ -55,6 +56,12 @@ class Roof:
         )
         # check the direction of vertices, it must be counterclockwise
         self.polygon.checkDirection()
+    
+    def getHeight(self):
+        tags = self.element.tags
+        return parseNumber(tags["roof:height"], self.defaultHeight)\
+            if "roof:height" in tags\
+            else self.defaultHeight
     
     def render(self, r):
         bm = r.bm
