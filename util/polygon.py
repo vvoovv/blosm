@@ -4,15 +4,11 @@ from util import zAxis, zero, zeroVector
 
 class Polygon:
     
-    def __init__(self, indices, allVerts=None):
+    def __init__(self, indices, allVerts):
         n = len(indices)
         self.n = n
-        if allVerts:
-            self.allVerts = allVerts
-            self.indices = indices
-        else:
-            self.allVerts = indices
-            self.indices = list(range(n))
+        self.allVerts = allVerts
+        self.indices = indices
         # normal to the polygon
         self.normal = zAxis
     
@@ -40,7 +36,7 @@ class Polygon:
         # in that case the direction of vertices is counterclockwise, it's clockwise in the opposite case.
         if v1.x * v2.y - v1.y * v2.x < 0.:
             # clockwise direction, reverse <indices> in place
-            indices.reverse()
+            self.indices = tuple(reversed(indices))
     
     @property
     def verts(self):
@@ -62,13 +58,15 @@ class Polygon:
     def center(self):
         return sum(tuple(self.verts), zeroVector())/self.n
     
-    def sidesPrism(self, minLevel):
+    def sidesPrism(self, z, indices):
         verts = self.allVerts
-        indices = self.indices
+        _indices = self.indices
         indexOffset = len(verts)
-        verts.extend(Vector((v.x, v.y, minLevel)) for v in self.verts)
-        return tuple(
-            (indices[i-1], indexOffset - 1 + (i if i else self.n), indexOffset + i, indices[i]) for i in range(self.n)
+        verts.extend(Vector((v.x, v.y, z)) for v in self.verts)
+        # the starting side
+        indices.append((_indices[-1], _indices[0], indexOffset, indexOffset + self.n - 1))
+        indices.extend(
+            (_indices[i-1], _indices[i], indexOffset + i, indexOffset + i - 1) for i in range(1, self.n)
         )
     
     def sidesShortestProjection(self, minZindex):

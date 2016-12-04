@@ -49,10 +49,21 @@ class Roof:
         'NNW': Vector((-0.38268, 0.92388, 0.))
     }
     
-    def init(self, element, osm):
+    def __init__(self):
+        self.roofIndices = []
+        self.wallIndices = []
+    
+    def init(self, element, minHeight, osm):
+        self.roofIndices.clear()
+        self.wallIndices.clear()
+        
         self.element = element
+        
+        verts = [Vector((coord[0], coord[1], minHeight)) for coord in element.getData(osm)]
+        self.verts = verts
         self.polygon = Polygon(
-            element.getData(osm) if element.t is Renderer.polygon else element.getOuterData(osm)
+            tuple(range(len(verts))),
+            verts
         )
         # check the direction of vertices, it must be counterclockwise
         self.polygon.checkDirection()
@@ -65,11 +76,12 @@ class Roof:
     
     def render(self, r):
         bm = r.bm
-        sidesIndices = self.sidesIndices
         verts = [bm.verts.new(v) for v in self.polygon.allVerts]
-        f = bm.faces.new(verts[i] for i in self.polygon.indices)
-        f.material_index = r.getMaterialIndex(self.element)
         
-        materialIndex = r.getSideMaterialIndex(self.element)
-        for f in (bm.faces.new(verts[i] for i in indices) for indices in sidesIndices):
+        materialIndex = r.getRoofMaterialIndex(self.element)
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
+            f.material_index = materialIndex
+        
+        materialIndex = r.getWallMaterialIndex(self.element)
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
             f.material_index = materialIndex

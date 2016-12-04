@@ -12,14 +12,10 @@ class RoofFlat(Roof):
         if bldgMinHeight is None:
             return
         polygon = self.polygon
-        # update <polygon.allVerts> with vertices translated along z-axis
-        for _i in range(polygon.n):
-            i = polygon.indices[_i]
-            vert = polygon.allVerts[i].copy()
-            vert.z = bldgMaxHeight
-            polygon.allVerts[i] = vert
+        n = len(self.verts)
         
-        self.sidesIndices = self.polygon.sidesPrism(bldgMinHeight)
+        self.polygon.sidesPrism(bldgMaxHeight, self.wallIndices)
+        self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
 
 

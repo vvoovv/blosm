@@ -305,21 +305,32 @@ class Multipolygon(Relation):
     def getData(self, osm):
         """
         Get projected data for the relation if it is composed of the only linestring
+        
+        Returns a Python generator
         """
         return self.getLinestringData(self.l, osm)
     
     def getDataMulti(self, osm):
         """
         Get projected data for the relation if it is composed of several linestrings
+        
+        Returns a Python generator
         """
-        return [self.getLinestringData(_l, osm) for _l in self.l]
+        return (self.getLinestringData(_l, osm) for _l in self.l)
     
     def getLinestringData(self, linestring, osm):
-        return [osm.nodes[nodeId].getData(osm) for nodeId in linestring.nodeIds(osm)]
+        """
+        Returns a Python generator
+        
+        Returns a Python generator
+        """
+        return (osm.nodes[nodeId].getData(osm) for nodeId in linestring.nodeIds(osm))
     
     def getOuterData(self, osm):
         """
         Get projected data for the outer polygon of the relation
+        
+        Returns a Python generator
         """
         # the method is applicable only for <self.t is Render.multipolygon>
         
@@ -345,13 +356,10 @@ class Multipolygon(Relation):
     def nodeIds(self, osm):
         """
         A generator to get id of OSM nodes of all linestrings of the relation
+        
+        Returns a Python generator
         """
         l = self.l
-        if isinstance(l, list):
-            # iterate through the linestrings in the list <l>
-            for _l in l:
-                for nodeId in _l.nodeIds(osm):
-                    yield nodeId
-        else:
-            for nodeId in l.nodeIds(osm):
-                yield nodeId
+        return (nodeId for _l in l for nodeId in _l.nodeIds(osm))\
+            if isinstance(l, list) else\
+            (nodeId for nodeId in l.nodeIds(osm))

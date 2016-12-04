@@ -1,5 +1,5 @@
 import os, bpy, bmesh
-from util import zeroVec, zeroVector
+from util import zeroVector
 from util.blender import createEmptyObject
 from util.osm import assignTags
 
@@ -179,7 +179,7 @@ class Renderer2d(Renderer):
     def __init__(self, op):
         super().__init__(op)
         # vertical position for polygons and multipolygons
-        self.z = zeroVec
+        self.z = 0.
     
     def renderLineString(self, element, data):
         self._renderLineString(element, element.getData(data), element.isClosed())
@@ -189,25 +189,24 @@ class Renderer2d(Renderer):
         # previous BMesh vertex
         _v = None
         for coord in coords:
-            v = bm.verts.new(coord)
+            v = bm.verts.new((coord[0], coord[1], 0.))
             if _v:
-                bm.edges.new([_v, v])
+                bm.edges.new((_v, v))
             else:
                 v0 = v
             _v = v
         if closed:
             # create the closing edge
-            bm.edges.new([v, v0])
+            bm.edges.new((v, v0))
     
     def renderMultiLineString(self, element, data):
-        linestrings = element.getDataMulti(data)
-        for i,l in enumerate(linestrings):
+        for i,l in enumerate( element.getDataMulti(data) ):
             self._renderLineString(element, l, element.isClosed(i))
     
     def renderPolygon(self, element, data):
         bm = self.bm
         f = bm.faces.new(
-            [bm.verts.new(coord + self.z) for coord in element.getData(data)]
+            bm.verts.new((coord[0], coord[1], self.z)) for coord in element.getData(data)
         )
         f.normal_update()
         if f.normal.z < 0.:
@@ -221,9 +220,8 @@ class Renderer2d(Renderer):
         return f.edges
     
     def renderMultiPolygon(self, element, data):
-        # get both outer and inner polygons
-        polygons = element.getDataMulti(data)
-        return self.createMultiPolygon(element, polygons)
+        # get both outer and inner polygons via <element.getDataMulti(data)>
+        return self.createMultiPolygon(element, element.getDataMulti(data))
     
     def createMultiPolygon(self, element, polygons):
         bm = self.bm
@@ -233,14 +231,14 @@ class Renderer2d(Renderer):
             # previous BMesh vertex
             _v = None
             for coord in polygon:
-                v = bm.verts.new(coord + self.z)
+                v = bm.verts.new((coord[0], coord[1], self.z))
                 if _v:
-                    edges.append( bm.edges.new([_v, v]) )
+                    edges.append( bm.edges.new((_v, v)) )
                 else:
                     v0 = v
                 _v = v
             # create the closing edge
-            edges.append( bm.edges.new([v, v0]) )
+            edges.append( bm.edges.new((v, v0)) )
                 
         # finally a magic function that does everything
         geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
@@ -257,7 +255,7 @@ class Renderer2d(Renderer):
         return edges
 
     def reset(self):
-        self.z = zeroVec
+        self.z = 0.
 
 
 class Renderer3d(Renderer2d):

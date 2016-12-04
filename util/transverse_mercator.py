@@ -1,5 +1,4 @@
 import math
-from mathutils import Vector
 
 # see conversion formulas at
 # http://en.wikipedia.org/wiki/Transverse_Mercator_projection
@@ -18,13 +17,13 @@ class TransverseMercator:
             setattr(self, attr, kwargs[attr])
         self.latInRadians = math.radians(self.lat)
 
-    def fromGeographic(self, lat, lon, h=0.):
+    def fromGeographic(self, lat, lon):
         lat = math.radians(lat)
         lon = math.radians(lon-self.lon)
         B = math.sin(lon) * math.cos(lat)
         x = 0.5 * self.k * self.radius * math.log((1.+B)/(1.-B))
         y = self.k * self.radius * ( math.atan(math.tan(lat)/math.cos(lon)) - self.latInRadians )
-        return Vector((x, y, h))
+        return (x, y)
 
     def toGeographic(self, x, y):
         x = x/(self.k * self.radius)

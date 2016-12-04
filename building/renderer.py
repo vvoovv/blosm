@@ -52,7 +52,7 @@ class BuildingRenderer(Renderer3d):
         roof = self.roofs.get(element.tags.get("roof:shape"), self.flatRoof)
         if element.t is Renderer.multipolygon:
             roof = self.flatRoofMulti
-        roof.init(element, osm)
+        roof.init(element, z1, osm)
         
         roofHeight = roof.getHeight()
         roofMinHeight = z2 - roofHeight
@@ -66,7 +66,7 @@ class BuildingRenderer(Renderer3d):
         if roof.make(z2, roofMinHeight, None if wallHeight is None else z1, osm):
             roof.render(self)
 
-    def getMaterialIndex(self, element):
+    def getRoofMaterialIndex(self, element):
         """
         Returns the material index for the building roof
         
@@ -129,7 +129,7 @@ class BuildingRenderer(Renderer3d):
                 self.defaultMaterialIndices[partIndex] = materialIndex
         return materialIndex
     
-    def getSideMaterialIndex(self, element):
+    def getWallMaterialIndex(self, element):
         """
         Returns the material index for the building walls
         

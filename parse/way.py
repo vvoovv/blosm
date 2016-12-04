@@ -62,12 +62,15 @@ class Way:
     def getData(self, osm):
         """
         Get projected data for the way
+        
+        Returns a Python generator
         """
-        return [osm.nodes[self.nodes[i]].getData(osm) for i in range(self.n)]
+        return (osm.nodes[self.nodes[i]].getData(osm) for i in range(self.n))
     
     def nodeIds(self, osm):
         """
         A generator to get id of OSM nodes of the way
+        
+        Returns a Python generator
         """
-        for i in range(self.n):
-            yield self.nodes[i]
+        return (self.nodes[i] for i in range(self.n))
