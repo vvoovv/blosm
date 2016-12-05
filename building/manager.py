@@ -131,7 +131,8 @@ class BuildingManager(Manager):
         osm = self.osm
         vertices = []
         polygons = []
-        vertexIndex = 0
+        vertexIndex1 = 0
+        vertexIndex2 = 0
         
         for building in self.buildings:
             # OSM element (a OSM way or an OSM relation of the type 'multipolygon')
@@ -142,10 +143,10 @@ class BuildingManager(Manager):
             if not polygon:
                 # no outer linestring, so skip it
                 continue
-            numPoints = len(polygon)
             vertices.extend(polygon)
-            polygons.append(tuple(range(vertexIndex, vertexIndex+numPoints)))
-            vertexIndex += numPoints
+            vertexIndex2 = len(vertices)
+            polygons.append(tuple(range(vertexIndex1, vertexIndex2)))
+            vertexIndex1 = vertexIndex2
         return BVHTree.FromPolygons(vertices, polygons)
 
 

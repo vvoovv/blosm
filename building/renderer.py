@@ -63,7 +63,7 @@ class BuildingRenderer(Renderer3d):
         elif wallHeight < zero:
             wallHeight = None
         
-        if roof.make(z2, roofMinHeight, None if wallHeight is None else z1, osm):
+        if roof.make(z2, z1 if wallHeight is None else roofMinHeight, None if wallHeight is None else z1, osm):
             roof.render(self)
 
     def getRoofMaterialIndex(self, element):

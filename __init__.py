@@ -87,19 +87,19 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     water = bpy.props.BoolProperty(
         name = "Import water objects",
         description = "Import water objects (rivers and lakes)",
-        default = False
+        default = True
     )
     
     forests = bpy.props.BoolProperty(
         name = "Import forests",
         description = "Import forests and woods",
-        default = False
+        default = True
     )
     
     vegetation = bpy.props.BoolProperty(
         name = "Import other vegetation",
         description = "Import other vegetation (grass, meadow, scrub)",
-        default = False
+        default = True
     )
     
     singleObject = bpy.props.BoolProperty(

@@ -1,5 +1,6 @@
 import math
 from mathutils import Vector
+from util import zero
 from util.osm import parseNumber
 from . import Roof
 
@@ -8,27 +9,89 @@ class RoofSkillion(Roof):
     
     defaultHeight = 2.
     
-    def init(self, element, osm):
-        super().init(element, osm)
-        self.projections = None
+    def __init__(self):
+        super().__init__()
+        self.projections = []
+    
+    def init(self, element, minHeight, osm):
+        super().init(element, minHeight, osm)
+        self.projections.clear()
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+        verts = self.verts
         polygon = self.polygon
+        indices = polygon.indices
+        n = polygon.n
+        wallIndices = self.wallIndices
+        
+        self.roofIndices.append( tuple(range(0, n)) )
+        
         if not self.projections:
             self.processDirection()
+        
         projections = self.projections
-        maxProj = projections[self.maxProjIndex]
-        # update <polygon.allVerts> with vertices sheared along z-axis
+        minZindex = self.maxProjIndex
+        maxProj = projections[minZindex]
         tan = self.h/self.polygonLength
-        for _i in range(polygon.n):
-            i = polygon.indices[_i]
-            vert = polygon.allVerts[i].copy()
-            vert.z = roofMinHeight + (maxProj - projections[_i]) * tan
-            polygon.allVerts[i] = vert
+        # update <polygon.verts> with vertices moved along z-axis
+        for i in range(polygon.n):
+            verts[indices[i]].z = roofMinHeight + (maxProj - projections[i]) * tan
         # <polygon.normal> won't be used, so it won't be updated
         
-        self.sidesIndices = polygon.sidesShortestProjection(self.maxProjIndex) if bldgMinHeight is None else\
-            polygon.sidesPrism(bldgMinHeight)
+        indexOffset = len(verts)
+        if bldgMinHeight is None:
+            # <roofMinHeight> is exactly equal to the height of the bottom part of the building
+            # check height of the neighbors of the vertex with the index <minZindex>
+            
+            # index of the left neighbor
+            leftIndex = polygon.prev(minZindex)
+            # index of the right neighbor
+            rightIndex = polygon.next(minZindex)
+            if verts[ indices[leftIndex] ].z - roofMinHeight < zero:
+                # Not only the vertex <minZindex> preserves its height,
+                # but also its left neighbor
+                rightIndex = minZindex
+            elif verts[ indices[rightIndex] ].z - roofMinHeight < zero:
+                # Not only the vertex <minZindex> preserves its height,
+                # but also its right neighbor
+                leftIndex = minZindex
+            else:
+                leftIndex = rightIndex = minZindex
+            
+            # starting from <rightIndex> walk counterclockwise along the polygon vertices till <leftIndex>
+            
+            # the current vertex index
+            index = polygon.next(rightIndex)
+            verts.append(Vector((
+                verts[indices[index]].x,
+                verts[indices[index]].y,
+                roofMinHeight
+            )))
+            # a triangle that start at the vertex <rightIndex>
+            wallIndices.append((indices[rightIndex], indexOffset, indices[index]))
+            while True:
+                prevIndex = index
+                index = polygon.next(index)
+                if index == leftIndex:
+                    break
+                # create a quadrangle
+                verts.append(Vector((
+                    verts[indices[index]].x,
+                    verts[indices[index]].y,
+                    roofMinHeight
+                )))
+                wallIndices.append((indexOffset, indexOffset + 1, indices[index], indices[prevIndex]))
+                indexOffset += 1
+            # a triangle that starts at the vertex <leftIndex> (all vertices for it are already available)
+            wallIndices.append((indexOffset, indices[index], indices[prevIndex]))
+        else:
+            verts.extend(Vector((v.x, v.y, bldgMinHeight)) for v in polygon.verts)
+            # the starting side
+            wallIndices.append((indexOffset + n - 1, indexOffset, indices[0], indices[-1]))
+            wallIndices.extend(
+                (indexOffset + i - 1, indexOffset + i, indices[i], indices[i-1]) for i in range(1, n)
+            )
+        
         return True
     
     def getHeight(self):

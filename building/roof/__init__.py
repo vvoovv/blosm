@@ -50,17 +50,19 @@ class Roof:
     }
     
     def __init__(self):
+        self.verts = []
         self.roofIndices = []
         self.wallIndices = []
     
     def init(self, element, minHeight, osm):
+        self.verts.clear()
         self.roofIndices.clear()
         self.wallIndices.clear()
         
         self.element = element
         
-        verts = [Vector((coord[0], coord[1], minHeight)) for coord in element.getData(osm)]
-        self.verts = verts
+        verts = self.verts
+        self.verts.extend( Vector((coord[0], coord[1], minHeight)) for coord in element.getData(osm) )
         self.polygon = Polygon(
             tuple(range(len(verts))),
             verts
@@ -76,7 +78,7 @@ class Roof:
     
     def render(self, r):
         bm = r.bm
-        verts = [bm.verts.new(v) for v in self.polygon.allVerts]
+        verts = [bm.verts.new(v) for v in self.verts]
         
         materialIndex = r.getRoofMaterialIndex(self.element)
         for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
