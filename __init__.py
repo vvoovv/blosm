@@ -137,8 +137,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         # <self.logger> may be set in <setup(..)>
         self.logger = None
-        # defines for which layerId's material is set per item instead of per layer
-        self.materialPerItem = set()
         
         scene = context.scene
         kwargs = {}

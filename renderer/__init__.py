@@ -141,16 +141,12 @@ class Renderer:
     
     def getMaterialIndex(self, element):
         op = self.op
-        layerId = op.layerIds[self.layerIndex]
-        if layerId in op.materialPerItem:
-            pass
-        else:
-            # the material name is simply <layerId>
-            name = layerId
-            materialIndex = self.getMaterialIndexByName(name)
-            if not materialIndex:
-                # create Blender material
-                materialIndex = self.createDiffuseMaterial(name, op.colors[name])
+        # the material name is simply <layerId>
+        name = op.layerIds[self.layerIndex]
+        materialIndex = self.getMaterialIndexByName(name)
+        if not materialIndex:
+            # create Blender material
+            materialIndex = self.createDiffuseMaterial(name, op.colors[name])
         return materialIndex
     
     def getMaterialIndexByName(self, name):
