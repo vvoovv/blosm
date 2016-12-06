@@ -12,3 +12,13 @@ def createEmptyObject(name, location, hide=False, **kwargs):
             setattr(obj, key, kwargs[key])
     bpy.context.scene.objects.link(obj)
     return obj
+
+
+def loadMeshFromFile(filepath, name):
+    """
+    Loads a Blender mesh with the given <name> from the .blend file with the given <filepath>
+    """
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
+        data_to.meshes = [name]
+    return data_to.meshes[0]

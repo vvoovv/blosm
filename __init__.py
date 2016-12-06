@@ -137,6 +137,10 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         # <self.logger> may be set in <setup(..)>
         self.logger = None
+        # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
+        self.meshes = {}
+        # path to the directory for assets
+        self.assetPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
         
         scene = context.scene
         kwargs = {}

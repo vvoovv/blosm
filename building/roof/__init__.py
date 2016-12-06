@@ -30,6 +30,8 @@ directions = {
 
 class Roof:
     
+    assetPath = "roofs.blend"
+    
     directions = {
         'N': Vector((0., 1., 0.)),
         'NNE': Vector((0.38268, 0.92388, 0.)),
@@ -72,18 +74,27 @@ class Roof:
     
     def getHeight(self):
         tags = self.element.tags
-        return parseNumber(tags["roof:height"], self.defaultHeight)\
+        h = parseNumber(tags["roof:height"], self.defaultHeight)\
             if "roof:height" in tags\
             else self.defaultHeight
+        self.h = h
+        return h
     
     def render(self, r):
+        wallIndices = self.wallIndices
+        roofIndices = self.roofIndices
+        if not (roofIndices or wallIndices):
+            return
+        
         bm = r.bm
         verts = [bm.verts.new(v) for v in self.verts]
         
-        materialIndex = r.getRoofMaterialIndex(self.element)
-        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
-            f.material_index = materialIndex
+        if wallIndices:
+            materialIndex = r.getWallMaterialIndex(self.element)
+            for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
+                f.material_index = materialIndex
         
-        materialIndex = r.getWallMaterialIndex(self.element)
-        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
-            f.material_index = materialIndex
+        if roofIndices:
+            materialIndex = r.getRoofMaterialIndex(self.element)
+            for f in (bm.faces.new(verts[i] for i in indices) for indices in roofIndices):
+                f.material_index = materialIndex

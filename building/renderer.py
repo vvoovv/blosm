@@ -3,6 +3,7 @@ from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
+from .roof.dome import RoofDome
 from util import zero
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
@@ -24,7 +25,8 @@ class BuildingRenderer(Renderer3d):
         self.roofs = {
             'flat': self.flatRoof,
             'pyramidal': RoofPyramidal(),
-            'skillion': RoofSkillion()
+            'skillion': RoofSkillion(),
+            'dome': RoofDome()
         }
     
     def render(self, building, osm):

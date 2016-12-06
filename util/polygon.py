@@ -1,5 +1,5 @@
 from mathutils import Vector
-from util import zAxis, zero, zeroVector
+from util import zAxis, zeroVector
 
 
 class Polygon:

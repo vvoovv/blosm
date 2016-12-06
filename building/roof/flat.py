@@ -12,7 +12,7 @@ class RoofFlat(Roof):
         polygon = self.polygon
         n = len(self.verts)
         
-        self.polygon.sidesPrism(bldgMaxHeight, self.wallIndices)
+        polygon.sidesPrism(bldgMaxHeight, self.wallIndices)
         self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
 
