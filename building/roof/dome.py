@@ -27,6 +27,11 @@ class RoofDome(Roof):
     def render(self, r):
         polygon = self.polygon
         op = r.op
+        
+        # create walls
+        super().render(r)
+        
+        # now deal with the roof
         mesh = loadMeshFromFile(os.path.join(op.assetPath, self.assetPath), self.mesh)
         o = bpy.data.objects.new(self.mesh, mesh)
         o.location = self.location
@@ -36,6 +41,5 @@ class RoofDome(Roof):
             self.h
         )
         bpy.context.scene.objects.link(o)
-        o.parent = r.parent
-        
-        super().render(r)
+        o.parent = r.obj
+        o.data.materials.append(r.getMaterial(self.element))

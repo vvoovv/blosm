@@ -1,6 +1,6 @@
 import os, bpy, bmesh
 from util import zeroVector
-from util.blender import createEmptyObject
+from util.blender import createEmptyObject, createDiffuseMaterial
 from util.osm import assignTags
 
 
@@ -139,14 +139,32 @@ class Renderer:
     def getLayerName(self, layerIndex, op):
         return self.name + "_" + op.layerIds[layerIndex]
     
-    def getMaterialIndex(self, element):
+    def getMaterial(self, element):
+        op = self.op
+        # the material name is simply <layerId>
+        name = op.layerIds[self.layerIndex]
+        material = bpy.data.materials.get(name)
+        
+        if not material:
+            # create Blender material
+            material = createDiffuseMaterial(name, op.colors[name])
+        return material
+    
+    def getElementMaterialIndex(self, element):
         op = self.op
         # the material name is simply <layerId>
         name = op.layerIds[self.layerIndex]
         materialIndex = self.getMaterialIndexByName(name)
         if not materialIndex:
             # create Blender material
-            materialIndex = self.createDiffuseMaterial(name, op.colors[name])
+            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, op.colors[name]) )
+        return materialIndex
+    
+    def getMaterialIndex(self, material):
+        obj = self.obj
+        materialIndex = len(obj.data.materials)
+        obj.data.materials.append(material)
+        self.materialIndices[material.name] = materialIndex
         return materialIndex
     
     def getMaterialIndexByName(self, name):
@@ -158,15 +176,6 @@ class Renderer:
             self.materialIndices[name] = materialIndex
         else:
             materialIndex = None
-        return materialIndex
-    
-    def createDiffuseMaterial(self, name, color):
-        obj = self.obj
-        material = bpy.data.materials.new(name)
-        material.diffuse_color = color
-        materialIndex = len(obj.data.materials)
-        obj.data.materials.append(material)
-        self.materialIndices[name] = materialIndex
         return materialIndex
 
 
@@ -208,7 +217,7 @@ class Renderer2d(Renderer):
         if f.normal.z < 0.:
             f.normal_flip()
         # assign material to BMFace <f>
-        materialIndex = self.getMaterialIndex(element)
+        materialIndex = self.getElementMaterialIndex(element)
         f.material_index = materialIndex
         # Store <materialIndex> since it's returned
         # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
@@ -239,7 +248,7 @@ class Renderer2d(Renderer):
         # finally a magic function that does everything
         geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
         # check the normal direction of the created faces and assign material to all BMFace
-        materialIndex = self.getMaterialIndex(element)
+        materialIndex = self.getElementMaterialIndex(element)
         for f in geom["geom"]:
             if isinstance(f, bmesh.types.BMFace):
                 if f.normal.z < 0.:

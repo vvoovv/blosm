@@ -1,3 +1,4 @@
+import bpy
 from renderer import Renderer, Renderer3d
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
@@ -5,6 +6,7 @@ from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
 from .roof.dome import RoofDome
 from util import zero
+from util.blender import createDiffuseMaterial
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -76,6 +78,15 @@ class BuildingRenderer(Renderer3d):
             element: OSM element (building=* or building:part=*)
         """
         return self.getMaterialIndexByPart(element, roofIndex)
+
+    def getWallMaterialIndex(self, element):
+        """
+        Returns the material index for the building walls
+        
+        Args:
+            element: OSM element (building=* or building:part=*)
+        """
+        return self.getMaterialIndexByPart(element, wallIndex)
     
     def getMaterialIndexByPart(self, element, partIndex):
         """
@@ -100,7 +111,7 @@ class BuildingRenderer(Renderer3d):
                 materialIndex = self.getMaterialIndexByName(name)
                 if materialIndex is None:
                     # the related Blender material hasn't been created yet, so create it
-                    materialIndex = self.createDiffuseMaterial(name, defaultColors[partIndex])
+                    materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, defaultColors[partIndex]) )
                 if self.parts:
                     # If there are parts, store <materialIndex>,
                     # since it's set for a building part, if it doesn't have an OSM tag for color
@@ -124,19 +135,41 @@ class BuildingRenderer(Renderer3d):
             if materialIndex is None:
                 # The related Blender material hasn't been already created,
                 # so create it
-                materialIndex = self.createDiffuseMaterial(name, Manager.getColor(name))
+                materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, Manager.getColor(name)) )
             # If <element is self.outline> and there are parts, store <materialIndex>,
             # since it's set for a building part, if it doesn't have an OSM tag for color
             if element is self.outline and self.parts:
                 self.defaultMaterialIndices[partIndex] = materialIndex
         return materialIndex
     
-    def getWallMaterialIndex(self, element):
+    def getRoofMaterial(self, element):
         """
-        Returns the material index for the building walls
+        Returns a Blender material for the building roof
         
         Args:
             element: OSM element (building=* or building:part=*)
         """
-        return self.getMaterialIndexByPart(element, wallIndex)
+        return self.getMaterialByPart(element, roofIndex)
+
+    def getMaterialByPart(self, element, partIndex):
+        """
+        Returns a Blender material either for building walls or for buildings roofs
         
+        Args:
+            element: OSM element (building=* or building:part=*)
+            partIndex (int): Equal to either <roofIndex> or <wallIndex>
+        """
+        # material name is just the related color (either a hex or a CSS color)
+        name = Manager.normalizeColor(element.tags.get(tags[partIndex]))
+        if name is None:
+            # <name> is invalid as a color name
+            # take the name for the related default color
+            name = defaultColorNames[partIndex]
+
+        # check if the related Blender material has been already created
+        material = bpy.data.materials.get(name)
+        if material is None:
+            # The related Blender material hasn't been already created,
+            # so create it
+            material = createDiffuseMaterial(name, Manager.getColor(name))
+        return material

@@ -14,6 +14,12 @@ def createEmptyObject(name, location, hide=False, **kwargs):
     return obj
 
 
+def createDiffuseMaterial(name, color):
+    material = bpy.data.materials.new(name)
+    material.diffuse_color = color
+    return material
+
+
 def loadMeshFromFile(filepath, name):
     """
     Loads a Blender mesh with the given <name> from the .blend file with the given <filepath>
