@@ -5,6 +5,7 @@ from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
 from .roof.dome import RoofDome
+from .roof.onion import RoofOnion
 from util import zero
 from util.blender import createDiffuseMaterial
 
@@ -28,7 +29,8 @@ class BuildingRenderer(Renderer3d):
             'flat': self.flatRoof,
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
-            'dome': RoofDome()
+            'dome': RoofDome(),
+            'onion': RoofOnion()
         }
     
     def render(self, building, osm):
@@ -41,6 +43,7 @@ class BuildingRenderer(Renderer3d):
         if parts:
             # reset material indices derived from <outline>
             self.defaultMaterialIndices = [None, None]
+            self.defaultMaterials = [None]
         if not parts or outline.tags.get("building:part") == "yes":
             # render building outline
             self.renderElement(outline, building, osm)
@@ -149,27 +152,50 @@ class BuildingRenderer(Renderer3d):
         Args:
             element: OSM element (building=* or building:part=*)
         """
-        return self.getMaterialByPart(element, roofIndex)
-
-    def getMaterialByPart(self, element, partIndex):
-        """
-        Returns a Blender material either for building walls or for buildings roofs
-        
-        Args:
-            element: OSM element (building=* or building:part=*)
-            partIndex (int): Equal to either <roofIndex> or <wallIndex>
-        """
         # material name is just the related color (either a hex or a CSS color)
-        name = Manager.normalizeColor(element.tags.get(tags[partIndex]))
+        name = Manager.normalizeColor(element.tags.get(tags[roofIndex]))
+        
         if name is None:
             # <name> is invalid as a color name
-            # take the name for the related default color
-            name = defaultColorNames[partIndex]
-
-        # check if the related Blender material has been already created
-        material = bpy.data.materials.get(name)
-        if material is None:
-            # The related Blender material hasn't been already created,
-            # so create it
-            material = createDiffuseMaterial(name, Manager.getColor(name))
+            if self.outline is element:
+                # Building oultine is rendererd if there are no parts or
+                # if the outline has <building:part=yes>
+                
+                # take the name for the related default color
+                name = defaultColorNames[roofIndex]
+                # check if Blender material has been already created
+                material = bpy.data.materials.get(name)
+                if material is None:
+                    # the related Blender material hasn't been created yet, so create it
+                    material = createDiffuseMaterial(name, defaultColors[roofIndex])
+                if self.parts:
+                    # If there are parts, store <materialIndex>,
+                    # since it's set for a building part, if it doesn't have an OSM tag for color
+                    self.defaultMaterials[roofIndex] = material
+            else:
+                # this a building part (building:part=yes), not the building outline
+                
+                # check if the material index for the default color has been set before
+                if self.defaultMaterials[roofIndex] is None:
+                    # The material index for the default color hasn't been set before
+                    # Get the material index for the default color,
+                    # i.e. the material index for <self.outline>
+                    material = self.getRoofMaterial(self.outline)\
+                        if self.defaultMaterialIndices[roofIndex] is None else\
+                        self.obj.data.materials[roofIndex]
+                else:
+                    # The material index for the default color has been set before, so use it,
+                    # i.e. use the color for <self.outline>
+                    material = self.defaultMaterials[roofIndex]
+        else:
+            # check if the related Blender material has been already created
+            material = bpy.data.materials.get(name)
+            if material is None:
+                # The related Blender material hasn't been already created,
+                # so create it
+                material = createDiffuseMaterial(name, Manager.getColor(name))
+            # If <element is self.outline> and there are parts, store <materialIndex>,
+            # since it's set for a building part, if it doesn't have an OSM tag for color
+            if element is self.outline and self.parts:
+                self.defaultMaterials[roofIndex] = material
         return material
