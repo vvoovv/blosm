@@ -15,7 +15,7 @@ roofIndex = 0
 wallIndex = 1
 tags = ("roof:colour", "building:colour")
 defaultColorNames = ("roof", "wall")
-defaultColors = ( (0.309, 0.013, 0.012), (1., 0.5, 0.2) )
+defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 
 class BuildingRenderer(Renderer3d):

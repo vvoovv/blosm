@@ -24,7 +24,7 @@ class RoofSkillion(Roof):
         n = polygon.n
         wallIndices = self.wallIndices
         
-        self.roofIndices.append( tuple(range(0, n)) )
+        self.roofIndices.append( tuple(indices[i] for i in range(0, n)) )
         
         if not self.projections:
             self.processDirection()
@@ -101,11 +101,11 @@ class RoofSkillion(Roof):
         if "roof:height" in tags:
             h = parseNumber(tags["roof:height"], self.defaultHeight)
         elif "roof:angle" in tags:
-            angle = parseNumber(tags["roof:height"])
+            angle = parseNumber(tags["roof:angle"])
             if angle is None:
                 h = self.defaultHeight
             else:
-                self.processDirection(element, True)
+                self.processDirection()
                 h = self.polygonLength * math.tan(math.radians(angle))
         else:
             h = self.defaultHeight

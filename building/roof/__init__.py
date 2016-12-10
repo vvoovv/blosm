@@ -73,10 +73,10 @@ class Roof:
         self.polygon.checkDirection()
     
     def getHeight(self):
-        tags = self.element.tags
-        h = parseNumber(tags["roof:height"], self.defaultHeight)\
-            if "roof:height" in tags\
-            else self.defaultHeight
+        h = parseNumber(
+            self.element.tags.get("roof:height", self.defaultHeight),
+            self.defaultHeight
+        )
         self.h = h
         return h
     

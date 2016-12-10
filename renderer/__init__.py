@@ -155,7 +155,7 @@ class Renderer:
         # the material name is simply <layerId>
         name = op.layerIds[self.layerIndex]
         materialIndex = self.getMaterialIndexByName(name)
-        if not materialIndex:
+        if materialIndex is None:
             # create Blender material
             materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, op.colors[name]) )
         return materialIndex
