@@ -4,11 +4,13 @@ from . import Roof
 from util.blender import loadMeshFromFile
 
 
-class RoofDome(Roof):
-    
-    mesh = "roof_dome"
+class RoofMesh(Roof):
     
     defaultHeight = 10.
+    
+    def __init__(self, mesh):
+        super().__init__()
+        self.mesh = mesh
     
     def init(self, element, minHeight, osm):
         super().init(element, minHeight, osm)
@@ -32,7 +34,11 @@ class RoofDome(Roof):
         super().render(r)
         
         # now deal with the roof
-        mesh = loadMeshFromFile(os.path.join(op.assetPath, self.assetPath), self.mesh)
+        mesh = bpy.data.meshes.get(self.mesh)\
+            if self.mesh in bpy.data.meshes else\
+            loadMeshFromFile(os.path.join(op.assetPath, self.assetPath), self.mesh)
+        if not mesh.materials:
+            mesh.materials.append(None)
         o = bpy.data.objects.new(self.mesh, mesh)
         o.location = self.location
         o.scale = (
@@ -42,4 +48,7 @@ class RoofDome(Roof):
         )
         bpy.context.scene.objects.link(o)
         o.parent = r.obj
-        o.data.materials.append(r.getMaterial(self.element))
+        # link Blender material to the Blender object <o> instead of <o.data>
+        slot = o.material_slots[0]
+        slot.link = 'OBJECT'
+        slot.material = r.getRoofMaterial(self.element)

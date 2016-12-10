@@ -4,8 +4,7 @@ from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
-from .roof.dome import RoofDome
-from .roof.onion import RoofOnion
+from .roof.mesh import RoofMesh
 from util import zero
 from util.blender import createDiffuseMaterial
 
@@ -29,8 +28,8 @@ class BuildingRenderer(Renderer3d):
             'flat': self.flatRoof,
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
-            'dome': RoofDome(),
-            'onion': RoofOnion()
+            'dome': RoofMesh("roof_dome"),
+            'onion': RoofMesh("roof_onion")
         }
     
     def render(self, building, osm):
