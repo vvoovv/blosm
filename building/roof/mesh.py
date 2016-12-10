@@ -1,6 +1,7 @@
 import os
 import bpy
 from . import Roof
+from renderer import Renderer
 from util.blender import loadMeshFromFile
 
 
@@ -52,3 +53,5 @@ class RoofMesh(Roof):
         slot = o.material_slots[0]
         slot.link = 'OBJECT'
         slot.material = r.getRoofMaterial(self.element)
+        
+        Renderer.addForJoin(o, r.obj)

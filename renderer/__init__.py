@@ -42,6 +42,9 @@ class Renderer:
         else:
             if op.layered:
                 self.layerParents = [None for _ in op.layerIndices]
+
+        # store here Blender object that are to be joined
+        self.toJoin = {}
     
     def preRender(self, element, layerIndex=None):
         op = self.op
@@ -106,6 +109,29 @@ class Renderer:
                 # finalize BMesh
                 self.bm.to_mesh(self.obj.data)
         bpy.context.scene.update()
+        self.join()
+    
+    @classmethod
+    def join(self):
+        join = self.toJoin
+        if join:
+            bpy.ops.object.select_all(action="DESELECT")
+            for target in join:
+                for o in join[target]:
+                    o.select = True
+                target = bpy.data.objects[target]
+                target.select = True
+                bpy.context.scene.objects.active = target
+                bpy.ops.object.join()
+                target.select = False
+        join.clear()
+    
+    @classmethod
+    def addForJoin(self, o, target):
+        join = self.toJoin
+        if not target.name in join:
+            join[target.name] = []
+        join[target.name].append(o)
     
     @classmethod
     def createBlenderObject(self, name, parent=None):
