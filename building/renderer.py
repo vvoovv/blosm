@@ -31,6 +31,8 @@ class BuildingRenderer(Renderer3d):
             'dome': RoofMesh("roof_dome"),
             'onion': RoofMesh("roof_onion")
         }
+        self.defaultMaterialIndices = [None, None]
+        self.defaultMaterials = [None, None]
     
     def render(self, building, osm):
         parts = building.parts
@@ -41,8 +43,9 @@ class BuildingRenderer(Renderer3d):
         
         if parts:
             # reset material indices derived from <outline>
-            self.defaultMaterialIndices = [None, None]
-            self.defaultMaterials = [None, None]
+            for i in range(2):
+                self.defaultMaterialIndices[i] = None
+                self.defaultMaterials[i] = None
         if not parts or outline.tags.get("building:part") == "yes":
             # render building outline
             self.renderElement(outline, building, osm)
