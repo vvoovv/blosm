@@ -42,7 +42,7 @@ class BuildingRenderer(Renderer3d):
         if parts:
             # reset material indices derived from <outline>
             self.defaultMaterialIndices = [None, None]
-            self.defaultMaterials = [None]
+            self.defaultMaterials = [None, None]
         if not parts or outline.tags.get("building:part") == "yes":
             # render building outline
             self.renderElement(outline, building, osm)
@@ -126,7 +126,11 @@ class BuildingRenderer(Renderer3d):
                     # The material index for the default color hasn't been set before
                     # Get the material index for the default color,
                     # i.e. the material index for <self.outline>
-                    materialIndex = self.getMaterialIndexByPart(self.outline, partIndex)
+                    if self.defaultMaterials[partIndex] is None:
+                        materialIndex = self.getMaterialIndexByPart(self.outline, partIndex)
+                    else:
+                        materialIndex = self.getMaterialIndex(self.defaultMaterials[partIndex])
+                        self.defaultMaterialIndices[partIndex] = materialIndex
                 else:
                     # The material index for the default color has been set before, so use it,
                     # i.e. use the color for <self.outline>
@@ -168,7 +172,7 @@ class BuildingRenderer(Renderer3d):
                     # the related Blender material hasn't been created yet, so create it
                     material = createDiffuseMaterial(name, defaultColors[roofIndex])
                 if self.parts:
-                    # If there are parts, store <materialIndex>,
+                    # If there are parts, store <material>,
                     # since it's set for a building part, if it doesn't have an OSM tag for color
                     self.defaultMaterials[roofIndex] = material
             else:
@@ -176,12 +180,12 @@ class BuildingRenderer(Renderer3d):
                 
                 # check if the material index for the default color has been set before
                 if self.defaultMaterials[roofIndex] is None:
-                    # The material index for the default color hasn't been set before
+                    # The material for the default color hasn't been set before
                     # Get the material index for the default color,
                     # i.e. the material index for <self.outline>
                     material = self.getRoofMaterial(self.outline)\
                         if self.defaultMaterialIndices[roofIndex] is None else\
-                        self.obj.data.materials[roofIndex]
+                        self.obj.data.materials[self.defaultMaterialIndices[roofIndex]]
                 else:
                     # The material index for the default color has been set before, so use it,
                     # i.e. use the color for <self.outline>
