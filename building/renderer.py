@@ -22,6 +22,7 @@ class BuildingRenderer(Renderer3d):
     def __init__(self, op, layerId):
         super().__init__(op)
         self.layerIndex = op.layerIndices.get(layerId)
+        # create instances of classes that deal with specific roof shapes
         self.flatRoof = RoofFlat()
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
@@ -32,6 +33,8 @@ class BuildingRenderer(Renderer3d):
             'onion': RoofMesh("roof_onion")
         }
         self.defaultMaterialIndices = [None, None]
+        # References to Blender materials used by roof Blender meshes
+        # loaded from a .blend library file
         self.defaultMaterials = [None, None]
     
     def render(self, building, osm):
@@ -42,7 +45,7 @@ class BuildingRenderer(Renderer3d):
         self.preRender(outline, self.layerIndex)
         
         if parts:
-            # reset material indices derived from <outline>
+            # reset material indices and Blender materials derived from <outline>
             for i in range(2):
                 self.defaultMaterialIndices[i] = None
                 self.defaultMaterials[i] = None
@@ -57,9 +60,10 @@ class BuildingRenderer(Renderer3d):
     def renderElement(self, element, building, osm):
         z1 = building.getMinHeight(element, self.op)
         z2 = building.getHeight(element, self.op)
-        # get manager-renderer for the building roof
+        # get a class instance created in the constructor to deal with a specific roof shape
         roof = self.roofs.get(element.tags.get("roof:shape"), self.flatRoof)
         if element.t is Renderer.multipolygon:
+            # flat roof is always for multipolygons
             roof = self.flatRoofMulti
         roof.init(element, z1, osm)
         
@@ -70,6 +74,7 @@ class BuildingRenderer(Renderer3d):
         if wallHeight < 0.:
             return
         elif wallHeight < zero:
+            # no building walls, just a roof
             wallHeight = None
         
         if roof.make(z2, z1 if wallHeight is None else roofMinHeight, None if wallHeight is None else z1, osm):
@@ -95,7 +100,7 @@ class BuildingRenderer(Renderer3d):
     
     def getMaterialIndexByPart(self, element, partIndex):
         """
-        Returns the material index either for building walls or for buildings roofs
+        Returns the material index either for building walls or for buildings roof
         
         Args:
             element: OSM element (building=* or building:part=*)
@@ -126,13 +131,19 @@ class BuildingRenderer(Renderer3d):
                 
                 # check if the material index for the default color has been set before
                 if self.defaultMaterialIndices[partIndex] is None:
-                    # The material index for the default color hasn't been set before
-                    # Get the material index for the default color,
-                    # i.e. the material index for <self.outline>
+                    # The material index hasn't been set before
                     if self.defaultMaterials[partIndex] is None:
+                        # A Blender material also hasn't been set before
+                        # Get the material index for the default color,
+                        # i.e. the material index for <self.outline>
                         materialIndex = self.getMaterialIndexByPart(self.outline, partIndex)
                     else:
+                        # A Blender material also has been set before
+                        # Append the Blender material to the related Blender object and
+                        # get its material index
                         materialIndex = self.getMaterialIndex(self.defaultMaterials[partIndex])
+                        # Store the material index, so we won't need to check
+                        # defaultMaterials for the next building part
                         self.defaultMaterialIndices[partIndex] = materialIndex
                 else:
                     # The material index for the default color has been set before, so use it,
@@ -169,39 +180,43 @@ class BuildingRenderer(Renderer3d):
                 
                 # take the name for the related default color
                 name = defaultColorNames[roofIndex]
-                # check if Blender material has been already created
+                # check if Blender material has been created before
                 material = bpy.data.materials.get(name)
                 if material is None:
                     # the related Blender material hasn't been created yet, so create it
                     material = createDiffuseMaterial(name, defaultColors[roofIndex])
                 if self.parts:
                     # If there are parts, store <material>,
-                    # since it's set for a building part, if it doesn't have an OSM tag for color
+                    # since it will set for the roof of another building part,
+                    # if the building part doesn't have an OSM tag for the roof color
                     self.defaultMaterials[roofIndex] = material
             else:
                 # this a building part (building:part=yes), not the building outline
                 
-                # check if the material index for the default color has been set before
+                # check if the Blender material for the default color has been set before
                 if self.defaultMaterials[roofIndex] is None:
-                    # The material for the default color hasn't been set before
-                    # Get the material index for the default color,
-                    # i.e. the material index for <self.outline>
+                    # Check if the material index for the default color has been set before
+                    # Use the related Blender material for that index,
+                    # if it has been set before
+                    # Otherwise get the roof Blender material for the default color,
+                    # i.e. the roof material for <self.outline>
                     material = self.getRoofMaterial(self.outline)\
                         if self.defaultMaterialIndices[roofIndex] is None else\
                         self.obj.data.materials[self.defaultMaterialIndices[roofIndex]]
                 else:
-                    # The material index for the default color has been set before, so use it,
-                    # i.e. use the color for <self.outline>
+                    # The Blender material for the default color has been set before, so use it,
+                    # i.e. use the roof color for <self.outline>
                     material = self.defaultMaterials[roofIndex]
         else:
-            # check if the related Blender material has been already created
+            # check if the related Blender material has been created before
             material = bpy.data.materials.get(name)
             if material is None:
-                # The related Blender material hasn't been already created,
+                # The related Blender material hasn't been created before,
                 # so create it
                 material = createDiffuseMaterial(name, Manager.getColor(name))
-            # If <element is self.outline> and there are parts, store <materialIndex>,
-            # since it's set for a building part, if it doesn't have an OSM tag for color
+            # If <element is self.outline> and there are parts, store <material>,
+            # since it will set for the roof of another building part,
+            # if the building part doesn't have an OSM tag for the roof color
             if element is self.outline and self.parts:
                 self.defaultMaterials[roofIndex] = material
         return material

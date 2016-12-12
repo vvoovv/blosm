@@ -52,6 +52,7 @@ class Roof:
     }
     
     def __init__(self):
+        # Python list with vertices is shared accross all operations
         self.verts = []
         self.roofIndices = []
         self.wallIndices = []
@@ -65,6 +66,7 @@ class Roof:
         
         verts = self.verts
         self.verts.extend( Vector((coord[0], coord[1], minHeight)) for coord in element.getData(osm) )
+        # create a polygon located at <minHeight>
         self.polygon = Polygon(
             tuple(range(len(verts))),
             verts
@@ -87,14 +89,17 @@ class Roof:
             return
         
         bm = r.bm
+        # create BMesh vertices
         verts = [bm.verts.new(v) for v in self.verts]
         
         if wallIndices:
             materialIndex = r.getWallMaterialIndex(self.element)
+            # create BMesh faces for the building walls
             for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
                 f.material_index = materialIndex
         
         if roofIndices:
             materialIndex = r.getRoofMaterialIndex(self.element)
+            # create BMesh faces for the building roof
             for f in (bm.faces.new(verts[i] for i in indices) for indices in roofIndices):
                 f.material_index = materialIndex

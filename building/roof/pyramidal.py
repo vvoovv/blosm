@@ -3,6 +3,9 @@ from . import Roof
 
 
 class RoofPyramidal(Roof):
+    """
+    A Blender object to deal with buildings or building part with a pyramidal roof
+    """
     
     defaultHeight = 0.5
     
@@ -14,13 +17,17 @@ class RoofPyramidal(Roof):
         
         if not bldgMinHeight is None:
             indexOffset = len(verts)
+            # Create sides for the prism with the height <roofMinHeight - bldgMinHeight>,
+            # that is based on the <polygon>
             polygon.sidesPrism(roofMinHeight, self.wallIndices)
         
+        # index for the top vertex
         topIndex = len(verts)
         verts.append(
             polygon.center + (bldgMaxHeight - (roofMinHeight if bldgMinHeight is None else bldgMinHeight)) * zAxis
         )
         
+        # indices for triangles that form the pyramidal roof
         if bldgMinHeight is None:
             roofIndices.extend(
                 (indices[i-1], indices[i], topIndex) for i in range(polygon.n)

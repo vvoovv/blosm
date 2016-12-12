@@ -113,6 +113,9 @@ class Renderer:
     
     @classmethod
     def join(self):
+        """
+        Join Blender object collect during rendering
+        """
         join = self.toJoin
         if join:
             bpy.ops.object.select_all(action="DESELECT")
@@ -128,7 +131,11 @@ class Renderer:
     
     @classmethod
     def addForJoin(self, o, target):
+        """
+        Add a Blender object o to be joined with the Blender object <target>
+        """
         join = self.toJoin
+        # <name> of the Blender object <target> is used as a key for Python dict <join>
         if not target.name in join:
             join[target.name] = []
         join[target.name].append(o)

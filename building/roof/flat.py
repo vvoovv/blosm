@@ -5,6 +5,10 @@ from . import Roof
 
 
 class RoofFlat(Roof):
+    """
+    A class to deal with building or building parts with the flat roof
+    for a simple polygon (not a multipolygon)
+    """
     
     defaultHeight = 0.01
     
@@ -12,12 +16,19 @@ class RoofFlat(Roof):
         polygon = self.polygon
         n = len(self.verts)
         
+        # Create sides for the prism with the height <bldgMaxHeight - bldgMinHeight>,
+        # that is based on the <polygon>
         polygon.sidesPrism(bldgMaxHeight, self.wallIndices)
+        # vertices of the top part of the prism serve for the flat roof
         self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
 
 
 class RoofFlatMulti(RoofFlat):
+    """
+    A class to deal with building or building parts with the flat roof
+    for a multipolygon
+    """
     
     def __init__(self):
         self.verts = []
@@ -36,6 +47,7 @@ class RoofFlatMulti(RoofFlat):
             bldgMinHeight = roofMinHeight
         element = self.element
         
+        # create vertices for all linestrings of the multipolygon
         verts = self.verts
         polygons = self.polygons
         indexOffset = 0
@@ -59,7 +71,9 @@ class RoofFlatMulti(RoofFlat):
         element = self.element
         polygons = self.polygons
         bm = r.bm
+        # create BMesh vertices
         verts = tuple( bm.verts.new(v) for v in self.verts )
+        # create BMesh edges out of <verts>
         edges = tuple(
             bm.edges.new( (verts[polygon.indices[i-1]], verts[polygon.indices[i]]) )\
             for polygon in polygons\
@@ -76,6 +90,7 @@ class RoofFlatMulti(RoofFlat):
                     f.normal_flip()
                 f.material_index = materialIndex
         
+        # create BMesh faces for building sides
         indexOffset1 = 0
         indexOffset2 = len(verts)//2
         wallIndices = self.wallIndices
@@ -92,6 +107,7 @@ class RoofFlatMulti(RoofFlat):
                 continue
             # a BMLoop for <edge>
             l = edge.link_loops[0]
+            # check if the direction of <polygon> needs to be reverted
             keepDirection = l.link_loop_next.vert == verts[indexOffset1]
             
             wallIndices.extend(
@@ -115,5 +131,6 @@ class RoofFlatMulti(RoofFlat):
             indexOffset2 += n
         
         materialIndex = r.getWallMaterialIndex(element)
+        # actual code to create BMesh faces for the building walls out of <verts> and <wallIndices>
         for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
             f.material_index = materialIndex

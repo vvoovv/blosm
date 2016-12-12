@@ -13,12 +13,28 @@ class Polygon:
         self.normal = zAxis
     
     def prev(self, index):
+        """
+        Returns the previous index for <index>
+        
+        Args:
+            index (int): A number between 0 and <self.n - 1>
+        """
         return index - 1 if index else self.n - 1
     
     def next(self, index):
+        """
+        Returns the next index for <index>
+        
+        Args:
+            index (int): A number between 0 and <self.n - 1>
+        """
         return (index+1) % self.n
     
     def checkDirection(self):
+        """
+        Check direction of the polygon vertices and
+        force their direction to be counterclockwise
+        """
         verts = self.allVerts
         indices = self.indices
         # find indices of vertices with the minimum y-coordinate (the lowest vertices)
@@ -33,18 +49,25 @@ class Polygon:
         # the edge leaving the vertex <verts[i]>
         v2 = verts[ indices[(_i+1) % self.n] ] - verts[i]
         # Check if the vector <v2> is to the left from the vector <v1>;
-        # in that case the direction of vertices is counterclockwise, it's clockwise in the opposite case.
+        # in that case the direction of vertices is counterclockwise,
+        # it's clockwise in the opposite case.
         if v1.x * v2.y - v1.y * v2.x < 0.:
             # clockwise direction, reverse <indices> in place
             self.indices = tuple(reversed(indices))
     
     @property
     def verts(self):
+        """
+        A Python generator for the polygon vertices
+        """
         for i in self.indices:
             yield self.allVerts[i]
     
     @property
     def edges(self):
+        """
+        A Python generator for the polygon edges represented as vectors
+        """
         verts = self.allVerts
         indices = self.indices
         # previous vertex
@@ -56,12 +79,27 @@ class Polygon:
     
     @property
     def center(self):
+        """
+        Returns geometric center of the polygon
+        """
         return sum(tuple(self.verts), zeroVector())/self.n
     
     def sidesPrism(self, z, indices):
+        """
+        Create sides for the prism with the height <z - <polygon height>>,
+        that is based on the polygon.
+        
+        Vertices for the top part of the prism are appended to <self.allVerts>.
+        Vertex indices for the prism sides are appended to <indices>
+        
+        Args:
+            z (float): Vertical location of top part of the prism
+            indices (list): A python list to append vertex indices for the prism sides
+        """
         verts = self.allVerts
         _indices = self.indices
         indexOffset = len(verts)
+        # verts
         verts.extend(Vector((v.x, v.y, z)) for v in self.verts)
         # the starting side
         indices.append((_indices[-1], _indices[0], indexOffset, indexOffset + self.n - 1))
