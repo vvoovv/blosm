@@ -59,7 +59,7 @@ class Manager:
     
     @staticmethod
     def getColorFromHex(color):
-        return tuple( map(lambda component: component/255, bytes.fromhex(color)) )
+        return tuple( c/255. for c in bytes.fromhex(color) )
 
 
 class Linestring(Manager):
