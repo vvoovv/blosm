@@ -8,7 +8,7 @@ The addon imports a file in the OpenStreetMap format (.osm).
 
 The price of the addon is just [$2.85](https://gumroad.com/l/blender-osm)
 
-By [buying](https://gumroad.com/l/blender-osm) the addon you support the addon development.
+By [buying](https://gumroad.com/l/blender-osm) the addon you support the its development.
 
 The following items can be imported by the addon:
 * Buildings. Building height, number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed.
