@@ -6,7 +6,7 @@
 
 The addon imports a file in the OpenStreetMap format (.osm).
 
-[Get the addon for just $2.85.](https://gumroad.com/l/blender-osm)
+[Get the addon for just $2.85!](https://gumroad.com/l/blender-osm)
 
 By [buying](https://gumroad.com/l/blender-osm) the addon you support the addon development.
 
