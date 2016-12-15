@@ -21,7 +21,7 @@ Polygons with holes are supported!
 ## Installation
 The addon requires at least Blender 2.76, but it makes sense to use the latest version of Blender.
 
-[Buy](https://gumroad.com/l/blender-osm) the addon for just 2.85$ or download a free version from [here](https://github.com/vvoovv/blender-osm/archive/master.zip). In either case you will get a zip archive. Do not unpack it! Install it via the usual Blender way:
+[Buy](https://gumroad.com/l/blender-osm) the addon for just $2.85. You will get a zip archive. Do not unpack it! Install it via the usual Blender way:
 * Delete the previous version of the addon if you have one:
     * _File → User Preferences... → Addons_
     * Type _osm_ in the search box in the top left corner of the _Addons_ tab to find the addon
