@@ -6,15 +6,9 @@
 
 The addon imports a file in the OpenStreetMap format (.osm).
 
-There are free and [paid](https://gumroad.com/l/blender-osm) (2.85$) versions of the addon.
+The price of the addon is just $[2.85](https://gumroad.com/l/blender-osm)
 
-[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/paid_vs_free.png)](https://gumroad.com/l/blender-osm)
-
-The free version is 2D only. Also a popup window is shown after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
-
-The [paid](https://gumroad.com/l/blender-osm) version supports 3D buildings and doesn't show you an annoying popup window.
-
-By [buying](https://gumroad.com/l/blender-osm) the paid version you support the addon development.
+By [buying](https://gumroad.com/l/blender-osm) the addon you support the addon development.
 
 The following items can be imported by the addon:
 * Buildings. Building height, number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed.
