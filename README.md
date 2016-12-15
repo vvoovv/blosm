@@ -35,14 +35,13 @@ The addon requires at least Blender 2.76, but it makes sense to use the latest v
 * _File → Import → OpenStreetMap (.osm)_
 * Find an OpenStreetMap file in your file system
 * Press _Import OpenStreetMap_ button
-* If you have the free version, a popup window shows up after the import finished. A mouse click closes the popup window and brings you to the [webpage](https://gumroad.com/l/blender-osm) to buy the paid version for just 2.85$.
-* The [paid](https://gumroad.com/l/blender-osm) version doesn't show you the popup and brings you directly to the imported scene.
+* Enjoy the imported scene!
 
 For detailed instructions, limitations, tips and tricks see the [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation).
 
 
 ## Links
-* [Paid version](https://gumroad.com/l/blender-osm)
+* [Addon](https://gumroad.com/l/blender-osm)
 * [Documentation](https://github.com/vvoovv/blender-osm/wiki/Documentation)
 * twitter: [@prokitektura](https://twitter.com/prokitektura)
 * blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
