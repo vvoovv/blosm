@@ -1,3 +1,5 @@
+import math
+from . import Roof
 
 
 gabledProfile = (
@@ -40,3 +42,37 @@ saltboxProfile = (
     (0.65, 1.),
     (1., 0.)
 )
+
+
+class RoofProfile(Roof):
+    
+    defaultHeight = 10.
+    
+    def __init__(self, profile, numSamples):
+        super().__init__()
+        self.profile = profile
+        self.numSamples = numSamples
+        
+        # quantize <profile> with <numSamples>
+        _profile = tuple(math.ceil(p[0]*numSamples) for p in profile)
+        profileQ = []
+        index = 0
+        for i in range(numSamples):
+            if i >= _profile[index+1]:
+                index += 1  
+            profileQ.append(index)
+        profileQ.append(len(_profile)-1)
+        self.profileQ = profileQ
+    
+    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+        verts = self.verts
+        polygon = self.polygon
+        indices = polygon.indices
+        
+        _v = self.sampleProfile(verts[indices[0]])
+        for i in range(1, polygon.n):
+            v = self.sampleProfile(verts[indices[i]])
+            _v = v
+    
+    def sampleProfile(self):
+        pass

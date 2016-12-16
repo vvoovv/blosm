@@ -11,7 +11,7 @@ class RoofMesh(Roof):
     with roof meshes loaded from a .blend library file
     """
     
-    defaultHeight = 10.
+    defaultHeight = 5.
     
     def __init__(self, mesh):
         """

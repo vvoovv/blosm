@@ -5,6 +5,7 @@ from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
 from .roof.mesh import RoofMesh
+from .roof.profile import *
 from util import zero
 from util.blender import createDiffuseMaterial
 
@@ -30,7 +31,8 @@ class BuildingRenderer(Renderer3d):
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
             'dome': RoofMesh("roof_dome"),
-            'onion': RoofMesh("roof_onion")
+            'onion': RoofMesh("roof_onion"),
+            'gabled': RoofProfile(gabledProfile, 10)
         }
         self.defaultMaterialIndices = [None, None]
         # References to Blender materials used by roof Blender meshes

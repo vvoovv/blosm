@@ -42,7 +42,7 @@ class RoofSkillion(Roof):
         maxProj = projections[minZindex]
         tan = self.h/self.polygonLength
         # update <polygon.verts> with vertices moved along z-axis
-        for i in range(polygon.n):
+        for i in range(n):
             verts[indices[i]].z = roofMinHeight + (maxProj - projections[i]) * tan
         # <polygon.normal> won't be used, so it won't be updated
         
@@ -126,10 +126,9 @@ class RoofSkillion(Roof):
     def processDirection(self):
         polygon = self.polygon
         # <d> stands for direction
-        d = self.element.tags.get(
-            "roof:slope:direction",
-            self.element.tags.get("roof:direction")
-        )
+        d = self.element.tags.get("roof:direction")
+        if not d:
+            d = self.element.tags.get("roof:slope:direction")
         # getting a direction vector with the unit length
         if d is None:
             d = self.getDefaultDirection()
