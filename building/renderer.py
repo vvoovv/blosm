@@ -28,11 +28,11 @@ class BuildingRenderer(Renderer3d):
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
             'flat': self.flatRoof,
+            'gabled': RoofProfile(gabled),
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
             'dome': RoofMesh("roof_dome"),
-            'onion': RoofMesh("roof_onion"),
-            'gabled': RoofProfile(gabledProfile, 10)
+            'onion': RoofMesh("roof_onion")
         }
         self.defaultMaterialIndices = [None, None]
         # References to Blender materials used by roof Blender meshes

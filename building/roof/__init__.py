@@ -1,3 +1,4 @@
+import math
 from mathutils import Vector
 from util.osm import parseNumber
 from util.polygon import Polygon
@@ -90,7 +91,7 @@ class Roof:
         
         bm = r.bm
         # create BMesh vertices
-        verts = [bm.verts.new(v) for v in self.verts]
+        verts = tuple(bm.verts.new(v) for v in self.verts)
         
         if wallIndices:
             materialIndex = r.getWallMaterialIndex(self.element)
@@ -103,3 +104,39 @@ class Roof:
             # create BMesh faces for the building roof
             for f in (bm.faces.new(verts[i] for i in indices) for indices in roofIndices):
                 f.material_index = materialIndex
+    
+    def processDirection(self):
+        polygon = self.polygon
+        # <d> stands for direction
+        d = self.element.tags.get("roof:direction")
+        if not d:
+            d = self.element.tags.get("roof:slope:direction")
+        # getting a direction vector with the unit length
+        if d is None:
+            d = self.getDefaultDirection()
+        elif d in Roof.directions:
+            d = Roof.directions[d]
+        else:
+            # trying to get a direction angle in degrees
+            d = parseNumber(d)
+            if d is None:
+                d = self.getDefaultDirection()
+            else:
+                d = math.radians(d)
+                d = Vector((math.sin(d), math.cos(d), 0.))
+        
+        # For each vertex from <polygon.verts> calculate projection of the vertex
+        # on the vector <d> that defines the roof direction
+        projections = [d.dot(v) for v in polygon.verts]
+        self.projections = projections
+        minProjIndex = min(range(polygon.n), key = lambda i: projections[i])
+        self.minProjIndex = minProjIndex
+        maxProjIndex = max(range(polygon.n), key = lambda i: projections[i])
+        self.maxProjIndex = maxProjIndex
+        # <polygon> width along the vector <d>
+        self.polygonWidth = projections[maxProjIndex] - projections[minProjIndex]
+    
+    def getDefaultDirection(self):
+        polygon = self.polygon
+        # a perpendicular to the longest edge of the polygon
+        return max(self.polygon.edges).cross(polygon.normal).normalized()

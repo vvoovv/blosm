@@ -52,7 +52,7 @@ class Polygon:
         # in that case the direction of vertices is counterclockwise,
         # it's clockwise in the opposite case.
         if v1.x * v2.y - v1.y * v2.x < 0.:
-            # clockwise direction, reverse <indices> in place
+            # clockwise direction, reverse <indices>
             self.indices = tuple(reversed(indices))
     
     @property
