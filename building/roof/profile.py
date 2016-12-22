@@ -1,6 +1,7 @@
 import math
 from mathutils import Vector
 from . import Roof
+from util import zero
 from util.osm import parseNumber
 
 
@@ -100,6 +101,7 @@ class RoofProfile(Roof):
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         verts = self.verts
+        p = self.profile
         polygon = self.polygon
         indices = polygon.indices
         
@@ -107,25 +109,60 @@ class RoofProfile(Roof):
             self.processDirection()
         
         _v = verts[indices[0]]
-        for i in range(polygon.n):
+        _pIndex, onProfile, _pCoord, vertIndex = self.sampleProfile(0, roofMinHeight)
+        for i in range(1, polygon.n):
             v = verts[indices[i]]
-            self.sampleProfile(i, roofMinHeight)
+            pIndex, onProfile, pCoord, vertIndex = self.sampleProfile(i, roofMinHeight)
+            # Create vertices for profile reference points located
+            # with the indices between _pIndex and pIndex
+            if pIndex != _pIndex:
+                for _i in (range(_pIndex+1, pIndex if onProfile else pIndex+1)
+                    if pIndex > _pIndex else
+                    range(_pIndex-1 if onProfile else _pIndex, pIndex, -1)):
+                    multiplier = (p[_i][0] - _pCoord) / (pCoord - _pCoord)
+                    verts.append(Vector((
+                        _v.x + multiplier * (v.x - _v.x),
+                        _v.y + multiplier * (v.x - _v.x),
+                        roofMinHeight + self.h * p[_i][1]
+                    )))
             _v = v
+            _pIndex = pIndex
+            _pCoord = pCoord
+        # TODO: the closing part
         
         return True
     
     def sampleProfile(self, index, roofMinHeight):
+        verts = self.verts
         proj = self.projections
         p = self.profile
-        x = (proj[index] - proj[self.minProjIndex]) / self.polygonWidth
-        i = self.profileQ[
-            math.floor(x * self.numSamples)
+        # Coordinate along roof profile (i.e. along the roof direction)
+        # the roof direction is calculated in self.processDirection(..);
+        # the coordinate can possess the value from 0. to 1.
+        pCoord = (proj[index] - proj[self.minProjIndex]) / self.polygonWidth
+        # index in <self.profileQ>
+        pIndex = self.profileQ[
+            math.floor(pCoord * self.numSamples)
         ]
-        h1 = p[i][1]
-        h2 = p[i+1][1]
-        h = h1 + (h2 - h1) / (p[i+1][0] - p[i][0]) * (x - p[i][0])
-        v = self.verts[self.polygon.indices[index]]
-        self.verts.append(Vector((v.x, v.y, roofMinHeight + self.h * h)))
+        coef = pCoord - p[pIndex][0]
+        # check if x is equal zero
+        if coef < zero:
+            pCoord, h = p[pIndex]
+            onProfile = True
+        elif abs(p[pIndex + 1][0] - pCoord) < zero:
+            # increase <profileIndex> by one
+            pIndex += 1
+            pCoord, h = p[pIndex]
+            onProfile = True
+        else:
+            onProfile = False
+            h1 = p[pIndex][1]
+            h2 = p[pIndex+1][1]
+            h = h1 + (h2 - h1) / (p[pIndex+1][0] - p[pIndex][0]) * coef
+        v = verts[self.polygon.indices[index]]
+        vertIndex = len(verts)
+        verts.append(Vector((v.x, v.y, roofMinHeight + self.h * h)))
+        return pIndex, onProfile, pCoord, vertIndex
         
     
     def getHeight(self):
