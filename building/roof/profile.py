@@ -164,9 +164,9 @@ class RoofProfile(Roof):
         pIndex = self.profileQ[
             math.floor(pCoord * self.numSamples)
         ]
-        coef = pCoord - p[pIndex][0]
+        distance = pCoord - p[pIndex][0]
         # check if x is equal zero
-        if coef < zero:
+        if distance < zero:
             pCoord, h = p[pIndex]
             onProfile = True
         elif abs(p[pIndex + 1][0] - pCoord) < zero:
@@ -178,7 +178,7 @@ class RoofProfile(Roof):
             onProfile = False
             h1 = p[pIndex][1]
             h2 = p[pIndex+1][1]
-            h = h1 + (h2 - h1) / (p[pIndex+1][0] - p[pIndex][0]) * coef
+            h = h1 + (h2 - h1) / (p[pIndex+1][0] - p[pIndex][0]) * distance
         v = verts[self.polygon.indices[index]]
         vertIndex = len(verts)
         verts.append(Vector((v.x, v.y, roofMinHeight + self.h * h)))
