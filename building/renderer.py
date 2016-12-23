@@ -32,7 +32,8 @@ class BuildingRenderer(Renderer3d):
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
             'dome': RoofMesh("roof_dome"),
-            'onion': RoofMesh("roof_onion")
+            'onion': RoofMesh("roof_onion"),
+            'round': RoofProfile(round)
         }
         self.defaultMaterialIndices = [None, None]
         # References to Blender materials used by roof Blender meshes

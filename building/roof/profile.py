@@ -20,21 +20,21 @@ gabled = (
 round = (
     (
         (0., 0.),
-        (0.01, 0.098),
-        (0.038, 0.191),
-        (0.084, 0.278),
-        (0.146, 0.354),
-        (0.222, 0.416),
-        (0.309, 0.462),
-        (0.402, 0.49),
-        (0.5, 0.5),
-        (0.598, 0.49),
-        (0.691, 0.462),
-        (0.778, 0.416),
-        (0.854, 0.354),
-        (0.916, 0.278),
-        (0.962, 0.191),
-        (0.99, 0.098),
+        (0.01, 0.195),
+        (0.038, 0.383),
+        (0.084, 0.556),
+        (0.146, 0.707),
+        (0.222, 0.831),
+        (0.309, 0.924),
+        (0.402, 0.981),
+        (0.5, 1.),
+        (0.598, 0.981),
+        (0.691, 0.924),
+        (0.778, 0.831),
+        (0.854, 0.707),
+        (0.916, 0.556),
+        (0.962, 0.383),
+        (0.99, 0.195),
         (1., 0.)
     ),
     {
@@ -104,31 +104,51 @@ class RoofProfile(Roof):
         p = self.profile
         polygon = self.polygon
         indices = polygon.indices
+        wallIndices = self.wallIndices
+        
+        def createProfileVertices(v1, pIndex1, onProfile1, pCoord1, v2, pIndex2, onProfile2, pCoord2):
+            """
+            Create vertices for profile reference points located
+            with the indices between _pIndex and pIndex
+            """
+            vertIndex = len(verts)
+            if pIndex2 != pIndex1:
+                for _i in (
+                    range(pIndex2-1 if onProfile2 else pIndex2, pIndex1, -1)
+                    if pIndex2 > pIndex1 else
+                    range(pIndex2+1, pIndex1 if onProfile1 else pIndex1+1)
+                ):
+                    multiplier = (p[_i][0] - pCoord1) / (pCoord2 - pCoord1)
+                    verts.append(Vector((
+                        v1.x + multiplier * (v2.x - v1.x),
+                        v1.y + multiplier * (v2.y - v1.y),
+                        roofMinHeight + self.h * p[_i][1]
+                    )))
+                    wallIndices[-1].append(vertIndex)
+                    vertIndex += 1
+            
         
         if not self.projections:
             self.processDirection()
         
-        _v = verts[indices[0]]
-        _pIndex, onProfile, _pCoord, vertIndex = self.sampleProfile(0, roofMinHeight)
+        _v = v0 = verts[indices[0]]
+        _pIndex, _onProfile, _pCoord, _vertIndex =\
+            pIndex0, onProfile0, pCoord0, vertIndex0 =\
+            self.sampleProfile(0, roofMinHeight)
         for i in range(1, polygon.n):
             v = verts[indices[i]]
             pIndex, onProfile, pCoord, vertIndex = self.sampleProfile(i, roofMinHeight)
-            # Create vertices for profile reference points located
-            # with the indices between _pIndex and pIndex
-            if pIndex != _pIndex:
-                for _i in (range(_pIndex+1, pIndex if onProfile else pIndex+1)
-                    if pIndex > _pIndex else
-                    range(_pIndex-1 if onProfile else _pIndex, pIndex, -1)):
-                    multiplier = (p[_i][0] - _pCoord) / (pCoord - _pCoord)
-                    verts.append(Vector((
-                        _v.x + multiplier * (v.x - _v.x),
-                        _v.y + multiplier * (v.x - _v.x),
-                        roofMinHeight + self.h * p[_i][1]
-                    )))
+            wallIndices.append([indices[i-1], indices[i], vertIndex])
+            createProfileVertices(_v, _pIndex, _onProfile, _pCoord, v, pIndex, onProfile, pCoord)
+            wallIndices[-1].append(_vertIndex)
             _v = v
             _pIndex = pIndex
+            _onProfile = onProfile
             _pCoord = pCoord
-        # TODO: the closing part
+            _vertIndex = vertIndex
+        wallIndices.append([indices[-1], indices[0], vertIndex0])
+        createProfileVertices(v, pIndex, onProfile, pCoord, v0, pIndex0, onProfile0, pCoord0)
+        wallIndices[-1].append(vertIndex)
         
         return True
     
@@ -183,6 +203,3 @@ class RoofProfile(Roof):
         
         self.h = h
         return h
-    
-    def render(self, r):
-        tuple(r.bm.verts.new(v) for v in self.verts)
