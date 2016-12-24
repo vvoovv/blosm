@@ -5,7 +5,7 @@ from util import zero
 from util.osm import parseNumber
 
 
-gabled = (
+gabledRoof = (
     (
         (0., 0.),
         (0.5, 1.),
@@ -17,7 +17,7 @@ gabled = (
     }
 )
 
-round = (
+roundRoof = (
     (
         (0., 0.),
         (0.01, 0.195),
@@ -43,7 +43,7 @@ round = (
     }
 )
 
-gambrel = (
+gambrelRoof = (
     (
         (0., 0.),
         (0.2, 0.6),
@@ -57,7 +57,7 @@ gambrel = (
     }
 )
 
-saltbox = (
+saltboxRoof = (
     (
         (0., 0.),
         (0.35, 1.),
