@@ -131,7 +131,7 @@ class RoofProfile(Roof):
                 return
             _wallIndices = [vertIndex1]
             if not skip1:
-                _wallIndices.append(indices[i-1])
+                _wallIndices.append(indices[polygon.prev(i)])
             if not skip2:
                 _wallIndices.append(indices[i])
             _wallIndices.append(vertIndex2)
@@ -157,11 +157,15 @@ class RoofProfile(Roof):
         if not self.projections:
             self.processDirection()
         
-        _v = v0 = verts[indices[0]]
+        i = self.minProjIndex
+        _v = v0 = verts[indices[i]]
         _pIndex, _onProfile, _pCoord, _vertIndex =\
             pIndex0, onProfile0, pCoord0, vertIndex0 =\
-            self.sampleProfile(0, roofMinHeight, noWalls)
-        for i in range(1, polygon.n):
+            self.sampleProfile(i, roofMinHeight, noWalls)
+        while True:
+            i = polygon.next(i)
+            if i == self.minProjIndex:
+                break
             v = verts[indices[i]]
             pIndex, onProfile, pCoord, vertIndex = self.sampleProfile(i, roofMinHeight, noWalls)
             createProfileVertices(
@@ -176,7 +180,7 @@ class RoofProfile(Roof):
             _vertIndex = vertIndex
         # the closing part
         createProfileVertices(
-            0,
+            self.minProjIndex,
             v,  pIndex,  onProfile,  pCoord,  vertIndex,
             v0, pIndex0, onProfile0, pCoord0, vertIndex0
         )
