@@ -1,6 +1,6 @@
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
-    "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
+    "author": "Vladimir Elistratov <prokitektura+dev@gmail.com>",
     "version": (2, 1, 0),
     "blender": (2, 7, 8),
     "location": "File > Import > OpenStreetMap (.osm)",
