@@ -124,11 +124,13 @@ class Roof:
             else:
                 d = math.radians(d)
                 d = Vector((math.sin(d), math.cos(d), 0.))
+        # the direction vector is used by <profile.RoofProfile>
+        self.direction = d
         
         # For each vertex from <polygon.verts> calculate projection of the vertex
         # on the vector <d> that defines the roof direction
-        projections = [d.dot(v) for v in polygon.verts]
-        self.projections = projections
+        projections = self.projections
+        projections.extend( d[0]*v[0] + d[1]*v[1] for v in polygon.verts )
         minProjIndex = min(range(polygon.n), key = lambda i: projections[i])
         self.minProjIndex = minProjIndex
         maxProjIndex = max(range(polygon.n), key = lambda i: projections[i])

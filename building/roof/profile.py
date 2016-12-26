@@ -71,6 +71,64 @@ saltboxRoof = (
 )
 
 
+class ProfileVert:
+    
+    def __init__(self, roof, i, roofMinHeight, noWalls):
+        self.i = i
+        verts = roof.verts
+        indices = roof.polygon.indices
+        proj = roof.projections
+        p = roof.profile
+        d = roof.direction
+        v = verts[indices[i]]
+        onProfile = False
+        createVert = True
+        # Coordinate along roof profile (i.e. along the roof direction)
+        # the roof direction is calculated in roof.processDirection(..);
+        # the coordinate can possess the value from 0. to 1.
+        x = (proj[i] - proj[roof.minProjIndex]) / roof.polygonWidth
+        # Coordinate (with an offset) across roof profile;
+        # a perpendicular to <roof.direction> is equal to <Vector((-d[1], d[0], 0.))
+        self.y = -v[0]*d[1] + v[1]*d[0]
+        # index in <roof.profileQ>
+        index = roof.profileQ[
+            math.floor(x * roof.numSamples)
+        ]
+        distance = x - p[index][0]
+        # check if x is equal zero
+        if distance < zero:
+            onProfile = True
+            if roof.lEndZero and noWalls and not index:
+                createVert = False
+                index = 0
+                x = 0.
+                vertIndex = indices[i]
+            else:
+                x, h = p[index]
+        elif abs(p[index + 1][0] - x) < zero:
+            onProfile = True
+            # increase <index> by one
+            index += 1
+            if roof.rEndZero and noWalls and index == roof.lastProfileIndex:
+                createVert = False
+                index = roof.lastProfileIndex
+                x = 1.
+                vertIndex = indices[i]
+            else:
+                x, h = p[index]
+        else:
+            h1 = p[index][1]
+            h2 = p[index+1][1]
+            h = h1 + (h2 - h1) / (p[index+1][0] - p[index][0]) * distance
+        if createVert:
+            vertIndex = len(verts)
+            verts.append(Vector((v.x, v.y, roofMinHeight + roof.h * h)))
+        self.index = index
+        self.onProfile = onProfile
+        self.x = x
+        self.vertIndex = vertIndex
+
+
 class RoofProfile(Roof):
     
     defaultHeight = 3.
@@ -81,7 +139,11 @@ class RoofProfile(Roof):
         
         profile = data[0]
         self.profile = profile
-        self.lastProfileIndex = len(profile) - 1
+        numProfilesPoints = len(profile)
+        self.lastProfileIndex = numProfilesPoints - 1
+        # profile slots
+        self.slots = [ [] for _ in range(numProfilesPoints) ]
+        
         for attr in data[1]:
             setattr(self, attr, data[1][attr])
         
@@ -102,128 +164,78 @@ class RoofProfile(Roof):
     def init(self, element, minHeight, osm):
         super().init(element, minHeight, osm)
         self.projections.clear()
+        for slot in self.slots:
+            slot.clear()
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
-        verts = self.verts
-        p = self.profile
         polygon = self.polygon
-        indices = polygon.indices
-        wallIndices = self.wallIndices
         noWalls = bldgMinHeight is None
-        
-        def createProfileVertices(
-            i,
-            v1, pIndex1, onProfile1, pCoord1, vertIndex1,
-            v2, pIndex2, onProfile2, pCoord2, vertIndex2
-        ):
-            """
-            Create vertices for profile reference points located
-            with the indices between _pIndex and pIndex
-            """
-            skip1 = noWalls and onProfile1 and\
-                ((self.lEndZero and not pIndex1) or\
-                (self.rEndZero and pIndex1 == self.lastProfileIndex))
-            skip2 = noWalls and onProfile2 and\
-                ((self.lEndZero and not pIndex2) or\
-                (self.rEndZero and pIndex2 == self.lastProfileIndex))
-            
-            if skip1 and skip2 and pIndex1 == pIndex2:
-                return
-            _wallIndices = [vertIndex1]
-            if not skip1:
-                _wallIndices.append(indices[polygon.prev(i)])
-            if not skip2:
-                _wallIndices.append(indices[i])
-            _wallIndices.append(vertIndex2)
-            
-            vertIndex = len(verts)
-            if pIndex2 != pIndex1:
-                for _i in (
-                    range(pIndex2-1 if onProfile2 else pIndex2, pIndex1, -1)
-                    if pIndex2 > pIndex1 else
-                    range(pIndex2+1, pIndex1 if onProfile1 else pIndex1+1)
-                ):
-                    multiplier = (p[_i][0] - pCoord1) / (pCoord2 - pCoord1)
-                    verts.append(Vector((
-                        v1.x + multiplier * (v2.x - v1.x),
-                        v1.y + multiplier * (v2.y - v1.y),
-                        roofMinHeight + self.h * p[_i][1]
-                    )))
-                    _wallIndices.append(vertIndex)
-                    vertIndex += 1
-            wallIndices.append(_wallIndices)
-            
         
         if not self.projections:
             self.processDirection()
         
-        i = self.minProjIndex
-        _v = v0 = verts[indices[i]]
-        _pIndex, _onProfile, _pCoord, _vertIndex =\
-            pIndex0, onProfile0, pCoord0, vertIndex0 =\
-            self.sampleProfile(i, roofMinHeight, noWalls)
+        i = i0 = self.minProjIndex
+        # <pv> stands for profile vertex
+        _pv = pv0 = ProfileVert(self, i, roofMinHeight, noWalls)
         while True:
             i = polygon.next(i)
-            if i == self.minProjIndex:
+            if i == i0:
                 break
-            v = verts[indices[i]]
-            pIndex, onProfile, pCoord, vertIndex = self.sampleProfile(i, roofMinHeight, noWalls)
-            createProfileVertices(
-                i,
-                _v, _pIndex, _onProfile, _pCoord, _vertIndex,
-                 v,  pIndex,  onProfile,  pCoord,  vertIndex
-            )        
-            _v = v
-            _pIndex = pIndex
-            _onProfile = onProfile
-            _pCoord = pCoord
-            _vertIndex = vertIndex
+            pv = ProfileVert(self, i, roofMinHeight, noWalls)
+            self.createProfileVertices(_pv, pv, roofMinHeight, noWalls)        
+            _pv = pv
         # the closing part
-        createProfileVertices(
-            self.minProjIndex,
-            v,  pIndex,  onProfile,  pCoord,  vertIndex,
-            v0, pIndex0, onProfile0, pCoord0, vertIndex0
-        )
-        
+        self.createProfileVertices(pv, pv0, roofMinHeight, noWalls)
         return True
     
-    def sampleProfile(self, index, roofMinHeight, noWalls):
+    def createProfileVertices(self, pv1, pv2, roofMinHeight, noWalls):
+        """
+        Create vertices for profile reference points located
+        with the indices between <pv1.index> and <pv2.index>
+        """
         verts = self.verts
         indices = self.polygon.indices
-        proj = self.projections
         p = self.profile
-        # Coordinate along roof profile (i.e. along the roof direction)
-        # the roof direction is calculated in self.processDirection(..);
-        # the coordinate can possess the value from 0. to 1.
-        pCoord = (proj[index] - proj[self.minProjIndex]) / self.polygonWidth
-        # index in <self.profileQ>
-        pIndex = self.profileQ[
-            math.floor(pCoord * self.numSamples)
-        ]
-        distance = pCoord - p[pIndex][0]
-        # check if x is equal zero
-        if distance < zero:
-            if self.lEndZero and noWalls and not pIndex:
-                return 0, True, 0., indices[index]
-            pCoord, h = p[pIndex]
-            onProfile = True
-        elif abs(p[pIndex + 1][0] - pCoord) < zero:
-            # increase <profileIndex> by one
-            pIndex += 1
-            if self.rEndZero and noWalls and pIndex == self.lastProfileIndex:
-                return self.lastProfileIndex, True, 1., indices[index]
-            pCoord, h = p[pIndex]
-            onProfile = True
-        else:
-            onProfile = False
-            h1 = p[pIndex][1]
-            h2 = p[pIndex+1][1]
-            h = h1 + (h2 - h1) / (p[pIndex+1][0] - p[pIndex][0]) * distance
-        v = verts[indices[index]]
-        vertIndex = len(verts)
-        verts.append(Vector((v.x, v.y, roofMinHeight + self.h * h)))
-        return pIndex, onProfile, pCoord, vertIndex
+        wallIndices = self.wallIndices
         
+        index1 = pv1.index
+        index2 = pv2.index
+        
+        skip1 = noWalls and pv1.onProfile and\
+            ((self.lEndZero and not index1) or\
+            (self.rEndZero and index1 == self.lastProfileIndex))
+        skip2 = noWalls and pv2.onProfile and\
+            ((self.lEndZero and not index2) or\
+            (self.rEndZero and index2 == self.lastProfileIndex))
+        
+        if skip1 and skip2 and pv1.index == pv2.index:
+            return
+        _wallIndices = [pv1.vertIndex]
+        if not skip1:
+            _wallIndices.append(indices[pv1.i])
+        if not skip2:
+            _wallIndices.append(indices[pv2.i])
+        _wallIndices.append(pv2.vertIndex)
+        
+        v1 = verts[indices[pv1.i]]
+        v2 = verts[indices[pv2.i]]
+        
+        vertIndex = len(verts)
+        if index1 != index2:
+            for _i in (
+                range(index2-1 if pv2.onProfile else index2, index1, -1)
+                if index2 > index1 else
+                range(index2+1, index1 if pv1.onProfile else index1+1)
+            ):
+                multiplier = (p[_i][0] - pv1.x) / (pv2.x - pv1.x)
+                verts.append(Vector((
+                    v1.x + multiplier * (v2.x - v1.x),
+                    v1.y + multiplier * (v2.y - v1.y),
+                    roofMinHeight + self.h * p[_i][1]
+                )))
+                _wallIndices.append(vertIndex)
+                vertIndex += 1
+        wallIndices.append(_wallIndices)
     
     def getHeight(self):
         element = self.element
