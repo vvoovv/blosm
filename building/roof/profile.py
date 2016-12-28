@@ -129,6 +129,66 @@ class ProfileVert:
         self.vertIndex = vertIndex
 
 
+class Slot:
+    
+    def __init__(self):
+        # (y, vertIndex, chunk, chunkEndsInNeighborSlots)
+        self.parts = []
+        self.partsR = []
+    
+    def reset(self):
+        self.parts.clear()
+        self.partsR.clear()
+    
+    def prepare(self):
+        self.parts.sort(key = lambda p: p[0])
+    
+    def trackDown(self, roofIndices):
+        parts = self.parts
+        roofIndices = self.roofIndices
+        indexPartR = -1
+        index = len(parts) - 2
+        roofFace = []
+        vertIndex0 = None
+        while index >= 0:
+            part = parts[index]
+            if vertIndex0 is None:
+                vertIndex0 = part[1]
+                roofFace.clear()
+            roofFace.extend(part[2])
+            if part[3]:
+                roofFace.extend(self.n.partsR[indexPartR])
+                indexPartR -= 1
+                roofIndices.append[roofFace]
+                vertIndex0 = None
+            elif part[2][-1] == vertIndex0:
+                # came down and closed the loop
+                roofIndices.append(roofFace)
+                vertIndex0 = None
+            index -= 2
+
+    def trackUp(self):
+        parts = self.parts
+        numParts = len(parts)
+        index = 1
+        roofFace = []
+        vertIndex0 = None
+        while index < numParts:
+            part = parts[index]
+            if vertIndex0 is None:
+                vertIndex0 = part[1]
+                roofFace.clear()
+            roofFace.extend(part[2])
+            if part[3]:
+                self.partsR.append(roofFace)
+                vertIndex0 = None
+            elif part[2][-1] == vertIndex0:
+                # came down and closed the loop
+                self.roofIndices.append(roofFace)
+                vertIndex0 = None
+            index += 2
+
+
 class RoofProfile(Roof):
     
     defaultHeight = 3.
@@ -142,7 +202,9 @@ class RoofProfile(Roof):
         numProfilesPoints = len(profile)
         self.lastProfileIndex = numProfilesPoints - 1
         # profile slots
-        self.slots = [ [] for _ in range(numProfilesPoints) ]
+        slots = tuple(Slot() for i in range(numProfilesPoints) )
+        for i in range(self.lastProfileIndex):
+            slots[i].n = slots[i+1]
         
         for attr in data[1]:
             setattr(self, attr, data[1][attr])
@@ -170,6 +232,7 @@ class RoofProfile(Roof):
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         polygon = self.polygon
         noWalls = bldgMinHeight is None
+        slots = self.slots
         
         if not self.projections:
             self.processDirection()
@@ -186,6 +249,18 @@ class RoofProfile(Roof):
             _pv = pv
         # the closing part
         self.createProfileVertices(pv, pv0, roofMinHeight, noWalls)
+        
+        # deal with the roof top
+        for slot in slots:
+            slot.prepare()
+        
+        slotR = slot[1]
+        slotR.trackUp()
+        for i in range(1, self.lastProfileIndex):
+            slotL = slotR
+            slotR = slots[i+1]
+            slotR.trackUp()
+            slotL.trackDown()
         return True
     
     def createProfileVertices(self, pv1, pv2, roofMinHeight, noWalls):
