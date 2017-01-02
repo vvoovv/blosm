@@ -132,7 +132,7 @@ class ProfileVert:
 class Slot:
     
     def __init__(self):
-        # (y, vertIndex, chunk, chunkEndsInNeighborSlots)
+        # (y, chunk, reflection)
         self.parts = []
         self.partsR = []
     
@@ -143,50 +143,58 @@ class Slot:
     def prepare(self):
         self.parts.sort(key = lambda p: p[0])
     
+    def append(self, vertIndex, y=None, reflection=False):
+        parts = self.parts
+        if y is None:
+            parts[-1][1].append(vertIndex)
+        else:
+            parts.append((y, [vertIndex], reflection))
+    
     def trackDown(self, roofIndices):
         parts = self.parts
-        roofIndices = self.roofIndices
         indexPartR = -1
         index = len(parts) - 2
         roofFace = []
         vertIndex0 = None
         while index >= 0:
-            part = parts[index]
+            _, part, reflection = parts[index]
             if vertIndex0 is None:
-                vertIndex0 = part[1]
+                vertIndex0 = parts[index+1][1][0]
                 roofFace.clear()
-            roofFace.extend(part[2])
-            if part[3]:
-                roofFace.extend(self.n.partsR[indexPartR])
-                indexPartR -= 1
-                roofIndices.append[roofFace]
-                vertIndex0 = None
-            elif part[2][-1] == vertIndex0:
-                # came down and closed the loop
+            roofFace.extend(part)
+            if part[-1] == vertIndex0:
+                # came up and closed the loop
                 roofIndices.append(roofFace)
                 vertIndex0 = None
-            index -= 2
+            elif not index or part[-1] != parts[index-1][1][0]:
+                # came to the neighbor from the right
+                roofFace.extend(self.n.partsR[indexPartR])
+                indexPartR -= 1
+                roofIndices.append(roofFace)
+                vertIndex0 = None
+            index -= 1 if reflection else 2
 
-    def trackUp(self):
+    def trackUp(self, roofIndices):
         parts = self.parts
         numParts = len(parts)
         index = 1
         roofFace = []
         vertIndex0 = None
         while index < numParts:
-            part = parts[index]
+            _, part, reflection = parts[index]
             if vertIndex0 is None:
-                vertIndex0 = part[1]
+                vertIndex0 = parts[index-1][1][0]
                 roofFace.clear()
-            roofFace.extend(part[2])
-            if part[3]:
+            roofFace.extend(part)
+            if part[-1] == vertIndex0:
+                # came down and closed the loop
+                roofIndices.append(roofFace)
+                vertIndex0 = None
+            elif index == numParts-1 or part[-1] != parts[index+1][1][0]:
+                # came to the neighbor from the left
                 self.partsR.append(roofFace)
                 vertIndex0 = None
-            elif part[2][-1] == vertIndex0:
-                # came down and closed the loop
-                self.roofIndices.append(roofFace)
-                vertIndex0 = None
-            index += 2
+            index += 1 if reflection else 2
 
 
 class RoofProfile(Roof):
@@ -205,6 +213,7 @@ class RoofProfile(Roof):
         slots = tuple(Slot() for i in range(numProfilesPoints) )
         for i in range(self.lastProfileIndex):
             slots[i].n = slots[i+1]
+        self.slots = slots
         
         for attr in data[1]:
             setattr(self, attr, data[1][attr])
@@ -226,44 +235,51 @@ class RoofProfile(Roof):
     def init(self, element, minHeight, osm):
         super().init(element, minHeight, osm)
         self.projections.clear()
-        for slot in self.slots:
-            slot.clear()
+        # The last slot with the index <self.lastProfileIndex> isn't touched,
+        # so no need to reset it
+        for i in range(self.lastProfileIndex):
+            self.slots[i].reset()
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         polygon = self.polygon
+        roofIndices = self.roofIndices
         noWalls = bldgMinHeight is None
         slots = self.slots
+        self.slot = slots[0]
         
         if not self.projections:
             self.processDirection()
         
         i = i0 = self.minProjIndex
         # <pv> stands for profile vertex
-        _pv = pv0 = ProfileVert(self, i, roofMinHeight, noWalls)
+        pv1 = pv0 = ProfileVert(self, i, roofMinHeight, noWalls)
+        _pv = None
         while True:
             i = polygon.next(i)
             if i == i0:
                 break
-            pv = ProfileVert(self, i, roofMinHeight, noWalls)
-            self.createProfileVertices(_pv, pv, roofMinHeight, noWalls)        
-            _pv = pv
+            pv2 = ProfileVert(self, i, roofMinHeight, noWalls)
+            self.createProfileVertices(pv1, pv2, _pv, roofMinHeight, noWalls)
+            _pv = pv1     
+            pv1 = pv2
         # the closing part
-        self.createProfileVertices(pv, pv0, roofMinHeight, noWalls)
+        self.createProfileVertices(pv1, pv0, _pv, roofMinHeight, noWalls)
         
+        slots[1].parts[-1][1].extend(slots[0].parts[0][1][i] for i in range(1, len(slots[0].parts[0][1])))
         # deal with the roof top
-        for slot in slots:
-            slot.prepare()
+        for i in range(1, self.lastProfileIndex):
+            slots[i].prepare()
         
-        slotR = slot[1]
-        slotR.trackUp()
+        slotR = slots[1]
+        slotR.trackUp(roofIndices)
         for i in range(1, self.lastProfileIndex):
             slotL = slotR
             slotR = slots[i+1]
-            slotR.trackUp()
-            slotL.trackDown()
+            slotR.trackUp(roofIndices)
+            slotL.trackDown(roofIndices)
         return True
     
-    def createProfileVertices(self, pv1, pv2, roofMinHeight, noWalls):
+    def createProfileVertices(self, pv1, pv2, _pv, roofMinHeight, noWalls):
         """
         Create vertices for profile reference points located
         with the indices between <pv1.index> and <pv2.index>
@@ -272,18 +288,23 @@ class RoofProfile(Roof):
         indices = self.polygon.indices
         p = self.profile
         wallIndices = self.wallIndices
+        slots = self.slots
+        slot = self.slot
         
         index1 = pv1.index
         index2 = pv2.index
-        
+            
         skip1 = noWalls and pv1.onProfile and\
             ((self.lEndZero and not index1) or\
             (self.rEndZero and index1 == self.lastProfileIndex))
         skip2 = noWalls and pv2.onProfile and\
             ((self.lEndZero and not index2) or\
             (self.rEndZero and index2 == self.lastProfileIndex))
-        
-        if skip1 and skip2 and pv1.index == pv2.index:
+
+        if skip1 and skip2 and index1 == index2:
+            if _pv is None:
+                slot.append(pv1.vertIndex, pv1.y)
+            slot.append(pv2.vertIndex)
             return
         _wallIndices = [pv1.vertIndex]
         if not skip1:
@@ -294,23 +315,67 @@ class RoofProfile(Roof):
         
         v1 = verts[indices[pv1.i]]
         v2 = verts[indices[pv2.i]]
+        if not _pv is None:
+            _v = verts[indices[_pv.i]]
         
-        vertIndex = len(verts)
+        # deal with the roof top
+        if pv1.onProfile:
+            if pv2.x > pv1.x:
+                # going from the left to the right
+                if _pv is None or _pv.x < pv1.x:
+                    slot.append(pv1.vertIndex, pv1.y)
+                else:
+                    if (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
+                        slot.append(pv1.vertIndex, pv1.y, True)
+            else:
+                # going from the right to the left
+                if pv1.x < _pv.x:
+                    slot.append(pv1.vertIndex, pv1.y)
+                else:
+                    if (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
+                        slot.append(pv1.vertIndex, pv1.y, True)
+        
+        vertIndex = len(verts) - 1
         if index1 != index2:
-            for _i in (
-                range(index2-1 if pv2.onProfile else index2, index1, -1)
-                if index2 > index1 else
-                range(index2+1, index1 if pv1.onProfile else index1+1)
-            ):
-                multiplier = (p[_i][0] - pv1.x) / (pv2.x - pv1.x)
-                verts.append(Vector((
-                    v1.x + multiplier * (v2.x - v1.x),
-                    v1.y + multiplier * (v2.y - v1.y),
-                    roofMinHeight + self.h * p[_i][1]
-                )))
-                _wallIndices.append(vertIndex)
-                vertIndex += 1
+            if index2 > index1:
+                if not pv2.onProfile or index1 != index2-1:
+                    for _i in range(index2-1 if pv2.onProfile else index2, index1, -1):
+                        vertIndex += 1
+                        multiplier = (p[_i][0] - pv1.x) / (pv2.x - pv1.x)
+                        verts.append(Vector((
+                            v1.x + multiplier * (v2.x - v1.x),
+                            v1.y + multiplier * (v2.y - v1.y),
+                            roofMinHeight + self.h * p[_i][1]
+                        )))
+                        _wallIndices.append(vertIndex)
+                    # fill <slots>
+                    multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
+                    for _i in range(index1+1, index2 if pv2.onProfile else index2+1):
+                        slot.append(vertIndex)
+                        slot = slots[_i]
+                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x))
+                        vertIndex -= 1
+            else:
+                if not pv1.onProfile or index2 != index1-1:
+                    for _i in range(index2+1, index1 if pv1.onProfile else index1+1):
+                        vertIndex += 1
+                        multiplier = (p[_i][0] - pv1.x) / (pv2.x - pv1.x)
+                        verts.append(Vector((
+                            v1.x + multiplier * (v2.x - v1.x),
+                            v1.y + multiplier * (v2.y - v1.y),
+                            roofMinHeight + self.h * p[_i][1]
+                        )))
+                        _wallIndices.append(vertIndex)
+                    # fill <slots>
+                    multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
+                    for _i in range(index1-1 if pv1.onProfile else index1, index2, -1):
+                        slot.append(vertIndex)
+                        slot = slots[_i]
+                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x))
+                        vertIndex -= 1
         wallIndices.append(_wallIndices)
+        slot.append(pv2.vertIndex)
+        self.slot = slot
     
     def getHeight(self):
         element = self.element
