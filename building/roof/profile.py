@@ -319,24 +319,24 @@ class RoofProfile(Roof):
             _v = verts[indices[_pv.i]]
         
         # deal with the roof top
-        if pv1.onProfile:
+        if _pv is None:
+            slot.append(pv1.vertIndex, pv1.y)
+        elif pv1.onProfile:
             if pv2.x > pv1.x:
                 # going from the left to the right
-                if _pv is None or _pv.x < pv1.x:
+                if _pv.x < pv1.x:
                     slot.append(pv1.vertIndex, pv1.y)
-                else:
-                    if (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
-                        slot.append(pv1.vertIndex, pv1.y, True)
+                elif (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
+                    slot.append(pv1.vertIndex, pv1.y, True)
             else:
                 # going from the right to the left
                 if pv1.x < _pv.x:
                     slot.append(pv1.vertIndex, pv1.y)
-                else:
-                    if (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
-                        slot.append(pv1.vertIndex, pv1.y, True)
+                elif (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
+                    slot.append(pv1.vertIndex, pv1.y, True)
         
-        vertIndex = len(verts) - 1
         if index1 != index2:
+            vertIndex = len(verts) - 1
             if index2 > index1:
                 if not pv2.onProfile or index1 != index2-1:
                     for _i in range(index2-1 if pv2.onProfile else index2, index1, -1):
