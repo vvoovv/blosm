@@ -135,66 +135,83 @@ class Slot:
         # (y, chunk, reflection)
         self.parts = []
         self.partsR = []
+        # does a part from <self.parts> with <index> end at self (True) or at neighbor slot (False) 
+        self.endAtSelf = []
     
     def reset(self):
         self.parts.clear()
         self.partsR.clear()
+        self.endAtSelf.clear()
+        # the current index in <self.parts>
+        self.index = 0
     
     def prepare(self):
         self.parts.sort(key = lambda p: p[0])
     
-    def append(self, vertIndex, y=None, reflection=False):
+    def append(self, vertIndex, y=None, originSlot=None, reflection=None):
         parts = self.parts
         if y is None:
             parts[-1][1].append(vertIndex)
         else:
-            parts.append((y, [vertIndex], reflection))
+            parts.append((y, [vertIndex], reflection, self.index))
+            originSlot.endAtSelf.append(originSlot is self)
+            self.index += 1
     
     def trackDown(self, roofIndices):
         parts = self.parts
         indexPartR = -1
         index = len(parts) - 2
-        roofFace = []
+        roofFace = None
         vertIndex0 = None
         while index >= 0:
-            _, part, reflection = parts[index]
+            _, part, reflection, _index = parts[index]
+            # <False> for the reflection means reflection to the left
+            if reflection is False:
+                index -= 1
+                continue
             if vertIndex0 is None:
                 vertIndex0 = parts[index+1][1][0]
-                roofFace.clear()
+                roofFace = []
             roofFace.extend(part)
             if part[-1] == vertIndex0:
                 # came up and closed the loop
                 roofIndices.append(roofFace)
                 vertIndex0 = None
-            elif not index or part[-1] != parts[index-1][1][0]:
+            elif not self.endAtSelf[_index]:
                 # came to the neighbor from the right
                 roofFace.extend(self.n.partsR[indexPartR])
                 indexPartR -= 1
                 roofIndices.append(roofFace)
                 vertIndex0 = None
-            index -= 1 if reflection else 2
+            # <True> for the reflection means reflection to the right
+            index -= 1 if reflection is True else 2
 
     def trackUp(self, roofIndices):
         parts = self.parts
         numParts = len(parts)
         index = 1
-        roofFace = []
+        roofFace = None
         vertIndex0 = None
         while index < numParts:
-            _, part, reflection = parts[index]
+            _, part, reflection, _index = parts[index]
+            # <True> for the reflection means reflection to the right
+            if reflection is True:
+                index += 1
+                continue
             if vertIndex0 is None:
                 vertIndex0 = parts[index-1][1][0]
-                roofFace.clear()
+                roofFace = []
             roofFace.extend(part)
             if part[-1] == vertIndex0:
                 # came down and closed the loop
                 roofIndices.append(roofFace)
                 vertIndex0 = None
-            elif index == numParts-1 or part[-1] != parts[index+1][1][0]:
+            elif not self.endAtSelf[_index]:
                 # came to the neighbor from the left
                 self.partsR.append(roofFace)
                 vertIndex0 = None
-            index += 1 if reflection else 2
+            # <False> for the reflection means reflection to the left
+            index += 1 if reflection is False else 2
 
 
 class RoofProfile(Roof):
@@ -246,6 +263,7 @@ class RoofProfile(Roof):
         noWalls = bldgMinHeight is None
         slots = self.slots
         self.slot = slots[0]
+        self.originSlot = slots[0]
         
         if not self.projections:
             self.processDirection()
@@ -265,6 +283,7 @@ class RoofProfile(Roof):
         # the closing part
         self.createProfileVertices(pv1, pv0, _pv, roofMinHeight, noWalls)
         
+        slots[1].endAtSelf.append(True)
         slots[1].parts[-1][1].extend(slots[0].parts[0][1][i] for i in range(1, len(slots[0].parts[0][1])))
         # deal with the roof top
         for i in range(1, self.lastProfileIndex):
@@ -303,7 +322,7 @@ class RoofProfile(Roof):
 
         if skip1 and skip2 and index1 == index2:
             if _pv is None:
-                slot.append(pv1.vertIndex, pv1.y)
+                slot.append(pv1.vertIndex, pv1.y, self.originSlot)
             slot.append(pv2.vertIndex)
             return
         _wallIndices = [pv1.vertIndex]
@@ -320,20 +339,33 @@ class RoofProfile(Roof):
         
         # deal with the roof top
         if _pv is None:
-            slot.append(pv1.vertIndex, pv1.y)
+            slot.append(pv1.vertIndex, pv1.y, self.originSlot)
         elif pv1.onProfile:
-            if pv2.x > pv1.x:
+            if pv2.onProfile and index1 == index2:
+                if (_pv.x < pv1.x and pv1.y > pv2.y) or (_pv.x > pv1.x and pv1.y < pv2.y):
+                    slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+            elif pv1.x < pv2.x:
                 # going from the left to the right
                 if _pv.x < pv1.x:
-                    slot.append(pv1.vertIndex, pv1.y)
-                elif (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
-                    slot.append(pv1.vertIndex, pv1.y, True)
+                    self.originSlot = slot
+                    slot = slots[index1]
+                    slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+                elif (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.x-v1.x) < 0.:
+                    self.originSlot = slot
+                    slot = slots[index1]
+                    # <True> for the reflection means reflection to the right
+                    slot.append(pv1.vertIndex, pv1.y, self.originSlot, True)
             else:
                 # going from the right to the left
-                if pv1.x < _pv.x:
-                    slot.append(pv1.vertIndex, pv1.y)
-                elif (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.y-v1.x) < 0.:
-                    slot.append(pv1.vertIndex, pv1.y, True)
+                if _pv.x > pv1.x:
+                    self.originSlot = slot
+                    slot = slots[index1]
+                    slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+                elif (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.x-v1.x) < 0.:
+                    self.originSlot = slot
+                    slot = slots[index1]
+                    # <False> for the reflection means reflection to the left
+                    slot.append(pv1.vertIndex, pv1.y, self.originSlot, False)
         
         if index1 != index2:
             vertIndex = len(verts) - 1
@@ -352,8 +384,9 @@ class RoofProfile(Roof):
                     multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
                     for _i in range(index1+1, index2 if pv2.onProfile else index2+1):
                         slot.append(vertIndex)
+                        self.originSlot = slot
                         slot = slots[_i]
-                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x))
+                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
                         vertIndex -= 1
             else:
                 if not pv1.onProfile or index2 != index1-1:
@@ -370,8 +403,9 @@ class RoofProfile(Roof):
                     multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
                     for _i in range(index1-1 if pv1.onProfile else index1, index2, -1):
                         slot.append(vertIndex)
+                        self.originSlot = slot
                         slot = slots[_i]
-                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x))
+                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
                         vertIndex -= 1
         wallIndices.append(_wallIndices)
         slot.append(pv2.vertIndex)
