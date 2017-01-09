@@ -157,10 +157,10 @@ class Slot:
             originSlot.endAtSelf.append(originSlot is self)
             self.index += 1
     
-    def trackDown(self, roofIndices):
+    def trackDown(self, roofIndices, index=None, destVertIndex=None):
         parts = self.parts
         indexPartR = -1
-        index = len(parts) - 2
+        index = (len(parts) if index is None else index) - 2
         roofFace = None
         vertIndex0 = None
         while index >= 0:
@@ -183,13 +183,18 @@ class Slot:
                 indexPartR -= 1
                 roofIndices.append(roofFace)
                 vertIndex0 = None
+            else:
+                if part[-1] != parts[index-1][1][0]:
+                    index = self.trackDown(roofIndices, index, part[-1])
+            if not destVertIndex is None and parts[index-1][1][0] == destVertIndex:
+                return index
             # <True> for the reflection means reflection to the right
             index -= 1 if reflection is True else 2
 
-    def trackUp(self, roofIndices):
+    def trackUp(self, roofIndices, index=None, destVertIndex=None):
         parts = self.parts
         numParts = len(parts)
-        index = 1
+        index = 1 if index is None else index+2
         roofFace = None
         vertIndex0 = None
         while index < numParts:
@@ -210,6 +215,11 @@ class Slot:
                 # came to the neighbor from the left
                 self.partsR.append(roofFace)
                 vertIndex0 = None
+            else:
+                if part[-1] != parts[index+1][1][0]:
+                    index = self.trackUp(roofIndices, index, part[-1])
+            if not destVertIndex is None and parts[index+1][1][0] == destVertIndex:
+                return index
             # <False> for the reflection means reflection to the left
             index += 1 if reflection is False else 2
 
