@@ -161,28 +161,26 @@ class Slot:
         parts = self.parts
         indexPartR = -1
         index = (len(parts) if index is None else index) - 2
-        roofFace = None
-        vertIndex0 = None
+        roofFace = []
         while index >= 0:
             _, part, reflection, _index = parts[index]
             # <False> for the reflection means reflection to the left
             if reflection is False:
                 index -= 1
                 continue
-            if vertIndex0 is None:
+            if not roofFace:
                 vertIndex0 = parts[index+1][1][0]
-                roofFace = []
             roofFace.extend(part)
             if part[-1] == vertIndex0:
                 # came up and closed the loop
                 roofIndices.append(roofFace)
-                vertIndex0 = None
+                roofFace = []
             elif not self.endAtSelf[_index]:
                 # came to the neighbor from the right
                 roofFace.extend(self.n.partsR[indexPartR])
                 indexPartR -= 1
                 roofIndices.append(roofFace)
-                vertIndex0 = None
+                roofFace = []
             else:
                 if part[-1] != parts[index-1][1][0]:
                     index = self.trackDown(roofIndices, index, part[-1])
@@ -195,26 +193,24 @@ class Slot:
         parts = self.parts
         numParts = len(parts)
         index = 1 if index is None else index+2
-        roofFace = None
-        vertIndex0 = None
+        roofFace = []
         while index < numParts:
             _, part, reflection, _index = parts[index]
             # <True> for the reflection means reflection to the right
             if reflection is True:
                 index += 1
                 continue
-            if vertIndex0 is None:
+            if not roofFace:
                 vertIndex0 = parts[index-1][1][0]
-                roofFace = []
             roofFace.extend(part)
             if part[-1] == vertIndex0:
                 # came down and closed the loop
                 roofIndices.append(roofFace)
-                vertIndex0 = None
+                roofFace = []
             elif not self.endAtSelf[_index]:
                 # came to the neighbor from the left
                 self.partsR.append(roofFace)
-                vertIndex0 = None
+                roofFace = []
             else:
                 if part[-1] != parts[index+1][1][0]:
                     index = self.trackUp(roofIndices, index, part[-1])
