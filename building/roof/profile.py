@@ -358,7 +358,7 @@ class RoofProfile(Roof):
                     self.originSlot = slot
                     slot = slots[index1]
                     slot.append(pv1.vertIndex, pv1.y, self.originSlot)
-                elif index1 and (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.x-v1.x) < 0.:
+                elif index1 and (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
                     # The condition <index1> is to prevent
                     # erroneous reflection due to precision error caused by
                     # precision error due to the nature of <zero> variable
@@ -372,7 +372,7 @@ class RoofProfile(Roof):
                     self.originSlot = slot
                     slot = slots[index1]
                     slot.append(pv1.vertIndex, pv1.y, self.originSlot)
-                elif index1 != self.lastProfileIndex and (v2.x-v1.x)*(_v.y-v1.y) - (v2.y-v1.y)*(_v.x-v1.x) < 0.:
+                elif index1 != self.lastProfileIndex and (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
                     # The condition <index1 != self.lastProfileIndex> is to prevent
                     # erroneous reflection due to precision error caused by
                     # precision error due to the nature of <zero> variable
