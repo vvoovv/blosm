@@ -90,6 +90,7 @@ class Osm:
                     skip = False
                     # <ci> stands for <condition index>
                     if tags:
+                        #tags["id"] = _id #DEBUG OSM id
                         ci = self.checkConditions(tags, way)
                         if not ci is None:
                             skip = self.processCondition(ci, way, _id, Osm.way)
@@ -120,6 +121,7 @@ class Osm:
                             relation = Osm.relationTypes.get(v)
                 # skip the relation without tags
                 if relation and tags:
+                    #tags["id"] = _id #DEBUG OSM id
                     createdBefore = _id in relations
                     if createdBefore:
                         # The empty OSM relation was created before,

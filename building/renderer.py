@@ -6,7 +6,6 @@ from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
 from .roof.mesh import RoofMesh
 from .roof.profile import *
-from util import zero
 from util.blender import createDiffuseMaterial
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
@@ -83,6 +82,7 @@ class BuildingRenderer(Renderer3d):
             # no building walls, just a roof
             wallHeight = None
         
+        #print(element.tags["id"]) #DEBUG OSM id
         if roof.make(z2, z1 if wallHeight is None else roofMinHeight, None if wallHeight is None else z1, osm):
             roof.render(self)
 
