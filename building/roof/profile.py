@@ -381,50 +381,47 @@ class RoofProfile(Roof):
                     # <False> for the reflection means reflection to the left
                     slot.append(pv1.vertIndex, pv1.y, self.originSlot, False)
         
-        if index1 != index2:
+        def common_code(slot, vertsRange, slotRange):
+            """
+            A helper function
+            """
             vertIndex = len(verts) - 1
+            multiplierX = (v2.x - v1.x) / (pv2.x - pv1.x)
+            multiplierY = (v2.y - v1.y) / (pv2.x - pv1.x)
+            for _i in vertsRange:
+                vertIndex += 1
+                multiplier = p[_i][0] - pv1.x
+                verts.append(Vector((
+                    v1.x + multiplier * multiplierX,
+                    v1.y + multiplier * multiplierY,
+                    roofMinHeight + self.h * p[_i][1]
+                )))
+                _wallIndices.append(vertIndex)
+            # fill <slots>
+            multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
+            for _i in slotRange:
+                slot.append(vertIndex)
+                self.originSlot = slot
+                slot = slots[_i]
+                slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
+                vertIndex -= 1
+            return slot
+        
+        if index1 != index2:
             if index2 > index1:
                 if not pv2.onProfile or index1 != index2-1:
-                    multiplierX = (v2.x - v1.x) / (pv2.x - pv1.x)
-                    multiplierY = (v2.y - v1.y) / (pv2.x - pv1.x)
-                    for _i in range(index2-1 if pv2.onProfile else index2, index1, -1):
-                        vertIndex += 1
-                        multiplier = p[_i][0] - pv1.x
-                        verts.append(Vector((
-                            v1.x + multiplier * multiplierX,
-                            v1.y + multiplier * multiplierY,
-                            roofMinHeight + self.h * p[_i][1]
-                        )))
-                        _wallIndices.append(vertIndex)
-                    # fill <slots>
-                    multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
-                    for _i in range(index1+1, index2 if pv2.onProfile else index2+1):
-                        slot.append(vertIndex)
-                        self.originSlot = slot
-                        slot = slots[_i]
-                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
-                        vertIndex -= 1
+                    slot = common_code(
+                        slot,
+                        range(index2-1 if pv2.onProfile else index2, index1, -1),
+                        range(index1+1, index2 if pv2.onProfile else index2+1)
+                    )
             else:
                 if not pv1.onProfile or index2 != index1-1:
-                    multiplierX = (v2.x - v1.x) / (pv2.x - pv1.x)
-                    multiplierY = (v2.y - v1.y) / (pv2.x - pv1.x)
-                    for _i in range(index2+1, index1 if pv1.onProfile else index1+1):
-                        vertIndex += 1
-                        multiplier = p[_i][0] - pv1.x
-                        verts.append(Vector((
-                            v1.x + multiplier * multiplierX,
-                            v1.y + multiplier * multiplierY,
-                            roofMinHeight + self.h * p[_i][1]
-                        )))
-                        _wallIndices.append(vertIndex)
-                    # fill <slots>
-                    multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
-                    for _i in range(index1-1 if pv1.onProfile else index1, index2, -1):
-                        slot.append(vertIndex)
-                        self.originSlot = slot
-                        slot = slots[_i]
-                        slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
-                        vertIndex -= 1
+                    slot = common_code(
+                        slot,
+                        range(index2+1, index1 if pv1.onProfile else index1+1),
+                        range(index1-1 if pv1.onProfile else index1, index2, -1)
+                    )
         wallIndices.append(_wallIndices)
         slot.append(pv2.vertIndex)
         self.slot = slot
