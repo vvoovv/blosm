@@ -347,39 +347,37 @@ class RoofProfile(Roof):
         if _pv is None:
             slot.append(pv1.vertIndex, pv1.y, self.originSlot)
         elif pv1.onProfile:
+            reflection = None
+            appendToSlot = False
             if pv2.onProfile and index1 == index2:
                 if (_pv.x < pv1.x and pv1.y > pv2.y) or (_pv.x > pv1.x and pv1.y < pv2.y):
-                    self.originSlot = slot
-                    slot = slots[index1]
-                    slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+                    appendToSlot = True
             elif pv1.x < pv2.x:
                 # going from the left to the right
                 if _pv.x < pv1.x:
-                    self.originSlot = slot
-                    slot = slots[index1]
-                    slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+                    appendToSlot = True
                 elif index1 and (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
                     # The condition <index1> is to prevent
                     # erroneous reflection due to precision error caused by
                     # precision error due to the nature of <zero> variable
-                    self.originSlot = slot
-                    slot = slots[index1]
+                    appendToSlot = True
                     # <True> for the reflection means reflection to the right
-                    slot.append(pv1.vertIndex, pv1.y, self.originSlot, True)
+                    reflection = True
             else:
                 # going from the right to the left
                 if _pv.x > pv1.x:
-                    self.originSlot = slot
-                    slot = slots[index1]
-                    slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+                    appendToSlot = True
                 elif index1 != self.lastProfileIndex and (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
                     # The condition <index1 != self.lastProfileIndex> is to prevent
                     # erroneous reflection due to precision error caused by
                     # precision error due to the nature of <zero> variable
-                    self.originSlot = slot
-                    slot = slots[index1]
+                    appendToSlot = True
                     # <False> for the reflection means reflection to the left
-                    slot.append(pv1.vertIndex, pv1.y, self.originSlot, False)
+                    reflection = False
+            if appendToSlot:
+                self.originSlot = slot
+                slot = slots[index1]
+                slot.append(pv1.vertIndex, pv1.y, self.originSlot, reflection)
         
         def common_code(slot, vertsRange, slotRange):
             """
