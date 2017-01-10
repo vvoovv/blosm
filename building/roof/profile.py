@@ -385,12 +385,14 @@ class RoofProfile(Roof):
             vertIndex = len(verts) - 1
             if index2 > index1:
                 if not pv2.onProfile or index1 != index2-1:
+                    multiplierX = (v2.x - v1.x) / (pv2.x - pv1.x)
+                    multiplierY = (v2.y - v1.y) / (pv2.x - pv1.x)
                     for _i in range(index2-1 if pv2.onProfile else index2, index1, -1):
                         vertIndex += 1
-                        multiplier = (p[_i][0] - pv1.x) / (pv2.x - pv1.x)
+                        multiplier = p[_i][0] - pv1.x
                         verts.append(Vector((
-                            v1.x + multiplier * (v2.x - v1.x),
-                            v1.y + multiplier * (v2.y - v1.y),
+                            v1.x + multiplier * multiplierX,
+                            v1.y + multiplier * multiplierY,
                             roofMinHeight + self.h * p[_i][1]
                         )))
                         _wallIndices.append(vertIndex)
@@ -404,12 +406,14 @@ class RoofProfile(Roof):
                         vertIndex -= 1
             else:
                 if not pv1.onProfile or index2 != index1-1:
+                    multiplierX = (v2.x - v1.x) / (pv2.x - pv1.x)
+                    multiplierY = (v2.y - v1.y) / (pv2.x - pv1.x)
                     for _i in range(index2+1, index1 if pv1.onProfile else index1+1):
                         vertIndex += 1
-                        multiplier = (p[_i][0] - pv1.x) / (pv2.x - pv1.x)
+                        multiplier = p[_i][0] - pv1.x
                         verts.append(Vector((
-                            v1.x + multiplier * (v2.x - v1.x),
-                            v1.y + multiplier * (v2.y - v1.y),
+                            v1.x + multiplier * multiplierX,
+                            v1.y + multiplier * multiplierY,
                             roofMinHeight + self.h * p[_i][1]
                         )))
                         _wallIndices.append(vertIndex)
