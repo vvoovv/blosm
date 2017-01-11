@@ -245,6 +245,7 @@ class RoofProfile(Roof):
     
     def __init__(self, data):
         super().__init__()
+        self.hasRidge = True
         self.projections = []
         
         profile = data[0]

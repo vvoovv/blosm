@@ -37,6 +37,7 @@ class RoofSkillion(Roof):
     
     def __init__(self):
         super().__init__()
+        self.hasRidge = False
         self.projections = []
     
     def init(self, element, minHeight, osm):

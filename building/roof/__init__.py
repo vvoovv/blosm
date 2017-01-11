@@ -126,13 +126,19 @@ class Roof:
     
     def processDirection(self):
         polygon = self.polygon
+        tags = self.element.tags
         # <d> stands for direction
-        d = self.element.tags.get("roof:direction")
-        if not d:
-            d = self.element.tags.get("roof:slope:direction")
+        d = tags.get("roof:direction")
+        if d is None:
+            d = tags.get("roof:slope:direction")
         # getting a direction vector with the unit length
         if d is None:
-            d = self.getDefaultDirection()
+            if self.hasRidge and tags.get("roof:orientation") == "across":
+                # The roof ridge is across the longest side of the building outline,
+                # i.e. the profile direction is along the longest side
+                d = max(self.polygon.edges).normalized()
+            else:
+                d = self.getDefaultDirection()
         elif d in Roof.directions:
             d = Roof.directions[d]
         else:
