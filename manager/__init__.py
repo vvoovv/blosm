@@ -152,3 +152,10 @@ class BaseManager(Manager):
                 else:
                     renderer.renderLineString(way, osm)
                 renderer.postRender(way)
+        
+        for node in osm.rNodes:
+            if node.valid and node.rr:
+                renderer = node.rr
+                renderer.preRender(node)
+                renderer.renderNode(node, osm)
+                renderer.postRender(node)

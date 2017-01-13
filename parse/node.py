@@ -24,10 +24,11 @@ class Node:
     Some attributes:
         tags (dict): OSM tags
         b (set): Here we store building indices (i.e. the indices of instances of
-        the wrapper class <building.manager.Building> in Python list <buildings> of an instance
-        of <building.manager.BuildingManager>)
+            the wrapper class <building.manager.Building> in Python list <buildings> of an instance
+            of <building.manager.BuildingManager>)
+        rr: A renderer for the OSM node
     """
-    __slots__ = ("tags", "lat", "lon", "coords", "b")
+    __slots__ = ("tags", "lat", "lon", "coords", "b", "rr", "valid")
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
@@ -35,6 +36,7 @@ class Node:
         self.lon = lon
         # projected coordinates
         self.coords = None
+        self.valid = True
     
     def getData(self, osm):
         """

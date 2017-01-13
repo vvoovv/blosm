@@ -17,11 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import math
 from mathutils import Vector
 from util import zero
-from util.osm import parseNumber
 from . import Roof
+from .profile import RoofProfile
 
 
 class RoofSkillion(Roof):
@@ -39,6 +38,7 @@ class RoofSkillion(Roof):
         super().__init__()
         self.hasRidge = False
         self.projections = []
+        self.angleToHeight = 1.
     
     def init(self, element, minHeight, osm):
         super().init(element, minHeight, osm)
@@ -124,21 +124,5 @@ class RoofSkillion(Roof):
         
         return True
     
-    def getHeight(self):
-        element = self.element
-        tags = element.tags
-        
-        if "roof:height" in tags:
-            h = parseNumber(tags["roof:height"], self.defaultHeight)
-        elif "roof:angle" in tags:
-            angle = parseNumber(tags["roof:angle"])
-            if angle is None:
-                h = self.defaultHeight
-            else:
-                self.processDirection()
-                h = self.polygonWidth * math.tan(math.radians(angle))
-        else:
-            h = self.defaultHeight
-        
-        self.h = h
-        return h
+    def getHeight(self, op):
+        return RoofProfile.getHeight(self, op)

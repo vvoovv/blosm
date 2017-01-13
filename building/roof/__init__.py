@@ -94,11 +94,14 @@ class Roof:
         # check the direction of vertices, it must be counterclockwise
         self.polygon.checkDirection()
     
-    def getHeight(self):
-        h = parseNumber(
-            self.element.tags.get("roof:height", self.defaultHeight),
-            self.defaultHeight
-        )
+    def getHeight(self, op):
+        tags = self.element.tags
+        h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
+        if h is None:
+            # getting the number of levels
+            if "roof:levels" in tags:
+                h = parseNumber(tags["roof:levels"])
+            h = self.defaultHeight if h is None else h * op.levelHeight
         self.h = h
         return h
     

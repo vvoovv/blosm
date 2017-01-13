@@ -60,7 +60,12 @@ class Osm:
         self.ways = {}
         self.relations = {}
         
+        # the following Python list contains OSM nodes to be rendered
+        self.rNodes = []
+        
         self.conditions = []
+        # use separate conditions for nodes to get some performance gain
+        self.nodeConditions = []
         
         self.doc = etree.parse(op.filepath)
         self.osm = self.doc.getroot()
@@ -69,6 +74,11 @@ class Osm:
         # convert layerId to layerIndex
         layerIndex = self.op.layerIndices.get(layerId)
         self.conditions.append((condition, manager, renderer, layerIndex))
+    
+    def addNodeCondition(self, condition, layerId=None, manager=None, renderer=None):
+        # convert layerId to layerIndex
+        layerIndex = self.op.layerIndices.get(layerId)
+        self.nodeConditions.append((condition, manager, renderer, layerIndex))
     
     def parse(self, **kwargs):        
         self.projection = kwargs.get("projection")
@@ -91,7 +101,15 @@ class Osm:
                         if not tags:
                             tags = {}
                         tags[c.get("k")] = c.get("v")
-                self.nodes[_id] = Node(float(attrs["lat"]), float(attrs["lon"]), tags)
+                node = Node(float(attrs["lat"]), float(attrs["lon"]), tags)
+                if tags:
+                    # <ci> stands for <condition index>
+                    ci = self.checkNodeConditions(tags, node)
+                    if not ci is None:
+                        self.processCondition(ci, node, _id, Osm.node)
+                        # set <node> for rendering by appending it to <self.rNodes>
+                        self.rNodes.append(node)
+                self.nodes[_id] = node
             elif e.tag == "way":
                 _id = attrs["id"]
                 nodes = []
@@ -107,12 +125,12 @@ class Osm:
                 if way.valid:
                     # do we need to skip the OSM <way> from storing in <self.ways>
                     skip = False
-                    # <ci> stands for <condition index>
                     if tags:
                         #tags["id"] = _id #DEBUG OSM id
+                        # <ci> stands for <condition index>
                         ci = self.checkConditions(tags, way)
                         if not ci is None:
-                            skip = self.processCondition(ci, way, _id, Osm.way)
+                            skip = self.processCondition(ci, way, _id, self.parseWay)
                             if not self.projection and way.valid:
                                 self.updateBounds(way)
                     if not skip:
@@ -154,7 +172,7 @@ class Osm:
                         if not ci is None:
                             relation.process(members, tags, self)
                             if relation.valid:
-                                skip = self.processCondition(ci, relation, _id, Osm.relation)
+                                skip = self.processCondition(ci, relation, _id, self.parseRelation)
                                 if not createdBefore and not skip:
                                     relations[_id] = relation
             elif e.tag == "bounds":
@@ -179,18 +197,22 @@ class Osm:
                 # setting manager
                 element.m = c[1]
                 return i
+
+    def checkNodeConditions(self, tags, element):
+        for i,c in enumerate(self.nodeConditions):
+            if c[0](tags, element):
+                # setting manager
+                element.m = c[1]
+                return i
     
-    def processCondition(self, ci, element, elementId, elementType):
+    def processCondition(self, ci, element, elementId, parseElement):
         # do we need to skip the OSM <element> from storing in <self.ways> or <self.relations>
         skip = False
         condition = self.conditions[ci]
         # check if we have a special manager for the element
         manager = condition[1]
         if manager:
-            if elementType is Osm.way:
-                skip = manager.parseWay(element, elementId)
-            else:
-                skip = manager.parseRelation(element, elementId)
+            parseElement(manager, element, elementId)
         # alwayes set <layerIndex>
         # layerIndex = condition[3]
         element.li = condition[3]
@@ -199,6 +221,18 @@ class Osm:
             # renderer = condition[2]
             element.rr = condition[2]
         return skip
+    
+    @staticmethod
+    def parseNode(manager, element, elementId):
+        return manager.parseNode(element, elementId)
+    
+    @staticmethod
+    def parseWay(manager, element, elementId):
+        return manager.parseWay(element, elementId)
+    
+    @staticmethod
+    def parseRelation(manager, element, elementId):
+        return manager.parseRelation(element, elementId)
     
     def updateBounds(self, way):
         # <way> has been already used for bounds calculation

@@ -82,8 +82,8 @@ class BuildingRenderer(Renderer3d):
         self.postRender(outline)
     
     def renderElement(self, element, building, osm):
-        z1 = building.getMinHeight(element, self.op)
-        z2 = building.getHeight(element, self.op)
+        op = self.op
+        z1 = building.getMinHeight(element, op)
         # get a class instance created in the constructor to deal with a specific roof shape
         roof = self.roofs.get(element.tags.get("roof:shape"), self.flatRoof)
         if element.t is Renderer.multipolygon:
@@ -91,9 +91,20 @@ class BuildingRenderer(Renderer3d):
             roof = self.flatRoofMulti
         roof.init(element, z1, osm)
         
-        roofHeight = roof.getHeight()
-        roofMinHeight = z2 - roofHeight
-        wallHeight = roofMinHeight - z1
+        roofHeight = roof.getHeight(op)
+        z2 = building.getHeight(element)
+        if z2 is None:
+            wallHeight = building.getWallHeight(element, op)
+            if wallHeight is None:
+                z2 = op.defaultBuildingHeight
+                roofMinHeight = z2 - roofHeight
+                wallHeight = roofMinHeight - z1
+            else:
+                roofMinHeight = z1 + wallHeight
+                z2 = roofMinHeight + roofHeight
+        else:
+            roofMinHeight = z2 - roofHeight
+            wallHeight = roofMinHeight - z1
         # validity check
         if wallHeight < 0.:
             return

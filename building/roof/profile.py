@@ -444,21 +444,20 @@ class RoofProfile(Roof):
         slot.append(pv2.vertIndex)
         self.slot = slot
     
-    def getHeight(self):
-        element = self.element
-        tags = element.tags
+    def getHeight(self, op):
+        tags = self.element.tags
         
-        if "roof:height" in tags:
-            h = parseNumber(tags["roof:height"], self.defaultHeight)
-        elif not self.angleToHeight is None and "roof:angle" in tags:
-            angle = parseNumber(tags["roof:angle"])
-            if angle is None:
-                h = self.defaultHeight
-            else:
-                self.processDirection()
-                h = self.angleToHeight * self.polygonWidth * math.tan(math.radians(angle))
-        else:
-            h = self.defaultHeight
-        
+        h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
+        if h is None:
+            if not self.angleToHeight is None and "roof:angle" in tags:
+                angle = parseNumber(tags["roof:angle"])
+                if not angle is None:
+                    self.processDirection()
+                    h = self.angleToHeight * self.polygonWidth * math.tan(math.radians(angle))
+            if h is None:
+                # getting the number of levels
+                if "roof:levels" in tags:
+                    h = parseNumber(tags["roof:levels"])
+                h = self.defaultHeight if h is None else h * op.levelHeight
         self.h = h
         return h

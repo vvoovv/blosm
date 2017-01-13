@@ -40,15 +40,16 @@ class Building:
         for nodeId in self.element.nodeIds(osm):
             osm.nodes[nodeId].b.add(buildingIndex)
     
-    def getHeight(self, element, op):
-        tags = element.tags
-        if "height" in tags:
-            h = parseNumber(tags["height"], op.defaultBuildingHeight)
-        elif "building:levels" in tags:
-            numLevels = parseNumber(tags["building:levels"])
-            h = op.defaultBuildingHeight if numLevels is None else numLevels * op.levelHeight
-        else:
-            h = op.defaultBuildingHeight
+    def getHeight(self, element):
+        return parseNumber(element.tags["height"]) if "height" in element.tags else None
+    
+    def getWallHeight(self, element, op):
+        # getting the number of levels
+        h = element.tags.get("building:levels")
+        if not h is None:
+            h = parseNumber(h)
+            if not h is None:
+                h *= op.levelHeight
         return h
     
     def getMinHeight(self, element, op):
