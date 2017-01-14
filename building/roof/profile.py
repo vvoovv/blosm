@@ -180,29 +180,29 @@ class Slot:
         parts = self.parts
         indexPartR = -1
         index = (len(parts) if index is None else index) - 2
-        roofFace = []
+        vertIndex0 = None
         while index >= 0:
             _, part, reflection, _index = parts[index]
+            if vertIndex0 is None:
+                vertIndex0 = parts[index+1][1][0]
+                roofFace = []
             # <False> for the reflection means reflection to the left
             if reflection is False:
                 index -= 1
                 continue
-            if not roofFace:
-                vertIndex0 = parts[index+1][1][0]
             roofFace.extend(part)
             if part[-1] == vertIndex0:
                 # came up and closed the loop
                 roofIndices.append(roofFace)
-                roofFace = []
+                vertIndex0 = None
             elif not self.endAtSelf[_index]:
                 # came to the neighbor from the right
                 roofFace.extend(self.n.partsR[indexPartR])
                 indexPartR -= 1
                 roofIndices.append(roofFace)
-                roofFace = []
-            else:
-                if part[-1] != parts[index-1][1][0]:
-                    index = self.trackDown(roofIndices, index, part[-1])
+                vertIndex0 = None
+            elif part[-1] != parts[index-1][1][0]:
+                index = self.trackDown(roofIndices, index, part[-1])
             if not destVertIndex is None and parts[index-1][1][0] == destVertIndex:
                 return index
             # <True> for the reflection means reflection to the right
@@ -212,26 +212,26 @@ class Slot:
         parts = self.parts
         numParts = len(parts)
         index = 1 if index is None else index+2
-        roofFace = []
+        vertIndex0 = None
         while index < numParts:
             _, part, reflection, _index = parts[index]
+            if vertIndex0 is None:
+                vertIndex0 = parts[index-1][1][0]
+                roofFace = []
             # <True> for the reflection means reflection to the right
             if reflection is True:
                 index += 1
                 continue
-            if not roofFace:
-                vertIndex0 = parts[index-1][1][0]
             roofFace.extend(part)
             if part[-1] == vertIndex0:
                 # came down and closed the loop
                 roofIndices.append(roofFace)
-                roofFace = []
+                vertIndex0 = None
             elif not self.endAtSelf[_index]:
                 # came to the neighbor from the left
                 self.partsR.append(roofFace)
-                roofFace = []
-            else:
-                if part[-1] != parts[index+1][1][0]:
+                vertIndex0 = None
+            elif part[-1] != parts[index+1][1][0]:
                     index = self.trackUp(roofIndices, index, part[-1])
             if not destVertIndex is None and parts[index+1][1][0] == destVertIndex:
                 return index
@@ -376,24 +376,34 @@ class RoofProfile(Roof):
                 # going from the left to the right
                 if _pv.x < pv1.x:
                     appendToSlot = True
-                elif index1 and (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
+                elif index1:
                     # The condition <index1> is to prevent
-                    # erroneous reflection due to precision error caused by
-                    # precision error due to the nature of <zero> variable
-                    appendToSlot = True
-                    # <True> for the reflection means reflection to the right
-                    reflection = True
+                    # erroneous reflection due to zero angle as the result of mapping error or
+                    # precision error caused by the nature of <zero> variable
+                    if _pv.onProfile and _pv.index == pv1.index:
+                        if _pv.y < pv1.y:
+                            appendToSlot = True
+                            # no reflection in this case!
+                    elif (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
+                        appendToSlot = True
+                        # <True> for the reflection means reflection to the right
+                        reflection = True
             else:
                 # going from the right to the left
                 if _pv.x > pv1.x:
                     appendToSlot = True
-                elif index1 != self.lastProfileIndex and (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
+                elif index1 != self.lastProfileIndex:
                     # The condition <index1 != self.lastProfileIndex> is to prevent
-                    # erroneous reflection due to precision error caused by
-                    # precision error due to the nature of <zero> variable
-                    appendToSlot = True
-                    # <False> for the reflection means reflection to the left
-                    reflection = False
+                    # erroneous reflection due to zero angle as the result of mapping error or
+                    # precision error caused by the nature of <zero> variable
+                    if _pv.onProfile and _pv.index == pv1.index:
+                        if _pv.y > pv1.y:
+                            appendToSlot = True
+                            # no reflection in this case!
+                    elif (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
+                        appendToSlot = True
+                        # <False> for the reflection means reflection to the left
+                        reflection = False
             if appendToSlot:
                 self.originSlot = slot
                 slot = slots[index1]
