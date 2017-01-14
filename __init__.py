@@ -90,18 +90,6 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         description = "Import building outlines",
         default = True
     )
-
-    highways = bpy.props.BoolProperty(
-        name = "Import roads and paths",
-        description = "Import roads and paths",
-        default = False
-    )
-    
-    railways = bpy.props.BoolProperty(
-        name = "Import railways",
-        description = "Import railways",
-        default = False
-    )
     
     water = bpy.props.BoolProperty(
         name = "Import water objects",
@@ -119,6 +107,24 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         name = "Import other vegetation",
         description = "Import other vegetation (grass, meadow, scrub)",
         default = True
+    )
+    
+    highways = bpy.props.BoolProperty(
+        name = "Import roads and paths",
+        description = "Import roads and paths",
+        default = False
+    )
+    
+    railways = bpy.props.BoolProperty(
+        name = "Import railways",
+        description = "Import railways",
+        default = False
+    )
+    
+    defaultRoofShape = bpy.props.EnumProperty(
+        items = (("flat", "flat", "flat shape"), ("gabled", "gabled", "gabled shape")),
+        description = "Roof shape for a building if the roof shape is not set in OpenStreetMap",
+        default = "flat"
     )
     
     singleObject = bpy.props.BoolProperty(
@@ -243,12 +249,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             layout.prop(self, "mode", expand=True)
         box = layout.box()
         box.prop(self, "buildings")
-        box.prop(self, "highways")
-        box.prop(self, "railways")
         box.prop(self, "water")
         box.prop(self, "forests")
         box.prop(self, "vegetation")
+        box.prop(self, "highways")
+        box.prop(self, "railways")
         box = layout.box()
+        split = box.split(percentage=0.66)
+        split.label("Default roof shape:")
+        split.prop(self, "defaultRoofShape", text="")
         box.prop(self, "defaultBuildingHeight")
         box.prop(self, "levelHeight")
         box = layout.box()

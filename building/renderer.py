@@ -42,10 +42,9 @@ class BuildingRenderer(Renderer3d):
         super().__init__(op)
         self.layerIndex = op.layerIndices.get(layerId)
         # create instances of classes that deal with specific roof shapes
-        self.flatRoof = RoofFlat()
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
-            'flat': self.flatRoof,
+            'flat': RoofFlat(),
             'gabled': RoofProfile(gabledRoof),
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
@@ -56,6 +55,8 @@ class BuildingRenderer(Renderer3d):
             'gambrel': RoofProfile(gambrelRoof),
             'saltbox': RoofProfile(saltboxRoof)
         }
+        self.defaultRoof = self.roofs[op.defaultRoofShape]
+        
         self.defaultMaterialIndices = [None, None]
         # References to Blender materials used by roof Blender meshes
         # loaded from a .blend library file
@@ -85,7 +86,7 @@ class BuildingRenderer(Renderer3d):
         op = self.op
         z1 = building.getMinHeight(element, op)
         # get a class instance created in the constructor to deal with a specific roof shape
-        roof = self.roofs.get(element.tags.get("roof:shape"), self.flatRoof)
+        roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
         if element.t is Renderer.multipolygon:
             # flat roof is always for multipolygons
             roof = self.flatRoofMulti
