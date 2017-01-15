@@ -87,10 +87,7 @@ class Roof:
         verts = self.verts
         self.verts.extend( Vector((coord[0], coord[1], minHeight)) for coord in element.getData(osm) )
         # create a polygon located at <minHeight>
-        self.polygon = Polygon(
-            tuple(range(len(verts))),
-            verts
-        )
+        self.polygon = Polygon(verts)
         # check the direction of vertices, it must be counterclockwise
         self.polygon.checkDirection()
     
@@ -112,8 +109,12 @@ class Roof:
             return
         
         bm = r.bm
-        # create BMesh vertices
-        verts = tuple(bm.verts.new(v) for v in self.verts)
+        verts = self.verts
+        # create BMesh vertices directly in the Python list <self.verts>
+        for i in self.polygon.indices:
+            verts[i] = bm.verts.new(verts[i])
+        for i in range(self.polygon.indexOffset, len(verts)):
+            verts[i] = bm.verts.new(verts[i])
         
         if wallIndices:
             materialIndex = r.getWallMaterialIndex(self.element)

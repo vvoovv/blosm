@@ -77,21 +77,26 @@ class RoofFlatMulti(RoofFlat):
             n = len(verts)
             polygons.append(
                 Polygon(
-                    tuple(range(indexOffset, n)),
-                    verts
+                    verts,
+                    tuple(range(indexOffset, n))
                 )
             )
             indexOffset = n
-        # vertices for the bottom
-        verts.extend(Vector((verts[i].x, verts[i].y, bldgMinHeight)) for i in range(n))
+        # vertices for the bottom  
+        verts.extend(Vector((verts[i].x, verts[i].y, bldgMinHeight)) for p in polygons for i in p.indices)
         return True
     
     def render(self, r):
         element = self.element
+        verts = self.verts
         polygons = self.polygons
         bm = r.bm
-        # create BMesh vertices
-        verts = tuple( bm.verts.new(v) for v in self.verts )
+        # create BMesh vertices directly in the Python list <self.verts>
+        for polygon in polygons:
+            for i in polygon.indices:
+                verts[i] = bm.verts.new(verts[i])
+        for i in range(polygons[-1].indexOffset, len(verts)):
+            verts[i] = bm.verts.new(verts[i])
         # create BMesh edges out of <verts>
         edges = tuple(
             bm.edges.new( (verts[polygon.indices[i-1]], verts[polygon.indices[i]]) )\
@@ -111,7 +116,7 @@ class RoofFlatMulti(RoofFlat):
         
         # create BMesh faces for building sides
         indexOffset1 = 0
-        indexOffset2 = len(verts)//2
+        indexOffset2 = polygons[-1].indexOffset
         wallIndices = self.wallIndices
         for polygon in polygons:
             n = polygon.n
@@ -131,15 +136,15 @@ class RoofFlatMulti(RoofFlat):
             
             wallIndices.extend(
                 (
-                    indexOffset1 - 1 + (i if i else n),
+                    polygon.indices[i-1],
                     indexOffset2 - 1 + (i if i else n),
-                    indexOffset2 + i, 
-                    indexOffset1 + i
+                    indexOffset2 + i,
+                    polygon.indices[i]
                 )\
                 if keepDirection else\
                 (
-                    indexOffset1 - 1 + (i if i else n),
-                    indexOffset1 + i,
+                    polygon.indices[i-1],
+                    polygon.indices[i],
                     indexOffset2 + i,
                     indexOffset2 - 1 + (i if i else n)
                 )\

@@ -18,16 +18,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from mathutils import Vector
-from util import zAxis, zeroVector
+from util import zAxis, zero, zeroVector
 
 
 class Polygon:
     
-    def __init__(self, indices, allVerts):
-        n = len(indices)
-        self.n = n
+    def __init__(self, allVerts, indices=None, removeStraightAngles=True):
         self.allVerts = allVerts
+        # Not all vertices from <allVerts> will be used to create BMesh vertices,
+        # since they may have a straight angle.
+        # Later new vertices may be added to <allVerts>, for each of those vertices
+        # a BMesh vertex will be created. To distinguish between those two groups of <allVerts>,
+        # we need to keep the border between them as <self.indexOffset>
+        self.indexOffset = len(allVerts)
         self.indices = indices
+        self.n = len(indices if indices else allVerts)
+        self.removeStraightAngles()
         # normal to the polygon
         self.normal = zAxis
     
@@ -125,3 +131,49 @@ class Polygon:
         indices.extend(
             (_indices[i-1], _indices[i], indexOffset + i, indexOffset + i - 1) for i in range(1, self.n)
         )
+    
+    def removeStraightAngles(self):
+        """
+        Given <verts> constituting a polygon, removes vertices forming a straight angle
+        """
+        verts = self.allVerts
+        indices = self.indices
+        # Create the Python list <newIndices> only if it's really necessary,
+        # i.e. there are straight angles in the polygon 
+        newIndices = None
+        v = verts[indices[-1] if indices else -1]
+        v_ = verts[indices[0] if indices else 0]
+        ux = v_.x - v.x
+        uy = v_.y - v.y
+        # the last index
+        i_ = self.n-1
+        for i in range(self.n):
+            v = v_
+            _ux = ux
+            _uy = uy
+            v_ = verts[
+                (indices[0] if indices else 0)\
+                if i == i_ else\
+                (indices[i+1] if indices else i+1)
+            ]
+            ux = v_.x - v.x
+            uy = v_.y - v.y
+            # dot product of the vectors <_u> and <u>
+            dot = _ux*ux + _uy*uy
+            # Check if tangent of angle between the vectors <_u> and <u> is nearly equal to zero;
+            # the tangent can be calculated as ration of cross product and dot product
+            if dot and abs((_ux*uy - _uy*ux)/dot) < zero:
+                if newIndices is None:
+                    # Found the first straight angle in the polygon.
+                    # Copy indices for the non-straight angles that we encountered before to <newIndices>
+                    newIndices = [indices[_i] for _i in range(i)] if indices else [_i for _i in range(i)]
+            elif not newIndices is None:
+                newIndices.append(indices[i] if indices else i)
+        if newIndices is None:
+            # no straight angles found
+            if not indices:
+                self.indices = tuple(range(self.n))
+        else:
+            # set new indices without straight angles to <self.indices>
+            self.indices = newIndices
+            self.n = len(newIndices)

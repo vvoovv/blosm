@@ -58,6 +58,12 @@ class RoofMesh(Roof):
         polygon = self.polygon
         op = r.op
         
+        scale = (
+            ( max(v.x for v in polygon.verts) - min(v.x for v in polygon.verts) )/2.,
+            ( max(v.y for v in polygon.verts) - min(v.y for v in polygon.verts) )/2.,
+            self.h
+        )
+        
         # create building walls
         super().render(r)
         
@@ -74,11 +80,7 @@ class RoofMesh(Roof):
         # create a Blender object to host <mesh>
         o = bpy.data.objects.new(self.mesh, mesh)
         o.location = self.location
-        o.scale = (
-            ( max(v.x for v in polygon.verts) - min(v.x for v in polygon.verts) )/2.,
-            ( max(v.y for v in polygon.verts) - min(v.y for v in polygon.verts) )/2.,
-            self.h
-        )
+        o.scale = scale
         bpy.context.scene.objects.link(o)
         # perform Blender parenting
         o.parent = r.obj

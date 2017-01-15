@@ -48,7 +48,7 @@ class BuildingRenderer(Renderer3d):
             'gabled': RoofProfile(gabledRoof),
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
-            'hipped': RoofProfile(gabledRoof),
+            #'hipped': RoofProfile(gabledRoof),
             'dome': RoofMesh("roof_dome"),
             'onion': RoofMesh("roof_onion"),
             'round': RoofProfile(roundRoof),
