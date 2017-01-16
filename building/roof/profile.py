@@ -277,6 +277,9 @@ class RoofProfile(Roof):
 
     def init(self, element, minHeight, osm):
         super().init(element, minHeight, osm)
+        self.initProfile()
+    
+    def initProfile(self):
         self.projections.clear()
         # The last slot with the index <self.lastProfileIndex> isn't touched,
         # so no need to reset it

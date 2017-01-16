@@ -25,6 +25,7 @@ from .roof.pyramidal import RoofPyramidal
 from .roof.skillion import RoofSkillion
 from .roof.mesh import RoofMesh
 from .roof.profile import *
+from .roof.hipped import RoofHipped
 from util.blender import createDiffuseMaterial
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
@@ -48,7 +49,7 @@ class BuildingRenderer(Renderer3d):
             'gabled': RoofProfile(gabledRoof),
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
-            #'hipped': RoofProfile(gabledRoof),
+            'hipped': RoofHipped(gabledRoof),
             'dome': RoofMesh("roof_dome"),
             'onion': RoofMesh("roof_onion"),
             'round': RoofProfile(roundRoof),
