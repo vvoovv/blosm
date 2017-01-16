@@ -132,7 +132,7 @@ class RoofFlatMulti(RoofFlat):
             # a BMLoop for <edge>
             l = edge.link_loops[0]
             # check if the direction of <polygon> needs to be reverted
-            keepDirection = l.link_loop_next.vert == verts[indexOffset1]
+            keepDirection = l.link_loop_next.vert == verts[polygon.indices[0]]
             
             wallIndices.extend(
                 (
