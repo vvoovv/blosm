@@ -237,6 +237,14 @@ class Slot:
                 return index
             # <False> for the reflection means reflection to the left
             index += 1 if reflection is False else 2
+    
+    def processWallFace(self, indices):
+        """
+        
+        Args:
+            indices (list): Vertex indices for the wall face
+        """
+        pass
 
 
 class RoofProfile(Roof):
@@ -435,6 +443,7 @@ class RoofProfile(Roof):
                 self.originSlot = slot
                 slot = slots[_i]
                 slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
+                slot.processWallFace(_wallIndices)
                 vertIndex -= 1
             return slot
         
