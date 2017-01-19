@@ -1,44 +1,26 @@
+"""
+This file is part of blender-osm (OpenStreetMap importer for Blender).
+Copyright (C) 2014-2017 Vladimir Elistratov
+prokitektura+support@gmail.com
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 from . import Roof
-from .profile import RoofProfile, Slot
+from .profile import RoofProfile
 from .flat import RoofFlat
-
-
-class MiddleSlot(Slot):
-    
-    def __init__(self):
-        super().__init__()
-        # The first element of the Python lists <self.front> and <self.back> is <y> from <self.parts>,
-        # the second one is vertex indices for a wall face
-        # Front wall face
-        self.front = [None, None]
-        # Back wall face
-        self.back = [None, None]
-    
-    def reset(self):
-        super().reset()
-        self.front[0] = None
-        self.back[0] = None
-
-    def processWallFace(self, indices):
-        """
-        A child class may provide realization of this methods
-        Args:
-            indices (list): Vertex indices for the wall face
-        """
-        y = self.parts[-1][0]
-        front = self.front
-        back = self.back
-        noFront = front[0] is None
-        noBack = back[0] is None
-        if noFront or y < front[0]:
-            if not noFront and noBack:
-                back[0] = front[0]
-                back[1] = front[1]
-            front[0] = y
-            front[1] = indices
-        elif noBack or y > back[0]:
-            back[0] = y
-            back[1] = indices
+from .half_hipped import MiddleSlot
 
 
 class RoofHipped(RoofProfile):
@@ -106,13 +88,15 @@ class RoofHipped(RoofProfile):
         return True
     
     def makeHipped(self, wallFace, ridgeVertexIndex, displacement):
+        wallFaceIndices = wallFace[1][0]
         if len(wallFace[1]) == 3:
-            self.wallIndices.remove(wallFace[1])
+            self.wallIndices.remove(wallFaceIndices)
             # create extra triangle for the roof
-            self.roofIndices.append(wallFace[1])
+            self.roofIndices.append(wallFaceIndices)
         else:
-            wallFace[1].remove(ridgeVertexIndex)
+            # the following line is equivalent to <wallFace[1].remove(ridgeVertexIndex)>
+            wallFace[1].pop()
             # create extra triangle for the roof
-            self.roofIndices.append( (wallFace[1][0], wallFace[1][-1], ridgeVertexIndex) )
+            self.roofIndices.append( (wallFaceIndices[0], wallFaceIndices[-1], ridgeVertexIndex) )
         # add displacement for the ridge vertex
         self.verts[ridgeVertexIndex] += displacement

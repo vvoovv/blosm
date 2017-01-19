@@ -238,11 +238,13 @@ class Slot:
             # <False> for the reflection means reflection to the left
             index += 1 if reflection is False else 2
     
-    def processWallFace(self, indices):
+    def processWallFace(self, indices, pv1, pv2):
         """
-        
+        A child class may provide realization for this methods
         Args:
             indices (list): Vertex indices for the wall face
+            pv1 (ProfileVert): the first vertex of the two between which the slot vertex is located
+            pv2 (ProfileVert): the second vertex of the two between which the slot vertex is located
         """
         pass
 
@@ -425,25 +427,25 @@ class RoofProfile(Roof):
             A helper function
             """
             vertIndex = len(verts) - 1
-            multiplierX = (v2.x - v1.x) / (pv2.x - pv1.x)
-            multiplierY = (v2.y - v1.y) / (pv2.x - pv1.x)
+            factorX = (v2.x - v1.x) / (pv2.x - pv1.x)
+            factorY = (v2.y - v1.y) / (pv2.x - pv1.x)
             for _i in vertsRange:
                 vertIndex += 1
-                multiplier = p[_i][0] - pv1.x
+                factor = p[_i][0] - pv1.x
                 verts.append(Vector((
-                    v1.x + multiplier * multiplierX,
-                    v1.y + multiplier * multiplierY,
+                    v1.x + factor * factorX,
+                    v1.y + factor * factorY,
                     roofMinHeight + self.h * p[_i][1]
                 )))
                 _wallIndices.append(vertIndex)
             # fill <slots>
-            multiplier = (pv2.y - pv1.y) / (pv2.x - pv1.x)
+            factor = (pv2.y - pv1.y) / (pv2.x - pv1.x)
             for _i in slotRange:
                 slot.append(vertIndex)
                 self.originSlot = slot
                 slot = slots[_i]
-                slot.append(vertIndex, pv1.y + multiplier * (p[_i][0] - pv1.x), self.originSlot)
-                slot.processWallFace(_wallIndices)
+                slot.append(vertIndex, pv1.y + factor * (p[_i][0] - pv1.x), self.originSlot)
+                slot.processWallFace(_wallIndices, pv1, pv2)
                 vertIndex -= 1
             return slot
         
