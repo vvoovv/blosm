@@ -89,13 +89,13 @@ class RoofHipped(RoofProfile):
     
     def makeHipped(self, wallFace, ridgeVertexIndex, displacement):
         wallFaceIndices = wallFace[1][0]
-        if len(wallFace[1]) == 3:
+        if len(wallFaceIndices) == 3:
             self.wallIndices.remove(wallFaceIndices)
             # create extra triangle for the roof
             self.roofIndices.append(wallFaceIndices)
         else:
             # the following line is equivalent to <wallFace[1].remove(ridgeVertexIndex)>
-            wallFace[1].pop()
+            wallFaceIndices.pop()
             # create extra triangle for the roof
             self.roofIndices.append( (wallFaceIndices[0], wallFaceIndices[-1], ridgeVertexIndex) )
         # add displacement for the ridge vertex
