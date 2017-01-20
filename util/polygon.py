@@ -141,14 +141,18 @@ class Polygon:
         # Create the Python list <newIndices> only if it's really necessary,
         # i.e. there are straight angles in the polygon 
         newIndices = None
+        # <v> denotes the beginning of the vector along a polygon side
         v = verts[indices[-1] if indices else -1]
+        # <v_> denotes the end of the vector along the polygon side
         v_ = verts[indices[0] if indices else 0]
+        # x and y components of the vector <u> = <v_> - <v>
         ux = v_.x - v.x
         uy = v_.y - v.y
         # the last index
         i_ = self.n-1
         for i in range(self.n):
             v = v_
+            # x and y components of the vector <_u> along the previous side of the polygon
             _ux = ux
             _uy = uy
             v_ = verts[
@@ -168,6 +172,8 @@ class Polygon:
                     # Copy indices for the non-straight angles that we encountered before to <newIndices>
                     newIndices = [indices[_i] for _i in range(i)] if indices else [_i for _i in range(i)]
             elif not newIndices is None:
+                # We encountered a straight angle before,
+                # therefore we and the current vertex index to <newIndices>
                 newIndices.append(indices[i] if indices else i)
         if newIndices is None:
             # no straight angles found
@@ -176,4 +182,5 @@ class Polygon:
         else:
             # set new indices without straight angles to <self.indices>
             self.indices = newIndices
+            # calculate the new number of vertices in the polygon
             self.n = len(newIndices)
