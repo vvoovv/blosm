@@ -62,7 +62,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     filename_ext = ".osm"
 
     filter_glob = bpy.props.StringProperty(
-        default="*.osm",
+        default="*.osm;*.xml",
         options={"HIDDEN"},
     )
     
