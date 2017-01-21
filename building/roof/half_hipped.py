@@ -30,7 +30,7 @@ class MiddleSlot(Slot):
         super().__init__()
         # The first element of the Python lists <self.front> and <self.back> is <y> from <self.parts>,
         # the second one is a Python tuple:
-        # (vertex indices for a wall face, profile vertex 1, profile vertex 2)
+        # (vertex indices for a wall face, profiled vertex 1, profiled vertex 2)
         # Front wall face
         self.front = [None, None]
         # Back wall face
@@ -46,6 +46,10 @@ class MiddleSlot(Slot):
         """
         The method is used to find the front and the back wall faces.
         The arguments of the method are described in the parent class.
+        
+        This method is not called if a profiled vertex lies on the middle slot.
+        The middle slot must be somewhere in between two profiled vertices <pv1> and <pv2>,
+        in order for a wall face to be considered as candidate for <self.front> or <self.back>
         """
         y = self.parts[-1][0]
         front = self.front
