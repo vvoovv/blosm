@@ -22,11 +22,15 @@ from .profile import RoofProfile, Slot, gabledRoof
 
 
 class MiddleSlot(Slot):
+    """
+    Extension of the <Slot> class to help finding front and back walls of a building
+    """
     
     def __init__(self):
         super().__init__()
         # The first element of the Python lists <self.front> and <self.back> is <y> from <self.parts>,
-        # the second one is vertex indices for a wall face
+        # the second one is a Python tuple:
+        # (vertex indices for a wall face, profile vertex 1, profile vertex 2)
         # Front wall face
         self.front = [None, None]
         # Back wall face
@@ -34,6 +38,7 @@ class MiddleSlot(Slot):
     
     def reset(self):
         super().reset()
+        # it's enough to reset the y value
         self.front[0] = None
         self.back[0] = None
 
@@ -49,6 +54,7 @@ class MiddleSlot(Slot):
         noBack = back[0] is None
         if noFront or y < front[0]:
             if not noFront and noBack:
+                # uset the previous entry in <front> as <back>
                 back[0] = front[0]
                 back[1] = front[1]
             front[0] = y

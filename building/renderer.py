@@ -98,8 +98,10 @@ class BuildingRenderer(Renderer3d):
         roofHeight = roof.getHeight(op)
         z2 = building.getHeight(element)
         if z2 is None:
+            # no tag <height> or invalid value
             wallHeight = building.getWallHeight(element, op)
             if wallHeight is None:
+                # not tag <building:levels> or invalid value
                 z2 = op.defaultBuildingHeight
                 roofMinHeight = z2 - roofHeight
                 wallHeight = roofMinHeight - z1

@@ -91,10 +91,15 @@ class RoofFlatMulti(RoofFlat):
         verts = self.verts
         polygons = self.polygons
         bm = r.bm
-        # create BMesh vertices directly in the Python list <self.verts>
+        # Create BMesh vertices directly in the Python list <self.verts>
+        # First, deal with vertices defining each polygon in <polygons>;
+        # some vertices of a polygon could be skipped because of the straight angle
         for polygon in polygons:
             for i in polygon.indices:
                 verts[i] = bm.verts.new(verts[i])
+        # Second, create BMesh vertices added after the creation of <polygons>;
+        # <polygons[-1].indexOffset> (i.e. <indexOffset> of the last polygon in <polygons>)
+        # is used to distinguish between the two groups of vertices
         for i in range(polygons[-1].indexOffset, len(verts)):
             verts[i] = bm.verts.new(verts[i])
         # create BMesh edges out of <verts>
@@ -107,14 +112,14 @@ class RoofFlatMulti(RoofFlat):
         # a magic function that does everything
         geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
         materialIndex = r.getRoofMaterialIndex(element)
-        # check the normal direction of the created faces and assign material to all BMFace
+        # check the normal direction of the created faces and assign material to all BMesh faces
         for f in geom["geom"]:
             if isinstance(f, bmesh.types.BMFace):
                 if f.normal.z < 0.:
                     f.normal_flip()
                 f.material_index = materialIndex
         
-        # create BMesh faces for building sides
+        # create BMesh faces for the walls of the building
         indexOffset1 = 0
         indexOffset2 = polygons[-1].indexOffset
         wallIndices = self.wallIndices

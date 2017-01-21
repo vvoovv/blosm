@@ -95,7 +95,7 @@ class Roof:
         tags = self.element.tags
         h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
         if h is None:
-            # getting the number of levels
+            # get the number of levels
             if "roof:levels" in tags:
                 h = parseNumber(tags["roof:levels"])
             h = self.defaultHeight if h is None else h * op.levelHeight
@@ -110,9 +110,13 @@ class Roof:
         
         bm = r.bm
         verts = self.verts
-        # create BMesh vertices directly in the Python list <self.verts>
+        # Create BMesh vertices directly in the Python list <self.verts>
+        # First, deal with vertices defining <self.polygon>;
+        # some vertices of <self.polygon> could be skipped because of the straight angle
         for i in self.polygon.indices:
             verts[i] = bm.verts.new(verts[i])
+        # Second, create BMesh vertices added after the creation of <self.polygon>;
+        # <self.polygon.indexOffset> is used to distinguish between the two groups of vertices
         for i in range(self.polygon.indexOffset, len(verts)):
             verts[i] = bm.verts.new(verts[i])
         
