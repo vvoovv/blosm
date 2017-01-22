@@ -28,7 +28,7 @@ class RoofSkillion(Roof):
     A class to deal with buildings or building parts with a skillion roof
     
     Direction vector of the roof is pointing to the lower part of the roof,
-    perpendicular to the horinontal line that the roof plane contains.
+    perpendicular to the horizontal line that the roof plane contains.
     In other words the direction vector is pointing from the top to the bottom of the roof.
     """
     
@@ -52,7 +52,7 @@ class RoofSkillion(Roof):
         wallIndices = self.wallIndices
         
         # simply take <polygon> indices for the roof
-        self.roofIndices.append( tuple(indices[i] for i in range(0, n)) )
+        self.roofIndices.append(indices)
         
         if not self.projections:
             self.processDirection()
@@ -116,7 +116,7 @@ class RoofSkillion(Roof):
         else:
             # vertices for the bottom part
             verts.extend(Vector((v.x, v.y, bldgMinHeight)) for v in polygon.verts)
-            # the starting wall side
+            # the starting wall face
             wallIndices.append((indexOffset + n - 1, indexOffset, indices[0], indices[-1]))
             wallIndices.extend(
                 (indexOffset + i - 1, indexOffset + i, indices[i], indices[i-1]) for i in range(1, n)

@@ -72,13 +72,16 @@ class RoofHipped(RoofProfile):
                     front = None
             if not front and not back:
                 return True
-            # Relative displacement for the ridge vertices
-            # calculated through the tangent of the roof inclination angle
+            # Relative displacement for the ridge vertex
+            # calculated through the tangent of the roof inclination angle.
+            # We assume that all roof faces have the same pitch.
             d = self.angleToHeight * self.polygonWidth / (slot[-1][0] - slot[0][0])
             if d >= 0.5:
                 d = 0.45
             
-            # indices for the ridge vertices
+            # Indices for the ridge vertices; the ridge for the gabled roof was created by the parent class.
+            # Remember that parts in a slot are sorted by <y> of each part,
+            # the element with the index 1 of each part is the Python list of vertex indices
             indexFront = slot[0][1][0]
             indexBack = slot[-1][1][0]
             # the vector along the ridge
@@ -92,15 +95,28 @@ class RoofHipped(RoofProfile):
         return True
     
     def makeHipped(self, wallFace, ridgeVertexIndex, displacement):
+        """
+        Corrects the gabled roof created by the parent class to create a hipped roof face
+        
+        Args:
+            wallFace (list): Either <self.front> or <self.back>
+            ridgeVertexIndex (int): The index of the ridge vertex belonging to either
+                the front wall face or the back one
+            displacement (Vector): A vector for displacement of the ridge vertex
+                with the index <ridgeVertexIndex> to make a hipped roof face
+        """
+        # vertex indices for a wall face
         wallFaceIndices = wallFace[1][0]
         if len(wallFaceIndices) == 3:
+            # 3 vertices for a wall face actually means no wall face, so remove that wall face
             self.wallIndices.remove(wallFaceIndices)
-            # create extra triangle for the roof
+            # create extra triangle for the hipped roof face
             self.roofIndices.append(wallFaceIndices)
         else:
-            # the following line is equivalent to <wallFace[1].remove(ridgeVertexIndex)>
+            # Remove the ridge vertex from the wall face;
+            # the following line is equivalent to <wallFaceIndices.remove(ridgeVertexIndex)>
             wallFaceIndices.pop()
-            # create extra triangle for the roof
+            # create extra triangle for the hipped roof face
             self.roofIndices.append( (wallFaceIndices[0], wallFaceIndices[-1], ridgeVertexIndex) )
         # add displacement for the ridge vertex
         self.verts[ridgeVertexIndex] += displacement

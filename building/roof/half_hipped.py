@@ -106,8 +106,8 @@ class RoofHalfHipped(RoofProfile):
             return True
         
         # Indices for the ridge vertices; the ridge for the gabled roof was created by the parent class.
-        # Remember that parts are sorted by <y> of each part, the element with the index 1 of each part is
-        # the Python list of vertex indices
+        # Remember that parts in a slot are sorted by <y> of each part,
+        # the element with the index 1 of each part is the Python list of vertex indices
         indexFront = slot[0][1][0]
         indexBack = slot[-1][1][0]
         # the vector along the ridge
@@ -123,7 +123,7 @@ class RoofHalfHipped(RoofProfile):
     
     def makeHalfHipped(self, wallFace, ridgeVertexIndex, ridgeVector, ridgeLength, roofMinHeight):
         """
-        Corrects the gabled roof created by the parent class to create hipped roof faces
+        Corrects the gabled roof created by the parent class to create a hipped roof face
         
         Args:
             wallFace (list): Either <self.front> or <self.back>
