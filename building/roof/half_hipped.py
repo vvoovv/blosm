@@ -69,6 +69,10 @@ class MiddleSlot(Slot):
             
             
 class RoofHalfHipped(RoofProfile):
+    """
+    The half-hipped roof shape is implemented through the correction of the gabled roof
+    created by the parent class.
+    """
     
     # used to calculate the length of the hipped roof face
     widthFactor = 0.5

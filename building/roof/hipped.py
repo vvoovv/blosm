@@ -24,6 +24,10 @@ from .half_hipped import MiddleSlot
 
 
 class RoofHipped(RoofProfile):
+    """
+    The hipped roof shape is implemented only for a quadrangle building outline through the correction of
+    the gabled roof created by the parent class. For the other building outlines a flat roof is created.
+    """
     
     def __init__(self, data):
         super().__init__(data)
