@@ -90,7 +90,7 @@ saltboxRoof = (
 )
 
 
-class ProfileVert:
+class ProfiledVert:
     
     def __init__(self, roof, i, roofMinHeight, noWalls):
         self.i = i
@@ -243,8 +243,8 @@ class Slot:
         A child class may provide realization for this methods
         Args:
             indices (list): Vertex indices for the wall face
-            pv1 (ProfileVert): the first vertex of the two between which the slot vertex is located
-            pv2 (ProfileVert): the second vertex of the two between which the slot vertex is located
+            pv1 (ProfiledVert): the first vertex of the two between which the slot vertex is located
+            pv2 (ProfiledVert): the second vertex of the two between which the slot vertex is located
         """
         pass
 
@@ -308,14 +308,14 @@ class RoofProfile(Roof):
             self.processDirection()
         
         i = i0 = self.minProjIndex
-        # <pv> stands for profile vertex
-        pv1 = pv0 = ProfileVert(self, i, roofMinHeight, noWalls)
+        # <pv> stands for profiled vertex
+        pv1 = pv0 = ProfiledVert(self, i, roofMinHeight, noWalls)
         _pv = None
         while True:
             i = polygon.next(i)
             if i == i0:
                 break
-            pv2 = ProfileVert(self, i, roofMinHeight, noWalls)
+            pv2 = ProfiledVert(self, i, roofMinHeight, noWalls)
             self.createProfileVertices(pv1, pv2, _pv, roofMinHeight, noWalls)
             _pv = pv1     
             pv1 = pv2
@@ -339,8 +339,7 @@ class RoofProfile(Roof):
     
     def createProfileVertices(self, pv1, pv2, _pv, roofMinHeight, noWalls):
         """
-        Create vertices for profile reference points located
-        with the indices between <pv1.index> and <pv2.index>
+        Create vertices for profile reference points located between <pv1.index> and <pv2.index>
         """
         verts = self.verts
         indices = self.polygon.indices
