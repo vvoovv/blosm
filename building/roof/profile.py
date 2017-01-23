@@ -252,6 +252,7 @@ class Slot:
     def processWallFace(self, indices, pv1, pv2):
         """
         A child class may provide realization for this methods
+        
         Args:
             indices (list): Vertex indices for the wall face
             pv1 (ProfiledVert): the first vertex of the two between which the slot vertex is located
@@ -264,21 +265,32 @@ class RoofProfile(Roof):
     """
     The class deals with so called profiled roofs (i.e. roofs defined be a profile):
     gabled, round, gambrel, saltbox
+    
+    See https://github.com/vvoovv/blender-osm/wiki/Profiled-roofs for description and illustration
+    of concepts and algorithms used in the code. Specifically, the image <Main> from that webpage is
+    used a number of times to illustrate the code.
     """
     
     defaultHeight = 3.
     
     def __init__(self, data):
+        """
+        Args:
+            data (tuple): profile values and some attributes to define a profiled roof,
+                e.g. gabledRoof, roundRoof, gambrelRoof, saltboxRoof
+        """
         super().__init__()
         self.hasRidge = True
         self.projections = []
         
+        # actual profile values as a Python tuple of (x, y)
         profile = data[0]
         self.profile = profile
         numProfilesPoints = len(profile)
         self.lastProfileIndex = numProfilesPoints - 1
-        # profile slots
+        # create profile slots
         slots = tuple(Slot() for i in range(numProfilesPoints) )
+        # set the next slot, it will be need in further calculations
         for i in range(self.lastProfileIndex):
             slots[i].n = slots[i+1]
         self.slots = slots
@@ -286,10 +298,15 @@ class RoofProfile(Roof):
         for attr in data[1]:
             setattr(self, attr, data[1][attr])
         
+        # is the y-coordinate at <x=0.0> (the left end of the profile) is equal to zero?
         self.lEndZero = not profile[0][1]
+        # is the y-coordinate at <x=1.0> (the right end of the profile) is equal to zero?
         self.rEndZero = not profile[-1][1]
         
-        # quantize <profile> with <numSamples>
+        # Quantize <profile> with <numSamples> to get performance gain
+        # Quantization is needed to perform the following action very fast.
+        # Given x-coordinate <x> between 0. and 1. in the profile coordinate system,
+        # find two neighboring slots between which <x> is located
         _profile = tuple(math.ceil(p[0]*self.numSamples) for p in profile)
         profileQ = []
         index = 0
@@ -316,33 +333,57 @@ class RoofProfile(Roof):
         roofIndices = self.roofIndices
         noWalls = bldgMinHeight is None
         slots = self.slots
+        # the current slot: start from the leftmost slot
         self.slot = slots[0]
+        # the slot from which the last part in <slot.parts> originates
         self.originSlot = slots[0]
         
         if not self.projections:
             self.processDirection()
         
+        # Start with the vertex from <polygon> with <x=0.> in the profile coordinate system;
+        # the variable <i0> is needed to break the cycle below
         i = i0 = self.minProjIndex
+        # Create a profiled vertex out of <self.verts[polygon.indices[i]]>;
         # <pv> stands for profiled vertex
         pv1 = pv0 = ProfiledVert(self, i, roofMinHeight, noWalls)
         _pv = None
         while True:
             i = polygon.next(i)
             if i == i0:
+                # came to the starting vertex, so break the cycle
                 break
+            # create a profiled vertex out of <self.verts[polygon.indices[i]]>
             pv2 = ProfiledVert(self, i, roofMinHeight, noWalls)
+            # The order of profiled vertices is <_pv>, <pv1>, <pv2>
+            # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>)
             self.createProfileVertices(pv1, pv2, _pv, roofMinHeight, noWalls)
             _pv = pv1     
             pv1 = pv2
-        # the closing part
+        # Create in-between vertices located on the slots for the closing segment between <pv1> and <pv0>
         self.createProfileVertices(pv1, pv0, _pv, roofMinHeight, noWalls)
         
-        slots[1].endAtSelf.append(True)
+        # Append the vertices from the first part of the <slot[0]> (i.e. slots[0].parts[0])
+        # to the last part of <slots[1]> (i.e. slots[1].parts[-1])
+        # Example on the image <Main>:
+        # slots[0].parts[0][1] is [11, 12, 15]
+        # slots[1].parts[-1][1] is [28, 11]
+        # after the execution of the line of below:
+        # slots[1].parts[-1][1] is [28, 11, 12, 15]
         slots[1].parts[-1][1].extend(slots[0].parts[0][1][i] for i in range(1, len(slots[0].parts[0][1])))
-        # deal with the roof top
+        # the last part of <slots[1]> ends at self
+        slots[1].endAtSelf.append(True)
+        
+        # Prepare the slots to form faces for the roof;
+        # note that slots[0] and slots[-1] aren't used in calculations
         for i in range(1, self.lastProfileIndex):
             slots[i].prepare()
         
+        # Below is the cycle to form faces for the roof
+        # Each time a band between the neighboring slots
+        # <slotL> (a slot from the left) and <slotR> (a slot from the right) is considered.
+        # We trace <slotR> upwards by executing <slotR.trackUp(roofIndices)>,
+        # then we trace <slotL> downwards by executing slotL.trackDown(roofIndices)
         slotR = slots[1]
         slotR.trackUp(roofIndices)
         for i in range(1, self.lastProfileIndex):
@@ -354,7 +395,7 @@ class RoofProfile(Roof):
     
     def createProfileVertices(self, pv1, pv2, _pv, roofMinHeight, noWalls):
         """
-        Create vertices for profile reference points located between <pv1.index> and <pv2.index>
+        Create in-between vertices located on the slots for the segment between <pv1> and <pv2>
         """
         verts = self.verts
         indices = self.polygon.indices
