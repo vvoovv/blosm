@@ -24,6 +24,8 @@ from util import zero
 from util.osm import parseNumber
 
 
+# Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
+# to generate values for a specific profile
 gabledRoof = (
     (
         (0., 0.),
@@ -91,8 +93,17 @@ saltboxRoof = (
 
 
 class ProfiledVert:
-    
+    """
+    A class represents a vertex belonging to RoofProfile.polygon projected on the profile
+    """
     def __init__(self, roof, i, roofMinHeight, noWalls):
+        """
+        Args:
+            roof (RoofProfile): an instance of the class <RoofProfile>
+            i (int): index (between 0 and <roof.polygon.n-1>) of the polygon vertex
+            roofMinHeight (float): Supplied by BuildingRenderer.renderElement(..)
+            noWalls (bool): Does the building has wallls?
+        """
         self.i = i
         verts = roof.verts
         indices = roof.polygon.indices
@@ -250,6 +261,10 @@ class Slot:
 
 
 class RoofProfile(Roof):
+    """
+    The class deals with so called profiled roofs (i.e. roofs defined be a profile):
+    gabled, round, gambrel, saltbox
+    """
     
     defaultHeight = 3.
     
