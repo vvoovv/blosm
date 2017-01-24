@@ -111,58 +111,88 @@ class ProfiledVert:
         p = roof.profile
         d = roof.direction
         v = verts[indices[i]]
+        # is the polygon vertex <i> located on a profile slot?
         onProfile = False
         createVert = True
-        # Coordinate along roof profile (i.e. along the roof direction)
+        # X-coordinate in the profile coordinate system (i.e. along the roof direction);
         # the roof direction is calculated in roof.processDirection(..);
-        # the coordinate can possess the value from 0. to 1.
+        # the coordinate can possess the value between 0. and 1.
         x = (proj[i] - proj[roof.minProjIndex]) / roof.polygonWidth
-        # Coordinate (with an offset) across roof profile;
-        # a perpendicular to <roof.direction> is equal to <Vector((-d[1], d[0], 0.))
+        # Y-coordinate in the profile coordinate system;
+        # it's a coordinate (with an offset) across roof profile.
+        # Note, that a perpendicular to <roof.direction> is equal to <Vector((-d[1], d[0], 0.))
         self.y = -v[0]*d[1] + v[1]*d[0]
         # index in <roof.profileQ>
         index = roof.profileQ[
             math.floor(x * roof.numSamples)
         ]
         distance = x - p[index][0]
-        # check if x is equal zero
+        
         if distance < zero:
+            # the vertex <i> is located on the profile slot <roof.slots[index]>
             onProfile = True
             if roof.lEndZero and noWalls and not index:
+                # The vertex <i> is located on the first profile slot <roof.slots[0]>,
+                # also the building doesn't have walls and the profile value is equal to zero.
+                # Therefore, no need to create a vertex, just use the polygon vertex with the index <indices[i]>
                 createVert = False
                 index = 0
                 x = 0.
                 vertIndex = indices[i]
             else:
+                # <x> and <z> coordinates for the profile point with the <index>
                 x, h = p[index]
         elif abs(p[index + 1][0] - x) < zero:
+            # the vertex <i> is located on the profile slot <roof.slots[index+1]>
             onProfile = True
             # increase <index> by one
             index += 1
             if roof.rEndZero and noWalls and index == roof.lastProfileIndex:
+                # The vertex <i> is located on the last profile slot <roof.slots[-1]>,
+                # also the building doesn't have walls and the profile value is equal to zero.
+                # Therefore, no need to create a vertex, just use the polygon vertex with the index <indices[i]>
                 createVert = False
                 index = roof.lastProfileIndex
                 x = 1.
                 vertIndex = indices[i]
             else:
+                # <x> and <z> coordinates for the profile point with the <index>
                 x, h = p[index]
         else:
+            # Polygon vertex <i> has X-coordinate in the profile coordinate system,
+            # located between the profile slots <roof.slots[index]> and <roof.slots[index+1]>
+            # Z-coordinate for the profile point with the <index>
             h1 = p[index][1]
+            # Z-coordinate for the profile point with the <index+1>
             h2 = p[index+1][1]
+            # given <h1> and <h2>, calculate Z-coordinate for the polygon vertex <i>
             h = h1 + (h2 - h1) / (p[index+1][0] - p[index][0]) * distance
         if createVert:
             vertIndex = len(verts)
+            # note, that <h> is multiplied by the roof height <roof.h>
             verts.append(Vector((v.x, v.y, roofMinHeight + roof.h * h)))
+        # The meaning of <self.index> is that the polygon vertex <i> projected on the profile
+        # has X-coordinate in the profile coordinate system,
+        # located between the profile slots <roof.slots[index]> and <roof.slots[index+1]>
         self.index = index
+        # If the polygon vertex <i> is located on a profile slot (i.e. <self.onProfile> is <True>) and
+        # has <self.index>, it can be located only on the slot <roof.slots[index]>,
+        # not (!) on the slot <roof.slots[index+1]>
         self.onProfile = onProfile
+        # X-coordinate in the profile coordinate system, it can possess the value between 0. and 1.
         self.x = x
+        # vertex index of the polygon vertex <i> projected on the profile
         self.vertIndex = vertIndex
 
 
 class Slot:
+    """
+    An instance of the class is created for each profile point.
+    The class is used to form faces for the profiled roof.
+    """
     
     def __init__(self):
-        # (y, chunk, reflection)
+        # (y, part, reflection, index in <self.parts>)
         self.parts = []
         self.partsR = []
         # does a part from <self.parts> with <index> end at self (True) or at neighbor slot (False) 
@@ -356,11 +386,13 @@ class RoofProfile(Roof):
             # create a profiled vertex out of <self.verts[polygon.indices[i]]>
             pv2 = ProfiledVert(self, i, roofMinHeight, noWalls)
             # The order of profiled vertices is <_pv>, <pv1>, <pv2>
-            # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>)
+            # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>),
+            # also form a wall face under the segment between <pv1> and <pv2>
             self.createProfileVertices(pv1, pv2, _pv, roofMinHeight, noWalls)
             _pv = pv1     
             pv1 = pv2
-        # Create in-between vertices located on the slots for the closing segment between <pv1> and <pv0>
+        # Create in-between vertices located on the slots for the closing segment between <pv1> and <pv0>,
+        # also form a wall face under the segment between <pv1> and <pv0>
         self.createProfileVertices(pv1, pv0, _pv, roofMinHeight, noWalls)
         
         # Append the vertices from the first part of the <slot[0]> (i.e. slots[0].parts[0])
@@ -395,30 +427,55 @@ class RoofProfile(Roof):
     
     def createProfileVertices(self, pv1, pv2, _pv, roofMinHeight, noWalls):
         """
-        Create in-between vertices located on the slots for the segment between <pv1> and <pv2>
+        Create in-between vertices located on the slots for the segment between <pv1> and <pv2>,
+        also form a wall face under the segment between <pv1> and <pv2>.
+        
+        For example (see the image <Main>), if <pv1> was created for the polygon vertex with the index <3>,
+        <pv2> was created for the polygon vertex with the index <4>, then two vertices with the indices
+        <22> and <23> will be created for the intersection of the segment between <pv1> and <pv2> with
+        the slots <slots[2]> and <slots[3]> respectively.
+         
+        Args:
+            pv1 (ProfiledVert): Defines the first vertex of the segment of <self.polygon> projected on the profile
+            pv2 (ProfiledVert): Defines the second vertex of the segment of <self.polygon> projected on the profile
+            _pv (ProfiledVert): Precedes <pv1>
+            roofMinHeight (float): Supplied by BuildingRenderer.renderElement(..)
+            noWalls (bool): Does the building has wallls?
         """
         verts = self.verts
         indices = self.polygon.indices
         p = self.profile
         wallIndices = self.wallIndices
         slots = self.slots
+        # the current slot
         slot = self.slot
         
+        # index of the slot for <pv1>
         index1 = pv1.index
+        # index of the slot for <pv1>
         index2 = pv2.index
-            
+        
+        # skip the polygon vertex with the index indices[pv1.i] from including it to the wall face?
         skip1 = noWalls and pv1.onProfile and\
             ((self.lEndZero and not index1) or\
             (self.rEndZero and index1 == self.lastProfileIndex))
+        # skip the polygon vertex with the index indices[pv2.i] from including it to the wall face?
         skip2 = noWalls and pv2.onProfile and\
             ((self.lEndZero and not index2) or\
             (self.rEndZero and index2 == self.lastProfileIndex))
 
         if skip1 and skip2 and index1 == index2:
+            # In the case the building doesn't have walls and both <pv1> and <pv2>
+            # are located either on <slots[0]> or <slots[-1]>
             if _pv is None:
+                # We are at <slots[0]> and just started, so create the very first part for the <slot>;
+                # <slot> is <slots[0]>
                 slot.append(pv1.vertIndex, pv1.y, self.originSlot)
+            # append <pv2.vertIndex> to the last part of the <slot> (i.e. to <slot.parts[-1]>)
             slot.append(pv2.vertIndex)
+            # we are done
             return
+        # start a wall face under the segment between <pv1> and <pv2>
         _wallIndices = [pv1.vertIndex]
         if not skip1:
             _wallIndices.append(indices[pv1.i])
@@ -426,62 +483,104 @@ class RoofProfile(Roof):
             _wallIndices.append(indices[pv2.i])
         _wallIndices.append(pv2.vertIndex)
         
+        # polygon vertices
         v1 = verts[indices[pv1.i]]
         v2 = verts[indices[pv2.i]]
         if not _pv is None:
             _v = verts[indices[_pv.i]]
         
-        # deal with the roof top
         if _pv is None:
+            # We are at <slots[0]> and just started, so create the very first part for the <slot>;
+            # <slot> is <slots[0]>
             slot.append(pv1.vertIndex, pv1.y, self.originSlot)
         elif pv1.onProfile:
+            # <pv1> is located on a profile slot
+            
+            # <reflection> can have 3 values:
+            # <reflection> is <None>: no reflection
+            # <reflection> is <True>: reflection to the right (see below an example)
+            # <reflection> is <False>: reflection to the left
             reflection = None
+            # If <appendToSlot> is <True> we change the current slot and create a new part for that slot.
+            # If <appendToSlot> is <False> we continue with the <slot> and its last part <slot.parts[-1]>.
             appendToSlot = False
             if pv2.onProfile and index1 == index2:
+                # <pv2> is located on the same profile slot as <pv1>
+                # Example on the image <Main>:
+                # <_pv> ~ <6>
+                # <pv1> ~ <7>
+                # <pv2> ~ <8>
                 if (_pv.x < pv1.x and pv1.y > pv2.y) or (_pv.x > pv1.x and pv1.y < pv2.y):
+                    # <6>, <7>, <8> on the image <Main> doesn't satisfy that condition
                     appendToSlot = True
             elif pv1.x < pv2.x:
                 # going from the left to the right
                 if _pv.x < pv1.x:
                     appendToSlot = True
-                elif index1:
+                elif index1: # i.e. index1 != 0
                     # The condition <index1> is to prevent
-                    # erroneous reflection due to zero angle as the result of mapping error or
+                    # erroneous reflection due to 180 degrees angle as the result of mapping error or
                     # precision error caused by the nature of <zero> variable
                     if _pv.onProfile and _pv.index == pv1.index:
+                        # <_pv> is located on the same profile slot as <pv1>
                         if _pv.y < pv1.y:
                             appendToSlot = True
                             # no reflection in this case!
                     elif (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
+                        # <_pv.x > pv1.x> and <pv1.x < pv2.x>
                         appendToSlot = True
                         # <True> for the reflection means reflection to the right
                         reflection = True
+                        # Example of a reflection to the right on the image <Main>:
+                        # <_pv> ~ <4>
+                        # <pv1> ~ <6>
+                        # <pv2> ~ <6>
             else:
                 # going from the right to the left
                 if _pv.x > pv1.x:
                     appendToSlot = True
                 elif index1 != self.lastProfileIndex:
                     # The condition <index1 != self.lastProfileIndex> is to prevent
-                    # erroneous reflection due to zero angle as the result of mapping error or
+                    # erroneous reflection due to 180 degrees angle as the result of mapping error or
                     # precision error caused by the nature of <zero> variable
                     if _pv.onProfile and _pv.index == pv1.index:
+                        # <_pv> is located on the same profile slot as <pv1>
                         if _pv.y > pv1.y:
                             appendToSlot = True
                             # no reflection in this case!
                     elif (pv2.x-pv1.x)*(_pv.y-pv1.y) - (pv2.y-pv1.y)*(_pv.x-pv1.x) < 0.:
+                        # <_pv.x < pv1.x> and <pv1.x > pv2.x>
                         appendToSlot = True
                         # <False> for the reflection means reflection to the left
                         reflection = False
+                        # No example of a refelection to the left on the image <Main>,
+                        # the example above with the reflection to right should give
+                        # understanding what a reflection is about 
             if appendToSlot:
+                # change the current slot and <self.originSlot>
                 self.originSlot = slot
                 slot = slots[index1]
+                # Create a new part for the new slot
+                # Note, that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
+                # ends at the new current <slot>
                 slot.append(pv1.vertIndex, pv1.y, self.originSlot, reflection)
         
         def common_code(slot, vertsRange, slotRange):
             """
             A helper function
+            
+            Actually create in-between vertices located on the slots for the segment between <pv1> and <pv2>,
+            add the indices of the newly created vertices to the wall face <_wallIndices>.
+            Also append those indices to the related slots and change the current slot in the cycle
+            
+            Args:
+                slot (Slot): the current slot
+                vertsRange (range): range of <slots> to create in-between vertices
+                slotRange (range): range of <slots> to append the indices of the newly created vertices
+                    to the related slots
             """
             vertIndex = len(verts) - 1
+            # <factorX> and <factorY> are used in calculations in the cycle below
             factorX = (v2.x - v1.x) / (pv2.x - pv1.x)
             factorY = (v2.y - v1.y) / (pv2.x - pv1.x)
             for _i in vertsRange:
@@ -493,19 +592,30 @@ class RoofProfile(Roof):
                     roofMinHeight + self.h * p[_i][1]
                 )))
                 _wallIndices.append(vertIndex)
-            # fill <slots>
+            # Fill <slots>
+            # <factor> is used to calculate Y-coordinate in the profile coordinate system
             factor = (pv2.y - pv1.y) / (pv2.x - pv1.x)
             for _i in slotRange:
+                # append <vertIndex> to the last part of the current slot (i.e. to slot.parts[-1])
                 slot.append(vertIndex)
+                # change the current slot and <self.originSlot>
                 self.originSlot = slot
                 slot = slots[_i]
+                # Create a new part for the new slot
+                # Note, that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
+                # ends at the new current <slot>
                 slot.append(vertIndex, pv1.y + factor * (p[_i][0] - pv1.x), self.originSlot)
+                # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
+                # to do some stuff
                 slot.processWallFace(_wallIndices, pv1, pv2)
                 vertIndex -= 1
+            # return the current slot
             return slot
         
         if index1 != index2:
             if index2 > index1:
+                # Going from the left to the right
+                # If the condition below isn't valid, there is no need to call <common_code(..)>
                 if not pv2.onProfile or index1 != index2-1:
                     slot = common_code(
                         slot,
@@ -513,14 +623,19 @@ class RoofProfile(Roof):
                         range(index1+1, index2 if pv2.onProfile else index2+1)
                     )
             else:
+                # Going from the right to the left
+                # If the condition below isn't valid, there is no need to call <common_code(..)>
                 if not pv1.onProfile or index2 != index1-1:
                     slot = common_code(
                         slot,
                         range(index2+1, index1 if pv1.onProfile else index1+1),
                         range(index1-1 if pv1.onProfile else index1, index2, -1)
                     )
+        # the wall face <_wallIndices> is ready, append it to <wallIndices>
         wallIndices.append(_wallIndices)
+        # append <pv2.vertIndex> to the last part of the current slot (i.e. to <slot.parts[-1]>)
         slot.append(pv2.vertIndex)
+        # remember the current slot
         self.slot = slot
     
     def getHeight(self, op):
@@ -534,7 +649,7 @@ class RoofProfile(Roof):
                     self.processDirection()
                     h = self.angleToHeight * self.polygonWidth * math.tan(math.radians(angle))
             if h is None:
-                # getting the number of levels
+                # get the number of levels
                 if "roof:levels" in tags:
                     h = parseNumber(tags["roof:levels"])
                 h = self.defaultHeight if h is None else h * op.levelHeight
