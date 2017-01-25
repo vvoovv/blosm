@@ -189,13 +189,34 @@ class Slot:
     """
     An instance of the class is created for each profile point.
     The class is used to form faces for the profiled roof.
+    
+    See https://github.com/vvoovv/blender-osm/wiki/Profiled-roofs for description and illustration
+    of concepts and algorithms used in the code. Specifically, the image <Main> from that webpage is
+    used a number of times to illustrate the code.
     """
     
     def __init__(self):
+        # Each element of <self.parts> is a Python tuple:
         # (y, part, reflection, index in <self.parts>)
+        # A part is sequence of vertices that start at a slot and ends at the same slot or at a neighboring one.
+        # Y-coordinate of the first vertex of the part in the coordinate system of the profile is
+        # stored for each part.
+        # Example of parts on the image <Main> for slots[2]:
+        #     [16, 17]: starts at slots[2], ends at slots[3]
+        #     [20, 2, 21]: starts at slots[2], ends at slots[2]
+        #     [21, 3, 22]: starts at slots[2], ends at slots[2]
+        #     [25, 26]: starts at slots[2], ends at slots[1]
         self.parts = []
+        # <self.partsR> is used to store incomplete roof faces started in <self.trackUp(..)>
+        # Each of those incomplete roof faces is completed in subsequent <self.trackDown(..)>
         self.partsR = []
-        # does a part from <self.parts> with <index> end at self (True) or at neighbor slot (False) 
+        # <self.endAtSelf[index]> indicates if a <part> from <self.parts> with <part[3] == index>
+        # ends at self (True) or at neighbor slot (False).
+        # We use a separate Python list for <self.endAtSelf> to get some memory usage gain.
+        # We could use <self.parts> to store that information, however in that case we would need
+        # to use a Python list instead of Python tuple for each element of <self.parts>,
+        # since the information where a part ends is set post factum, not during the creation of
+        # an element of <self.parts>
         self.endAtSelf = []
     
     def reset(self):
@@ -206,76 +227,223 @@ class Slot:
         self.index = 0
     
     def prepare(self):
+        """
+        Prepare the slot to form roof faces.
+        
+        Specifically, sort <self.parts> by <y> coordinate in the profile coordinate system 
+        """
+        # remember that <y == part[0]>, where <part> is an element of <self.parts>
         self.parts.sort(key = lambda p: p[0])
     
     def append(self, vertIndex, y=None, originSlot=None, reflection=None):
+        """
+        Append <vertIndex> to the slot.
+        
+        If <y>, <originSlot> and <reflection> are given, create a new part starting with <vertIndex> and
+        its <y> coordinate in the profile coordinate system.
+        Otherwise append <vertIndex> to the last part of the slot (i.e. to <self.parts[-1]>)
+        
+        Args:
+            vertIndex (int): Vertex index to append to the slot
+            y (float): Y-coordinate in the profile coordinate system of the vertex with the index <vertIndex>
+                wherer the new part starts
+            originSlot (Slot): The last part of <originSlot> (i.e. <originSlot.parts[-1]>) ends at <self>.
+                We need <originSlot> here to set <originSlot.endAtSelf> for the last part of <originSlot>.
+                So after the execution of the method, <originSlot.endAtSelf[-1]> will correspond to
+                <originSlot.parts[-1]>
+            reflection (bool or None): Is there a reflection at <vertIndex>>
+                <reflection> can have 3 values:
+                <None>: no reflection
+                <True>: reflection to the right (the example is give on the image <Main>; there is reflection
+                    at the vertex <5> on the slot <slots[3]>)
+                <False>: reflection to the left
+        """
         parts = self.parts
         if y is None:
+            # append <vertIndex> to the last part of the slot
             parts[-1][1].append(vertIndex)
         else:
+            # create a new part starting with <vertIndex> and its <y> coordinate in the profile coordinate system
             parts.append((y, [vertIndex], reflection, self.index))
+            # set <originSlot.endAtSelf> for the last part of <originSlot>
             originSlot.endAtSelf.append(originSlot is self)
             self.index += 1
     
     def trackDown(self, roofIndices, index=None, destVertIndex=None):
+        """
+        Track the slot downwards to form roof faces.
+        
+        Args:
+            roofIndices (list): A Python list for all roof faces, so each entry of <roofIndices> is
+                a Python list of vertex indices defining a single roof face
+            index (int or None): If <index> is not <None>, it indicates a part in <self.parts> where to begin,
+                otherwise start from the very top of the slot
+            destVertIndex (int or None): If <index> is not <None>, <destVertIndex> indicates where to stop.
+                There is no example on the image <Main>. However the idea is completely similar to
+                the related example in <self.trackUp(..)>
+        """
         parts = self.parts
+        # Incomplete roof faces for that slot are stored in <self.n.partsR>.
+        # <indexPartR> specifies the index of the element in <self.n.partsR>
+        # to complete the current part.
         indexPartR = -1
+        # We start from the very top if <index> is <None>.
+        # The example of that case on the image <Main> for <slots[1]>:
+        # <len(part) == 4>
+        # <index == 2>
         index = (len(parts) if index is None else index) - 2
+        # <vertIndex0> is set to the first vertex index of the next part, i.e. to <parts[index+1][1][0]>
         vertIndex0 = None
         while index >= 0:
+            # the current part
             _, part, reflection, _index = parts[index]
             if vertIndex0 is None:
+                # set <vertIndex0> to the first vertex index of the next part
                 vertIndex0 = parts[index+1][1][0]
+                # start a new roof face
                 roofFace = []
             # <False> for the reflection means reflection to the left
             if reflection is False:
+                # No example for that case on the image <Main>. However the idea is completely similar to
+                # the related example in <self.trackUp(..)>.
                 index -= 1
                 continue
+            # extend <roofFace> with vertex indices from <part>
             roofFace.extend(part)
             if part[-1] == vertIndex0:
-                # came up and closed the loop
+                # Сame up
+                # The example of that case on the image <Main> for <slots[3]>:
+                # <index == 0>
+                # <part == [17, 13, 14, 18]>
+                # <vertIndex0 == 18>
+                # The roof face is completed
                 roofIndices.append(roofFace)
+                # Setting <vertIndex0> to <None> means that we start a new roof face in
+                # the next iteration of the <while> cycle
                 vertIndex0 = None
             elif not self.endAtSelf[_index]:
-                # came to the neighbor from the right
+                # Came to the neighbor from the right.
+                # The example of that case on the image <Main> for <slots[1]>:
+                # <index == 0>
+                # <part == [15, 16]>
+                # <roofFace == [27, 9, 10, 28, 15, 16]>
+                # <self.n == slots[2]>
+                # <self.n.partsR == [[19, 0, 1, 20, 25, 26]]>
+                # Complete <roofFace> with the incomplete roof face <self.n.partsR[indexPartR]>
                 roofFace.extend(self.n.partsR[indexPartR])
+                # Change <indexPartR> to use the next incomplete roof face of <self.n.partsR>
+                # in the next iterations of the <while> cycle
                 indexPartR -= 1
+                # The roof face is complete
                 roofIndices.append(roofFace)
+                # Setting <vertIndex0> to <None> means that we start a new roof face in
+                # the next iteration of the <while> cycle
                 vertIndex0 = None
             elif part[-1] != parts[index-1][1][0]:
+                # No example for that case on the image <Main>. However the idea is completely similar to
+                # the related example in <self.trackUp(..)>.
+                # Basically, that case means that there is an island between
+                # the vertices <part[0]> and <part[-1]>
+                # We need to process that island in line below
                 index = self.trackDown(roofIndices, index, part[-1])
             if not destVertIndex is None and parts[index-1][1][0] == destVertIndex:
+                # No example for that case on the image <Main>. However the idea is completely similar to
+                # the related example in <self.trackUp(..)>.
                 return index
+            # Proceed to the previous part downwards by decreasing <index>.
             # <True> for the reflection means reflection to the right
+            # The example of case with <reflection is True> on the image <Main> for <slots[3]>:
+            # <reflection is True>
+            # <index == 3>
+            # <part == [5, 6, 24]>
+            # For that case in the next iteration of the <while> cycle
+            # we proceed to <index == 2> and <part == [23, 4, 5]>,instead of <index == 1>,
+            # where there is no part for tracking it downwards.
             index -= 1 if reflection is True else 2
 
     def trackUp(self, roofIndices, index=None, destVertIndex=None):
+        """
+        Track the slot upwards to form roof faces.
+        
+        Args:
+            roofIndices (list): A Python list for all roof faces, so each entry of <roofIndices> is
+                a Python list of vertex indices defining a single roof face
+            index (int or None): If <index> is not <None>, it indicates a part in <self.parts> where to begin,
+                otherwise start from the very bottom of the slot
+            destVertIndex (int or None): If <index> is not <None>, <destVertIndex> indicates where to stop.
+                See the example on the image <Main> for the slot <slots[2]>.
+                <self.trackUp(..)> is called with <index == 1>, <destVertIndex == 20>.
+                The example is elaborated further in the code below.
+        """
         parts = self.parts
         numParts = len(parts)
+        # Continue the example with the input attribute <index == 1>.
+        # <index> will be set to <3> in the line below if <index == 1>.
+        # Otherwise we start from the very bottom of the slots and set <index> to <1>
         index = 1 if index is None else index+2
+        # <vertIndex0> is set to the first vertex index of the previous part, i.e. to <parts[index-1][1][0]>
         vertIndex0 = None
         while index < numParts:
+            # the current part
             _, part, reflection, _index = parts[index]
             if vertIndex0 is None:
+                # set <vertIndex0> to the first vertex index of the previous part
                 vertIndex0 = parts[index-1][1][0]
+                # start a new roof face
                 roofFace = []
             # <True> for the reflection means reflection to the right
             if reflection is True:
+                # The example of that case on the image <Main>:
+                # there is reflection at the vertex <5> on the slot <slots[3]>
+                # <index == 3>
+                # We increase <index> by <1> in the line below; so we will come to the part [24, 25]
+                # in the next iteration of the <while> cycle
                 index += 1
                 continue
+            # extend <roofFace> with vertex indices from <part>
             roofFace.extend(part)
             if part[-1] == vertIndex0:
-                # came down and closed the loop
+                # Сame down
+                # The example of that case on the image <Main> for <slots[1]>:
+                # <index == 1>
+                # <part == [28, 11, 12, 15]>
+                # <vertIndex0 == 15>
+                # The roof face is complete
                 roofIndices.append(roofFace)
+                # Setting <vertIndex0> to <None> means that we start a new roof face in
+                # the next iteration of the <while> cycle
                 vertIndex0 = None
             elif not self.endAtSelf[_index]:
-                # came to the neighbor from the left
+                # Came to the neighbor from the left.
+                # The example of that case on the image <Main> for <slots[2]>:
+                # <index == 5>
+                # <part == [25, 26]>
+                # <roofFace == [19, 0, 1, 20, 25, 26]>
+                # Store the incomplete roof face <roofFace> in <self.partsR>. It will be completed in
+                # the subsequent call of <self.trackDown(..)>
                 self.partsR.append(roofFace)
+                # Setting <vertIndex0> to <None> means that we start a new roof face in
+                # the next iteration of the <while> cycle
                 vertIndex0 = None
             elif part[-1] != parts[index+1][1][0]:
-                    index = self.trackUp(roofIndices, index, part[-1])
+                # The example of that case on the image <Main> for <slots[2]>:
+                # <index == 1>
+                # <part == [19, 0, 1, 20]>
+                # <part[-1] == 20>
+                # <parts[index+1][1] == [22, 3, 21]>
+                # <parts[index+1][1][0] == 22>
+                # Basically, that case means that there is an island between the vertices <19> and <20>
+                # We need to process that island in line below
+                index = self.trackUp(roofIndices, index, part[-1])
             if not destVertIndex is None and parts[index+1][1][0] == destVertIndex:
+                # The example of that case on the image <Main> for <slots[2]>:
+                # <destVertIndex == 20>
+                # <index == 3>
+                # <part == [21, 3, 22]>
+                # <parts[index+1][1] == [20, 2, 21]>
+                # <parts[index+1][1][0] == 20>
                 return index
+            # Proceed to the next part upwards by increasing <index>.
             # <False> for the reflection means reflection to the left
             index += 1 if reflection is False else 2
     
@@ -285,8 +453,8 @@ class Slot:
         
         Args:
             indices (list): Vertex indices for the wall face
-            pv1 (ProfiledVert): the first vertex of the two between which the slot vertex is located
-            pv2 (ProfiledVert): the second vertex of the two between which the slot vertex is located
+            pv1 (ProfiledVert): the first profiled vertex of the two between which the slot vertex is located
+            pv2 (ProfiledVert): the second profiled vertex of the two between which the slot vertex is located
         """
         pass
 
@@ -406,16 +574,16 @@ class RoofProfile(Roof):
         # the last part of <slots[1]> ends at self
         slots[1].endAtSelf.append(True)
         
-        # Prepare the slots to form faces for the roof;
-        # note that slots[0] and slots[-1] aren't used in calculations
+        # Prepare the slots to form roof faces;
+        # note that slots[0] and slots[-1] aren't used in the calculations
         for i in range(1, self.lastProfileIndex):
             slots[i].prepare()
         
-        # Below is the cycle to form faces for the roof
+        # Below is the cycle to form roof faces
         # Each time a band between the neighboring slots
         # <slotL> (a slot from the left) and <slotR> (a slot from the right) is considered.
-        # We trace <slotR> upwards by executing <slotR.trackUp(roofIndices)>,
-        # then we trace <slotL> downwards by executing slotL.trackDown(roofIndices)
+        # We track <slotR> upwards by executing <slotR.trackUp(roofIndices)>,
+        # then we track <slotL> downwards by executing slotL.trackDown(roofIndices)
         slotR = slots[1]
         slotR.trackUp(roofIndices)
         for i in range(1, self.lastProfileIndex):
@@ -497,9 +665,9 @@ class RoofProfile(Roof):
             # <pv1> is located on a profile slot
             
             # <reflection> can have 3 values:
-            # <reflection> is <None>: no reflection
-            # <reflection> is <True>: reflection to the right (see below an example)
-            # <reflection> is <False>: reflection to the left
+            # <None>: no reflection
+            # <True>: reflection to the right (see below an example)
+            # <False>: reflection to the left
             reflection = None
             # If <appendToSlot> is <True> we change the current slot and create a new part for that slot.
             # If <appendToSlot> is <False> we continue with the <slot> and its last part <slot.parts[-1]>.
@@ -561,7 +729,7 @@ class RoofProfile(Roof):
                 self.originSlot = slot
                 slot = slots[index1]
                 # Create a new part for the new slot
-                # Note, that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
+                # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
                 slot.append(pv1.vertIndex, pv1.y, self.originSlot, reflection)
         
@@ -602,7 +770,7 @@ class RoofProfile(Roof):
                 self.originSlot = slot
                 slot = slots[_i]
                 # Create a new part for the new slot
-                # Note, that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
+                # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
                 slot.append(vertIndex, pv1.y + factor * (p[_i][0] - pv1.x), self.originSlot)
                 # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
