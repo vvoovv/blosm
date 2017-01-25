@@ -11,7 +11,7 @@ The addon imports a file in the OpenStreetMap format (.osm).
 By [buying](https://gumroad.com/l/blender-osm) the addon you support the addon development. All customers will get the addon source code under GPL license!
 
 The following items can be imported by the addon:
-* **Buildings**. Building height, number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed. A number of roof shapes is supported.
+* **Buildings**. Building height, number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed. A large number of roof shapes is supported: flat, gabled, hipped (for a quadrangle outline only), mono-pitched, half-hipped, round, pyramidal, gambrel, dome, onion and saltbox.
 * **Water objects** (rivers and lakes). Imported as polygons. Coastlines for seas and oceans are importes as edges.
 * **Vegetation areas** (forests, grass, scrubs). Imported as polygons.
 * Highways, paths and railways. Imported as edges.
