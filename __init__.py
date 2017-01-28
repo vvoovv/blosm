@@ -35,8 +35,10 @@ import os,sys
 
 def _checkPath():
     path = os.path.dirname(__file__)
-    if path not in sys.path:
-        sys.path.append(path)
+    if path in sys.path:
+        sys.path.remove(path)
+    # make <path> the first one to search for a module
+    sys.path.insert(0, path)
 _checkPath()
 
 import bpy, bmesh
