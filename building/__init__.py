@@ -43,7 +43,7 @@ class Building:
     def getHeight(self, element):
         return parseNumber(element.tags["height"]) if "height" in element.tags else None
     
-    def getWallHeight(self, element, op):
+    def getRoofMinHeight(self, element, op):
         # getting the number of levels
         h = element.tags.get("building:levels")
         if not h is None:

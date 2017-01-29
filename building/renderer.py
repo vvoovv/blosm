@@ -86,31 +86,45 @@ class BuildingRenderer(Renderer3d):
         self.postRender(outline)
     
     def renderElement(self, element, building, osm):
-        op = self.op
-        z1 = building.getMinHeight(element, op)
         # get a class instance created in the constructor to deal with a specific roof shape
         roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
         if element.t is Renderer.multipolygon:
-            # flat roof is always for multipolygons
-            roof = self.flatRoofMulti
-        roof.init(element, z1, osm)
+            # check if the multipolygon has holes
+            if element.hasInner():
+                # flat roof is always for multipolygons with holes
+                roof = self.flatRoofMulti
+                data = None
+            else:
+                # treat each outer polygon of the multipolygon as a single polygon
+                for _l in element.l:
+                    self._renderElement(element, building, roof, element.getLinestringData(_l, osm), osm)
+                return
+        else:
+            data = element.getData(osm)
+        self._renderElement(element, building, roof, data, osm)
+    
+    def _renderElement(self, element, building, roof, data, osm):
+        """
+        Do actual stuff for <self.renderElement(..) here>
+        """
+        op = self.op
+        z1 = building.getMinHeight(element, op)
+        roof.init(element, data, z1, osm)
         
         roofHeight = roof.getHeight(op)
         z2 = building.getHeight(element)
         if z2 is None:
             # no tag <height> or invalid value
-            wallHeight = building.getWallHeight(element, op)
-            if wallHeight is None:
+            roofMinHeight = building.getRoofMinHeight(element, op)
+            if roofMinHeight is None:
                 # not tag <building:levels> or invalid value
                 z2 = op.defaultBuildingHeight
                 roofMinHeight = z2 - roofHeight
-                wallHeight = roofMinHeight - z1
             else:
-                roofMinHeight = z1 + wallHeight
                 z2 = roofMinHeight + roofHeight
         else:
             roofMinHeight = z2 - roofHeight
-            wallHeight = roofMinHeight - z1
+        wallHeight = roofMinHeight - z1
         # validity check
         if wallHeight < 0.:
             return

@@ -372,6 +372,17 @@ class Multipolygon(Relation):
             l = self.l[linestringIndex]
             return not l.parts or self.l[linestringIndex].end is None
     
+    def hasInner(self):
+        """
+        Check if the multipolygons has a hole (i.e has an inner polygon)
+        
+        The method can be called only if <self.t> is <Renderer.multipolygon>
+        """
+        for _l in self.l:
+            if _l.role is Osm.inner:
+                return True
+        return False
+    
     def nodeIds(self, osm):
         """
         A generator to get id of OSM nodes of all linestrings of the relation

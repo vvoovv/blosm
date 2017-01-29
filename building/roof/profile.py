@@ -515,8 +515,8 @@ class RoofProfile(Roof):
         profileQ.append(index)
         self.profileQ = profileQ
 
-    def init(self, element, minHeight, osm):
-        super().init(element, minHeight, osm)
+    def init(self, element, data, minHeight, osm):
+        super().init(element, data, minHeight, osm)
         self.initProfile()
     
     def initProfile(self):

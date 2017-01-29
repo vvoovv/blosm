@@ -54,7 +54,8 @@ class RoofFlatMulti(RoofFlat):
         self.wallIndices = []
         self.polygons = []
     
-    def init(self, element, minHeight, osm):
+    def init(self, element, data, minHeight, osm):
+        # <data> isn't used it this class
         self.verts.clear()
         self.wallIndices.clear()
         self.polygons.clear()

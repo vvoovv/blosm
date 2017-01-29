@@ -40,8 +40,8 @@ class RoofSkillion(Roof):
         self.projections = []
         self.angleToHeight = 1.
     
-    def init(self, element, minHeight, osm):
-        super().init(element, minHeight, osm)
+    def init(self, element, data, minHeight, osm):
+        super().init(element, data, minHeight, osm)
         self.projections.clear()
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):

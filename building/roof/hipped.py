@@ -37,8 +37,8 @@ class RoofHipped(RoofProfile):
         slots[1].n = slots[2]
         self.slots = slots
     
-    def init(self, element, minHeight, osm):
-        Roof.init(self, element, minHeight, osm)
+    def init(self, element, data, minHeight, osm):
+        Roof.init(self, element, data, minHeight, osm)
         if self.polygon.n == 4:
             self.makeFlat = False
             self.defaultHeight = RoofProfile.defaultHeight
