@@ -26,7 +26,7 @@ class RoofPyramidal(Roof):
     A Blender object to deal with buildings or building part with a pyramidal roof
     """
     
-    defaultHeight = 0.5
+    defaultHeight = 3.
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         polygon = self.polygon
