@@ -157,7 +157,7 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
     straightAngleThreshold = bpy.props.FloatProperty(
         name = "Straight angle threshold",
         description = "Threshold for an angle of the building outline: when consider it as straight one. "+
-            "It may be important for calculation of the largest side of the building outline for a gabled roof.",
+            "It may be important for calculation of the longest side of the building outline for a gabled roof.",
         default = 179.8,
         min = 170.,
         max = 179.95,
