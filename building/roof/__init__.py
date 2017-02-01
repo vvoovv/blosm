@@ -88,8 +88,10 @@ class Roof:
         self.verts.extend( Vector((coord[0], coord[1], minHeight)) for coord in data )
         # create a polygon located at <minHeight>
         self.polygon = Polygon(verts)
-        # check the direction of vertices, it must be counterclockwise
-        self.polygon.checkDirection()
+        self.valid = self.polygon.n > 2
+        if self.valid:
+            # check the direction of vertices, it must be counterclockwise
+            self.polygon.checkDirection()
     
     def getHeight(self, op):
         tags = self.element.tags

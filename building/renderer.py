@@ -110,6 +110,8 @@ class BuildingRenderer(Renderer3d):
         op = self.op
         z1 = building.getMinHeight(element, op)
         roof.init(element, data, z1, osm)
+        if not roof.valid:
+            return
         
         roofHeight = roof.getHeight(op)
         z2 = building.getHeight(element)
@@ -118,13 +120,15 @@ class BuildingRenderer(Renderer3d):
             roofMinHeight = building.getRoofMinHeight(element, op)
             if roofMinHeight is None:
                 # not tag <building:levels> or invalid value
-                z2 = op.defaultBuildingHeight
-                roofMinHeight = z2 - roofHeight
+                # assume it has only one level
+                wallHeight = op.levelHeight
+                roofMinHeight = z1 + wallHeight
             else:
-                z2 = roofMinHeight + roofHeight
+                wallHeight = roofMinHeight - z1
+            z2 = roofMinHeight + roofHeight
         else:
             roofMinHeight = z2 - roofHeight
-        wallHeight = roofMinHeight - z1
+            wallHeight = roofMinHeight - z1
         # validity check
         if wallHeight < 0.:
             return

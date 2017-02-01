@@ -29,7 +29,7 @@ class RoofFlat(Roof):
     for a simple polygon (not a multipolygon)
     """
     
-    defaultHeight = 0.01
+    defaultHeight = 0.
     
     def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
         polygon = self.polygon
@@ -50,6 +50,7 @@ class RoofFlatMulti(RoofFlat):
     """
     
     def __init__(self):
+        self.valid = True
         self.verts = []
         self.wallIndices = []
         self.polygons = []
@@ -76,13 +77,16 @@ class RoofFlatMulti(RoofFlat):
                 Vector((v[0], v[1], bldgMaxHeight)) for v in element.getLinestringData(_l, osm)
             )
             n = len(verts)
-            polygons.append(
-                Polygon(
-                    verts,
-                    tuple(range(indexOffset, n))
-                )
+            
+            polygon = Polygon(
+                verts,
+                tuple(range(indexOffset, n))             
             )
+            if polygon.n > 2:
+                polygons.append(polygon)
             indexOffset = n
+        if not polygons:
+            return False
         # vertices for the bottom  
         verts.extend(Vector((verts[i].x, verts[i].y, bldgMinHeight)) for p in polygons for i in p.indices)
         return True

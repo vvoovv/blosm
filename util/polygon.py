@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from mathutils import Vector
-from util import zAxis, zero, zeroVector
+from util import zAxis, zeroVector
 
 
 class Polygon:
@@ -166,7 +166,7 @@ class Polygon:
             dot = _ux*ux + _uy*uy
             # Check if tangent of angle between the vectors <_u> and <u> is nearly equal to zero;
             # the tangent can be calculated as ration of cross product and dot product
-            if dot and abs((_ux*uy - _uy*ux)/dot) < zero:
+            if dot and abs((_ux*uy - _uy*ux)/dot) < Polygon.straightAngleTan:
                 if newIndices is None:
                     # Found the first straight angle in the polygon.
                     # Copy indices for the non-straight angles that we encountered before to <newIndices>

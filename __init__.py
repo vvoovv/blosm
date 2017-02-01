@@ -31,7 +31,7 @@ bl_info = {
     "category": "Import-Export",
 }
 
-import os,sys
+import os, sys, math
 
 def _checkPath():
     path = os.path.dirname(__file__)
@@ -46,6 +46,7 @@ import bpy, bmesh
 from bpy_extras.io_utils import ImportHelper
 
 from util.transverse_mercator import TransverseMercator
+from util.polygon import Polygon
 from renderer import Renderer
 from parse import Osm
 import app
@@ -146,17 +147,20 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         description = "Ignore existing georeferencing and make a new one",
         default = False
     )
-
-    defaultBuildingHeight = bpy.props.FloatProperty(
-        name = "Default building height",
-        description = "Default height in meters if the building height isn't set in OSM tags",
-        default = 5.
-    )
     
     levelHeight = bpy.props.FloatProperty(
         name = "Level height",
         description = "Height of a level in meters to use for OSM tags building:levels and building:min_level",
         default = 3.
+    )
+    
+    straightAngleThreshold = bpy.props.FloatProperty(
+        name = "Straight angle threshold",
+        description = "Threshold for an angle for the building outline: when consider it as straight one",
+        default = 179.8,
+        min = 170.,
+        max = 179.95,
+        step = 10 # i.e. step/100 == 0.1
     )
     
     app = app.App()
@@ -168,6 +172,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         self.meshes = {}
         # path to the directory for assets
         self.assetPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+        # tangent to check if an angle of the polygon is straight
+        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
         
         scene = context.scene
         kwargs = {}
@@ -260,8 +266,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         split = box.split(percentage=0.66)
         split.label("Default roof shape:")
         split.prop(self, "defaultRoofShape", text="")
-        box.prop(self, "defaultBuildingHeight")
         box.prop(self, "levelHeight")
+        box.prop(self, "straightAngleThreshold")
         box = layout.box()
         box.prop(self, "singleObject")
         box.prop(self, "layered")
