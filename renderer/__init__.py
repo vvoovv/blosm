@@ -38,6 +38,22 @@ class Renderer:
         self.op = op
     
     @classmethod
+    def init(self, op, context):
+        """
+        The method performs some initialization, namely checks if a Blender object for the terrain is set.
+        """
+        terrain = None
+        name = context.scene.terrainObject
+        if name:
+            terrain = context.scene.objects.get(name)
+            if terrain:
+                pass
+            else:
+                op.report({"ERROR"}, "Blender object %s for the terrain doesn't exist. " % name +
+                    "Import of OpenStreetMap data will be done without takining into account the terrain.")
+        self.terrain = terrain
+    
+    @classmethod
     def begin(self, op):
         self.name = os.path.basename(op.filepath)
         

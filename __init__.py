@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <prokitektura+dev@gmail.com>",
-    "version": (2, 1, 3),
+    "version": (2, 2, 0),
     "blender": (2, 7, 8),
     "location": "File > Import > OpenStreetMap (.osm)",
     "description": "Import a file in the OpenStreetMap format (.osm)",
@@ -49,7 +49,7 @@ from util.transverse_mercator import TransverseMercator
 from util.polygon import Polygon
 from renderer import Renderer
 from parse import Osm
-import app
+import app, gui
 from defs import Keys
 
 from setup import setup
@@ -173,6 +173,9 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         self.meshes = {}
         # path to the directory for assets
         self.assetPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+        
+        Renderer.init(self, context)
+        
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
         
@@ -182,8 +185,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         # setting active object if there is no active object
         if context.mode != "OBJECT":
             # if there is no object in the scene, only "OBJECT" mode is provided
-            if not context.scene.objects.active:
-                context.scene.objects.active = context.scene.objects[0]
+            if not scene.objects.active:
+                scene.objects.active = context.scene.objects[0]
             bpy.ops.object.mode_set(mode="OBJECT")
             
         if not self.app.has(Keys.mode3d):
@@ -282,11 +285,13 @@ def menu_func_import(self, context):
 def register():
     bpy.utils.register_class(ImportOsm)
     app.register()
+    gui.register()
     bpy.types.INFO_MT_file_import.append(menu_func_import)
 
 def unregister():
     bpy.utils.unregister_class(ImportOsm)
     app.unregister()
+    gui.unregister()
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
 
 # This allows you to run the script directly from blenders text editor
