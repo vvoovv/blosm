@@ -59,17 +59,17 @@ def vegetation(tags, e):
         ( "natural" in tags and tags["natural"] in ("scrub", "grassland", "heath") )
 
 
-def setup(op, osm):
+def setup(app, osm):
     # comment the next line if logging isn't needed
-    Logger(op, osm)
+    Logger(app, osm)
     
     # create managers
     linestring = Linestring(osm)
     polygon = Polygon(osm)
     polygonAcceptBroken = PolygonAcceptBroken(osm)
     
-    if op.buildings:
-        if op.mode == '2D':
+    if app.buildings:
+        if app.mode == '2D':
             osm.addCondition(building, "buildings", polygon)
         else: # 3D
             buildingParts = BuildingParts()
@@ -88,27 +88,27 @@ def setup(op, osm):
                 buildingPart, None, buildingParts
             )
             buildings.setRenderer(
-                BuildingRenderer(op, "buildings")
+                BuildingRenderer(app, "buildings")
             )
-            op.managers.append(buildings)
+            app.managers.append(buildings)
     
-    if op.highways:
+    if app.highways:
         osm.addCondition(highway, "highways", linestring)
-    if op.railways:
+    if app.railways:
         osm.addCondition(railway, "railways", linestring)
-    if op.water:
+    if app.water:
         osm.addCondition(water, "water", polygonAcceptBroken)
         osm.addCondition(coastline, "water", linestring)
-    if op.forests:
+    if app.forests:
         osm.addCondition(forest, "forests", polygon)
-    if op.vegetation:
+    if app.vegetation:
         osm.addCondition(vegetation, "vegetation", polygon)
     
     numConditions = len(osm.conditions)
-    if op.mode == '3D' and op.buildings:
+    if app.mode == '3D' and app.buildings:
         # 3D buildings aren't processed by BaseManager
         numConditions -= 1
     if numConditions:
         m = BaseManager(osm)
-        m.setRenderer(Renderer2d(op))
-        op.managers.append(m)
+        m.setRenderer(Renderer2d(app))
+        app.managers.append(m)

@@ -19,14 +19,98 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 import os, json, webbrowser, base64
+from urllib import request
 
 import defs
+from renderer import Renderer
 
 
 class App:
     
+    layers = ("buildings", "highways", "railways", "water", "forests", "vegetation")
+    
+    osmUrl = "http://overpass-api.de/api/map"
+    
+    # diffuse colors for some layers
+    colors = {
+        "buildings": (0.309, 0.013, 0.012),
+        "highways": (0.1, 0.1, 0.1),
+        "water": (0.009, 0.002, 0.8),
+        "forests": (0.02, 0.208, 0.007),
+        "vegetation": (0.007, 0.558, 0.005),
+        "railways": (0.2, 0.2, 0.2)
+    }
+    
     def __init__(self):
         self.load()
+    
+    def init(self, op, context, basePath):
+        self.op = op
+        self.assetPath = os.path.join(basePath, "assets")
+        j = os.path.join
+        # set <self.dataDir> to basePath/../../../data
+        self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
+        # <self.logger> may be set in <setup(..)>
+        self.logger = None
+        # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
+        self.meshes = {}
+        
+        # copy properties from <context.scene.blender_osm>
+        addon = context.scene.blender_osm
+        for p in dir(addon):
+            if not (p.startswith("__") or p in ("bl_rna", "rna_type")):
+                setattr(self, p, getattr(addon, p))
+        
+        if addon.osmSource == "server":
+            self.osmFilepath = self.download("%s?bbox=%s,%s,%s,%s"  % (self.osmUrl, app.minLon, app.minLat, app.maxLon, app.maxLat))
+            print(self.osmFilepath)
+        
+        if not app.has(defs.Keys.mode3d):
+            self.mode = '2D'
+        
+        # manager (derived from manager.Manager) performing some processing
+        self.managers = []
+        
+        self.prepareLayers()
+        if not len(self.layerIndices):
+            self.layered = False
+
+
+    def prepareLayers(self):
+        layerIndices = {}
+        layerIds = []
+        i = 0
+        for layerId in self.layers:
+            if getattr(self, layerId):
+                layerIndices[layerId] = i
+                layerIds.append(layerId)
+                i += 1
+        self.layerIndices = layerIndices
+        self.layerIds = layerIds
+    
+    def process(self):
+        logger = self.logger
+        if logger: logger.processStart()
+        
+        for m in self.managers:
+            m.process()
+        
+        if logger: logger.processEnd()
+    
+    def render(self):
+        logger = self.logger
+        if logger: logger.renderStart()
+        
+        Renderer.begin(self)
+        for m in self.managers:
+            m.render()
+        Renderer.end(self)
+        
+        if logger: logger.renderEnd()
+    
+    def clean(self):
+        self.meshes = None
+        self.managers = None
     
     def has(self, key):
         return self.license and (self.all or key in self.keys)
@@ -49,6 +133,13 @@ class App:
     
     def show(self):
         bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
+    
+    def download(self, url):
+        filepath = os.path.realpath( os.path.join(self.dataDir, "osm/map.osm") )
+        self.op.report({'INFO'}, "Downloading the file from %s..." % url)
+        request.urlretrieve(url, filepath)
+        self.op.report({'INFO'}, "Saving the file to %s..." % filepath)
+        return filepath
 
 
 class OperatorPopup(bpy.types.Operator):
@@ -87,6 +178,9 @@ class OperatorPopup(bpy.types.Operator):
         row = self.layout.row()
         row.alignment = "CENTER"
         row.label(text, **kwargs)
+
+
+app = App()
 
 
 def register():

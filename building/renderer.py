@@ -40,9 +40,9 @@ defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 class BuildingRenderer(Renderer3d):
     
-    def __init__(self, op, layerId):
-        super().__init__(op)
-        self.layerIndex = op.layerIndices.get(layerId)
+    def __init__(self, app, layerId):
+        super().__init__(app)
+        self.layerIndex = app.layerIndices.get(layerId)
         # create instances of classes that deal with specific roof shapes
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
@@ -58,7 +58,7 @@ class BuildingRenderer(Renderer3d):
             'gambrel': RoofProfile(gambrelRoof),
             'saltbox': RoofProfile(saltboxRoof)
         }
-        self.defaultRoof = self.roofs[op.defaultRoofShape]
+        self.defaultRoof = self.roofs[app.defaultRoofShape]
         
         self.defaultMaterialIndices = [None, None]
         # References to Blender materials used by roof Blender meshes
@@ -107,21 +107,21 @@ class BuildingRenderer(Renderer3d):
         """
         Do actual stuff for <self.renderElement(..) here>
         """
-        op = self.op
-        z1 = building.getMinHeight(element, op)
+        app = self.app
+        z1 = building.getMinHeight(element, app)
         roof.init(element, data, z1, osm)
         if not roof.valid:
             return
         
-        roofHeight = roof.getHeight(op)
+        roofHeight = roof.getHeight(app)
         z2 = building.getHeight(element)
         if z2 is None:
             # no tag <height> or invalid value
-            roofMinHeight = building.getRoofMinHeight(element, op)
+            roofMinHeight = building.getRoofMinHeight(element, app)
             if roofMinHeight is None:
                 # not tag <building:levels> or invalid value
                 # assume it has only one level
-                wallHeight = op.levelHeight
+                wallHeight = app.levelHeight
                 roofMinHeight = z1 + wallHeight
             else:
                 wallHeight = roofMinHeight - z1

@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
-    "author": "Vladimir Elistratov <prokitektura+dev@gmail.com>",
+    "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
     "version": (2, 2, 0),
     "blender": (2, 7, 8),
     "location": "File > Import > OpenStreetMap (.osm)",
@@ -42,8 +42,6 @@ def _checkPath():
 _checkPath()
 
 import bpy, bmesh
-# ImportHelper is a helper class, defines filename and invoke() function which calls the file selector
-from bpy_extras.io_utils import ImportHelper
 
 from util.transverse_mercator import TransverseMercator
 from util.polygon import Polygon
@@ -55,11 +53,27 @@ from defs import Keys
 from setup import setup
 
 
-class ImportOsm(bpy.types.Operator, ImportHelper):
-    """Import a file in the OpenStreetMap format (.osm)"""
-    bl_idname = "import_scene.osm"  # important since its how bpy.ops.import_scene.osm is constructed
-    bl_label = "Import OpenStreetMap"
-    bl_options = {"UNDO"}
+class BlenderOsmPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+    
+    dataDir= bpy.props.StringProperty(
+        name = "",
+        subtype = 'DIR_PATH',
+        description = "Directory to store downloaded OpenStreetMap and terrain files"
+    )
+    
+    def draw(self, context):
+        layout = self.layout
+        layout.label("Directory to store downloaded OpenStreetMap and terrain files:")
+        layout.prop(self, "dataDir")
+
+
+class ImportData(bpy.types.Operator):
+    """Import data: OpenStreetMap, terrain or base overlay for the terrain"""
+    bl_idname = "blender_osm.import_data"  # important since its how bpy.ops.blender_osm.import_data is constructed
+    bl_label = "Import data of the selected type (OSM, terrain or terrain overlay)"
+    bl_description = "Import data of the selected type (OpenStreetMap, terrain or base overlay for the terrain)"
+    bl_options = {'REGISTER', 'UNDO'}
 
     # ImportHelper mixin class uses this
     filename_ext = ".osm"
@@ -68,116 +82,15 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
         default="*.osm;*.xml",
         options={"HIDDEN"},
     )
-    
-    layers = ("buildings", "highways", "railways", "water", "forests", "vegetation")
-    
-    # diffuse colors for some layers
-    colors = {
-        "buildings": (0.309, 0.013, 0.012),
-        "highways": (0.1, 0.1, 0.1),
-        "water": (0.009, 0.002, 0.8),
-        "forests": (0.02, 0.208, 0.007),
-        "vegetation": (0.007, 0.558, 0.005),
-        "railways": (0.2, 0.2, 0.2)
-    }
-    
-    mode = bpy.props.EnumProperty(
-        name = "Mode: 3D or 2D",
-        items = (("3D","3D","3D"), ("2D","2D","2D")),
-        description = "Import data in 3D or 2D mode",
-        default = "3D"
-    )
-    
-    buildings = bpy.props.BoolProperty(
-        name = "Import buildings",
-        description = "Import building outlines",
-        default = True
-    )
-    
-    water = bpy.props.BoolProperty(
-        name = "Import water objects",
-        description = "Import water objects (rivers and lakes)",
-        default = True
-    )
-    
-    forests = bpy.props.BoolProperty(
-        name = "Import forests",
-        description = "Import forests and woods",
-        default = True
-    )
-    
-    vegetation = bpy.props.BoolProperty(
-        name = "Import other vegetation",
-        description = "Import other vegetation (grass, meadow, scrub)",
-        default = True
-    )
-    
-    highways = bpy.props.BoolProperty(
-        name = "Import roads and paths",
-        description = "Import roads and paths",
-        default = False
-    )
-    
-    railways = bpy.props.BoolProperty(
-        name = "Import railways",
-        description = "Import railways",
-        default = False
-    )
-    
-    defaultRoofShape = bpy.props.EnumProperty(
-        items = (("flat", "flat", "flat shape"), ("gabled", "gabled", "gabled shape")),
-        description = "Roof shape for a building if the roof shape is not set in OpenStreetMap",
-        default = "flat"
-    )
-    
-    singleObject = bpy.props.BoolProperty(
-        name = "Import as a single object",
-        description = "Import OSM objects as a single Blender mesh objects instead of separate ones",
-        default = True
-    )
-    
-    layered = bpy.props.BoolProperty(
-        name = "Arrange into layers",
-        description = "Arrange imported OSM objects into layers (buildings, highways, etc)",
-        default = True
-    )
-
-    ignoreGeoreferencing = bpy.props.BoolProperty(
-        name = "Ignore existing georeferencing",
-        description = "Ignore existing georeferencing and make a new one",
-        default = False
-    )
-    
-    levelHeight = bpy.props.FloatProperty(
-        name = "Level height",
-        description = "Height of a level in meters to use for OSM tags building:levels and building:min_level",
-        default = 3.
-    )
-    
-    straightAngleThreshold = bpy.props.FloatProperty(
-        name = "Straight angle threshold",
-        description = "Threshold for an angle of the building outline: when consider it as straight one. "+
-            "It may be important for calculation of the longest side of the building outline for a gabled roof.",
-        default = 179.8,
-        min = 170.,
-        max = 179.95,
-        step = 10 # i.e. step/100 == 0.1
-    )
-    
-    app = app.App()
 
     def execute(self, context):
-        # <self.logger> may be set in <setup(..)>
-        self.logger = None
-        # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
-        self.meshes = {}
-        # path to the directory for assets
-        self.assetPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
-        
-        Renderer.init(self, context)
+        a = app.app
+        # path to the directory for assets is given as an argument to <a.init(..)>
+        a.init(self, context, os.path.dirname(os.path.realpath(__file__)))
+        #Renderer.init(context)
         
         # tangent to check if an angle of the polygon is straight
-        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
+        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-a.straightAngleThreshold) ))
         
         scene = context.scene
         kwargs = {}
@@ -188,19 +101,9 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             if not scene.objects.active:
                 scene.objects.active = context.scene.objects[0]
             bpy.ops.object.mode_set(mode="OBJECT")
-            
-        if not self.app.has(Keys.mode3d):
-            self.mode = '2D'
         
-        # manager (derived from manager.Manager) performing some processing
-        self.managers = []
-        
-        self.prepareLayers()
-        if not len(self.layerIndices):
-            self.layered = False
-        
-        osm = Osm(self)
-        setup(self, osm)
+        osm = Osm(a)
+        setup(a, osm)
         
         if "lat" in scene and "lon" in scene and not self.ignoreGeoreferencing:
             kwargs["projection"] = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
@@ -208,8 +111,8 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             kwargs["projectionClass"] = TransverseMercator
         
         osm.parse(**kwargs)
-        self.process()
-        self.render()
+        a.process()
+        a.render()
         
         # setting 'lon' and 'lat' attributes for <scene> if necessary
         if not "projection" in kwargs:
@@ -217,82 +120,23 @@ class ImportOsm(bpy.types.Operator, ImportHelper):
             scene["lat"] = osm.lat
             scene["lon"] = osm.lon
         
-        if not self.app.has(Keys.mode3d):
-            self.app.show()
+        if not a.has(Keys.mode3d):
+            a.show()
+        
+        a.clean()
         
         return {"FINISHED"}
-    
-    def prepareLayers(self):
-        layerIndices = {}
-        layerIds = []
-        i = 0
-        for layerId in self.layers:
-            if getattr(self, layerId):
-                layerIndices[layerId] = i
-                layerIds.append(layerId)
-                i += 1
-        self.layerIndices = layerIndices
-        self.layerIds = layerIds
-    
-    def process(self):
-        logger = self.logger
-        if logger: logger.processStart()
-        
-        for m in self.managers:
-            m.process()
-        
-        if logger: logger.processEnd()
-    
-    def render(self):
-        logger = self.logger
-        if logger: logger.renderStart()
-        
-        Renderer.begin(self)
-        for m in self.managers:
-            m.render()
-        Renderer.end(self)
-        
-        if logger: logger.renderEnd()
-    
-    def draw(self, context):
-        layout = self.layout
-        
-        if self.app.has(Keys.mode3d):
-            layout.prop(self, "mode", expand=True)
-        box = layout.box()
-        box.prop(self, "buildings")
-        box.prop(self, "water")
-        box.prop(self, "forests")
-        box.prop(self, "vegetation")
-        box.prop(self, "highways")
-        box.prop(self, "railways")
-        box = layout.box()
-        split = box.split(percentage=0.66)
-        split.label("Default roof shape:")
-        split.prop(self, "defaultRoofShape", text="")
-        box.prop(self, "levelHeight")
-        box.prop(self, "straightAngleThreshold")
-        box = layout.box()
-        box.prop(self, "singleObject")
-        box.prop(self, "layered")
-        layout.box().prop(self, "ignoreGeoreferencing")
 
-
-# Only needed if you want to add into a dynamic menu
-def menu_func_import(self, context):
-    self.layout.operator(ImportOsm.bl_idname, text="OpenStreetMap (.osm)")
 
 def register():
-    bpy.utils.register_class(ImportOsm)
+    bpy.utils.register_module(__name__)
     app.register()
     gui.register()
-    bpy.types.INFO_MT_file_import.append(menu_func_import)
 
 def unregister():
-    bpy.utils.unregister_class(ImportOsm)
+    bpy.utils.unregister_module(__name__)
     app.unregister()
     gui.unregister()
-    bpy.types.INFO_MT_file_import.remove(menu_func_import)
 
 # This allows you to run the script directly from blenders text editor
 # to test the addon without having to install it.

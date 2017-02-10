@@ -28,7 +28,7 @@ class Building(Relation):
     __slots__ = ("outline",)
     
     def __init__(self, osm):
-        if osm.op.mode == "2D":
+        if osm.app.mode == "2D":
             # OSM relation of the type 'building' makes sense only in the 3D mode
             self.valid = False
             return

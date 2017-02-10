@@ -806,7 +806,7 @@ class RoofProfile(Roof):
         # remember the current slot
         self.slot = slot
     
-    def getHeight(self, op):
+    def getHeight(self, app):
         tags = self.element.tags
         
         h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
@@ -820,6 +820,6 @@ class RoofProfile(Roof):
                 # get the number of levels
                 if "roof:levels" in tags:
                     h = parseNumber(tags["roof:levels"])
-                h = self.defaultHeight if h is None else h * op.levelHeight
+                h = self.defaultHeight if h is None else h * app.levelHeight
         self.h = h
         return h

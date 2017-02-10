@@ -23,10 +23,10 @@ from building.manager import BuildingManager
 
 class Logger:
     
-    def __init__(self, op, osm):
+    def __init__(self, app, osm):
         self.parseStartTime = datetime.now()
-        op.logger = self
-        self.op = op
+        app.logger = self
+        self.app = app
         self.osm = osm
     
     def processStart(self):
@@ -46,9 +46,9 @@ class Logger:
         print("Total duration: {}".format(t - self.parseStartTime))
     
     def numBuildings(self):
-        op = self.op
-        if not (op.mode == '3D' and op.buildings):
+        app = self.app
+        if not (app.mode == '3D' and app.buildings):
             return
-        for m in op.managers:
+        for m in app.managers:
             if isinstance(m, BuildingManager):
                 print("The number of buildings: {}".format(len(m.buildings)))

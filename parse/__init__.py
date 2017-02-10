@@ -47,8 +47,8 @@ class Osm:
     # <roles> is set in the constructor
     roles = None
     
-    def __init__(self, op):
-        self.op = op
+    def __init__(self, app):
+        self.app = app
         
         if not Osm.types:
             # initialize dictionaries
@@ -67,17 +67,17 @@ class Osm:
         # use separate conditions for nodes to get some performance gain
         self.nodeConditions = []
         
-        self.doc = etree.parse(op.filepath)
+        self.doc = etree.parse(app.osmFilepath)
         self.osm = self.doc.getroot()
     
     def addCondition(self, condition, layerId=None, manager=None, renderer=None):
         # convert layerId to layerIndex
-        layerIndex = self.op.layerIndices.get(layerId)
+        layerIndex = self.app.layerIndices.get(layerId)
         self.conditions.append((condition, manager, renderer, layerIndex))
     
     def addNodeCondition(self, condition, layerId=None, manager=None, renderer=None):
         # convert layerId to layerIndex
-        layerIndex = self.op.layerIndices.get(layerId)
+        layerIndex = self.app.layerIndices.get(layerId)
         self.nodeConditions.append((condition, manager, renderer, layerIndex))
     
     def parse(self, **kwargs):        

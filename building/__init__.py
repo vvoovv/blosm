@@ -43,22 +43,22 @@ class Building:
     def getHeight(self, element):
         return parseNumber(element.tags["height"]) if "height" in element.tags else None
     
-    def getRoofMinHeight(self, element, op):
+    def getRoofMinHeight(self, element, app):
         # getting the number of levels
         h = element.tags.get("building:levels")
         if not h is None:
             h = parseNumber(h)
             if not h is None:
-                h *= op.levelHeight
+                h *= app.levelHeight
         return h
     
-    def getMinHeight(self, element, op):
+    def getMinHeight(self, element, app):
         tags = element.tags
         if "min_height" in tags:
             z0 = parseNumber(tags["min_height"], 0.)
         elif "building:min_level" in tags:
             numLevels = parseNumber(tags["building:min_level"])
-            z0 = 0. if numLevels is None else numLevels * op.levelHeight
+            z0 = 0. if numLevels is None else numLevels * app.levelHeight
         else:
             z0 = 0.
         return z0

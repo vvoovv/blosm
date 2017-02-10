@@ -56,7 +56,7 @@ class RoofMesh(Roof):
     
     def render(self, r):
         polygon = self.polygon
-        op = r.op
+        app = r.app
         
         scale = (
             ( max(v.x for v in polygon.verts) - min(v.x for v in polygon.verts) )/2.,
@@ -69,11 +69,11 @@ class RoofMesh(Roof):
         
         # Now deal with the roof
         # Use the Blender mesh loaded before or load it from the .blend file
-        # with the path defined by <op.assetPath> and <self.assetPath>
+        # with the path defined by <app.assetPath> and <self.assetPath>
         # <self.assetPath> is set in the parent class <Roof>
         mesh = bpy.data.meshes.get(self.mesh)\
             if self.mesh in bpy.data.meshes else\
-            loadMeshFromFile(os.path.join(op.assetPath, self.assetPath), self.mesh)
+            loadMeshFromFile(os.path.join(app.assetPath, self.assetPath), self.mesh)
         if not mesh.materials:
             # create an empty slot for a Blender material
             mesh.materials.append(None)

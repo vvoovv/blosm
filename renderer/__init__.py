@@ -34,11 +34,11 @@ class Renderer:
     parent = None
     name = None
     
-    def __init__(self, op):
-        self.op = op
+    def __init__(self, app):
+        self.app = app
     
     @classmethod
-    def init(self, op, context):
+    def init(self, context):
         """
         The method performs some initialization, namely checks if a Blender object for the terrain is set.
         """
@@ -49,46 +49,46 @@ class Renderer:
             if terrain:
                 pass
             else:
-                op.report({"ERROR"}, "Blender object %s for the terrain doesn't exist. " % name +
+                self.op.report({"ERROR"}, "Blender object %s for the terrain doesn't exist. " % name +
                     "Import of OpenStreetMap data will be done without takining into account the terrain.")
         self.terrain = terrain
     
     @classmethod
-    def begin(self, op):
-        self.name = os.path.basename(op.filepath)
+    def begin(self, app):
+        self.name = os.path.basename(app.osmFilepath)
         
-        if op.layered or not op.singleObject:
+        if app.layered or not app.singleObject:
             self.parent = createEmptyObject(
                 self.name,
                 zeroVector(),
                 empty_draw_size=0.01
             )
-        if op.singleObject:
-            if op.layered:
-                self.layerMeshes = [None for _ in op.layerIndices]
-                self.layerObjects = [None for _ in op.layerIndices]
+        if app.singleObject:
+            if app.layered:
+                self.layerMeshes = [None for _ in app.layerIndices]
+                self.layerObjects = [None for _ in app.layerIndices]
                 # cache material indices in <self.materialIndices>
-                self.materialIndices = [None for _ in op.layerIndices]
+                self.materialIndices = [None for _ in app.layerIndices]
             else:
                 self.bm = bmesh.new()
                 self.obj = self.createBlenderObject(self.name, None)
                 # cache material indices in <self.materialIndices>
                 self.materialIndices = {}
         else:
-            if op.layered:
-                self.layerParents = [None for _ in op.layerIndices]
+            if app.layered:
+                self.layerParents = [None for _ in app.layerIndices]
 
         # store here Blender object that are to be joined
         self.toJoin = {}
     
     def preRender(self, element, layerIndex=None):
-        op = self.op
+        app = self.app
         # <li> stands for 'layer index'
         li = element.li if layerIndex is None else layerIndex
         self.layerIndex = li
         
-        if op.singleObject:
-            if op.layered:
+        if app.singleObject:
+            if app.layered:
                 mesh = Renderer.layerMeshes[li]
                 obj = Renderer.layerObjects[li]
                 materialIndices = Renderer.materialIndices[li]
@@ -96,7 +96,7 @@ class Renderer:
                     mesh = bmesh.new()
                     Renderer.layerMeshes[li] = mesh
                     obj = self.createBlenderObject(
-                        self.getLayerName(li, op),
+                        self.getLayerName(li, app),
                         self.parent
                     )
                     Renderer.layerObjects[li] = obj
@@ -112,7 +112,7 @@ class Renderer:
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
-                self.getLayerParent() if op.layered else Renderer.parent
+                self.getLayerParent() if app.layered else Renderer.parent
             )
             self.bm = bmesh.new()
             self.materialIndices = {}
@@ -127,16 +127,16 @@ class Renderer:
         pass
     
     def postRender(self, element):
-        if not self.op.singleObject:
+        if not self.app.singleObject:
             # finalize BMesh
             self.bm.to_mesh(self.obj.data)
             # assign OSM tags to the blender object
             assignTags(self.obj, element.tags)
     
     @classmethod
-    def end(self, op):
-        if op.singleObject:
-            if op.layered:
+    def end(self, app):
+        if app.singleObject:
+            if app.layered:
                 for bm,obj in zip(self.layerMeshes, self.layerObjects):
                     if bm:
                         bm.to_mesh(obj.data)
@@ -195,7 +195,7 @@ class Renderer:
         layerParent = layerParents[layerIndex]
         if not layerParent:
             layerParent = createEmptyObject(
-                self.getLayerName(layerIndex, self.op),
+                self.getLayerName(layerIndex, self.app),
                 zeroVector(),
                 empty_draw_size=0.01
             )
@@ -204,28 +204,28 @@ class Renderer:
         return layerParent
     
     @classmethod
-    def getLayerName(self, layerIndex, op):
-        return self.name + "_" + op.layerIds[layerIndex]
+    def getLayerName(self, layerIndex, app):
+        return self.name + "_" + app.layerIds[layerIndex]
     
     def getMaterial(self, element):
-        op = self.op
+        app = self.app
         # the material name is simply <layerId>
-        name = op.layerIds[self.layerIndex]
+        name = app.layerIds[self.layerIndex]
         material = bpy.data.materials.get(name)
         
         if not material:
             # create Blender material
-            material = createDiffuseMaterial(name, op.colors[name])
+            material = createDiffuseMaterial(name, app.colors[name])
         return material
     
     def getElementMaterialIndex(self, element):
-        op = self.op
+        app = self.app
         # the material name is simply <layerId>
-        name = op.layerIds[self.layerIndex]
+        name = app.layerIds[self.layerIndex]
         materialIndex = self.getMaterialIndexByName(name)
         if materialIndex is None:
             # create Blender material
-            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, op.colors[name]) )
+            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, app.colors[name]) )
         return materialIndex
     
     def getMaterialIndex(self, material):

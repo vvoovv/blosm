@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 import webbrowser
+from app import app
+from defs import Keys
 
 
 class OperatorSelectExtent(bpy.types.Operator):
@@ -82,7 +84,7 @@ class PanelExtent(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
-    bl_category = "blender-osm"
+    bl_category = "osm (blender-osm)"
 
     def draw(self, context):
         layout = self.layout
@@ -99,22 +101,46 @@ class PanelExtent(bpy.types.Panel):
         row.prop(addon, "minLon")
         row.prop(addon, "maxLon")
         box.prop(addon, "minLat")
+        
+        layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
+        
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(addon, "dataType", text="")
+        row.operator("blender_osm.import_data", text="import")
 
 
-class PanelMain(bpy.types.Panel):
+class PanelSettings(bpy.types.Panel):
     bl_label = "Settings"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
-    bl_category = "blender-osm"
+    bl_category = "osm (blender-osm)"
+    
+    @classmethod
+    def poll(cls, context):
+        # nothing to render for the terrain
+        return context.scene.blender_osm.dataType != "terrain"
     
     def draw(self, context):
+        addon = context.scene.blender_osm
+        
+        dataType = addon.dataType
+        if dataType == "osm":
+            self.drawOsm(context)
+        elif dataType == "overlay":
+            self.drawOverlay(context)
+    
+    def drawOsm(self, context):
         layout = self.layout
         addon = context.scene.blender_osm
-        layout.prop_search(addon, "terrainObject", context.scene, "objects")
         
-        #if self.app.has(Keys.mode3d):
-        #    layout.prop(addon, "mode", expand=True)
+        box = layout.box()
+        box.prop(addon, "osmSource", text="Import from")
+        if addon.osmSource == "file":
+            box.prop(addon, "osmFilepath", text="File")
+        if app.has(Keys.mode3d):
+            layout.prop(addon, "mode", expand=True)
         box = layout.box()
         box.prop(addon, "buildings")
         box.prop(addon, "water")
@@ -132,11 +158,47 @@ class PanelMain(bpy.types.Panel):
         box.prop(addon, "singleObject")
         box.prop(addon, "layered")
         layout.box().prop(addon, "ignoreGeoreferencing")
+    
+    def drawOverlay(self, context):
+        layout = self.layout
+        addon = context.scene.blender_osm
+        
+        layout.label("overlay is under development")
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
     
-    terrainObject = bpy.props.StringProperty()
+    terrainObject = bpy.props.StringProperty(
+        name = "Terrain",
+        description = "Blender object for the terrain"
+    )
+    
+    osmSource = bpy.props.EnumProperty(
+        name = "Import OpenStreetMap from",
+        items = (
+            ("server", "server", "remote server"),
+            ("file", "file", "file on the local disk")
+        ),
+        description = "From where to import OpenStreetMap data: remote server or a file on the local disk",
+        default = "server"
+    )
+    
+    osmFilepath = bpy.props.StringProperty(
+        name = "OpenStreetMap file",
+        subtype = 'FILE_PATH',
+        description = "Path to an OpenStreetMap file for import"
+    )
+    
+    dataType = bpy.props.EnumProperty(
+        name = "Data",
+        items = (
+            ("osm", "OpenStreetMap", "OpenStreetMap"),
+            ("terrain", "terrain", "Terrain"),
+            ("overlay", "base overlay", "Base overlay for the terrain, e.g. satellite imagery or maps")
+        ),
+        description = "Data type for import",
+        default = "osm"
+    )
     
     mode = bpy.props.EnumProperty(
         name = "Mode: 3D or 2D",
@@ -257,6 +319,23 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         min = 170.,
         max = 179.95,
         step = 10 # i.e. step/100 == 0.1
+    )
+    
+    # Terrain settings
+    # SRTM3 data are sampled at either 3 arc-second and contain 1201 lines and 1201 samples
+    # or 1 arc-second and contain 3601 lines and 3601 samples
+    terrainResolution = bpy.props.EnumProperty(
+        name="Resolution",
+        items=(("1", "1 arc-second", "1 arc-second"), ("3", "3 arc-second", "3 arc-second")),
+        description="Spation resolution",
+        default="1"
+    )
+    
+    terrainPrimitiveType = bpy.props.EnumProperty(
+        name="Mesh primitive type: quad or triangle",
+        items=(("quad","quad","quad"),("triangle","triangle","triangle")),
+        description="Primitive type used for the terrain mesh: quad or triangle",
+        default="quad"
     )
 
 
