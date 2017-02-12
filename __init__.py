@@ -85,8 +85,17 @@ class ImportData(bpy.types.Operator):
 
     def execute(self, context):
         a = app.app
-        # path to the directory for assets is given as an argument to <a.init(..)>
-        a.init(self, context, os.path.dirname(os.path.realpath(__file__)))
+        try:
+            # path to the directory for assets is given as an argument to <a.init(..)>
+            a.init(
+                self,
+                context,
+                os.path.dirname(os.path.realpath(__file__)),
+                BlenderOsmPreferences.bl_idname
+            )
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {"FINISHED"}
         #Renderer.init(context)
         
         # tangent to check if an angle of the polygon is straight

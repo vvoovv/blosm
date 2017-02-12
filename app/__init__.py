@@ -31,6 +31,10 @@ class App:
     
     osmUrl = "http://overpass-api.de/api/map"
     
+    osmDir = "osm"
+    
+    osmFileName = "map%s.osm"
+    
     # diffuse colors for some layers
     colors = {
         "buildings": (0.309, 0.013, 0.012),
@@ -44,12 +48,28 @@ class App:
     def __init__(self):
         self.load()
     
-    def init(self, op, context, basePath):
+    def init(self, op, context, basePath, addonName):
         self.op = op
         self.assetPath = os.path.join(basePath, "assets")
+        # set <self.dataDir> (path to data)
+        prefs = context.user_preferences.addons
         j = os.path.join
-        # set <self.dataDir> to basePath/../../../data
-        self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
+        if addonName in prefs:
+            dataDir = prefs[addonName].preferences.dataDir
+            if not dataDir:
+                raise Exception("A valid directory for data in the addon preferences isn't set")
+            dataDir = os.path.realpath(bpy.path.abspath(dataDir))
+            if not os.path.isdir(dataDir):
+                raise Exception("The directory for data in the addon preferences doesn't exist")
+            self.dataDir = dataDir
+        else:
+            # set <self.dataDir> to basePath/../../../data (development version)
+            self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
+        # create a sub-directory under <self.dataDir> for OSM files
+        osmDir = os.path.join(self.dataDir, self.osmDir)
+        if not os.path.exists(osmDir):
+            os.makedirs(osmDir)
+        
         # <self.logger> may be set in <setup(..)>
         self.logger = None
         # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
@@ -62,8 +82,22 @@ class App:
                 setattr(self, p, getattr(addon, p))
         
         if addon.osmSource == "server":
-            self.osmFilepath = self.download("%s?bbox=%s,%s,%s,%s"  % (self.osmUrl, app.minLon, app.minLat, app.maxLon, app.maxLat))
-            print(self.osmFilepath)
+            # find a file name for the OSM file
+            osmFileName = self.osmFileName % ""
+            counter = 1
+            while True:
+                osmFilePath = os.path.realpath( os.path.join(osmDir, osmFileName) )
+                if os.path.exists(osmFilePath):
+                    counter += 1
+                    osmFileName = self.osmFileName % "_%s" % counter
+                else:
+                    break
+            self.osmFilepath = self.download(
+                "%s?bbox=%s,%s,%s,%s"  % (self.osmUrl, app.minLon, app.minLat, app.maxLon, app.maxLat),
+                osmFilePath
+            )
+        else:
+            self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
         
         if not app.has(defs.Keys.mode3d):
             self.mode = '2D'
@@ -134,11 +168,10 @@ class App:
     def show(self):
         bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
     
-    def download(self, url):
-        filepath = os.path.realpath( os.path.join(self.dataDir, "osm/map.osm") )
-        self.op.report({'INFO'}, "Downloading the file from %s..." % url)
+    def download(self, url, filepath):
+        print("Downloading the file from %s..." % url)
         request.urlretrieve(url, filepath)
-        self.op.report({'INFO'}, "Saving the file to %s..." % filepath)
+        print("Saving the file to %s..." % filepath)
         return filepath
 
 

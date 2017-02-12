@@ -96,11 +96,15 @@ class PanelExtent(bpy.types.Panel):
         row.operator("blender_osm.extent_from_active")
         
         box = layout.box()
-        box.prop(addon, "maxLat")
+        split = box.split(percentage=0.25)
+        split.label()
+        split.split(percentage=0.67).prop(addon, "maxLat")
         row = box.row()
         row.prop(addon, "minLon")
         row.prop(addon, "maxLon")
-        box.prop(addon, "minLat")
+        split = box.split(percentage=0.25)
+        split.label()
+        split.split(percentage=0.67).prop(addon, "minLat")
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
         
@@ -149,7 +153,7 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "highways")
         box.prop(addon, "railways")
         box = layout.box()
-        split = box.split(percentage=0.66)
+        split = box.split(percentage=0.67)
         split.label("Default roof shape:")
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
