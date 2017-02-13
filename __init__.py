@@ -31,7 +31,7 @@ bl_info = {
     "category": "Import-Export",
 }
 
-import os, sys, math
+import os, sys
 
 def _checkPath():
     path = os.path.dirname(__file__)
@@ -44,7 +44,6 @@ _checkPath()
 import bpy, bmesh
 
 from util.transverse_mercator import TransverseMercator
-from util.polygon import Polygon
 from renderer import Renderer
 from parse import Osm
 import app, gui
@@ -71,7 +70,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
 class ImportData(bpy.types.Operator):
     """Import data: OpenStreetMap, terrain or base overlay for the terrain"""
     bl_idname = "blender_osm.import_data"  # important since its how bpy.ops.blender_osm.import_data is constructed
-    bl_label = "Import data of the selected type (OSM, terrain or terrain overlay)"
+    bl_label = "blender-osm"
     bl_description = "Import data of the selected type (OpenStreetMap, terrain or base overlay for the terrain)"
     bl_options = {'REGISTER', 'UNDO'}
 
@@ -84,37 +83,35 @@ class ImportData(bpy.types.Operator):
     )
 
     def execute(self, context):
+        # path to the directory for assets
+        basePath = os.path.dirname(os.path.realpath(__file__))
+        dataType = context.scene.blender_osm.dataType
+        
+        if dataType == "osm":
+            return self.importOsm(context, basePath)
+        elif dataType == "terrain":
+            return self.importTerrain(context, basePath)
+        
+        return {'FINISHED'}
+    
+    def importOsm(self, context, basePath):
         a = app.app
         try:
-            # path to the directory for assets is given as an argument to <a.init(..)>
-            a.init(
-                self,
-                context,
-                os.path.dirname(os.path.realpath(__file__)),
-                BlenderOsmPreferences.bl_idname
-            )
+            a.initOsm(self, context, basePath, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
-            return {"FINISHED"}
+            return {'FINISHED'}
         #Renderer.init(context)
-        
-        # tangent to check if an angle of the polygon is straight
-        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-a.straightAngleThreshold) ))
         
         scene = context.scene
         kwargs = {}
         
-        # setting active object if there is no active object
-        if context.mode != "OBJECT":
-            # if there is no object in the scene, only "OBJECT" mode is provided
-            if not scene.objects.active:
-                scene.objects.active = context.scene.objects[0]
-            bpy.ops.object.mode_set(mode="OBJECT")
+        self.setObjectMode(context)
         
         osm = Osm(a)
         setup(a, osm)
         
-        if "lat" in scene and "lon" in scene and not self.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
             kwargs["projection"] = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
         else:
             kwargs["projectionClass"] = TransverseMercator
@@ -134,7 +131,43 @@ class ImportData(bpy.types.Operator):
         
         a.clean()
         
-        return {"FINISHED"}
+        return {'FINISHED'}
+    
+    def importTerrain(self, context, basePath):
+        a = app.app
+        #try:
+        a.initTerrain(self, context, basePath, BlenderOsmPreferences.bl_idname)
+        #except Exception as e:
+        #    self.report({'ERROR'}, str(e))
+        #    return {'FINISHED'}
+        
+        scene = context.scene
+        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+            lat = scene["lat"]
+            lon = scene["lon"]
+            setLatLon = False
+        else:
+            lat = (a.minLat+a.maxLat)/2.
+            lon = (a.minLon+a.maxLon)/2.
+            setLatLon = True
+        
+        a.projection = TransverseMercator(lat=lat, lon=lon)
+        a.importTerrain(context)
+        
+        # set custom parameter "lat" and "lon" to the active scene
+        if setLatLon:
+            scene["lat"] = lat
+            scene["lon"] = lon
+        return {'FINISHED'}
+    
+    def setObjectMode(self, context):
+        # setting active object if there is no active object
+        if context.mode != "OBJECT":
+            scene = context.scene
+            # if there is no object in the scene, only "OBJECT" mode is available
+            if not scene.objects.active:
+                scene.objects.active = scene.objects[0]
+            bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def register():
