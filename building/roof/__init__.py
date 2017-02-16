@@ -104,7 +104,8 @@ class Roof:
         self.h = h
         return h
     
-    def render(self, r):
+    def render(self):
+        r = self.r
         wallIndices = self.wallIndices
         roofIndices = self.roofIndices
         if not (roofIndices or wallIndices):
@@ -116,11 +117,11 @@ class Roof:
         # First, deal with vertices defining <self.polygon>;
         # some vertices of <self.polygon> could be skipped because of the straight angle
         for i in self.polygon.indices:
-            verts[i] = bm.verts.new(verts[i])
+            verts[i] = bm.verts.new(r.getVert(verts[i]))
         # Second, create BMesh vertices added after the creation of <self.polygon>;
         # <self.polygon.indexOffset> is used to distinguish between the two groups of vertices
         for i in range(self.polygon.indexOffset, len(verts)):
-            verts[i] = bm.verts.new(verts[i])
+            verts[i] = bm.verts.new(r.getVert(verts[i]))
         
         if wallIndices:
             materialIndex = r.getWallMaterialIndex(self.element)

@@ -91,7 +91,8 @@ class RoofFlatMulti(RoofFlat):
         verts.extend(Vector((verts[i].x, verts[i].y, bldgMinHeight)) for p in polygons for i in p.indices)
         return True
     
-    def render(self, r):
+    def render(self):
+        r = self.r
         element = self.element
         verts = self.verts
         polygons = self.polygons
@@ -101,12 +102,12 @@ class RoofFlatMulti(RoofFlat):
         # some vertices of a polygon could be skipped because of the straight angle
         for polygon in polygons:
             for i in polygon.indices:
-                verts[i] = bm.verts.new(verts[i])
+                verts[i] = bm.verts.new(r.getVert(verts[i]))
         # Second, create BMesh vertices added after the creation of <polygons>;
         # <polygons[-1].indexOffset> (i.e. <indexOffset> of the last polygon in <polygons>)
         # is used to distinguish between the two groups of vertices
         for i in range(polygons[-1].indexOffset, len(verts)):
-            verts[i] = bm.verts.new(verts[i])
+            verts[i] = bm.verts.new(r.getVert(verts[i]))
         # create BMesh edges out of <verts>
         edges = tuple(
             bm.edges.new( (verts[polygon.indices[i-1]], verts[polygon.indices[i]]) )\

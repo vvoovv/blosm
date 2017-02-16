@@ -23,6 +23,7 @@ from urllib import request
 
 import defs
 from renderer import Renderer
+from terrain import Terrain
 from util.polygon import Polygon
 
 
@@ -109,6 +110,10 @@ class App:
         
         if not app.has(defs.Keys.mode3d):
             self.mode = '2D'
+        
+        # check if have a terrain Blender object set
+        terrain = Terrain(context)
+        self.terrain = terrain if terrain.terrain else None
         
         # manager (derived from manager.Manager) performing some processing
         self.managers = []
@@ -263,19 +268,33 @@ class App:
         verts = []
         indices = []
         
-        self.buildTerrain(verts, indices)
+        try:
+            heightOffset = Terrain(context).terrain["height_offset"]
+        except Exception:
+            heightOffset = None
+        
+        minHeight = self.buildTerrain(verts, indices, heightOffset)
+        
+        # apply the offset along z-axis
+        for v in verts:
+            v[2] -= minHeight
         
         # create a mesh object in Blender
         mesh = bpy.data.meshes.new("Terrain")
         mesh.from_pydata(verts, [], indices)
         mesh.update()
-        context.scene.objects.link( bpy.data.objects.new("Terrain", mesh) )
+        obj = bpy.data.objects.new("Terrain", mesh)
+        obj["height_offset"] = minHeight
+        context.scene.objects.link(obj)
+        context.scene.blender_osm.terrainObject = obj.name
 
-    def buildTerrain(self, verts, indices):
+    def buildTerrain(self, verts, indices, heightOffset):
         """
         The method fills verts and indices lists with values
         verts is a list of vertices
         indices is a list of tuples; each tuple is composed of 3 indices of verts that define a triangle
+        
+        Returns the minimal height
         """
         latIntervals = self.latIntervals
         lonIntervals = self.lonIntervals
@@ -283,9 +302,6 @@ class App:
         makeQuads = (self.terrainPrimitiveType == "quad")
         
         minHeight = 32767
-        maxHeight = -32767
-        maxLon = 0
-        maxLat = 0
         
         vertsCounter = 0
         
@@ -331,14 +347,10 @@ class App:
                             z = struct.unpack('>h', buf)[0]
                             if z==self.voidValue:
                                 z = self.voidSubstitution
-                            if z<minHeight:
+                            if heightOffset is None and z<minHeight:
                                 minHeight = z
-                            elif z>maxHeight:
-                                maxHeight = z
-                                maxLon = lat
-                                maxLat = lon
                             # add a new vertex to the verts array
-                            verts.append((xy[0], xy[1], z))
+                            verts.append([xy[0], xy[1], z])
                             if not firstLatInterval and y==y2:
                                 topNeighborIndex = lonIntervalVertsCounterValues[lonIntervalIndex] + x - x1
                                 if x!=x1:
@@ -386,7 +398,9 @@ class App:
             if firstLatInterval:
                 firstLatInterval = 0
             # remembering ySize
-            prevYsize = y2-y1
+            prevYsize = y2-y
+        
+        return minHeight if heightOffset is None else heightOffset
 
 
 class OperatorPopup(bpy.types.Operator):

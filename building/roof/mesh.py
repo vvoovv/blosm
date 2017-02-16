@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import bpy
+from mathutils import Vector
 from . import Roof
 from renderer import Renderer
 from util.blender import loadMeshFromFile
@@ -50,11 +51,12 @@ class RoofMesh(Roof):
         
         c = polygon.center
         # location of the Blender mesh for the roof
-        self.location = (c.x, c.y, roofMinHeight)
+        self.location = Vector((c[0], c[1], roofMinHeight))
         
         return True
     
-    def render(self, r):
+    def render(self):
+        r = self.r
         polygon = self.polygon
         app = r.app
         
@@ -65,7 +67,7 @@ class RoofMesh(Roof):
         )
         
         # create building walls
-        super().render(r)
+        super().render()
         
         # Now deal with the roof
         # Use the Blender mesh loaded before or load it from the .blend file
@@ -79,7 +81,7 @@ class RoofMesh(Roof):
             mesh.materials.append(None)
         # create a Blender object to host <mesh>
         o = bpy.data.objects.new(self.mesh, mesh)
-        o.location = self.location
+        o.location = r.getVert(self.location)
         o.scale = scale
         bpy.context.scene.objects.link(o)
         # perform Blender parenting

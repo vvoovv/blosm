@@ -36,22 +36,10 @@ class Renderer:
     
     def __init__(self, app):
         self.app = app
-    
-    @classmethod
-    def init(self, context):
-        """
-        The method performs some initialization, namely checks if a Blender object for the terrain is set.
-        """
-        terrain = None
-        name = context.scene.terrainObject
-        if name:
-            terrain = context.scene.objects.get(name)
-            if terrain:
-                pass
-            else:
-                self.op.report({"ERROR"}, "Blender object %s for the terrain doesn't exist. " % name +
-                    "Import of OpenStreetMap data will be done without takining into account the terrain.")
-        self.terrain = terrain
+        # offset for a Blender object created if <app.singleObject is False>
+        self.offset = None
+        # offset if a terrain is set
+        self.offsetZ = None
     
     @classmethod
     def begin(self, app):
@@ -71,7 +59,7 @@ class Renderer:
                 self.materialIndices = [None for _ in app.layerIndices]
             else:
                 self.bm = bmesh.new()
-                self.obj = self.createBlenderObject(self.name, None)
+                self.obj = self.createBlenderObject(self.name, None, None)
                 # cache material indices in <self.materialIndices>
                 self.materialIndices = {}
         else:
@@ -80,6 +68,10 @@ class Renderer:
 
         # store here Blender object that are to be joined
         self.toJoin = {}
+        
+        # init terrain which can be used by multiple renderers
+        if app.terrain:
+            app.terrain.initBvhTree()
     
     def preRender(self, element, layerIndex=None):
         app = self.app
@@ -97,6 +89,7 @@ class Renderer:
                     Renderer.layerMeshes[li] = mesh
                     obj = self.createBlenderObject(
                         self.getLayerName(li, app),
+                        None,
                         self.parent
                     )
                     Renderer.layerObjects[li] = obj
@@ -112,6 +105,7 @@ class Renderer:
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
+                self.offsetZ if self.offsetZ else self.offset,
                 self.getLayerParent() if app.layered else Renderer.parent
             )
             self.bm = bmesh.new()
@@ -176,9 +170,11 @@ class Renderer:
         join[target.name].append(o)
     
     @classmethod
-    def createBlenderObject(self, name, parent=None):
+    def createBlenderObject(self, name, location, parent):
         mesh = bpy.data.meshes.new(name)
         obj = bpy.data.objects.new(name, mesh)
+        if location:
+            obj.location = location
         bpy.context.scene.objects.link(obj)
         if parent:
             # perform parenting

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
+from mathutils import Vector
 from renderer import Renderer, Renderer3d
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
@@ -60,6 +61,11 @@ class BuildingRenderer(Renderer3d):
         }
         self.defaultRoof = self.roofs[app.defaultRoofShape]
         
+        # set renderer for each roof
+        for r in self.roofs:
+            self.roofs[r].r = self
+        self.flatRoofMulti.r = self
+        
         self.defaultMaterialIndices = [None, None]
         # References to Blender materials used by roof Blender meshes
         # loaded from a .blend library file
@@ -68,8 +74,15 @@ class BuildingRenderer(Renderer3d):
     def render(self, building, osm):
         parts = building.parts
         outline = building.element
+        app = self.app
         self.parts = parts
         self.outline = outline
+        
+        if not app.singleObject:
+            self.calculateOffset(outline, osm)
+        elif app.terrain:
+            self.projectOnTerrain(outline, osm)
+        
         self.preRender(outline, self.layerIndex)
         
         if parts:
@@ -83,6 +96,12 @@ class BuildingRenderer(Renderer3d):
         if parts:
             for part in parts:
                 self.renderElement(part, building, osm)
+        
+        if not app.singleObject:
+            self.offset = None
+        if app.terrain and not self.offsetZ is None:
+            self.offsetZ = None
+        
         self.postRender(outline)
     
     def renderElement(self, element, building, osm):
@@ -138,7 +157,7 @@ class BuildingRenderer(Renderer3d):
         
         #print(element.tags["id"]) #DEBUG OSM id
         if roof.make(z2, z1 if wallHeight is None else roofMinHeight, None if wallHeight is None else z1, osm):
-            roof.render(self)
+            roof.render()
 
     def getRoofMaterialIndex(self, element):
         """
@@ -280,3 +299,24 @@ class BuildingRenderer(Renderer3d):
             if element is self.outline and self.parts:
                 self.defaultMaterials[roofIndex] = material
         return material
+    
+    def calculateOffset(self, outline, osm):
+        self.offset = Vector(
+            next( outline.getOuterData(osm) if outline.t is Renderer.multipolygon else outline.getData(osm) )
+        )
+        if self.app.terrain:
+            self.offsetZ = self.app.terrain.project(self.offset)
+    
+    def projectOnTerrain(self, outline, osm):
+        offset = self.app.terrain.project(
+            next( outline.getOuterData(osm) if outline.t is Renderer.multipolygon else outline.getData(osm) )
+        )
+        if offset:
+            self.offsetZ = offset[2]
+    
+    def getVert(self, vert):
+        if not self.app.singleObject:
+            vert -= self.offset
+        elif not self.offsetZ is None:
+            vert[2] += self.offsetZ
+        return vert

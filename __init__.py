@@ -74,14 +74,6 @@ class ImportData(bpy.types.Operator):
     bl_description = "Import data of the selected type (OpenStreetMap, terrain or base overlay for the terrain)"
     bl_options = {'REGISTER', 'UNDO'}
 
-    # ImportHelper mixin class uses this
-    filename_ext = ".osm"
-
-    filter_glob = bpy.props.StringProperty(
-        default="*.osm;*.xml",
-        options={"HIDDEN"},
-    )
-
     def execute(self, context):
         # path to the directory for assets
         basePath = os.path.dirname(os.path.realpath(__file__))
@@ -135,11 +127,11 @@ class ImportData(bpy.types.Operator):
     
     def importTerrain(self, context, basePath):
         a = app.app
-        #try:
-        a.initTerrain(self, context, basePath, BlenderOsmPreferences.bl_idname)
-        #except Exception as e:
-        #    self.report({'ERROR'}, str(e))
-        #    return {'FINISHED'}
+        try:
+            a.initTerrain(self, context, basePath, BlenderOsmPreferences.bl_idname)
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'FINISHED'}
         
         scene = context.scene
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
