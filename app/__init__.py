@@ -27,25 +27,6 @@ from terrain import Terrain
 from util.polygon import Polygon
 
 
-def getSrtmIntervals(x1, x2):
-    """
-    Split (x1, x2) into SRTM intervals. Examples:
-    (31.2, 32.7) => [ (31.2, 32), (32, 32.7) ]
-    (31.2, 32) => [ (31.2, 32) ]
-    """
-    _x1 = x1
-    intervals = []
-    while True:
-        _x2 = math.floor(_x1 + 1)
-        if (_x2>=x2):
-            intervals.append((_x1, x2))
-            break
-        else:
-            intervals.append((_x1, _x2))
-            _x1 = _x2
-    return intervals
-
-
 class App:
     
     layers = ("buildings", "highways", "railways", "water", "forests", "vegetation")
@@ -137,12 +118,12 @@ class App:
         self.terrainSize = 3600//int(self.terrainResolution)
         
         # we are going from top to down, that's why we call reversed()
-        self.latIntervals = tuple(reversed(getSrtmIntervals(self.minLat, self.maxLat)))
-        self.lonIntervals = getSrtmIntervals(self.minLon, self.maxLon)
+        self.latIntervals = tuple(reversed(Terrain.getHgtIntervals(self.minLat, self.maxLat)))
+        self.lonIntervals = Terrain.getHgtIntervals(self.minLon, self.maxLon)
 
-        missingSrtmFiles = self.getMissingSrtmFiles()
-        # download missing SRTM files
-        for missingPath in missingSrtmFiles:
+        missingHgtFiles = self.getMissingHgtFiles()
+        # download missing .hgt files
+        for missingPath in missingHgtFiles:
             missingFile = os.path.basename(missingPath)
             self.download(
                 "https://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s" % (missingFile[:3], missingFile),
@@ -239,29 +220,24 @@ class App:
         request.urlretrieve(url, filepath)
         print("Saving the file to %s..." % filepath)
         return filepath
-    
-    def getSrtmFileName(self, lat, lon):
-        prefixLat = "N" if lat>= 0 else "S"
-        prefixLon = "E" if lon>= 0 else "W"
-        return "{}{:02d}{}{:03d}.hgt.gz".format(prefixLat, abs(lat), prefixLon, abs(lon))
 
-    def getMissingSrtmFiles(self):
+    def getMissingHgtFiles(self):
         """
-        Returns the list of missing SRTM files
+        Returns the list of missing .hgt files
         """
         latIntervals = self.latIntervals
         lonIntervals = self.lonIntervals
         missingFiles = []
         for latInterval in latIntervals:
-            # latitude of the lower-left corner of the SRTM tile
+            # latitude of the lower-left corner of the .hgt tile
             _lat = math.floor(latInterval[0])
             for lonInterval in lonIntervals:
-                # longitude of the lower-left corner of the SRTM tile
+                # longitude of the lower-left corner of the .hgt tile
                 _lon = math.floor(lonInterval[0])
-                srtmFileName = os.path.join(self.terrainDir, self.getSrtmFileName(_lat, _lon))
-                # check if the SRTM file exists
-                if not os.path.exists(srtmFileName):
-                    missingFiles.append(srtmFileName)
+                hgtFileName = os.path.join(self.terrainDir, Terrain.getHgtFileName(_lat, _lon))
+                # check if the .hgt file exists
+                if not os.path.exists(hgtFileName):
+                    missingFiles.append(hgtFileName)
         return missingFiles
     
     def importTerrain(self, context):
@@ -314,9 +290,9 @@ class App:
             lonIntervalVertsCounterValues.append(None)
         
         for latInterval in latIntervals:
-            # latitude of the lower-left corner of the SRTM tile
+            # latitude of the lower-left corner of the .hgt tile
             _lat = math.floor(latInterval[0])
-            # vertical indices that limit the active SRTM tile area
+            # vertical indices that limit the active .hgt tile area
             y1 = math.floor( size * (latInterval[0] - _lat) )
             y2 = math.ceil( size * (latInterval[1] - _lat) ) + firstLatInterval - 1
             
@@ -324,14 +300,14 @@ class App:
             firstLonInterval = 1
             
             for lonIntervalIndex,lonInterval in enumerate(lonIntervals):
-                # longitude of the lower-left corner of the SRTM tile
+                # longitude of the lower-left corner of the .hgt tile
                 _lon = math.floor(lonInterval[0])
-                # horizontal indices that limit the active SRTM tile area
+                # horizontal indices that limit the active .hgt tile area
                 x1 = math.floor( size * (lonInterval[0] - _lon) ) + 1 - firstLonInterval 
                 x2 = math.ceil( size * (lonInterval[1] - _lon) )
                 xSize = x2-x1
                 
-                filepath = os.path.join(self.terrainDir, self.getSrtmFileName(_lat, _lon))
+                filepath = os.path.join(self.terrainDir, Terrain.getHgtFileName(_lat, _lon))
                 
                 with gzip.open(filepath, "rb") as f:
                     for y in range(y2, y1-1, -1):
