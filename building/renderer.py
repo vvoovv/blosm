@@ -43,7 +43,7 @@ class BuildingRenderer(Renderer3d):
     
     def __init__(self, app, layerId):
         super().__init__(app)
-        self.layerIndex = app.layerIndices.get(layerId)
+        self.layer = app.getLayer(layerId)
         # create instances of classes that deal with specific roof shapes
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
@@ -83,7 +83,7 @@ class BuildingRenderer(Renderer3d):
         elif app.terrain:
             self.projectOnTerrain(outline, osm)
         
-        self.preRender(outline, self.layerIndex)
+        self.preRender(outline, self.layer)
         
         if parts:
             # reset material indices and Blender materials derived from <outline>
@@ -115,7 +115,7 @@ class BuildingRenderer(Renderer3d):
                 data = None
             else:
                 # treat each outer polygon of the multipolygon as a single polygon
-                for _l in element.l:
+                for _l in element.ls:
                     self._renderElement(element, building, roof, element.getLinestringData(_l, osm), osm)
                 return
         else:

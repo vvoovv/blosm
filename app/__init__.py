@@ -22,6 +22,7 @@ import os, json, webbrowser, base64, math, gzip, struct
 from urllib import request
 
 import defs
+from .layer import Layer
 from renderer import Renderer
 from terrain import Terrain
 from util.polygon import Polygon
@@ -29,7 +30,7 @@ from util.polygon import Polygon
 
 class App:
     
-    layers = ("buildings", "highways", "railways", "water", "forests", "vegetation")
+    layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
     
     osmUrl = "http://overpass-api.de/api/map"
     
@@ -159,15 +160,15 @@ class App:
     
     def prepareLayers(self):
         layerIndices = {}
-        layerIds = []
+        layers = []
         i = 0
-        for layerId in self.layers:
+        for layerId in self.layerIds:
             if getattr(self, layerId):
                 layerIndices[layerId] = i
-                layerIds.append(layerId)
+                layers.append(Layer(layerId, self))
                 i += 1
         self.layerIndices = layerIndices
-        self.layerIds = layerIds
+        self.layers = layers
     
     def process(self):
         logger = self.logger
@@ -220,6 +221,9 @@ class App:
         request.urlretrieve(url, filepath)
         print("Saving the file to %s..." % filepath)
         return filepath
+    
+    def getLayer(self, layerId):
+        return self.layers[ self.layerIndices.get(layerId) ]
 
     def getMissingHgtFiles(self):
         """

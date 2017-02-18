@@ -71,14 +71,14 @@ class Osm:
         self.osm = self.doc.getroot()
     
     def addCondition(self, condition, layerId=None, manager=None, renderer=None):
-        # convert layerId to layerIndex
-        layerIndex = self.app.layerIndices.get(layerId)
-        self.conditions.append((condition, manager, renderer, layerIndex))
+        self.conditions.append(
+            (condition, manager, renderer, None if layerId is None else self.app.getLayer(layerId))
+        )
     
     def addNodeCondition(self, condition, layerId=None, manager=None, renderer=None):
-        # convert layerId to layerIndex
-        layerIndex = self.app.layerIndices.get(layerId)
-        self.nodeConditions.append((condition, manager, renderer, layerIndex))
+        self.nodeConditions.append(
+            (condition, manager, renderer, None if layerId is None else self.app.getLayer(layerId))
+        )
     
     def parse(self, **kwargs):        
         self.projection = kwargs.get("projection")
@@ -213,9 +213,9 @@ class Osm:
         manager = condition[1]
         if manager:
             parseElement(manager, element, elementId)
-        # alwayes set <layerIndex>
-        # layerIndex = condition[3]
-        element.li = condition[3]
+        # always set <layer>
+        # layer = condition[3]
+        element.l = condition[3]
         # check if wee need to set a special renderer
         if condition[2]:
             # renderer = condition[2]

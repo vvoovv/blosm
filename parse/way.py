@@ -22,7 +22,7 @@ class Way:
     A class to represent an OSM way
     
     Some attributes:
-        li (int): layer index used to place the related geometry to a specific Blender object
+        l (app.Layer): layer used to place the related geometry to a specific Blender object
         t: type for rendering (Render.polygon, Render.linestring)
         tags (dict): OSM tags
         m: A manager used during the rendering, if None <manager.BaseManager> applies defaults
@@ -41,7 +41,7 @@ class Way:
             has the form (osmId, osmElement); set only in the case of 3D buildings
     """
     
-    __slots__ = ("li", "t", "tags", "nodes", "m", "r", "rr", "used", "n", "closed", "valid", "b", "o")
+    __slots__ = ("l", "t", "tags", "nodes", "m", "r", "rr", "used", "n", "closed", "valid", "b", "o")
     
     def __init__(self, nodes, tags, osm):
         self.nodes = nodes

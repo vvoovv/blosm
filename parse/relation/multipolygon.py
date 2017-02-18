@@ -203,11 +203,11 @@ class Multipolygon(Relation):
         b (building.manager.Building): A related 3D Building; set only for 3D buildings
         o (tuple): Defines the related outline for a building part (building:part=*);
             has the form (osmId, osmElement); set only in the case of 3D buildings
-        l (Linestring or tuple of Linestring's): linestring(s) the relation is composed of
+        ls (Linestring or tuple of Linestring's): linestring(s) the relation is composed of
     """
     
     # use __slots__ for memory optimization
-    __slots__ = ("t", "l", "b", "o")
+    __slots__ = ("t", "ls", "b", "o")
     
     def __init__(self, osm=None):
         super().__init__()
@@ -280,11 +280,11 @@ class Multipolygon(Relation):
             if len(polygons) == 1:
                 self.t = Renderer.polygon
                 # the only linestring is the valid polygon
-                self.l = polygons[0]
+                self.ls = polygons[0]
             else:
                 self.t = Renderer.multipolygon
                 # all linestrings are valid polygon
-                self.l = polygons
+                self.ls = polygons
             # update bounds of the OSM data with the valid elements of the relation
             if not osm.projection:
                 for p in polygons:
@@ -301,7 +301,7 @@ class Multipolygon(Relation):
             # so the condition <len(linestrings) == 2> actually means the only broken linestring
             if not polygons and len(linestrings) == 2:
                 self.t = Renderer.linestring
-                self.l = next( iter(linestrings.values()) )
+                self.ls = next( iter(linestrings.values()) )
             else:
                 self.t = Renderer.multilinestring
                 l = polygons
@@ -317,7 +317,7 @@ class Multipolygon(Relation):
                         # add to <nodeIds> the id of the opposite open OSM node of <linestring>
                         nodeIds.add(linestring.end if nodeId == linestring.start else linestring.start)
                         l.append(linestring)
-                self.l = l
+                self.ls = l
         else:
             self.valid = False
     
@@ -327,7 +327,7 @@ class Multipolygon(Relation):
         
         Returns a Python generator
         """
-        return self.getLinestringData(self.l, osm)
+        return self.getLinestringData(self.ls, osm)
     
     def getDataMulti(self, osm):
         """
@@ -335,7 +335,7 @@ class Multipolygon(Relation):
         
         Returns a Python generator
         """
-        return (self.getLinestringData(_l, osm) for _l in self.l)
+        return (self.getLinestringData(_l, osm) for _l in self.ls)
     
     def getLinestringData(self, linestring, osm):
         """
@@ -354,7 +354,7 @@ class Multipolygon(Relation):
         # the method is applicable only for <self.t is Render.multipolygon>
         
         # iterate through the linestrings in the list <self.l>
-        for _l in self.l:
+        for _l in self.ls:
             if _l.role is Osm.outer:
                 break
         else:
@@ -369,8 +369,8 @@ class Multipolygon(Relation):
         if linestringIndex is None:
             return False
         else:
-            l = self.l[linestringIndex]
-            return not l.parts or self.l[linestringIndex].end is None
+            l = self.ls[linestringIndex]
+            return not l.parts or self.ls[linestringIndex].end is None
     
     def hasInner(self):
         """
@@ -378,7 +378,7 @@ class Multipolygon(Relation):
         
         The method can be called only if <self.t> is <Renderer.multipolygon>
         """
-        for _l in self.l:
+        for _l in self.ls:
             if _l.role is Osm.inner:
                 return True
         return False
@@ -389,7 +389,7 @@ class Multipolygon(Relation):
         
         Returns a Python generator
         """
-        l = self.l
+        l = self.ls
         return (nodeId for _l in l for nodeId in _l.nodeIds(osm))\
             if isinstance(l, list) else\
             (nodeId for nodeId in l.nodeIds(osm))

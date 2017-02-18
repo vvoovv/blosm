@@ -51,20 +51,11 @@ class Renderer:
                 zeroVector(),
                 empty_draw_size=0.01
             )
-        if app.singleObject:
-            if app.layered:
-                self.layerMeshes = [None for _ in app.layerIndices]
-                self.layerObjects = [None for _ in app.layerIndices]
-                # cache material indices in <self.materialIndices>
-                self.materialIndices = [None for _ in app.layerIndices]
-            else:
-                self.bm = bmesh.new()
-                self.obj = self.createBlenderObject(self.name, None, None)
-                # cache material indices in <self.materialIndices>
-                self.materialIndices = {}
-        else:
-            if app.layered:
-                self.layerParents = [None for _ in app.layerIndices]
+        if app.singleObject and not app.layered:
+            self.bm = bmesh.new()
+            self.obj = self.createBlenderObject(self.name, None, None)
+            # cache material indices in <self.materialIndices>
+            self.materialIndices = {}
 
         # store here Blender object that are to be joined
         self.toJoin = {}
@@ -73,29 +64,28 @@ class Renderer:
         if app.terrain:
             app.terrain.initBvhTree()
     
-    def preRender(self, element, layerIndex=None):
+    def preRender(self, element, layer=None):
         app = self.app
-        # <li> stands for 'layer index'
-        li = element.li if layerIndex is None else layerIndex
-        self.layerIndex = li
+        layer = element.l if layer is None else layer
+        self.layer = layer
         
         if app.singleObject:
             if app.layered:
-                mesh = Renderer.layerMeshes[li]
-                obj = Renderer.layerObjects[li]
-                materialIndices = Renderer.materialIndices[li]
-                if not mesh:
-                    mesh = bmesh.new()
-                    Renderer.layerMeshes[li] = mesh
+                bm = layer.bm
+                obj = layer.obj
+                materialIndices = layer.materialIndices
+                if not bm:
+                    bm = bmesh.new()
+                    layer.bm = bm
                     obj = self.createBlenderObject(
-                        self.getLayerName(li, app),
+                        layer.name,
                         None,
                         self.parent
                     )
-                    Renderer.layerObjects[li] = obj
+                    layer.obj = obj
                     materialIndices = {}
-                    Renderer.materialIndices[li] = materialIndices
-                self.bm = mesh
+                    layer.materialIndices = materialIndices
+                self.bm = bm
                 self.obj = obj
                 self.materialIndices = materialIndices
             else:
@@ -106,7 +96,7 @@ class Renderer:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else self.offset,
-                self.getLayerParent() if app.layered else Renderer.parent
+                layer.getParent() if app.layered else Renderer.parent
             )
             self.bm = bmesh.new()
             self.materialIndices = {}
@@ -131,9 +121,9 @@ class Renderer:
     def end(self, app):
         if app.singleObject:
             if app.layered:
-                for bm,obj in zip(self.layerMeshes, self.layerObjects):
-                    if bm:
-                        bm.to_mesh(obj.data)
+                for layer in app.layers:
+                    if layer.bm:
+                        layer.bm.to_mesh(layer.obj.data)
             else:
                 # finalize BMesh
                 self.bm.to_mesh(self.obj.data)
@@ -185,43 +175,23 @@ class Renderer:
         tags = element.tags
         return tags["name"] if "name" in tags else "element"
     
-    def getLayerParent(self):
-        layerIndex = self.layerIndex
-        layerParents = self.layerParents
-        layerParent = layerParents[layerIndex]
-        if not layerParent:
-            layerParent = createEmptyObject(
-                self.getLayerName(layerIndex, self.app),
-                zeroVector(),
-                empty_draw_size=0.01
-            )
-            layerParent.parent = Renderer.parent
-            layerParents[layerIndex] = layerParent
-        return layerParent
-    
-    @classmethod
-    def getLayerName(self, layerIndex, app):
-        return self.name + "_" + app.layerIds[layerIndex]
-    
     def getMaterial(self, element):
-        app = self.app
-        # the material name is simply <layerId>
-        name = app.layerIds[self.layerIndex]
+        # the material name is simply <id> of the layer
+        name = self.layer.id
         material = bpy.data.materials.get(name)
         
         if not material:
             # create Blender material
-            material = createDiffuseMaterial(name, app.colors[name])
+            material = createDiffuseMaterial(name, self.app.colors[name])
         return material
     
     def getElementMaterialIndex(self, element):
-        app = self.app
-        # the material name is simply <layerId>
-        name = app.layerIds[self.layerIndex]
+        # the material name is simply <id> of the layer
+        name = self.layer.id
         materialIndex = self.getMaterialIndexByName(name)
         if materialIndex is None:
             # create Blender material
-            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, app.colors[name]) )
+            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, self.app.colors[name]) )
         return materialIndex
     
     def getMaterialIndex(self, material):

@@ -72,7 +72,7 @@ class RoofFlatMulti(RoofFlat):
         verts = self.verts
         polygons = self.polygons
         indexOffset = 0
-        for _l in element.l:
+        for _l in element.ls:
             verts.extend(
                 Vector((v[0], v[1], bldgMaxHeight)) for v in element.getLinestringData(_l, osm)
             )
