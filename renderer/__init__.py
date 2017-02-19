@@ -36,7 +36,7 @@ class Renderer:
     
     def __init__(self, app):
         self.app = app
-        # offset for a Blender object created if <app.singleObject is False>
+        # offset for a Blender object created if <layer.singleObject is False>
         self.offset = None
         # offset if a terrain is set
         self.offsetZ = None
@@ -69,8 +69,8 @@ class Renderer:
         layer = element.l if layer is None else layer
         self.layer = layer
         
-        if app.singleObject:
-            if app.layered:
+        if layer.singleObject:
+            if layer.layered:
                 bm = layer.bm
                 obj = layer.obj
                 materialIndices = layer.materialIndices
@@ -111,7 +111,7 @@ class Renderer:
         pass
     
     def postRender(self, element):
-        if not self.app.singleObject:
+        if not self.layer.singleObject:
             # finalize BMesh
             self.bm.to_mesh(self.obj.data)
             # assign OSM tags to the blender object
@@ -119,14 +119,14 @@ class Renderer:
     
     @classmethod
     def end(self, app):
-        if app.singleObject:
-            if app.layered:
-                for layer in app.layers:
-                    if layer.bm:
-                        layer.bm.to_mesh(layer.obj.data)
-            else:
-                # finalize BMesh
-                self.bm.to_mesh(self.obj.data)
+        for layer in app.layers:
+            if layer.bm:
+                layer.bm.to_mesh(layer.obj.data)
+                layer.bm.free()
+        if app.singleObject and not app.layered:
+            # finalize BMesh
+            self.bm.to_mesh(self.obj.data)
+            self.bm.free()
         bpy.context.scene.update()
         self.join()
     

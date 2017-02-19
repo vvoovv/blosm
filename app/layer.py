@@ -7,7 +7,9 @@ class Layer:
     def __init__(self, layerId, app):
         self.app = app
         self.id = layerId
-        self.singleObject = app.singleObject
+        terrain = bool(app.terrain)
+        self.singleObject = app.singleObject or terrain
+        self.layered = (app.layered if app.singleObject else True) if terrain else app.layered
         # instance of BMesh
         self.bm = None
         # Blender object

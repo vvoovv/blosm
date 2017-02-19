@@ -43,7 +43,12 @@ class BuildingRenderer(Renderer3d):
     
     def __init__(self, app, layerId):
         super().__init__(app)
-        self.layer = app.getLayer(layerId)
+        layer = app.getLayer(layerId)
+        self.layer = layer
+        # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
+        layer.singleObject = app.singleObject
+        # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
+        layer.layered = app.layered
         # create instances of classes that deal with specific roof shapes
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
