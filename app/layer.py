@@ -9,7 +9,7 @@ class Layer:
         self.id = layerId
         terrain = bool(app.terrain)
         self.singleObject = app.singleObject or terrain
-        self.layered = (app.layered if app.singleObject else True) if terrain else app.layered
+        self.layered = app.layered or terrain
         # instance of BMesh
         self.bm = None
         # Blender object

@@ -101,8 +101,9 @@ class App:
         self.managers = []
         
         self.prepareLayers()
-        if not len(self.layerIndices):
-            self.layered = False
+        if self.terrain and self.singleObject and not self.layered:
+            print("Imported OpenStreetMap objects will be arranged into layers")
+            self.layered = True
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
