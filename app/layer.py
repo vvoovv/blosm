@@ -17,6 +17,7 @@ class Layer:
         self.materialIndices = []
         # Blender parent object
         self.parent = None
+        self.swModifier = terrain
         
     def getParent(self):
         parent = self.parent

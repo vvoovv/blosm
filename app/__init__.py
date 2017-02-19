@@ -50,6 +50,9 @@ class App:
         "railways": (0.2, 0.2, 0.2)
     }
     
+    # <offset> parameter for the SHRINKWRAP modifier used to project flat meshes onto a terrain
+    swOffset = 0.5
+    
     voidValue = -32768
     voidSubstitution = 0
     

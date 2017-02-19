@@ -123,6 +123,8 @@ class Renderer:
             if layer.bm:
                 layer.bm.to_mesh(layer.obj.data)
                 layer.bm.free()
+                if layer.swModifier:
+                    self.addShrinkwrapModifier(layer.obj, app.terrain.terrain, app.swOffset)
         if app.singleObject and not app.layered:
             # finalize BMesh
             self.bm.to_mesh(self.obj.data)
@@ -170,6 +172,14 @@ class Renderer:
             # perform parenting
             obj.parent = parent
         return obj
+    
+    @staticmethod
+    def addShrinkwrapModifier(obj, target, offset):
+        m = obj.modifiers.new(name="Shrinkwrap", type="SHRINKWRAP")
+        m.wrap_method = "PROJECT"
+        m.use_project_z = True
+        m.target = target
+        m.offset = offset
     
     def getName(self, element):
         tags = element.tags

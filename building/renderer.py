@@ -45,10 +45,13 @@ class BuildingRenderer(Renderer3d):
         super().__init__(app)
         layer = app.getLayer(layerId)
         self.layer = layer
-        # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-        layer.singleObject = app.singleObject
-        # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-        layer.layered = app.layered
+        if app.terrain:
+            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
+            layer.singleObject = app.singleObject
+            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
+            layer.layered = app.layered
+            # no need to add a SHRINKWRAP modifier for buildings
+            layer.swModifier = False
         # create instances of classes that deal with specific roof shapes
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
