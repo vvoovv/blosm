@@ -17,7 +17,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
+import bpy, bmesh
+
+
+def createMeshObject(name, location=(0., 0., 0.), mesh=None):
+    if not mesh:
+        mesh = bpy.data.meshes.new(name)
+    obj = bpy.data.objects.new(name, mesh)
+    obj.location = location
+    bpy.context.scene.objects.link(obj)
+    return obj
 
 
 def createEmptyObject(name, location, hide=False, **kwargs):
@@ -31,6 +40,22 @@ def createEmptyObject(name, location, hide=False, **kwargs):
             setattr(obj, key, kwargs[key])
     bpy.context.scene.objects.link(obj)
     return obj
+
+
+def getBmesh(obj):
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    return bm
+
+
+def setBmesh(obj, bm):
+    bm.to_mesh(obj.data)
+    bm.free()
+    
+
+def pointNormalUpward(face):
+    if face.normal.z < 0.:
+        face.normal_flip()
 
 
 def createDiffuseMaterial(name, color):

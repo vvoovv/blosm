@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, bpy, bmesh
 from util import zeroVector
-from util.blender import createEmptyObject, createDiffuseMaterial
+from util.blender import createEmptyObject, createDiffuseMaterial, pointNormalUpward
 from util.osm import assignTags
 
 
@@ -119,12 +119,16 @@ class Renderer:
     
     @classmethod
     def end(self, app):
+        terrain = app.terrain
         for layer in app.layers:
             if layer.bm:
                 layer.bm.to_mesh(layer.obj.data)
                 layer.bm.free()
                 if layer.swModifier:
-                    self.addShrinkwrapModifier(layer.obj, app.terrain.terrain, app.swOffset)
+                    if not terrain.envelope:
+                        terrain.createEnvelope()
+                    self.addBoolenModifier(layer.obj, terrain.envelope)
+                    self.addShrinkwrapModifier(layer.obj, terrain.terrain, terrain.swOffset)
         if app.singleObject and not app.layered:
             # finalize BMesh
             self.bm.to_mesh(self.obj.data)
@@ -173,14 +177,6 @@ class Renderer:
             obj.parent = parent
         return obj
     
-    @staticmethod
-    def addShrinkwrapModifier(obj, target, offset):
-        m = obj.modifiers.new(name="Shrinkwrap", type="SHRINKWRAP")
-        m.wrap_method = "PROJECT"
-        m.use_project_z = True
-        m.target = target
-        m.offset = offset
-    
     def getName(self, element):
         tags = element.tags
         return tags["name"] if "name" in tags else "element"
@@ -221,6 +217,19 @@ class Renderer:
         else:
             materialIndex = None
         return materialIndex
+    
+    @staticmethod
+    def addShrinkwrapModifier(obj, target, offset):
+        m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+        m.wrap_method = "PROJECT"
+        m.use_project_z = True
+        m.target = target
+        m.offset = offset
+    
+    @staticmethod
+    def addBoolenModifier(obj, operand):
+        m = obj.modifiers.new(name="Boolean", type='BOOLEAN')
+        m.object = operand
 
 
 class Renderer2d(Renderer):
@@ -258,8 +267,7 @@ class Renderer2d(Renderer):
             bm.verts.new((coord[0], coord[1], self.z)) for coord in element.getData(data)
         )
         f.normal_update()
-        if f.normal.z < 0.:
-            f.normal_flip()
+        pointNormalUpward(f)
         # assign material to BMFace <f>
         materialIndex = self.getElementMaterialIndex(element)
         f.material_index = materialIndex
@@ -295,8 +303,7 @@ class Renderer2d(Renderer):
         materialIndex = self.getElementMaterialIndex(element)
         for f in geom["geom"]:
             if isinstance(f, bmesh.types.BMFace):
-                if f.normal.z < 0.:
-                    f.normal_flip()
+                pointNormalUpward(f)
                 f.material_index = materialIndex
         # Store <materialIndex> since it's returned
         # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>

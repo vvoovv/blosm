@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import bmesh
 from mathutils import Vector
 from util.polygon import Polygon
+from util.blender import pointNormalUpward
 from . import Roof
 
 
@@ -121,8 +122,7 @@ class RoofFlatMulti(RoofFlat):
         # check the normal direction of the created faces and assign material to all BMesh faces
         for f in geom["geom"]:
             if isinstance(f, bmesh.types.BMFace):
-                if f.normal.z < 0.:
-                    f.normal_flip()
+                pointNormalUpward(f)
                 f.material_index = materialIndex
         
         # create BMesh faces for the walls of the building
