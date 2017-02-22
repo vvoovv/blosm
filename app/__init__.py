@@ -32,13 +32,22 @@ class App:
     
     layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
     
-    osmUrl = "http://overpass-api.de/api/map"
+    osmUrl = "http://overpass-api.de/api/map?bbox=%s,%s,%s,%s"
+    
+    osmUrl2 = "http://overpass-api.de/api/interpreter"
+    
+    terrainUrl = "https://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
     
     osmDir = "osm"
     
     terrainSubDir = "terrain"
     
     osmFileName = "map%s.osm"
+    
+    osmFileExtraName = "%s_extra.osm"
+    
+    # request to the Overpass server to get both ways and their nodes for the given way ids
+    overpassWays = "((way(%s););node(w););out;"
     
     # diffuse colors for some layers
     colors = {
@@ -80,15 +89,16 @@ class App:
             osmFileName = self.osmFileName % ""
             counter = 1
             while True:
-                osmFilePath = os.path.realpath( os.path.join(osmDir, osmFileName) )
-                if os.path.exists(osmFilePath):
+                osmFilepath = os.path.realpath( os.path.join(osmDir, osmFileName) )
+                if os.path.exists(osmFilepath):
                     counter += 1
                     osmFileName = self.osmFileName % "_%s" % counter
                 else:
                     break
-            self.osmFilepath = self.download(
-                "%s?bbox=%s,%s,%s,%s"  % (self.osmUrl, app.minLon, app.minLat, app.maxLon, app.maxLat),
-                osmFilePath
+            self.osmFilepath = osmFilepath
+            self.download(
+                self.osmUrl % (app.minLon, app.minLat, app.maxLon, app.maxLat),
+                osmFilepath
             )
         else:
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
@@ -131,7 +141,7 @@ class App:
         for missingPath in missingHgtFiles:
             missingFile = os.path.basename(missingPath)
             self.download(
-                "https://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s" % (missingFile[:3], missingFile),
+                self.terrainUrl % (missingFile[:3], missingFile),
                 missingPath
             )
     
@@ -220,11 +230,19 @@ class App:
     def show(self):
         bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
     
-    def download(self, url, filepath):
+    def download(self, url, filepath, data=None):
         print("Downloading the file from %s..." % url)
-        request.urlretrieve(url, filepath)
+        if data:
+            data = data.encode('ascii')
+        request.urlretrieve(url, filepath, None, data)
         print("Saving the file to %s..." % filepath)
-        return filepath
+    
+    def downloadOsmWays(self, ways):
+        self.download(
+            self.osmUrl2,
+            self.osmFileExtraName % self.osmFilepath[:-4],
+            self.overpassWays % ");way(".join(ways)
+        )
     
     def getLayer(self, layerId):
         return self.layers[ self.layerIndices.get(layerId) ]
