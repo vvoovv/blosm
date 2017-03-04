@@ -143,8 +143,6 @@ class BuildingManager(Manager):
     def render(self):
         for building in self.buildings:
             self.renderer.render(building, self.osm)
-        # restore default values of the renderer
-        self.renderer.reset()
     
     def createBvhTree(self):
         osm = self.osm

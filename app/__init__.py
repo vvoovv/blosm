@@ -49,13 +49,22 @@ class App:
     # request to the Overpass server to get both ways and their nodes for the given way ids
     overpassWays = "((way(%s););node(w););out;"
     
+    layerOffsets = {
+        "buildings": 0.2,
+        "water": 0.2,
+        "forests": 0.1,
+        "vegetation": 0.,
+        "highways": 0.2,
+        "railways": 0.2
+    }
+    
     # diffuse colors for some layers
     colors = {
         "buildings": (0.309, 0.013, 0.012),
-        "highways": (0.1, 0.1, 0.1),
         "water": (0.009, 0.002, 0.8),
         "forests": (0.02, 0.208, 0.007),
         "vegetation": (0.007, 0.558, 0.005),
+        "highways": (0.1, 0.1, 0.1),
         "railways": (0.2, 0.2, 0.2)
     }
     
@@ -102,6 +111,13 @@ class App:
             )
         else:
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
+            if self.hasExtraData():
+                self.loadExtraData()
+                self.downloadMissingMembers = False
+        
+        if self.downloadMissingMembers:
+            self.incompleteRelations = []
+            self.missingWays = set()
         
         if not app.has(defs.Keys.mode3d):
             self.mode = '2D'
@@ -237,12 +253,38 @@ class App:
         request.urlretrieve(url, filepath, None, data)
         print("Saving the file to %s..." % filepath)
     
-    def downloadOsmWays(self, ways):
+    def downloadOsmWays(self, ways, filepath):
         self.download(
             self.osmUrl2,
-            self.osmFileExtraName % self.osmFilepath[:-4],
+            filepath,
             self.overpassWays % ");way(".join(ways)
         )
+    
+    def processIncompleteRelations(self, osm):
+        """
+        Download missing OSM ways with ids stored in <self.missingWays>,
+        add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
+        """
+        filepath = self.osmFileExtraName % self.osmFilepath[:-4]
+        self.downloadOsmWays(self.missingWays, filepath)
+        osm.parse(filepath)
+        for relation, _id, members, tags, ci in self.incompleteRelations:
+            # below there is the same code for a relation as in osm.parse(..)
+            relation.process(members, tags, osm)
+            if relation.valid:
+                skip = osm.processCondition(ci, relation, _id, osm.parseRelation)
+                if not _id in osm.relations and not skip:
+                    osm.relations[_id] = relation
+        self.downloadMissingMembers = False
+        # cleanup
+        self.incompleteRelations = None
+        self.missingWays = None
+
+    def hasExtraData(self):
+        pass
+    
+    def loadExtraData(self):
+        pass
     
     def getLayer(self, layerId):
         return self.layers[ self.layerIndices.get(layerId) ]
@@ -289,6 +331,10 @@ class App:
         obj["height_offset"] = minHeight
         context.scene.objects.link(obj)
         context.scene.blender_osm.terrainObject = obj.name
+        # force smooth shading
+        obj.select = True
+        context.scene.objects.active = obj
+        bpy.ops.object.shade_smooth()
 
     def buildTerrain(self, verts, indices, heightOffset):
         """

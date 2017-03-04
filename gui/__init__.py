@@ -19,8 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 import webbrowser
+from mathutils import Vector
 from app import app
 from defs import Keys
+from util.transverse_mercator import TransverseMercator
 
 
 class OperatorSelectExtent(bpy.types.Operator):
@@ -73,9 +75,30 @@ class OperatorExtentFromActive(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        return True
+        scene = context.scene
+        return context.object and context.object.type == "MESH" and "lat" in scene and "lon" in scene
     
     def invoke(self, context, event):
+        scene = context.scene
+        addon = scene.blender_osm
+        obj = context.object
+        projection = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
+        # transform <obj.bound_box> to the world system of coordinates
+        bound_box = tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
+        bbox = []
+        for i in (0,1):
+            for f in (min, max):
+                bbox.append(
+                    f( bound_box, key=lambda v: v[i] )[i]
+                )
+        bbox = (
+            projection.toGeographic(bbox[0], bbox[2]),
+            projection.toGeographic(bbox[1], bbox[3])
+        )
+        addon.minLat = bbox[0][0]
+        addon.maxLat = bbox[1][0]
+        addon.minLon = bbox[0][1]
+        addon.maxLon = bbox[1][1]
         return {'FINISHED'}
 
 
@@ -157,6 +180,7 @@ class PanelSettings(bpy.types.Panel):
         split.label("Default roof shape:")
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
+        box.prop(addon, "defaultNumLevels")
         box.prop(addon, "straightAngleThreshold")
         box = layout.box()
         box.prop(addon, "singleObject")
@@ -315,6 +339,15 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = 3.
     )
     
+    defaultNumLevels = bpy.props.IntProperty(
+        name = "Default number of levels",
+        description = "Default number of levels for a building if the number of levels or " +
+            "the building height aren't set in OSM tags",
+        min = 1,
+        subtype = 'UNSIGNED',
+        default = 5
+    )
+    
     straightAngleThreshold = bpy.props.FloatProperty(
         name = "Straight angle threshold",
         description = "Threshold for an angle of the building outline: when consider it as straight one. "+
@@ -323,6 +356,14 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         min = 170.,
         max = 179.95,
         step = 10 # i.e. step/100 == 0.1
+    )
+    
+    downloadMissingMembers = bpy.props.BoolProperty(
+        name = "Download missing members of relations",
+        description = "Relation members aren't contained in the OSM file " +
+            "if they are located outside of the OSM file extent. " +
+            "Enable this option to download the missiong members of the relations.",
+        default = True
     )
     
     # Terrain settings

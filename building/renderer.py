@@ -45,6 +45,12 @@ class BuildingRenderer(Renderer3d):
         super().__init__(app)
         layer = app.getLayer(layerId)
         self.layer = layer
+        # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
+        layer.location = None
+        layer.meshZ = 0.
+        if layer.parentLocation:
+            layer.parentLocation[2] = 0.
+        
         if app.terrain:
             # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
             layer.singleObject = app.singleObject
@@ -105,6 +111,7 @@ class BuildingRenderer(Renderer3d):
             for part in parts:
                 self.renderElement(part, building, osm)
         
+        # cleanup <self.offset> and <self.offsetZ>
         if not app.singleObject:
             self.offset = None
         if app.terrain and not self.offsetZ is None:
@@ -145,17 +152,10 @@ class BuildingRenderer(Renderer3d):
         if z2 is None:
             # no tag <height> or invalid value
             roofMinHeight = building.getRoofMinHeight(element, app)
-            if roofMinHeight is None:
-                # not tag <building:levels> or invalid value
-                # assume it has only one level
-                wallHeight = app.levelHeight
-                roofMinHeight = z1 + wallHeight
-            else:
-                wallHeight = roofMinHeight - z1
             z2 = roofMinHeight + roofHeight
         else:
             roofMinHeight = z2 - roofHeight
-            wallHeight = roofMinHeight - z1
+        wallHeight = roofMinHeight - z1
         # validity check
         if wallHeight < 0.:
             return
@@ -309,6 +309,7 @@ class BuildingRenderer(Renderer3d):
         return material
     
     def calculateOffset(self, outline, osm):
+        # take the first vertex of the outline as the offset
         self.offset = Vector(
             next( outline.getOuterData(osm) if outline.t is Renderer.multipolygon else outline.getData(osm) )
         )
@@ -316,6 +317,7 @@ class BuildingRenderer(Renderer3d):
             self.offsetZ = self.app.terrain.project(self.offset)
     
     def projectOnTerrain(self, outline, osm):
+        # take the first vertex of the outline as the offset
         offset = self.app.terrain.project(
             next( outline.getOuterData(osm) if outline.t is Renderer.multipolygon else outline.getData(osm) )
         )

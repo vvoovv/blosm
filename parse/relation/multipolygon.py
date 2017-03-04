@@ -215,6 +215,21 @@ class Multipolygon(Relation):
         self.tags = None
     
     def process(self, members, tags, osm):
+        """
+        Returns False if there are incomplete members, True otherwise
+        """
+        ways = osm.ways
+        app = osm.app
+        if app.downloadMissingMembers:
+            hasMissing = False
+            # perform a quick check if there are missing relation members
+            for mType, mId, mRole in members:
+                if not (mType is Osm.way and mId in ways):
+                    app.missingWays.add(mId)
+                    if not hasMissing:
+                        hasMissing = True
+            if hasMissing:
+                return False
         # store <tags>
         self.tags = tags
         # For each linestring under processing we store in <linestrings> two entries:
@@ -222,7 +237,6 @@ class Multipolygon(Relation):
         # 2) <end of the linestring (nodeId)> -> <linestring object>
         linestrings = {}
         polygons = []
-        ways = osm.ways
         for mType, mId, mRole in members:
             if not (mType is Osm.way and mId in ways):
                 continue
@@ -320,6 +334,7 @@ class Multipolygon(Relation):
                 self.ls = l
         else:
             self.valid = False
+        return True
     
     def getData(self, osm):
         """

@@ -1,8 +1,8 @@
 import bpy, bmesh
 import math
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
-from util import zAxis
+from util import zAxis, zeroVector
 from util.blender import createMeshObject, getBmesh, setBmesh, pointNormalUpward
 
 direction = -zAxis # downwards
@@ -10,8 +10,6 @@ direction = -zAxis # downwards
 
 class Terrain:
     
-    # z-coordinate of the bottom of the envelope
-    envZb = -1.
     # offset for the SHRINKWRAP modifier used to project flat meshes on the terrain
     swOffset = 1.
     
@@ -30,17 +28,40 @@ class Terrain:
         self.terrain = terrain
         self.envelope = None
     
-    def initBvhTree(self):
+    def init(self):
+        terrain = self.terrain
+        # An attribute to store the original location of the terrain Blender object,
+        # if the terrain isn't located at the origin of the world system of coordinates
+        self.location = None
+        if terrain.location.length_squared:
+            self.location = terrain.location.copy()
+            # set origin of the terrain Blender object to zero
+            self.setOrigin(zeroVector())
+            # execute the line below to get correct results
+            bpy.context.scene.update()
         bm = bmesh.new()
-        bm.from_mesh(self.terrain.data)
+        bm.from_mesh(terrain.data)
         self.bvhTree = BVHTree.FromBMesh(bm)
         # <bm> is no longer needed
         bm.free()
+    
+    def cleanup(self):
+        if not self.location is None:
+            self.setOrigin(self.location)
+        self.terrain = None
+        self.bvhTree = None
     
     def project(self, coords):
         # Cast a ray from the point with horizontal coords equal to <coords> and
         # z = 10000. in the direction of <direction>
         return self.bvhTree.ray_cast((coords[0], coords[1], 10000.), direction)[0]
+    
+    def setOrigin(self, origin):
+        terrain = self.terrain
+        # see http://blender.stackexchange.com/questions/35825/changing-object-origin-to-arbitrary-point-without-origin-set
+        offset = origin - terrain.matrix_world.translation
+        terrain.data.transform(Matrix.Translation(-offset))
+        terrain.matrix_world.translation += offset
     
     @staticmethod
     def getHgtIntervals(x1, x2):
@@ -69,7 +90,11 @@ class Terrain:
     
     def createEnvelope(self):
         terrain = self.terrain
-        envelope = createMeshObject("%s_envelope" % terrain.name, (0., 0., self.envZb), terrain.data.copy())
+        # transform <terrain.bound_box> to the world system of coordinates
+        bound_box = tuple(terrain.matrix_world*Vector(v) for v in terrain.bound_box)
+        zBottom = min(bound_box, key = lambda v: v[2])[2]
+        zTop = max(bound_box, key = lambda v: v[2])[2]
+        envelope = createMeshObject("%s_envelope" % terrain.name, (0., 0., zBottom), terrain.data.copy())
         self.envelope = envelope
         # flatten the terrain envelope
         envelope.scale[2] = 0.
@@ -87,6 +112,5 @@ class Terrain:
             v for v in bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
                 if isinstance(v, bmesh.types.BMVert)
         )
-        envZt = max( terrain.bound_box, key=lambda f:(terrain.matrix_world*Vector(f))[2] )[2]
-        bmesh.ops.translate(bm, verts=verts, vec=(0., 0., -self.envZb + envZt + 2*self.swOffset))
+        bmesh.ops.translate(bm, verts=verts, vec=(0., 0., zTop - zBottom + 2*self.swOffset))
         setBmesh(envelope, bm)

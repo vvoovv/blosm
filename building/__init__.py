@@ -48,8 +48,9 @@ class Building:
         h = element.tags.get("building:levels")
         if not h is None:
             h = parseNumber(h)
-            if not h is None:
-                h *= app.levelHeight
+        if h is None:
+            h = app.defaultNumLevels
+        h *= app.levelHeight
         return h
     
     def getMinHeight(self, element, app):

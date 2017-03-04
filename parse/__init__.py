@@ -50,6 +50,8 @@ class Osm:
     def __init__(self, app):
         self.app = app
         
+        self.projection = None
+        
         if not Osm.types:
             # initialize dictionaries
             Osm.types = {'node':Osm.node, 'way':Osm.way, 'relation':Osm.relation}
@@ -66,9 +68,6 @@ class Osm:
         self.conditions = []
         # use separate conditions for nodes to get some performance gain
         self.nodeConditions = []
-        
-        self.doc = etree.parse(app.osmFilepath)
-        self.osm = self.doc.getroot()
     
     def addCondition(self, condition, layerId=None, manager=None, renderer=None):
         self.conditions.append(
@@ -80,8 +79,12 @@ class Osm:
             (condition, manager, renderer, None if layerId is None else self.app.getLayer(layerId))
         )
     
-    def parse(self, **kwargs):        
-        self.projection = kwargs.get("projection")
+    def parse(self, filepath, **kwargs):
+        osm = etree.parse(filepath).getroot()
+        
+        # <self.projection> could be set during a previous call of <self.parse(..)>
+        if not self.projection:
+            self.projection = kwargs.get("projection")
         if not self.projection:
             self.minLat = 90.
             self.maxLat = -90.
@@ -90,7 +93,7 @@ class Osm:
         
         relations = self.relations
         
-        for e in self.osm: # e stands for element
+        for e in osm: # e stands for element
             attrs = e.attrib
             if "action" in attrs and attrs["action"] == "delete": continue
             if e.tag == "node":
@@ -170,11 +173,14 @@ class Osm:
                         # <ci> stands for <condition index>
                         ci = self.checkConditions(tags, relation)
                         if not ci is None:
-                            relation.process(members, tags, self)
-                            if relation.valid:
-                                skip = self.processCondition(ci, relation, _id, self.parseRelation)
-                                if not createdBefore and not skip:
-                                    relations[_id] = relation
+                            complete = relation.process(members, tags, self)
+                            if complete:
+                                if relation.valid:
+                                    skip = self.processCondition(ci, relation, _id, self.parseRelation)
+                                    if not createdBefore and not skip:
+                                        relations[_id] = relation
+                            else:
+                                self.app.incompleteRelations.append((relation, _id, members, tags, ci))
             elif e.tag == "bounds":
                 # If <projectionClass> is present in <kwargs>,
                 # it means we need to set <self.projection> here,

@@ -38,7 +38,7 @@ class Renderer:
         self.app = app
         # offset for a Blender object created if <layer.singleObject is False>
         self.offset = None
-        # offset if a terrain is set
+        # offset if a terrain is set (used instead of <self.offset>)
         self.offsetZ = None
     
     @classmethod
@@ -62,7 +62,7 @@ class Renderer:
         
         # init terrain which can be used by multiple renderers
         if app.terrain:
-            app.terrain.initBvhTree()
+            app.terrain.init()
     
     def preRender(self, element, layer=None):
         app = self.app
@@ -79,7 +79,7 @@ class Renderer:
                     layer.bm = bm
                     obj = self.createBlenderObject(
                         layer.name,
-                        None,
+                        layer.location,
                         self.parent
                     )
                     layer.obj = obj
@@ -95,7 +95,7 @@ class Renderer:
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
-                self.offsetZ if self.offsetZ else self.offset,
+                self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
                 layer.getParent() if app.layered else Renderer.parent
             )
             self.bm = bmesh.new()
@@ -135,6 +135,10 @@ class Renderer:
             self.bm.free()
         bpy.context.scene.update()
         self.join()
+        
+        # init terrain which can be used by multiple renderers
+        if app.terrain:
+            app.terrain.cleanup()
     
     @classmethod
     def join(self):
@@ -244,10 +248,11 @@ class Renderer2d(Renderer):
     
     def _renderLineString(self, element, coords, closed):
         bm = self.bm
+        z = self.layer.meshZ
         # previous BMesh vertex
         _v = None
         for coord in coords:
-            v = bm.verts.new((coord[0], coord[1], 0.))
+            v = bm.verts.new((coord[0], coord[1], z))
             if _v:
                 bm.edges.new((_v, v))
             else:
@@ -263,8 +268,9 @@ class Renderer2d(Renderer):
     
     def renderPolygon(self, element, data):
         bm = self.bm
+        z = self.layer.meshZ
         f = bm.faces.new(
-            bm.verts.new((coord[0], coord[1], self.z)) for coord in element.getData(data)
+            bm.verts.new((coord[0], coord[1], z)) for coord in element.getData(data)
         )
         f.normal_update()
         pointNormalUpward(f)
@@ -282,13 +288,14 @@ class Renderer2d(Renderer):
     
     def createMultiPolygon(self, element, polygons):
         bm = self.bm
+        z = self.layer.meshZ
         # the common list of all edges of all polygons
         edges = []
         for polygon in polygons:
             # previous BMesh vertex
             _v = None
             for coord in polygon:
-                v = bm.verts.new((coord[0], coord[1], self.z))
+                v = bm.verts.new((coord[0], coord[1], z))
                 if _v:
                     edges.append( bm.edges.new((_v, v)) )
                 else:
@@ -309,9 +316,6 @@ class Renderer2d(Renderer):
         # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
         self.materialIndex = materialIndex
         return edges
-
-    def reset(self):
-        self.z = 0.
 
 
 class Renderer3d(Renderer2d):
