@@ -112,13 +112,19 @@ class Terrain:
         bmesh.ops.dissolve_limit(bm, angle_limit=math.radians(0.1), verts=bm.verts, edges=bm.edges)
         for f in bm.faces:
             f.smooth = False
+            # ensure all normals point upward
             pointNormalUpward(f)
-        verts = tuple(
-            v for v in bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
-                if isinstance(v, bmesh.types.BMVert)
-        )
-        bmesh.ops.translate(bm, verts=verts, vec=(0., 0., self.maxZ - self.minZ + self.envelopeOffset))
+        # There may be double faces sharing the same vertices;
+        # separate them with bmesh.ops.recalc_face_normals(..)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        # delete faces pointing downward
+        bmesh.ops.delete(bm, geom=tuple(f for f in bm.faces if f.normal.z < 0.), context=5)
         setBmesh(envelope, bm)
+        
         envelope.hide_render = True
         # hide <envelope> after all Blender operator
         envelope.hide = True
+        # SOLIDIFY modifier instead of BMesh extrude operator
+        m = envelope.modifiers.new(name="Solidify", type='SOLIDIFY')
+        m.offset = 1.
+        m.thickness = self.maxZ - self.minZ + self.envelopeOffset
