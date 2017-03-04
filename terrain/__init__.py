@@ -10,8 +10,11 @@ direction = -zAxis # downwards
 
 class Terrain:
     
-    # offset for the SHRINKWRAP modifier used to project flat meshes on the terrain
-    swOffset = 1.
+    # extra offset for the top part of the terrain envelope
+    envelopeOffset = 25.
+    # Extra offset for z-coordinate of flat layers to be projected on the terrain;
+    # used only if a terrain is set
+    layerOffset = 20.
     
     def __init__(self, context):
         """
@@ -30,6 +33,12 @@ class Terrain:
     
     def init(self):
         terrain = self.terrain
+        
+        # transform <terrain.bound_box> to the world system of coordinates
+        bound_box = tuple(terrain.matrix_world*Vector(v) for v in terrain.bound_box)
+        self.minZ = min(bound_box, key = lambda v: v[2])[2]
+        self.maxZ = max(bound_box, key = lambda v: v[2])[2]
+        
         # An attribute to store the original location of the terrain Blender object,
         # if the terrain isn't located at the origin of the world system of coordinates
         self.location = None
@@ -90,11 +99,7 @@ class Terrain:
     
     def createEnvelope(self):
         terrain = self.terrain
-        # transform <terrain.bound_box> to the world system of coordinates
-        bound_box = tuple(terrain.matrix_world*Vector(v) for v in terrain.bound_box)
-        zBottom = min(bound_box, key = lambda v: v[2])[2]
-        zTop = max(bound_box, key = lambda v: v[2])[2]
-        envelope = createMeshObject("%s_envelope" % terrain.name, (0., 0., zBottom), terrain.data.copy())
+        envelope = createMeshObject("%s_envelope" % terrain.name, (0., 0., self.minZ), terrain.data.copy())
         self.envelope = envelope
         # flatten the terrain envelope
         envelope.scale[2] = 0.
@@ -112,5 +117,8 @@ class Terrain:
             v for v in bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
                 if isinstance(v, bmesh.types.BMVert)
         )
-        bmesh.ops.translate(bm, verts=verts, vec=(0., 0., zTop - zBottom + 2*self.swOffset))
+        bmesh.ops.translate(bm, verts=verts, vec=(0., 0., self.maxZ - self.minZ + self.envelopeOffset))
         setBmesh(envelope, bm)
+        envelope.hide_render = True
+        # hide <envelope> after all Blender operator
+        envelope.hide = True

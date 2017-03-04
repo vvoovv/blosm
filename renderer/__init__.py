@@ -59,10 +59,6 @@ class Renderer:
 
         # store here Blender object that are to be joined
         self.toJoin = {}
-        
-        # init terrain which can be used by multiple renderers
-        if app.terrain:
-            app.terrain.init()
     
     def preRender(self, element, layer=None):
         app = self.app
@@ -128,7 +124,7 @@ class Renderer:
                     if not terrain.envelope:
                         terrain.createEnvelope()
                     self.addBoolenModifier(layer.obj, terrain.envelope)
-                    self.addShrinkwrapModifier(layer.obj, terrain.terrain, terrain.swOffset)
+                    self.addShrinkwrapModifier(layer.obj, terrain.terrain, layer.swOffset)
         if app.singleObject and not app.layered:
             # finalize BMesh
             self.bm.to_mesh(self.obj.data)
@@ -226,6 +222,8 @@ class Renderer:
     def addShrinkwrapModifier(obj, target, offset):
         m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
         m.wrap_method = "PROJECT"
+        m.use_positive_direction = False
+        m.use_negative_direction = True
         m.use_project_z = True
         m.target = target
         m.offset = offset

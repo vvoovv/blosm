@@ -2,12 +2,17 @@ from mathutils import Vector
 from renderer import Renderer
 from util.blender import createEmptyObject
 
+
 class Layer:
     
     def __init__(self, layerId, app):
         self.app = app
         self.id = layerId
-        hasTerrain = bool(app.terrain)
+        terrain = app.terrain
+        hasTerrain = bool(terrain)
+        # The following two lines of the code mean that
+        # if a terrain is set, then we force:
+        # <self.singleObject = True> and <self.layered = True>
         self.singleObject = app.singleObject or hasTerrain
         self.layered = app.layered or hasTerrain
         # instance of BMesh
@@ -17,6 +22,7 @@ class Layer:
         self.materialIndices = []
         # Blender parent object
         self.parent = None
+        # apply SHRINKWRAP modifier if a terrain is set
         self.swModifier = hasTerrain
         # set layer offsets <self.location>, <self.meshZ> and <self.parentLocation>
         # <self.location> is used for a Blender object
@@ -24,13 +30,16 @@ class Layer:
         # <self.parentLocation> is used for an EMPTY Blender object serving
         # as a parent for Blender objects of the layer
         self.parentLocation = None
+        meshZ = 0.
         _z = app.layerOffsets[layerId]
-        if self.singleObject and self.layered:
+        if hasTerrain:
+            # here we have <self.singleObject is True> and <self.layered is True>
+            location = Vector((0., 0., terrain.maxZ + terrain.layerOffset))
+            self.swOffset = _z
+        elif self.singleObject and self.layered:
             location = Vector((0., 0., _z))
-            meshZ = 0.
         elif not self.singleObject and self.layered:
             location = None
-            meshZ = 0.
             # it's the only case when <self.parentLocation>
             self.parentLocation = Vector((0., 0., app.layerOffsets[layerId]))
         elif self.singleObject and not self.layered:
@@ -38,7 +47,6 @@ class Layer:
             meshZ = _z
         elif not self.singleObject and not self.layered:
             location = Vector((0., 0., _z))
-            meshZ = 0.
         self.location = location
         self.meshZ = meshZ
         

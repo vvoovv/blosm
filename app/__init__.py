@@ -125,6 +125,8 @@ class App:
         # check if have a terrain Blender object set
         terrain = Terrain(context)
         self.terrain = terrain if terrain.terrain else None
+        if self.terrain:
+            terrain.init()
         
         # manager (derived from manager.Manager) performing some processing
         self.managers = []

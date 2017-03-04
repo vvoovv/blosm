@@ -103,31 +103,32 @@ class OperatorExtentFromActive(bpy.types.Operator):
 
 
 class PanelExtent(bpy.types.Panel):
-    bl_label = "Extent for your area"
+    bl_label = "blender-osm"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
-    bl_category = "osm (blender-osm)"
+    bl_category = "blender-osm"
 
     def draw(self, context):
         layout = self.layout
         addon = context.scene.blender_osm
         
-        row = layout.row()
-        row.operator("blender_osm.choose_extent")
-        row.operator("blender_osm.paste_extent")
-        row.operator("blender_osm.extent_from_active")
+        if addon.osmSource == "server" or addon.dataType != "osm":
+            row = layout.row()
+            row.operator("blender_osm.choose_extent")
+            row.operator("blender_osm.paste_extent")
+            row.operator("blender_osm.extent_from_active")
         
-        box = layout.box()
-        split = box.split(percentage=0.25)
-        split.label()
-        split.split(percentage=0.67).prop(addon, "maxLat")
-        row = box.row()
-        row.prop(addon, "minLon")
-        row.prop(addon, "maxLon")
-        split = box.split(percentage=0.25)
-        split.label()
-        split.split(percentage=0.67).prop(addon, "minLat")
+            box = layout.box()
+            split = box.split(percentage=0.25)
+            split.label()
+            split.split(percentage=0.67).prop(addon, "maxLat")
+            row = box.row()
+            row.prop(addon, "minLon")
+            row.prop(addon, "maxLon")
+            split = box.split(percentage=0.25)
+            split.label()
+            split.split(percentage=0.67).prop(addon, "minLat")
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
         
@@ -142,7 +143,7 @@ class PanelSettings(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
-    bl_category = "osm (blender-osm)"
+    bl_category = "blender-osm"
     
     @classmethod
     def poll(cls, context):
