@@ -269,6 +269,8 @@ class App:
         if not os.path.isfile(filepath):
             print("Downloading data for incomplete OSM relations")
             self.downloadOsmWays(self.missingWays, filepath)
+        
+        self.loadMissingMembers = False
         print("Parsing and processing data from the file %s for incomplete OSM relations" % filepath)
         osm.parse(filepath)
         for relation, _id, members, tags, ci in self.incompleteRelations:
@@ -278,7 +280,6 @@ class App:
                 skip = osm.processCondition(ci, relation, _id, osm.parseRelation)
                 if not _id in osm.relations and not skip:
                     osm.relations[_id] = relation
-        self.loadMissingMembers = False
         # cleanup
         self.incompleteRelations = None
         self.missingWays = None
