@@ -260,19 +260,20 @@ class App:
             self.overpassWays % ");way(".join(ways)
         )
     
+    def loadMissingWays(self, osm):
+        filepath = self.osmFileExtraName % self.osmFilepath[:-4]
+        if not os.path.isfile(filepath):
+            print("Downloading data for incomplete OSM relations")
+            self.downloadOsmWays(self.missingWays, filepath)
+        self.loadMissingMembers = False
+        print("Parsing and processing data from the file %s for incomplete OSM relations" % filepath)
+        osm.parse(filepath)
+    
     def processIncompleteRelations(self, osm):
         """
         Download missing OSM ways with ids stored in <self.missingWays>,
         add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
         """
-        filepath = self.osmFileExtraName % self.osmFilepath[:-4]
-        if not os.path.isfile(filepath):
-            print("Downloading data for incomplete OSM relations")
-            self.downloadOsmWays(self.missingWays, filepath)
-        
-        self.loadMissingMembers = False
-        print("Parsing and processing data from the file %s for incomplete OSM relations" % filepath)
-        osm.parse(filepath)
         for relation, _id, members, tags, ci in self.incompleteRelations:
             # below there is the same code for a relation as in osm.parse(..)
             relation.process(members, tags, osm)

@@ -93,7 +93,6 @@ class ImportData(bpy.types.Operator):
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
-        #Renderer.init(context)
         
         scene = context.scene
         kwargs = {}
@@ -110,6 +109,11 @@ class ImportData(bpy.types.Operator):
         
         osm.parse(a.osmFilepath, **kwargs)
         if a.loadMissingMembers and a.incompleteRelations:
+            try:
+                a.loadMissingWays(osm)
+            except Exception as e:
+                self.report({'ERROR'}, str(e))
+                a.loadMissingMembers = False
             a.processIncompleteRelations(osm)
         a.process()
         a.render()
