@@ -220,7 +220,7 @@ class Multipolygon(Relation):
         """
         ways = osm.ways
         app = osm.app
-        if app.downloadMissingMembers:
+        if app.loadMissingMembers:
             hasMissing = False
             # perform a quick check if there are missing relation members
             for mType, mId, mRole in members:

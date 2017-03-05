@@ -32,8 +32,10 @@ class Terrain:
     # extra offset for the top part of the terrain envelope
     envelopeOffset = 25.
     # Extra offset for z-coordinate of flat layers to be projected on the terrain;
-    # used only if a terrain is set
+    # used only if a terrain is set. It must be less than <self.envelopeOffset>
     layerOffset = 20.
+    # extra offset for the location used to project objects on the terrain
+    projectOffset = 1.
     # used for <thickness> parameter of bmesh.ops.inset_region(..)
     envelopeInset = 0.5
     
@@ -60,6 +62,8 @@ class Terrain:
         self.minZ = min(bound_box, key = lambda v: v[2])[2]
         self.maxZ = max(bound_box, key = lambda v: v[2])[2]
         
+        self.projectLocation = self.maxZ + self.projectOffset
+        
         # An attribute to store the original location of the terrain Blender object,
         # if the terrain isn't located at the origin of the world system of coordinates
         self.location = None
@@ -67,7 +71,7 @@ class Terrain:
             self.location = terrain.location.copy()
             # set origin of the terrain Blender object to zero
             self.setOrigin(zeroVector())
-            # execute the line below to get correct results
+            # execute the line below to get correct results (i.e. update transformation matrix)
             bpy.context.scene.update()
         bm = bmesh.new()
         bm.from_mesh(terrain.data)
@@ -84,7 +88,7 @@ class Terrain:
     def project(self, coords):
         # Cast a ray from the point with horizontal coords equal to <coords> and
         # z = 10000. in the direction of <direction>
-        return self.bvhTree.ray_cast((coords[0], coords[1], 10000.), direction)[0]
+        return self.bvhTree.ray_cast((coords[0], coords[1], self.projectLocation), direction)[0]
     
     def setOrigin(self, origin):
         terrain = self.terrain

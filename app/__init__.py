@@ -68,8 +68,9 @@ class App:
         "railways": (0.2, 0.2, 0.2)
     }
     
-    # <offset> parameter for the SHRINKWRAP modifier used to project flat meshes onto a terrain
-    swOffset = 0.5
+    # Default value for <offset> parameter for the SHRINKWRAP modifier;
+    # it's used to project flat meshes onto a terrain
+    swOffset = 0.05
     
     voidValue = -32768
     voidSubstitution = 0
@@ -99,7 +100,7 @@ class App:
             counter = 1
             while True:
                 osmFilepath = os.path.realpath( os.path.join(osmDir, osmFileName) )
-                if os.path.exists(osmFilepath):
+                if os.path.isfile(osmFilepath):
                     counter += 1
                     osmFileName = self.osmFileName % "_%s" % counter
                 else:
@@ -111,11 +112,8 @@ class App:
             )
         else:
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
-            if self.hasExtraData():
-                self.loadExtraData()
-                self.downloadMissingMembers = False
         
-        if self.downloadMissingMembers:
+        if self.loadMissingMembers:
             self.incompleteRelations = []
             self.missingWays = set()
         
@@ -268,7 +266,10 @@ class App:
         add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
         """
         filepath = self.osmFileExtraName % self.osmFilepath[:-4]
-        self.downloadOsmWays(self.missingWays, filepath)
+        if not os.path.isfile(filepath):
+            print("Downloading data for incomplete OSM relations")
+            self.downloadOsmWays(self.missingWays, filepath)
+        print("Parsing and processing data from the file %s for incomplete OSM relations" % filepath)
         osm.parse(filepath)
         for relation, _id, members, tags, ci in self.incompleteRelations:
             # below there is the same code for a relation as in osm.parse(..)
@@ -277,16 +278,10 @@ class App:
                 skip = osm.processCondition(ci, relation, _id, osm.parseRelation)
                 if not _id in osm.relations and not skip:
                     osm.relations[_id] = relation
-        self.downloadMissingMembers = False
+        self.loadMissingMembers = False
         # cleanup
         self.incompleteRelations = None
         self.missingWays = None
-
-    def hasExtraData(self):
-        pass
-    
-    def loadExtraData(self):
-        pass
     
     def getLayer(self, layerId):
         return self.layers[ self.layerIndices.get(layerId) ]
@@ -306,7 +301,7 @@ class App:
                 _lon = math.floor(lonInterval[0])
                 hgtFileName = os.path.join(self.terrainDir, Terrain.getHgtFileName(_lat, _lon))
                 # check if the .hgt file exists
-                if not os.path.exists(hgtFileName):
+                if not os.path.isfile(hgtFileName):
                     missingFiles.append(hgtFileName)
         return missingFiles
     

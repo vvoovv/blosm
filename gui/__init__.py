@@ -359,11 +359,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         step = 10 # i.e. step/100 == 0.1
     )
     
-    downloadMissingMembers = bpy.props.BoolProperty(
-        name = "Download missing members of relations",
+    loadMissingMembers = bpy.props.BoolProperty(
+        name = "Load missing members of relations",
         description = "Relation members aren't contained in the OSM file " +
             "if they are located outside of the OSM file extent. " +
-            "Enable this option to download the missiong members of the relations.",
+            "Enable this option to load the missiong members of the relations " +
+            "either from a local file (if available) or from the server.",
         default = True
     )
     

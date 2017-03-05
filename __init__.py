@@ -109,7 +109,7 @@ class ImportData(bpy.types.Operator):
             kwargs["projectionClass"] = TransverseMercator
         
         osm.parse(a.osmFilepath, **kwargs)
-        if a.downloadMissingMembers and a.incompleteRelations:
+        if a.loadMissingMembers and a.incompleteRelations:
             a.processIncompleteRelations(osm)
         a.process()
         a.render()

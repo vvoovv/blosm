@@ -54,7 +54,7 @@ class Layer:
         if hasTerrain:
             # here we have <self.singleObject is True> and <self.layered is True>
             location = Vector((0., 0., terrain.maxZ + terrain.layerOffset))
-            self.swOffset = _z
+            self.swOffset = _z if _z else app.swOffset
         elif self.singleObject and self.layered:
             location = Vector((0., 0., _z))
         elif not self.singleObject and self.layered:
