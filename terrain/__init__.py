@@ -34,6 +34,8 @@ class Terrain:
     # Extra offset for z-coordinate of flat layers to be projected on the terrain;
     # used only if a terrain is set
     layerOffset = 20.
+    # used for <thickness> parameter of bmesh.ops.inset_region(..)
+    envelopeInset = 0.5
     
     def __init__(self, context):
         """
@@ -138,6 +140,13 @@ class Terrain:
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
         # delete faces pointing downward
         bmesh.ops.delete(bm, geom=tuple(f for f in bm.faces if f.normal.z < 0.), context=5)
+        # inset faces to avoid weird results of the BOOLEAN modifier
+        insetFaces = bmesh.ops.inset_region(bm, faces=bm.faces,
+            use_boundary=True, use_even_offset=True, use_interpolate=True,
+            use_relative_offset=False, use_edge_rail=False, use_outset=False,
+            thickness=self.envelopeInset, depth=0.
+        )['faces']
+        bmesh.ops.delete(bm, geom=insetFaces, context=5)
         setBmesh(envelope, bm)
         
         envelope.hide_render = True
