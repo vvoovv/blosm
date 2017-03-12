@@ -51,6 +51,9 @@ from defs import Keys
 
 from setup import setup
 
+# set addon version
+app.app.version = bl_info["version"]
+
 
 class BlenderOsmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__

@@ -76,6 +76,7 @@ class App:
     voidSubstitution = 0
     
     def __init__(self):
+        self.version = None
         self.load()
     
     def initOsm(self, op, context, basePath, addonName):

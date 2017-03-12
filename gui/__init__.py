@@ -31,10 +31,15 @@ class OperatorSelectExtent(bpy.types.Operator):
     bl_description = "Choose extent for your area of interest on a geographical map"
     bl_options = {'INTERNAL'}
     
-    mapUrl = "http://www.openstreetmap.org/export"
+    url = "http://prokitektura.com/blender-osm/extent/"
     
     def invoke(self, context, event):
-        webbrowser.open_new_tab(self.mapUrl)
+        bv = bpy.app.version
+        av = app.version
+        webbrowser.open_new_tab(
+            "%s?blender_version=%s.%s&addon=blender-osm&addon_version=%s.%s.%s" %
+            (self.url, bv[0], bv[1], av[0], av[1], av[2])
+        )
         return {'FINISHED'}
 
 
