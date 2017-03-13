@@ -124,46 +124,55 @@ class Terrain:
     
     def createEnvelope(self):
         terrain = self.terrain
-        envelope = createMeshObject("%s_envelope" % terrain.name, (0., 0., self.minZ), terrain.data.copy())
+        name = "%s_envelope" % terrain.name
+        if name in bpy.data.objects:
+            # use existing Blender object
+            envelope = bpy.data.objects[name]
+            # delete modifiers
+            for m in reversed(envelope.modifiers):
+                envelope.modifiers.remove(m)
+        else:
+            # create new envelope for the terrain
+            envelope = createMeshObject(name, (0., 0., self.minZ), terrain.data.copy())
+            # flatten the terrain envelope
+            envelope.scale[2] = 0.
+            envelope.select = True 
+            bpy.context.scene.objects.active = envelope
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='DESELECT')
+            bpy.ops.mesh.select_mode(type='FACE')
+            bpy.ops.object.mode_set(mode='OBJECT')
+            for p in envelope.data.polygons:
+                if p.normal[2] < 0.:
+                    p.select = True
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.delete(type='FACE')
+            bpy.ops.mesh.select_mode(type='VERT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.remove_doubles()
+            bpy.ops.mesh.region_to_loop()
+            bpy.ops.mesh.select_all(action='INVERT')
+            bpy.ops.mesh.dissolve_verts(use_face_split=False, use_boundary_tear=False)
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.dissolve_limited(angle_limit=math.radians(0.1))
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bm = getBmesh(envelope)
+            for f in bm.faces:
+                f.smooth = False
+                # ensure all normals point upward
+                pointNormalUpward(f)
+            # inset faces to avoid weird results of the BOOLEAN modifier
+            insetFaces = bmesh.ops.inset_region(bm, faces=bm.faces,
+                use_boundary=True, use_even_offset=True, use_interpolate=True,
+                use_relative_offset=False, use_edge_rail=False, use_outset=False,
+                thickness=self.envelopeInset, depth=0.
+            )['faces']
+            bmesh.ops.delete(bm, geom=insetFaces, context=5)
+            setBmesh(envelope, bm)
+        
         self.envelope = envelope
-        # flatten the terrain envelope
-        envelope.scale[2] = 0.
-        envelope.select = True 
-        bpy.context.scene.objects.active = envelope
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='DESELECT')
-        bpy.ops.mesh.select_mode(type='FACE')
-        bpy.ops.object.mode_set(mode='OBJECT')
-        for p in envelope.data.polygons:
-            if p.normal[2] < 0.:
-                p.select = True
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.delete(type='FACE')
-        bpy.ops.mesh.select_mode(type='VERT')
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.remove_doubles()
-        bpy.ops.mesh.region_to_loop()
-        bpy.ops.mesh.select_all(action='INVERT')
-        bpy.ops.mesh.dissolve_verts(use_face_split=False, use_boundary_tear=False)
-        bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.mesh.dissolve_limited(angle_limit=math.radians(0.1))
-        bpy.ops.object.mode_set(mode='OBJECT')
-        bm = getBmesh(envelope)
-        for f in bm.faces:
-            f.smooth = False
-            # ensure all normals point upward
-            pointNormalUpward(f)
-        # inset faces to avoid weird results of the BOOLEAN modifier
-        insetFaces = bmesh.ops.inset_region(bm, faces=bm.faces,
-            use_boundary=True, use_even_offset=True, use_interpolate=True,
-            use_relative_offset=False, use_edge_rail=False, use_outset=False,
-            thickness=self.envelopeInset, depth=0.
-        )['faces']
-        bmesh.ops.delete(bm, geom=insetFaces, context=5)
-        setBmesh(envelope, bm)
-        
         envelope.select = False
         envelope.hide_render = True
         # hide <envelope> after all Blender operator
