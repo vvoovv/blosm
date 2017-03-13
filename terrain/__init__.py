@@ -164,6 +164,7 @@ class Terrain:
         bmesh.ops.delete(bm, geom=insetFaces, context=5)
         setBmesh(envelope, bm)
         
+        envelope.select = False
         envelope.hide_render = True
         # hide <envelope> after all Blender operator
         envelope.hide = True
