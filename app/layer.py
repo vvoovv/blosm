@@ -59,7 +59,7 @@ class Layer:
             location = Vector((0., 0., _z))
         elif not self.singleObject and self.layered:
             location = None
-            # it's the only case when <self.parentLocation>
+            # it's the only case when <self.parentLocation> is needed
             self.parentLocation = Vector((0., 0., app.layerOffsets[layerId]))
         elif self.singleObject and not self.layered:
             location = None

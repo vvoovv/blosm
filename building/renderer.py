@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-from mathutils import Vector
 from renderer import Renderer, Renderer3d
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
@@ -29,6 +28,7 @@ from .roof.profile import *
 from .roof.hipped import RoofHipped
 from .roof.half_hipped import RoofHalfHipped
 from util.blender import createDiffuseMaterial
+from util import zeroVector
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -50,6 +50,8 @@ class BuildingRenderer(Renderer3d):
         layer.meshZ = 0.
         if layer.parentLocation:
             layer.parentLocation[2] = 0.
+        else:
+            layer.parentLocation = zeroVector()
         
         if app.terrain:
             # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
@@ -96,6 +98,13 @@ class BuildingRenderer(Renderer3d):
             self.calculateOffset(outline, osm)
         elif app.terrain:
             self.projectOnTerrain(outline, osm)
+        
+        if app.terrain and not self.offsetZ:
+            # The building is located outside the terrain.
+            # Perform cleanup and exit
+            if not app.singleObject:
+                self.offset = None
+            return
         
         self.preRender(outline, self.layer)
         
