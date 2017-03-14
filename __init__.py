@@ -71,10 +71,10 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
 
 
 class ImportData(bpy.types.Operator):
-    """Import data: OpenStreetMap, terrain or base overlay for the terrain"""
+    """Import data: OpenStreetMap or terrain"""
     bl_idname = "blender_osm.import_data"  # important since its how bpy.ops.blender_osm.import_data is constructed
     bl_label = "blender-osm"
-    bl_description = "Import data of the selected type (OpenStreetMap, terrain or base overlay for the terrain)"
+    bl_description = "Import data of the selected type (OpenStreetMap or terrain)"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):

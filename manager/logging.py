@@ -28,22 +28,25 @@ class Logger:
         app.logger = self
         self.app = app
         self.osm = osm
+        print("Parsing OSM file %s..." % app.osmFilepath)
     
     def processStart(self):
-        print("Parsing OSM file: {}".format(datetime.now() - self.parseStartTime))
+        print("Time for parsing OSM file: %s" % (datetime.now() - self.parseStartTime))
         self.processStartTime = datetime.now()
+        print("Processing the parsed OSM data...")
 
     def processEnd(self):
         self.numBuildings()
-        print("Processing of parsed OSM data: {}".format(datetime.now() - self.processStartTime))
+        print("Time for processing of the parsed OSM data: %s" % (datetime.now() - self.processStartTime))
     
     def renderStart(self):
         self.renderStartTime = datetime.now()
+        print("Creating meshes in Blender...")
 
     def renderEnd(self):
         t = datetime.now()
-        print("Mesh creation in Blender: {}".format(t - self.renderStartTime))
-        print("Total duration: {}".format(t - self.parseStartTime))
+        print("Time for mesh creation in Blender: %s" % (t - self.renderStartTime))
+        print("Total duration: %s" % (t - self.parseStartTime))
     
     def numBuildings(self):
         app = self.app
@@ -51,4 +54,4 @@ class Logger:
             return
         for m in app.managers:
             if isinstance(m, BuildingManager):
-                print("The number of buildings: {}".format(len(m.buildings)))
+                print("The number of buildings: %s" % len(m.buildings))

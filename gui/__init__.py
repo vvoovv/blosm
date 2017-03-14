@@ -47,7 +47,7 @@ class OperatorPasteExtent(bpy.types.Operator):
     bl_idname = "blender_osm.paste_extent"
     bl_label = "paste"
     bl_description = "Paste extent (chosen on the geographical map) for your area of interest from the clipboard"
-    bl_options = {'INTERNAL'}
+    bl_options = {'INTERNAL', 'UNDO'}
     
     def invoke(self, context, event):
         addon = context.scene.blender_osm
@@ -76,7 +76,7 @@ class OperatorExtentFromActive(bpy.types.Operator):
     bl_idname = "blender_osm.extent_from_active"
     bl_label = "from active"
     bl_description = "Use extent from the active Blender object"
-    bl_options = {'INTERNAL'}
+    bl_options = {'INTERNAL', 'UNDO'}
     
     @classmethod
     def poll(cls, context):
@@ -135,8 +135,6 @@ class PanelExtent(bpy.types.Panel):
             split.label()
             split.split(percentage=0.67).prop(addon, "minLat")
         
-        layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
-        
         box = layout.box()
         row = box.row(align=True)
         row.prop(addon, "dataType", text="")
@@ -150,17 +148,14 @@ class PanelSettings(bpy.types.Panel):
     bl_context = "objectmode"
     bl_category = "blender-osm"
     
-    @classmethod
-    def poll(cls, context):
-        # nothing to render for the terrain
-        return context.scene.blender_osm.dataType != "terrain"
-    
     def draw(self, context):
         addon = context.scene.blender_osm
         
         dataType = addon.dataType
         if dataType == "osm":
             self.drawOsm(context)
+        elif dataType == "terrain":
+            self.drawTerrain(context)
         elif dataType == "overlay":
             self.drawOverlay(context)
     
@@ -172,8 +167,12 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "osmSource", text="Import from")
         if addon.osmSource == "file":
             box.prop(addon, "osmFilepath", text="File")
+        
+        layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
+            
         if app.has(Keys.mode3d):
             layout.prop(addon, "mode", expand=True)
+        
         box = layout.box()
         box.prop(addon, "buildings")
         box.prop(addon, "water")
@@ -193,11 +192,11 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "layered")
         layout.box().prop(addon, "ignoreGeoreferencing")
     
+    def drawTerrain(self, context):
+        self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")
+    
     def drawOverlay(self, context):
-        layout = self.layout
-        addon = context.scene.blender_osm
-        
-        layout.label("overlay is under development")
+        self.layout.label("overlay is under development")
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
@@ -227,8 +226,8 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         name = "Data",
         items = (
             ("osm", "OpenStreetMap", "OpenStreetMap"),
-            ("terrain", "terrain", "Terrain"),
-            ("overlay", "base overlay", "Base overlay for the terrain, e.g. satellite imagery or maps")
+            ("terrain", "terrain", "Terrain")
+            #("overlay", "base overlay", "Base overlay for the terrain, e.g. satellite imagery or maps")
         ),
         description = "Data type for import",
         default = "osm"
