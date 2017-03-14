@@ -62,6 +62,11 @@ class Terrain:
         self.minZ = min(bound_box, key = lambda v: v[2])[2]
         self.maxZ = max(bound_box, key = lambda v: v[2])[2]
         
+        self.minX = min(bound_box, key = lambda v: v[0])[0]
+        self.maxX = max(bound_box, key = lambda v: v[0])[0]
+        self.minY = min(bound_box, key = lambda v: v[1])[1]
+        self.maxY = max(bound_box, key = lambda v: v[1])[1]
+        
         self.projectLocation = self.maxZ + self.projectOffset
         
         # An attribute to store the original location of the terrain Blender object,
@@ -156,7 +161,7 @@ class Terrain:
             bpy.ops.mesh.select_all(action='INVERT')
             bpy.ops.mesh.dissolve_verts(use_face_split=False, use_boundary_tear=False)
             bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.mesh.dissolve_limited(angle_limit=math.radians(0.1))
+            #bpy.ops.mesh.dissolve_limited(angle_limit=math.radians(0.1))
             bpy.ops.object.mode_set(mode='OBJECT')
             bm = getBmesh(envelope)
             for f in bm.faces:
