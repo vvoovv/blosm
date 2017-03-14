@@ -80,7 +80,8 @@ class Building(Relation):
         # the first pass
         self.preprocess(members, osm)
         if not self.valid:
-            return
+            # return True since the relation shouldn't be added to <app.incompleteRelations>
+            return True
         # The second pass:
         # For all building parts from <self.members> set attribute <o> to <self.outline>
         for mType, mId, mRole in members:
@@ -91,3 +92,5 @@ class Building(Relation):
                         osm.ways[mId].o = self.outline
                 elif mType is Osm.relation:
                     osm.getRelation(mId, Multipolygon).o = self.outline
+        # return True since the relation shouldn't be added to <app.incompleteRelations>
+        return True
