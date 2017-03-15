@@ -26,9 +26,9 @@ from util.transverse_mercator import TransverseMercator
 
 
 class OperatorSelectExtent(bpy.types.Operator):
-    bl_idname = "blender_osm.choose_extent"
-    bl_label = "choose"
-    bl_description = "Choose extent for your area of interest on a geographical map"
+    bl_idname = "blender_osm.select_extent"
+    bl_label = "select"
+    bl_description = "Select extent for your area of interest on a geographical map"
     bl_options = {'INTERNAL'}
     
     url = "http://prokitektura.com/blender-osm/extent/"
@@ -119,12 +119,15 @@ class PanelExtent(bpy.types.Panel):
         addon = context.scene.blender_osm
         
         if addon.osmSource == "server" or addon.dataType != "osm":
-            row = layout.row()
-            row.operator("blender_osm.choose_extent")
+            box = layout.box()
+            row = box.row()
+            row.alignment = "CENTER"
+            row.label("Extent:")
+            row = box.row(align=True)
+            row.operator("blender_osm.select_extent")
             row.operator("blender_osm.paste_extent")
             row.operator("blender_osm.extent_from_active")
-        
-            box = layout.box()
+            
             split = box.split(percentage=0.25)
             split.label()
             split.split(percentage=0.67).prop(addon, "maxLat")
