@@ -112,7 +112,7 @@ class PanelExtent(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
-    bl_category = "blender-osm"
+    bl_category = "osm"
 
     def draw(self, context):
         layout = self.layout
@@ -149,7 +149,7 @@ class PanelSettings(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
-    bl_category = "blender-osm"
+    bl_category = "osm"
     
     def draw(self, context):
         addon = context.scene.blender_osm
@@ -183,6 +183,7 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "vegetation")
         box.prop(addon, "highways")
         box.prop(addon, "railways")
+        
         box = layout.box()
         split = box.split(percentage=0.67)
         split.label("Default roof shape:")
@@ -190,10 +191,18 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "levelHeight")
         box.prop(addon, "defaultNumLevels")
         box.prop(addon, "straightAngleThreshold")
+        
         box = layout.box()
         box.prop(addon, "singleObject")
         box.prop(addon, "layered")
+        
         layout.box().prop(addon, "ignoreGeoreferencing")
+        
+        if addon.terrainObject and addon.terrainObject in context.scene.objects:
+            box = layout.box()
+            box.prop(addon, "sliceFlatLayers")
+            if addon.sliceFlatLayers:
+                box.prop(addon, "sliceSize")
     
     def drawTerrain(self, context):
         self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")
@@ -373,6 +382,21 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
             "Enable this option to load the missiong members of the relations " +
             "either from a local file (if available) or from the server.",
         default = True
+    )
+    
+    sliceFlatLayers = bpy.props.BoolProperty(
+        name = "Slice flat layers",
+        description = "Slice mesh of flat layers (water, forest, vegetaion) " +
+        "to project them on the terrain correctly",
+        default = True
+    )
+    
+    sliceSize = bpy.props.FloatProperty(
+        name = "Slice size",
+        description = "Slice size in meters",
+        default = 30.,
+        min = 10.,
+        step = 100 # i.e. step/100 == 1.
     )
     
     # Terrain settings

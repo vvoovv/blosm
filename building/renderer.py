@@ -60,6 +60,8 @@ class BuildingRenderer(Renderer3d):
             layer.layered = app.layered
             # no need to add a SHRINKWRAP modifier for buildings
             layer.swModifier = False
+            # no need to slice Blender mesh
+            layer.sliceMesh = False
         # create instances of classes that deal with specific roof shapes
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {

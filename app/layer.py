@@ -43,6 +43,8 @@ class Layer:
         self.parent = None
         # apply SHRINKWRAP modifier if a terrain is set
         self.swModifier = hasTerrain
+        # slice flat mesh to project it on the terrain correctly
+        self.sliceMesh = hasTerrain and app.sliceFlatLayers
         # set layer offsets <self.location>, <self.meshZ> and <self.parentLocation>
         # <self.location> is used for a Blender object
         # <self.meshZ> is used for vertices of a BMesh
