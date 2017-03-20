@@ -362,7 +362,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
             "the building height aren't set in OSM tags",
         min = 1,
         subtype = 'UNSIGNED',
-        default = 5
+        default = 2
     )
     
     straightAngleThreshold = bpy.props.FloatProperty(
