@@ -1,4 +1,5 @@
-# blender-osm: one click download and import of OpenStreetMap and terrain with global coverage!
+# blender-osm:
+# One click download and import of OpenStreetMap and terrain with global coverage!
 
 [![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender-osm.png)](https://gumroad.com/l/blender-osm)
 
