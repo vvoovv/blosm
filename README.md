@@ -1,4 +1,4 @@
-# blender-osm: one click download and import of OpenStreetMap and terrain with global coverage!
+# blender-osm: OpenStreetMap and terrain for Blender
 
 [![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender-osm.png)](https://gumroad.com/l/blender-osm)
 
@@ -18,6 +18,6 @@ By [buying](https://gumroad.com/l/blender-osm) the addon you support the addon d
 * e-mail: [prokitektura+support@gmail.com](mailto:prokitektura+support@gmail.com)
 * facebook: [prokitektura](https://www.facebook.com/prokitektura)
 * twitter: [@prokitektura](https://twitter.com/prokitektura)
-* blenderartists.org: [thread](http://blenderartists.org/forum/showthread.php?334508-Addon-Import-OpenStreetMap-(-osm))
+* blenderartists.org: [thread](https://blenderartists.org/forum/showthread.php?334508-Addon-blender-osm-OpenStreetMap-and-terrain-for-Blender)
 <br>post questions, nice renderings created with the addon and your experience with the addon
 * bugs and feature requests: [issues](https://github.com/vvoovv/blender-osm/issues)
