@@ -55,8 +55,6 @@ class BuildingRenderer(Renderer3d):
         
         if app.terrain:
             # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-            layer.singleObject = app.singleObject
-            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
             layer.layered = app.layered
             # no need to add a SHRINKWRAP modifier for buildings
             layer.swModifier = False

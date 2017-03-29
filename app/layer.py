@@ -29,10 +29,9 @@ class Layer:
         self.id = layerId
         terrain = app.terrain
         hasTerrain = bool(terrain)
-        # The following two lines of the code mean that
-        # if a terrain is set, then we force:
-        # <self.singleObject = True> and <self.layered = True>
-        self.singleObject = app.singleObject or hasTerrain
+        self.singleObject = app.singleObject
+        # The following line of the code means that
+        # if a terrain is set, then we force: <self.layered = True>
         self.layered = app.layered or hasTerrain
         # instance of BMesh
         self.bm = None
@@ -57,11 +56,14 @@ class Layer:
             # here we have <self.singleObject is True> and <self.layered is True>
             location = Vector((0., 0., terrain.maxZ + terrain.layerOffset))
             self.swOffset = _z if _z else app.swOffset
+            if not self.singleObject and self.layered:
+                # it's the only case when <self.parentLocation> is needed if a terrain is set
+                self.parentLocation = Vector((0., 0., app.layerOffsets[layerId]))
         elif self.singleObject and self.layered:
             location = Vector((0., 0., _z))
         elif not self.singleObject and self.layered:
             location = None
-            # it's the only case when <self.parentLocation> is needed
+            # it's the only case when <self.parentLocation> is needed if a terrain is't set
             self.parentLocation = Vector((0., 0., app.layerOffsets[layerId]))
         elif self.singleObject and not self.layered:
             location = None

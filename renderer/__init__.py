@@ -108,11 +108,22 @@ class Renderer:
         pass
     
     def postRender(self, element):
-        if not self.layer.singleObject:
+        layer = self.layer
+        if not layer.singleObject:
+            app = self.app
+            terrain = app.terrain
+            obj = self.obj
             # finalize BMesh
-            self.bm.to_mesh(self.obj.data)
+            setBmesh(obj, self.bm)
             # assign OSM tags to the blender object
-            assignTags(self.obj, element.tags)
+            assignTags(obj, element.tags)
+            if terrain and layer.sliceMesh:
+                self.slice(obj, terrain, app)
+            if layer.swModifier:
+                if not terrain.envelope:
+                    terrain.createEnvelope()
+                self.addBoolenModifier(obj, terrain.envelope)
+                self.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
     
     @classmethod
     def end(self, app):
@@ -124,7 +135,7 @@ class Renderer:
             # finalize BMesh
             setBmesh(self.obj, self.bm)
         
-        bpy.context.scene.update()
+        #bpy.context.scene.update()
         # Go through <app.layers> once again after <bpy.context.scene.update()>
         # to get correct results for <layer.obj.bound_box>
         for layer in app.layers:
