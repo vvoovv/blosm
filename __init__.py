@@ -49,8 +49,6 @@ from parse import Osm
 import app, gui
 from defs import Keys
 
-from setup import setup
-
 # set addon version
 app.app.version = bl_info["version"]
 
@@ -96,6 +94,10 @@ class ImportData(bpy.types.Operator):
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
+        if a.has(Keys.mode3dRealistic) and a.mode3d == "realistic":
+            from setup_premium import setup
+        else:
+            from setup_base import setup
         
         scene = context.scene
         kwargs = {}
