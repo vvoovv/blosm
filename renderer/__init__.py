@@ -110,24 +110,29 @@ class Renderer:
     def postRender(self, element):
         layer = self.layer
         if not layer.singleObject:
-            app = self.app
-            terrain = app.terrain
             obj = self.obj
             # finalize BMesh
             setBmesh(obj, self.bm)
             # assign OSM tags to the blender object
             assignTags(obj, element.tags)
-            if terrain and layer.sliceMesh:
-                self.slice(obj, terrain, app)
-            if layer.swModifier:
-                if not terrain.envelope:
-                    terrain.createEnvelope()
-                self.addBoolenModifier(obj, terrain.envelope)
-                self.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
+            self.finalizeBlenderObject(obj, layer, self.app)
+    
+    @classmethod
+    def finalizeBlenderObject(self, obj, layer, app):
+        """
+        Slice Blender MESH object, add modifiers
+        """
+        terrain = app.terrain
+        if terrain and layer.sliceMesh:
+            self.slice(obj, terrain, app)
+        if layer.swModifier:
+            if not terrain.envelope:
+                terrain.createEnvelope()
+            self.addBoolenModifier(obj, terrain.envelope)
+            self.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
     
     @classmethod
     def end(self, app):
-        terrain = app.terrain
         for layer in app.layers:
             if layer.obj:
                 setBmesh(layer.obj, layer.bm)
@@ -140,19 +145,13 @@ class Renderer:
         # to get correct results for <layer.obj.bound_box>
         for layer in app.layers:
             if layer.obj:
-                if terrain and layer.sliceMesh:
-                    self.slice(layer.obj, terrain, app)
-                if layer.swModifier:
-                    if not terrain.envelope:
-                        terrain.createEnvelope()
-                    self.addBoolenModifier(layer.obj, terrain.envelope)
-                    self.addShrinkwrapModifier(layer.obj, terrain.terrain, layer.swOffset)
+                self.finalizeBlenderObject(layer.obj, layer, app)
         
         bpy.ops.object.select_all(action="DESELECT")
         self.join()
         
-        if terrain:
-            terrain.cleanup()
+        if app.terrain:
+            app.terrain.cleanup()
     
     @classmethod
     def join(self):
