@@ -175,6 +175,8 @@ class PanelSettings(bpy.types.Panel):
             
         if app.has(Keys.mode3d):
             layout.prop(addon, "mode", expand=True)
+            if addon.mode == "3D" and app.has(Keys.mode3dRealistic):
+                layout.prop(addon, "mode3d", expand=True)
         
         box = layout.box()
         box.prop(addon, "buildings")
@@ -250,6 +252,13 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         items = (("3D","3D","3D"), ("2D","2D","2D")),
         description = "Import data in 3D or 2D mode",
         default = "3D"
+    )
+    
+    mode3d = bpy.props.EnumProperty(
+        name = "3D Mode: realistic or simple",
+        items = (("realistic","realistic","realistic"), ("simple","simple","simple")),
+        description = "Import data with textures and 3D objects (realistic) or without them (simple)",
+        default = "realistic"
     )
     
     # extent bounds: minLat, maxLat, minLon, maxLon
