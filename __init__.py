@@ -103,9 +103,11 @@ class ImportData(bpy.types.Operator):
         kwargs = {}
         
         self.setObjectMode(context)
+        bpy.ops.object.select_all(action="DESELECT")
         
         osm = Osm(a)
         setup(a, osm)
+        a.prepareLayers(osm)
         
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
             kwargs["projection"] = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
