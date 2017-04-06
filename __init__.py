@@ -33,6 +33,12 @@ bl_info = {
 
 import os, sys
 
+for m in [
+        "app", "building", "gui", "manager", "material", "parse", "realistic",
+        "renderer", "terrain", "util", "defs", "setup_base", "setup_premium"
+    ]:
+    sys.modules.pop(m, 0)
+
 def _checkPath():
     path = os.path.dirname(__file__)
     if path in sys.path:
