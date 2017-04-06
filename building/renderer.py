@@ -43,7 +43,7 @@ class BuildingRenderer(Renderer3d):
     
     def __init__(self, app, layerId):
         super().__init__(app)
-        layer = app.getLayer(layerId)
+        layer = app.createLayer(layerId, area=False)
         self.layer = layer
         # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
         layer.location = None
@@ -56,8 +56,8 @@ class BuildingRenderer(Renderer3d):
         if app.terrain:
             # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
             layer.layered = app.layered
-            # no need to add a SHRINKWRAP modifier for buildings
-            layer.swModifier = False
+            # no need to apply any Blender modifier for buildings
+            layer.modifiers = False
             # no need to slice Blender mesh
             layer.sliceMesh = False
         # create instances of classes that deal with specific roof shapes

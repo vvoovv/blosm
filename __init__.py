@@ -94,7 +94,7 @@ class ImportData(bpy.types.Operator):
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
-        if a.has(Keys.mode3dRealistic) and a.mode3d == "realistic":
+        if a.mode is a.realistic:
             from setup_premium import setup
         else:
             from setup_base import setup
@@ -184,8 +184,3 @@ def unregister():
     bpy.utils.unregister_module(__name__)
     app.unregister()
     gui.unregister()
-
-# This allows you to run the script directly from blenders text editor
-# to test the addon without having to install it.
-if __name__ == "__main__":
-    register()

@@ -50,7 +50,7 @@ class Logger:
     
     def numBuildings(self):
         app = self.app
-        if not (app.mode == '3D' and app.buildings):
+        if app.mode is app.twoD or not app.buildings:
             return
         for m in app.managers:
             if isinstance(m, BuildingManager):

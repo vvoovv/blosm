@@ -69,7 +69,7 @@ def setup(app, osm):
     polygonAcceptBroken = PolygonAcceptBroken(osm)
     
     if app.buildings:
-        if app.mode == '2D':
+        if app.mode is app.twoD:
             osm.addCondition(building, "buildings", polygon)
         else: # 3D
             buildingParts = BuildingParts()
@@ -100,12 +100,12 @@ def setup(app, osm):
         osm.addCondition(water, "water", polygonAcceptBroken)
         osm.addCondition(coastline, "water", linestring)
     if app.forests:
-        osm.addCondition(forest, "forests", polygon)
+        osm.addCondition(forest, "forest", polygon)
     if app.vegetation:
         osm.addCondition(vegetation, "vegetation", polygon)
     
     numConditions = len(osm.conditions)
-    if app.mode == '3D' and app.buildings:
+    if not app.mode is app.twoD and app.buildings:
         # 3D buildings aren't processed by BaseManager
         numConditions -= 1
     if numConditions:

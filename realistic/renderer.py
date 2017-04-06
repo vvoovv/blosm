@@ -2,71 +2,82 @@ import os
 import bpy
 from util.blender import makeActive, appendObjectsFromFile
 
+
 class AreaRenderer:
     
-    assetPath = "assets/base.blend"
+    #assetPath = "assets/base.blend"
     
     def render(self, app):
+        layers = app.layers
+        # check we have a layer that defines an area (natural or landus)
+        for layer in layers:
+            if layer.obj and layer.area: break
+        else: return
+        
         # the terrain Blender object
         terrain = app.terrain.terrain
         
-        # Append objects with DYNAMIC_PAINT modifiers to be copied to
-        # the terrain Blender object, which is to serve as a dynamic paint canvas and
-        # to the Blender objects representing flat layers which are to serve
-        # as dynamic paint brushes
-        dp_brush, dp_canvas = appendObjectsFromFile(
-            os.path.join(os.path.dirname(os.path.realpath(__file__)), self.assetPath),
-            "dp_brush",
-            "dp_canvas"
-        )
-        
-        # Copy the DYNAMIC_PAINT modifier from <dp_canvas> to <terrain>. The modifier turns
-        # <terrain> into dynamic paint canvas
-        terrain.select = True
-        makeActive(dp_canvas)
-        bpy.ops.object.make_links_data(type='MODIFIERS')
-        terrain.select = False
-        # <dp_canvas> isn't needed anymore
-        bpy.data.objects.remove(dp_canvas, True)
-        
-        # DYNAMIC_PAINT modifier of <terrain>
-        dp = terrain.modifiers[-1]
-        
-        # a Python list to store Blender objects used as brushes for dynamic painting
-        brushes = []
         # a Python list to store Blender groups for brushes (to be deleted later)
-        groups = []
+        #groups = []
         
-        surfaces = dp.canvas_settings.canvas_surfaces
-        for layer in app.layers:
+        # setup a DYNAMIC_PAINT modifier for <terrain> with canvas surfaces
+        makeActive(terrain)
+        m = terrain.modifiers.new("Dynamic Paint", 'DYNAMIC_PAINT')
+        bpy.ops.dpaint.type_toggle(type='CANVAS')
+        bpy.ops.dpaint.surface_slot_remove()
+        
+        def prepare_dp_surface(surface, group, output_name_a):
+            surface.use_antialiasing = True
+            surface.use_drying = False
+            surface.use_dry_log = False
+            surface.use_dissolve_log = False
+            surface.brush_group = group
+            surface.output_name_a = output_name_a
+            surface.output_name_b = ""
+        
+        for layer in layers:
             layerId = layer.id
-            nameColors = "%s_colors" % layerId
-            nameWeights = "%s_weights" % layerId
             obj = layer.obj
-            if obj and nameColors in surfaces and nameWeights in surfaces:
-                obj.select = True
-                brushes.append(obj)
-                surfaceColors = surfaces[nameColors]
-                surfaceWeights = surfaces[nameWeights]
-                surfaceColors.is_active = True
-                surfaceWeights.is_active = True
+            if obj and layer.area:
                 # create a brush group
                 group = bpy.data.groups.new("%s_brush" % layerId)
                 # add <obj> to the brush group
                 group.objects.link(obj)
-                surfaceColors.brush_group = group
-                surfaceWeights.brush_group = group
+                # vertex colors
+                bpy.ops.dpaint.surface_slot_add()
+                surface = m.canvas_settings.canvas_surfaces.active
+                surface.name = "%s_colors" % layerId
                 # create a target vertex colors layer for dynamically painted vertex colors
                 colors = terrain.data.vertex_colors.new(layerId)
-                surfaceColors.output_name_a = colors.name
+                prepare_dp_surface(surface, group, colors.name)
+                # vertex weights
+                bpy.ops.dpaint.surface_slot_add()
+                surface = m.canvas_settings.canvas_surfaces.active
+                surface.name = "%s_weights" % layerId
+                surface.surface_type = 'WEIGHT'
                 # create a target vertex group for dynamically painted vertex weights
                 weights = terrain.vertex_groups.new(layerId)
-                surfaceWeights.output_name_a = weights.name
-            # Copy the DYNAMIC_PAINT modifier from <dp_brush> to the Blender objects from 
-            # the Python list <brushes>. The modifier turns them into dynamic paint brushes
-            makeActive(dp_brush)
-            bpy.ops.object.make_links_data(type='MODIFIERS')
-            for brush in brushes:
-                brush.select = False
-            # <dp_brush> isn't needed anymore
-            #bpy.data.objects.remove(dp_brush, True)
+                prepare_dp_surface(surface, group, weights.name)
+        m.canvas_settings.canvas_surfaces.active_index = 0
+        m.canvas_settings.canvas_surfaces[0].show_preview = True
+        terrain.select = False
+        
+        # setup a DYNAMIC_PAINT modifier for <layer.obj> in the brush mode
+        for layer in layers:
+            layerId = layer.id
+            obj = layer.obj
+            if obj and layer.area:
+                makeActive(obj)
+                m = obj.modifiers.new("Dynamic Paint", 'DYNAMIC_PAINT')
+                m.ui_type = 'BRUSH'
+                bpy.ops.dpaint.type_toggle(type='BRUSH')
+                brush = m.brush_settings
+                brush.paint_color = (1., 1., 1.)
+                brush.paint_source = 'DISTANCE'
+                brush.paint_distance = 500.
+                brush.use_proximity_project = True
+                brush.ray_direction = 'Z_AXIS'
+                brush.proximity_falloff = 'CONSTANT'
+                obj.hide = True
+                # deselect <obj> to ensure correct work of subsequent operators
+                obj.select = False

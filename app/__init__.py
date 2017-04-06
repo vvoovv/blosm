@@ -25,12 +25,26 @@ import defs
 from .layer import Layer
 from renderer import Renderer
 from terrain import Terrain
+from util.blender import makeActive
 from util.polygon import Polygon
 
 
 class App:
     
-    layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
+    #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
+    
+    layerIds = [
+        "building", "highway", "railway",
+        "water", "forest",
+        "grass", "meadow", "grassland", "farmland"
+        "scrub", "heath",
+        "marsh", "reedbed", "bog", "swamp",
+        "glacier",
+        "bare_rock",
+        "scree", "shingle",
+        "sand",
+        "beach" # sand, gravel, pebbles
+    ]
     
     osmUrl = "http://overpass-api.de/api/map?bbox=%s,%s,%s,%s"
     
@@ -49,10 +63,15 @@ class App:
     # request to the Overpass server to get both ways and their nodes for the given way ids
     overpassWays = "((way(%s););node(w););out;"
     
+    # app mode
+    twoD = (1,)
+    simple = (1,)
+    realistic = (1,)
+    
     layerOffsets = {
         "buildings": 0.2,
         "water": 0.2,
-        "forests": 0.1,
+        "forest": 0.1,
         "vegetation": 0.,
         "highways": 0.2,
         "railways": 0.2
@@ -62,15 +81,19 @@ class App:
     colors = {
         "buildings": (0.309, 0.013, 0.012),
         "water": (0.009, 0.002, 0.8),
-        "forests": (0.02, 0.208, 0.007),
+        "forest": (0.02, 0.208, 0.007),
         "vegetation": (0.007, 0.558, 0.005),
         "highways": (0.1, 0.1, 0.1),
         "railways": (0.2, 0.2, 0.2)
     }
     
-    # Default value for <offset> parameter for the SHRINKWRAP modifier;
+    # Default value for <offset> parameter of the SHRINKWRAP modifier;
     # it's used to project flat meshes onto a terrain
     swOffset = 0.05
+    
+    # Value for <offset> parameter of the SHRINKWRAP modifier in the realistic mode
+    # to ensure correct results for dynamic paint. <dp> stands for dynamic paint.
+    swOffsetDp = 50.
     
     voidValue = -32768
     voidSubstitution = 0
@@ -93,7 +116,11 @@ class App:
         # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
         self.meshes = {}
         
+        self.layerIndices = {}
+        self.layers = []
+        
         self.setAttributes(context)
+        
         addon = context.scene.blender_osm
         if addon.osmSource == "server":
             # find a file name for the OSM file
@@ -118,8 +145,12 @@ class App:
             self.incompleteRelations = []
             self.missingWays = set()
         
-        if not app.has(defs.Keys.mode3d):
-            self.mode = '2D'
+        if app.has(defs.Keys.mode3d) and self.mode != "2D":
+            self.mode = App.realistic\
+                if app.has(defs.Keys.mode3dRealistic) and self.mode3d == "realistic"\
+                else App.simple
+        else:
+            self.mode = App.twoD
         
         # check if have a terrain Blender object set
         terrain = Terrain(context)
@@ -130,7 +161,6 @@ class App:
         # manager (derived from manager.Manager) performing some processing
         self.managers = []
         
-        self.prepareLayers()
         if self.terrain and self.singleObject and not self.layered:
             print("Imported OpenStreetMap objects will be arranged into layers")
             self.layered = True
@@ -189,17 +219,28 @@ class App:
             # set <self.dataDir> to basePath/../../../data (development version)
             self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
     
-    def prepareLayers(self):
-        layerIndices = {}
-        layers = []
-        i = 0
-        for layerId in self.layerIds:
-            if getattr(self, layerId):
-                layerIndices[layerId] = i
-                layers.append(Layer(layerId, self))
-                i += 1
-        self.layerIndices = layerIndices
-        self.layers = layers
+    def prepareLayers(self, osm):
+        layerIndices = self.layerIndices
+        # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+        for c in osm.conditions:
+            layerId = c[3]
+            if layerId and not layerId in layerIndices:
+                kwargs = {}
+                if self.mode is App.realistic:
+                    if layerId.startswith("water"):
+                        kwargs["area"] = False
+                    else:
+                        kwargs["swOffset"] = self.swOffsetDp
+                self.createLayer(
+                    layerId,
+                    **kwargs
+                )
+        # Replace <osm.conditions> with a new etries
+        # where <layerId> is replaced by the related instance of <Layer>
+        osm.conditions = tuple(
+            (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+            for c in osm.conditions
+        )
     
     def process(self):
         logger = self.logger
@@ -218,6 +259,11 @@ class App:
         for m in self.managers:
             m.render()
         Renderer.end(self)
+        
+        for m in self.managers:
+            m.renderExtra()
+        
+        Renderer.cleanup(self)
         
         if logger: logger.renderEnd()
     
@@ -288,6 +334,14 @@ class App:
     
     def getLayer(self, layerId):
         return self.layers[ self.layerIndices.get(layerId) ]
+    
+    def createLayer(self, layerId, **kwargs):
+        layer = Layer(layerId, self)
+        for k in kwargs:
+            setattr(layer, k, kwargs[k])
+        self.layerIndices[layerId] = len(self.layers)
+        self.layers.append(layer)
+        return layer
 
     def getMissingHgtFiles(self):
         """
@@ -332,8 +386,7 @@ class App:
         context.scene.objects.link(obj)
         context.scene.blender_osm.terrainObject = obj.name
         # force smooth shading
-        obj.select = True
-        context.scene.objects.active = obj
+        makeActive(obj, context)
         bpy.ops.object.shade_smooth()
 
     def buildTerrain(self, verts, indices, heightOffset):

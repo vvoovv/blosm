@@ -22,7 +22,7 @@ import math
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from util import zAxis, zeroVector
-from util.blender import createMeshObject, getBmesh, setBmesh, pointNormalUpward
+from util.blender import makeActive, createMeshObject, getBmesh, setBmesh, pointNormalUpward
 
 direction = -zAxis # downwards
 
@@ -141,8 +141,7 @@ class Terrain:
             envelope = createMeshObject(name, (0., 0., self.minZ), terrain.data.copy())
             # flatten the terrain envelope
             envelope.scale[2] = 0.
-            envelope.select = True 
-            bpy.context.scene.objects.active = envelope
+            makeActive(envelope)
             bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
             
             bpy.ops.object.mode_set(mode='EDIT')

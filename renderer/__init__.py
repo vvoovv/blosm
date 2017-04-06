@@ -35,12 +35,15 @@ class Renderer:
     parent = None
     name = None
     
-    def __init__(self, app):
+    def __init__(self, app, **kwargs):
         self.app = app
         # offset for a Blender object created if <layer.singleObject is False>
         self.offset = None
         # offset if a terrain is set (used instead of <self.offset>)
         self.offsetZ = None
+        self.applyMaterial = True
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
     
     @classmethod
     def begin(self, app):
@@ -125,7 +128,7 @@ class Renderer:
         terrain = app.terrain
         if terrain and layer.sliceMesh:
             self.slice(obj, terrain, app)
-        if layer.swModifier:
+        if layer.modifiers:
             if not terrain.envelope:
                 terrain.createEnvelope()
             self.addBoolenModifier(obj, terrain.envelope)
@@ -147,9 +150,10 @@ class Renderer:
             if layer.obj:
                 self.finalizeBlenderObject(layer.obj, layer, app)
         
-        bpy.ops.object.select_all(action="DESELECT")
         self.join()
-        
+     
+    @classmethod   
+    def cleanup(self, app):
         if app.terrain:
             app.terrain.cleanup()
     
@@ -314,8 +318,8 @@ class Renderer:
 
 class Renderer2d(Renderer):
     
-    def __init__(self, op):
-        super().__init__(op)
+    def __init__(self, op, **kwargs):
+        super().__init__(op, **kwargs)
         # vertical position for polygons and multipolygons
         self.z = 0.
     
@@ -350,12 +354,13 @@ class Renderer2d(Renderer):
         )
         f.normal_update()
         pointNormalUpward(f)
-        # assign material to BMFace <f>
-        materialIndex = self.getElementMaterialIndex(element)
-        f.material_index = materialIndex
-        # Store <materialIndex> since it's returned
-        # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
-        self.materialIndex = materialIndex
+        if self.applyMaterial:
+            # assign material to BMFace <f>
+            materialIndex = self.getElementMaterialIndex(element)
+            f.material_index = materialIndex
+            # Store <materialIndex> since it's returned
+            # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
+            self.materialIndex = materialIndex
         return f.edges
     
     def renderMultiPolygon(self, element, data):
@@ -382,15 +387,21 @@ class Renderer2d(Renderer):
                 
         # finally a magic function that does everything
         geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
-        # check the normal direction of the created faces and assign material to all BMFace
-        materialIndex = self.getElementMaterialIndex(element)
-        for f in geom["geom"]:
-            if isinstance(f, bmesh.types.BMFace):
-                pointNormalUpward(f)
-                f.material_index = materialIndex
-        # Store <materialIndex> since it's returned
-        # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
-        self.materialIndex = materialIndex
+        if self.applyMaterial:
+            # check the normal direction of the created faces and assign material to all BMFace
+            materialIndex = self.getElementMaterialIndex(element)
+            for f in geom["geom"]:
+                if isinstance(f, bmesh.types.BMFace):
+                    pointNormalUpward(f)
+                    f.material_index = materialIndex
+            # Store <materialIndex> since it's returned
+            # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
+            self.materialIndex = materialIndex
+        else:
+            # check the normal direction of the created faces
+            for f in geom["geom"]:
+                if isinstance(f, bmesh.types.BMFace):
+                    pointNormalUpward(f)
         return edges
 
 
@@ -399,7 +410,8 @@ class Renderer3d(Renderer2d):
     def renderPolygon(self, element, data):
         bm = self.bm
         edges = super().renderPolygon(element, data)
-        materialIndex = self.getSideMaterialIndex(element)
+        if self.applyMaterial:
+            materialIndex = self.getSideMaterialIndex(element)
         
         # extrude the edges
         # each edge has exactly one BMLoop
@@ -412,12 +424,14 @@ class Renderer3d(Renderer2d):
             vt = edges[i].link_loops[0].link_loop_next.vert
             vb = bm.verts.new(vt.co - self.h)
             f = bm.faces.new((vt, _vt, _vb, vb))
-            f.material_index = materialIndex
+            if self.applyMaterial:
+                f.material_index = materialIndex
             _vt = vt
             _vb = vb
         # the closing face
         f = bm.faces.new((ut, vt, vb, ub))
-        f.material_index = materialIndex
+        if self.applyMaterial:
+            f.material_index = materialIndex
         
     def renderMultiPolygon(self, element, data):
         bm = self.bm
@@ -425,7 +439,8 @@ class Renderer3d(Renderer2d):
         # get both outer and inner polygons
         polygons = element.getDataMulti(data)
         edges = self.createMultiPolygon(element, polygons)
-        materialIndex = self.getSideMaterialIndex(element)
+        if self.applyMaterial:
+            materialIndex = self.getSideMaterialIndex(element)
         
         # index of the first edge of the related closed linestring in the list <edges>
         index = 0
@@ -452,7 +467,8 @@ class Renderer3d(Renderer2d):
                 if vt == ut:
                     # reached the initial vertex, creating the closing face
                     f = bm.faces.new((ut, _vt, _vb, ub))
-                    f.material_index = materialIndex
+                    if self.applyMaterial:
+                        f.material_index = materialIndex
                     break
                 else:
                     if len(l.edge.link_loops) == 2:
@@ -460,7 +476,8 @@ class Renderer3d(Renderer2d):
                         l = vt.link_loops[1] if vt.link_loops[0]==l else vt.link_loops[0]
                     vb = bm.verts.new(vt.co - self.h)
                     f = bm.faces.new((vt, _vt, _vb, vb))
-                    f.material_index = materialIndex
+                    if self.applyMaterial:
+                        f.material_index = materialIndex
                     _vt = vt
                     _vb = vb
             # update <index> to switch to the next closed linestring

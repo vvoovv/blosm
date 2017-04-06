@@ -40,8 +40,10 @@ class Layer:
         self.materialIndices = []
         # Blender parent object
         self.parent = None
-        # apply SHRINKWRAP modifier if a terrain is set
-        self.swModifier = hasTerrain
+        # does the layer represents an area (natural or landuse)
+        self.area = True
+        # apply Blender modifiers (BOOLEAND AND SHRINKWRAP) if a terrain is set
+        self.modifiers = hasTerrain
         # slice flat mesh to project it on the terrain correctly
         self.sliceMesh = hasTerrain and app.sliceFlatLayers
         # set layer offsets <self.location>, <self.meshZ> and <self.parentLocation>
@@ -51,20 +53,20 @@ class Layer:
         # as a parent for Blender objects of the layer
         self.parentLocation = None
         meshZ = 0.
-        _z = app.layerOffsets[layerId]
+        _z = app.layerOffsets.get(layerId, 0.)
         if hasTerrain:
             # here we have <self.singleObject is True> and <self.layered is True>
             location = Vector((0., 0., terrain.maxZ + terrain.layerOffset))
             self.swOffset = _z if _z else app.swOffset
             if not self.singleObject and self.layered:
                 # it's the only case when <self.parentLocation> is needed if a terrain is set
-                self.parentLocation = Vector((0., 0., app.layerOffsets[layerId]))
+                self.parentLocation = Vector((0., 0., _z))
         elif self.singleObject and self.layered:
             location = Vector((0., 0., _z))
         elif not self.singleObject and self.layered:
             location = None
             # it's the only case when <self.parentLocation> is needed if a terrain is't set
-            self.parentLocation = Vector((0., 0., app.layerOffsets[layerId]))
+            self.parentLocation = Vector((0., 0., _z))
         elif self.singleObject and not self.layered:
             location = None
             meshZ = _z

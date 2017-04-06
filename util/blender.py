@@ -20,6 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import bpy, bmesh
 
 
+def makeActive(obj, context=None):
+    if not context:
+        context = bpy.context
+    obj.select = True
+    context.scene.objects.active = obj
+
+
 def createMeshObject(name, location=(0., 0., 0.), mesh=None):
     if not mesh:
         mesh = bpy.data.meshes.new(name)
@@ -72,3 +79,15 @@ def loadMeshFromFile(filepath, name):
         # a Python list (not a Python tuple!) must be set to <data_to.meshes>
         data_to.meshes = [name]
     return data_to.meshes[0]
+
+
+def appendObjectsFromFile(filepath, *names):
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.object>
+        data_to.objects = list(names)
+    # append the objects to the Blender scene
+    for obj in data_to.objects:
+        obj.select = False
+        bpy.context.scene.objects.link(obj)
+    # return the appended Blender objects
+    return data_to.objects

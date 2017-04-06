@@ -19,8 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from parse.relation.building import Building
 
-from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
+from manager import Linestring, Polygon, PolygonAcceptBroken
 from renderer import Renderer2d
+from realistic.manager import AreaManager
+from realistic.renderer import AreaRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
 from building.renderer import BuildingRenderer
@@ -54,9 +56,70 @@ def coastline(tags, e):
 def forest(tags, e):
     return tags.get("natural") == "wood" or tags.get("landuse") == "forest"
 
-def vegetation(tags, e):
-    return ( "landuse" in tags and tags["landuse"] in ("grass", "meadow", "farmland") ) or\
-        ( "natural" in tags and tags["natural"] in ("scrub", "grassland", "heath") )
+#
+# "grass", "meadow", "grassland", "farmland"
+#
+def grass(tags, e):
+    return tags.get("landuse") == "grass"
+def meadow(tags, e):
+    return tags.get("landuse") == "meadow"
+def grassland(tags, e):
+    return tags.get("natural") == "grassland"
+def farmland(tags, e):
+    return tags.get("landuse") == "farmland"
+
+#
+# "scrub", "heath"
+#
+def scrub(tags, e):
+    return tags.get("natural") == "scrub"
+def heath(tags, e):
+    return tags.get("natural") == "heath"
+
+#
+# "marsh", "reedbed", "bog", "swamp"
+#
+def marsh(tags, e):
+    return tags.get("natural") == "wetland" and tags.get("wetland") == "marsh"
+def reedbed(tags, e):
+    return tags.get("natural") == "wetland" and tags.get("wetland") == "reedbed"
+def bog(tags, e):
+    return tags.get("natural") == "wetland" and tags.get("wetland") == "bog"
+def swamp(tags, e):
+    return tags.get("natural") == "wetland" and tags.get("wetland") == "swamp"
+
+#
+# "glacier"
+#
+def glacier(tags, e):
+    return tags.get("natural") == "glacier"
+
+#
+# "bare_rock:
+#
+def bare_rock(tags, e):
+    return tags.get("natural") == "bare_rock"
+
+#
+# "scree", "shingle"
+# "beach" with "gravel" or "pebbles"
+#
+def scree(tags, e):
+    return tags.get("natural") == "scree"
+def shingle(tags, e):
+    natural = tags.get("natural")
+    return natural == "shingle" or (natural == "beach" and tags.get("surface") in ("gravel", "pebbles"))
+
+#
+# "sand"
+# "beach" with "sand"
+#
+def sand(tags, e):
+    natural = tags.get("natural")
+    # The condition is added after shingle(..),
+    # so any value of <surface> for <natural=beach> or its absence is
+    # considered as <surface=sand>
+    return natural == "sand" or natural == "beach"
 
 
 def setup(app, osm):
@@ -69,7 +132,7 @@ def setup(app, osm):
     polygonAcceptBroken = PolygonAcceptBroken(osm)
     
     if app.buildings:
-        if app.mode == '2D':
+        if app.mode is app.twoD:
             osm.addCondition(building, "buildings", polygon)
         else: # 3D
             buildingParts = BuildingParts()
@@ -100,15 +163,34 @@ def setup(app, osm):
         osm.addCondition(water, "water", polygonAcceptBroken)
         osm.addCondition(coastline, "water", linestring)
     if app.forests:
-        osm.addCondition(forest, "forests", polygon)
+        osm.addCondition(forest, "forest", polygon)
     if app.vegetation:
-        osm.addCondition(vegetation, "vegetation", polygon)
+        # "grass", "meadow", "grassland", "farmland"
+        osm.addCondition(grass, "grass", polygon)
+        osm.addCondition(meadow, "meadow", polygon)
+        osm.addCondition(grassland, "grassland", polygon)
+        osm.addCondition(farmland, "farmland", polygon)
+        # "scrub", "heath"
+        osm.addCondition(scrub, "scrub", polygon)
+        osm.addCondition(heath, "heath", polygon)
+        # "marsh", "reedbed", "bog", "swamp"
+        osm.addCondition(marsh, "marsh", polygon)
+        osm.addCondition(reedbed, "reedbed", polygon)
+        osm.addCondition(bog, "bog", polygon)
+        osm.addCondition(swamp, "swamp", polygon)
+    #if app.otherAreas:
+    osm.addCondition(glacier, "glacier", polygon)
+    osm.addCondition(bare_rock, "bare_rock", polygon)
+    osm.addCondition(scree, "scree", polygon)
+    osm.addCondition(shingle, "shingle", polygon)
+    osm.addCondition(sand, "sand", polygon)
+        
     
     numConditions = len(osm.conditions)
-    if app.mode == '3D' and app.buildings:
+    if not app.mode is app.twoD and app.buildings:
         # 3D buildings aren't processed by BaseManager
         numConditions -= 1
     if numConditions:
-        m = BaseManager(osm)
-        m.setRenderer(Renderer2d(app))
+        m = AreaManager(osm, app, AreaRenderer())
+        m.setRenderer(Renderer2d(app, applyMaterial=False))
         app.managers.append(m)

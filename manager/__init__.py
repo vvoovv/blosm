@@ -36,6 +36,12 @@ class Manager:
         
     def process(self):
         pass
+    
+    def renderExtra(self):
+        """
+        Do additional rendering after <Renderer.end(..)> in <App.render(..)>
+        """
+        pass
 
     def parseRelation(self, element, elementId):
         # render <element> in <BaseManager.render(..)>

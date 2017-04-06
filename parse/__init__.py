@@ -71,12 +71,12 @@ class Osm:
     
     def addCondition(self, condition, layerId=None, manager=None, renderer=None):
         self.conditions.append(
-            (condition, manager, renderer, None if layerId is None else self.app.getLayer(layerId))
+            (condition, manager, renderer, layerId)
         )
     
     def addNodeCondition(self, condition, layerId=None, manager=None, renderer=None):
         self.nodeConditions.append(
-            (condition, manager, renderer, None if layerId is None else self.app.getLayer(layerId))
+            (condition, manager, renderer, layerId)
         )
     
     def parse(self, filepath, **kwargs):
