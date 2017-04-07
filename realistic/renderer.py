@@ -24,7 +24,7 @@ from util.blender import makeActive, appendObjectsFromFile
 
 class AreaRenderer:
     
-    #assetPath = "assets/base.blend"
+    assetPath = "assets/base.blend"
     
     def render(self, app):
         layers = app.layers
@@ -38,6 +38,9 @@ class AreaRenderer:
         
         # a Python list to store Blender groups for brushes (to be deleted later)
         #groups = []
+        
+        # layer ids for forests
+        forests = []
         
         # setup a DYNAMIC_PAINT modifier for <terrain> with canvas surfaces
         makeActive(terrain)
@@ -77,6 +80,9 @@ class AreaRenderer:
                 # create a target vertex group for dynamically painted vertex weights
                 weights = terrain.vertex_groups.new(layerId)
                 prepare_dp_surface(surface, group, weights.name)
+                # check if <layer> represents a forest
+                if layerId.startswith("forest"):
+                    forests.append(layerId)
         m.canvas_settings.canvas_surfaces.active_index = 0
         m.canvas_settings.canvas_surfaces[0].show_preview = True
         terrain.select = False
@@ -100,3 +106,22 @@ class AreaRenderer:
                 obj.hide = True
                 # deselect <obj> to ensure correct work of subsequent operators
                 obj.select = False
+        
+        self.renderForests(forests, app)
+    
+    def renderForests(self, forests, app):
+        # the terrain Blender object
+        terrain = app.terrain.terrain
+        
+        if forests:
+            makeActive(terrain)
+        else:
+            return
+        
+        for forestId in forests:
+            bpy.ops.object.particle_system_add()
+            # <ps> stands for particle systems
+            ps = terrain.particle_systems[-1]
+            ps.name = forestId
+        
+        terrain.select = False
