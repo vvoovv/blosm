@@ -38,23 +38,20 @@ class AreaRenderer:
         terrain = app.terrain
         obj = layer.obj
         # add modifiers, slice flat mesh
-        if layer.area:
-            if not terrain.envelope:
-                terrain.createEnvelope()
-            Renderer.addBoolenModifier(obj, terrain.envelope)
-            makeActive(obj)
-            bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
-            # calculate area after the BOOLEAND modifier has been applied
-            if self.calculateArea:
-                bm = getBmesh(obj)
-                layer.surfaceArea = sum(face.calc_area() for face in bm.faces)
-                bm.free()
-            Renderer.slice(obj, terrain, app)
-            Renderer.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
-            bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
-            obj.select = False
-        else:
-            Renderer.finalizeBlenderObject(obj, layer, app)
+        if not terrain.envelope:
+            terrain.createEnvelope()
+        Renderer.addBoolenModifier(obj, terrain.envelope)
+        makeActive(obj)
+        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
+        # calculate area after the BOOLEAND modifier has been applied
+        if self.calculateArea:
+            bm = getBmesh(obj)
+            layer.surfaceArea = sum(face.calc_area() for face in bm.faces)
+            bm.free()
+        Renderer.slice(obj, terrain, app)
+        Renderer.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
+        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
+        obj.select = False
 
     def renderTerrain(self, layer, terrain):
         layerId = layer.id

@@ -225,15 +225,9 @@ class App:
         for c in osm.conditions:
             layerId = c[3]
             if layerId and not layerId in layerIndices:
-                kwargs = {}
-                if self.mode is App.realistic:
-                    if layerId.startswith("water"):
-                        kwargs["area"] = False
-                    else:
-                        kwargs["swOffset"] = self.swOffsetDp
                 self.createLayer(
                     layerId,
-                    **kwargs
+                    **(dict(swOffset=self.swOffsetDp) if self.mode is App.realistic else {})
                 )
         # Replace <osm.conditions> with a new etries
         # where <layerId> is replaced by the related instance of <Layer>
