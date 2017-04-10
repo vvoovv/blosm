@@ -146,9 +146,10 @@ class Renderer:
         #bpy.context.scene.update()
         # Go through <app.layers> once again after <bpy.context.scene.update()>
         # to get correct results for <layer.obj.bound_box>
-        for layer in app.layers:
-            if layer.obj:
-                self.finalizeBlenderObject(layer.obj, layer, app)
+        if not app.mode is app.realistic:
+            for layer in app.layers:
+                if layer.obj:
+                    self.finalizeBlenderObject(layer.obj, layer, app)
         
         self.join()
      

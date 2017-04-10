@@ -22,7 +22,7 @@ from parse.relation.building import Building
 from manager import Linestring, Polygon, PolygonAcceptBroken
 from renderer import Renderer2d
 from realistic.manager import AreaManager
-from realistic.renderer import AreaRenderer
+from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
 from building.renderer import BuildingRenderer
@@ -126,6 +126,8 @@ def setup(app, osm):
     # comment the next line if logging isn't needed
     Logger(app, osm)
     
+    areaRenderers = {}
+    
     # create managers
     linestring = Linestring(osm)
     polygon = Polygon(osm)
@@ -162,8 +164,10 @@ def setup(app, osm):
     if app.water:
         osm.addCondition(water, "water", polygonAcceptBroken)
         osm.addCondition(coastline, "water", linestring)
+        areaRenderers["water"] = WaterRenderer()
     if app.forests:
         osm.addCondition(forest, "forest", polygon)
+        areaRenderers["forest"] = ForestRenderer()
     if app.vegetation:
         # "grass", "meadow", "grassland", "farmland"
         osm.addCondition(grass, "grass", polygon)
@@ -180,7 +184,10 @@ def setup(app, osm):
         osm.addCondition(swamp, "swamp", polygon)
     #if app.otherAreas:
     osm.addCondition(glacier, "glacier", polygon)
-    osm.addCondition(bare_rock, "bare_rock", polygon)
+    if True:
+        osm.addCondition(bare_rock, "bare_rock", polygon)
+        areaRenderers["bare_rock"] = BareRockRenderer()
+    
     osm.addCondition(scree, "scree", polygon)
     osm.addCondition(shingle, "shingle", polygon)
     osm.addCondition(sand, "sand", polygon)
@@ -191,6 +198,6 @@ def setup(app, osm):
         # 3D buildings aren't processed by BaseManager
         numConditions -= 1
     if numConditions:
-        m = AreaManager(osm, app, AreaRenderer())
+        m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)
         m.setRenderer(Renderer2d(app, applyMaterial=False))
         app.managers.append(m)

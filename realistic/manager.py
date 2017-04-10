@@ -18,18 +18,57 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from manager import BaseManager
+from .renderer import AreaRenderer
 
 
 class AreaManager(BaseManager):
     
-    def __init__(self, osm, app, areaRenderer):
+    def __init__(self, osm, app, defaultRenderer, **renderers):
         """
         Args:
             osm (parse.Osm): Parsed OSM data
         """
         super().__init__(osm)
         self.app = app
-        self.areaRenderer = areaRenderer
+        self.defaultRenderer = defaultRenderer
+        self.renderers = renderers
     
     def renderExtra(self):
-        self.areaRenderer.render(self.app)
+        app = self.app
+        # Blender object for the terrain
+        terrain = app.terrain.terrain
+        
+        # a counter for the number of valid area layers
+        numLayers = 0
+        for layer in app.layers:
+            layerId = layer.id
+            if layer.area and layer.obj:
+                numLayers += 1
+                # find a render for <layer>
+                for _layerId in self.renderers:
+                    if _layerId.startswith(layerId):
+                        renderer = self.renderers[layerId]
+                        break
+                else:
+                    renderer = self.defaultRenderer
+                # save <renderer> in <layer> for future references
+                layer.renderer = renderer
+                renderer.finalizeBlenderObject(layer, app)
+        
+        if not numLayers:
+            return
+        
+        AreaRenderer.addSubsurfModifier(terrain)
+        AreaRenderer.beginDynamicPaintCanvas(terrain)
+        for layer in app.layers:
+            layerId = layer.id
+            if layer.area and layer.obj:
+                layer.renderer.renderTerrain(layer, terrain)
+        AreaRenderer.endDynamicPaintCanvas(terrain)
+        
+        for layer in app.layers:
+            layerId = layer.id
+            if layer.area and layer.obj:
+                layer.renderer.renderArea(layer, app)
+        
+        terrain.select = False

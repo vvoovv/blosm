@@ -424,6 +424,16 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         description="Primitive type used for the terrain mesh: quad or triangle",
         default="quad"
     )
+    
+    # Settings for the realistic 3D mode
+    treeDensity = bpy.props.IntProperty(
+        name = "Trees per hectare",
+        description = "Number of trees per hectare (10,000 square meters, " +
+            "e.g. a plot 100m x 100m) for forests",
+        min = 1,
+        subtype = 'UNSIGNED',
+        default = 1000#1500
+    )
 
 
 def register():

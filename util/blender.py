@@ -81,6 +81,17 @@ def loadMeshFromFile(filepath, name):
     return data_to.meshes[0]
 
 
+def loadParticlesFromFile(filepath, name):
+    """
+    Loads Blender particles settings with the given <name> from the .blend file
+    with the given <filepath>
+    """
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
+        data_to.particles = [name]
+    return data_to.particles[0]
+
+
 def appendObjectsFromFile(filepath, *names):
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
         # a Python list (not a Python tuple!) must be set to <data_to.object>
