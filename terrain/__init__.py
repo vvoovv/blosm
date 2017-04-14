@@ -159,8 +159,6 @@ class Terrain:
             bpy.ops.mesh.region_to_loop()
             bpy.ops.mesh.select_all(action='INVERT')
             bpy.ops.mesh.dissolve_verts(use_face_split=False, use_boundary_tear=False)
-            bpy.ops.mesh.select_all(action='SELECT')
-            #bpy.ops.mesh.dissolve_limited(angle_limit=math.radians(0.1))
             bpy.ops.object.mode_set(mode='OBJECT')
             bm = getBmesh(envelope)
             for f in bm.faces:
@@ -175,13 +173,13 @@ class Terrain:
             )['faces']
             bmesh.ops.delete(bm, geom=insetFaces, context=5)
             setBmesh(envelope, bm)
+            # SOLIDIFY modifier instead of BMesh extrude operator
+            m = envelope.modifiers.new(name="Solidify", type='SOLIDIFY')
+            m.offset = 1.
+            m.thickness = self.maxZ - self.minZ + self.envelopeOffset
         
         self.envelope = envelope
         envelope.select = False
         envelope.hide_render = True
         # hide <envelope> after all Blender operator
         envelope.hide = True
-        # SOLIDIFY modifier instead of BMesh extrude operator
-        m = envelope.modifiers.new(name="Solidify", type='SOLIDIFY')
-        m.offset = 1.
-        m.thickness = self.maxZ - self.minZ + self.envelopeOffset

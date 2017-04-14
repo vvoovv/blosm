@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from manager import BaseManager
 from .renderer import AreaRenderer
+from util.blender import makeActive
 
 
 class AreaManager(BaseManager):
@@ -40,6 +41,7 @@ class AreaManager(BaseManager):
         
         # a counter for the number of valid area layers
         numLayers = 0
+        # set renderer for each layer
         for layer in app.layers:
             layerId = layer.id
             if layer.area and layer.obj:
@@ -53,21 +55,23 @@ class AreaManager(BaseManager):
                     renderer = self.defaultRenderer
                 # save <renderer> in <layer> for future references
                 layer.renderer = renderer
-                renderer.finalizeBlenderObject(layer, app)
-        
         if not numLayers:
             return
         
+        for layer in app.layers:
+            if layer.area and layer.obj:
+                layer.renderer.finalizeBlenderObject(layer, app)
+        
         AreaRenderer.addSubsurfModifier(terrain)
         AreaRenderer.beginDynamicPaintCanvas(terrain)
+                
         for layer in app.layers:
-            layerId = layer.id
             if layer.area and layer.obj:
                 layer.renderer.renderTerrain(layer, terrain)
+        
         AreaRenderer.endDynamicPaintCanvas(terrain)
         
         for layer in app.layers:
-            layerId = layer.id
             if layer.area and layer.obj:
                 layer.renderer.renderArea(layer, app)
         
