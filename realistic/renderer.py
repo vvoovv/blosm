@@ -113,8 +113,8 @@ class AreaRenderer:
             m = terrain.modifiers.new("Subsurf", 'SUBSURF')
             m.subdivision_type = 'SIMPLE'
             m.use_subsurf_uv = False
-            m.levels = 3
-            m.render_levels = 3
+            m.levels = 0
+            m.render_levels = 2
     
     @staticmethod
     def beginDynamicPaintCanvas(terrain):
@@ -254,7 +254,6 @@ class ForestRenderer(AreaRenderer):
     
     def renderArea(self, layer, app):
         super().renderArea(layer, app)
-        return
         
         # the terrain Blender object
         terrain = app.terrain.terrain
@@ -266,6 +265,8 @@ class ForestRenderer(AreaRenderer):
             makeActive(terrain)
         
         bpy.ops.object.particle_system_add()
+        # do not show particles in the viewport for better performance
+        terrain.modifiers[-1].show_viewport = False
         # <ps> stands for particle systems
         ps = terrain.particle_systems[-1]
         ps.name = layerId

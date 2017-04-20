@@ -98,7 +98,7 @@ def setup(app, osm):
         osm.addCondition(railway, "railways", linestring)
     if app.water:
         osm.addCondition(water, "water", polygonAcceptBroken)
-        osm.addCondition(coastline, "water", linestring)
+        osm.addCondition(coastline, "coastlines", linestring)
     if app.forests:
         osm.addCondition(forest, "forest", polygon)
     if app.vegetation:

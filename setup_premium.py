@@ -163,7 +163,7 @@ def setup(app, osm):
         osm.addCondition(railway, "railways", linestring)
     if app.water:
         osm.addCondition(water, "water", polygonAcceptBroken)
-        osm.addCondition(coastline, "water", linestring)
+        osm.addCondition(coastline, "coastlines", linestring)
         areaRenderers["water"] = WaterRenderer()
     if app.forests:
         osm.addCondition(forest, "forest", polygon)
@@ -184,7 +184,7 @@ def setup(app, osm):
         osm.addCondition(swamp, "swamp", polygon)
     #if app.otherAreas:
     osm.addCondition(glacier, "glacier", polygon)
-    if True:
+    if False:
         osm.addCondition(bare_rock, "bare_rock", polygon)
         areaRenderers["bare_rock"] = BareRockRenderer()
     
