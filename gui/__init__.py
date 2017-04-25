@@ -144,6 +144,26 @@ class PanelExtent(bpy.types.Panel):
         row.operator("blender_osm.import_data", text="import")
 
 
+class PanelRealisticTools(bpy.types.Panel):
+    bl_label = "Realistic mode"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_context = "objectmode"
+    bl_category = "osm"
+    
+    @classmethod
+    def poll(cls, context):
+        addon = context.scene.blender_osm
+        return app.has(Keys.mode3d) and addon.mode == "3D" and addon.mode3d == "realistic"
+    
+    def draw(self, context):
+        layout = self.layout
+        addon = context.scene.blender_osm
+
+        layout.prop(addon, "treeDensity")
+        layout.operator("blosm.make_water")
+
+
 class PanelSettings(bpy.types.Panel):
     bl_label = "Settings"
     bl_space_type = "VIEW_3D"

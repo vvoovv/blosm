@@ -21,7 +21,7 @@ import os, math
 import bpy, bmesh
 from renderer import Renderer
 from util.blender import makeActive, createMeshObject, getBmesh, setBmesh,\
-    loadParticlesFromFile
+    loadParticlesFromFile, getMaterialIndexByName
 
 
 class AreaRenderer:
@@ -285,7 +285,21 @@ class ForestRenderer(AreaRenderer):
 
 
 class WaterRenderer(VertexGroupBaker):
-    pass
+    
+    def renderArea(self, layer, app):
+        # the terrain Blender object
+        terrain = app.terrain.terrain
+        # Vertex group with the name <layerId> has been already selected in
+        # <self.finalizeBlenderObject(..)>
+        makeActive(terrain)
+        bpy.ops.object.mode_set(mode='EDIT')
+        # if there are no materials, append the default material
+        if not terrain.data.materials:
+            getMaterialIndexByName(terrain, "default", self.assetPath)
+        terrain.active_material_index = getMaterialIndexByName(terrain, layer.id, self.assetPath)
+        bpy.ops.object.material_slot_assign()
+        bpy.ops.object.mode_set(mode='OBJECT')
+        terrain.select = False    
 
 
 class BareRockRenderer(VertexGroupBaker):

@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from manager import BaseManager
 from .renderer import AreaRenderer
-from util.blender import makeActive
 
 
 class AreaManager(BaseManager):

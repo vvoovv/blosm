@@ -63,7 +63,7 @@ app.app.version = bl_info["version"]
 class BlenderOsmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
-    dataDir= bpy.props.StringProperty(
+    dataDir = bpy.props.StringProperty(
         name = "",
         subtype = 'DIR_PATH',
         description = "Directory to store downloaded OpenStreetMap and terrain files"
@@ -186,8 +186,13 @@ def register():
     bpy.utils.register_module(__name__)
     app.register()
     gui.register()
+    if app.app.has(Keys.mode3d):
+        import realistic
+        realistic.register()
 
 def unregister():
     bpy.utils.unregister_module(__name__)
     app.unregister()
     gui.unregister()
+    if app.app.has(Keys.mode3d):
+        realistic.unregister()

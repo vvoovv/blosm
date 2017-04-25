@@ -102,3 +102,29 @@ def appendObjectsFromFile(filepath, *names):
         bpy.context.scene.objects.link(obj)
     # return the appended Blender objects
     return data_to.objects
+
+
+def getMaterialIndexByName(obj, name, filepath):
+    """
+    Check if Blender material with the <name> is already set for <obj>,
+    if not check if the material is available in bpy.data.material
+    (if yes, append it to <obj>),
+    if not loads the material with the <name> from the .blend with the given <filepath>
+    and append it to <obj>.
+    """
+    if name in obj.data.materials:
+        material = obj.data.materials[name]
+        # find index of the material
+        for materialIndex,m in enumerate(obj.data.materials):
+            if material == m:
+                break
+    elif name in bpy.data.materials:
+        materialIndex = len(obj.data.materials)
+        obj.data.materials.append( bpy.data.materials[name] )
+    else:
+        with bpy.data.libraries.load(filepath) as (data_from, data_to):
+            data_to.materials = [name]
+        material = data_to.materials[0]
+        materialIndex = len(obj.data.materials)
+        obj.data.materials.append(material)
+    return materialIndex
