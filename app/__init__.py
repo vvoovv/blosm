@@ -100,6 +100,8 @@ class App:
     
     def __init__(self):
         self.version = None
+        self.layerIndices = {}
+        self.layers = []
         self.load()
     
     def initOsm(self, op, context, basePath, addonName):
@@ -153,10 +155,7 @@ class App:
             self.mode = App.twoD
         
         # check if have a terrain Blender object set
-        terrain = Terrain(context)
-        self.terrain = terrain if terrain.terrain else None
-        if self.terrain:
-            terrain.init()
+        self.setTerrain(context)
         
         # manager (derived from manager.Manager) performing some processing
         self.managers = []
@@ -167,6 +166,13 @@ class App:
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
+    
+    def setTerrain(self, context):
+        # check if have a terrain Blender object set
+        terrain = Terrain(context)
+        self.terrain = terrain if terrain.terrain else None
+        if self.terrain:
+            terrain.init()
     
     def initTerrain(self, op, context, basePath, addonName):
         self.setDataDir(context, basePath, addonName)
@@ -327,7 +333,8 @@ class App:
         self.missingWays = None
     
     def getLayer(self, layerId):
-        return self.layers[ self.layerIndices.get(layerId) ]
+        layerIndex = self.layerIndices.get(layerId)
+        return None if layerIndex is None else self.layers[layerIndex] 
     
     def createLayer(self, layerId, **kwargs):
         layer = Layer(layerId, self)

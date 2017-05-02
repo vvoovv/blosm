@@ -165,6 +165,7 @@ def setup(app, osm):
         osm.addCondition(water, "water", polygonAcceptBroken)
         osm.addCondition(coastline, "coastlines", linestring)
         areaRenderers["water"] = WaterRenderer()
+        areaRenderers["coastlines"] = None
     if app.forests:
         osm.addCondition(forest, "forest", polygon)
         areaRenderers["forest"] = ForestRenderer()

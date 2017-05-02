@@ -58,20 +58,20 @@ class AreaManager(BaseManager):
             return
         
         for layer in app.layers:
-            if layer.area and layer.obj:
+            if layer.area and layer.obj and layer.renderer:
                 layer.renderer.finalizeBlenderObject(layer, app)
         
         AreaRenderer.addSubsurfModifier(terrain)
         AreaRenderer.beginDynamicPaintCanvas(terrain)
                 
         for layer in app.layers:
-            if layer.area and layer.obj:
+            if layer.area and layer.obj and layer.renderer:
                 layer.renderer.renderTerrain(layer, terrain)
         
         AreaRenderer.endDynamicPaintCanvas(terrain)
         
         for layer in app.layers:
-            if layer.area and layer.obj:
+            if layer.area and layer.obj and layer.renderer:
                 layer.renderer.renderArea(layer, app)
         
         terrain.select = False
