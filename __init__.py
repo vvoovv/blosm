@@ -33,7 +33,7 @@ bl_info = {
 
 import os, sys
 
-# cleanup sys.modules to prevent using the code from the other Blender addons
+# force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
         "app", "building", "gui", "manager", "material", "parse", "realistic",
         "renderer", "terrain", "util", "defs", "setup_base", "setup_premium"
