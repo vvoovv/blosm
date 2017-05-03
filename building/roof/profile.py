@@ -678,7 +678,12 @@ class RoofProfile(Roof):
                 # <_pv> ~ <6>
                 # <pv1> ~ <7>
                 # <pv2> ~ <8>
-                if (_pv.x < pv1.x and pv1.y > pv2.y) or (_pv.x > pv1.x and pv1.y < pv2.y):
+                if (index1 != self.lastProfileIndex and _pv.x < pv1.x and pv1.y > pv2.y)\
+                    or (index1 and _pv.x > pv1.x and pv1.y < pv2.y):
+                    # The conditions <index1 != self.lastProfileIndex> and <index1>
+                    # are to prevent erroneous behavior due to 180 degrees angle as the result of mapping error or
+                    # precision error caused by the nature of <zero> variable
+                    
                     # <6>, <7>, <8> on the image <Main> doesn't satisfy that condition
                     appendToSlot = True
             elif pv1.x < pv2.x:
