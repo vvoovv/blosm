@@ -54,7 +54,7 @@ class Terrain:
         self.terrain = terrain
         self.envelope = None
     
-    def init(self):
+    def init(self, createBvhTree):
         terrain = self.terrain
         
         # transform <terrain.bound_box> to the world system of coordinates
@@ -69,20 +69,21 @@ class Terrain:
         
         self.projectLocation = self.maxZ + self.projectOffset
         
-        # An attribute to store the original location of the terrain Blender object,
-        # if the terrain isn't located at the origin of the world system of coordinates
-        self.location = None
-        if terrain.location.length_squared:
-            self.location = terrain.location.copy()
-            # set origin of the terrain Blender object to zero
-            self.setOrigin(zeroVector())
-            # execute the line below to get correct results (i.e. update transformation matrix)
-            bpy.context.scene.update()
-        bm = bmesh.new()
-        bm.from_mesh(terrain.data)
-        self.bvhTree = BVHTree.FromBMesh(bm)
-        # <bm> is no longer needed
-        bm.free()
+        if createBvhTree:    
+            # An attribute to store the original location of the terrain Blender object,
+            # if the terrain isn't located at the origin of the world system of coordinates
+            self.location = None
+            if terrain.location.length_squared:
+                self.location = terrain.location.copy()
+                # set origin of the terrain Blender object to zero
+                self.setOrigin(zeroVector())
+                # execute the line below to get correct results (i.e. update transformation matrix)
+                bpy.context.scene.update()
+            bm = bmesh.new()
+            bm.from_mesh(terrain.data)
+            self.bvhTree = BVHTree.FromBMesh(bm)
+            # <bm> is no longer needed
+            bm.free()
     
     def cleanup(self):
         if not self.location is None:
@@ -133,9 +134,6 @@ class Terrain:
         if name in bpy.data.objects:
             # use existing Blender object
             envelope = bpy.data.objects[name]
-            # delete modifiers
-            for m in reversed(envelope.modifiers):
-                envelope.modifiers.remove(m)
         else:
             # create new envelope for the terrain
             envelope = createMeshObject(name, (0., 0., self.minZ), terrain.data.copy())

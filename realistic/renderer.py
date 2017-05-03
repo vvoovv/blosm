@@ -21,7 +21,7 @@ import os, math
 import bpy, bmesh
 from renderer import Renderer
 from util.blender import makeActive, createMeshObject, getBmesh, setBmesh,\
-    loadParticlesFromFile, getMaterialIndexByName
+    loadParticlesFromFile, getMaterialIndexByName, getModifier
 
 
 class AreaRenderer:
@@ -61,7 +61,7 @@ class AreaRenderer:
         layerId = layer.id
         obj = layer.obj
         # DYNAMIC_PAINT modifier of <terrain>
-        m = terrain.modifiers[-1]
+        m = getModifier(terrain, 'DYNAMIC_PAINT')
         # create a brush group
         group = bpy.data.groups.new("%s_brush" % layerId)
         # add <obj> to the brush group
@@ -79,8 +79,10 @@ class AreaRenderer:
         surface = m.canvas_settings.canvas_surfaces[-1]
         surface.name = "%s_weights" % layerId
         surface.surface_type = 'WEIGHT'
-        # create a target vertex group for dynamically painted vertex weights
-        weights = terrain.vertex_groups.new(layerId)
+        # create if necessary a target vertex group for dynamically painted vertex weights
+        weights = terrain.vertex_groups[layerId]\
+            if layerId in terrain.vertex_groups\
+            else terrain.vertex_groups.new(layerId)
         AreaRenderer.prepareDynamicPaintSurface(surface, group, weights.name, use_antialiasing)
     
     def renderArea(self, layer, app):
@@ -120,14 +122,17 @@ class AreaRenderer:
     def beginDynamicPaintCanvas(terrain):
         # setup a DYNAMIC_PAINT modifier for <terrain> with canvas surfaces
         makeActive(terrain)
-        terrain.modifiers.new("Dynamic Paint", 'DYNAMIC_PAINT')
-        bpy.ops.dpaint.type_toggle(type='CANVAS')
-        bpy.ops.dpaint.surface_slot_remove()
+        # DYNAMIC_PAINT modifier of <terrain>
+        m = getModifier(terrain, 'DYNAMIC_PAINT')
+        if not m:
+            terrain.modifiers.new("Dynamic Paint", 'DYNAMIC_PAINT')
+            bpy.ops.dpaint.type_toggle(type='CANVAS')
+            bpy.ops.dpaint.surface_slot_remove()
 
     @staticmethod
     def endDynamicPaintCanvas(terrain):
         # DYNAMIC_PAINT modifier of <terrain>
-        m = terrain.modifiers[-1]
+        m = getModifier(terrain, 'DYNAMIC_PAINT')
         # setup a DYNAMIC_PAINT modifier for <terrain> with canvas surfaces
         m.canvas_settings.canvas_surfaces[-1].show_preview = False
         m.canvas_settings.canvas_surfaces.active_index = 0
@@ -159,6 +164,7 @@ class VertexGroupBaker(AreaRenderer):
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
+        # do mesh cleanup
         bpy.ops.mesh.delete_loose()
         bpy.ops.object.mode_set(mode='OBJECT')
         

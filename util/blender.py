@@ -128,3 +128,12 @@ def getMaterialIndexByName(obj, name, filepath):
         materialIndex = len(obj.data.materials)
         obj.data.materials.append(material)
     return materialIndex
+
+
+def getModifier(obj, modifierType):
+    for m in obj.modifiers:
+        if m.type == modifierType:
+            break
+    else:
+        m = None
+    return m

@@ -25,12 +25,12 @@ class OperatorMakeWater(bpy.types.Operator):
         setBmesh(obj, bm)
         
         app.setAttributes(context)
-        app.setTerrain(context)
+        app.setTerrain(context, False)
         # create a renderer
         renderer = WaterRenderer()
         layer = app.getLayer(self.layerId)
         if not layer:
-            layer = app.createLayer(self.layerId)
+            layer = app.createLayer(self.layerId, swOffset = app.swOffsetDp)
         layer.obj = obj
         renderer.finalizeBlenderObject(layer, app)
         renderer.renderArea(layer, app)

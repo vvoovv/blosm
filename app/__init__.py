@@ -155,7 +155,7 @@ class App:
             self.mode = App.twoD
         
         # check if have a terrain Blender object set
-        self.setTerrain(context)
+        self.setTerrain(context, True)
         
         # manager (derived from manager.Manager) performing some processing
         self.managers = []
@@ -167,12 +167,12 @@ class App:
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
     
-    def setTerrain(self, context):
+    def setTerrain(self, context, createBvhTree=False):
         # check if have a terrain Blender object set
         terrain = Terrain(context)
         self.terrain = terrain if terrain.terrain else None
         if self.terrain:
-            terrain.init()
+            terrain.init(createBvhTree)
     
     def initTerrain(self, op, context, basePath, addonName):
         self.setDataDir(context, basePath, addonName)
