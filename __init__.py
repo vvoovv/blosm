@@ -33,6 +33,13 @@ bl_info = {
 
 import os, sys
 
+# force cleanup of sys.modules to avoid conflicts with the other addons for Blender
+for m in [
+        "app", "building", "gui", "manager", "material", "parse",
+        "renderer", "terrain", "util", "defs", "setup"
+    ]:
+    sys.modules.pop(m, 0)
+
 def _checkPath():
     path = os.path.dirname(__file__)
     if path in sys.path:
