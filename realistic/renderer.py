@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, math
 import bpy, bmesh
 from renderer import Renderer
-from util.blender import makeActive, createMeshObject, getBmesh, setBmesh,\
+from util.blender import makeActive, createMeshObject, getBmesh,\
     loadParticlesFromFile, getMaterialIndexByName, getModifier
 
 
@@ -62,8 +62,11 @@ class AreaRenderer:
         obj = layer.obj
         # DYNAMIC_PAINT modifier of <terrain>
         m = getModifier(terrain, 'DYNAMIC_PAINT')
-        # create a brush group
-        group = bpy.data.groups.new("%s_brush" % layerId)
+        # create a brush group if necessary
+        groupName = "%s_brush" % layerId
+        group = bpy.data.groups[groupName]\
+            if groupName in bpy.data.groups\
+            else bpy.data.groups.new(groupName)
         # add <obj> to the brush group
         group.objects.link(obj)
         # vertex colors

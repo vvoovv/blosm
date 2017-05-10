@@ -70,7 +70,7 @@ class OperatorPasteExtent(bpy.types.Operator):
         addon.maxLon = coords[2]
         addon.maxLat = coords[3]
         return {'FINISHED'}
-    
+
 
 class OperatorExtentFromActive(bpy.types.Operator):
     bl_idname = "blender_osm.extent_from_active"
@@ -161,7 +161,13 @@ class PanelRealisticTools(bpy.types.Panel):
         addon = context.scene.blender_osm
 
         layout.prop(addon, "treeDensity")
-        layout.operator("blosm.make_water")
+        
+        box = layout.box()
+        row = box.row(align=True)
+        row.prop(addon, "makeRealisticLayer", text="")
+        row.operator("blosm.make_realistic")
+        
+        layout.operator("blosm.make_polygon")
 
 
 class PanelSettings(bpy.types.Panel):
@@ -445,7 +451,9 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default="quad"
     )
     
+    ####################################
     # Settings for the realistic 3D mode
+    ####################################
     treeDensity = bpy.props.IntProperty(
         name = "Trees per hectare",
         description = "Number of trees per hectare (10,000 square meters, " +
@@ -453,6 +461,17 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         min = 1,
         subtype = 'UNSIGNED',
         default = 1000#1500
+    )
+    
+    makeRealisticLayer = bpy.props.EnumProperty(
+        name = "\"Make realistic\" layer",
+        items = (
+            ("water", "water", "water"),
+            ("forest", "forest", "forest"),
+            ("meadow", "meadow", "meadow")
+        ),
+        description = "A layer for the operator \"Make realistic\"",
+        default = "water"
     )
 
 
