@@ -27,6 +27,7 @@ from .roof.mesh import RoofMesh
 from .roof.profile import *
 from .roof.hipped import RoofHipped
 from .roof.half_hipped import RoofHalfHipped
+from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
 
@@ -73,7 +74,8 @@ class BuildingRenderer(Renderer3d):
             'round': RoofProfile(roundRoof),
             'half-hipped': RoofHalfHipped(),
             'gambrel': RoofProfile(gambrelRoof),
-            'saltbox': RoofProfile(saltboxRoof)
+            'saltbox': RoofProfile(saltboxRoof),
+            'mansard': RoofMansard(gabledRoof)
         }
         self.defaultRoof = self.roofs[app.defaultRoofShape]
         
