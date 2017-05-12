@@ -148,7 +148,7 @@ class PanelRealisticTools(bpy.types.Panel):
     bl_label = "Realistic mode"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
-    bl_context = "objectmode"
+    #bl_context = "objectmode"
     bl_category = "osm"
     
     @classmethod
@@ -166,6 +166,7 @@ class PanelRealisticTools(bpy.types.Panel):
         row = box.row(align=True)
         row.prop(addon, "makeRealisticLayer", text="")
         row.operator("blosm.make_realistic")
+        box.operator("blosm.flatten_selected")
         
         layout.operator("blosm.make_polygon")
 

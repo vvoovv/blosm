@@ -1,4 +1,5 @@
 import bpy, bmesh
+import math
 from app import app
 from util.blender import getBmesh, setBmesh
 from .renderer import AreaRenderer, ForestRenderer, WaterRenderer
@@ -72,6 +73,69 @@ class OperatorMakePolygon(bpy.types.Operator):
         # a magic function that does everything
         bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=bm.edges)
         setBmesh(obj, bm)
+        return {'FINISHED'}
+    
+
+class OperatorFlattenSelected(bpy.types.Operator):
+    bl_idname = "blosm.flatten_selected"
+    bl_label = "Flatten selected"
+    bl_description = "Flatten selected faces"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_MESH'
+    
+    def invoke(self, context, event):
+        obj = context.object
+        bm = bmesh.from_edit_mesh(obj.data)
+        
+        islandIndex = 0
+        islandHeights = []
+        # a dictionary of visited faces
+        visitedFaces = {}
+        # a list of faces to visit during the traversal of adjacent faces
+        facesToVisit = []
+        
+        def processFace(face):
+            """
+            An auxiliary function used in two places in the code below
+            """
+            visitedFaces[face.index] = (face, islandIndex)
+            # calculate the minumun height of the vertices of <face>
+            minZ = min(v.co[2] for v in face.verts)
+            if minZ < islandHeights[islandIndex]:
+                islandHeights[islandIndex] = minZ
+        
+        for face in (f for f in bm.faces if f.select):
+            if face.index in visitedFaces:
+                continue
+            islandHeights.append(math.inf)
+            processFace(face)
+            while True:
+                # find a connected face for the BMFace <face>
+                for edge in face.edges:
+                    linked_faces = edge.link_faces
+                    if len(linked_faces) == 2:
+                        _face = linked_faces[0] if linked_faces[1] == face else linked_faces[1]
+                        if _face.select and not _face.index in visitedFaces:
+                            processFace(_face)
+                            facesToVisit.append(_face)
+                if not facesToVisit:
+                    break
+                # pick a new face for the traversal
+                face = facesToVisit.pop()
+            # All adjacent faces are found! Increase <islandIndex>
+            islandIndex += 1
+        
+        # Set new height for the selected faces depending on
+        # which island a selected face belongs to
+        for i in visitedFaces:
+            face, islandIndex = visitedFaces[i]
+            for v in face.verts:
+                v.co[2] = islandHeights[islandIndex]
+        
+        bmesh.update_edit_mesh(obj.data)
         return {'FINISHED'}
 
 
