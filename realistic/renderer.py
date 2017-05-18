@@ -21,7 +21,123 @@ import os, math
 import bpy, bmesh
 from renderer import Renderer
 from util.blender import makeActive, createMeshObject, getBmesh,\
-    loadParticlesFromFile, getMaterialIndexByName, getModifier
+    loadParticlesFromFile, loadNodeGroupsFromFile, getMaterialIndexByName, getMaterialByName, getModifier
+    
+
+class TerrainRenderer:
+    """
+    The class assigns material for the terrain
+    """
+    
+    materialName = "terrain"
+    
+    baseAssetPath = "assets/base.blend"
+    
+    # default width of a image texture in meters
+    w = 6.
+    
+    # default height of a image texture in meters
+    h = 6.
+    
+    def render(self, app):
+        assetPath = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), self.baseAssetPath
+        )
+        terrain = app.terrain
+        # the size of the terrain
+        sizeX = terrain.maxX - terrain.minX
+        sizeY = terrain.maxY - terrain.minY
+        # Blender object for the terrain
+        terrain = terrain.terrain
+        
+        nodeGroups = tuple(layer.id for layer in app.layers if layer.area and layer.obj)
+        
+        materialName = self.materialName
+        materials = terrain.data.materials
+        
+        if materials:
+            if not materials[0] or materials[0].name != materialName:
+                material = getMaterialByName(terrain, materialName, assetPath)
+        else:
+            materials.append(None)
+            material = getMaterialByName(terrain, materialName, assetPath)
+        
+        if not material:
+            return
+        
+        materials[0] = material
+        
+        uvMap = self.getNode(material, 'UVMAP')
+        if not uvMap:
+            return
+        inp = self.getInput(material)
+        if not inp:
+            return
+        output = self.getOutput(material)
+        if not output:
+            return
+        
+        # set correct scale for the texture
+        for node in material.node_tree.nodes:
+            if node.name == materialName:
+                mapping = self.getNode(node, 'MAPPING')
+                if mapping:
+                    mapping.scale[0] = sizeX/mapping.scale[0]
+                    mapping.scale[1] = sizeY/mapping.scale[1]
+        
+        loadNodeGroupsFromFile(assetPath, *nodeGroups)
+        
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+        x,y = uvMap.location
+        x += 350
+        y += 200
+        for name in nodeGroups:
+            nodeGroup = bpy.data.node_groups.get(name)
+            if nodeGroup:
+                node = nodes.new('ShaderNodeGroup')
+                node.location = x,y
+                node.node_tree = nodeGroup
+                node.name = name
+                node.label = name
+                # set correct scale for the texture
+                mapping = self.getNode(node, 'MAPPING')
+                if mapping:
+                    mapping.scale[0] = sizeX/mapping.scale[0]
+                    mapping.scale[1] = sizeY/mapping.scale[1]
+                # find vector and color inputs of <node> and create links
+                for _input in node.inputs:
+                    if _input.type == 'VECTOR':
+                        links.new(uvMap.outputs[0], _input)
+                    elif _input.type == 'RGBA':
+                        links.new(output, _input)
+                # set the new value for the current output
+                output = node.outputs[0]
+                y += 200
+        links.new(output, inp)
+    
+    @staticmethod
+    def getNode(material, nodeType):
+        for node in material.node_tree.nodes:
+            if node.type == nodeType:
+                return node
+        return None
+
+    @staticmethod
+    def getInput(material):
+        for node in material.node_tree.nodes:
+            for inp in node.inputs:
+                if not inp.is_linked:
+                    return inp
+        return None
+    
+    @staticmethod
+    def getOutput(material):
+        for node in material.node_tree.nodes:
+            for output in node.outputs:
+                if not output.is_linked:
+                    return output
+        return None
 
 
 class AreaRenderer:
@@ -302,9 +418,9 @@ class WaterRenderer(VertexGroupBaker):
         # <self.finalizeBlenderObject(..)>
         makeActive(terrain)
         bpy.ops.object.mode_set(mode='EDIT')
-        # if there are no materials, append the default material
+        # if there are no materials create an empty slot
         if not terrain.data.materials:
-            getMaterialIndexByName(terrain, "default", self.assetPath)
+            terrain.data.materials.append(None)
         terrain.active_material_index = getMaterialIndexByName(terrain, layer.id, self.assetPath)
         bpy.ops.object.material_slot_assign()
         bpy.ops.object.mode_set(mode='OBJECT')

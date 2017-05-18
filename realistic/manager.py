@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from manager import BaseManager
-from .renderer import AreaRenderer
+from .renderer import AreaRenderer, TerrainRenderer
 
 
 class AreaManager(BaseManager):
@@ -32,6 +32,7 @@ class AreaManager(BaseManager):
         self.app = app
         self.defaultRenderer = defaultRenderer
         self.renderers = renderers
+        self.terrainRenderer = TerrainRenderer()
     
     def renderExtra(self):
         app = self.app
@@ -73,5 +74,8 @@ class AreaManager(BaseManager):
         for layer in app.layers:
             if layer.area and layer.obj and layer.renderer:
                 layer.renderer.renderArea(layer, app)
+        
+        # set material for the terrain
+        self.terrainRenderer.render(app)
         
         terrain.select = False

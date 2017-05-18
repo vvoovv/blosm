@@ -87,14 +87,38 @@ def loadParticlesFromFile(filepath, name):
     with the given <filepath>
     """
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
-        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
+        # a Python list (not a Python tuple!) must be set to <data_to.particles>
         data_to.particles = [name]
     return data_to.particles[0]
 
 
+def loadImagesFromFile(filepath, *names):
+    """
+    Loads images with <names> from the .blend file with the given <filepath>.
+    If an image name is available at <bpy.data.images>, the image won't be loaded
+    """
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.images>
+        data_to.images = [
+            name for name in names if not name in bpy.data.images and name in data_from.images
+        ]
+
+
+def loadNodeGroupsFromFile(filepath, *names):
+    """
+    Loads node groups with <names> from the .blend file with the given <filepath>.
+    If a node group is available at <bpy.data.node_groups>, the node groups won't be loaded
+    """
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.images>
+        data_to.node_groups = [
+            name for name in names if not name in bpy.data.node_groups and name in data_from.node_groups
+        ]
+
+
 def appendObjectsFromFile(filepath, *names):
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
-        # a Python list (not a Python tuple!) must be set to <data_to.object>
+        # a Python list (not a Python tuple!) must be set to <data_to.objects>
         data_to.objects = list(names)
     # append the objects to the Blender scene
     for obj in data_to.objects:
@@ -109,7 +133,7 @@ def getMaterialIndexByName(obj, name, filepath):
     Check if Blender material with the <name> is already set for <obj>,
     if not check if the material is available in bpy.data.material
     (if yes, append it to <obj>),
-    if not loads the material with the <name> from the .blend with the given <filepath>
+    if not load the material with the <name> from the .blend with the given <filepath>
     and append it to <obj>.
     """
     if name in obj.data.materials:
@@ -128,6 +152,26 @@ def getMaterialIndexByName(obj, name, filepath):
         materialIndex = len(obj.data.materials)
         obj.data.materials.append(material)
     return materialIndex
+
+
+def getMaterialByName(obj, name, filepath=None):
+    """
+    Check if Blender material with the <name> is already set for <obj>,
+    if not, check if the material is available in bpy.data.material,
+    if not and if <filepath> is provided, load the material with the <name>
+    from the .blend with the given <filepath>.
+    The material is NOT appended to <obj>.
+    """
+    material = None
+    if name in obj.data.materials:
+        material = obj.data.materials[name]
+    elif name in bpy.data.materials:
+        material = bpy.data.materials[name]
+    elif filepath:
+        with bpy.data.libraries.load(filepath) as (data_from, data_to):
+            data_to.materials = [name]
+        material = data_to.materials[0]
+    return material
 
 
 def getModifier(obj, modifierType):
