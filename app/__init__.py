@@ -336,8 +336,8 @@ class App:
         layerIndex = self.layerIndices.get(layerId)
         return None if layerIndex is None else self.layers[layerIndex] 
     
-    def createLayer(self, layerId, **kwargs):
-        layer = Layer(layerId, self)
+    def createLayer(self, layerId, layerConstructor=Layer, **kwargs):
+        layer = layerConstructor(layerId, self)
         for k in kwargs:
             setattr(layer, k, kwargs[k])
         self.layerIndices[layerId] = len(self.layers)
