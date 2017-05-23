@@ -45,9 +45,9 @@ class RoofMesh(Roof):
         polygon = self.polygon
         
         if not bldgMinHeight is None:
-            # Create sides for the prism with the height <roofMinHeight - bldgMinHeight>,
-            # that is based on the <polygon>
-            polygon.sidesPrism(roofMinHeight, self.wallIndices)
+            # Extrude <polygon> in the direction of <z> axis to bring
+            # the extruded part to the height <roofMinHeight>
+            polygon.extrude(roofMinHeight, self.wallIndices)
         
         c = polygon.center
         # location of the Blender mesh for the roof

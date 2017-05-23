@@ -36,9 +36,9 @@ class RoofPyramidal(Roof):
         
         if not bldgMinHeight is None:
             indexOffset = len(verts)
-            # Create sides for the prism with the height <roofMinHeight - bldgMinHeight>,
-            # that is based on the <polygon>
-            polygon.sidesPrism(roofMinHeight, self.wallIndices)
+            # Extrude <polygon> in the direction of <z> axis to bring
+            # the extruded part to the height <roofMinHeight>
+            polygon.extrude(roofMinHeight, self.wallIndices)
         
         # index for the top vertex
         topIndex = len(verts)

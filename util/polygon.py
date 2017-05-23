@@ -109,17 +109,16 @@ class Polygon:
         """
         return sum(tuple(self.verts), zeroVector())/self.n
     
-    def sidesPrism(self, z, indices):
+    def extrude(self, z, indices):
         """
-        Create sides for the prism with the height <z - <polygon height>>,
-        that is based on the polygon.
+        Extrude the polygon along <z>-axis to the target height <z>
         
-        Vertices for the top part of the prism are appended to <self.allVerts>.
-        Vertex indices for the prism sides are appended to <indices>
+        Extruded vertices are appended to <self.allVerts>.
+        Vertex indices for the extruded sides are appended to <indices>
         
         Args:
-            z (float): Vertical location of top part of the prism
-            indices (list): A python list to append vertex indices for the prism sides
+            z (float): The target height of the extruded part
+            indices (list): A python list to append vertex indices for the exruded sides
         """
         verts = self.allVerts
         _indices = self.indices

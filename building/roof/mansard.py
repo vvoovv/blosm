@@ -40,13 +40,7 @@ class RoofMansard(RoofHipped):
             
             if not bldgMinHeight is None:
                 indexOffset = _indexOffset = len(verts)
-                # verts
-                verts.extend(Vector((v.x, v.y, roofMinHeight)) for v in polygon.verts)
-                # the starting side
-                wallIndices.append((_indices[-1], _indices[0], indexOffset, indexOffset + polygon.n - 1))
-                wallIndices.extend(
-                    (_indices[i-1], _indices[i], indexOffset + i, indexOffset + i - 1) for i in range(1, polygon.n)
-                )
+                polygon.extrude(roofMinHeight, wallIndices)
                 # new values for the polygon indices
                 polygon.indices = tuple(_indexOffset + i for i in range(polygon.n))
             

@@ -36,10 +36,12 @@ class RoofFlat(Roof):
         polygon = self.polygon
         n = len(self.verts)
         
-        # Create sides for the prism with the height <bldgMaxHeight - bldgMinHeight>,
-        # that is based on the <polygon>
-        polygon.sidesPrism(bldgMaxHeight, self.wallIndices)
-        # vertices of the top part of the prism serve for the flat roof
+        polygon.extrude(bldgMaxHeight, self.wallIndices)
+        
+        # Extrude <polygon> in the direction of <z> axis to bring
+        # the extruded part to the height <bldgMaxHeight>
+        polygon.extrude(bldgMaxHeight, self.wallIndices)
+        # fill the extruded part
         self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
 
