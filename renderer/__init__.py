@@ -49,17 +49,12 @@ class Renderer:
     def begin(self, app):
         self.name = os.path.basename(app.osmFilepath)
         
-        if app.layered or not app.singleObject:
+        if not app.singleObject:
             self.parent = createEmptyObject(
                 self.name,
                 zeroVector(),
                 empty_draw_size=0.01
             )
-        if app.singleObject and not app.layered:
-            self.bm = bmesh.new()
-            self.obj = self.createBlenderObject(self.name, None, None)
-            # cache material indices in <self.materialIndices>
-            self.materialIndices = {}
 
         # store here Blender object that are to be joined
         self.toJoin = {}
@@ -70,33 +65,28 @@ class Renderer:
         self.layer = layer
         
         if layer.singleObject:
-            if layer.layered:
-                bm = layer.bm
-                obj = layer.obj
-                materialIndices = layer.materialIndices
-                if not bm:
-                    bm = bmesh.new()
-                    layer.bm = bm
-                    obj = self.createBlenderObject(
-                        layer.name,
-                        layer.location,
-                        self.parent
-                    )
-                    layer.obj = obj
-                    materialIndices = {}
-                    layer.materialIndices = materialIndices
-                self.bm = bm
-                self.obj = obj
-                self.materialIndices = materialIndices
-            else:
-                self.bm = Renderer.bm
-                self.obj = Renderer.obj
-                self.materialIndices = Renderer.materialIndices
+            bm = layer.bm
+            obj = layer.obj
+            materialIndices = layer.materialIndices
+            if not bm:
+                bm = bmesh.new()
+                layer.bm = bm
+                obj = self.createBlenderObject(
+                    layer.name,
+                    layer.location,
+                    self.parent
+                )
+                layer.obj = obj
+                materialIndices = {}
+                layer.materialIndices = materialIndices
+            self.bm = bm
+            self.obj = obj
+            self.materialIndices = materialIndices
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
-                layer.getParent() if app.layered else Renderer.parent
+                layer.getParent()
             )
             self.bm = bmesh.new()
             self.materialIndices = {}
@@ -139,9 +129,6 @@ class Renderer:
         for layer in app.layers:
             if layer.obj:
                 setBmesh(layer.obj, layer.bm)
-        if app.singleObject and not app.layered:
-            # finalize BMesh
-            setBmesh(self.obj, self.bm)
         
         #bpy.context.scene.update()
         # Go through <app.layers> once again after <bpy.context.scene.update()>

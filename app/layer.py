@@ -30,9 +30,6 @@ class Layer:
         terrain = app.terrain
         hasTerrain = bool(terrain)
         self.singleObject = app.singleObject
-        # The following line of the code means that
-        # if a terrain is set, then we force: <self.layered = True>
-        self.layered = app.layered or hasTerrain
         # instance of BMesh
         self.bm = None
         # Blender object
@@ -55,29 +52,24 @@ class Layer:
         meshZ = 0.
         _z = app.layerOffsets.get(layerId, 0.)
         if hasTerrain:
-            # here we have <self.singleObject is True> and <self.layered is True>
+            # here we have <self.singleObject is True>
             location = Vector((0., 0., terrain.maxZ + terrain.layerOffset))
             self.swOffset = _z if _z else app.swOffset
-            if not self.singleObject and self.layered:
+            if not self.singleObject:
                 # it's the only case when <self.parentLocation> is needed if a terrain is set
                 self.parentLocation = Vector((0., 0., _z))
-        elif self.singleObject and self.layered:
+        elif self.singleObject:
             location = Vector((0., 0., _z))
-        elif not self.singleObject and self.layered:
+        elif not self.singleObject:
             location = None
             # it's the only case when <self.parentLocation> is needed if a terrain is't set
             self.parentLocation = Vector((0., 0., _z))
-        elif self.singleObject and not self.layered:
-            location = None
-            meshZ = _z
-        elif not self.singleObject and not self.layered:
-            location = Vector((0., 0., _z))
         self.location = location
         self.meshZ = meshZ
         
     def getParent(self):
         # The method is called currently in the single place of the code:
-        # in <Renderer.prerender(..)> if (not layer.singleObject and app.layered)
+        # in <Renderer.prerender(..)> if (not layer.singleObject)
         parent = self.parent
         if not self.parent:
             parent = createEmptyObject(

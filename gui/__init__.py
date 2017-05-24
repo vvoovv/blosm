@@ -223,7 +223,6 @@ class PanelSettings(bpy.types.Panel):
         
         box = layout.box()
         box.prop(addon, "singleObject")
-        box.prop(addon, "layered")
         
         layout.box().prop(addon, "ignoreGeoreferencing")
         
@@ -371,12 +370,6 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     singleObject = bpy.props.BoolProperty(
         name = "Import as a single object",
         description = "Import OSM objects as a single Blender mesh objects instead of separate ones",
-        default = True
-    )
-    
-    layered = bpy.props.BoolProperty(
-        name = "Arrange into layers",
-        description = "Arrange imported OSM objects into layers (buildings, highways, etc)",
         default = True
     )
 

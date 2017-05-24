@@ -31,6 +31,12 @@ from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
 
+from app import app
+if app.mode is app.realistic:
+    from realistic.building.layer import BuildingLayer as Layer
+else:
+    from app.layer import Layer
+
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
 roofIndex = 0
@@ -44,7 +50,7 @@ class BuildingRenderer(Renderer3d):
     
     def __init__(self, app, layerId):
         super().__init__(app)
-        layer = app.createLayer(layerId, area=False)
+        layer = app.createLayer(layerId, Layer, area=False)
         self.layer = layer
         # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
         layer.location = None
@@ -56,7 +62,6 @@ class BuildingRenderer(Renderer3d):
         
         if app.terrain:
             # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-            layer.layered = app.layered
             # no need to apply any Blender modifier for buildings
             layer.modifiers = False
             # no need to slice Blender mesh
