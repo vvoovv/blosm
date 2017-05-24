@@ -1,7 +1,18 @@
 from app.layer import Layer
+from util.blender import getBmesh
+from renderer import Renderer
 
 
 class BuildingLayer(Layer):
     
-    def preRender(self):
-        pass
+    # the name for the base UV map
+    uvName = "UVMap"
+    
+    # the name for the auxiliary UV map used to keep the size of a BMFace
+    uvNameSize = "size"
+    
+    def prepare(self, instance):
+        uv_textures = instance.obj.data.uv_textures
+        uv_textures.new(self.uvName)
+        uv_textures.new(self.uvNameSize)
+        super().prepare(instance)

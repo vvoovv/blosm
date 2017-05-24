@@ -17,9 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import bmesh
 from mathutils import Vector
 from renderer import Renderer
-from util.blender import createEmptyObject
+from util.blender import createEmptyObject, getBmesh
 
 
 class Layer:
@@ -80,6 +81,10 @@ class Layer:
             parent.parent = Renderer.parent
             self.parent = parent
         return parent
+    
+    def prepare(self, instance):
+        instance.bm = getBmesh(instance.obj)
+        instance.materialIndices = {}
     
     @property
     def name(self):

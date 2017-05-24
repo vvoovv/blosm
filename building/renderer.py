@@ -31,11 +31,12 @@ from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
 
+import defs
 from app import app
-if app.mode is app.realistic:
-    from realistic.building.layer import BuildingLayer as Layer
-else:
-    from app.layer import Layer
+
+from app.layer import Layer
+if app.has(defs.Keys.mode3dRealistic):
+    from realistic.building.layer import BuildingLayer
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -50,7 +51,11 @@ class BuildingRenderer(Renderer3d):
     
     def __init__(self, app, layerId):
         super().__init__(app)
-        layer = app.createLayer(layerId, Layer, area=False)
+        layer = app.createLayer(
+            layerId,
+            BuildingLayer if app.mode is app.realistic else Layer,
+            area=False
+        )
         self.layer = layer
         # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
         layer.location = None

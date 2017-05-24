@@ -64,13 +64,12 @@ class Renderer:
         
         if layer.singleObject:
             if not layer.bm:
-                layer.bm = bmesh.new()
                 layer.obj = self.createBlenderObject(
                     layer.name,
                     layer.location,
                     self.parent
                 )
-                layer.materialIndices = {}
+                layer.prepare(layer)
             self.bm = layer.bm
             self.obj = layer.obj
             self.materialIndices = layer.materialIndices
@@ -80,8 +79,7 @@ class Renderer:
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
                 layer.getParent()
             )
-            self.bm = bmesh.new()
-            self.materialIndices = {}
+            layer.prepare(self)
     
     def renderLineString(self, element, data):
         pass
