@@ -1,6 +1,4 @@
 from app.layer import Layer
-from util.blender import getBmesh
-from renderer import Renderer
 
 
 class BuildingLayer(Layer):
