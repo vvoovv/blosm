@@ -49,39 +49,31 @@ class Renderer:
     def begin(self, app):
         self.name = os.path.basename(app.osmFilepath)
         
-        if not app.singleObject:
-            self.parent = createEmptyObject(
-                self.name,
-                zeroVector(),
-                empty_draw_size=0.01
-            )
+        self.parent = createEmptyObject(
+            self.name,
+            zeroVector(),
+            empty_draw_size=0.01
+        )
 
         # store here Blender object that are to be joined
         self.toJoin = {}
     
     def preRender(self, element, layer=None):
-        app = self.app
         layer = element.l if layer is None else layer
         self.layer = layer
         
         if layer.singleObject:
-            bm = layer.bm
-            obj = layer.obj
-            materialIndices = layer.materialIndices
-            if not bm:
-                bm = bmesh.new()
-                layer.bm = bm
-                obj = self.createBlenderObject(
+            if not layer.bm:
+                layer.bm = bmesh.new()
+                layer.obj = self.createBlenderObject(
                     layer.name,
                     layer.location,
                     self.parent
                 )
-                layer.obj = obj
-                materialIndices = {}
-                layer.materialIndices = materialIndices
-            self.bm = bm
-            self.obj = obj
-            self.materialIndices = materialIndices
+                layer.materialIndices = {}
+            self.bm = layer.bm
+            self.obj = layer.obj
+            self.materialIndices = layer.materialIndices
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
