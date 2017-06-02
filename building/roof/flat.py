@@ -36,8 +36,6 @@ class RoofFlat(Roof):
         polygon = self.polygon
         n = len(self.verts)
         
-        polygon.extrude(bldgMaxHeight, self.wallIndices)
-        
         # Extrude <polygon> in the direction of <z> axis to bring
         # the extruded part to the height <bldgMaxHeight>
         polygon.extrude(bldgMaxHeight, self.wallIndices)
