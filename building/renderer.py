@@ -130,7 +130,9 @@ class BuildingRenderer(Renderer3d):
             for i in range(2):
                 self.defaultMaterialIndices[i] = None
                 self.defaultMaterials[i] = None
-        if not parts or outline.tags.get("building:part") == "yes":
+        
+        partTag = outline.tags.get("building:part")
+        if not parts or (partTag and partTag != "no"):
             # render building outline
             self.renderElement(outline, building, osm)
         if parts:
