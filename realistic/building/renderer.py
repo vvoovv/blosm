@@ -8,8 +8,7 @@ class RealisticBuildingRenderer(BuildingRenderer):
     
     def __init__(self, app, layerId):
         super().__init__(app, layerId, BuildingLayer)
-        
+    
+    def initRoofs(self):
+        super().initRoofs()
         self.roofs['flat'] = RoofFlatRealistic()
-        # set renderer for each roof
-        for r in self.roofs:
-            self.roofs[r].r = self

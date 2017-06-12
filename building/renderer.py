@@ -67,7 +67,24 @@ class BuildingRenderer(Renderer3d):
             layer.modifiers = False
             # no need to slice Blender mesh
             layer.sliceMesh = False
-        # create instances of classes that deal with specific roof shapes
+        
+        self.initRoofs()
+        self.defaultRoof = self.roofs[app.defaultRoofShape]
+        
+        # set renderer for each roof
+        for r in self.roofs:
+            self.roofs[r].r = self
+        self.flatRoofMulti.r = self
+        
+        self.defaultMaterialIndices = [None, None]
+        # References to Blender materials used by roof Blender meshes
+        # loaded from a .blend library file
+        self.defaultMaterials = [None, None]
+    
+    def initRoofs(self):
+        """
+        Create instances of classes that deal with specific roof shapes
+        """
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
             'flat': RoofFlat(),
@@ -83,17 +100,6 @@ class BuildingRenderer(Renderer3d):
             'saltbox': RoofProfile(saltboxRoof),
             'mansard': RoofMansard(gabledRoof)
         }
-        self.defaultRoof = self.roofs[app.defaultRoofShape]
-        
-        # set renderer for each roof
-        for r in self.roofs:
-            self.roofs[r].r = self
-        self.flatRoofMulti.r = self
-        
-        self.defaultMaterialIndices = [None, None]
-        # References to Blender materials used by roof Blender meshes
-        # loaded from a .blend library file
-        self.defaultMaterials = [None, None]
     
     def render(self, building, osm):
         parts = building.parts
