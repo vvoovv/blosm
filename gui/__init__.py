@@ -398,7 +398,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         name = "Straight angle threshold",
         description = "Threshold for an angle of the building outline: when consider it as straight one. "+
             "It may be important for calculation of the longest side of the building outline for a gabled roof.",
-        default = 179.8,
+        default = 175.5,
         min = 170.,
         max = 179.95,
         step = 10 # i.e. step/100 == 0.1

@@ -31,14 +31,7 @@ from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
 
-import defs
-from app import app
-
 from app.layer import Layer
-
-if app.has(defs.Keys.mode3dRealistic):
-    from realistic.building.layer import BuildingLayer
-    from realistic.building.roof.flat import RoofFlatRealistic
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -51,14 +44,12 @@ defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 class BuildingRenderer(Renderer3d):
     
-    def __init__(self, app, layerId):
+    def __init__(self, app, layerId, layerConstructor=Layer):
         super().__init__(app)
-        
-        realistic = app.mode is app.realistic
         
         layer = app.createLayer(
             layerId,
-            BuildingLayer if realistic else Layer,
+            layerConstructor,
             area=False
         )
         self.layer = layer
@@ -79,7 +70,7 @@ class BuildingRenderer(Renderer3d):
         # create instances of classes that deal with specific roof shapes
         self.flatRoofMulti = RoofFlatMulti()
         self.roofs = {
-            'flat': RoofFlatRealistic() if realistic else RoofFlat(),
+            'flat': RoofFlat(),
             'gabled': RoofProfile(gabledRoof),
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),

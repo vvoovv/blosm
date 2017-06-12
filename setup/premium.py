@@ -23,6 +23,7 @@ from manager import Linestring, Polygon, PolygonAcceptBroken
 from renderer import Renderer2d
 from realistic.manager import AreaManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
+from realistic.building.renderer import RealisticBuildingRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
 from building.renderer import BuildingRenderer
@@ -152,9 +153,11 @@ def setup(app, osm):
             osm.addCondition(
                 buildingPart, None, buildingParts
             )
-            buildings.setRenderer(
+            # set building renderer
+            buildingRenderer = RealisticBuildingRenderer(app, "buildings")\
+                if app.mode is app.realistic else\
                 BuildingRenderer(app, "buildings")
-            )
+            buildings.setRenderer(buildingRenderer)
             app.managers.append(buildings)
     
     if app.highways:

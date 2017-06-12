@@ -36,7 +36,7 @@ import os, sys
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
         "app", "building", "gui", "manager", "material", "parse", "realistic",
-        "renderer", "terrain", "util", "defs", "setup_base", "setup_premium"
+        "renderer", "terrain", "util", "defs", "setup"
     ]:
     sys.modules.pop(m, 0)
 
@@ -102,9 +102,9 @@ class ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
         if a.mode is a.realistic:
-            from setup_premium import setup
+            from setup.premium import setup as setup_function
         else:
-            from setup_base import setup
+            from setup.base import setup as setup_function
         
         scene = context.scene
         kwargs = {}
@@ -113,7 +113,7 @@ class ImportData(bpy.types.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         
         osm = Osm(a)
-        setup(a, osm)
+        setup_function(a, osm)
         a.prepareLayers(osm)
         
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:

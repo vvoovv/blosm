@@ -1,4 +1,3 @@
-from mathutils import Vector
 from building.roof.flat import RoofFlat
 
 
