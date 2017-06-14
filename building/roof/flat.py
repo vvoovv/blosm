@@ -32,13 +32,13 @@ class RoofFlat(Roof):
     
     defaultHeight = 0.
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         polygon = self.polygon
         n = len(self.verts)
         
         # Extrude <polygon> in the direction of <z> axis to bring
         # the extruded part to the height <bldgMaxHeight>
-        polygon.extrude(bldgMaxHeight, self.wallIndices)
+        polygon.extrude(self.z2, self.wallIndices)
         # fill the extruded part
         self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
@@ -56,17 +56,17 @@ class RoofFlatMulti(RoofFlat):
         self.wallIndices = []
         self.polygons = []
     
-    def init(self, element, data, minHeight, osm):
+    def init(self, element, data, osm, app):
         # <data> isn't used it this class
         self.verts.clear()
         self.wallIndices.clear()
         self.polygons.clear()
         
         self.element = element
+        
+        self.calculateDimensions(element, app, self.getMinHeight(element, app))
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
-        if bldgMinHeight is None:
-            bldgMinHeight = roofMinHeight
+    def make(self, osm):
         element = self.element
         
         # create vertices for all linestrings of the multipolygon
@@ -75,7 +75,7 @@ class RoofFlatMulti(RoofFlat):
         indexOffset = 0
         for _l in element.ls:
             verts.extend(
-                Vector((v[0], v[1], bldgMaxHeight)) for v in element.getLinestringData(_l, osm)
+                Vector((v[0], v[1], self.z2)) for v in element.getLinestringData(_l, osm)
             )
             n = len(verts)
             
@@ -89,7 +89,7 @@ class RoofFlatMulti(RoofFlat):
         if not polygons:
             return False
         # vertices for the bottom  
-        verts.extend(Vector((verts[i].x, verts[i].y, bldgMinHeight)) for p in polygons for i in p.indices)
+        verts.extend(Vector((verts[i].x, verts[i].y, self.z1)) for p in polygons for i in p.indices)
         return True
     
     def render(self):

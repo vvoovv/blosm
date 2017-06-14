@@ -166,30 +166,12 @@ class BuildingRenderer(Renderer3d):
         """
         Do actual stuff for <self.renderElement(..) here>
         """
-        app = self.app
-        z1 = building.getMinHeight(element, app)
-        roof.init(element, data, z1, osm)
+        roof.init(element, data, osm, self.app)
         if not roof.valid:
             return
         
-        roofHeight = roof.getHeight(app)
-        z2 = building.getHeight(element)
-        if z2 is None:
-            # no tag <height> or invalid value
-            roofMinHeight = building.getRoofMinHeight(element, app)
-            z2 = roofMinHeight + roofHeight
-        else:
-            roofMinHeight = z2 - roofHeight
-        wallHeight = roofMinHeight - z1
-        # validity check
-        if wallHeight < 0.:
-            return
-        elif wallHeight < zero:
-            # no building walls, just a roof
-            wallHeight = None
-        
         #print(element.tags["id"]) #DEBUG OSM id
-        if roof.make(z2, z1 if wallHeight is None else roofMinHeight, None if wallHeight is None else z1, osm):
+        if roof.make(osm):
             roof.render()
 
     def getRoofMaterialIndex(self, element):

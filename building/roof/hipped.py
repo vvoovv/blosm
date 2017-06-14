@@ -37,8 +37,8 @@ class RoofHipped(RoofProfile):
         slots[1].n = slots[2]
         self.slots = slots
     
-    def init(self, element, data, minHeight, osm):
-        Roof.init(self, element, data, minHeight, osm)
+    def init(self, element, data, osm, app):
+        Roof.init(self, element, data, osm, app)
         if self.polygon.n == 4:
             self.makeFlat = False
             self.defaultHeight = RoofProfile.defaultHeight
@@ -47,14 +47,14 @@ class RoofHipped(RoofProfile):
             self.makeFlat = True
             self.defaultHeight = RoofFlat.defaultHeight
     
-    def getHeight(self, op):
-        return RoofFlat.getHeight(self, op) if self.makeFlat else super().getHeight(op)
+    def getRoofHeight(self, app):
+        return super().getRoofHeight(app) if self.polygon.n == 4 else RoofFlat.getRoofHeight(self, app)
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         if self.makeFlat:
-            return RoofFlat.make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm)
+            return RoofFlat.make(self, osm)
         else:
-            super().make(bldgMaxHeight, roofMinHeight, bldgMinHeight, osm)
+            super().make(osm)
             # the middle slot defining the roof ridge
             slot = self.slots[1]
             front = slot.front

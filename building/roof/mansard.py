@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .hipped import RoofHipped
 from .flat import RoofFlat
-from mathutils import Vector
 
 
 class RoofMansard(RoofHipped):
@@ -28,9 +27,9 @@ class RoofMansard(RoofHipped):
     For the other building outlines a flat roof is created.
     """
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         if self.makeFlat:
-            return RoofFlat.make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm)
+            return RoofFlat.make(self, osm)
         else:
             verts = self.verts
             wallIndices = self.wallIndices
@@ -38,19 +37,21 @@ class RoofMansard(RoofHipped):
             polygon = self.polygon
             _indices = polygon.indices
             
-            if not bldgMinHeight is None:
+            if not self.noWalls:
                 indexOffset = _indexOffset = len(verts)
-                polygon.extrude(roofMinHeight, wallIndices)
+                polygon.extrude(self.roofMinHeight, wallIndices)
                 # new values for the polygon indices
                 polygon.indices = tuple(_indexOffset + i for i in range(polygon.n))
             
             indexOffset = len(verts)
-            self.h /= 2.
-            polygon.inset(2., roofIndices, self.h)
+            self.roofHeight /= 2.
+            polygon.inset(2., roofIndices, self.roofHeight)
             # new values for the polygon indices
             polygon.indices = tuple(indexOffset + i for i in range(polygon.n))
             self.wallIndices = roofIndices
-            super().make(bldgMaxHeight, roofMinHeight+self.h, None, osm)
+            self.z1 = self.roofMinHeight+self.roofHeight
+            self.noWalls = True
+            super().make(osm)
             self.wallIndices = wallIndices
             
             # restore the original indices

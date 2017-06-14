@@ -40,16 +40,17 @@ class RoofSkillion(Roof):
         self.projections = []
         self.angleToHeight = 1.
     
-    def init(self, element, data, minHeight, osm):
-        super().init(element, data, minHeight, osm)
+    def init(self, element, data, osm, app):
+        super().init(element, data, osm, app)
         self.projections.clear()
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         verts = self.verts
         polygon = self.polygon
         indices = polygon.indices
         n = polygon.n
         wallIndices = self.wallIndices
+        roofMinHeight = self.roofMinHeight
         
         # simply take <polygon> indices for the roof
         self.roofIndices.append(indices)
@@ -60,14 +61,14 @@ class RoofSkillion(Roof):
         projections = self.projections
         minZindex = self.maxProjIndex
         maxProj = projections[minZindex]
-        tan = self.h/self.polygonWidth
+        tan = self.roofHeight/self.polygonWidth
         # update <polygon.verts> with vertices moved along z-axis
         for i in range(n):
             verts[indices[i]].z = roofMinHeight + (maxProj - projections[i]) * tan
         # <polygon.normal> won't be used, so it won't be updated
         
         indexOffset = len(verts)
-        if bldgMinHeight is None:
+        if self.noWalls:
             # <roofMinHeight> is exactly equal to the height of the bottom part of the building
             # check height of the neighbors of the vertex with the index <minZindex>
             
@@ -115,7 +116,7 @@ class RoofSkillion(Roof):
             wallIndices.append((indexOffset, indices[index], indices[prevIndex]))
         else:
             # vertices for the bottom part
-            verts.extend(Vector((v.x, v.y, bldgMinHeight)) for v in polygon.verts)
+            verts.extend(Vector((v.x, v.y, self.z1)) for v in polygon.verts)
             # the starting wall face
             wallIndices.append((indexOffset + n - 1, indexOffset, indices[0], indices[-1]))
             wallIndices.extend(
@@ -124,5 +125,5 @@ class RoofSkillion(Roof):
         
         return True
     
-    def getHeight(self, op):
-        return RoofProfile.getHeight(self, op)
+    def getRoofHeight(self, op):
+        return RoofProfile.getRoofHeight(self, op)

@@ -154,10 +154,12 @@ def setup(app, osm):
                 buildingPart, None, buildingParts
             )
             # set building renderer
-            buildingRenderer = RealisticBuildingRenderer(app, "buildings")\
-                if app.mode is app.realistic else\
-                BuildingRenderer(app, "buildings")
-            buildings.setRenderer(buildingRenderer)
+            if app.mode is app.realistic:
+                br = RealisticBuildingRenderer(app, "buildings", materialSetter)
+            else:
+                br = BuildingRenderer(app, "buildings")
+            # <br> stands for "building renderer"
+            buildings.setRenderer(br)
             app.managers.append(buildings)
     
     if app.highways:
@@ -205,3 +207,9 @@ def setup(app, osm):
         m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)
         m.setRenderer(Renderer2d(app, applyMaterial=False))
         app.managers.append(m)
+
+
+def materialSetter(element, r):
+    tags = element.tags
+    if tags.get("building:material") == "glass":
+        r.setMaterial()

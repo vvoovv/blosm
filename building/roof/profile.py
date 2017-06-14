@@ -169,8 +169,8 @@ class ProfiledVert:
             h = h1 + (h2 - h1) / (p[index+1][0] - p[index][0]) * distance
         if createVert:
             vertIndex = len(verts)
-            # note, that <h> is multiplied by the roof height <roof.h>
-            verts.append(Vector((v.x, v.y, roofMinHeight + roof.h * h)))
+            # note, that <h> is multiplied by the roof height <roof.roofHeight>
+            verts.append(Vector((v.x, v.y, roofMinHeight + roof.roofHeight * h)))
         # The meaning of <self.index> is that the polygon vertex <i> projected on the profile
         # has X-coordinate in the profile coordinate system,
         # located between the profile slots <roof.slots[index]> and <roof.slots[index+1]>
@@ -515,8 +515,8 @@ class RoofProfile(Roof):
         profileQ.append(index)
         self.profileQ = profileQ
 
-    def init(self, element, data, minHeight, osm):
-        super().init(element, data, minHeight, osm)
+    def init(self, element, data, osm, app):
+        super().init(element, data, osm, app)
         self.initProfile()
     
     def initProfile(self):
@@ -526,10 +526,10 @@ class RoofProfile(Roof):
         for i in range(self.lastProfileIndex):
             self.slots[i].reset()
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         polygon = self.polygon
         roofIndices = self.roofIndices
-        noWalls = bldgMinHeight is None
+        noWalls = self.noWalls
         slots = self.slots
         # the current slot: start from the leftmost slot
         self.slot = slots[0]
@@ -544,7 +544,7 @@ class RoofProfile(Roof):
         i = i0 = self.minProjIndex
         # Create a profiled vertex out of <self.verts[polygon.indices[i]]>;
         # <pv> stands for profiled vertex
-        pv1 = pv0 = ProfiledVert(self, i, roofMinHeight, noWalls)
+        pv1 = pv0 = ProfiledVert(self, i, self.roofMinHeight, noWalls)
         _pv = None
         while True:
             i = polygon.next(i)
@@ -552,16 +552,16 @@ class RoofProfile(Roof):
                 # came to the starting vertex, so break the cycle
                 break
             # create a profiled vertex out of <self.verts[polygon.indices[i]]>
-            pv2 = ProfiledVert(self, i, roofMinHeight, noWalls)
+            pv2 = ProfiledVert(self, i, self.roofMinHeight, noWalls)
             # The order of profiled vertices is <_pv>, <pv1>, <pv2>
             # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>),
             # also form a wall face under the segment between <pv1> and <pv2>
-            self.createProfileVertices(pv1, pv2, _pv, roofMinHeight, noWalls)
+            self.createProfileVertices(pv1, pv2, _pv)
             _pv = pv1     
             pv1 = pv2
         # Create in-between vertices located on the slots for the closing segment between <pv1> and <pv0>,
         # also form a wall face under the segment between <pv1> and <pv0>
-        self.createProfileVertices(pv1, pv0, _pv, roofMinHeight, noWalls)
+        self.createProfileVertices(pv1, pv0, _pv)
         
         # Append the vertices from the first part of the <slot[0]> (i.e. slots[0].parts[0])
         # to the last part of <slots[1]> (i.e. slots[1].parts[-1])
@@ -593,7 +593,7 @@ class RoofProfile(Roof):
             slotL.trackDown(roofIndices)
         return True
     
-    def createProfileVertices(self, pv1, pv2, _pv, roofMinHeight, noWalls):
+    def createProfileVertices(self, pv1, pv2, _pv):
         """
         Create in-between vertices located on the slots for the segment between <pv1> and <pv2>,
         also form a wall face under the segment between <pv1> and <pv2>.
@@ -607,8 +607,6 @@ class RoofProfile(Roof):
             pv1 (ProfiledVert): Defines the first vertex of the segment of <self.polygon> projected on the profile
             pv2 (ProfiledVert): Defines the second vertex of the segment of <self.polygon> projected on the profile
             _pv (ProfiledVert): Precedes <pv1>
-            roofMinHeight (float): Supplied by BuildingRenderer.renderElement(..)
-            noWalls (bool): Does the building has wallls?
         """
         verts = self.verts
         indices = self.polygon.indices
@@ -624,11 +622,11 @@ class RoofProfile(Roof):
         index2 = pv2.index
         
         # skip the polygon vertex with the index indices[pv1.i] from including it to the wall face?
-        skip1 = noWalls and pv1.onProfile and\
+        skip1 = self.noWalls and pv1.onProfile and\
             ((self.lEndZero and not index1) or\
             (self.rEndZero and index1 == self.lastProfileIndex))
         # skip the polygon vertex with the index indices[pv2.i] from including it to the wall face?
-        skip2 = noWalls and pv2.onProfile and\
+        skip2 = self.noWalls and pv2.onProfile and\
             ((self.lEndZero and not index2) or\
             (self.rEndZero and index2 == self.lastProfileIndex))
 
@@ -762,7 +760,7 @@ class RoofProfile(Roof):
                 verts.append(Vector((
                     v1.x + factor * factorX,
                     v1.y + factor * factorY,
-                    roofMinHeight + self.h * p[_i][1]
+                    self.roofMinHeight + self.roofHeight * p[_i][1]
                 )))
                 _wallIndices.append(vertIndex)
             # Fill <slots>
@@ -811,7 +809,7 @@ class RoofProfile(Roof):
         # remember the current slot
         self.slot = slot
     
-    def getHeight(self, app):
+    def getRoofHeight(self, app):
         tags = self.element.tags
         
         h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
@@ -826,5 +824,4 @@ class RoofProfile(Roof):
                 if "roof:levels" in tags:
                     h = parseNumber(tags["roof:levels"])
                 h = self.defaultHeight if h is None else h * app.levelHeight
-        self.h = h
         return h

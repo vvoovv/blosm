@@ -41,17 +41,17 @@ class RoofMesh(Roof):
         super().__init__()
         self.mesh = mesh
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         polygon = self.polygon
         
-        if not bldgMinHeight is None:
+        if not self.noWalls:
             # Extrude <polygon> in the direction of <z> axis to bring
             # the extruded part to the height <roofMinHeight>
-            polygon.extrude(roofMinHeight, self.wallIndices)
+            polygon.extrude(self.roofMinHeight, self.wallIndices)
         
         c = polygon.center
         # location of the Blender mesh for the roof
-        self.location = Vector((c[0], c[1], roofMinHeight))
+        self.location = Vector((c[0], c[1], self.roofMinHeight))
         
         return True
     
@@ -63,7 +63,7 @@ class RoofMesh(Roof):
         scale = (
             ( max(v.x for v in polygon.verts) - min(v.x for v in polygon.verts) )/2.,
             ( max(v.y for v in polygon.verts) - min(v.y for v in polygon.verts) )/2.,
-            self.h
+            self.roofHeight
         )
         
         # create building walls

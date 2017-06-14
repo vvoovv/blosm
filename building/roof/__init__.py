@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
 from mathutils import Vector
+from util import zero
 from util.osm import parseNumber
 from util.polygon import Polygon
 from renderer import Renderer
@@ -77,23 +78,74 @@ class Roof:
         self.roofIndices = []
         self.wallIndices = []
     
-    def init(self, element, data, minHeight, osm):
+    def init(self, element, data, osm, app):
         self.verts.clear()
         self.roofIndices.clear()
         self.wallIndices.clear()
         
+        self.valid = True
+        
+        # minimum height
+        z1 = self.getMinHeight(element, app)
+        
         self.element = element
         
         verts = self.verts
-        self.verts.extend( Vector((coord[0], coord[1], minHeight)) for coord in data )
+        self.verts.extend( Vector((coord[0], coord[1], z1)) for coord in data )
         # create a polygon located at <minHeight>
         self.polygon = Polygon(verts)
-        self.valid = self.polygon.n > 2
-        if self.valid:
-            # check the direction of vertices, it must be counterclockwise
-            self.polygon.checkDirection()
+        if self.polygon.n < 3:
+            self.valid = False
+            return
+        # check the direction of vertices, it must be counterclockwise
+        self.polygon.checkDirection()
+        
+        # calculate numerical dimensions for the building or building part
+        self.calculateDimensions(element, app, z1)
     
-    def getHeight(self, app):
+    def calculateDimensions(self, element, app, z1):
+        """
+        Calculate numerical dimensions for the building or building part
+        """
+        roofHeight = self.getRoofHeight(app)
+        z2 = self.getHeight(element)
+        if z2 is None:
+            # no tag <height> or invalid value
+            roofMinHeight = self.getRoofMinHeight(element, app)
+            z2 = roofMinHeight + roofHeight
+        else:
+            roofMinHeight = z2 - roofHeight
+        wallHeight = roofMinHeight - z1
+        # validity check
+        if wallHeight < 0.:
+            self.valid = False
+            return
+        elif wallHeight < zero:
+            # no building walls, just a roof
+            self.noWalls = True
+        else:
+            self.noWalls = False
+        
+        self.z1 = z1
+        self.z2 = z2
+        self.roofMinHeight = z1 if wallHeight is None else roofMinHeight
+        self.roofHeight = roofHeight
+
+    def getHeight(self, element):
+        return parseNumber(element.tags["height"]) if "height" in element.tags else None
+
+    def getMinHeight(self, element, app):
+        tags = element.tags
+        if "min_height" in tags:
+            z0 = parseNumber(tags["min_height"], 0.)
+        elif "building:min_level" in tags:
+            numLevels = parseNumber(tags["building:min_level"])
+            z0 = 0. if numLevels is None else numLevels * app.levelHeight
+        else:
+            z0 = 0.
+        return z0
+    
+    def getRoofHeight(self, app):
         tags = self.element.tags
         h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
         if h is None:
@@ -101,7 +153,16 @@ class Roof:
             if "roof:levels" in tags:
                 h = parseNumber(tags["roof:levels"])
             h = self.defaultHeight if h is None else h * app.levelHeight
-        self.h = h
+        return h
+
+    def getRoofMinHeight(self, element, app):
+        # getting the number of levels
+        h = element.tags.get("building:levels")
+        if not h is None:
+            h = parseNumber(h)
+        if h is None:
+            h = app.defaultNumLevels
+        h *= app.levelHeight
         return h
     
     def render(self):

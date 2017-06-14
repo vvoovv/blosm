@@ -85,8 +85,8 @@ class RoofHalfHipped(RoofProfile):
         slots[1].n = slots[2]
         self.slots = slots
         
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
-        super().make(bldgMaxHeight, roofMinHeight, bldgMinHeight, osm)
+    def make(self, osm):
+        super().make(osm)
         # the middle slot defining the roof ridge
         slot = self.slots[1]
         front = slot.front
@@ -116,12 +116,12 @@ class RoofHalfHipped(RoofProfile):
         ridgeLength = slot[-1][0] - slot[0][0]
         
         if front:
-            self.makeHalfHipped(front, indexFront, ridgeVector, ridgeLength, roofMinHeight)
+            self.makeHalfHipped(front, indexFront, ridgeVector, ridgeLength)
         if back:
-            self.makeHalfHipped(back, indexBack, -ridgeVector, ridgeLength, roofMinHeight)
+            self.makeHalfHipped(back, indexBack, -ridgeVector, ridgeLength)
         return True
     
-    def makeHalfHipped(self, wallFace, ridgeVertexIndex, ridgeVector, ridgeLength, roofMinHeight):
+    def makeHalfHipped(self, wallFace, ridgeVertexIndex, ridgeVector, ridgeLength):
         """
         Corrects the gabled roof created by the parent class to create a hipped roof face
         
@@ -133,7 +133,6 @@ class RoofHalfHipped(RoofProfile):
                 the largest <y> coordinate; the direction (forward or backward) of the vector is
                 important to calculate the displacement of the vertex to make a hipped roof face
             ridgeLength (float): The length of the ridge
-            roofMinHeight (float): Supplied by BuildingRenderer.renderElement(..)
         """
         verts = self.verts
         # the middle point of the profile
@@ -217,7 +216,7 @@ class RoofHalfHipped(RoofProfile):
         # Relative displacement for the ridge vertex
         # calculated through the tangent of the roof inclination angle
         # We assume that the hipped roof face has the same pitch as the gabled roof faces
-        d = (self.h - z + roofMinHeight) * self.angleToHeight * self.polygonWidth / self.h / ridgeLength
+        d = (self.roofHeight - z + self.roofMinHeight) * self.angleToHeight * self.polygonWidth / self.roofHeight / ridgeLength
         if d >= 0.5:
             d = 0.45
         
