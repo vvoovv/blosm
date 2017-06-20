@@ -128,7 +128,7 @@ class Roof:
         
         self.z1 = z1
         self.z2 = z2
-        self.roofMinHeight = z1 if wallHeight is None else roofMinHeight
+        self.roofMinHeight = z1 if self.noWalls else roofMinHeight
         self.roofHeight = roofHeight
 
     def getHeight(self, element):

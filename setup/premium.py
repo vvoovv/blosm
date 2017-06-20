@@ -21,14 +21,16 @@ from parse.relation.building import Building
 
 from manager import Linestring, Polygon, PolygonAcceptBroken
 from renderer import Renderer2d
-from realistic.manager import AreaManager
-from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
-from realistic.building.renderer import RealisticBuildingRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
 from building.renderer import BuildingRenderer
 
 from manager.logging import Logger
+
+from realistic.manager import AreaManager
+from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
+from realistic.building.renderer import RealisticBuildingRenderer
+from realistic.material.manager import MaterialManager
 
 
 def building(tags, e):
@@ -155,7 +157,11 @@ def setup(app, osm):
             )
             # set building renderer
             if app.mode is app.realistic:
-                br = RealisticBuildingRenderer(app, "buildings", materialSetter)
+                br = RealisticBuildingRenderer(
+                    app,
+                    "buildings",
+                    bldgPreRender=bldgPreRender
+                )
             else:
                 br = BuildingRenderer(app, "buildings")
             # <br> stands for "building renderer"
@@ -209,7 +215,21 @@ def setup(app, osm):
         app.managers.append(m)
 
 
-def materialSetter(element, r):
+def bldgPreRender(building):
+    element = building.element
     tags = element.tags
-    if tags.get("building:material") == "glass":
-        r.setMaterial()
+    material = building.getOsmMaterial()
+    
+    #if material == "glass":
+    building.setMaterialManager(Glass)
+
+
+class Glass(MaterialManager):
+    
+    def init(self):
+        self.ensureUvLayer("data.1")
+        self.setupMaterials("glass")
+    
+    def render(self, face):
+        self.setData(face, "data.1", self.numLevels)
+        self.setMaterial(face)

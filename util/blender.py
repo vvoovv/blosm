@@ -131,9 +131,9 @@ def appendObjectsFromFile(filepath, *names):
 def getMaterialIndexByName(obj, name, filepath):
     """
     Check if Blender material with the <name> is already set for <obj>,
-    if not check if the material is available in bpy.data.material
+    if not, check if the material is available in bpy.data.material
     (if yes, append it to <obj>),
-    if not load the material with the <name> from the .blend with the given <filepath>
+    if not, load the material with the <name> from the .blend with the given <filepath>
     and append it to <obj>.
     """
     if name in obj.data.materials:
@@ -172,6 +172,13 @@ def getMaterialByName(obj, name, filepath=None):
             data_to.materials = [name]
         material = data_to.materials[0]
     return material
+
+
+def appendMaterialsFromFile(filepath, *names):
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.objects>
+        data_to.materials = list(names)
+    return data_to.materials
 
 
 def getModifier(obj, modifierType):
