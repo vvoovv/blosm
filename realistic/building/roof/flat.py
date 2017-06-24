@@ -1,6 +1,6 @@
 import math
 from util.osm import parseNumber
-from building.roof.flat import RoofFlat
+from building.roof.flat import Roof, RoofFlat
 
 
 class RoofFlatRealistic(RoofFlat):
@@ -59,7 +59,9 @@ class RoofFlatRealistic(RoofFlat):
             if not n is None:
                 n = parseNumber(n)
             if n is None:
-                n = math.floor((self.roofMinHeight-self.z1)/self.r.app.levelHeight)
+                n = self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundFloorFactor\
+                    if self.z1 else\
+                    math.floor((self.roofMinHeight-self.z1)/self.r.app.levelHeight)
             else:
                 _n = tags.get("building:min_level")
                 if not _n is None:

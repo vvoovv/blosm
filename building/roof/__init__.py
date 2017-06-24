@@ -53,6 +53,8 @@ class Roof:
     
     assetPath = "roofs.blend"
     
+    groundFloorFactor = 1.5
+    
     directions = {
         'N': Vector((0., 1., 0.)),
         'NNE': Vector((0.38268, 0.92388, 0.)),
@@ -157,13 +159,12 @@ class Roof:
 
     def getRoofMinHeight(self, element, app):
         # getting the number of levels
-        h = element.tags.get("building:levels")
-        if not h is None:
-            h = parseNumber(h)
-        if h is None:
-            h = app.defaultNumLevels
-        h *= app.levelHeight
-        return h
+        n = element.tags.get("building:levels")
+        if not n is None:
+            n = parseNumber(n)
+        if n is None:
+            n = app.defaultNumLevels
+        return app.levelHeight * (n-1+Roof.groundFloorFactor)
     
     def render(self):
         r = self.r
