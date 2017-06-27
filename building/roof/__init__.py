@@ -53,7 +53,7 @@ class Roof:
     
     assetPath = "roofs.blend"
     
-    groundFloorFactor = 1.5
+    groundLevelFactor = 1.5
     
     directions = {
         'N': Vector((0., 1., 0.)),
@@ -164,7 +164,7 @@ class Roof:
             n = parseNumber(n)
         if n is None:
             n = app.defaultNumLevels
-        return app.levelHeight * (n-1+Roof.groundFloorFactor)
+        return app.levelHeight * (n-1+Roof.groundLevelFactor)
     
     def render(self):
         r = self.r

@@ -17,15 +17,20 @@ class MaterialManager:
         if not name in uv:
             uv.new(name)
     
-    def setData(self, face, uvLayerName, u, v=0.):
+    def setData(self, face, uvLayerName, uv):
+        if not isinstance(uv, tuple):
+            uv = (uv, 0.)
         uvLayer = self.r.bm.loops.layers.uv[uvLayerName]
-        uv = u, v
         for loop in face.loops:
             loop[uvLayer].uv = uv
     
     @property
     def numLevels(self):
-        return self.b.numLevels
+        return self.b.getNumLevels()
+    
+    @property
+    def levelHeights(self):
+        return self.b.getLevelHeights()
     
     def setupMaterials(self, baseName, numMaterials=20):
         # names of materials to load from a .blen file

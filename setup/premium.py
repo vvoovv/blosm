@@ -231,5 +231,5 @@ class Glass(MaterialManager):
         self.setupMaterials("glass")
     
     def render(self, face):
-        self.setData(face, "data.1", self.numLevels)
+        self.setData(face, "data.1", self.levelHeights)
         self.setMaterial(face)

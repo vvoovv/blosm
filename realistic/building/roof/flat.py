@@ -10,6 +10,7 @@ class RoofFlatRealistic(RoofFlat):
         # material manager
         self.mm = None
         self._numLevels = None
+        self._levelHeights = None
     
     def render(self):
         r = self.r
@@ -51,17 +52,18 @@ class RoofFlatRealistic(RoofFlat):
             else:
                 f.material_index = materialIndex
     
-    @property
-    def numLevels(self):
+    def getNumLevels(self):
         if not self._numLevels:
             tags = self.element.tags
             n = tags.get("building:levels")
             if not n is None:
                 n = parseNumber(n)
             if n is None:
-                n = self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundFloorFactor\
+                n = math.floor(
+                    self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundLevelFactor\
                     if self.z1 else\
-                    math.floor((self.roofMinHeight-self.z1)/self.r.app.levelHeight)
+                    (self.roofMinHeight-self.z1)/self.r.app.levelHeight
+                )
             else:
                 _n = tags.get("building:min_level")
                 if not _n is None:
@@ -70,6 +72,12 @@ class RoofFlatRealistic(RoofFlat):
                         n -= _n
             self._numLevels = n
         return self._numLevels
+    
+    def getLevelHeights(self):
+        if not self._levelHeights:
+            h = self.roofMinHeight/(Roof.groundLevelFactor + self.getNumLevels() - 1)
+            self._levelHeights = (Roof.groundLevelFactor*h, h)
+        return self._levelHeights
 
     def getOsmMaterial(self):
         element = self.element
