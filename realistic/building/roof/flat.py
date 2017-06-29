@@ -7,8 +7,8 @@ class RoofFlatRealistic(RoofFlat):
     
     def init(self, element, data, osm, app):
         super().init(element, data, osm, app)
-        # material manager
-        self.mm = None
+        # material renderer
+        self.mr = None
         self._numLevels = None
         self._levelHeights = None
     
@@ -18,16 +18,16 @@ class RoofFlatRealistic(RoofFlat):
             r.bldgPreRender(self)
         super().render()
         # cleanup
-        if self.mm:
-            self.mm = None
+        if self.mr:
+            self.mr = None
     
-    def setMaterialManager(self, constructor):
-        # mm stands for "material manager"
-        mm = self.r.getMaterialManager(constructor)
-        mm.init()
+    def setMaterialRenderer(self, constructor):
+        # mr stands for "material renderer"
+        mr = self.r.getMaterialRenderer(constructor)
+        mr.init()
         # set building <b> attribute to <self>
-        mm.b = self
-        self.mm = mm
+        mr.b = self
+        self.mr = mr
     
     def renderWalls(self):
         r = self.r
@@ -47,12 +47,13 @@ class RoofFlatRealistic(RoofFlat):
             f.loops[3][uvLayer].uv = (0., h)
             for i in range(4):
                 f.loops[i][uvLayerSize].uv = size
-            if self.mm:
-                self.mm.render(f)
+            if self.mr:
+                self.mr.render(f)
             else:
                 f.material_index = materialIndex
     
-    def getNumLevels(self):
+    @property
+    def numLevels(self):
         if not self._numLevels:
             tags = self.element.tags
             n = tags.get("building:levels")
@@ -73,9 +74,10 @@ class RoofFlatRealistic(RoofFlat):
             self._numLevels = n
         return self._numLevels
     
-    def getLevelHeights(self):
+    @property
+    def levelHeights(self):
         if not self._levelHeights:
-            h = self.roofMinHeight/(Roof.groundLevelFactor + self.getNumLevels() - 1)
+            h = self.roofMinHeight/(Roof.groundLevelFactor + self.numLevels - 1)
             self._levelHeights = (Roof.groundLevelFactor*h, h)
         return self._levelHeights
 

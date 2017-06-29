@@ -11,16 +11,20 @@ class RealisticBuildingRenderer(BuildingRenderer):
         super().__init__(app, layerId, BuildingLayer)
         for k in kwargs:
             setattr(self, k, kwargs[k])
-        # create a dictionary for material managers
-        self.materialManagers = {}
+        # a Python dictionary of material renderers
+        self.materialRenderers = {}
+        # a Python set of names of processed material groups;
+        # it maybe used by several material renderers
+        self.materialGroups = set()
     
-    def getMaterialManager(self, constructor):
+    def getMaterialRenderer(self, constructor):
         name = constructor.__name__
-        mm = self.materialManagers.get(name)
-        if not mm:
-            mm = constructor(self)
-            self.materialManagers[name] = mm
-        return mm
+        # <mr> stands for "material renderer"
+        mr = self.materialRenderers.get(name)
+        if not mr:
+            mr = constructor(self)
+            self.materialRenderers[name] = mr
+        return mr
     
     def initRoofs(self):
         super().initRoofs()

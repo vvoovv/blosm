@@ -2,7 +2,7 @@ import bpy
 from util.blender import appendMaterialsFromFile
 
 
-class MaterialManager:
+class MaterialRenderer:
     
     def __init__(self, renderer):
         self.r = renderer
@@ -10,6 +10,10 @@ class MaterialManager:
         self.index = -1
         # keep track of building outline
         self.outline = None
+        # a data structure to store names of Blender materials
+        self.materials = None
+        # do we have multiple groups of materials?
+        self.multipleGroups = False
     
     def ensureUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
@@ -24,21 +28,15 @@ class MaterialManager:
         for loop in face.loops:
             loop[uvLayer].uv = uv
     
-    @property
-    def numLevels(self):
-        return self.b.getNumLevels()
-    
-    @property
-    def levelHeights(self):
-        return self.b.getLevelHeights()
-    
-    def setupMaterials(self, baseName, numMaterials=20):
+    def setupMaterials(self, groupName, numMaterials=20):
+        if groupName in self.r.materialGroups:
+            return
         # names of materials to load from a .blen file
         materialsToLoad = []
         # names of materials available after scanning everything
         materials = []
         
-        for name in ("%s.%s" % (baseName, i) for i in range(1, numMaterials+1)):
+        for name in ("%s.%s" % (groupName, i) for i in range(1, numMaterials+1)):
             if name in bpy.data.materials:
                 materials.append(name)
             else:
@@ -49,10 +47,34 @@ class MaterialManager:
                 *materialsToLoad
             )
             materials.extend(m.name for m in loadedMaterials if not m is None)
-        self.materials = materials
-        self.numMaterials = len(materials)
+        
+        if materials:
+            # set the number of materials
+            numMaterials = len(materials)
+            if not self.multipleGroups or numMaterials < self.numMaterials:
+                self.numMaterials = numMaterials
+            
+            # data structure to store names of Blender materials
+            _materials = self.materials
+            if _materials:
+                if not self.multipleGroups:
+                    self.multipleGroups = True
+                    # create a more complex data structure (a Python dictionary of Python lists)
+                    _materials = {}
+                    _materials[self.groupName] = self.materials
+                    self.materials = _materials
+                _materials[groupName] = materials
+            else:
+                # The name of the first group of Blender materials;
+                # <self.groupName> will be used in the code if another group
+                self.groupName = groupName
+                self.materials = materials
+        else:
+            print("No materials with the base name %s have been found" % groupName)
+        
+        self.r.materialGroups.add(groupName)
     
-    def setMaterial(self, face):
+    def setMaterial(self, face, groupName=None):
         r = self.r
         materialIndices = r.materialIndices
         materials = r.obj.data.materials
@@ -64,7 +86,11 @@ class MaterialManager:
                 # all available materials have been used, so set <self.index> to zero
                 self.index = 0
         # the name of the current material
-        name = self.materials[self.index]
+        name = (
+            self.materials[groupName if groupName else self.groupName]\
+            if self.multipleGroups else\
+            self.materials
+        )[self.index]
         if not name in materialIndices:
             materialIndices[name] = len(materials)
             materials.append(bpy.data.materials[name])

@@ -30,7 +30,7 @@ from manager.logging import Logger
 from realistic.manager import AreaManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 from realistic.building.renderer import RealisticBuildingRenderer
-from realistic.material.manager import MaterialManager
+from realistic.material.renderer import MaterialRenderer
 
 
 def building(tags, e):
@@ -221,15 +221,22 @@ def bldgPreRender(building):
     material = building.getOsmMaterial()
     
     #if material == "glass":
-    building.setMaterialManager(Glass)
+    building.setMaterialRenderer(Glass)
 
 
-class Glass(MaterialManager):
+class Glass(MaterialRenderer):
     
     def init(self):
         self.ensureUvLayer("data.1")
         self.setupMaterials("glass")
+        self.setupMaterials("glass_with_ground_level")
     
     def render(self, face):
-        self.setData(face, "data.1", self.levelHeights)
-        self.setMaterial(face)
+        # building
+        b = self.b
+        if b.z1:
+            self.setData(face, "data.1", b.numLevels)
+            self.setMaterial(face, "glass")
+        else:
+            self.setData(face, "data.1", b.levelHeights)
+            self.setMaterial(face, "glass_with_ground_level")
