@@ -27,7 +27,7 @@ from building.renderer import BuildingRenderer
 
 from manager.logging import Logger
 
-from realistic.manager import AreaManager
+from realistic.manager import AreaManager, BaseManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 from realistic.building.renderer import RealisticBuildingRenderer
 from realistic.material.renderer import MaterialRenderer
@@ -194,24 +194,30 @@ def setup(app, osm):
         osm.addCondition(reedbed, "reedbed", polygon)
         osm.addCondition(bog, "bog", polygon)
         osm.addCondition(swamp, "swamp", polygon)
+    if False:
     #if app.otherAreas:
-    osm.addCondition(glacier, "glacier", polygon)
+        osm.addCondition(glacier, "glacier", polygon)
     if False:
         osm.addCondition(bare_rock, "bare_rock", polygon)
         areaRenderers["bare_rock"] = BareRockRenderer()
     
-    osm.addCondition(scree, "scree", polygon)
-    osm.addCondition(shingle, "shingle", polygon)
-    osm.addCondition(sand, "sand", polygon)
+    if False:
+        osm.addCondition(scree, "scree", polygon)
+        osm.addCondition(shingle, "shingle", polygon)
+        osm.addCondition(sand, "sand", polygon)
         
     
     numConditions = len(osm.conditions)
-    if not app.mode is app.twoD and app.buildings:
-        # 3D buildings aren't processed by BaseManager
-        numConditions -= 1
+    if app.buildings:
+        # 3D buildings aren't processed by AreaManager or BaseManager
+        numConditions -= 3
     if numConditions:
-        m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)
-        m.setRenderer(Renderer2d(app, applyMaterial=False))
+        if app.terrainObject:
+            m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)
+            m.setRenderer(Renderer2d(app, applyMaterial=False))
+        else:
+            m = BaseManager(osm)
+            m.setRenderer(Renderer2d(app))
         app.managers.append(m)
 
 
