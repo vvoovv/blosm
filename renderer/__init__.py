@@ -296,8 +296,8 @@ class Renderer:
 
 class Renderer2d(Renderer):
     
-    def __init__(self, op, **kwargs):
-        super().__init__(op, **kwargs)
+    def __init__(self, app, **kwargs):
+        super().__init__(app, **kwargs)
         # vertical position for polygons and multipolygons
         self.z = 0.
     

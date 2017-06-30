@@ -43,7 +43,7 @@ class MaterialRenderer:
                 materialsToLoad.append(name)
         if materialsToLoad:
             loadedMaterials = appendMaterialsFromFile(
-                "D:\\projects\\prokitektura\\projects\\building material\\building_material_background.blend",
+                self.r.app.bldgMaterialsFilepath,
                 *materialsToLoad
             )
             materials.extend(m.name for m in loadedMaterials if not m is None)

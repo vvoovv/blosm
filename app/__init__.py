@@ -162,6 +162,16 @@ class App:
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
+        
+        if self.mode is App.realistic:
+            materialsPath = self.bldgMaterialsFilepath
+            if materialsPath:
+                materialsPath = os.path.realpath(bpy.path.abspath(materialsPath))
+                if not os.path.isfile(materialsPath):
+                    raise Exception("The Blender file set in the field \"Materials for buildings\" doesn't exist")
+                self.bldgMaterialsFilepath = materialsPath
+            else:
+                raise Exception("A valid directory for a Blender file with materials for buildings isn't set!")
     
     def setTerrain(self, context, createBvhTree=False):
         # check if have a terrain Blender object set

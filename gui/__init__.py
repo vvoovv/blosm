@@ -213,6 +213,10 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "highways")
         box.prop(addon, "railways")
         
+        if addon.mode3d == "realistic":
+            box = layout.box()
+            box.prop(addon, "bldgMaterialsFilepath")
+        
         box = layout.box()
         split = box.split(percentage=0.67)
         split.label("Default roof shape:")
@@ -448,6 +452,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     ####################################
     # Settings for the realistic 3D mode
     ####################################
+    bldgMaterialsFilepath = bpy.props.StringProperty(
+        name = "Materials for buildings",
+        subtype = 'FILE_PATH',
+        description = "Path to a Blender file with materials for buildings"
+    )
+    
     treeDensity = bpy.props.IntProperty(
         name = "Trees per hectare",
         description = "Number of trees per hectare (10,000 square meters, " +
