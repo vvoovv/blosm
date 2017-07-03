@@ -226,8 +226,10 @@ def bldgPreRender(building):
     tags = element.tags
     material = building.getOsmMaterial()
     
-    #if material == "glass":
-    building.setMaterialRenderer(Glass)
+    if material == "glass":
+        building.setMaterialRenderer(Glass)
+    else:
+        building.setMaterialRenderer(Apartments)
 
 
 class Glass(MaterialRenderer):
@@ -246,3 +248,21 @@ class Glass(MaterialRenderer):
         else:
             self.setData(face, "data.1", b.levelHeights)
             self.setMaterial(face, "glass_with_ground_level")
+
+
+class Apartments(MaterialRenderer):
+    
+    def init(self):
+        self.ensureUvLayer("data.1")
+        self.setupMaterials("apartments")
+        self.setupMaterials("apartments_with_ground_level")
+    
+    def render(self, face):
+        # building
+        b = self.b
+        if b.z1:
+            self.setData(face, "data.1", b.numLevels)
+            self.setMaterial(face, "apartments")
+        else:
+            self.setData(face, "data.1", b.levelHeights)
+            self.setMaterial(face, "apartments_with_ground_level")
