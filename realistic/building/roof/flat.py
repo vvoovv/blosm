@@ -61,9 +61,9 @@ class RoofFlatRealistic(RoofFlat):
                 n = parseNumber(n)
             if n is None:
                 n = math.floor(
-                    self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundLevelFactor\
+                    (self.roofMinHeight-self.z1)/self.r.app.levelHeight\
                     if self.z1 else\
-                    (self.roofMinHeight-self.z1)/self.r.app.levelHeight
+                    self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundLevelFactor
                 )
             else:
                 _n = tags.get("building:min_level")
