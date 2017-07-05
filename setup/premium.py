@@ -228,6 +228,8 @@ def bldgPreRender(building):
     
     if material == "glass":
         building.setMaterialRenderer(Glass)
+    #elif tags.get("building") == "commercial":
+    #    building.setMaterialRenderer(Commercial)
     else:
         building.setMaterialRenderer(Apartments)
 
@@ -266,3 +268,21 @@ class Apartments(MaterialRenderer):
         else:
             self.setData(face, "data.1", b.levelHeights)
             self.setMaterial(face, "apartments_with_ground_level")
+
+
+class Commercial(MaterialRenderer):
+    
+    def init(self):
+        self.ensureUvLayer("data.1")
+        self.setupMaterials("commercial")
+        self.setupMaterials("commercial_with_ground_level")
+    
+    def render(self, face):
+        # building
+        b = self.b
+        if b.z1:
+            self.setData(face, "data.1", b.numLevels)
+            self.setMaterial(face, "commercial")
+        else:
+            self.setData(face, "data.1", b.levelHeights)
+            self.setMaterial(face, "commercial_with_ground_level")
