@@ -516,11 +516,11 @@ class RoofProfile(Roof):
         self.profileQ = profileQ
 
     def init(self, element, data, osm, app):
+        self.projections.clear()
         super().init(element, data, osm, app)
         self.initProfile()
     
     def initProfile(self):
-        self.projections.clear()
         # The last slot with the index <self.lastProfileIndex> isn't touched,
         # so no need to reset it
         for i in range(self.lastProfileIndex):

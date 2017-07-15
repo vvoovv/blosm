@@ -38,6 +38,7 @@ class RoofHipped(RoofProfile):
         self.slots = slots
     
     def init(self, element, data, osm, app):
+        self.projections.clear()
         Roof.init(self, element, data, osm, app)
         if self.polygon.n == 4:
             self.makeFlat = False
