@@ -4,6 +4,8 @@ from app import app
 from util.blender import getBmesh, setBmesh
 from .renderer import AreaRenderer, ForestRenderer, WaterRenderer
 
+import util.blender_extra.material as material
+
 
 class OperatorMakeRealistic(bpy.types.Operator):
     bl_idname = "blosm.make_realistic"
@@ -141,7 +143,8 @@ class OperatorFlattenSelected(bpy.types.Operator):
 
 def register():
     bpy.utils.register_module(__name__)
-
+    material.register()
 
 def unregister():
     bpy.utils.unregister_module(__name__)
+    material.unregister()

@@ -477,6 +477,16 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         description = "A layer for the operator \"Make realistic\"",
         default = "water"
     )
+    
+    listOfTextures = bpy.props.StringProperty(
+        name = "List of textures",
+        description = "A list of textures to download from textures.com"
+    )
+    
+    materialScript = bpy.props.StringProperty(
+        name = "Script",
+        description = "A Python script to generate materials with selected textures"
+    )
 
 
 def register():
