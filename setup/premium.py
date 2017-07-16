@@ -228,8 +228,8 @@ def bldgPreRender(building):
     
     if material == "glass":
         building.setMaterialRenderer(Glass)
-    #elif tags.get("building") == "commercial":
-    #    building.setMaterialRenderer(Commercial)
+    elif tags.get("building") == "commercial":
+        building.setMaterialRenderer(Commercial)
     else:
         building.setMaterialRenderer(Apartments)
 

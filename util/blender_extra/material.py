@@ -2,6 +2,42 @@ import webbrowser, time, imp, os
 import bpy
 
 
+def createMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate1, materialTemplate2):
+    def createMaterials(materialBaseName, materialTemplate):
+        materialName = "%s.%s" % (materialBaseName, (i+1))
+        if not materialName in bpy.data.materials:
+            m = materialTemplate.copy()
+            m.name = materialName
+            m.use_fake_user = True
+            
+            nodes = m.node_tree.nodes
+            setImage(fileName, directory, nodes["Image Texture"])
+            setCustomNodeValue(nodes["FacadePart"], "Number of Tiles U", textureDataEntry[0])
+            setCustomNodeValue(nodes["FacadePart"], "Number of Tiles V", textureDataEntry[1])
+            setCustomNodeValue(nodes["FacadePart"], "Tile Size U Default", textureDataEntry[2])
+    
+    textureData = readTextures(listOfTextures)
+    
+    # strip off the suffix '_template'
+    materialBaseName1 = materialTemplate1[:-9]
+    materialBaseName2 = materialTemplate2[:-9]
+    
+    materialTemplate1 = bpy.data.materials[materialTemplate1]
+    materialTemplate2 = bpy.data.materials[materialTemplate2]
+    
+    for i,fileName in enumerate(files):
+        fileName = fileName.name
+        textureDataEntry = textureData.get(fileName)
+        if textureDataEntry:
+            createMaterials(materialBaseName1, materialTemplate1)
+            createMaterials(materialBaseName2, materialTemplate2)
+        else:
+            print(
+                ("Information about the image texture \"%s\" isn't available " +
+                "in the list of textures \"%s\"") % (fileName, listOfTextures)
+            )
+
+
 def readTextures(listOfTextures):
     textureData = {}
     for line in bpy.data.texts[listOfTextures].lines:
@@ -63,52 +99,12 @@ class OperatorCreateMaterials(bpy.types.Operator):
     
     def execute(self, context):
         addon = context.scene.blender_osm
-        #module = imp.new_module("module")
-        #exec(
-        #    bpy.data.texts[addon.materialScript].as_string(),
-        #    module.__dict__
-        #)
-        #module.main("testing")
-        textures = "textures_apartments"
-        material1 = "apartments_template"
-        material2 = "apartments_with_ground_level_template"
-
-        textureData = readTextures(textures)
-        
-        materialTemplate1 = bpy.data.materials[material1]
-        materialTemplate2 = bpy.data.materials[material2]
-        # strip off the suffix '_template'
-        materialBaseName1 = material1[:-9]
-        materialBaseName2 = material2[:-9]
-        
-        for i,fileName in enumerate(self.files):
-            fileName = fileName.name
-            textureDataEntry = textureData[fileName]
-            
-            materialName1 = "%s.%s" % (materialBaseName1, (i+1))
-            materialName2 = "%s.%s" % (materialBaseName2, (i+1))
-            
-            if not materialName1 in bpy.data.materials:
-                m = materialTemplate1.copy()
-                m.name = materialName1
-                m.use_fake_user = True
-                
-                nodes = m.node_tree.nodes
-                setImage(fileName, self.directory, nodes["Image Texture"])
-                setCustomNodeValue(nodes["FacadePart"], "Number of Tiles U", textureDataEntry[0])
-                setCustomNodeValue(nodes["FacadePart"], "Number of Tiles V", textureDataEntry[1])
-                setCustomNodeValue(nodes["FacadePart"], "Tile Size U Default", textureDataEntry[2])
-                
-            if not materialName2 in bpy.data.materials:
-                m = materialTemplate2.copy()
-                m.name = materialName2
-                m.use_fake_user = True
-                
-                nodes = m.node_tree.nodes
-                setImage(fileName, self.directory, nodes["Image Texture"])
-                setCustomNodeValue(nodes["FacadePart"], "Number of Tiles U", textureDataEntry[0])
-                setCustomNodeValue(nodes["FacadePart"], "Number of Tiles V", textureDataEntry[1])
-                setCustomNodeValue(nodes["FacadePart"], "Tile Size U Default", textureDataEntry[2])
+        module = imp.new_module("module")
+        exec(
+            bpy.data.texts[addon.materialScript].as_string(),
+            module.__dict__
+        )
+        module.main(self.files, self.directory)
         return {'FINISHED'}
 
 
