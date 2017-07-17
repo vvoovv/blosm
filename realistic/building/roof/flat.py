@@ -30,27 +30,26 @@ class RoofFlatRealistic(RoofFlat):
         self.mr = mr
     
     def renderWalls(self):
-        r = self.r
-        bm = r.bm
-        verts = self.verts
-        materialIndex = r.getWallMaterialIndex(self.element)
-        uvLayer = bm.loops.layers.uv[0]
-        uvLayerSize = bm.loops.layers.uv[1]
-        # create BMesh faces for the building walls
-        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
-            w = (f.verts[1].co - f.verts[0].co).length
-            h = (f.verts[-1].co - f.verts[0].co).length
-            size = (w, h)
-            f.loops[0][uvLayer].uv = (0., 0.)
-            f.loops[1][uvLayer].uv = (w, 0.)
-            f.loops[2][uvLayer].uv = size
-            f.loops[3][uvLayer].uv = (0., h)
-            for i in range(4):
-                f.loops[i][uvLayerSize].uv = size
-            if self.mr:
+        if self.mr:
+            r = self.r
+            bm = r.bm
+            verts = self.verts
+            uvLayer = bm.loops.layers.uv[0]
+            uvLayerSize = bm.loops.layers.uv[1]
+            # create BMesh faces for the building walls
+            for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
+                w = (f.verts[1].co - f.verts[0].co).length
+                h = (f.verts[-1].co - f.verts[0].co).length
+                size = (w, h)
+                f.loops[0][uvLayer].uv = (0., 0.)
+                f.loops[1][uvLayer].uv = (w, 0.)
+                f.loops[2][uvLayer].uv = size
+                f.loops[3][uvLayer].uv = (0., h)
+                for i in range(4):
+                    f.loops[i][uvLayerSize].uv = size
                 self.mr.render(f)
-            else:
-                f.material_index = materialIndex
+        else:
+            super().renderWalls()
     
     @property
     def numLevels(self):
