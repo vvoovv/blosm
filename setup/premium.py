@@ -234,55 +234,42 @@ def bldgPreRender(building):
         building.setMaterialRenderer(Apartments)
 
 
-class Glass(MaterialRenderer):
+class SeamlessTextureRenderer(MaterialRenderer):
     
+    uvLayer = "data.1"
+    
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer)
+        self.materialName1 = baseMaterialName
+        self.materialName2 = "%s_with_ground_level" % baseMaterialName
+        
     def init(self):
-        self.ensureUvLayer("data.1")
-        self.setupMaterials("glass")
-        self.setupMaterials("glass_with_ground_level")
-    
+        self.ensureUvLayer(self.uvLayer)
+        self.setupMaterials(self.materialName1)
+        self.setupMaterials(self.materialName2)
+        
     def render(self, face):
         # building
         b = self.b
         if b.z1:
-            self.setData(face, "data.1", b.numLevels)
-            self.setMaterial(face, "glass")
+            self.setData(face, self.uvLayer, b.numLevels)
+            self.setMaterial(face, self.materialName1)
         else:
-            self.setData(face, "data.1", b.levelHeights)
-            self.setMaterial(face, "glass_with_ground_level")
+            self.setData(face, self.uvLayer, b.levelHeights)
+            self.setMaterial(face, self.materialName2)
 
 
-class Apartments(MaterialRenderer):
+class Glass(SeamlessTextureRenderer):
     
-    def init(self):
-        self.ensureUvLayer("data.1")
-        self.setupMaterials("apartments")
-        self.setupMaterials("apartments_with_ground_level")
-    
-    def render(self, face):
-        # building
-        b = self.b
-        if b.z1:
-            self.setData(face, "data.1", b.numLevels)
-            self.setMaterial(face, "apartments")
-        else:
-            self.setData(face, "data.1", b.levelHeights)
-            self.setMaterial(face, "apartments_with_ground_level")
+    def __init__(self, renderer):
+        super().__init__(renderer, "glass")
 
 
-class Commercial(MaterialRenderer):
-    
-    def init(self):
-        self.ensureUvLayer("data.1")
-        self.setupMaterials("commercial")
-        self.setupMaterials("commercial_with_ground_level")
-    
-    def render(self, face):
-        # building
-        b = self.b
-        if b.z1:
-            self.setData(face, "data.1", b.numLevels)
-            self.setMaterial(face, "commercial")
-        else:
-            self.setData(face, "data.1", b.levelHeights)
-            self.setMaterial(face, "commercial_with_ground_level")
+class Apartments(SeamlessTextureRenderer):
+    def __init__(self, renderer):
+        super().__init__(renderer, "apartments")
+
+
+class Commercial(SeamlessTextureRenderer):
+    def __init__(self, renderer):
+        super().__init__(renderer, "commercial")
