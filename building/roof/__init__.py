@@ -142,7 +142,7 @@ class Roof:
             z0 = parseNumber(tags["min_height"], 0.)
         elif "building:min_level" in tags:
             numLevels = parseNumber(tags["building:min_level"])
-            z0 = 0. if numLevels is None else numLevels * app.levelHeight
+            z0 = 0. if numLevels is None else app.levelHeight * (numLevels-1+Roof.groundLevelFactor)
         else:
             z0 = 0.
         return z0
