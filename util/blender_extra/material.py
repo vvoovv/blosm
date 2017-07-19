@@ -2,7 +2,7 @@ import webbrowser, time, imp, os
 import bpy
 
 
-def createMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate1, materialTemplate2):
+def createFacadeMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate1, materialTemplate2):
     def createMaterials(materialBaseName, materialTemplate):
         materialName = "%s.%s" % (materialBaseName, (i+1))
         if not materialName in bpy.data.materials:
@@ -31,6 +31,34 @@ def createMaterialsForSeamlessTextures(files, directory, listOfTextures, materia
         if textureDataEntry:
             createMaterials(materialBaseName1, materialTemplate1)
             createMaterials(materialBaseName2, materialTemplate2)
+        else:
+            print(
+                ("Information about the image texture \"%s\" isn't available " +
+                "in the list of textures \"%s\"") % (fileName, listOfTextures)
+            )
+
+
+def createMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate):
+    textureData = readTextures(listOfTextures)
+    # strip off the suffix '_template'
+    materialBaseName = materialTemplate[:-9]
+    
+    materialTemplate = bpy.data.materials[materialTemplate]
+    
+    for i,fileName in enumerate(files):
+        fileName = fileName.name
+        textureDataEntry = textureData.get(fileName)
+        if textureDataEntry:
+            materialName = "%s.%s" % (materialBaseName, (i+1))
+            if not materialName in bpy.data.materials:
+                m = materialTemplate.copy()
+                m.name = materialName
+                m.use_fake_user = True
+                
+                nodes = m.node_tree.nodes
+                setImage(fileName, directory, nodes["Image Texture"])
+                nodes["Mapping"].scale[0] = textureDataEntry[0]
+                nodes["Mapping"].scale[1] = textureDataEntry[1]
         else:
             print(
                 ("Information about the image texture \"%s\" isn't available " +

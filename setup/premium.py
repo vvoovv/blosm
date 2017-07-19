@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from parse.relation.building import Building
 
-from manager import Linestring, Polygon, PolygonAcceptBroken
+from manager import Manager, Linestring, Polygon, PolygonAcceptBroken
 from renderer import Renderer2d
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
@@ -224,14 +224,26 @@ def setup(app, osm):
 def bldgPreRender(building):
     element = building.element
     tags = element.tags
-    material = building.getOsmMaterial()
+    
+    # material for walls
+    material = building.getOsmMaterialWalls()
     
     if material == "glass":
-        building.setMaterialRenderer(Glass)
+        building.setMaterialRendererW(Glass)
     elif tags.get("building") == "commercial":
-        building.setMaterialRenderer(Commercial)
+        building.setMaterialRendererW(Commercial)
     else:
-        building.setMaterialRenderer(Apartments)
+        building.setMaterialRendererW(Apartments)
+    
+    # material for roof
+    material = building.getOsmMaterialRoof()
+    
+    if material == "concrete":
+        color = Manager.normalizeColor(tags.get("roof:colour"))
+        if color:
+            building.setMaterialRendererR(ConcreteColor)
+        else:
+            building.setMaterialRendererR(Concrete)
 
 
 class SeamlessTextureRenderer(MaterialRenderer):
@@ -260,7 +272,6 @@ class SeamlessTextureRenderer(MaterialRenderer):
 
 
 class Glass(SeamlessTextureRenderer):
-    
     def __init__(self, renderer):
         super().__init__(renderer, "glass")
 
@@ -273,3 +284,24 @@ class Apartments(SeamlessTextureRenderer):
 class Commercial(SeamlessTextureRenderer):
     def __init__(self, renderer):
         super().__init__(renderer, "commercial")
+
+
+class Concrete(MaterialRenderer):
+    
+    def init(self):
+        self.setupMaterials("concrete")
+    
+    def render(self, face):
+        self.setMaterial(face, "concrete")
+
+
+class ConcreteColor(MaterialRenderer):
+    
+    vertexColorLayer = "data.1"
+    
+    def init(self):
+        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.setupMaterials("concrete")
+    
+    def render(self, face):
+        self.setMaterial(face, "concrete")

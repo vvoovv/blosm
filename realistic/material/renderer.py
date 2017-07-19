@@ -21,6 +21,12 @@ class MaterialRenderer:
         if not name in uv:
             uv.new(name)
     
+    def ensureVertexColorLayer(self, name):
+        vertex_colors = self.r.obj.data.vertex_colors
+        # create a vertex color layer for data
+        if not name in vertex_colors:
+            vertex_colors.new(name)
+    
     def setData(self, face, uvLayerName, uv):
         if not isinstance(uv, tuple):
             uv = (uv, 0.)

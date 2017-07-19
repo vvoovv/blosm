@@ -189,10 +189,7 @@ class Roof:
             self.renderWalls()
         
         if roofIndices:
-            materialIndex = r.getRoofMaterialIndex(self.element)
-            # create BMesh faces for the building roof
-            for f in (bm.faces.new(verts[i] for i in indices) for indices in roofIndices):
-                f.material_index = materialIndex
+            self.renderRoof()
     
     def renderWalls(self):
         r = self.r
@@ -201,6 +198,15 @@ class Roof:
         materialIndex = r.getWallMaterialIndex(self.element)
         # create BMesh faces for the building walls
         for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
+            f.material_index = materialIndex
+    
+    def renderRoof(self):
+        r = self.r
+        bm = r.bm
+        verts = self.verts
+        materialIndex = r.getRoofMaterialIndex(self.element)
+        # create BMesh faces for the building roof
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
             f.material_index = materialIndex
     
     def processDirection(self):
