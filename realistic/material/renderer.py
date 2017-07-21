@@ -12,7 +12,8 @@ class MaterialRenderer:
         self.outline = None
         # a data structure to store names of Blender materials
         self.materials = None
-        # do we have multiple groups of materials?
+        # Do we have multiple groups of materials
+        # (e.g. apartments and apartments_with_ground_level)?
         self.multipleGroups = False
     
     def ensureUvLayer(self, name):
@@ -22,22 +23,27 @@ class MaterialRenderer:
             uv.new(name)
     
     def ensureVertexColorLayer(self, name):
-        vertex_colors = self.r.obj.data.vertex_colors
+        vertex_colors = self.r.bm.loops.layers.color
         # create a vertex color layer for data
         if not name in vertex_colors:
             vertex_colors.new(name)
     
-    def setData(self, face, uvLayerName, uv):
+    def setData(self, face, layerName, uv):
         if not isinstance(uv, tuple):
             uv = (uv, 0.)
-        uvLayer = self.r.bm.loops.layers.uv[uvLayerName]
+        uvLayer = self.r.bm.loops.layers.uv[layerName]
         for loop in face.loops:
             loop[uvLayer].uv = uv
+    
+    def setColor(self, face, layerName, color):
+        vertexColorLayer = self.r.bm.loops.layers.color[layerName]
+        for loop in face.loops:
+            loop[vertexColorLayer] = color
     
     def setupMaterials(self, groupName, numMaterials=20):
         if groupName in self.r.materialGroups:
             return
-        # names of materials to load from a .blen file
+        # names of materials to load from a .blend file
         materialsToLoad = []
         # names of materials available after scanning everything
         materials = []

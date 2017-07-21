@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from parse.relation.building import Building
 
-from manager import Manager, Linestring, Polygon, PolygonAcceptBroken
+from manager import Linestring, Polygon, PolygonAcceptBroken
 from renderer import Renderer2d
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
@@ -239,9 +239,8 @@ def bldgPreRender(building):
     material = building.getOsmMaterialRoof()
     
     if material == "concrete":
-        color = Manager.normalizeColor(tags.get("roof:colour"))
-        if color:
-            building.setMaterialRendererR(ConcreteColor)
+        if building.roofColor:
+            building.setMaterialRendererR(ConcreteWithColor)
         else:
             building.setMaterialRendererR(Concrete)
 
@@ -295,13 +294,14 @@ class Concrete(MaterialRenderer):
         self.setMaterial(face, "concrete")
 
 
-class ConcreteColor(MaterialRenderer):
-    
+class ConcreteWithColor(MaterialRenderer):
+        
     vertexColorLayer = "data.1"
     
     def init(self):
         self.ensureVertexColorLayer(self.vertexColorLayer)
-        self.setupMaterials("concrete")
+        self.setupMaterials("concrete_with_color")
     
     def render(self, face):
-        self.setMaterial(face, "concrete")
+        self.setColor(face, self.vertexColorLayer, self.b.roofColor)
+        self.setMaterial(face, "concrete_with_color")

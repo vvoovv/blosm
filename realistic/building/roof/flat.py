@@ -1,4 +1,5 @@
 import math
+from manager import Manager
 from util.osm import parseNumber
 from building.roof.flat import Roof, RoofFlat
 
@@ -13,6 +14,7 @@ class RoofFlatRealistic(RoofFlat):
         self.mrr = None
         self._numLevels = None
         self._levelHeights = None
+        self._roofColor = None
     
     def render(self):
         r = self.r
@@ -108,6 +110,13 @@ class RoofFlatRealistic(RoofFlat):
             h = self.roofMinHeight/(Roof.groundLevelFactor + self.numLevels - 1)
             self._levelHeights = (Roof.groundLevelFactor*h, h)
         return self._levelHeights
+    
+    @property
+    def roofColor(self):
+        if self._roofColor is None:
+            roofColor = Manager.normalizeColor(self.element.tags.get("roof:colour"))
+            self._roofColor = Manager.getColorFromHex(roofColor) if roofColor else 0
+        return self._roofColor
 
     def getOsmMaterial(self, tag):
         element = self.element
