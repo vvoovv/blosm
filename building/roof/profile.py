@@ -246,7 +246,7 @@ class Slot:
         Args:
             vertIndex (int): Vertex index to append to the slot
             y (float): Y-coordinate in the profile coordinate system of the vertex with the index <vertIndex>
-                wherer the new part starts
+                where the new part starts
             originSlot (Slot): The last part of <originSlot> (i.e. <originSlot.parts[-1]>) ends at <self>.
                 We need <originSlot> here to set <originSlot.endAtSelf> for the last part of <originSlot>.
                 So after the execution of the method, <originSlot.endAtSelf[-1]> will correspond to
