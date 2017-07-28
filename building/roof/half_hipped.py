@@ -26,8 +26,8 @@ class MiddleSlot(Slot):
     Extension of the <Slot> class to help finding front and back walls of a building
     """
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, x):
+        super().__init__(x)
         # The first element of the Python lists <self.front> and <self.back> is <y> from <self.parts>,
         # the second one is a Python tuple:
         # (vertex indices for a wall face, profiled vertex 1, profiled vertex 2)
@@ -81,7 +81,7 @@ class RoofHalfHipped(RoofProfile):
         super().__init__(gabledRoof)
         # replace the middle slot defining the roof ridge
         slots = self.slots
-        slots = (slots[0], MiddleSlot(), slots[2])
+        slots = (slots[0], MiddleSlot(slots[1].x), slots[2])
         slots[1].n = slots[2]
         self.slots = slots
         

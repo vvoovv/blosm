@@ -27,17 +27,17 @@ class RoofRealistic:
         if self.mrr:
             self.mrr = None
 
-    def setMaterialRendererW(self, constructor):
+    def setMaterialWalls(self, name):
         # mrw stands for "material renderer for walls"
-        mrw = self.r.getMaterialRenderer(constructor)
+        mrw = self.r.getMaterialRenderer(name)
         mrw.init()
         # set building <b> attribute to <self>
         mrw.b = self
         self.mrw = mrw
     
-    def setMaterialRendererR(self, constructor):
+    def setMaterialRoof(self, name):
         # mrr stands for "material renderer for roof"
-        mrr = self.r.getMaterialRenderer(constructor)
+        mrr = self.r.getMaterialRenderer(name)
         mrr.init()
         # set building <b> attribute to <self>
         mrr.b = self

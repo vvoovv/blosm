@@ -30,7 +30,7 @@ from manager.logging import Logger
 from realistic.manager import AreaManager, BaseManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 from realistic.building.renderer import RealisticBuildingRenderer
-from realistic.material.renderer import MaterialRenderer
+from realistic.material.renderer import MaterialRenderer, SeamlessTexture, SeamlessTextureWithColor
 
 
 def building(tags, e):
@@ -160,7 +160,8 @@ def setup(app, osm):
                 br = RealisticBuildingRenderer(
                     app,
                     "buildings",
-                    bldgPreRender=bldgPreRender
+                    bldgPreRender = bldgPreRender,
+                    materials = getMaterials()
                 )
             else:
                 br = BuildingRenderer(app, "buildings")
@@ -229,34 +230,46 @@ def bldgPreRender(building):
     material = building.getOsmMaterialWalls()
     
     if material == "glass":
-        building.setMaterialRendererW(Glass)
+        building.setMaterialWalls("glass")
     elif tags.get("building") == "commercial":
-        building.setMaterialRendererW(Commercial)
+        building.setMaterialWalls("commercial")
     else:
-        building.setMaterialRendererW(Apartments)
+        building.setMaterialWalls("apartments")
     
     # material for roof
     material = building.getOsmMaterialRoof()
     
     if material == "concrete":
         if building.roofColor:
-            building.setMaterialRendererR(ConcreteWithColor)
+            building.setMaterialRoof("concrete_with_color")
         else:
-            building.setMaterialRendererR(Concrete)
+            building.setMaterialRoof("concrete")
+    else:
+        building.setMaterialRoof("roof_tiles")
 
 
-class SeamlessTextureRenderer(MaterialRenderer):
+def getMaterials():
+    return dict(
+        glass = FacadeSeamlessTexture,
+        commercial = FacadeSeamlessTexture,
+        apartments = FacadeSeamlessTexture,
+        concrete = SeamlessTexture,
+        concrete_with_color = SeamlessTextureWithColor,
+        roof_tiles = SeamlessTexture
+    )
+
+
+class FacadeSeamlessTexture(MaterialRenderer):
     
     uvLayer = "data.1"
     
     def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer)
-        self.materialName1 = baseMaterialName
+        super().__init__(renderer, baseMaterialName)
         self.materialName2 = "%s_with_ground_level" % baseMaterialName
         
     def init(self):
         self.ensureUvLayer(self.uvLayer)
-        self.setupMaterials(self.materialName1)
+        self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         
     def render(self, face):
@@ -264,44 +277,7 @@ class SeamlessTextureRenderer(MaterialRenderer):
         b = self.b
         if b.z1:
             self.setData(face, self.uvLayer, b.numLevels)
-            self.setMaterial(face, self.materialName1)
+            self.setMaterial(face, self.materialName)
         else:
             self.setData(face, self.uvLayer, b.levelHeights)
             self.setMaterial(face, self.materialName2)
-
-
-class Glass(SeamlessTextureRenderer):
-    def __init__(self, renderer):
-        super().__init__(renderer, "glass")
-
-
-class Apartments(SeamlessTextureRenderer):
-    def __init__(self, renderer):
-        super().__init__(renderer, "apartments")
-
-
-class Commercial(SeamlessTextureRenderer):
-    def __init__(self, renderer):
-        super().__init__(renderer, "commercial")
-
-
-class Concrete(MaterialRenderer):
-    
-    def init(self):
-        self.setupMaterials("concrete")
-    
-    def render(self, face):
-        self.setMaterial(face, "concrete")
-
-
-class ConcreteWithColor(MaterialRenderer):
-        
-    vertexColorLayer = "data.1"
-    
-    def init(self):
-        self.ensureVertexColorLayer(self.vertexColorLayer)
-        self.setupMaterials("concrete_with_color")
-    
-    def render(self, face):
-        self.setColor(face, self.vertexColorLayer, self.b.roofColor)
-        self.setMaterial(face, "concrete_with_color")

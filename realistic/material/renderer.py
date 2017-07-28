@@ -4,8 +4,10 @@ from util.blender import appendMaterialsFromFile
 
 class MaterialRenderer:
     
-    def __init__(self, renderer):
+    def __init__(self, renderer, baseMaterialName):
         self.r = renderer
+        # base name for Blender materials
+        self.materialName = baseMaterialName
         # index of the Blender material to set to a BMFace
         self.index = -1
         # keep track of building outline
@@ -107,4 +109,25 @@ class MaterialRenderer:
             materialIndices[name] = len(materials)
             materials.append(bpy.data.materials[name])
         face.material_index = materialIndices[name]
+
+
+class SeamlessTexture(MaterialRenderer):
+    
+    def init(self):
+        self.setupMaterials(self.materialName)
+    
+    def render(self, face):
+        self.setMaterial(face, self.materialName)
+
+
+class SeamlessTextureWithColor(MaterialRenderer):
         
+    vertexColorLayer = "data.1"
+    
+    def init(self):
+        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.setupMaterials(self.materialName)
+    
+    def render(self, face):
+        self.setColor(face, self.vertexColorLayer, self.b.roofColor)
+        self.setMaterial(face, self.materialName)

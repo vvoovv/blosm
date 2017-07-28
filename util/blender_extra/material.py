@@ -38,10 +38,8 @@ def createFacadeMaterialsForSeamlessTextures(files, directory, listOfTextures, m
             )
 
 
-def createMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate):
+def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listOfTextures, materialTemplate):
     textureData = readTextures(listOfTextures)
-    # strip off the suffix '_template'
-    materialBaseName = materialTemplate[:-9]
     
     materialTemplate = bpy.data.materials[materialTemplate]
     

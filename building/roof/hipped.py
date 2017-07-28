@@ -33,7 +33,7 @@ class RoofHipped(RoofProfile):
         super().__init__(data)
         # replace the middle slot defining the roof ridge
         slots = self.slots
-        slots = (slots[0], MiddleSlot(), slots[2])
+        slots = (slots[0], MiddleSlot(slots[1].x), slots[2])
         slots[1].n = slots[2]
         self.slots = slots
     

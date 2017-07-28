@@ -195,7 +195,16 @@ class Slot:
     used a number of times to illustrate the code.
     """
     
-    def __init__(self):
+    def __init__(self, x):
+        """
+        Args:
+            x (float): a location between 0. and 1. of the slot
+                in the profile coordinate system
+        """
+        self.x = x
+        # The location of the slot in real units in the profile coordinate system;
+        # its real value can be assigned in the <self.init(..)> method of a child class
+        self.xReal = 0.
         # Each element of <self.parts> is a Python tuple:
         # (y, part, reflection, index in <self.parts>)
         # A part is sequence of vertices that start at a slot and ends at the same slot or at a neighboring one.
@@ -487,7 +496,7 @@ class RoofProfile(Roof):
         numProfilesPoints = len(profile)
         self.lastProfileIndex = numProfilesPoints - 1
         # create profile slots
-        slots = tuple(Slot() for i in range(numProfilesPoints) )
+        slots = tuple(Slot(profile[i][0]) for i in range(numProfilesPoints) )
         # set the next slot, it will be need in further calculations
         for i in range(self.lastProfileIndex):
             slots[i].n = slots[i+1]
@@ -527,24 +536,30 @@ class RoofProfile(Roof):
             self.slots[i].reset()
     
     def make(self, osm):
+        slots = self.slots
+        
+        if not self.projections:
+            self.processDirection()
+        
+        # Set the attribute <xReal> (i.e. the location of the slot
+        # in real units in the profile coordinate system) for each slot
+        for slot in slots:
+            slot.xReal = self.polygonWidth * slot.x
+        
         polygon = self.polygon
         roofIndices = self.roofIndices
         noWalls = self.noWalls
-        slots = self.slots
         # the current slot: start from the leftmost slot
         self.slot = slots[0]
         # the slot from which the last part in <slot.parts> originates
         self.originSlot = slots[0]
-        
-        if not self.projections:
-            self.processDirection()
         
         # Start with the vertex from <polygon> with <x=0.> in the profile coordinate system;
         # the variable <i0> is needed to break the cycle below
         i = i0 = self.minProjIndex
         # Create a profiled vertex out of <self.verts[polygon.indices[i]]>;
         # <pv> stands for profiled vertex
-        pv1 = pv0 = ProfiledVert(self, i, self.roofMinHeight, noWalls)
+        pv1 = pv0 = self.getProfiledVert(i, self.roofMinHeight, noWalls)
         _pv = None
         while True:
             i = polygon.next(i)
@@ -552,7 +567,7 @@ class RoofProfile(Roof):
                 # came to the starting vertex, so break the cycle
                 break
             # create a profiled vertex out of <self.verts[polygon.indices[i]]>
-            pv2 = ProfiledVert(self, i, self.roofMinHeight, noWalls)
+            pv2 = self.getProfiledVert(i, self.roofMinHeight, noWalls)
             # The order of profiled vertices is <_pv>, <pv1>, <pv2>
             # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>),
             # also form a wall face under the segment between <pv1> and <pv2>
@@ -592,6 +607,16 @@ class RoofProfile(Roof):
             slotR.trackUp(roofIndices)
             slotL.trackDown(roofIndices)
         return True
+    
+    def getProfiledVert(self, i, roofMinHeight, noWalls):
+        """
+        A factory method to get an instance of the <ProfiledVert> class.
+        
+        The arguments of the method are the same as for the constructor
+        of the <ProfiledVert> class.
+        The methid can overridden by child classes.
+        """
+        return ProfiledVert(self, i, roofMinHeight, noWalls)
     
     def createProfileVertices(self, pv1, pv2, _pv):
         """
@@ -775,7 +800,9 @@ class RoofProfile(Roof):
                 # Create a new part for the new slot
                 # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
-                slot.append(vertIndex, pv1.y + factor * (p[_i][0] - pv1.x), self.originSlot)
+                y = pv1.y + factor * (p[_i][0] - pv1.x)
+                slot.append(vertIndex, y, self.originSlot)
+                self.onNewSlotVertex(_i, vertIndex, y)
                 # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
                 # to do some stuff
                 slot.processWallFace(_wallIndices, pv1, pv2)
@@ -825,3 +852,13 @@ class RoofProfile(Roof):
                     h = parseNumber(tags["roof:levels"])
                 h = self.defaultHeight if h is None else h * app.levelHeight
         return h
+    
+    def onNewSlotVertex(self, slotIndex, vertIndex, y):
+        """
+        The method is called for every newly created in-between vertex <self.verts[vertIndex]>
+        located on the slot <self.slots[slotIndex]> between the neighbor profiled vertices.
+        The vertex has Y-coordinate <y> in the profile coordinate system.
+        
+        The method can be overriden by a child class
+        """
+        pass
