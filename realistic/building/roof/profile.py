@@ -1,3 +1,4 @@
+import math
 from . import RoofRealistic
 from building.roof.profile import RoofProfile
 
@@ -9,6 +10,25 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         self.texCoords = []
         # mapping between the indices
         self.indicesMap = {}
+        # Mapping between a roof polygon (or face) and the related slot;
+        # indices in self.roofToSlot exactly correspond to the indices in <self.roofIndices>
+        self.roofFaceToSlot = []
+        slots = self.slots
+        p = self.profile
+        self.dx_2 = tuple(
+            (slots[i+1].x-slots[i].x)*(slots[i+1].x-slots[i].x)
+            for i in range(self.lastProfileIndex)
+        )
+        self.dy_2 = tuple(
+            (p[i+1][1]-p[i][1])*(p[i+1][1]-p[i][1])
+            for i in range(self.lastProfileIndex)
+        )
+        self.slopes = tuple(
+            True if p[i+1][1]>p[i][1] else
+            (False if p[i+1][1]<p[i][1] else None)
+            for i in range(self.lastProfileIndex)
+        )
+        self.partLength = [0. for i in range(self.lastProfileIndex)]
     
     def init(self, element, data, osm, app):
         super().init(element, data, osm, app)
@@ -21,6 +41,26 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         indicesMap.clear()
         for i,index in enumerate(self.polygon.indices):
             indicesMap[index] = i
+        self.roofFaceToSlot.clear()
+    
+    def _make(self):
+        """
+        The override of the parent class method
+        """
+        slots = self.slots
+        # Set the attribute <xReal> (i.e. the location of the slot
+        # in real units in the profile coordinate system) for each slot.
+        # <self.slots[0].xReal> is always equal to zero, so don't need to set it.
+        for i in range(1, self.numSlots):
+            slot = slots[i]
+            slot.xReal = self.polygonWidth * slot.x
+        
+        self.polygonWidth_2 = self.polygonWidth * self.polygonWidth
+        self.roofHeight_2 = self.roofHeight * self.roofHeight
+        for i in range(self.lastProfileIndex):
+            self.partLength[i] = self.polygonWidth * (slots[i+1].x-slots[i].x)\
+            if self.slopes[i] is None else\
+            math.sqrt(self.polygonWidth_2*self.dx_2[i] + self.roofHeight_2 * self.dy_2[i])
 
     def renderRoof(self):
         if self.mrr:
@@ -30,15 +70,30 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             polygon = self.polygon
             uvLayer = bm.loops.layers.uv[0]
             texCoords = self.texCoords
+            slopes = self.slopes
             # create BMesh faces for the building roof
-            for indices in self.roofIndices:
+            for indices,slotIndex in zip(self.roofIndices, self.roofFaceToSlot):
                 f = bm.faces.new(verts[i] for i in indices)
                 for i,roofIndex in enumerate(indices):
-                    if roofIndex < polygon.indexOffset:
-                        texCoords = self.texCoords[ self.indicesMap[roofIndex] ]
+                    texCoords = self.texCoords[
+                        self.indicesMap[roofIndex]\
+                        if roofIndex < polygon.indexOffset\
+                        else polygon.n + roofIndex - polygon.indexOffset
+                    ]
+                    # <texCoords> is a Python tuple of three elements:
+                    # <texCoords[0]> indicates if the related roof vertex is located
+                    # on the slot;
+                    # <texCoords[1]> is a slot index if <[0]> is equal to True;
+                    # <texCoords[1]> is a coordinate ... TODO
+                    if texCoords[0]:
+                        x = 0.\
+                        if (slopes[slotIndex] and texCoords[1] == slotIndex) or\
+                        (not slopes[slotIndex] and texCoords[1] == slotIndex+1) else\
+                        self.partLength[slotIndex]
                     else:
-                        texCoords = self.texCoords[polygon.n + roofIndex - polygon.indexOffset]
-                    f.loops[i][uvLayer].uv = texCoords
+                        # the related roof vertex isn't located on the slot
+                        x = texCoords[1]
+                    f.loops[i][uvLayer].uv = (x, texCoords[2])
                 self.mrr.render(f)
         else:
             super().renderRoof()
@@ -48,9 +103,9 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         The override of the parent class method
         """
         pv = super().getProfiledVert(i, roofMinHeight, noWalls)
-        proj = self.projections
         texCoords = (
-            proj[i] - proj[self.minProjIndex],
+            pv.onSlot,
+            pv.index if pv.onSlot else self.getTexCoordAlongProfile(pv),
             pv.y
         )
         if pv.vertIndex < self.polygon.indexOffset:
@@ -59,11 +114,36 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             self.texCoords.append(texCoords)
         return pv
     
+    def getTexCoordAlongProfile(self, pv):
+        slots = self.slots
+        p = self.profile
+        slope = self.slopes[pv.index]
+        if slope:
+            dx = pv.x - slots[pv.index].x
+            dh = pv.h - p[pv.index][1]
+            texCoord = math.sqrt(self.polygonWidth_2*dx*dx + self.roofHeight_2*dh*dh)
+        elif slope is False:
+            dx = slots[pv.index+1].x - pv.x
+            dh = pv.h - p[pv.index+1][1]
+            texCoord = math.sqrt(self.polygonWidth_2*dx*dx + self.roofHeight_2*dh*dh)
+        else: # slope is None
+            texCoord = self.polygonWidth * (pv.x - slots[pv.index].x)
+        return texCoord
+    
     def onNewSlotVertex(self, slotIndex, vertIndex, y):
         """
         The override of the parent class method
         """
         self.texCoords.append((
-            self.slots[slotIndex].xReal,
+            True,
+            slotIndex,
             y
         ))
+    
+    def onRoofForSlotCompleted(self, slotIndex):
+        """
+        The override of the parent class method
+        """
+        roofFaceToSlot = self.roofFaceToSlot
+        for _ in range(len(roofFaceToSlot), len(self.roofIndices)):
+            roofFaceToSlot.append(slotIndex)

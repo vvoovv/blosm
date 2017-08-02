@@ -112,7 +112,7 @@ class ProfiledVert:
         d = roof.direction
         v = verts[indices[i]]
         # is the polygon vertex <i> located on a profile slot?
-        onProfile = False
+        onSlot = False
         createVert = True
         # X-coordinate in the profile coordinate system (i.e. along the roof direction);
         # the roof direction is calculated in roof.processDirection(..);
@@ -130,13 +130,12 @@ class ProfiledVert:
         
         if distance < zero:
             # the vertex <i> is located on the profile slot <roof.slots[index]>
-            onProfile = True
+            onSlot = True
             if roof.lEndZero and noWalls and not index:
                 # The vertex <i> is located on the first profile slot <roof.slots[0]>,
                 # also the building doesn't have walls and the profile value is equal to zero.
                 # Therefore, no need to create a vertex, just use the polygon vertex with the index <indices[i]>
                 createVert = False
-                index = 0
                 x = 0.
                 vertIndex = indices[i]
             else:
@@ -144,7 +143,7 @@ class ProfiledVert:
                 x, h = p[index]
         elif abs(p[index + 1][0] - x) < zero:
             # the vertex <i> is located on the profile slot <roof.slots[index+1]>
-            onProfile = True
+            onSlot = True
             # increase <index> by one
             index += 1
             if roof.rEndZero and noWalls and index == roof.lastProfileIndex:
@@ -152,7 +151,6 @@ class ProfiledVert:
                 # also the building doesn't have walls and the profile value is equal to zero.
                 # Therefore, no need to create a vertex, just use the polygon vertex with the index <indices[i]>
                 createVert = False
-                index = roof.lastProfileIndex
                 x = 1.
                 vertIndex = indices[i]
             else:
@@ -171,14 +169,17 @@ class ProfiledVert:
             vertIndex = len(verts)
             # note, that <h> is multiplied by the roof height <roof.roofHeight>
             verts.append(Vector((v.x, v.y, roofMinHeight + roof.roofHeight * h)))
+            self.h = h
+        else:
+            self.h = 0.
         # The meaning of <self.index> is that the polygon vertex <i> projected on the profile
         # has X-coordinate in the profile coordinate system,
         # located between the profile slots <roof.slots[index]> and <roof.slots[index+1]>
         self.index = index
-        # If the polygon vertex <i> is located on a profile slot (i.e. <self.onProfile> is <True>) and
+        # If the polygon vertex <i> is located on a profile slot (i.e. <self.onSlot> is <True>) and
         # has <self.index>, it can be located only on the slot <roof.slots[index]>,
         # not (!) on the slot <roof.slots[index+1]>
-        self.onProfile = onProfile
+        self.onSlot = onSlot
         # X-coordinate in the profile coordinate system, it can possess the value between 0. and 1.
         self.x = x
         # vertex index of the polygon vertex <i> projected on the profile
@@ -494,6 +495,7 @@ class RoofProfile(Roof):
         profile = data[0]
         self.profile = profile
         numProfilesPoints = len(profile)
+        self.numSlots = numProfilesPoints
         self.lastProfileIndex = numProfilesPoints - 1
         # create profile slots
         slots = tuple(Slot(profile[i][0]) for i in range(numProfilesPoints) )
@@ -541,10 +543,7 @@ class RoofProfile(Roof):
         if not self.projections:
             self.processDirection()
         
-        # Set the attribute <xReal> (i.e. the location of the slot
-        # in real units in the profile coordinate system) for each slot
-        for slot in slots:
-            slot.xReal = self.polygonWidth * slot.x
+        self._make()
         
         polygon = self.polygon
         roofIndices = self.roofIndices
@@ -601,12 +600,21 @@ class RoofProfile(Roof):
         # then we track <slotL> downwards by executing slotL.trackDown(roofIndices)
         slotR = slots[1]
         slotR.trackUp(roofIndices)
+        self.onRoofForSlotCompleted(0)
         for i in range(1, self.lastProfileIndex):
             slotL = slotR
             slotR = slots[i+1]
             slotR.trackUp(roofIndices)
             slotL.trackDown(roofIndices)
+            self.onRoofForSlotCompleted(i)
         return True
+    
+    def _make(self):
+        """
+        The method is called from <self.make(..)>. Some extra stuff can be done here.
+        
+        The method can overridden by a child class.
+        """
     
     def getProfiledVert(self, i, roofMinHeight, noWalls):
         """
@@ -614,7 +622,7 @@ class RoofProfile(Roof):
         
         The arguments of the method are the same as for the constructor
         of the <ProfiledVert> class.
-        The methid can overridden by child classes.
+        The method can overridden by a child class.
         """
         return ProfiledVert(self, i, roofMinHeight, noWalls)
     
@@ -647,11 +655,11 @@ class RoofProfile(Roof):
         index2 = pv2.index
         
         # skip the polygon vertex with the index indices[pv1.i] from including it to the wall face?
-        skip1 = self.noWalls and pv1.onProfile and\
+        skip1 = self.noWalls and pv1.onSlot and\
             ((self.lEndZero and not index1) or\
             (self.rEndZero and index1 == self.lastProfileIndex))
         # skip the polygon vertex with the index indices[pv2.i] from including it to the wall face?
-        skip2 = self.noWalls and pv2.onProfile and\
+        skip2 = self.noWalls and pv2.onSlot and\
             ((self.lEndZero and not index2) or\
             (self.rEndZero and index2 == self.lastProfileIndex))
 
@@ -684,7 +692,7 @@ class RoofProfile(Roof):
             # We are at <slots[0]> and just started, so create the very first part for the <slot>;
             # <slot> is <slots[0]>
             slot.append(pv1.vertIndex, pv1.y, self.originSlot)
-        elif pv1.onProfile:
+        elif pv1.onSlot:
             # <pv1> is located on a profile slot
             
             # <reflection> can have 3 values:
@@ -695,7 +703,7 @@ class RoofProfile(Roof):
             # If <appendToSlot> is <True> we change the current slot and create a new part for that slot.
             # If <appendToSlot> is <False> we continue with the <slot> and its last part <slot.parts[-1]>.
             appendToSlot = False
-            if pv2.onProfile and index1 == index2:
+            if pv2.onSlot and index1 == index2:
                 # <pv2> is located on the same profile slot as <pv1>
                 # Example on the image <Main>:
                 # <_pv> ~ <6>
@@ -717,7 +725,7 @@ class RoofProfile(Roof):
                     # The condition <index1> is to prevent
                     # erroneous reflection due to 180 degrees angle as the result of mapping error or
                     # precision error caused by the nature of <zero> variable
-                    if _pv.onProfile and _pv.index == pv1.index:
+                    if _pv.onSlot and _pv.index == pv1.index:
                         # <_pv> is located on the same profile slot as <pv1>
                         if _pv.y < pv1.y:
                             appendToSlot = True
@@ -739,7 +747,7 @@ class RoofProfile(Roof):
                     # The condition <index1 != self.lastProfileIndex> is to prevent
                     # erroneous reflection due to 180 degrees angle as the result of mapping error or
                     # precision error caused by the nature of <zero> variable
-                    if _pv.onProfile and _pv.index == pv1.index:
+                    if _pv.onSlot and _pv.index == pv1.index:
                         # <_pv> is located on the same profile slot as <pv1>
                         if _pv.y > pv1.y:
                             appendToSlot = True
@@ -761,7 +769,7 @@ class RoofProfile(Roof):
                 # ends at the new current <slot>
                 slot.append(pv1.vertIndex, pv1.y, self.originSlot, reflection)
         
-        def common_code(slot, vertsRange, slotRange):
+        def common_code(slot, vertsRange):
             """
             A helper function
             
@@ -772,41 +780,45 @@ class RoofProfile(Roof):
             Args:
                 slot (Slot): the current slot
                 vertsRange (range): range of <slots> to create in-between vertices
-                slotRange (range): range of <slots> to append the indices of the newly created vertices
-                    to the related slots
             """
             vertIndex = len(verts) - 1
+            # <vertIndex> is incremented positively
+            # <vertIndexForSlots> is incremented negatively
+            vertIndexForSlots = vertIndex + len(vertsRange)
             # <factorX> and <factorY> are used in calculations in the cycle below
             factorX = (v2.x - v1.x) / (pv2.x - pv1.x)
             factorY = (v2.y - v1.y) / (pv2.x - pv1.x)
-            for _i in vertsRange:
+            # <factor> is used to calculate Y-coordinate in the profile coordinate system
+            factor = (pv2.y - pv1.y) / (pv2.x - pv1.x)
+            # <reversed(vertsRange)> is actually a Python range of <slots>
+            # to append the indices of the newly created vertices to the related slots
+            for slotIndexVerts,slotIndex in zip(vertsRange, reversed(vertsRange)):
                 vertIndex += 1
-                factor = p[_i][0] - pv1.x
+                factor = p[slotIndexVerts][0] - pv1.x
                 verts.append(Vector((
                     v1.x + factor * factorX,
                     v1.y + factor * factorY,
-                    self.roofMinHeight + self.roofHeight * p[_i][1]
+                    self.roofMinHeight + self.roofHeight * p[slotIndexVerts][1]
                 )))
                 _wallIndices.append(vertIndex)
-            # Fill <slots>
-            # <factor> is used to calculate Y-coordinate in the profile coordinate system
-            factor = (pv2.y - pv1.y) / (pv2.x - pv1.x)
-            for _i in slotRange:
+                #
+                # fill <slots>
+                #
                 # append <vertIndex> to the last part of the current slot (i.e. to slot.parts[-1])
-                slot.append(vertIndex)
+                slot.append(vertIndexForSlots)
                 # change the current slot and <self.originSlot>
                 self.originSlot = slot
-                slot = slots[_i]
+                slot = slots[slotIndex]
                 # Create a new part for the new slot
                 # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
-                y = pv1.y + factor * (p[_i][0] - pv1.x)
-                slot.append(vertIndex, y, self.originSlot)
-                self.onNewSlotVertex(_i, vertIndex, y)
+                y = pv1.y + factor * (p[slotIndex][0] - pv1.x)
+                slot.append(vertIndexForSlots, y, self.originSlot)
+                self.onNewSlotVertex(slotIndexVerts, vertIndex, y)
                 # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
                 # to do some stuff
                 slot.processWallFace(_wallIndices, pv1, pv2)
-                vertIndex -= 1
+                vertIndexForSlots -= 1
             # return the current slot
             return slot
         
@@ -814,20 +826,18 @@ class RoofProfile(Roof):
             if index2 > index1:
                 # Going from the left to the right
                 # If the condition below isn't valid, there is no need to call <common_code(..)>
-                if not pv2.onProfile or index1 != index2-1:
+                if not pv2.onSlot or index1 != index2-1:
                     slot = common_code(
                         slot,
-                        range(index2-1 if pv2.onProfile else index2, index1, -1),
-                        range(index1+1, index2 if pv2.onProfile else index2+1)
+                        range(index2-1 if pv2.onSlot else index2, index1, -1)
                     )
             else:
                 # Going from the right to the left
                 # If the condition below isn't valid, there is no need to call <common_code(..)>
-                if not pv1.onProfile or index2 != index1-1:
+                if not pv1.onSlot or index2 != index1-1:
                     slot = common_code(
                         slot,
-                        range(index2+1, index1 if pv1.onProfile else index1+1),
-                        range(index1-1 if pv1.onProfile else index1, index2, -1)
+                        range(index2+1, index1 if pv1.onSlot else index1+1)
                     )
         # the wall face <_wallIndices> is ready, append it to <wallIndices>
         wallIndices.append(_wallIndices)
@@ -859,6 +869,14 @@ class RoofProfile(Roof):
         located on the slot <self.slots[slotIndex]> between the neighbor profiled vertices.
         The vertex has Y-coordinate <y> in the profile coordinate system.
         
-        The method can be overriden by a child class
+        The method can be overriden by a child class.
         """
         pass
+    
+    def onRoofForSlotCompleted(self, slotIndex):
+        """
+        The method is called when polygons defining roof parts
+        for the slot <self.slots[slotIndex]> are completed.
+        
+        The method can be overriden by a child class.
+        """
