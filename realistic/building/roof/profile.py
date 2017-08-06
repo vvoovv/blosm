@@ -13,6 +13,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         # Mapping between a roof polygon (or face) and the related slot;
         # indices in self.roofToSlot exactly correspond to the indices in <self.roofIndices>
         self.roofFaceToSlot = []
+        
         slots = self.slots
         p = self.profile
         self.dx_2 = tuple(
@@ -23,11 +24,16 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             (p[i+1][1]-p[i][1])*(p[i+1][1]-p[i][1])
             for i in range(self.lastProfileIndex)
         )
+        # An element of <self.slopes> can take 3 possible value:
+        # True (positive slope of a profile part)
+        # False (negative slope of a profile part)
+        # None (flat profile part)
         self.slopes = tuple(
             True if p[i+1][1]>p[i][1] else
             (False if p[i+1][1]<p[i][1] else None)
             for i in range(self.lastProfileIndex)
         )
+        # the lenths of profile parts
         self.partLength = [0. for i in range(self.lastProfileIndex)]
     
     def init(self, element, data, osm, app):
@@ -42,6 +48,10 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         for i,index in enumerate(self.polygon.indices):
             indicesMap[index] = i
         self.roofFaceToSlot.clear()
+        # minimum and maximum Y-coordinates in the profile coordinate system
+        # for the roof vertices
+        self.minY = math.inf
+        self.maxY = -math.inf
     
     def _make(self):
         """
@@ -64,7 +74,6 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             polygon = self.polygon
             uvLayer = bm.loops.layers.uv[0]
             texCoords = self.texCoords
-            slopes = self.slopes
             # create BMesh faces for the building roof
             for indices,slotIndex in zip(self.roofIndices, self.roofFaceToSlot):
                 f = bm.faces.new(verts[i] for i in indices)
@@ -74,20 +83,31 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                         if roofIndex < polygon.indexOffset\
                         else polygon.n + roofIndex - polygon.indexOffset
                     ]
+                    slope = self.slopes[slotIndex]
+                    #
+                    # set texture coordinates <x> and <y>
+                    #
                     # <texCoords> is a Python tuple of three elements:
                     # <texCoords[0]> indicates if the related roof vertex is located
-                    # on the slot;
-                    # <texCoords[1]> is a slot index if <[0]> is equal to True;
-                    # <texCoords[1]> is a coordinate ... TODO
+                    #     on the slot;
+                    # <texCoords[1]> is a slot index if <texCoords[0]> is equal to True;
+                    # <texCoords[1]> is a coordinate along profile part
+                    #     if <texCoords[0]> is equal to False;
+                    # <texCoords[2]> is a coordinate along Y-axis of the profile
+                    #     coordinate system
                     if texCoords[0]:
-                        x = 0.\
-                        if (slopes[slotIndex] and texCoords[1] == slotIndex) or\
-                        (not slopes[slotIndex] and texCoords[1] == slotIndex+1) else\
+                        y = 0.\
+                        if (slope and texCoords[1] == slotIndex) or\
+                        (not slope and texCoords[1] == slotIndex+1) else\
                         self.partLength[slotIndex]
                     else:
                         # the related roof vertex isn't located on the slot
-                        x = texCoords[1]
-                    f.loops[i][uvLayer].uv = (x, texCoords[2])
+                        y = texCoords[1]
+                    # set texture coordinate <x> depending on the value of <slope>
+                    x = self.maxY - texCoords[2]\
+                        if slope else\
+                        texCoords[2] - self.minY
+                    f.loops[i][uvLayer].uv = (x, y)
                 self.mrr.render(f)
         else:
             super().renderRoof()
@@ -97,15 +117,21 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         The override of the parent class method
         """
         pv = super().getProfiledVert(i, roofMinHeight, noWalls)
+        y = pv.y
         texCoords = (
             pv.onSlot,
             pv.index if pv.onSlot else self.getTexCoordAlongProfile(pv),
-            pv.y
+            y
         )
         if pv.vertIndex < self.polygon.indexOffset:
             self.texCoords[i] = texCoords
         else:
             self.texCoords.append(texCoords)
+        # update <self.minY> and <self.maxY> if necessary
+        if y < self.minY:
+            self.minY = y
+        elif y > self.maxY:
+            self.maxY = y
         return pv
     
     def getTexCoordAlongProfile(self, pv):
@@ -133,6 +159,11 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             slotIndex,
             y
         ))
+        # update <self.minY> and <self.maxY> if necessary
+        if y < self.minY:
+            self.minY = y
+        elif y > self.maxY:
+            self.maxY = y
     
     def onRoofForSlotCompleted(self, slotIndex):
         """
