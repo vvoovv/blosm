@@ -48,12 +48,6 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
         The override of the parent class method
         """
         slots = self.slots
-        # Set the attribute <xReal> (i.e. the location of the slot
-        # in real units in the profile coordinate system) for each slot.
-        # <self.slots[0].xReal> is always equal to zero, so don't need to set it.
-        for i in range(1, self.numSlots):
-            slot = slots[i]
-            slot.xReal = self.polygonWidth * slot.x
         
         self.polygonWidth_2 = self.polygonWidth * self.polygonWidth
         self.roofHeight_2 = self.roofHeight * self.roofHeight

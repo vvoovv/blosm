@@ -203,9 +203,6 @@ class Slot:
                 in the profile coordinate system
         """
         self.x = x
-        # The location of the slot in real units in the profile coordinate system;
-        # its real value can be assigned in the <self.init(..)> method of a child class
-        self.xReal = 0.
         # Each element of <self.parts> is a Python tuple:
         # (y, part, reflection, index in <self.parts>)
         # A part is sequence of vertices that start at a slot and ends at the same slot or at a neighboring one.
@@ -788,8 +785,8 @@ class RoofProfile(Roof):
             # <factorX> and <factorY> are used in calculations in the cycle below
             factorX = (v2.x - v1.x) / (pv2.x - pv1.x)
             factorY = (v2.y - v1.y) / (pv2.x - pv1.x)
-            # <factor> is used to calculate Y-coordinate in the profile coordinate system
-            factor = (pv2.y - pv1.y) / (pv2.x - pv1.x)
+            # <factorSlots> is used to calculate Y-coordinate in the profile coordinate system
+            factorSlots = (pv2.y - pv1.y) / (pv2.x - pv1.x)
             # <reversed(vertsRange)> is actually a Python range of <slots>
             # to append the indices of the newly created vertices to the related slots
             for slotIndexVerts,slotIndex in zip(vertsRange, reversed(vertsRange)):
@@ -812,7 +809,7 @@ class RoofProfile(Roof):
                 # Create a new part for the new slot
                 # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
-                y = pv1.y + factor * (p[slotIndex][0] - pv1.x)
+                y = pv1.y + factorSlots * (p[slotIndexVerts][0] - pv1.x)
                 slot.append(vertIndexForSlots, y, self.originSlot)
                 self.onNewSlotVertex(slotIndexVerts, vertIndex, y)
                 # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
