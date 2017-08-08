@@ -244,8 +244,11 @@ def bldgPreRender(building):
             building.setMaterialRoof("concrete_with_color")
         else:
             building.setMaterialRoof("concrete")
-    else:
-        building.setMaterialRoof("roof_tiles")
+    elif material == "roof_tiles":
+        if building.roofColor:
+            building.setMaterialRoof("roof_tiles_with_color")
+        else:
+            building.setMaterialRoof("roof_tiles")
 
 
 def getMaterials():
@@ -255,7 +258,8 @@ def getMaterials():
         apartments = FacadeSeamlessTexture,
         concrete = SeamlessTexture,
         concrete_with_color = SeamlessTextureWithColor,
-        roof_tiles = SeamlessTexture
+        roof_tiles = SeamlessTexture,
+        roof_tiles_with_color = SeamlessTextureWithColor
     )
 
 

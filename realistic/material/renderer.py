@@ -122,7 +122,7 @@ class SeamlessTexture(MaterialRenderer):
 
 class SeamlessTextureWithColor(MaterialRenderer):
         
-    vertexColorLayer = "data.1"
+    vertexColorLayer = "data_color.1"
     
     def init(self):
         self.ensureVertexColorLayer(self.vertexColorLayer)
