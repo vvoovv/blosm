@@ -76,7 +76,7 @@ class RoofRealistic:
     def roofColor(self):
         if self._roofColor is None:
             roofColor = Manager.normalizeColor(self.element.tags.get("roof:colour"))
-            self._roofColor = Manager.getColorFromHex(roofColor) if roofColor else 0
+            self._roofColor = Manager.getColor(roofColor) if roofColor else 0
         return self._roofColor
 
     def getOsmMaterial(self, tag):
