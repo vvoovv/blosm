@@ -2,6 +2,7 @@ import math
 from building.roof import Roof
 from manager import Manager
 from util.osm import parseNumber
+from util import zAxis
 
 
 class RoofRealistic:
@@ -26,6 +27,40 @@ class RoofRealistic:
             self.mrw = None
         if self.mrr:
             self.mrr = None
+
+    def renderRoof(self):
+        if self.mrr:
+            self.renderRoofTextured()
+        else:
+            super().renderRoof()
+    
+    def renderRoofTextured(self):
+        r = self.r
+        bm = r.bm
+        verts = self.verts
+        uvLayer = bm.loops.layers.uv[0]
+        for indices in self.roofIndices:
+            # create a BMesh face for the building roof
+            f = bm.faces.new(verts[i] for i in indices)
+            # Find the vertex for newly created roof face <f> with the minimun <z>-coordinate;
+            # it will serve as an origin
+            origin = verts[ min(indices, key = lambda i: verts[i].co[2]) ].co
+            # normal to the roof face <f>
+            normal = (
+                (verts[indices[1]].co - verts[indices[0]].co).cross(
+                    verts[indices[2]].co - verts[indices[1]].co
+                )
+            ).normalized()
+            # Unit vector along the intersection between the plane of the roof face <f>
+            # and horizontal plane. It serves as u-axis for the UV-mapping
+            uVec = zAxis.cross(normal).normalized()
+            for i,roofIndex in enumerate(indices):
+                # u-coordinate is just a projecton of <verts[roofIndex].co - origin>
+                # on the vector <uVec>
+                u = (verts[roofIndex].co - origin).dot(uVec)
+                v = (verts[roofIndex].co - origin - u*uVec).length
+                f.loops[i][uvLayer].uv = (u, v)
+            self.mrr.render(f)
 
     def setMaterialWalls(self, name):
         # mrw stands for "material renderer for walls"

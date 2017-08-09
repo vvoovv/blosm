@@ -74,8 +74,8 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             polygon = self.polygon
             uvLayer = bm.loops.layers.uv[0]
             texCoords = self.texCoords
-            # create BMesh faces for the building roof
             for indices,slotIndex in zip(self.roofIndices, self.roofFaceToSlot):
+                # create a BMesh face for the building roof
                 f = bm.faces.new(verts[i] for i in indices)
                 for i,roofIndex in enumerate(indices):
                     texCoords = self.texCoords[
@@ -85,7 +85,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                     ]
                     slope = self.slopes[slotIndex]
                     #
-                    # set texture coordinates <x> and <y>
+                    # set texture coordinates <u> and <v>
                     #
                     # <texCoords> is a Python tuple of three elements:
                     # <texCoords[0]> indicates if the related roof vertex is located
@@ -96,18 +96,18 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                     # <texCoords[2]> is a coordinate along Y-axis of the profile
                     #     coordinate system
                     if texCoords[0]:
-                        y = 0.\
+                        v = 0.\
                         if (slope and texCoords[1] == slotIndex) or\
                         (not slope and texCoords[1] == slotIndex+1) else\
                         self.partLength[slotIndex]
                     else:
                         # the related roof vertex isn't located on the slot
-                        y = texCoords[1]
+                        v = texCoords[1]
                     # set texture coordinate <x> depending on the value of <slope>
-                    x = self.maxY - texCoords[2]\
+                    u = self.maxY - texCoords[2]\
                         if slope else\
                         texCoords[2] - self.minY
-                    f.loops[i][uvLayer].uv = (x, y)
+                    f.loops[i][uvLayer].uv = (u, v)
                 self.mrr.render(f)
         else:
             super().renderRoof()
