@@ -27,6 +27,8 @@ class RoofMansard(RoofHipped):
     For the other building outlines a flat roof is created.
     """
     
+    insetSize = 2.
+    
     def make(self, osm):
         if self.makeFlat:
             return RoofFlat.make(self, osm)
@@ -38,18 +40,18 @@ class RoofMansard(RoofHipped):
             _indices = polygon.indices
             
             if not self.noWalls:
-                indexOffset = _indexOffset = len(verts)
+                indexOffset = len(verts)
                 polygon.extrude(self.roofMinHeight, wallIndices)
                 # new values for the polygon indices
-                polygon.indices = tuple(_indexOffset + i for i in range(polygon.n))
+                polygon.indices = tuple(indexOffset + i for i in range(polygon.n))
             
             indexOffset = len(verts)
             self.roofHeight /= 2.
-            polygon.inset(2., roofIndices, self.roofHeight)
+            polygon.inset(self.insetSize, roofIndices, self.roofHeight)
             # new values for the polygon indices
             polygon.indices = tuple(indexOffset + i for i in range(polygon.n))
             self.wallIndices = roofIndices
-            self.z1 = self.roofMinHeight+self.roofHeight
+            self.roofMinHeight += self.roofHeight
             self.noWalls = True
             super().make(osm)
             self.wallIndices = wallIndices

@@ -7,6 +7,7 @@ from .roof.pyramidal import RoofPyramidalRealistic
 from .roof.skillion import RoofSkillionRealistic
 from .roof.hipped import RoofHippedRealistic
 from .roof.half_hipped import RoofHalfHippedRealistic
+from .roof.mansard import RoofMansardRealistic
 
 
 class RealisticBuildingRenderer(BuildingRenderer):
@@ -47,4 +48,4 @@ class RealisticBuildingRenderer(BuildingRenderer):
         self.roofs['half-hipped'] = RoofHalfHippedRealistic()
         self.roofs['gambrel'] = RoofProfileRealistic(gambrelRoof)
         self.roofs['saltbox'] = RoofProfileRealistic(saltboxRoof)
-        self.roofs['mansard'] = RoofProfileRealistic(gabledRoof)
+        self.roofs['mansard'] = RoofMansardRealistic(gabledRoof)

@@ -26,19 +26,16 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
         else:
             super().renderWalls()
     
-    def renderRoof(self):
-        if self.mrr:
-            r = self.r
-            bm = r.bm
-            verts = self.verts
-            uvLayer = bm.loops.layers.uv[0]
-            # create BMesh faces for the building roof
-            for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
-                loops = f.loops
-                offset = loops[0].vert.co
-                loops[0][uvLayer].uv = (0., 0.)
-                for i in range(1, len(loops)):
-                    loops[i][uvLayer].uv = (loops[i].vert.co - offset)[:2]
-                self.mrr.render(f)
-        else:
-            super().renderRoof()
+    def renderRoofTextured(self):
+        r = self.r
+        bm = r.bm
+        verts = self.verts
+        uvLayer = bm.loops.layers.uv[0]
+        # create BMesh faces for the building roof
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
+            loops = f.loops
+            offset = loops[0].vert.co
+            loops[0][uvLayer].uv = (0., 0.)
+            for i in range(1, len(loops)):
+                loops[i][uvLayer].uv = (loops[i].vert.co - offset)[:2]
+            self.mrr.render(f)

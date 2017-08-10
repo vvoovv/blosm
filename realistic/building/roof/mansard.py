@@ -1,9 +1,9 @@
 from . import RoofRealistic
-from building.roof.hipped import RoofHipped
+from building.roof.mansard import RoofMansard
 from .flat import RoofFlatRealistic
 
 
-class RoofHippedRealistic(RoofRealistic, RoofHipped):
+class RoofMansardRealistic(RoofRealistic, RoofMansard):
     
     def renderRoofTextured(self):
         if self.makeFlat:
