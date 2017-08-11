@@ -47,15 +47,22 @@ class RoofRealistic:
             f.normal_update()
             # Find the vertex for newly created roof face <f> with the minimun <z>-coordinate;
             # it will serve as an origin
-            origin = verts[ min(indices, key = lambda i: verts[i].co[2]) ].co
+            minIndex = min(indices, key = lambda i: verts[i].co[2])
+            origin = verts[minIndex].co
             # Unit vector along the intersection between the plane of the roof face <f>
             # and horizontal plane. It serves as u-axis for the UV-mapping
             uVec = zAxis.cross(f.normal).normalized()
             for i,roofIndex in enumerate(indices):
-                # u-coordinate is just a projecton of <verts[roofIndex].co - origin>
-                # on the vector <uVec>
-                u = (verts[roofIndex].co - origin).dot(uVec)
-                v = (verts[roofIndex].co - origin - u*uVec).length
+                if roofIndex == minIndex:
+                    # Some optimization, i.e. no need to perform calculations
+                    # as in the case <roofIndex != minIndex>
+                    u = 0.
+                    v = 0.
+                else:
+                    # u-coordinate is just a projecton of <verts[roofIndex].co - origin>
+                    # on the vector <uVec>
+                    u = (verts[roofIndex].co - origin).dot(uVec)
+                    v = (verts[roofIndex].co - origin - u*uVec).length
                 f.loops[i][uvLayer].uv = (u, v)
             self.mrr.render(f)
 
