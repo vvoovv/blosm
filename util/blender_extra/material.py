@@ -55,8 +55,8 @@ def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listO
                 
                 nodes = m.node_tree.nodes
                 setImage(fileName, directory, nodes["Image Texture"])
-                nodes["Mapping"].scale[0] = textureDataEntry[0]
-                nodes["Mapping"].scale[1] = textureDataEntry[1]
+                nodes["Mapping"].scale[0] = 1./textureDataEntry[0]
+                nodes["Mapping"].scale[1] = 1./textureDataEntry[1]
         else:
             print(
                 ("Information about the image texture \"%s\" isn't available " +
