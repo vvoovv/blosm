@@ -80,7 +80,7 @@ class RoofMesh(Roof):
             # create an empty slot for a Blender material
             mesh.materials.append(None)
         # create a Blender object to host <mesh>
-        o = bpy.data.objects.new(self.mesh, mesh)
+        o = bpy.data.objects.new(self.mesh, mesh.copy())
         o.location = r.getVert(self.location)
         o.scale = scale
         bpy.context.scene.objects.link(o)
@@ -89,6 +89,9 @@ class RoofMesh(Roof):
         # link Blender material to the Blender object <o> instead of <o.data>
         slot = o.material_slots[0]
         slot.link = 'OBJECT'
-        slot.material = r.getRoofMaterial(self.element)
+        self.setMaterial(o, slot)
         # add Blender object <o> for joining with Blender object <r.obj>
         Renderer.addForJoin(o, r.obj)
+    
+    def setMaterial(self, obj, slot):
+        slot.material = self.r.getRoofMaterial(self.element)

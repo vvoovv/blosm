@@ -1,5 +1,6 @@
 import math
 from building.roof import Roof
+from building.roof.mesh import RoofMesh
 from manager import Manager
 from util.osm import parseNumber
 from util import zAxis
@@ -114,19 +115,43 @@ class RoofRealistic:
     @property
     def roofColor(self):
         if self._roofColor is None:
-            roofColor = Manager.normalizeColor(self.element.tags.get("roof:colour"))
+            roofColor = Manager.normalizeColor( self.getOsmTagValue("roof:colour") )
             self._roofColor = Manager.getColor(roofColor) if roofColor else 0
         return self._roofColor
 
-    def getOsmMaterial(self, tag):
+    def getOsmTagValue(self, tag):
+        """
+        Returns a value of the given OSM <tag>, taking into account,
+        that the tag can be set either at the building part or at the building outline
+        """
         element = self.element
-        material = element.tags.get(tag)
-        if not material and not element is self.r.outline:
-            material = self.r.outline.tags.get(tag)
-        return material
+        value = element.tags.get(tag)
+        if not value and not element is self.r.outline:
+            value = self.r.outline.tags.get(tag)
+        return value
     
-    def getOsmMaterialWalls(self):
-        return self.getOsmMaterial("building:material")
+    @property
+    def wallsMaterial(self):
+        return self.getOsmTagValue("building:material")
     
-    def getOsmMaterialRoof(self):
-        return self.getOsmMaterial("roof:material")
+    @property
+    def roofMaterial(self):
+        return self.getOsmTagValue("roof:material")
+
+
+class RoofMeshRealistic(RoofRealistic, RoofMesh):
+    
+    def __init__(self, mesh):
+        super().__init__(mesh)
+
+    def setMaterial(self, obj, slot):
+        mrr = self.mrr
+        # set vertex color for all face of the mesh
+        roofColor = self.roofColor
+        if not roofColor:
+            roofColor = mrr.roofColor
+        vertexColorLayer = obj.data.vertex_colors[mrr.vertexColorLayer]
+        for d in vertexColorLayer.data:
+            d.color = roofColor
+        # set vertex color, 
+        slot.material = mrr.getMaterial()

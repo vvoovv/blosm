@@ -30,7 +30,8 @@ from manager.logging import Logger
 from realistic.manager import AreaManager, BaseManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 from realistic.building.renderer import RealisticBuildingRenderer
-from realistic.material.renderer import MaterialRenderer, SeamlessTexture, SeamlessTextureWithColor
+from realistic.material.renderer import\
+    MaterialRenderer, SeamlessTexture, SeamlessTextureWithColor, MaterialWithColor
 
 
 def building(tags, e):
@@ -227,7 +228,7 @@ def bldgPreRender(building):
     tags = element.tags
     
     # material for walls
-    material = building.getOsmMaterialWalls()
+    material = building.wallsMaterial
     
     if material == "glass":
         building.setMaterialWalls("glass")
@@ -237,7 +238,9 @@ def bldgPreRender(building):
         building.setMaterialWalls("apartments")
     
     # material for roof
-    material = building.getOsmMaterialRoof()
+    material = building.roofMaterial
+    if not material:
+        material = "metal"
     
     if material == "concrete":
         if building.roofColor:
@@ -249,6 +252,13 @@ def bldgPreRender(building):
             building.setMaterialRoof("roof_tiles_with_color")
         else:
             building.setMaterialRoof("roof_tiles")
+    elif material == "metal":
+        if tags.get("roof:shape") == "onion":
+            building.setMaterialRoof("metal_without_uv")
+        elif building.roofColor:
+            building.setMaterialRoof("metal_with_color")
+        else:
+            building.setMaterialRoof("metal")
 
 
 def getMaterials():
@@ -259,7 +269,10 @@ def getMaterials():
         concrete = SeamlessTexture,
         concrete_with_color = SeamlessTextureWithColor,
         roof_tiles = SeamlessTexture,
-        roof_tiles_with_color = SeamlessTextureWithColor
+        roof_tiles_with_color = SeamlessTextureWithColor,
+        metal_without_uv = MaterialWithColor,
+        metal = SeamlessTexture,
+        metal_with_color = SeamlessTextureWithColor,
     )
 
 

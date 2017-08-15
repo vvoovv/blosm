@@ -8,6 +8,7 @@ from .roof.skillion import RoofSkillionRealistic
 from .roof.hipped import RoofHippedRealistic
 from .roof.half_hipped import RoofHalfHippedRealistic
 from .roof.mansard import RoofMansardRealistic
+from .roof import RoofMeshRealistic
 
 
 class RealisticBuildingRenderer(BuildingRenderer):
@@ -49,3 +50,5 @@ class RealisticBuildingRenderer(BuildingRenderer):
         self.roofs['gambrel'] = RoofProfileRealistic(gambrelRoof)
         self.roofs['saltbox'] = RoofProfileRealistic(saltboxRoof)
         self.roofs['mansard'] = RoofMansardRealistic(gabledRoof)
+        #self.roofs['dome'] = RoofMeshRealistic("roof_dome")
+        self.roofs['onion'] = RoofMeshRealistic("roof_onion")

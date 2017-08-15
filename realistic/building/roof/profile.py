@@ -6,7 +6,7 @@ from building.roof.profile import RoofProfile
 class RoofProfileRealistic(RoofRealistic, RoofProfile):
     
     def __init__(self, data):
-        super().__init__(data);
+        super().__init__(data)
         self.texCoords = []
         # mapping between the indices
         self.indicesMap = {}

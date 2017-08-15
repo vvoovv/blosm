@@ -4,6 +4,11 @@ from util.blender import appendMaterialsFromFile
 
 class MaterialRenderer:
     
+    vertexColorLayer = "Col"
+    
+    # default roof color used by some material renderers
+    roofColor = (0.29, 0.25, 0.21)
+    
     def __init__(self, renderer, baseMaterialName):
         self.r = renderer
         # base name for Blender materials
@@ -41,6 +46,16 @@ class MaterialRenderer:
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
+    
+    def setupMaterial(self):
+        """
+        Unlike <self.setupMaterials(..)> the method setups a single Blender material
+        with the name <self.materialName>
+        """
+        name = self.materialName
+        if not name in bpy.data.materials:
+            if not appendMaterialsFromFile(self.r.app.bldgMaterialsFilepath, name):
+                print("The material %s doesn't exist!" % name)
     
     def setupMaterials(self, groupName, numMaterials=20):
         if groupName in self.r.materialGroups:
@@ -109,6 +124,34 @@ class MaterialRenderer:
             materialIndices[name] = len(materials)
             materials.append(bpy.data.materials[name])
         face.material_index = materialIndices[name]
+    
+    def setSingleMaterial(self, face):
+        r = self.r
+        materialIndices = r.materialIndices
+        materials = r.obj.data.materials
+        name = self.materialName
+        if not name in materialIndices:
+            materialIndices[name] = len(materials)
+            materials.append(bpy.data.materials[name])
+        face.material_index = materialIndices[name]
+    
+    def getMaterial(self):
+        return bpy.data.materials[self.materialName]
+
+
+class MaterialWithColor(MaterialRenderer):
+    """
+    Material renderer for a general Blender material without UV mapping
+    and with some base color
+    """
+    
+    def init(self):
+        self.setupMaterial()
+    
+    def render(self, face):
+        roofColor = self.b.roofColor
+        self.setColor(face, self.vertexColorLayer, roofColor if roofColor else self.roofColor)
+        self.setSingleMaterial(face)
 
 
 class SeamlessTexture(MaterialRenderer):
@@ -121,8 +164,6 @@ class SeamlessTexture(MaterialRenderer):
 
 
 class SeamlessTextureWithColor(MaterialRenderer):
-        
-    vertexColorLayer = "data_color.1"
     
     def init(self):
         self.ensureVertexColorLayer(self.vertexColorLayer)
