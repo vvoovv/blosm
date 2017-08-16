@@ -137,21 +137,3 @@ class RoofRealistic:
     @property
     def roofMaterial(self):
         return self.getOsmTagValue("roof:material")
-
-
-class RoofMeshRealistic(RoofRealistic, RoofMesh):
-    
-    def __init__(self, mesh):
-        super().__init__(mesh)
-
-    def setMaterial(self, obj, slot):
-        mrr = self.mrr
-        # set vertex color for all face of the mesh
-        roofColor = self.roofColor
-        if not roofColor:
-            roofColor = mrr.roofColor
-        vertexColorLayer = obj.data.vertex_colors[mrr.vertexColorLayer]
-        for d in vertexColorLayer.data:
-            d.color = roofColor
-        # set vertex color, 
-        slot.material = mrr.getMaterial()
