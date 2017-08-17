@@ -487,6 +487,15 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         name = "Script",
         description = "A Python script to generate materials with selected textures"
     )
+    
+    osmMaterial = bpy.props.EnumProperty(
+        name = "OSM material",
+        items = (
+            ("metal", "metal", "metal"),
+            ("roof_tiles", "roof_tiles", "roof_tiles")
+        ),
+        description = "OSM material"
+    )
 
 
 def register():

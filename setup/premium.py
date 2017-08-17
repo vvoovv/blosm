@@ -31,7 +31,8 @@ from realistic.manager import AreaManager, BaseManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 from realistic.building.renderer import RealisticBuildingRenderer
 from realistic.material.renderer import\
-    MaterialRenderer, SeamlessTexture, SeamlessTextureWithColor, MaterialWithColor
+    MaterialRenderer, SeamlessTexture, SeamlessTextureWithColor, MaterialWithColor,\
+    SeamlessTextureScaledWithColor, SeamlessTextureScaled
 
 
 def building(tags, e):
@@ -253,8 +254,14 @@ def bldgPreRender(building):
         else:
             building.setMaterialRoof("roof_tiles")
     elif material == "metal":
-        if tags.get("roof:shape") == "onion":
+        roofShape = tags.get("roof:shape")
+        if roofShape == "onion":
             building.setMaterialRoof("metal_without_uv")
+        elif roofShape == "dome":
+            if building.roofColor:
+                building.setMaterialRoof("metal_with_color_scaled")
+            else:
+                building.setMaterialRoof("metal_scaled")
         elif building.roofColor:
             building.setMaterialRoof("metal_with_color")
         else:
@@ -273,6 +280,8 @@ def getMaterials():
         metal_without_uv = MaterialWithColor,
         metal = SeamlessTexture,
         metal_with_color = SeamlessTextureWithColor,
+        metal_scaled = SeamlessTextureScaled,
+        metal_with_color_scaled = SeamlessTextureScaledWithColor
     )
 
 

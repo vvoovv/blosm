@@ -2,6 +2,14 @@ import webbrowser, time, imp, os
 import bpy
 
 
+materialFamily = (
+    "",
+    "_with_color",
+    "_scaled",
+    "_with_color_scaled"
+)
+
+
 def createFacadeMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate1, materialTemplate2):
     def createMaterials(materialBaseName, materialTemplate):
         materialName = "%s.%s" % (materialBaseName, (i+1))
@@ -38,25 +46,27 @@ def createFacadeMaterialsForSeamlessTextures(files, directory, listOfTextures, m
             )
 
 
-def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listOfTextures, materialTemplate):
+def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listOfTextures, baseMaterialTemplate):
     textureData = readTextures(listOfTextures)
     
-    materialTemplate = bpy.data.materials[materialTemplate]
+    materialTemplates = tuple("%s%s_template" % (baseMaterialTemplate, m) for m in materialFamily)
     
     for i,fileName in enumerate(files):
         fileName = fileName.name
         textureDataEntry = textureData.get(fileName)
         if textureDataEntry:
-            materialName = "%s.%s" % (materialBaseName, (i+1))
-            if not materialName in bpy.data.materials:
-                m = materialTemplate.copy()
-                m.name = materialName
-                m.use_fake_user = True
-                
-                nodes = m.node_tree.nodes
-                setImage(fileName, directory, nodes["Image Texture"])
-                nodes["Mapping"].scale[0] = 1./textureDataEntry[0]
-                nodes["Mapping"].scale[1] = 1./textureDataEntry[1]
+            for m, materialTemplate in zip(materialFamily, materialTemplates):
+                materialName = "%s%s.%s" % (materialBaseName, m, (i+1))
+                materialTemplate = bpy.data.materials[materialTemplate]
+                if not materialName in bpy.data.materials:
+                    m = materialTemplate.copy()
+                    m.name = materialName
+                    m.use_fake_user = True
+                    
+                    nodes = m.node_tree.nodes
+                    setImage(fileName, directory, nodes["Image Texture"])
+                    nodes["Mapping"].scale[0] = 1./textureDataEntry[0]
+                    nodes["Mapping"].scale[1] = 1./textureDataEntry[1]
         else:
             print(
                 ("Information about the image texture \"%s\" isn't available " +
@@ -134,6 +144,32 @@ class OperatorCreateMaterials(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OperatorCreateMaterialsSeamless(bpy.types.Operator):
+    bl_idname = "blosm.create_materials_seamless"
+    bl_label = "Create materials..."
+    bl_description = "Create Blender materials for the selected seamless textures"
+    bl_options = {"REGISTER", "UNDO"}
+    
+    directory = bpy.props.StringProperty(subtype='DIR_PATH')
+    
+    files = bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
+    
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+    
+    def execute(self, context):
+        addon = context.scene.blender_osm
+        createMaterialsForSeamlessTextures(
+            self.files,
+            self.directory,
+            addon.osmMaterial,
+            addon.listOfTextures,
+            "tiles"
+        )
+        return {'FINISHED'}
+
+
 class PanelMaterialCreate(bpy.types.Panel):
     bl_label = "Material Utils"
     bl_space_type = "VIEW_3D"
@@ -148,16 +184,19 @@ class PanelMaterialCreate(bpy.types.Panel):
         layout.prop_search(addon, "listOfTextures", bpy.data, "texts")
         layout.operator("blosm.download_textures")
 
-        layout.prop_search(addon, "materialScript", bpy.data, "texts")
-        layout.operator("blosm.create_materials")
+        #layout.prop_search(addon, "materialScript", bpy.data, "texts")
+        layout.prop(addon, "osmMaterial")
+        layout.operator("blosm.create_materials_seamless")
 
 
 def register():
     bpy.utils.register_class(OperatorDownloadTextures)
     bpy.utils.register_class(OperatorCreateMaterials)
+    bpy.utils.register_class(OperatorCreateMaterialsSeamless)
     bpy.utils.register_class(PanelMaterialCreate)
 
 def unregister():
     bpy.utils.unregister_class(OperatorDownloadTextures)
     bpy.utils.unregister_class(OperatorCreateMaterials)
+    bpy.utils.unregister_class(OperatorCreateMaterialsSeamless)
     bpy.utils.unregister_class(PanelMaterialCreate)

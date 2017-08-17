@@ -1,3 +1,4 @@
+import math
 import bpy
 from util.blender import appendMaterialsFromFile
 
@@ -41,11 +42,23 @@ class MaterialRenderer:
         uvLayer = self.r.bm.loops.layers.uv[layerName]
         for loop in face.loops:
             loop[uvLayer].uv = uv
+
+    def setDataForObject(self, obj, layerName, uv):
+        if not isinstance(uv, tuple):
+            uv = (uv, 0.)
+        uvLayer = obj.data.uv_layers[layerName]
+        for d in uvLayer.data:
+            d.uv = uv
     
     def setColor(self, face, layerName, color):
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
+    
+    def setColorForObject(self, obj, layerName, color):
+        vertexColorLayer = obj.data.vertex_colors[layerName]
+        for d in vertexColorLayer.data:
+            d.color = color
     
     def setupMaterial(self):
         """
@@ -107,6 +120,18 @@ class MaterialRenderer:
         r = self.r
         materialIndices = r.materialIndices
         materials = r.obj.data.materials
+        
+        name = self.getMaterialName(groupName)
+        if not name in materialIndices:
+            materialIndices[name] = len(materials)
+            materials.append(bpy.data.materials[name])
+        face.material_index = materialIndices[name]
+    
+    def getMaterial(self, groupName=None):
+        return bpy.data.materials[ self.getMaterialName(groupName) ]
+    
+    def getMaterialName(self, groupName):
+        r = self.r
         if not self.outline is r.outline:
             self.outline = r.outline
             # increase <self.index> to use the next material
@@ -115,15 +140,11 @@ class MaterialRenderer:
                 # all available materials have been used, so set <self.index> to zero
                 self.index = 0
         # the name of the current material
-        name = (
+        return (
             self.materials[groupName if groupName else self.groupName]\
             if self.multipleGroups else\
             self.materials
         )[self.index]
-        if not name in materialIndices:
-            materialIndices[name] = len(materials)
-            materials.append(bpy.data.materials[name])
-        face.material_index = materialIndices[name]
     
     def setSingleMaterial(self, face):
         r = self.r
@@ -135,7 +156,7 @@ class MaterialRenderer:
             materials.append(bpy.data.materials[name])
         face.material_index = materialIndices[name]
     
-    def getMaterial(self):
+    def getSingleMaterial(self):
         return bpy.data.materials[self.materialName]
 
 
@@ -148,10 +169,9 @@ class MaterialWithColor(MaterialRenderer):
     def init(self):
         self.setupMaterial()
     
-    def render(self, face):
-        roofColor = self.b.roofColor
-        self.setColor(face, self.vertexColorLayer, roofColor if roofColor else self.roofColor)
-        self.setSingleMaterial(face)
+    def renderForObject(self, obj, slot):
+        self.setColorForObject(obj, self.vertexColorLayer, self.b.roofColor)
+        slot.material = self.getSingleMaterial()
 
 
 class SeamlessTexture(MaterialRenderer):
@@ -161,6 +181,9 @@ class SeamlessTexture(MaterialRenderer):
     
     def render(self, face):
         self.setMaterial(face, self.materialName)
+    
+    def renderForObject(self, obj, slot):
+        slot.material = self.getMaterial()
 
 
 class SeamlessTextureWithColor(MaterialRenderer):
@@ -172,3 +195,37 @@ class SeamlessTextureWithColor(MaterialRenderer):
     def render(self, face):
         self.setColor(face, self.vertexColorLayer, self.b.roofColor)
         self.setMaterial(face, self.materialName)
+    
+    def renderForObject(self, obj, slot):
+        self.setColorForObject(obj, self.vertexColorLayer, self.b.roofColor)
+        slot.material = self.getMaterial()
+
+
+class SeamlessTextureScaled(MaterialRenderer):
+    
+    uvLayer = "size"
+    
+    def init(self):
+        self.ensureUvLayer(self.uvLayer)
+        self.setupMaterials(self.materialName)
+    
+    def renderForObject(self, obj, slot):
+        s = obj.scale
+        self.setDataForObject(obj, self.uvLayer, (math.sqrt(s[0]*s[0] + s[1]*s[1]), s[2]))
+        slot.material = self.getMaterial()
+
+
+class SeamlessTextureScaledWithColor(MaterialRenderer):
+    
+    uvLayer = "size"
+    
+    def init(self):
+        self.ensureUvLayer(self.uvLayer)
+        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.setupMaterials(self.materialName)
+    
+    def renderForObject(self, obj, slot):
+        s = obj.scale
+        self.setDataForObject(obj, self.uvLayer, (math.sqrt(s[0]*s[0] + s[1]*s[1]), s[2]))
+        self.setColorForObject(obj, self.vertexColorLayer, self.b.roofColor)
+        slot.material = self.getMaterial()
