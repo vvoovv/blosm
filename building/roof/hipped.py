@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from . import Roof
-from .profile import RoofProfile
+from .profile import RoofProfile, gabledRoof
 from .flat import RoofFlat
 from .half_hipped import MiddleSlot
 
@@ -29,8 +29,8 @@ class RoofHipped(RoofProfile):
     the gabled roof created by the parent class. For the other building outlines a flat roof is created.
     """
     
-    def __init__(self, data):
-        super().__init__(data)
+    def __init__(self):
+        super().__init__(gabledRoof)
         # replace the middle slot defining the roof ridge
         slots = self.slots
         slots = (slots[0], MiddleSlot(slots[1].x), slots[2])

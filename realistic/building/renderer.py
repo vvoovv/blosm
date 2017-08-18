@@ -39,16 +39,21 @@ class RealisticBuildingRenderer(BuildingRenderer):
         return mr
     
     def initRoofs(self):
-        super().initRoofs()
-        self.roofs['flat'] = RoofFlatRealistic()
-        self.roofs['gabled'] = RoofProfileRealistic(gabledRoof)
-        self.roofs['pyramidal'] = RoofPyramidalRealistic()
-        self.roofs['skillion'] = RoofSkillionRealistic()
-        self.roofs['hipped'] = RoofHippedRealistic(gabledRoof)
-        self.roofs['round'] = RoofProfileRealistic(roundRoof)
-        self.roofs['half-hipped'] = RoofHalfHippedRealistic()
-        self.roofs['gambrel'] = RoofProfileRealistic(gambrelRoof)
-        self.roofs['saltbox'] = RoofProfileRealistic(saltboxRoof)
-        self.roofs['mansard'] = RoofMansardRealistic(gabledRoof)
-        self.roofs['dome'] = RoofMeshRealistic("roof_dome")
-        self.roofs['onion'] = RoofMeshRealistic("roof_onion")
+        """
+        The override of the parent class method
+        """
+        self.flatRoofMulti = RoofFlatMulti()
+        self.roofs = {
+            'flat': RoofFlatRealistic(),
+            'gabled': RoofProfileRealistic(gabledRoof),
+            'pyramidal': RoofPyramidalRealistic(),
+            'skillion': RoofSkillionRealistic(),
+            'hipped': RoofHippedRealistic(),
+            'dome': RoofMeshRealistic("roof_dome"),
+            'onion': RoofMeshRealistic("roof_onion"),
+            'round': RoofProfileRealistic(roundRoof),
+            'half-hipped': RoofHalfHippedRealistic(),
+            'gambrel': RoofProfileRealistic(gambrelRoof),
+            'saltbox': RoofProfileRealistic(saltboxRoof),
+            'mansard': RoofMansardRealistic()
+        }

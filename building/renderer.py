@@ -91,14 +91,14 @@ class BuildingRenderer(Renderer3d):
             'gabled': RoofProfile(gabledRoof),
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
-            'hipped': RoofHipped(gabledRoof),
+            'hipped': RoofHipped(),
             'dome': RoofMesh("roof_dome"),
             'onion': RoofMesh("roof_onion"),
             'round': RoofProfile(roundRoof),
             'half-hipped': RoofHalfHipped(),
             'gambrel': RoofProfile(gambrelRoof),
             'saltbox': RoofProfile(saltboxRoof),
-            'mansard': RoofMansard(gabledRoof)
+            'mansard': RoofMansard()
         }
     
     def render(self, building, osm):
