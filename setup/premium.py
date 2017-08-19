@@ -259,7 +259,7 @@ def bldgPreRender(building):
             building.setMaterialRoof("metal_without_uv")
         elif roofShape == "dome":
             if building.roofColor:
-                building.setMaterialRoof("metal_with_color_scaled")
+                building.setMaterialRoof("metal_scaled_with_color")
             else:
                 building.setMaterialRoof("metal_scaled")
         elif building.roofColor:
@@ -281,7 +281,7 @@ def getMaterials():
         metal = SeamlessTexture,
         metal_with_color = SeamlessTextureWithColor,
         metal_scaled = SeamlessTextureScaled,
-        metal_with_color_scaled = SeamlessTextureScaledWithColor
+        metal_scaled_with_color = SeamlessTextureScaledWithColor
     )
 
 

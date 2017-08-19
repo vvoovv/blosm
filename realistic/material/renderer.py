@@ -108,7 +108,7 @@ class MaterialRenderer:
                 _materials[groupName] = materials
             else:
                 # The name of the first group of Blender materials;
-                # <self.groupName> will be used in the code if another group
+                # <self.groupName> will be used in the code if another group is added
                 self.groupName = groupName
                 self.materials = materials
         else:

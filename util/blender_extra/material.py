@@ -6,7 +6,7 @@ materialFamily = (
     "",
     "_with_color",
     "_scaled",
-    "_with_color_scaled"
+    "_scaled_with_color"
 )
 
 
@@ -170,6 +170,23 @@ class OperatorCreateMaterialsSeamless(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class OperatorDeleteMaterials(bpy.types.Operator):
+    bl_idname = "blosm.delete_materials"
+    bl_label = "Delete materials..."
+    bl_description = "Delete a family of Blender materials for the chosen OSM material"
+    bl_options = {"REGISTER", "UNDO"}
+        
+    def execute(self, context):
+        addon = context.scene.blender_osm
+        for i in range(100):
+            for m in materialFamily:
+                materialName = "%s%s.%s" % (addon.osmMaterial, m, (i+1))
+                material = bpy.data.materials.get(materialName)
+                if material:
+                    bpy.data.materials.remove(material, True)
+        return {'FINISHED'}
+
+
 class PanelMaterialCreate(bpy.types.Panel):
     bl_label = "Material Utils"
     bl_space_type = "VIEW_3D"
@@ -187,16 +204,19 @@ class PanelMaterialCreate(bpy.types.Panel):
         #layout.prop_search(addon, "materialScript", bpy.data, "texts")
         layout.prop(addon, "osmMaterial")
         layout.operator("blosm.create_materials_seamless")
+        layout.operator("blosm.delete_materials")
 
 
 def register():
     bpy.utils.register_class(OperatorDownloadTextures)
     bpy.utils.register_class(OperatorCreateMaterials)
     bpy.utils.register_class(OperatorCreateMaterialsSeamless)
+    bpy.utils.register_class(OperatorDeleteMaterials)
     bpy.utils.register_class(PanelMaterialCreate)
 
 def unregister():
     bpy.utils.unregister_class(OperatorDownloadTextures)
     bpy.utils.unregister_class(OperatorCreateMaterials)
     bpy.utils.unregister_class(OperatorCreateMaterialsSeamless)
+    bpy.utils.unregister_class(OperatorDeleteMaterials)
     bpy.utils.unregister_class(PanelMaterialCreate)
