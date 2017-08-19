@@ -75,7 +75,9 @@ class RoofRealistic:
         mrw.b = self
         self.mrw = mrw
     
-    def setMaterialRoof(self, name):
+    def setMaterialRoof(self, name, useColor=True):
+        if useColor and self.roofColor:
+            name += "_with_color"
         # mrr stands for "material renderer for roof"
         mrr = self.r.getMaterialRenderer(name)
         mrr.init()

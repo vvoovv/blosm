@@ -244,26 +244,15 @@ def bldgPreRender(building):
         material = "metal"
     
     if material == "concrete":
-        if building.roofColor:
-            building.setMaterialRoof("concrete_with_color")
-        else:
-            building.setMaterialRoof("concrete")
+        building.setMaterialRoof("concrete")
     elif material == "roof_tiles":
-        if building.roofColor:
-            building.setMaterialRoof("roof_tiles_with_color")
-        else:
-            building.setMaterialRoof("roof_tiles")
+        building.setMaterialRoof("roof_tiles")
     elif material == "metal":
         roofShape = tags.get("roof:shape")
         if roofShape == "onion":
-            building.setMaterialRoof("metal_without_uv")
+            building.setMaterialRoof("metal_without_uv", False)
         elif roofShape == "dome":
-            if building.roofColor:
-                building.setMaterialRoof("metal_scaled_with_color")
-            else:
-                building.setMaterialRoof("metal_scaled")
-        elif building.roofColor:
-            building.setMaterialRoof("metal_with_color")
+            building.setMaterialRoof("metal_scaled")
         else:
             building.setMaterialRoof("metal")
 
