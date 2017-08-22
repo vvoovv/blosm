@@ -25,6 +25,19 @@ from defs import Keys
 from util.transverse_mercator import TransverseMercator
 
 
+def getDataTypes():
+        items = (
+            ("osm", "OpenStreetMap", "OpenStreetMap"),
+            ("terrain", "terrain", "Terrain")
+        )
+        return (
+            items[0],
+            items[1],
+            ("overlay", "base overlay", "Base overlay for the terrain, e.g. satellite imagery or maps")
+        ) if app.has(Keys.mode3dRealistic) else items
+    
+
+
 class OperatorSelectExtent(bpy.types.Operator):
     bl_idname = "blender_osm.select_extent"
     bl_label = "select"
@@ -154,7 +167,7 @@ class PanelRealisticTools(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         addon = context.scene.blender_osm
-        return app.has(Keys.mode3d) and addon.mode == "3D" and addon.mode3d == "realistic"
+        return app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic"
     
     def draw(self, context):
         layout = self.layout
@@ -268,11 +281,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     
     dataType = bpy.props.EnumProperty(
         name = "Data",
-        items = (
-            ("osm", "OpenStreetMap", "OpenStreetMap"),
-            ("terrain", "terrain", "Terrain")
-            #("overlay", "base overlay", "Base overlay for the terrain, e.g. satellite imagery or maps")
-        ),
+        items = getDataTypes(),
         description = "Data type for import",
         default = "osm"
     )
