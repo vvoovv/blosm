@@ -50,11 +50,13 @@ class App:
     
     osmUrl2 = "http://overpass-api.de/api/interpreter"
     
-    terrainUrl = "https://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
+    terrainUrl = "http://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
     
     osmDir = "osm"
     
     terrainSubDir = "terrain"
+    
+    overlaySubDir = "overlay"
     
     osmFileName = "map%s.osm"
     
@@ -180,7 +182,7 @@ class App:
         if self.terrain:
             terrain.init(createBvhTree)
     
-    def initTerrain(self, op, context, basePath, addonName):
+    def initTerrain(self, context, basePath, addonName):
         self.setDataDir(context, basePath, addonName)
         # create a sub-directory under <self.dataDir> for OSM files
         terrainDir = os.path.join(self.dataDir, self.terrainSubDir)
@@ -203,6 +205,14 @@ class App:
                 self.terrainUrl % (missingFile[:3], missingFile),
                 missingPath
             )
+    
+    def initOverlay(self, context, basePath, addonName):
+        self.setDataDir(context, basePath, addonName)
+        # create a sub-directory under <self.dataDir> for overlay tiles
+        overlayDir = os.path.join(self.dataDir, self.overlaySubDir)
+        self.overlayDir = overlayDir
+        if not os.path.exists(overlayDir):
+            os.makedirs(overlayDir)
     
     def setAttributes(self, context):
         """
@@ -395,6 +405,21 @@ class App:
         # force smooth shading
         makeActive(obj, context)
         bpy.ops.object.shade_smooth()
+    
+    def importOverlay(self, context):
+        from overlay import Overlay, overlayTypeData
+        addon = context.scene.blender_osm
+        data = overlayTypeData[addon.overlayType]
+        o = data[0](
+            addon.overlayUrl if addon.overlayType == "custom" else data[1]
+        )
+            
+        print(o.getTileUrl(3, 20, 30))
+        print(o.getTileUrl(3, 21, 31))
+        print(o.getTileUrl(3, 22, 32))
+        print(o.getTileUrl(3, 23, 33))
+        print(o.getTileUrl(3, 24, 34))
+        print(o.getTileUrl(3, 25, 35))
 
     def buildTerrain(self, verts, indices, heightOffset):
         """

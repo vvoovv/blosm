@@ -35,7 +35,7 @@ import os, sys
 
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
-        "app", "building", "gui", "manager", "material", "parse", "realistic",
+        "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
         "renderer", "terrain", "util", "defs", "setup"
     ]:
     sys.modules.pop(m, 0)
@@ -64,15 +64,38 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
     dataDir = bpy.props.StringProperty(
-        name = "",
+        name = '',
         subtype = 'DIR_PATH',
         description = "Directory to store downloaded OpenStreetMap and terrain files"
+    )
+    
+    mapboxAccessToken = bpy.props.StringProperty(
+        name = "Mapbox access token",
+        description = "A string token to access overlays from Mapbox company"
     )
     
     def draw(self, context):
         layout = self.layout
         layout.label("Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
+        if app.app.has(Keys.mode3dRealistic):
+            split = layout.split(percentage=0.9)
+            split.prop(self, "mapboxAccessToken")
+            split.operator("blosm.get_mapbox_token", text="Get it!")
+
+
+class OperatorGetMapboxToken(bpy.types.Operator):
+    bl_idname = "blosm.get_mapbox_token"
+    bl_label = ""
+    bl_description = "Get Mapbox access token"
+    bl_options = {'INTERNAL'}
+    
+    url = "https://www.mapbox.com/signin/?route-to=https://www.mapbox.com/studio/account/tokens/"
+    
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
 
 
 class ImportData(bpy.types.Operator):
@@ -91,6 +114,8 @@ class ImportData(bpy.types.Operator):
             return self.importOsm(context, basePath)
         elif dataType == "terrain":
             return self.importTerrain(context, basePath)
+        elif dataType == "overlay":
+            return self.importOverlay(context, basePath)
         
         return {'FINISHED'}
     
@@ -148,7 +173,7 @@ class ImportData(bpy.types.Operator):
     def importTerrain(self, context, basePath):
         a = app.app
         try:
-            a.initTerrain(self, context, basePath, BlenderOsmPreferences.bl_idname)
+            a.initTerrain(context, basePath, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
@@ -171,6 +196,19 @@ class ImportData(bpy.types.Operator):
             scene["lat"] = lat
             scene["lon"] = lon
         return {'FINISHED'}
+    
+    def importOverlay(self, context, basePath):
+        a = app.app
+        try:
+            a.initOverlay(context, basePath, BlenderOsmPreferences.bl_idname)
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'FINISHED'}
+        
+        a.importOverlay(context)
+        
+        return {'FINISHED'}
+        
     
     def setObjectMode(self, context):
         # setting active object if there is no active object
@@ -195,4 +233,5 @@ def unregister():
     app.unregister()
     gui.unregister()
     if app.app.has(Keys.mode3d):
+        import realistic
         realistic.unregister()

@@ -4,7 +4,7 @@ from app import app
 from util.blender import getBmesh, setBmesh
 from .renderer import AreaRenderer, ForestRenderer, WaterRenderer
 
-import util.blender_extra.material as material
+from util.blender_extra import material
 
 
 class OperatorMakeRealistic(bpy.types.Operator):

@@ -253,7 +253,13 @@ class PanelSettings(bpy.types.Panel):
         self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")
     
     def drawOverlay(self, context):
-        self.layout.label("overlay is under development")
+        layout = self.layout
+        addon = context.scene.blender_osm
+        layout.prop(addon, "overlayType")
+        if addon.overlayType == "custom":
+            box = layout.box()
+            box.label("Paste overlay URL here:")
+            box.prop(addon, "overlayUrl")
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
@@ -456,6 +462,28 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         items=(("quad","quad","quad"),("triangle","triangle","triangle")),
         description="Primitive type used for the terrain mesh: quad or triangle",
         default="quad"
+    )
+    
+    #
+    # Overlay settings
+    #
+    overlayType = bpy.props.EnumProperty(
+        name = "Overlay",
+        items = (
+            ("bing-aerial", "Bing Aerial", "Bing Aerial"),
+            ("mapbox-satellite", "Mapbox Satellite", "Mapbox Satellite"),
+            ("osm-mapnik", "OSM Mapnik", "OpenStreetMap Mapnik"),
+            ("mapbox-streets", "Mapbox Streets", "Mapbox Streets"),
+            ("custom", "Custom URL", "A URL template for the custom overlay")
+        ),
+        description = "Overlay type"
+    )
+    
+    overlayUrl = bpy.props.StringProperty(
+        name = '',
+        description = "URL for the custom overlay. Use {z}/{x}/{y} in the URL. "+
+            "See http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for details about "+
+            "the URL format."
     )
     
     ####################################
