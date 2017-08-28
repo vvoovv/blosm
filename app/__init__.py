@@ -207,6 +207,17 @@ class App:
             )
     
     def initOverlay(self, context, basePath, addonName):
+        from overlay import Overlay, overlayTypeData
+        addon = context.scene.blender_osm
+        data = overlayTypeData[addon.overlayType]
+        
+        # <addonName> can be used by some classes derived from <Overlay>
+        # to access addon settings
+        self.overlay = data[0](
+            addon.overlayUrl if addon.overlayType == "custom" else data[1],
+            addonName
+        )
+        
         self.setDataDir(context, basePath, addonName)
         # create a sub-directory under <self.dataDir> for overlay tiles
         overlayDir = os.path.join(self.dataDir, self.overlaySubDir)
@@ -407,12 +418,8 @@ class App:
         bpy.ops.object.shade_smooth()
     
     def importOverlay(self, context):
-        from overlay import Overlay, overlayTypeData
-        addon = context.scene.blender_osm
-        data = overlayTypeData[addon.overlayType]
-        o = data[0](
-            addon.overlayUrl if addon.overlayType == "custom" else data[1]
-        )
+        
+        o = self.overlay
             
         print(o.getTileUrl(3, 20, 30))
         print(o.getTileUrl(3, 21, 31))

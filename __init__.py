@@ -208,7 +208,6 @@ class ImportData(bpy.types.Operator):
         a.importOverlay(context)
         
         return {'FINISHED'}
-        
     
     def setObjectMode(self, context):
         # setting active object if there is no active object
