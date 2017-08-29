@@ -8,8 +8,16 @@ class Mapbox(Overlay):
     
     baseUrl = "http://{a,b,c,d}.tiles.mapbox.com/v4/%s/{z}/{x}/{y}.png?access_token=%s"
     
-    def __init__(self, mapId, addonName):
-        super().__init__(self.baseUrl % (mapId, Mapbox.getAccessToken(addonName)), addonName)
+    def __init__(self, mapId, maxZoom, addonName):
+        super().__init__(
+            self.baseUrl % (mapId, Mapbox.getAccessToken(addonName)),
+            maxZoom,
+            addonName
+        )
+        self.mapId = mapId
+    
+    def getOverlaySubDir(self):
+        return self.mapId
     
     @staticmethod
     def getAccessToken(addonName):

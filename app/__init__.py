@@ -215,15 +215,19 @@ class App:
         # to access addon settings
         self.overlay = data[0](
             addon.overlayUrl if addon.overlayType == "custom" else data[1],
+            data[2],
             addonName
         )
         
         self.setDataDir(context, basePath, addonName)
         # create a sub-directory under <self.dataDir> for overlay tiles
-        overlayDir = os.path.join(self.dataDir, self.overlaySubDir)
+        j = os.path.join
+        overlayDir = j( j(self.dataDir, self.overlaySubDir), self.overlay.getOverlaySubDir() )
         self.overlayDir = overlayDir
         if not os.path.exists(overlayDir):
             os.makedirs(overlayDir)
+        
+        self.setAttributes(context)
     
     def setAttributes(self, context):
         """
@@ -418,15 +422,7 @@ class App:
         bpy.ops.object.shade_smooth()
     
     def importOverlay(self, context):
-        
-        o = self.overlay
-            
-        print(o.getTileUrl(3, 20, 30))
-        print(o.getTileUrl(3, 21, 31))
-        print(o.getTileUrl(3, 22, 32))
-        print(o.getTileUrl(3, 23, 33))
-        print(o.getTileUrl(3, 24, 34))
-        print(o.getTileUrl(3, 25, 35))
+        self.overlay.doImport(self.minLon, self.minLat, self.maxLon, self.maxLat)
 
     def buildTerrain(self, verts, indices, heightOffset):
         """
