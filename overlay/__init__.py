@@ -1,4 +1,5 @@
-import math
+import math, os
+from urllib import request
 import bpy
 
 
@@ -29,13 +30,13 @@ class Overlay:
     
     tileCoordsTemplate = "{z}/{x}/{y}"
     
-    subdomains = None
-    numSubdomains = 0
-    
-    tileCounter = 0
-    
     def __init__(self, url, maxZoom, addonName):
         self.maxZoom = maxZoom
+        self.subdomains = None
+        self.numSubdomains = 0
+        self.tileCounter = 0
+        self.imageExtension = "png"
+        
         # where to stop searching for sundomains {suddomain1,subdomain2}
         subdomainsEnd = len(url)
         # check if have {z}/{x}/{y} in <url> (i.e. tile coords)
@@ -96,11 +97,33 @@ class Overlay:
         
         # convert <l>, <b>, <r>, <t> to tile coordinates
         l, b, r, t = tuple(toTileCoords(coord, zoom) for coord in (l, b, r, t))
-        bpy.data.images.new(
-            "MyImage",
-            width = (r - l + 1) * self.tileWidth,
-            height = (b - t + 1) * self.tileHeight
-        )
+        # get individual tiles
+        for x in range(l, r+1):
+            for y in range(t, b+1):
+                tile = self.getTileImage(zoom, x, y)
+        #bpy.data.images.new(
+        #    "MyImage",
+        #    width = (r - l + 1) * self.tileWidth,
+        #    height = (b - t + 1) * self.tileHeight
+        #)
+    
+    def getTileImage(self, zoom, x, y):
+        # check if we the tile in the file cache
+        j = os.path.join
+        tileDir = j(self.overlayDir, str(zoom), str(x))
+        tilePath = j(tileDir, "%s.%s" % (y, self.imageExtension))
+        if os.path.exists(tilePath):
+            return None
+        else:
+            tile = request.urlopen(self.getTileUrl(zoom, x, y)).read()
+            # ensure that all directories in <tileDir> exist
+            if not os.path.exists(tileDir):
+                os.makedirs(tileDir)
+            # save the tile to file cache
+            with open(tilePath, 'wb') as f:
+                f.write(tile)
+        return tile
+        
     
     def getOverlaySubDir(self):
         urlStart = self.urlStart

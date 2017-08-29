@@ -15,6 +15,8 @@ class Mapbox(Overlay):
             addonName
         )
         self.mapId = mapId
+        if mapId == "mapbox.satellite":
+            self.imageExtension = "jpg"
     
     def getOverlaySubDir(self):
         return self.mapId

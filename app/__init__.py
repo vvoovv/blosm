@@ -213,19 +213,20 @@ class App:
         
         # <addonName> can be used by some classes derived from <Overlay>
         # to access addon settings
-        self.overlay = data[0](
+        overlay = data[0](
             addon.overlayUrl if addon.overlayType == "custom" else data[1],
             data[2],
             addonName
         )
+        self.overlay = overlay
         
         self.setDataDir(context, basePath, addonName)
         # create a sub-directory under <self.dataDir> for overlay tiles
         j = os.path.join
-        overlayDir = j( j(self.dataDir, self.overlaySubDir), self.overlay.getOverlaySubDir() )
-        self.overlayDir = overlayDir
+        overlayDir = j( j(self.dataDir, self.overlaySubDir), overlay.getOverlaySubDir() )
         if not os.path.exists(overlayDir):
             os.makedirs(overlayDir)
+        overlay.overlayDir = overlayDir
         
         self.setAttributes(context)
     
