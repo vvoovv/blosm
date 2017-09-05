@@ -3,6 +3,9 @@ import numpy
 from urllib import request
 import bpy
 
+from util.blender import getBmesh, setBmesh, appendMaterialsFromFile
+from app import app
+
 
 earthRadius = 6378137.
 halfEquator = math.pi * earthRadius
@@ -32,6 +35,15 @@ class Overlay:
     tileCoordsTemplate = "{z}/{x}/{y}"
     
     blenderImageName = "overlay"
+    
+    # the name for the base UV map
+    uvName = "UVMap"
+    
+    # relative path to default materials
+    materialPath = "realistic/assets/materials.blend"
+    
+    # name of the default material from <Overlay.materialPath>
+    defaultMaterial = "overlay"
     
     def __init__(self, url, maxZoom, addonName):
         self.maxZoom = maxZoom
@@ -69,10 +81,10 @@ class Overlay:
         self.urlMid = urlMid
         self.urlEnd = urlEnd
     
-    def doImport(self, l, b, r, t):
+    def doImport(self, left, bottom, right, top):
         def toTileCoord(coord, zoom, tileSize=0):
             """
-            An auxiliary function used below in the code
+            An auxiliary method used in the code
             
             Returns:
             A single integer tile coordinate if <tileSize>==0.
@@ -81,16 +93,20 @@ class Overlay:
                 1) number of pixels converted from the fractional part of the tile coordinate,
                     using <tileSize>
             """
-            coord = coord * math.pow(2, zoom) / equator
+            coord = coord * math.pow(2., zoom) / equator
             floor = math.floor(coord)
-            return ( int(floor), int(math.ceil((coord - floor) * tileSize)) )\
-                if tileSize else\
-                int(floor)
+            return int(floor)
+            #return ( int(floor), int(math.ceil((coord - floor) * tileSize)) )\
+            #    if tileSize else\
+            #    int(floor)
+        
+        def fromTileCoord(coord, zoom):
+            return coord * equator / math.pow(2., zoom)
         
         # Convert the coordinates from degrees to spherical Mercator coordinate system
         # and move zero to the top left corner (that's why the 3d argument in the function below)
-        b, l = Overlay.toSphericalMercator(b, l, True)
-        t, r = Overlay.toSphericalMercator(t, r, True)
+        b, l = Overlay.toSphericalMercator(bottom, left, True)
+        t, r = Overlay.toSphericalMercator(top, right, True)
         # find the maximum zoom
         zoom = int(math.floor(
             0.5 * math.log2(
@@ -130,6 +146,34 @@ class Overlay:
             height = (b - t + 1) * self.tileHeight
         )
         image.pixels = imageData
+        
+        if app.terrain:
+            self.setUvForTerrain(
+                app.terrain.terrain,
+                fromTileCoord(l, zoom) - halfEquator,
+                halfEquator - fromTileCoord(b+1, zoom),
+                fromTileCoord(r+1, zoom) - halfEquator,
+                halfEquator - fromTileCoord(t, zoom)
+            )
+        # load and append the default material
+        if app.setOverlayMaterial:
+            materials = app.terrain.terrain.data.materials
+            material = appendMaterialsFromFile(
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    os.pardir,
+                    self.materialPath
+                ),
+                self.defaultMaterial
+            )[0]
+            material.node_tree.nodes["Image Texture"].image = image
+            if materials:
+                # ensure that <material> is placed at the very first material slot
+                materials.append(None)
+                materials[-1] = materials[0]
+                materials[0] = material
+            else:
+                materials.append(material)
     
     def getTileData(self, zoom, x, y):
         # check if we the tile in the file cache
@@ -186,6 +230,29 @@ class Overlay:
                 self.urlEnd
             )
         return url
+    
+    def setUvForTerrain(self, terrain, l, b, r, t):
+        bm = getBmesh(terrain)
+        uv = bm.loops.layers.uv
+        
+        uvName = self.uvName
+        # create a data UV layer
+        if not uvName in uv:
+            uv.new(uvName)
+        
+        width = r - l
+        height = t - b
+        uvLayer = bm.loops.layers.uv[uvName]
+        worldMatrix = terrain.matrix_world
+        projection = app.projection
+        for vert in bm.verts:
+            for loop in vert.link_loops:
+                x, y = (worldMatrix * vert.co)[:2]
+                lat, lon = projection.toGeographic(x, y)
+                lat, lon = Overlay.toSphericalMercator(lat, lon, False)
+                loop[uvLayer].uv = (lon - l)/width, (lat - b)/height
+        
+        setBmesh(terrain, bm)
     
     @staticmethod
     def toSphericalMercator(lat, lon, moveToTopLeft=False):

@@ -160,8 +160,7 @@ class ImportData(bpy.types.Operator):
         # setting 'lon' and 'lat' attributes for <scene> if necessary
         if not "projection" in kwargs:
             # <kwargs["lat"]> and <kwargs["lon"]> have been set in osm.parse(..)
-            scene["lat"] = osm.lat
-            scene["lon"] = osm.lon
+            self.setCenterLatLon(context, osm.lat, osm.lon)
         
         if not a.has(Keys.mode3d):
             a.show()
@@ -170,14 +169,8 @@ class ImportData(bpy.types.Operator):
         
         return {'FINISHED'}
     
-    def importTerrain(self, context, basePath):
+    def getCenterLatLon(self, context):
         a = app.app
-        try:
-            a.initTerrain(context, basePath, BlenderOsmPreferences.bl_idname)
-        except Exception as e:
-            self.report({'ERROR'}, str(e))
-            return {'FINISHED'}
-        
         scene = context.scene
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
             lat = scene["lat"]
@@ -187,14 +180,28 @@ class ImportData(bpy.types.Operator):
             lat = (a.minLat+a.maxLat)/2.
             lon = (a.minLon+a.maxLon)/2.
             setLatLon = True
+        return lat, lon, setLatLon
+    
+    def setCenterLatLon(self, context, lat, lon):
+        context.scene["lat"] = lat
+        context.scene["lon"] = lon
+    
+    def importTerrain(self, context, basePath):
+        a = app.app
+        try:
+            a.initTerrain(context, basePath, BlenderOsmPreferences.bl_idname)
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'FINISHED'}
+        
+        lat, lon, setLatLon = self.getCenterLatLon(context)
         
         a.projection = TransverseMercator(lat=lat, lon=lon)
         a.importTerrain(context)
         
         # set custom parameter "lat" and "lon" to the active scene
         if setLatLon:
-            scene["lat"] = lat
-            scene["lon"] = lon
+            self.setCenterLatLon(context, lat)
         return {'FINISHED'}
     
     def importOverlay(self, context, basePath):
@@ -205,8 +212,14 @@ class ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
         
+        lat, lon, setLatLon = self.getCenterLatLon(context)
+        
+        a.projection = TransverseMercator(lat=lat, lon=lon)
         a.importOverlay(context)
         
+        # set custom parameter "lat" and "lon" to the active scene
+        if setLatLon:
+            self.setCenterLatLon(context, lat)
         return {'FINISHED'}
     
     def setObjectMode(self, context):

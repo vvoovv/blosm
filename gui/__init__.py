@@ -33,7 +33,7 @@ def getDataTypes():
         return (
             items[0],
             items[1],
-            ("overlay", "base overlay", "Base overlay for the terrain, e.g. satellite imagery or maps")
+            ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map")
         ) if app.has(Keys.mode3dRealistic) else items
     
 
@@ -260,6 +260,7 @@ class PanelSettings(bpy.types.Panel):
             box = layout.box()
             box.label("Paste overlay URL here:")
             box.prop(addon, "overlayUrl")
+        layout.prop(addon, "setOverlayMaterial")
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
@@ -474,16 +475,23 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
             ("mapbox-satellite", "Mapbox Satellite", "Mapbox Satellite"),
             ("osm-mapnik", "OSM Mapnik", "OpenStreetMap Mapnik"),
             ("mapbox-streets", "Mapbox Streets", "Mapbox Streets"),
-            ("custom", "Custom URL", "A URL template for the custom overlay")
+            ("custom", "Custom URL", "A URL template for the custom image overlay")
         ),
-        description = "Overlay type"
+        description = "Image overlay type"
     )
     
     overlayUrl = bpy.props.StringProperty(
         name = '',
-        description = "URL for the custom overlay. Use {z}/{x}/{y} in the URL. "+
+        description = "URL for the custom image overlay. Use {z}/{x}/{y} in the URL. "+
             "See http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for details about "+
             "the URL format."
+    )
+    
+    setOverlayMaterial = bpy.props.BoolProperty(
+        name = "Set default material",
+        description = "Set the default Cycles material and " +
+            "use the image overlay in the \"Image Texture\" node.",
+        default = True
     )
     
     ####################################

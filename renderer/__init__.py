@@ -287,11 +287,6 @@ class Renderer:
         _slice(0, (1., 0., 0.), terrain.minX, terrain.maxX)
         _slice(1, (0., 1., 0.), terrain.minY, terrain.maxY)
         setBmesh(obj, bm)
-        
-        #x = terrain.minX
-        #while x < terrain.maxX:
-        #    bmesh.ops.bisect_plane(bm, geom=bm.verts[:]+bm.edges[:]+bm.faces[:], plane_co=(x,0.,0.), plane_no=plane_no)
-        #    x += step
 
 
 class Renderer2d(Renderer):

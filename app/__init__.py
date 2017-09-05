@@ -229,6 +229,8 @@ class App:
         overlay.overlayDir = overlayDir
         
         self.setAttributes(context)
+        
+        self.setTerrain(context, False)
     
     def setAttributes(self, context):
         """
