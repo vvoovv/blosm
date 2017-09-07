@@ -147,17 +147,17 @@ class RoofFlatMulti(RoofFlat):
             
             wallIndices.extend(
                 (
-                    polygon.indices[i-1],
                     indexOffset2 - 1 + (i if i else n),
                     indexOffset2 + i,
-                    polygon.indices[i]
+                    polygon.indices[i],
+                    polygon.indices[i-1]
                 )\
                 if keepDirection else\
                 (
-                    polygon.indices[i-1],
-                    polygon.indices[i],
                     indexOffset2 + i,
-                    indexOffset2 - 1 + (i if i else n)
+                    indexOffset2 - 1 + (i if i else n),
+                    polygon.indices[i-1],
+                    polygon.indices[i]
                 )\
                 for i in range(n)
             )
@@ -165,7 +165,17 @@ class RoofFlatMulti(RoofFlat):
             indexOffset1 += n
             indexOffset2 += n
         
-        materialIndex = r.getWallMaterialIndex(element)
+        self.renderFaces()
+        
+    def renderFaces(self):
+        """
+        The method can be overriden by a child class
+        """
+        verts = self.verts
+        bm = self.r.bm
+        wallIndices = self.wallIndices
+        
+        materialIndex = self.r.getWallMaterialIndex(self.element)
         # actual code to create BMesh faces for the building walls out of <verts> and <wallIndices>
         for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
             f.material_index = materialIndex

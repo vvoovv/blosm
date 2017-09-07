@@ -1,7 +1,7 @@
 from building.renderer import *
 from realistic.building.layer import BuildingLayer
 
-from .roof.flat import RoofFlatRealistic
+from .roof.flat import RoofFlatRealistic, RoofFlatMultiRealistic
 from .roof.profile import RoofProfileRealistic
 from .roof.pyramidal import RoofPyramidalRealistic
 from .roof.skillion import RoofSkillionRealistic
@@ -42,7 +42,7 @@ class RealisticBuildingRenderer(BuildingRenderer):
         """
         The override of the parent class method
         """
-        self.flatRoofMulti = RoofFlatMulti()
+        self.flatRoofMulti = RoofFlatMultiRealistic()
         self.roofs = {
             'flat': RoofFlatRealistic(),
             'gabled': RoofProfileRealistic(gabledRoof),
