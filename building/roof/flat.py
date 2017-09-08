@@ -165,9 +165,9 @@ class RoofFlatMulti(RoofFlat):
             indexOffset1 += n
             indexOffset2 += n
         
-        self.renderFaces()
+        self.renderWalls()
         
-    def renderFaces(self):
+    def renderWalls(self):
         """
         The method can be overriden by a child class
         """
