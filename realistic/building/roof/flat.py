@@ -21,7 +21,7 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
                 f.loops[3][uvLayer].uv = (0., h)
                 for i in range(4):
                     f.loops[i][uvLayerSize].uv = size
-                self.mrw.render(f)
+                self.mrw.renderWalls(f)
         else:
             super().renderWalls()
     
@@ -37,7 +37,7 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
             loops[0][uvLayer].uv = (0., 0.)
             for i in range(1, len(loops)):
                 loops[i][uvLayer].uv = (loops[i].vert.co - offset)[:2]
-            self.mrr.render(f)
+            self.mrr.renderRoof(f)
 
 
 class RoofFlatMultiRealistic(RoofRealistic, RoofFlatMulti):

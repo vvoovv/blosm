@@ -179,7 +179,10 @@ class SeamlessTexture(MaterialRenderer):
     def init(self):
         self.setupMaterials(self.materialName)
     
-    def render(self, face):
+    def renderWalls(self, face):
+        self.setMaterial(face, self.materialName)
+    
+    def renderRoof(self, face):
         self.setMaterial(face, self.materialName)
     
     def renderForObject(self, obj, slot):
@@ -191,9 +194,15 @@ class SeamlessTextureWithColor(MaterialRenderer):
     def init(self):
         self.ensureVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
+        
+    def renderWalls(self, face):
+        self.render(face, self.b.wallsColor)
     
-    def render(self, face):
-        self.setColor(face, self.vertexColorLayer, self.b.roofColor)
+    def renderRoof(self, face):
+        self.render(face, self.b.roofColor)
+    
+    def render(self, face, color):
+        self.setColor(face, self.vertexColorLayer, color)
         self.setMaterial(face, self.materialName)
     
     def renderForObject(self, obj, slot):

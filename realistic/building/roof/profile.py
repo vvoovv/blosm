@@ -107,7 +107,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                     if slope else\
                     texCoords[2] - self.minY
                 f.loops[i][uvLayer].uv = (u, v)
-            self.mrr.render(f)
+            self.mrr.renderRoof(f)
 
     def getProfiledVert(self, i, roofMinHeight, noWalls):
         """

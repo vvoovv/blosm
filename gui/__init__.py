@@ -536,6 +536,8 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     osmMaterial = bpy.props.EnumProperty(
         name = "OSM material",
         items = (
+            ("brick", "brick", "brick"),
+            ("plaster", "plaster", "plaster"),
             ("metal", "metal", "metal"),
             ("roof_tiles", "roof_tiles", "roof_tiles")
         ),

@@ -16,6 +16,7 @@ class RoofRealistic:
         self.mrr = None
         self._numLevels = None
         self._levelHeights = None
+        self._wallsColor = None
         self._roofColor = None
     
     def render(self):
@@ -65,9 +66,11 @@ class RoofRealistic:
                     u = (verts[roofIndex].co - origin).dot(uVec)
                     v = (verts[roofIndex].co - origin - u*uVec).length
                 f.loops[i][uvLayer].uv = (u, v)
-            self.mrr.render(f)
+            self.mrr.renderRoof(f)
 
-    def setMaterialWalls(self, name):
+    def setMaterialWalls(self, name, useColor=True):
+        if useColor and self.wallsColor:
+            name += "_with_color"
         # mrw stands for "material renderer for walls"
         mrw = self.r.getMaterialRenderer(name)
         mrw.init()
@@ -113,6 +116,13 @@ class RoofRealistic:
             h = self.roofMinHeight/(Roof.groundLevelFactor + self.numLevels - 1)
             self._levelHeights = (Roof.groundLevelFactor*h, h)
         return self._levelHeights
+
+    @property
+    def wallsColor(self):
+        if self._wallsColor is None:
+            wallsColor = Manager.normalizeColor( self.getOsmTagValue("building:colour") )
+            self._wallsColor = Manager.getColor(wallsColor) if wallsColor else 0
+        return self._wallsColor
     
     @property
     def roofColor(self):

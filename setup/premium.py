@@ -231,12 +231,16 @@ def bldgPreRender(building):
     # material for walls
     material = building.wallsMaterial
     
-    if material == "glass":
+    if material == "brick":
+        building.setMaterialWalls("brick")
+    elif material == "plaster":
+        building.setMaterialWalls("plaster")
+    elif material == "glass":
         building.setMaterialWalls("glass")
     elif tags.get("building") == "commercial":
-        building.setMaterialWalls("commercial")
+        building.setMaterialWalls("commercial", False)
     else:
-        building.setMaterialWalls("apartments")
+        building.setMaterialWalls("apartments", False)
     
     # material for roof
     material = building.roofMaterial
@@ -262,8 +266,12 @@ def getMaterials():
         glass = FacadeSeamlessTexture,
         commercial = FacadeSeamlessTexture,
         apartments = FacadeSeamlessTexture,
+        brick = SeamlessTexture,
+        brick_with_color = SeamlessTextureWithColor,
         concrete = SeamlessTexture,
         concrete_with_color = SeamlessTextureWithColor,
+        plaster = SeamlessTexture,
+        plaster_with_color = SeamlessTextureWithColor,
         roof_tiles = SeamlessTexture,
         roof_tiles_with_color = SeamlessTextureWithColor,
         metal_without_uv = MaterialWithColor,
@@ -287,7 +295,7 @@ class FacadeSeamlessTexture(MaterialRenderer):
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         
-    def render(self, face):
+    def renderWalls(self, face):
         # building
         b = self.b
         if b.z1:
