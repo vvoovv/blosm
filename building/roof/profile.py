@@ -671,10 +671,15 @@ class RoofProfile(Roof):
             slot.append(pv2.vertIndex)
             # we are done
             return
-        # start a wall face under the segment between <pv1> and <pv2>
-        _wallIndices = [pv1.vertIndex]
-        if not skip1:
-            _wallIndices.append(indices[pv1.i])
+        # Start a wall face under the segment between <pv1> and <pv2>;
+        # ensure that the first two vertices will be always
+        # the lowest vertices located on the same height
+        if skip1:
+            _wallIndices = [pv1.vertIndex]
+            appendPv1 = False
+        else:
+            _wallIndices = [indices[pv1.i]]
+            appendPv1 = True
         if not skip2:
             _wallIndices.append(indices[pv2.i])
         _wallIndices.append(pv2.vertIndex)
@@ -836,7 +841,11 @@ class RoofProfile(Roof):
                         slot,
                         range(index2+1, index1 if pv1.onSlot else index1+1)
                     )
-        # the wall face <_wallIndices> is ready, append it to <wallIndices>
+        # The wall face <_wallIndices> is ready,
+        # append the closing vertex <pv1.vertIndex> to <_wallIndices> (if necessary!) and
+        # append <_wallIndices> to <wallIndices>
+        if appendPv1:
+            _wallIndices.append(pv1.vertIndex)
         wallIndices.append(_wallIndices)
         # append <pv2.vertIndex> to the last part of the current slot (i.e. to <slot.parts[-1]>)
         slot.append(pv2.vertIndex)

@@ -181,15 +181,25 @@ class RoofHalfHipped(RoofProfile):
                 v1.y + factor * factorY,
                 z
             ))
-        
         # the left vertex of the edge of the hipped roof face
         verts.append(getVertex(x1))
         # the right vertex of the edge of the hipped roof face
         verts.append(getVertex(x2))
-        # vertex index for the right vertex of the edge of the hipped roof face
-        wallFaceIndices[-1] = vertIndex+1
-        # vertex index for the left vertex of the edge of the hipped roof face
-        wallFaceIndices.append(vertIndex)
+        
+        if len(wallFaceIndices) in (3, 4) and wallFaceIndices[-1] == ridgeVertexIndex:
+            # Treat the special case if skip1 == True (see the code in module <.profile>
+            # for the definition of <skip1>)
+            # vertex index for the right vertex of the edge of the hipped roof face
+            wallFaceIndices[-1] = vertIndex+1
+            # vertex index for the left vertex of the edge of the hipped roof face
+            wallFaceIndices.append(vertIndex)
+        else:
+            # treat the general case
+            wallFaceIndices.append(wallFaceIndices[-1])
+            # vertex index for the left vertex of the edge of the hipped roof face
+            wallFaceIndices[-2] = vertIndex
+            # vertex index for the right vertex of the edge of the hipped roof face
+            wallFaceIndices[-3] = vertIndex+1
         
         # Find the roof faces sharing the ridge vertex with index <ridgeVertexIndex>
         # A helper counter used to break the cycle below when everything has been found

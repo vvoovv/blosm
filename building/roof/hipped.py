@@ -108,16 +108,26 @@ class RoofHipped(RoofProfile):
         """
         # vertex indices for a wall face
         wallFaceIndices = wallFace[1][0]
-        if len(wallFaceIndices) == 3:
+        # the number of vertices in <wallFace>
+        numVerts = len(wallFaceIndices)
+        if numVerts == 3:
             # 3 vertices for a wall face actually means no wall face, so remove that wall face
             self.wallIndices.remove(wallFaceIndices)
             # create extra triangle for the hipped roof face
             self.roofIndices.append(wallFaceIndices)
         else:
-            # Remove the ridge vertex from the wall face;
-            # the following line is equivalent to <wallFaceIndices.remove(ridgeVertexIndex)>
-            wallFaceIndices.pop()
+            # Remove the ridge vertex from the wall face.
+            if numVerts == 4 and wallFaceIndices[-1] == ridgeVertexIndex:
+                # Treat the special case if skip1 == True (see the code in module <.profile>
+                # for the definition of <skip1>)
+                wallFaceIndices.pop()
+                extraTriangle = (wallFaceIndices[0], wallFaceIndices[-1], ridgeVertexIndex)
+            else:
+                # treat the general case
+                closingVertexIndex = wallFaceIndices.pop()
+                wallFaceIndices[-1] = closingVertexIndex
+                extraTriangle = (wallFaceIndices[-1], wallFaceIndices[-2], ridgeVertexIndex)
             # create extra triangle for the hipped roof face
-            self.roofIndices.append( (wallFaceIndices[0], wallFaceIndices[-1], ridgeVertexIndex) )
+            self.roofIndices.append(extraTriangle)
         # add displacement for the ridge vertex
         self.verts[ridgeVertexIndex] += displacement
