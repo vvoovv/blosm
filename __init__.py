@@ -201,7 +201,7 @@ class ImportData(bpy.types.Operator):
         
         # set custom parameter "lat" and "lon" to the active scene
         if setLatLon:
-            self.setCenterLatLon(context, lat)
+            self.setCenterLatLon(context, lat, lon)
         return {'FINISHED'}
     
     def importOverlay(self, context, basePath):
@@ -219,7 +219,7 @@ class ImportData(bpy.types.Operator):
         
         # set custom parameter "lat" and "lon" to the active scene
         if setLatLon:
-            self.setCenterLatLon(context, lat)
+            self.setCenterLatLon(context, lat, lon)
         return {'FINISHED'}
     
     def setObjectMode(self, context):

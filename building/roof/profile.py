@@ -673,7 +673,8 @@ class RoofProfile(Roof):
             return
         # Start a wall face under the segment between <pv1> and <pv2>;
         # ensure that the first two vertices will be always
-        # the lowest vertices located on the same height
+        # the lowest vertices located on the same height;
+        # that's important for the correct uv-mapping
         if skip1:
             _wallIndices = [pv1.vertIndex]
             appendPv1 = False

@@ -1,5 +1,6 @@
 from . import RoofRealistic
 from building.roof.mesh import RoofMesh
+from .flat import RoofFlatRealistic
 
 
 class RoofMeshRealistic(RoofRealistic, RoofMesh):
@@ -13,3 +14,6 @@ class RoofMeshRealistic(RoofRealistic, RoofMesh):
             mrr.renderForObject(obj, slot)
         else:
             super().setMaterial(obj, slot)
+
+    def renderWalls(self):
+        RoofFlatRealistic.renderWalls(self)

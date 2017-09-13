@@ -67,6 +67,10 @@ class RoofSkillion(Roof):
             verts[indices[i]].z = roofMinHeight + (maxProj - projections[i]) * tan
         # <polygon.normal> won't be used, so it won't be updated
         
+        # Imprtant: ensure that the first two vertices of each wall face will be always
+        # the lowest vertices located on the same height;
+        # that's important for the correct uv-mapping
+        
         indexOffset = len(verts)
         if self.noWalls:
             # <roofMinHeight> is exactly equal to the height of the bottom part of the building
@@ -97,7 +101,7 @@ class RoofSkillion(Roof):
                 verts[indices[index]].y,
                 roofMinHeight
             )))
-            # a triangle that start at the vertex <rightIndex>
+            # a triangle that starts at the vertex <rightIndex>
             wallIndices.append((indices[rightIndex], indexOffset, indices[index]))
             while True:
                 prevIndex = index
@@ -117,8 +121,9 @@ class RoofSkillion(Roof):
         else:
             # vertices for the bottom part
             verts.extend(Vector((v.x, v.y, self.z1)) for v in polygon.verts)
-            # the starting wall face
+            # the starting wall face:
             wallIndices.append((indexOffset + n - 1, indexOffset, indices[0], indices[-1]))
+            # the rest of wall faces:
             wallIndices.extend(
                 (indexOffset + i - 1, indexOffset + i, indices[i], indices[i-1]) for i in range(1, n)
             )

@@ -66,6 +66,30 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             if self.slopes[i] is None else\
             math.sqrt(self.polygonWidth_2*self.dx_2[i] + self.roofHeight_2 * self.dy_2[i])
 
+    def renderWalls(self):
+        if self.mrw:
+            bm = self.r.bm
+            verts = self.verts
+            uvLayer = bm.loops.layers.uv[0]
+            # create BMesh faces for the building walls
+            for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
+                origin = f.verts[0].co
+                originZ = origin[2]
+                # vector along the u-axis, i.e. the first edge of the face <f>
+                uVec = f.verts[1].co - origin
+                w = uVec.length
+                # normalize <uVec>
+                uVec = uVec/w
+                f.loops[0][uvLayer].uv = (0., 0.)
+                f.loops[1][uvLayer].uv = (w, 0.)
+                for i in range(2, len(f.verts)):
+                    f.loops[i][uvLayer].uv = (
+                        (f.verts[i].co - origin).dot(uVec), f.verts[i].co[2] - originZ
+                    )
+                self.mrw.renderWalls(f)
+        else:
+            super().renderWalls()
+
     def renderRoofTextured(self):
         r = self.r
         bm = r.bm

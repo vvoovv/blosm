@@ -236,11 +236,11 @@ def bldgPreRender(building):
     elif material == "plaster":
         building.setMaterialWalls("plaster")
     elif material == "glass":
-        building.setMaterialWalls("glass")
+        building.setMaterialWalls("glass", False)
     elif tags.get("building") == "commercial":
         building.setMaterialWalls("commercial", False)
     else:
-        building.setMaterialWalls("apartments", False)
+        building.setMaterialWalls("plaster")
     
     # material for roof
     material = building.roofMaterial

@@ -10,3 +10,6 @@ class RoofMansardRealistic(RoofRealistic, RoofMansard):
             return RoofFlatRealistic.renderRoofTextured(self)
         else:
             super().renderRoofTextured()
+
+    def renderWalls(self):
+        RoofFlatRealistic.renderWalls(self)
