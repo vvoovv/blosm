@@ -50,6 +50,7 @@ class Overlay:
         self.subdomains = None
         self.numSubdomains = 0
         self.tileCounter = 0
+        self.numTiles = 0
         self.imageExtension = "png"
         
         # where to stop searching for sundomains {suddomain1,subdomain2}
@@ -129,16 +130,19 @@ class Overlay:
         l, b, r, t = tuple(toTileCoord(coord, zoom, self.tileWidth) for coord in (l, b, r, t))
         numTilesX = r - l + 1
         numTilesY = b - t + 1
+        self.numTiles = numTilesX * numTilesY
         # a numpy array for the resulting image stitched out of all tiles
-        imageData = numpy.ones(4*numTilesX*self.tileWidth * numTilesY*self.tileHeight)
+        imageData = numpy.zeros(4*numTilesX*self.tileWidth * numTilesY*self.tileHeight)
         w = 4 * self.tileWidth
         # get individual tiles
         for x in range(l, r+1):
             for y in range(t, b+1):
+                self.tileCounter += 1
                 tileData = self.getTileData(zoom, x, y)
-                for _y in range(self.tileHeight):
-                    i1 = w * ( (numTilesY-1-y+t) * self.tileHeight*numTilesX + _y*numTilesX + x-l )
-                    imageData[i1:i1+w] = tileData[_y*w:(_y+1)*w]
+                if not tileData is None:
+                    for _y in range(self.tileHeight):
+                        i1 = w * ( (numTilesY-1-y+t) * self.tileHeight*numTilesX + _y*numTilesX + x-l )
+                        imageData[i1:i1+w] = tileData[_y*w:(_y+1)*w]
         # create the resulting Blender image stitched out of all tiles
         image = bpy.data.images.new(
             self.blenderImageName,
@@ -146,6 +150,8 @@ class Overlay:
             height = (b - t + 1) * self.tileHeight
         )
         image.pixels = imageData
+        # pack the image into .blend file
+        image.pack(as_png=True)
         
         if app.terrain:
             self.setUvForTerrain(
@@ -180,8 +186,22 @@ class Overlay:
         j = os.path.join
         tileDir = j(self.overlayDir, str(zoom), str(x))
         tilePath = j(tileDir, "%s.%s" % (y, self.imageExtension))
-        if not os.path.exists(tilePath):
-            tileData = request.urlopen(self.getTileUrl(zoom, x, y)).read()
+        tileUrl = self.getTileUrl(zoom, x, y)
+        if os.path.exists(tilePath):
+            print(
+                "Using the cached version of the tile image %s (%s of %s)" %
+                (tileUrl, self.tileCounter, self.numTiles)
+            )
+        else:
+            print(
+                "Downloading the tile image %s (%s if %s)" %
+                (tileUrl, self.tileCounter, self.numTiles)
+            )
+            try:
+                tileData = request.urlopen(tileUrl).read()
+            except:
+                print("\tUnable to download the tile image %s" % tileUrl)
+                return None
             # ensure that all directories in <tileDir> exist
             if not os.path.exists(tileDir):
                 os.makedirs(tileDir)
@@ -220,7 +240,6 @@ class Overlay:
                 y,
                 self.urlEnd
             )
-            self.tileCounter += 1
         else:
             url = "%s%s/%s/%s%s" % (
                 self.urlStart,
