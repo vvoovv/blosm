@@ -13,14 +13,14 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
             # create BMesh faces for the building walls
             for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
                 w = (f.verts[1].co - f.verts[0].co).length
-                h = (f.verts[-1].co - f.verts[0].co).length
+                h = self.wallHeight
                 size = (w, h)
                 f.loops[0][uvLayer].uv = (0., 0.)
                 f.loops[1][uvLayer].uv = (w, 0.)
                 f.loops[2][uvLayer].uv = size
                 f.loops[3][uvLayer].uv = (0., h)
-                for i in range(4):
-                    f.loops[i][uvLayerSize].uv = size
+                for l in f.loops:
+                    l[uvLayerSize].uv = size
                 self.mrw.renderWalls(f)
         else:
             super().renderWalls()

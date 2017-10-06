@@ -30,9 +30,6 @@ from manager.logging import Logger
 from realistic.manager import AreaManager, BaseManager
 from realistic.renderer import AreaRenderer, ForestRenderer, WaterRenderer, BareRockRenderer
 from realistic.building.renderer import RealisticBuildingRenderer
-from realistic.material.renderer import\
-    MaterialRenderer, SeamlessTexture, SeamlessTextureWithColor, MaterialWithColor,\
-    SeamlessTextureScaledWithColor, SeamlessTextureScaled
 
 
 def building(tags, e):
@@ -127,7 +124,7 @@ def sand(tags, e):
     return natural == "sand" or natural == "beach"
 
 
-def setup(app, osm):
+def setup_base(app, osm, getMaterials, bldgPreRender):
     # comment the next line if logging isn't needed
     Logger(app, osm)
     
@@ -222,85 +219,3 @@ def setup(app, osm):
             m = BaseManager(osm)
             m.setRenderer(Renderer2d(app))
         app.managers.append(m)
-
-
-def bldgPreRender(building):
-    element = building.element
-    tags = element.tags
-    
-    # material for walls
-    material = building.wallsMaterial
-    
-    if material == "brick":
-        building.setMaterialWalls("brick")
-    elif material == "plaster":
-        building.setMaterialWalls("plaster")
-    elif material == "glass":
-        building.setMaterialWalls("glass", False)
-    elif tags.get("building") == "commercial":
-        building.setMaterialWalls("commercial", False)
-    else:
-        building.setMaterialWalls("plaster")
-    
-    # material for roof
-    material = building.roofMaterial
-    if not material:
-        material = "metal"
-    
-    if material == "concrete":
-        building.setMaterialRoof("concrete")
-    elif material == "roof_tiles":
-        building.setMaterialRoof("roof_tiles")
-    elif material == "metal":
-        roofShape = tags.get("roof:shape")
-        if roofShape == "onion":
-            building.setMaterialRoof("metal_without_uv", False)
-        elif roofShape == "dome":
-            building.setMaterialRoof("metal_scaled")
-        else:
-            building.setMaterialRoof("metal")
-
-
-def getMaterials():
-    return dict(
-        glass = FacadeSeamlessTexture,
-        commercial = FacadeSeamlessTexture,
-        apartments = FacadeSeamlessTexture,
-        brick = SeamlessTexture,
-        brick_with_color = SeamlessTextureWithColor,
-        concrete = SeamlessTexture,
-        concrete_with_color = SeamlessTextureWithColor,
-        plaster = SeamlessTexture,
-        plaster_with_color = SeamlessTextureWithColor,
-        roof_tiles = SeamlessTexture,
-        roof_tiles_with_color = SeamlessTextureWithColor,
-        metal_without_uv = MaterialWithColor,
-        metal = SeamlessTexture,
-        metal_with_color = SeamlessTextureWithColor,
-        metal_scaled = SeamlessTextureScaled,
-        metal_scaled_with_color = SeamlessTextureScaledWithColor
-    )
-
-
-class FacadeSeamlessTexture(MaterialRenderer):
-    
-    uvLayer = "data.1"
-    
-    def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer, baseMaterialName)
-        self.materialName2 = "%s_with_ground_level" % baseMaterialName
-        
-    def init(self):
-        self.ensureUvLayer(self.uvLayer)
-        self.setupMaterials(self.materialName)
-        self.setupMaterials(self.materialName2)
-        
-    def renderWalls(self, face):
-        # building
-        b = self.b
-        if b.z1:
-            self.setData(face, self.uvLayer, b.numLevels)
-            self.setMaterial(face, self.materialName)
-        else:
-            self.setData(face, self.uvLayer, b.levelHeights)
-            self.setMaterial(face, self.materialName2)

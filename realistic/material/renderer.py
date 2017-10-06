@@ -238,3 +238,27 @@ class SeamlessTextureScaledWithColor(MaterialRenderer):
         self.setDataForObject(obj, self.uvLayer, (math.sqrt(s[0]*s[0] + s[1]*s[1]), s[2]))
         self.setColorForObject(obj, self.vertexColorLayer, self.b.roofColor)
         slot.material = self.getMaterial()
+
+
+class FacadeSeamlessTexture(MaterialRenderer):
+    
+    uvLayer = "data.1"
+    
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer, baseMaterialName)
+        self.materialName2 = "%s_with_ground_level" % baseMaterialName
+        
+    def init(self):
+        self.ensureUvLayer(self.uvLayer)
+        self.setupMaterials(self.materialName)
+        self.setupMaterials(self.materialName2)
+        
+    def renderWalls(self, face):
+        # building
+        b = self.b
+        if b.z1:
+            self.setData(face, self.uvLayer, b.numLevels)
+            self.setMaterial(face, self.materialName)
+        else:
+            self.setData(face, self.uvLayer, b.levelHeights)
+            self.setMaterial(face, self.materialName2)

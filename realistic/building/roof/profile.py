@@ -71,6 +71,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             bm = self.r.bm
             verts = self.verts
             uvLayer = bm.loops.layers.uv[0]
+            uvLayerSize = bm.loops.layers.uv[1]
             # create BMesh faces for the building walls
             for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
                 origin = f.verts[0].co
@@ -78,6 +79,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                 # vector along the u-axis, i.e. the first edge of the face <f>
                 uVec = f.verts[1].co - origin
                 w = uVec.length
+                size = None if self.noWalls else (w, self.wallHeight)
                 # normalize <uVec>
                 uVec = uVec/w
                 f.loops[0][uvLayer].uv = (0., 0.)
@@ -86,6 +88,9 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                     f.loops[i][uvLayer].uv = (
                         (f.verts[i].co - origin).dot(uVec), f.verts[i].co[2] - originZ
                     )
+                if size:
+                    for l in f.loops:
+                        l[uvLayerSize].uv = size
                 self.mrw.renderWalls(f)
         else:
             super().renderWalls()
