@@ -218,6 +218,8 @@ class PanelSettings(bpy.types.Panel):
             if addon.mode == "3D" and app.has(Keys.mode3dRealistic):
                 layout.prop(addon, "mode3d", expand=True)
         
+        layout.prop(addon, "setupScript")
+        
         box = layout.box()
         box.prop(addon, "buildings")
         box.prop(addon, "water")
@@ -497,6 +499,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     ####################################
     # Settings for the realistic 3D mode
     ####################################
+    setupScript = bpy.props.StringProperty(
+        name = "Setup script",
+        subtype = 'FILE_PATH',
+        description = "Path to a setup script. Leave blank for default."
+    )
+    
     bldgMaterialsFilepath = bpy.props.StringProperty(
         name = "Materials for buildings",
         subtype = 'FILE_PATH',

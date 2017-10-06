@@ -127,6 +127,7 @@ class Roof:
             self.noWalls = True
         else:
             self.noWalls = False
+            self.wallHeight = wallHeight
         
         self.z1 = z1
         self.z2 = z2
