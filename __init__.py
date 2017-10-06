@@ -127,7 +127,30 @@ class ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
         if a.mode is a.realistic:
-            from setup.premium import setup as setup_function
+            setupScript = context.scene.blender_osm.setupScript
+            if setupScript:
+                setupScript = os.path.realpath(bpy.path.abspath(setupScript))
+                if not os.path.isfile(setupScript):
+                    self.report({'ERROR'},
+                        "The script file doesn't exist"
+                    )
+                    return {'FINISHED'}
+                import imp
+                # remove extension from the path
+                setupScript = os.path.splitext(setupScript)[0]
+                moduleName = os.path.basename(setupScript)
+                try:
+                    _file, _pathname, _description = imp.find_module(moduleName, [os.path.dirname(setupScript)])
+                    module = imp.load_module(moduleName, _file, _pathname, _description)
+                    _file.close()
+                    setup_function = module.setup
+                except Exception as e:
+                    self.report({'ERROR'},
+                        "Unable to execute the setup script!"
+                    )
+                    return {'FINISHED'}
+            else:
+                from setup.premium_default import setup as setup_function
         else:
             from setup.base import setup as setup_function
         
