@@ -90,6 +90,14 @@ class RoofRealistic:
 
     @property
     def numLevels(self):
+        """
+        Returns the number of levels in the building or building part.
+        
+        The number of levels is calculated as the difference
+        <building:levels> - <building:min_level>,
+        where both elements represent the value of the related tags OR
+        the heights in meters. See the code below.
+        """
         if not self._numLevels:
             tags = self.element.tags
             n = tags.get("building:levels")
@@ -101,6 +109,8 @@ class RoofRealistic:
                     if self.z1 else\
                     self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundLevelFactor
                 )
+                if not n:
+                    n = 1.
             else:
                 _n = tags.get("building:min_level")
                 if not _n is None:
@@ -113,8 +123,10 @@ class RoofRealistic:
     @property
     def levelHeights(self):
         if not self._levelHeights:
-            h = self.roofMinHeight/(Roof.groundLevelFactor + self.numLevels - 1)
-            self._levelHeights = (Roof.groundLevelFactor*h, h)
+            h = (self.roofMinHeight - self.z1)/self.numLevels\
+                if self.z1 else\
+                self.roofMinHeight/(Roof.groundLevelFactor + self.numLevels - 1)
+            self._levelHeights = (h, Roof.groundLevelFactor*h)
         return self._levelHeights
 
     @property
