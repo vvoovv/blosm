@@ -7,6 +7,15 @@ class MaterialRenderer:
     
     vertexColorLayer = "Col"
     
+    # default colors for walls, used if a valid tag <building:colour> isn't available
+    wallsColors = (
+        (0.502, 0., 0.502), # purple
+        (0.604, 0.804, 0.196), # yellowgreen
+        (0.529, 0.808, 0.922), # skyblue
+        (0.565, 0.933, 0.565), # lightgreen
+        (0.855, 0.647, 0.125) # goldenrod
+    )
+    
     # default roof color used by some material renderers
     roofColor = (0.29, 0.25, 0.21)
     
@@ -15,7 +24,7 @@ class MaterialRenderer:
         # base name for Blender materials
         self.materialName = baseMaterialName
         # index of the Blender material to set to a BMFace
-        self.index = -1
+        self.materialIndex = -1
         # keep track of building outline
         self.outline = None
         # a data structure to store names of Blender materials
@@ -51,6 +60,8 @@ class MaterialRenderer:
             d.uv = uv
     
     def setColor(self, face, layerName, color):
+        if not color:
+            color = MaterialRenderer.wallsColors[self.materialIndex]
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
@@ -117,6 +128,9 @@ class MaterialRenderer:
         self.r.materialGroups.add(groupName)
     
     def setMaterial(self, face, groupName=None):
+        """
+        Set material (actually material index) for the given <face>.
+        """
         r = self.r
         materialIndices = r.materialIndices
         materials = r.obj.data.materials
@@ -134,17 +148,17 @@ class MaterialRenderer:
         r = self.r
         if not self.outline is r.outline:
             self.outline = r.outline
-            # increase <self.index> to use the next material
-            self.index += 1
-            if self.index == self.numMaterials:
-                # all available materials have been used, so set <self.index> to zero
-                self.index = 0
+            # increase <self.materialIndex> to use the next material
+            self.materialIndex += 1
+            if self.materialIndex == self.numMaterials:
+                # all available materials have been used, so set <self.materialIndex> to zero
+                self.materialIndex = 0
         # the name of the current material
         return (
             self.materials[groupName if groupName else self.groupName]\
             if self.multipleGroups else\
             self.materials
-        )[self.index]
+        )[self.materialIndex]
     
     def setSingleMaterial(self, face):
         r = self.r
@@ -261,4 +275,29 @@ class FacadeSeamlessTexture(MaterialRenderer):
             self.setMaterial(face, self.materialName)
         else:
             self.setData(face, self.uvLayer, b.levelHeights)
+            self.setMaterial(face, self.materialName2)
+
+
+class FacadeWithColor(MaterialRenderer):
+    
+    uvLayer = "data.1"
+    
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer, baseMaterialName)
+        self.materialName2 = "%s_with_ground_level" % baseMaterialName
+        
+    def init(self):
+        self.ensureUvLayer(self.uvLayer)
+        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.setupMaterials(self.materialName)
+        self.setupMaterials(self.materialName2)
+        
+    def renderWalls(self, face):
+        # building
+        b = self.b
+        self.setData(face, self.uvLayer, b.levelHeights)
+        self.setColor(face, self.vertexColorLayer, b.wallsColor)
+        if b.z1:
+            self.setMaterial(face, self.materialName)
+        else:
             self.setMaterial(face, self.materialName2)
