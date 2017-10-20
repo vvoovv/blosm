@@ -3,18 +3,21 @@ import bpy
 from util.blender import appendMaterialsFromFile
 
 
-class MaterialRenderer:
-    
-    vertexColorLayer = "Col"
-    
-    # default colors for walls, used if a valid tag <building:colour> isn't available
-    wallsColors = (
+wallColors = (
         (0.502, 0., 0.502), # purple
         (0.604, 0.804, 0.196), # yellowgreen
         (0.529, 0.808, 0.922), # skyblue
         (0.565, 0.933, 0.565), # lightgreen
         (0.855, 0.647, 0.125) # goldenrod
     )
+
+
+class MaterialRenderer:
+    
+    vertexColorLayer = "Col"
+    
+    # default colors for walls, used if a valid tag <building:colour> isn't available
+    wallColors = wallColors
     
     # default roof color used by some material renderers
     roofColor = (0.29, 0.25, 0.21)
@@ -32,6 +35,9 @@ class MaterialRenderer:
         # Do we have multiple groups of materials
         # (e.g. apartments and apartments_with_ground_level)?
         self.multipleGroups = False
+        # variables for the default colors
+        self.colorIndex = -1
+        self.numColors = len(MaterialRenderer.wallColors)
     
     def ensureUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
@@ -61,7 +67,7 @@ class MaterialRenderer:
     
     def setColor(self, face, layerName, color):
         if not color:
-            color = MaterialRenderer.wallsColors[self.materialIndex]
+            color = MaterialRenderer.wallColors[self.colorIndex]
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
@@ -71,12 +77,11 @@ class MaterialRenderer:
         for d in vertexColorLayer.data:
             d.color = color
     
-    def setupMaterial(self):
+    def setupMaterial(self, name):
         """
         Unlike <self.setupMaterials(..)> the method setups a single Blender material
-        with the name <self.materialName>
+        with the name <name>
         """
-        name = self.materialName
         if not name in bpy.data.materials:
             if not appendMaterialsFromFile(self.r.app.bldgMaterialsFilepath, name):
                 print("The material %s doesn't exist!" % name)
@@ -145,14 +150,6 @@ class MaterialRenderer:
         return bpy.data.materials[ self.getMaterialName(groupName) ]
     
     def getMaterialName(self, groupName):
-        r = self.r
-        if not self.outline is r.outline:
-            self.outline = r.outline
-            # increase <self.materialIndex> to use the next material
-            self.materialIndex += 1
-            if self.materialIndex == self.numMaterials:
-                # all available materials have been used, so set <self.materialIndex> to zero
-                self.materialIndex = 0
         # the name of the current material
         return (
             self.materials[groupName if groupName else self.groupName]\
@@ -160,11 +157,23 @@ class MaterialRenderer:
             self.materials
         )[self.materialIndex]
     
-    def setSingleMaterial(self, face):
+    def checkBuildingChanged(self):
+        r = self.r
+        if not self.outline is r.outline:
+            self.outline = r.outline
+            self.onBuildingChanged()
+    
+    def onBuildingChanged(self):
+        # increase <self.materialIndex> to use the next material
+        self.materialIndex += 1
+        if self.materialIndex == self.numMaterials:
+            # all available materials have been used, so set <self.materialIndex> to zero
+            self.materialIndex = 0
+    
+    def setSingleMaterial(self, face, name):
         r = self.r
         materialIndices = r.materialIndices
         materials = r.obj.data.materials
-        name = self.materialName
         if not name in materialIndices:
             materialIndices[name] = len(materials)
             materials.append(bpy.data.materials[name])
@@ -181,11 +190,15 @@ class MaterialWithColor(MaterialRenderer):
     """
     
     def init(self):
-        self.setupMaterial()
+        self.setupMaterial(self.materialName)
     
     def renderForObject(self, obj, slot):
         self.setColorForObject(obj, self.vertexColorLayer, self.b.roofColor)
         slot.material = self.getSingleMaterial()
+    
+    def checkBuildingChanged(self):
+        # no actions are required here
+        return
 
 
 class SeamlessTexture(MaterialRenderer):
@@ -193,7 +206,7 @@ class SeamlessTexture(MaterialRenderer):
     def init(self):
         self.setupMaterials(self.materialName)
     
-    def renderWalls(self, face):
+    def renderWalls(self, face, width):
         self.setMaterial(face, self.materialName)
     
     def renderRoof(self, face):
@@ -209,7 +222,7 @@ class SeamlessTextureWithColor(MaterialRenderer):
         self.ensureVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         
-    def renderWalls(self, face):
+    def renderWalls(self, face, width):
         self.render(face, self.b.wallsColor)
     
     def renderRoof(self, face):
@@ -267,7 +280,7 @@ class FacadeSeamlessTexture(MaterialRenderer):
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         
-    def renderWalls(self, face):
+    def renderWalls(self, face, width):
         # building
         b = self.b
         if b.z1:
@@ -282,22 +295,39 @@ class FacadeWithColor(MaterialRenderer):
     
     uvLayer = "data.1"
     
+    materialWithoutWindows = "plaster_with_color"
+    
     def __init__(self, renderer, baseMaterialName):
         super().__init__(renderer, baseMaterialName)
+        self.colorIndex = -1
         self.materialName2 = "%s_with_ground_level" % baseMaterialName
-        
+    
     def init(self):
         self.ensureUvLayer(self.uvLayer)
         self.ensureVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
-        
-    def renderWalls(self, face):
+        self.setupMaterial(self.materialWithoutWindows)
+    
+    def onBuildingChanged(self):
+        super().onBuildingChanged()
+        if not self.b.wallsColor:
+            # Increase <self.colorIndex> to use it the mext time when color for the walls
+            # wasn't set
+            self.colorIndex += 1
+            if self.colorIndex == self.numColors:
+                # all available colors have been used, so set <self.colorIndex> to zero
+                self.colorIndex = 0
+    
+    def renderWalls(self, face, width):
         # building
         b = self.b
         self.setData(face, self.uvLayer, b.levelHeights)
         self.setColor(face, self.vertexColorLayer, b.wallsColor)
-        if b.z1:
-            self.setMaterial(face, self.materialName)
+        if width < 1.:
+            self.setSingleMaterial(face, self.materialWithoutWindows)
         else:
-            self.setMaterial(face, self.materialName2)
+            if b.z1:
+                self.setMaterial(face, self.materialName)
+            else:
+                self.setMaterial(face, self.materialName2)

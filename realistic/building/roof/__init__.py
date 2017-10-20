@@ -23,11 +23,21 @@ class RoofRealistic:
         r = self.r
         if r.bldgPreRender:
             r.bldgPreRender(self)
-        super().render()
-        # cleanup
+        
+        mrw = self.mrw
+        mrr = self.mrr
+        
         if self.mrw:
-            self.mrw = None
+            mrw.checkBuildingChanged()
         if self.mrr:
+            mrr.checkBuildingChanged()
+        
+        super().render()
+        
+        # cleanup
+        if mrw:
+            self.mrw = None
+        if mrr:
             self.mrr = None
 
     def renderRoof(self):

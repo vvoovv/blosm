@@ -94,7 +94,6 @@ class RoofFlatMulti(RoofFlat):
     
     def render(self):
         r = self.r
-        element = self.element
         verts = self.verts
         polygons = self.polygons
         bm = r.bm
@@ -117,13 +116,9 @@ class RoofFlatMulti(RoofFlat):
         )
         
         # a magic function that does everything
-        geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
-        materialIndex = r.getRoofMaterialIndex(element)
-        # check the normal direction of the created faces and assign material to all BMesh faces
-        for f in geom["geom"]:
-            if isinstance(f, bmesh.types.BMFace):
-                pointNormalUpward(f)
-                f.material_index = materialIndex
+        self.renderRoofTexturedMulti(
+            bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
+        )
         
         # create BMesh faces for the walls of the building
         indexOffset1 = 0
@@ -179,3 +174,11 @@ class RoofFlatMulti(RoofFlat):
         # actual code to create BMesh faces for the building walls out of <verts> and <wallIndices>
         for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
             f.material_index = materialIndex
+    
+    def renderRoofTexturedMulti(self, geom):
+        materialIndex = self.r.getRoofMaterialIndex(self.element)
+        # check the normal direction of the created faces and assign material to all BMesh faces
+        for f in geom["geom"]:
+            if isinstance(f, bmesh.types.BMFace):
+                pointNormalUpward(f)
+                f.material_index = materialIndex
