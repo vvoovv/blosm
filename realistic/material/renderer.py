@@ -300,7 +300,11 @@ class FacadeWithColor(MaterialRenderer):
     def __init__(self, renderer, baseMaterialName):
         super().__init__(renderer, baseMaterialName)
         self.colorIndex = -1
-        self.materialName2 = "%s_with_ground_level" % baseMaterialName
+        if self.r.app.dayTime == "day":
+            self.materialName2 = "%s_ground_level" % baseMaterialName
+        else:
+            self.materialName += "_emission"
+            self.materialName2 = "%s_ground_level_emission" % baseMaterialName
     
     def init(self):
         self.ensureUvLayer(self.uvLayer)

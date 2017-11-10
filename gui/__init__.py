@@ -35,7 +35,22 @@ def getDataTypes():
             items[1],
             ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map")
         ) if app.has(Keys.mode3dRealistic) else items
-    
+
+
+_blenderMaterials = (
+    ("neoclassical", "fo"),
+    ("apartments", "fs"),
+    ("commercial", "fs"),
+    ("glass", "fs"),
+    ("brick", "ms"),
+    ("plaster", "ms"),
+    ("metal", "ms"),
+    ("roof_tiles", "ms")
+)
+
+def getBlenderMaterials(self, context):
+    materialType = context.scene.blender_osm.materialType
+    return tuple((m[0], m[0], m[0]) for m in _blenderMaterials if m[1] == materialType)
 
 
 class OperatorSelectExtent(bpy.types.Operator):
@@ -231,6 +246,7 @@ class PanelSettings(bpy.types.Panel):
         if addon.mode3d == "realistic":
             box = layout.box()
             box.prop(addon, "bldgMaterialsFilepath")
+            box.prop(addon, "dayTime")
         
         box = layout.box()
         split = box.split(percentage=0.67)
@@ -531,6 +547,38 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "water"
     )
     
+    dayTime = bpy.props.EnumProperty(
+        name = "Day time",
+        items = (
+            ("day", "day", "Day. No light from windows."),
+            ("evening", "evening", "Evening. Light from windows.")
+        )
+    )
+    
+    materialType = bpy.props.EnumProperty(
+        name = "Material type",
+        items = (
+            # <fo> stands for 'facade with overlays'
+            ("fo", "facades with window overlays", 
+                "Seamless textures for wall materials, windows are placed on walls via overlay textures"),
+            # <fs> stands for 'facade seamless'
+            ("fs", "seamless facades",
+                "Seamless facades with windows"),
+            # <ms> stands for 'material seamless'
+            ("ms", "seamless materials",
+                "Simple seamless materials for roofs and walls without windows")
+            #("custom", "custom script", "Custom script")
+        ),
+        description = "Type of Blender material to create",
+        default = "fo"
+    )
+    
+    blenderMaterials = bpy.props.EnumProperty(
+        name = "Blender materials",
+        items = getBlenderMaterials,
+        description = "A group of Blender materials to create"
+    )
+    
     listOfTextures = bpy.props.StringProperty(
         name = "List of textures",
         description = "A list of textures to download from textures.com"
@@ -539,17 +587,6 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     materialScript = bpy.props.StringProperty(
         name = "Script",
         description = "A Python script to generate materials with selected textures"
-    )
-    
-    osmMaterial = bpy.props.EnumProperty(
-        name = "OSM material",
-        items = (
-            ("brick", "brick", "brick"),
-            ("plaster", "plaster", "plaster"),
-            ("metal", "metal", "metal"),
-            ("roof_tiles", "roof_tiles", "roof_tiles")
-        ),
-        description = "OSM material"
     )
 
 
