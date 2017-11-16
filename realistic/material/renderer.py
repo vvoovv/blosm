@@ -39,13 +39,13 @@ class MaterialRenderer:
         self.colorIndex = -1
         self.numColors = len(MaterialRenderer.wallColors)
     
-    def ensureUvLayer(self, name):
+    def requireUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
         # create a data UV layer
         if not name in uv:
             uv.new(name)
     
-    def ensureVertexColorLayer(self, name):
+    def requireVertexColorLayer(self, name):
         vertex_colors = self.r.bm.loops.layers.color
         # create a vertex color layer for data
         if not name in vertex_colors:
@@ -219,7 +219,7 @@ class SeamlessTexture(MaterialRenderer):
 class SeamlessTextureWithColor(MaterialRenderer):
     
     def init(self):
-        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.requireVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         
     def renderWalls(self, face, width):
@@ -242,7 +242,7 @@ class SeamlessTextureScaled(MaterialRenderer):
     uvLayer = "size"
     
     def init(self):
-        self.ensureUvLayer(self.uvLayer)
+        self.requireUvLayer(self.uvLayer)
         self.setupMaterials(self.materialName)
     
     def renderForObject(self, obj, slot):
@@ -256,8 +256,8 @@ class SeamlessTextureScaledWithColor(MaterialRenderer):
     uvLayer = "size"
     
     def init(self):
-        self.ensureUvLayer(self.uvLayer)
-        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.requireUvLayer(self.uvLayer)
+        self.requireVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
     
     def renderForObject(self, obj, slot):
@@ -276,7 +276,7 @@ class FacadeSeamlessTexture(MaterialRenderer):
         self.materialName2 = "%s_with_ground_level" % baseMaterialName
         
     def init(self):
-        self.ensureUvLayer(self.uvLayer)
+        self.requireUvLayer(self.uvLayer)
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         
@@ -307,8 +307,8 @@ class FacadeWithColor(MaterialRenderer):
             self.materialName2 = "%s_ground_level_emission" % baseMaterialName
     
     def init(self):
-        self.ensureUvLayer(self.uvLayer)
-        self.ensureVertexColorLayer(self.vertexColorLayer)
+        self.requireUvLayer(self.uvLayer)
+        self.requireVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         self.setupMaterial(self.materialWithoutWindows)
