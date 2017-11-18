@@ -8,6 +8,8 @@ from util import zAxis
 
 class RoofRealistic:
     
+    wallHeightWithoutWindows = 1.9
+    
     def init(self, element, data, osm, app):
         super().init(element, data, osm, app)
         # material renderer for walls
@@ -18,6 +20,8 @@ class RoofRealistic:
         self._levelHeights = None
         self._wallsColor = None
         self._roofColor = None
+        # Does the building or building part have windows?
+        self.noWindows = self.noWalls or self.wallHeight < RoofRealistic.wallHeightWithoutWindows
     
     def render(self):
         r = self.r
@@ -80,7 +84,7 @@ class RoofRealistic:
 
     def setMaterialWalls(self, name, useColor=True):
         if useColor and self.wallsColor:
-            name += "_with_color"
+            name += "_color"
         # mrw stands for "material renderer for walls"
         mrw = self.r.getMaterialRenderer(name)
         mrw.init()
@@ -90,7 +94,7 @@ class RoofRealistic:
     
     def setMaterialRoof(self, name, useColor=True):
         if useColor and self.roofColor:
-            name += "_with_color"
+            name += "_color"
         # mrr stands for "material renderer for roof"
         mrr = self.r.getMaterialRenderer(name)
         mrr.init()

@@ -15,18 +15,18 @@ def getMaterials():
         commercial = FacadeSeamlessTexture,
         apartments = FacadeSeamlessTexture,
         brick = SeamlessTexture,
-        brick_with_color = SeamlessTextureWithColor,
+        brick_color = SeamlessTextureWithColor,
         concrete = SeamlessTexture,
-        concrete_with_color = SeamlessTextureWithColor,
+        concrete_color = SeamlessTextureWithColor,
         plaster = SeamlessTexture,
-        plaster_with_color = SeamlessTextureWithColor,
+        plaster_color = SeamlessTextureWithColor,
         roof_tiles = SeamlessTexture,
-        roof_tiles_with_color = SeamlessTextureWithColor,
+        roof_tiles_color = SeamlessTextureWithColor,
         metal_without_uv = MaterialWithColor,
         metal = SeamlessTexture,
-        metal_with_color = SeamlessTextureWithColor,
+        metal_color = SeamlessTextureWithColor,
         metal_scaled = SeamlessTextureScaled,
-        metal_scaled_with_color = SeamlessTextureScaledWithColor
+        metal_scaled_color = SeamlessTextureScaledWithColor
     )
 
 

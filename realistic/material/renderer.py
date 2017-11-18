@@ -24,6 +24,7 @@ class MaterialRenderer:
     
     def __init__(self, renderer, baseMaterialName):
         self.r = renderer
+        self.isBlend4Web = bpy.context.scene.render.engine == "BLEND4WEB"
         # base name for Blender materials
         self.materialName = baseMaterialName
         # index of the Blender material to set to a BMFace
@@ -46,10 +47,15 @@ class MaterialRenderer:
             uv.new(name)
     
     def requireVertexColorLayer(self, name):
-        vertex_colors = self.r.bm.loops.layers.color
-        # create a vertex color layer for data
-        if not name in vertex_colors:
-            vertex_colors.new(name)
+        if self.isBlend4Web:
+            # emulate vertex color through UV-layers
+            self.requireUvLayer(name)
+            self.requireUvLayer(name + ".2")
+        else:
+            vertex_colors = self.r.bm.loops.layers.color
+            # create a vertex color layer for data
+            if not name in vertex_colors:
+                vertex_colors.new(name)
     
     def setData(self, face, layerName, uv):
         if not isinstance(uv, tuple):
@@ -68,14 +74,31 @@ class MaterialRenderer:
     def setColor(self, face, layerName, color):
         if not color:
             color = MaterialRenderer.wallColors[self.colorIndex]
-        vertexColorLayer = self.r.bm.loops.layers.color[layerName]
-        for loop in face.loops:
-            loop[vertexColorLayer] = color
+        if self.isBlend4Web:
+            # emulate vertex color through UV-layers
+            self.setData(face, layerName, (color[0], color[1]))
+            self.setData(face, layerName + ".2", color[2])
+        else:
+            vertexColorLayer = self.r.bm.loops.layers.color[layerName]
+            for loop in face.loops:
+                loop[vertexColorLayer] = color
     
     def setColorForObject(self, obj, layerName, color):
-        vertexColorLayer = obj.data.vertex_colors[layerName]
-        for d in vertexColorLayer.data:
-            d.color = color
+        if self.isBlend4Web:
+            layerName2 = layerName + ".2"
+            # create uv-layers if necessary
+            uv_textures = obj.data.uv_textures
+            if not layerName in uv_textures:
+                uv_textures.new(layerName)
+            if not layerName2 in uv_textures:
+                uv_textures.new(layerName2)
+            # emulate vertex color through UV-layers
+            self.setDataForObject(obj, layerName, (color[0], color[1]))
+            self.setDataForObject(obj, layerName2, color[2])
+        else:
+            vertexColorLayer = obj.data.vertex_colors[layerName]
+            for d in vertexColorLayer.data:
+                d.color = color
     
     def setupMaterial(self, name):
         """
@@ -189,6 +212,11 @@ class MaterialWithColor(MaterialRenderer):
     and with some base color
     """
     
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer, baseMaterialName)
+        if self.isBlend4Web:
+            self.materialName += "_b4w"
+    
     def init(self):
         self.setupMaterial(self.materialName)
     
@@ -217,6 +245,11 @@ class SeamlessTexture(MaterialRenderer):
 
 
 class SeamlessTextureWithColor(MaterialRenderer):
+
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer, baseMaterialName)
+        if self.isBlend4Web:
+            self.materialName += "_b4w"
     
     def init(self):
         self.requireVertexColorLayer(self.vertexColorLayer)
@@ -254,6 +287,11 @@ class SeamlessTextureScaled(MaterialRenderer):
 class SeamlessTextureScaledWithColor(MaterialRenderer):
     
     uvLayer = "size"
+
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer, baseMaterialName)
+        if self.isBlend4Web:
+            self.materialName += "_b4w"
     
     def init(self):
         self.requireUvLayer(self.uvLayer)
@@ -295,7 +333,7 @@ class FacadeWithColor(MaterialRenderer):
     
     uvLayer = "data.1"
     
-    materialWithoutWindows = "plaster_with_color"
+    materialWithoutWindows = "plaster_color"
     
     def __init__(self, renderer, baseMaterialName):
         super().__init__(renderer, baseMaterialName)
@@ -305,6 +343,10 @@ class FacadeWithColor(MaterialRenderer):
         else:
             self.materialName += "_emission"
             self.materialName2 = "%s_ground_level_emission" % baseMaterialName
+        if self.isBlend4Web:
+            self.materialName += "_b4w"
+            self.materialName2 += "_b4w"
+            self.materialWithoutWindows += "_b4w"
     
     def init(self):
         self.requireUvLayer(self.uvLayer)
@@ -328,7 +370,7 @@ class FacadeWithColor(MaterialRenderer):
         b = self.b
         self.setData(face, self.uvLayer, b.levelHeights)
         self.setColor(face, self.vertexColorLayer, b.wallsColor)
-        if width < 1.:
+        if b.noWindows or width < 1.:
             self.setSingleMaterial(face, self.materialWithoutWindows)
         else:
             if b.z1:

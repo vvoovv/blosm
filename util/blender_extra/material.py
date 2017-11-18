@@ -5,27 +5,29 @@ import bpy
 # <FO> means 'facade with overlay'
 _materialFamilyFO = (
     "",
+    "_b4w",
     "_emission",
+    "_emission_b4w",
     "_ground_level",
-    "_ground_level_emission"
+    "_ground_level_b4w",
+    "_ground_level_emission",
+    "_ground_level_emission_b4w",
 )
 
 # the name of the custom node for a Blender material for a facade with overlay;
 # the order of values in the Python tuple <_customNodeFO> corresponds to the one in
 # the Python tuple <_materialFamilyFO>
-_customNodeFO = (
-    "FacadeOverlay",
-    "FacadeOverlay",
-    "FacadeOverlayGroundLevel",
-    "FacadeOverlayGroundLevel"
-)
+_customNodeFO = 4*("FacadeOverlay",) + 4*("FacadeOverlayGroundLevel",)
+
 
 # <MS> means 'simple seamless material'
 _materialFamilyMS = (
     "",
     "_color",
+    "_color_b4w",
     "_scaled",
-    "_scaled_color"
+    "_scaled_color",
+    "_scaled_color_b4w"
 )
 
 
