@@ -40,7 +40,7 @@ class Overlay:
     uvName = "UVMap"
     
     # relative path to default materials
-    materialPath = "realistic/assets/materials.blend"
+    materialPath = "realistic/assets/base.blend"
     
     # name of the default material from <Overlay.materialPath>
     defaultMaterial = "overlay"
