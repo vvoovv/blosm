@@ -23,6 +23,7 @@ from mathutils import Vector
 from app import app
 from defs import Keys
 from util.transverse_mercator import TransverseMercator
+from realistic.material.renderer import FacadeWithColor
 
 
 def getDataTypes():
@@ -246,7 +247,7 @@ class PanelSettings(bpy.types.Panel):
         if addon.mode3d == "realistic":
             box = layout.box()
             box.prop(addon, "bldgMaterialsFilepath")
-            box.prop(addon, "dayTime")
+            box.prop(addon, "litWindows")
         
         box = layout.box()
         split = box.split(percentage=0.67)
@@ -547,12 +548,14 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "water"
     )
     
-    dayTime = bpy.props.EnumProperty(
-        name = "Day time",
-        items = (
-            ("day", "day", "Day. No light from windows."),
-            ("evening", "evening", "Evening. Light from windows.")
-        )
+    litWindows = bpy.props.IntProperty(
+        name = "Percentage of lit windows",
+        description = "Percentage of lit windows for a building",
+        min = 0,
+        max = 100,
+        subtype = 'UNSIGNED',
+        default = 0,
+        update = FacadeWithColor.updateLitWindows
     )
     
     materialType = bpy.props.EnumProperty(

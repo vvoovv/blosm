@@ -1,6 +1,7 @@
 import math
 import bpy
 from util.blender import appendMaterialsFromFile
+from util.blender_extra.material import setCustomNodeValue
 
 
 wallColors = (
@@ -130,6 +131,9 @@ class MaterialRenderer:
             materials.extend(m.name for m in loadedMaterials if not m is None)
         
         if materials:
+            for name in materials:
+                self.initMaterial(name)
+            
             # set the number of materials
             numMaterials = len(materials)
             if not self.multipleGroups or numMaterials < self.numMaterials:
@@ -154,6 +158,14 @@ class MaterialRenderer:
             print("No materials with the base name %s have been found" % groupName)
         
         self.r.materialGroups.add(groupName)
+    
+    def initMaterial(self, name):
+        """
+        Do something with the Blender material with the <name> marked in <self.setupMaterials(..)>.
+        
+        The function can be overriden by a child class
+        """
+        pass
     
     def setMaterial(self, face, groupName=None):
         """
@@ -338,11 +350,13 @@ class FacadeWithColor(MaterialRenderer):
     def __init__(self, renderer, baseMaterialName):
         super().__init__(renderer, baseMaterialName)
         self.colorIndex = -1
-        if self.r.app.dayTime == "day":
-            self.materialName2 = "%s_ground_level" % baseMaterialName
-        else:
+        
+        if self.r.app.litWindows:
             self.materialName += "_emission"
             self.materialName2 = "%s_ground_level_emission" % baseMaterialName
+        else:
+            self.materialName2 = "%s_ground_level" % baseMaterialName
+        
         if self.isBlend4Web:
             self.materialName += "_b4w"
             self.materialName2 += "_b4w"
@@ -354,6 +368,11 @@ class FacadeWithColor(MaterialRenderer):
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         self.setupMaterial(self.materialWithoutWindows)
+    
+    def initMaterial(self, name):
+        app = self.r.app
+        if app.litWindows:
+            FacadeWithColor.setWindowEmissionState(bpy.data.materials[name], app.litWindows)
     
     def onBuildingChanged(self):
         super().onBuildingChanged()
@@ -377,3 +396,19 @@ class FacadeWithColor(MaterialRenderer):
                 self.setMaterial(face, self.materialName)
             else:
                 self.setMaterial(face, self.materialName2)
+    
+    @staticmethod
+    def setWindowEmissionState(material, percentage):
+        nodes = material.node_tree.nodes
+        if "WindowEmissionState" in nodes:
+            setCustomNodeValue(
+                nodes["WindowEmissionState"],
+                "Lit Windows Ratio",
+                0.99999 if percentage == 100 else percentage/100.
+            )
+    
+    @staticmethod
+    def updateLitWindows(addon, context):
+        percentage = addon.litWindows
+        for m in bpy.data.materials:
+            FacadeWithColor.setWindowEmissionState(m, percentage)
