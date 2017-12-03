@@ -372,7 +372,7 @@ class FacadeWithColor(MaterialRenderer):
     def initMaterial(self, name):
         app = self.r.app
         if app.litWindows:
-            FacadeWithColor.setWindowEmissionState(bpy.data.materials[name], app.litWindows)
+            FacadeWithColor.setWindowEmissionRatio(bpy.data.materials[name], app.litWindows)
     
     def onBuildingChanged(self):
         super().onBuildingChanged()
@@ -398,7 +398,7 @@ class FacadeWithColor(MaterialRenderer):
                 self.setMaterial(face, self.materialName2)
     
     @staticmethod
-    def setWindowEmissionState(material, percentage):
+    def setWindowEmissionRatio(material, percentage):
         nodes = material.node_tree.nodes
         if "WindowEmissionState" in nodes:
             setCustomNodeValue(
@@ -411,4 +411,4 @@ class FacadeWithColor(MaterialRenderer):
     def updateLitWindows(addon, context):
         percentage = addon.litWindows
         for m in bpy.data.materials:
-            FacadeWithColor.setWindowEmissionState(m, percentage)
+            FacadeWithColor.setWindowEmissionRatio(m, percentage)
