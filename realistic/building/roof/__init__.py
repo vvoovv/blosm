@@ -117,7 +117,8 @@ class RoofRealistic:
             n = tags.get("building:levels")
             if not n is None:
                 n = parseNumber(n)
-            if n is None:
+            # the second condition is a sanity check
+            if n is None or n <= 0.:
                 n = math.floor(
                     (self.roofMinHeight-self.z1)/self.r.app.levelHeight\
                     if self.z1 else\
@@ -129,7 +130,8 @@ class RoofRealistic:
                 _n = tags.get("building:min_level")
                 if not _n is None:
                     _n = parseNumber(_n)
-                    if not _n is None:
+                    # the second condition is a sanity check
+                    if not _n is None and _n < n:
                         n -= _n
             self._numLevels = n
         return self._numLevels
