@@ -31,15 +31,20 @@ _materialFamilyMS = (
 )
 
 
+def createMaterialFromTemplate(materialTemplate, materialName):
+    m = materialTemplate.copy()
+    m.name = materialName
+    m.use_fake_user = True
+    
+    return m.node_tree.nodes
+
+
 def createFacadeMaterialsForSeamlessTextures(files, directory, listOfTextures, materialTemplate1, materialTemplate2):
     def createMaterials(materialBaseName, materialTemplate):
         materialName = "%s.%s" % (materialBaseName, (i+1))
         if not materialName in bpy.data.materials:
-            m = materialTemplate.copy()
-            m.name = materialName
-            m.use_fake_user = True
+            nodes = createMaterialFromTemplate(materialTemplate, materialName)
             
-            nodes = m.node_tree.nodes
             setImage(fileName, directory, nodes["Image Texture"])
             setCustomNodeValue(nodes["FacadePart"], "Number of Tiles U", textureDataEntry[0])
             setCustomNodeValue(nodes["FacadePart"], "Number of Tiles V", textureDataEntry[1])
@@ -67,16 +72,10 @@ def createFacadeMaterialsForSeamlessTextures(files, directory, listOfTextures, m
             )
 
 
-def createMaterialsForFacadesOverlay(files, directory, materialBaseName, listOfTextures, baseMaterialTemplate):
-    def setNode(n):
-        setCustomNodeValue(n, "Texture Width", textureWidthM)
-        setCustomNodeValue(n, "Number of Tiles U", numberOfTilesU)
-        setCustomNodeValue(n, "Tile Size U Default", tileSizeUdefaultM)
-        setCustomNodeValue(n, "Texture U-Offset", textureUoffsetM)
-        setCustomNodeValue(n, "Number of Tiles V", numberOfTilesV)
-        setCustomNodeValue(n, "Texture Level Height", textureLevelHeightM)
-        setCustomNodeValue(n, "Texture Height", textureHeightM)
-        setCustomNodeValue(n, "Texture V-Offset", textureVoffsetM)
+def createMaterialsForFacadesOverlay(
+        files, directory, materialBaseName, listOfTextures, baseMaterialTemplate,
+        wallMaterial, wallTexturePath, wallTextureWidthM, wallTextureHeightM
+    ):
     
     textureData = readTextures(listOfTextures)
     
@@ -113,24 +112,46 @@ def createMaterialsForFacadesOverlay(files, directory, materialBaseName, listOfT
             textureHeightM = factor*textureHeightPx
             textureVoffsetM = factor*(textureHeightPx - textureVoffsetPx)
             
-            for index, m, materialTemplate, customNode in\
-                zip(range(len(materialTemplates)), _materialFamilyFO, materialTemplates, _customNodeFO):
-                materialTemplate = bpy.data.materials[materialTemplate]
+            for m, materialTemplate, customNode in\
+                zip(_materialFamilyFO, materialTemplates, _customNodeFO):
+                materialTemplate = bpy.data.materials.get(materialTemplate)
                 if not materialTemplate:
                     print("Template \"%s\" for materials not found!" % materialTemplate)
                     continue
                 materialName = "%s%s.%s" % (materialBaseName, m, (i+1))
                 if not materialName in bpy.data.materials:
-                    m = materialTemplate.copy()
-                    m.name = materialName
-                    m.use_fake_user = True
-                    
-                    nodes = m.node_tree.nodes
-                    # the base image
+                    nodes = createMaterialFromTemplate(materialTemplate, materialName)
+                    # the overlay texture
                     setImage(fileName, directory, nodes["Overlay"])
+                    # The wall material (i.e. background) texture,
+                    # set it just in case
+                    setImage(wallTexturePath, None, nodes["Wall Material"])
+                    nodes["Mapping"].scale[0] = 1./wallTextureWidthM
+                    nodes["Mapping"].scale[1] = 1./wallTextureHeightM
                     # the masks for the overlay and for the emission
                     setImage("%s_masks.png" % fileName[:-4], directory, nodes["Masks"])
-                    setNode(nodes[customNode])
+                    # setting nodes
+                    n = nodes[customNode]
+                    setCustomNodeValue(n, "Texture Width", textureWidthM)
+                    setCustomNodeValue(n, "Number of Tiles U", numberOfTilesU)
+                    setCustomNodeValue(n, "Tile Size U Default", tileSizeUdefaultM)
+                    setCustomNodeValue(n, "Texture U-Offset", textureUoffsetM)
+                    setCustomNodeValue(n, "Number of Tiles V", numberOfTilesV)
+                    setCustomNodeValue(n, "Texture Level Height", textureLevelHeightM)
+                    setCustomNodeValue(n, "Texture Height", textureHeightM)
+                    setCustomNodeValue(n, "Texture V-Offset", textureVoffsetM)
+            # additionally create materials for walls
+            for suffix in ("", "_b4w"):
+                materialTemplate = bpy.data.materials.get("tiles_color%s_template" % suffix)
+                if not materialTemplate:
+                    print("Template \"%s\" for materials not found!" % materialTemplate)
+                    continue
+                materialName = "%s_color%s" % (wallMaterial, suffix)
+                if not materialName in bpy.data.materials:
+                    nodes = createMaterialFromTemplate(materialTemplate, materialName)
+                    setImage(wallTexturePath, None, nodes["Image Texture"])
+                    nodes["Mapping"].scale[0] = 1./wallTextureWidthM
+                    nodes["Mapping"].scale[1] = 1./wallTextureHeightM
         else:
             print(
                 ("Information about the image texture \"%s\" isn't available " +
@@ -148,17 +169,14 @@ def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listO
         textureDataEntry = textureData.get(fileName)
         if textureDataEntry:
             for m, materialTemplate in zip(_materialFamilyMS, materialTemplates):
-                materialTemplate = bpy.data.materials[materialTemplate]
+                materialTemplate = bpy.data.materials.get(materialTemplate)
                 if not materialTemplate:
                     print("Template \"%s\" for materials not found!" % materialTemplate)
                     continue
                 materialName = "%s%s.%s" % (materialBaseName, m, (i+1))
                 if not materialName in bpy.data.materials:
-                    m = materialTemplate.copy()
-                    m.name = materialName
-                    m.use_fake_user = True
+                    nodes = createMaterialFromTemplate(materialTemplate, materialName)
                     
-                    nodes = m.node_tree.nodes
                     setImage(fileName, directory, nodes["Image Texture"])
                     nodes["Mapping"].scale[0] = 1./textureDataEntry[0]
                     nodes["Mapping"].scale[1] = 1./textureDataEntry[1]
@@ -178,10 +196,9 @@ def readTextures(listOfTextures):
 
 
 def setImage(fileName, directory, node):
-    image = bpy.data.images.get(
-        fileName,
-        bpy.data.images.load(os.path.join(directory, fileName))
-    )
+    image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
+    if not image:
+        image = bpy.data.images.load(os.path.join(directory, fileName) if directory else fileName)
     node.image = image
 
 
@@ -253,7 +270,7 @@ class OperatorCreateMaterials(bpy.types.Operator):
     
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return {'RUNNING_MODAL'}
     
     def execute(self, context):
         addon = context.scene.blender_osm
@@ -269,12 +286,36 @@ class OperatorCreateMaterials(bpy.types.Operator):
             )
         # <fo> means 'facades with window overlays'
         elif materialType == "fo":
+            wallTexturePath = os.path.realpath(bpy.path.abspath(addon.wallTexture))
+            if not os.path.isfile(wallTexturePath):
+                self.report({'ERROR'}, "Set a valid wall texture listed in in the Blender text data-block \"wall_textures\"")
+                return {'CANCELLED'}
+            
+            wallTextureFileName = os.path.basename(wallTexturePath)
+            textBlock = bpy.data.texts.get("wall_textures")
+            if not textBlock:
+                self.report({'ERROR'}, "The Blender text data-block \"wall_textures\" is not found!")
+                return {'CANCELLED'}
+            
+            for line in textBlock.lines:
+                fileName, wallMaterial, width, height =  map(lambda s: s.strip(), line.body.split(','))
+                if fileName == wallTextureFileName:
+                    width = float(width)
+                    height = float(height)
+                    break
+            else:
+                self.report({'ERROR'}, "Unable to find a valid entry for the texture %s in the Blender text data-block \"wall_textures\"!" % wallTextureFileName)
+                return {'CANCELLED'}
             createMaterialsForFacadesOverlay(
                 self.files,
                 self.directory,
                 addon.blenderMaterials,
                 addon.listOfTextures,
-                "facade_overlay"
+                "facade_overlay",
+                wallMaterial,
+                wallTexturePath,
+                width,
+                height
             )
         return {'FINISHED'}
 
@@ -294,6 +335,13 @@ class OperatorDeleteMaterials(bpy.types.Operator):
                 material = bpy.data.materials.get(materialName)
                 if material:
                     bpy.data.materials.remove(material, True)
+        
+        if addon.materialType == "ms":
+            # also delete wall materials used by facade overlays
+            for suffix in ("", "_b4w"):
+                wallMaterial = bpy.data.materials.get("%s_color%s" % (addon.blenderMaterials, suffix))
+                if wallMaterial:
+                    bpy.data.materials.remove(wallMaterial, True)
         return {'FINISHED'}
 
 
@@ -313,6 +361,10 @@ class PanelMaterialCreate(bpy.types.Panel):
         box.prop(addon, "materialType", text='')
         
         layout.prop(addon, "blenderMaterials")
+        
+        if addon.materialType == "fo":
+            # wall texture (i.e. background material)
+            layout.prop(addon, "wallTexture")
         
         layout.prop_search(addon, "listOfTextures", bpy.data, "texts")
         

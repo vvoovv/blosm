@@ -41,6 +41,7 @@ def getDataTypes():
 _blenderMaterials = (
     ("neoclassical", "fo"),
     ("apartments", "fs"),
+    ("commercial", "fo"),
     ("commercial", "fs"),
     ("glass", "fs"),
     ("brick", "ms"),
@@ -558,6 +559,10 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         update = FacadeWithColor.updateLitWindows
     )
     
+    #    
+    # A group of properties for Blender material utilities
+    #
+    
     materialType = bpy.props.EnumProperty(
         name = "Material type",
         items = (
@@ -580,6 +585,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         name = "Blender materials",
         items = getBlenderMaterials,
         description = "A group of Blender materials to create"
+    )
+    
+    wallTexture = bpy.props.StringProperty(
+        name = "Wall texture",
+        subtype = 'FILE_PATH',
+        description = "Path to a wall texture, that must be listed in the Blender text data-block \"wall_textures\""
     )
     
     listOfTextures = bpy.props.StringProperty(

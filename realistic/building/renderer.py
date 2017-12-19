@@ -32,9 +32,13 @@ class RealisticBuildingRenderer(BuildingRenderer):
         # <mr> stands for "material renderer"
         mr = self.materialRenderers.get(name)
         if not mr:
-            constructor = self.materials.get(name)
-            if constructor:
-                mr = constructor(self, name)
+            # <md> stands for material definition
+            md = self.materials.get(name)
+            if md:
+                # <md[0]> is a constructor
+                mr = md[0](self, name, *md[1:])\
+                    if isinstance(md, tuple) else\
+                    md(self, name) # <md> is just a constructor
                 self.materialRenderers[name] = mr
         return mr
     

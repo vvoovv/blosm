@@ -345,10 +345,9 @@ class FacadeWithColor(MaterialRenderer):
     
     uvLayer = "data.1"
     
-    materialWithoutWindows = "plaster_color"
-    
-    def __init__(self, renderer, baseMaterialName):
+    def __init__(self, renderer, baseMaterialName, *args):
         super().__init__(renderer, baseMaterialName)
+        self.wallMaterial = "%s_color" % args[0]
         self.colorIndex = -1
         
         if self.r.app.litWindows:
@@ -360,14 +359,14 @@ class FacadeWithColor(MaterialRenderer):
         if self.isBlend4Web:
             self.materialName += "_b4w"
             self.materialName2 += "_b4w"
-            self.materialWithoutWindows += "_b4w"
+            self.wallMaterial += "_b4w"
     
     def init(self):
         self.requireUvLayer(self.uvLayer)
         self.requireVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
-        self.setupMaterial(self.materialWithoutWindows)
+        self.setupMaterial(self.wallMaterial)
     
     def initMaterial(self, name):
         app = self.r.app
@@ -390,7 +389,7 @@ class FacadeWithColor(MaterialRenderer):
         self.setData(face, self.uvLayer, b.levelHeights)
         self.setColor(face, self.vertexColorLayer, b.wallsColor)
         if b.noWindows or width < 1.:
-            self.setSingleMaterial(face, self.materialWithoutWindows)
+            self.setSingleMaterial(face, self.wallMaterial)
         else:
             if b.z1:
                 self.setMaterial(face, self.materialName)
