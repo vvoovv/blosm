@@ -115,6 +115,10 @@ class Roof:
             # no tag <height> or invalid value
             roofMinHeight = self.getRoofMinHeight(element, app)
             z2 = roofMinHeight + roofHeight
+        elif not z2:
+            # the tag <height> is equal to zero 
+            self.valid = False
+            return
         else:
             roofMinHeight = z2 - roofHeight
         wallHeight = roofMinHeight - z1
