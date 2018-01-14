@@ -25,7 +25,6 @@ class MaterialRenderer:
     
     def __init__(self, renderer, baseMaterialName):
         self.r = renderer
-        self.isBlend4Web = bpy.context.scene.render.engine == "BLEND4WEB"
         # base name for Blender materials
         self.materialName = baseMaterialName
         # index of the Blender material to set to a BMFace
@@ -48,15 +47,10 @@ class MaterialRenderer:
             uv.new(name)
     
     def requireVertexColorLayer(self, name):
-        if self.isBlend4Web:
-            # emulate vertex color through UV-layers
-            self.requireUvLayer(name)
-            self.requireUvLayer(name + ".2")
-        else:
-            vertex_colors = self.r.bm.loops.layers.color
-            # create a vertex color layer for data
-            if not name in vertex_colors:
-                vertex_colors.new(name)
+        vertex_colors = self.r.bm.loops.layers.color
+        # create a vertex color layer for data
+        if not name in vertex_colors:
+            vertex_colors.new(name)
     
     def setData(self, face, layerName, uv):
         if not isinstance(uv, tuple):
@@ -75,31 +69,14 @@ class MaterialRenderer:
     def setColor(self, face, layerName, color):
         if not color:
             color = MaterialRenderer.wallColors[self.colorIndex]
-        if self.isBlend4Web:
-            # emulate vertex color through UV-layers
-            self.setData(face, layerName, (color[0], color[1]))
-            self.setData(face, layerName + ".2", color[2])
-        else:
-            vertexColorLayer = self.r.bm.loops.layers.color[layerName]
-            for loop in face.loops:
-                loop[vertexColorLayer] = color
+        vertexColorLayer = self.r.bm.loops.layers.color[layerName]
+        for loop in face.loops:
+            loop[vertexColorLayer] = color
     
     def setColorForObject(self, obj, layerName, color):
-        if self.isBlend4Web:
-            layerName2 = layerName + ".2"
-            # create uv-layers if necessary
-            uv_textures = obj.data.uv_textures
-            if not layerName in uv_textures:
-                uv_textures.new(layerName)
-            if not layerName2 in uv_textures:
-                uv_textures.new(layerName2)
-            # emulate vertex color through UV-layers
-            self.setDataForObject(obj, layerName, (color[0], color[1]))
-            self.setDataForObject(obj, layerName2, color[2])
-        else:
-            vertexColorLayer = obj.data.vertex_colors[layerName]
-            for d in vertexColorLayer.data:
-                d.color = color
+        vertexColorLayer = obj.data.vertex_colors[layerName]
+        for d in vertexColorLayer.data:
+            d.color = color
     
     def setupMaterial(self, name):
         """
@@ -218,16 +195,53 @@ class MaterialRenderer:
         return bpy.data.materials[self.materialName]
 
 
+class FacadeWithColor(MaterialRenderer):
+    
+    def __init__(self, renderer, baseMaterialName):
+        super().__init__(renderer, baseMaterialName)
+        if self.r.app.litWindows:
+            self.materialName += "_emission"
+            self.materialName2 = "%s_ground_level_emission" % baseMaterialName
+        else:
+            self.materialName2 = "%s_ground_level" % baseMaterialName
+
+    def initMaterial(self, name):
+        app = self.r.app
+        if app.litWindows:
+            FacadeWithColor.setWindowEmissionRatio(bpy.data.materials[name], app.litWindows)
+    
+    def onBuildingChanged(self):
+        super().onBuildingChanged()
+        if not self.b.wallsColor:
+            # Increase <self.colorIndex> to use it the mext time when color for the walls
+            # wasn't set
+            self.colorIndex += 1
+            if self.colorIndex == self.numColors:
+                # all available colors have been used, so set <self.colorIndex> to zero
+                self.colorIndex = 0
+
+    @staticmethod
+    def updateLitWindows(addon, context):
+        percentage = addon.litWindows
+        for m in bpy.data.materials:
+            FacadeWithColor.setWindowEmissionRatio(m, percentage)
+
+    @staticmethod
+    def setWindowEmissionRatio(material, percentage):
+        nodes = material.node_tree.nodes
+        if "WindowEmissionState" in nodes:
+            setCustomNodeValue(
+                nodes["WindowEmissionState"],
+                "Lit Windows Ratio",
+                0.99999 if percentage == 100 else percentage/100.
+            )
+
+
 class MaterialWithColor(MaterialRenderer):
     """
     Material renderer for a general Blender material without UV mapping
     and with some base color
     """
-    
-    def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer, baseMaterialName)
-        if self.isBlend4Web:
-            self.materialName += "_b4w"
     
     def init(self):
         self.setupMaterial(self.materialName)
@@ -257,11 +271,6 @@ class SeamlessTexture(MaterialRenderer):
 
 
 class SeamlessTextureWithColor(MaterialRenderer):
-
-    def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer, baseMaterialName)
-        if self.isBlend4Web:
-            self.materialName += "_b4w"
     
     def init(self):
         self.requireVertexColorLayer(self.vertexColorLayer)
@@ -299,11 +308,6 @@ class SeamlessTextureScaled(MaterialRenderer):
 class SeamlessTextureScaledWithColor(MaterialRenderer):
     
     uvLayer = "size"
-
-    def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer, baseMaterialName)
-        if self.isBlend4Web:
-            self.materialName += "_b4w"
     
     def init(self):
         self.requireUvLayer(self.uvLayer)
@@ -317,22 +321,20 @@ class SeamlessTextureScaledWithColor(MaterialRenderer):
         slot.material = self.getMaterial()
 
 
-class FacadeSeamlessTexture(MaterialRenderer):
+class FacadeSeamlessTexture(FacadeWithColor):
     
     uvLayer = "data.1"
-    
-    def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer, baseMaterialName)
-        self.materialName2 = "%s_with_ground_level" % baseMaterialName
         
     def init(self):
         self.requireUvLayer(self.uvLayer)
+        self.requireVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
-        
+    
     def renderWalls(self, face, width):
         # building
         b = self.b
+        self.setColor(face, self.vertexColorLayer, b.wallsColor)
         if b.z1:
             self.setData(face, self.uvLayer, b.numLevels)
             self.setMaterial(face, self.materialName)
@@ -341,7 +343,7 @@ class FacadeSeamlessTexture(MaterialRenderer):
             self.setMaterial(face, self.materialName2)
 
 
-class FacadeWithColor(MaterialRenderer):
+class FacadeWithOverlay(FacadeWithColor):
     
     uvLayer = "data.1"
     
@@ -349,17 +351,6 @@ class FacadeWithColor(MaterialRenderer):
         super().__init__(renderer, baseMaterialName)
         self.wallMaterial = "%s_color" % args[0]
         self.colorIndex = -1
-        
-        if self.r.app.litWindows:
-            self.materialName += "_emission"
-            self.materialName2 = "%s_ground_level_emission" % baseMaterialName
-        else:
-            self.materialName2 = "%s_ground_level" % baseMaterialName
-        
-        if self.isBlend4Web:
-            self.materialName += "_b4w"
-            self.materialName2 += "_b4w"
-            self.wallMaterial += "_b4w"
     
     def init(self):
         self.requireUvLayer(self.uvLayer)
@@ -367,21 +358,6 @@ class FacadeWithColor(MaterialRenderer):
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
         self.setupMaterial(self.wallMaterial)
-    
-    def initMaterial(self, name):
-        app = self.r.app
-        if app.litWindows:
-            FacadeWithColor.setWindowEmissionRatio(bpy.data.materials[name], app.litWindows)
-    
-    def onBuildingChanged(self):
-        super().onBuildingChanged()
-        if not self.b.wallsColor:
-            # Increase <self.colorIndex> to use it the mext time when color for the walls
-            # wasn't set
-            self.colorIndex += 1
-            if self.colorIndex == self.numColors:
-                # all available colors have been used, so set <self.colorIndex> to zero
-                self.colorIndex = 0
     
     def renderWalls(self, face, width):
         # building
@@ -395,19 +371,3 @@ class FacadeWithColor(MaterialRenderer):
                 self.setMaterial(face, self.materialName)
             else:
                 self.setMaterial(face, self.materialName2)
-    
-    @staticmethod
-    def setWindowEmissionRatio(material, percentage):
-        nodes = material.node_tree.nodes
-        if "WindowEmissionState" in nodes:
-            setCustomNodeValue(
-                nodes["WindowEmissionState"],
-                "Lit Windows Ratio",
-                0.99999 if percentage == 100 else percentage/100.
-            )
-    
-    @staticmethod
-    def updateLitWindows(addon, context):
-        percentage = addon.litWindows
-        for m in bpy.data.materials:
-            FacadeWithColor.setWindowEmissionRatio(m, percentage)
