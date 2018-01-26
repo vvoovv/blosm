@@ -88,9 +88,10 @@ class RoofRealistic:
         # mrw stands for "material renderer for walls"
         mrw = self.r.getMaterialRenderer(name)
         mrw.init()
-        # set building <b> attribute to <self>
-        mrw.b = self
-        self.mrw = mrw
+        if mrw.valid:
+            # set building <b> attribute to <self>
+            mrw.b = self
+            self.mrw = mrw
     
     def setMaterialRoof(self, name, useColor=True):
         if useColor and self.roofColor:
@@ -98,9 +99,10 @@ class RoofRealistic:
         # mrr stands for "material renderer for roof"
         mrr = self.r.getMaterialRenderer(name)
         mrr.init()
-        # set building <b> attribute to <self>
-        mrr.b = self
-        self.mrr = mrr
+        if mrr.valid:
+            # set building <b> attribute to <self>
+            mrr.b = self
+            self.mrr = mrr
 
     @property
     def numLevels(self):

@@ -1,7 +1,7 @@
 from . import RoofRealistic
 from building.roof.hipped import RoofHipped
-from .flat import RoofFlatRealistic
-from .profile import RoofProfileRealistic
+from .flat import RoofFlatRealistic, RoofFlat
+from .profile import RoofProfileRealistic, RoofProfile
 
 
 class RoofHippedRealistic(RoofRealistic, RoofHipped):
@@ -14,6 +14,12 @@ class RoofHippedRealistic(RoofRealistic, RoofHipped):
     
     def renderWalls(self):
         if self.makeFlat:
-            RoofFlatRealistic.renderWalls(self)
+            if self.mrw:
+                RoofFlatRealistic.renderWalls(self)
+            else:
+                RoofFlat.renderWalls(self)
         else:
-            RoofProfileRealistic.renderWalls(self)
+            if self.mrw:
+                RoofProfileRealistic.renderWalls(self)
+            else:
+                RoofProfile.renderWalls(self)

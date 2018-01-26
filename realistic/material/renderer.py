@@ -24,6 +24,7 @@ class MaterialRenderer:
     roofColor = (0.29, 0.25, 0.21)
     
     def __init__(self, renderer, baseMaterialName):
+        self.valid = True
         self.r = renderer
         # base name for Blender materials
         self.materialName = baseMaterialName
@@ -132,6 +133,7 @@ class MaterialRenderer:
                 self.groupName = groupName
                 self.materials = materials
         else:
+            self.valid = False
             print("No materials with the base name %s have been found" % groupName)
         
         self.r.materialGroups.add(groupName)
