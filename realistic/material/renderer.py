@@ -4,26 +4,23 @@ from util.blender import appendMaterialsFromFile
 from util.blender_extra.material import setCustomNodeValue
 
 
-wallColors = (
-        (0.502, 0., 0.502), # purple
-        (0.604, 0.804, 0.196), # yellowgreen
-        (0.529, 0.808, 0.922), # skyblue
-        (0.565, 0.933, 0.565), # lightgreen
-        (0.855, 0.647, 0.125) # goldenrod
-    )
+_wallColors = (
+    (0.502, 0., 0.502), # purple
+    (0.604, 0.804, 0.196), # yellowgreen
+    (0.529, 0.808, 0.922), # skyblue
+    (0.565, 0.933, 0.565), # lightgreen
+    (0.855, 0.647, 0.125) # goldenrod
+)
 
 
 class MaterialRenderer:
     
     vertexColorLayer = "Col"
     
-    # default colors for walls, used if a valid tag <building:colour> isn't available
-    wallColors = wallColors
-    
     # default roof color used by some material renderers
     roofColor = (0.29, 0.25, 0.21)
     
-    def __init__(self, renderer, baseMaterialName):
+    def __init__(self, renderer, baseMaterialName, wallColors = None):
         self.valid = True
         self.r = renderer
         # base name for Blender materials
@@ -39,7 +36,8 @@ class MaterialRenderer:
         self.multipleGroups = False
         # variables for the default colors
         self.colorIndex = -1
-        self.numColors = len(MaterialRenderer.wallColors)
+        self.wallColors = wallColors or _wallColors
+        self.numColors = len(self.wallColors)
     
     def requireUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
@@ -69,7 +67,7 @@ class MaterialRenderer:
     
     def setColor(self, face, layerName, color):
         if not color:
-            color = MaterialRenderer.wallColors[self.colorIndex]
+            color = self.wallColors[self.colorIndex]
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
@@ -199,8 +197,8 @@ class MaterialRenderer:
 
 class FacadeWithColor(MaterialRenderer):
     
-    def __init__(self, renderer, baseMaterialName):
-        super().__init__(renderer, baseMaterialName)
+    def __init__(self, renderer, baseMaterialName, wallColors = None):
+        super().__init__(renderer, baseMaterialName, wallColors)
         if self.r.app.litWindows:
             self.materialName += "_emission"
             self.materialName2 = "%s_ground_level_emission" % baseMaterialName
@@ -350,7 +348,7 @@ class FacadeWithOverlay(FacadeWithColor):
     uvLayer = "data.1"
     
     def __init__(self, renderer, baseMaterialName, *args):
-        super().__init__(renderer, baseMaterialName)
+        super().__init__(renderer, baseMaterialName, args[1])
         self.wallMaterial = "%s_color" % args[0]
         self.colorIndex = -1
     
