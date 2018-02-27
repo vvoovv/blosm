@@ -136,7 +136,7 @@ class BaseManager(Manager):
         for rel in osm.relations:
             rel = osm.relations[rel]
             if rel.valid and rel.r:
-                renderer = rel.rr if rel.rr else self.renderer
+                renderer = rel.rr or self.renderer
                 renderer.preRender(rel)
                 if rel.t is Renderer.polygon:
                     renderer.renderPolygon(rel, osm)
@@ -151,7 +151,7 @@ class BaseManager(Manager):
         for way in osm.ways:
             way = osm.ways[way]
             if way.valid and way.r:
-                renderer = way.rr if way.rr else self.renderer
+                renderer = way.rr or self.renderer
                 renderer.preRender(way)
                 if way.t is Renderer.polygon:
                     renderer.renderPolygon(way, osm)
