@@ -85,7 +85,9 @@ class App:
         "water": (0.009, 0.002, 0.8),
         "forest": (0.02, 0.208, 0.007),
         "vegetation": (0.007, 0.558, 0.005),
-        "highways": (0.1, 0.1, 0.1),
+        "roads_pedestrian": (0.1, 0.1, 0.1),
+        "paths_footway": (0.1, 0.1, 0.1),
+        "paths_steps": (0.1, 0.1, 0.1),
         "railways": (0.2, 0.2, 0.2)
     }
     

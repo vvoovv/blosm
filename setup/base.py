@@ -37,8 +37,54 @@ def buildingPart(tags, e):
 def buildingRelation(tags, e):
     return isinstance(e, Building)
 
-def highway(tags, e):
-    return "highway" in tags
+#
+# highway = *
+#
+def highway_motorway(tags, e):
+    return tags.get("highway") in ("motorway", "motorway_link")
+
+def highway_trunk(tags, e):
+    return tags.get("highway") in ("trunk", "trunk_link")
+
+def highway_primary(tags, e):
+    return tags.get("highway") in ("primary", "primary_link")
+
+def highway_secondary(tags, e):
+    return tags.get("highway") in ("secondary", "secondary_link")
+
+def highway_tertiary(tags, e):
+    return tags.get("highway") in ("tertiary", "tertiary_link")
+
+def highway_unclassified(tags, e):
+    return tags.get("highway") == "unclassified"
+
+def highway_residential(tags, e):
+    return tags.get("highway") in ("residential", "living_street")
+
+def highway_service(tags, e):
+    return tags.get("highway") == "service"
+
+def highway_pedestrian(tags, e):
+    return tags.get("highway") == "pedestrian"
+
+def highway_track(tags, e):
+    return tags.get("highway") == "track"
+
+def highway_footway(tags, e):
+    return tags.get("highway") in ("footway", "path")
+
+def highway_steps(tags, e):
+    return tags.get("highway") == "steps"
+
+def highway_bridleway(tags, e):
+    return tags.get("highway") == "bridleway"
+
+def highway_cycleway(tags, e):
+    return tags.get("highway") == "cycleway"
+
+def highway_other(tags, e):
+    return tags.get("highway") in ("road", "escape", "raceway")
+
 
 def railway(tags, e):
     return "railway" in tags
@@ -93,7 +139,22 @@ def setup(app, osm):
             app.managers.append(buildings)
     
     if app.highways:
-        osm.addCondition(highway, "highways", linestring)
+        osm.addCondition(highway_motorway, "roads_motorway", linestring)
+        osm.addCondition(highway_trunk, "roads_trunk", linestring)
+        osm.addCondition(highway_primary, "roads_primary", linestring)
+        osm.addCondition(highway_secondary, "roads_secondary", linestring)
+        osm.addCondition(highway_tertiary, "roads_tertiary", linestring)
+        osm.addCondition(highway_unclassified, "roads_unclassified", linestring)
+        osm.addCondition(highway_residential, "roads_residential", linestring)
+        # footway to optimize the walk through conditions
+        osm.addCondition(highway_footway, "paths_footway", linestring)
+        osm.addCondition(highway_service, "roads_service", linestring)
+        osm.addCondition(highway_pedestrian, "roads_pedestrian", linestring)
+        osm.addCondition(highway_track, "roads_track", linestring)
+        osm.addCondition(highway_steps, "paths_steps", linestring)
+        osm.addCondition(highway_cycleway, "paths_cycleway", linestring)
+        osm.addCondition(highway_bridleway, "paths_bridleway", linestring)
+        osm.addCondition(highway_other, "roads_other", linestring)
     if app.railways:
         osm.addCondition(railway, "railways", linestring)
     if app.water:
