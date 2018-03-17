@@ -215,13 +215,13 @@ class Osm:
         # do we need to skip the OSM <element> from storing in <self.ways> or <self.relations>
         skip = False
         condition = self.conditions[ci]
+        # always set <layer>
+        # layer = condition[3]
+        element.l = condition[3]
         # check if we have a special manager for the element
         manager = condition[1]
         if manager:
             parseElement(manager, element, elementId)
-        # always set <layer>
-        # layer = condition[3]
-        element.l = condition[3]
         # check if wee need to set a special renderer
         if condition[2]:
             # renderer = condition[2]

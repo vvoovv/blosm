@@ -29,6 +29,9 @@ from util.blender import makeActive
 from util.polygon import Polygon
 
 
+_asphaltColor = (0.0865, 0.090842, 0.088656)
+
+
 class App:
     
     #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
@@ -85,9 +88,29 @@ class App:
         "water": (0.009, 0.002, 0.8),
         "forest": (0.02, 0.208, 0.007),
         "vegetation": (0.007, 0.558, 0.005),
-        "roads_pedestrian": (0.1, 0.1, 0.1),
-        "paths_footway": (0.1, 0.1, 0.1),
-        "paths_steps": (0.1, 0.1, 0.1),
+        
+        "areas_service": _asphaltColor,
+        "areas_pedestrian": _asphaltColor,
+        "areas_footway": _asphaltColor,
+        "areas_steps": _asphaltColor,
+        "areas_railways": _asphaltColor,
+        
+        "roads_motorway": _asphaltColor,
+        "roads_trunk": _asphaltColor,
+        "roads_primary": _asphaltColor,
+        "roads_secondary": _asphaltColor,
+        "roads_tertiary": _asphaltColor,
+        "roads_unclassified": _asphaltColor,
+        "roads_residential": _asphaltColor,
+        "paths_footway": _asphaltColor,
+        "roads_service": _asphaltColor,
+        "roads_pedestrian": _asphaltColor,
+        "roads_track": (0.564712, 0.332452, 0.066626),
+        "paths_steps": _asphaltColor,
+        "paths_cycleway": _asphaltColor,
+        "paths_bridleway": _asphaltColor,
+        "roads_other": _asphaltColor,
+        
         "railways": (0.2, 0.2, 0.2)
     }
     
@@ -263,15 +286,25 @@ class App:
     
     def prepareLayers(self, osm):
         layerIndices = self.layerIndices
+        kwargs = dict(swOffset=self.swOffsetDp) if self.mode is App.realistic else {}
         # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
         for c in osm.conditions:
+            manager = c[1]
             layerId = c[3]
             if layerId and not layerId in layerIndices:
-                self.createLayer(
-                    layerId,
-                    **(dict(swOffset=self.swOffsetDp) if self.mode is App.realistic else {})
-                )
-        # Replace <osm.conditions> with a new etries
+                if manager:
+                    manager.createLayer(
+                        layerId,
+                        self,
+                        **kwargs
+                    )
+                else:  
+                    self.createLayer(
+                        layerId,
+                        Layer,
+                        **kwargs
+                    )
+        # Replace <osm.conditions> with new entries
         # where <layerId> is replaced by the related instance of <Layer>
         osm.conditions = tuple(
             (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
@@ -372,7 +405,7 @@ class App:
         layerIndex = self.layerIndices.get(layerId)
         return None if layerIndex is None else self.layers[layerIndex] 
     
-    def createLayer(self, layerId, layerConstructor=Layer, **kwargs):
+    def createLayer(self, layerId, layerConstructor, **kwargs):
         layer = layerConstructor(layerId, self)
         for k in kwargs:
             setattr(layer, k, kwargs[k])

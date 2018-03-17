@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from renderer import Renderer
+from app.layer import Layer
+from renderer.curve_layer import CurveLayer
 from material import colors
 
 
@@ -46,6 +48,9 @@ class Manager:
     def parseRelation(self, element, elementId):
         # render <element> in <BaseManager.render(..)>
         element.r = True
+        
+    def createLayer(self, layerId, app, **kwargs):
+        return app.createLayer(layerId, Layer, **kwargs)
     
     @staticmethod
     def getColor(color):
@@ -101,6 +106,55 @@ class Linestring(Manager):
             element.t = Renderer.linestring
             # render it in <BaseManager.render(..)>
             element.r = True
+
+
+class WayManager(Manager):
+    
+    def __init__(self, osm, renderer):
+        super().__init__(osm)
+        # the special renderer
+        self.renderer = renderer
+
+    def parseWay(self, element, elementId):
+        if element.tags.get("area")=="yes":
+            if element.closed:
+                element.t = Renderer.polygon
+                # render it in <BaseManager.render(..)>
+                element.r = True
+                # <element> should go to a polygon layer
+                element.l = self.getPolygonLayer(element)
+            else:
+                element.valid = False
+        else:
+            element.t = Renderer.linestring
+            # set the special renderer
+            element.rr = self.renderer
+            # render it in <BaseManager.render(..)>
+            element.r = True
+    
+    def parseRelation(self, element, elementId):
+        if element.t in (Renderer.polygon, Renderer.multipolygon):
+            # render <element> in <BaseManager.render(..)>
+            element.r = True
+            # <element> should go to a polygon layer
+            element.l = self.getPolygonLayer(element)
+        else:
+            element.valid = False
+
+    def createLayer(self, layerId, app, **kwargs):
+        return app.createLayer(layerId, CurveLayer, **kwargs)
+    
+    def getPolygonLayer(self, element):
+        layerId = element.l.id
+        # the index of the underscore character in <layerId>
+        _index = layerId.rfind('_')
+        # If the underscore character isn't present in <layerId>,
+        # i.e. <_index == -1>, then <_index+1 == 0>,
+        # that means take the whole string for <layerId>
+        # Set the new <layerId>
+        layerId = "areas_%s" % layerId[_index+1:]
+        app = self.renderer.app
+        return app.getLayer(layerId) if layerId in app.layerIndices else app.createLayer(layerId, Layer)
 
 
 class Polygon(Manager):

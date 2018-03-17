@@ -17,10 +17,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import math
 import bmesh
 from mathutils import Vector
 from renderer import Renderer
-from util.blender import createEmptyObject, getBmesh
+from util.blender import createEmptyObject, getBmesh, setBmesh
 
 
 class Layer:
@@ -89,3 +90,86 @@ class Layer:
     @property
     def name(self):
         return "%s_%s" % (Renderer.name, self.id)
+    
+    def finalizeBlenderObject(self, obj):
+        """
+        Slice Blender MESH object, add modifiers
+        """
+        app = self.app
+        terrain = app.terrain
+        if terrain and self.sliceMesh:
+            self.slice(obj, terrain, app)
+        if self.modifiers:
+            if not terrain.envelope:
+                terrain.createEnvelope()
+            self.addBoolenModifier(obj, terrain.envelope)
+            self.addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
+    
+    def addShrinkwrapModifier(self, obj, target, offset):
+        m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+        m.wrap_method = "PROJECT"
+        m.use_positive_direction = False
+        m.use_negative_direction = True
+        m.use_project_z = True
+        m.target = target
+        m.offset = offset
+    
+    def addBoolenModifier(self, obj, operand):
+        m = obj.modifiers.new(name="Boolean", type='BOOLEAN')
+        m.object = operand
+    
+    def slice(self, obj, terrain, app):
+        sliceSize = app.sliceSize
+        bm = getBmesh(obj)
+        
+        def _slice(index, plane_no, terrainMin, terrainMax):
+            # min and max value along the axis defined by <index>
+            # 1) terrain
+            # a simple conversion from the world coordinate system to the local one
+            terrainMin = terrainMin - obj.location[index]
+            terrainMax = terrainMax - obj.location[index]
+            # 2) <bm>, i.e. Blender mesh
+            minValue = min(obj.bound_box, key = lambda v: v[index])[index]
+            maxValue = max(obj.bound_box, key = lambda v: v[index])[index]
+            
+            # cut everything off outside the terrain bounding box
+            if minValue < terrainMin:
+                minValue = terrainMin
+                bmesh.ops.bisect_plane(
+                    bm,
+                    geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
+                    plane_co=(0., minValue, 0.) if index else (minValue, 0., 0.),
+                    plane_no=plane_no,
+                    clear_inner=True
+                )
+            
+            if maxValue > terrainMax:
+                maxValue = terrainMax
+                bmesh.ops.bisect_plane(
+                    bm,
+                    geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
+                    plane_co=(0., maxValue, 0.) if index else (maxValue, 0., 0.),
+                    plane_no=plane_no,
+                    clear_outer=True
+                )
+            
+            # now cut the slices
+            width = maxValue - minValue
+            if width > sliceSize:
+                numSlices = math.ceil(width/sliceSize)
+                _sliceSize = width/numSlices
+                coord = minValue
+                sliceIndex = 1
+                while sliceIndex < numSlices:
+                    coord += _sliceSize
+                    bmesh.ops.bisect_plane(
+                        bm,
+                        geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
+                        plane_co=(0., coord, 0.) if index else (coord, 0., 0.),
+                        plane_no=plane_no
+                    )
+                    sliceIndex += 1
+        
+        _slice(0, (1., 0., 0.), terrain.minX, terrain.maxX)
+        _slice(1, (0., 1., 0.), terrain.minY, terrain.maxY)
+        setBmesh(obj, bm)

@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os, math, bpy, bmesh
+import os, bpy, bmesh
 from util import zeroVector
 from util.blender import createEmptyObject, createDiffuseMaterial, pointNormalUpward,\
     getBmesh, setBmesh
@@ -98,35 +98,21 @@ class Renderer:
             setBmesh(obj, self.bm)
             # assign OSM tags to the blender object
             assignTags(obj, element.tags)
-            self.finalizeBlenderObject(obj, layer, self.app)
-    
-    @classmethod
-    def finalizeBlenderObject(self, obj, layer, app):
-        """
-        Slice Blender MESH object, add modifiers
-        """
-        terrain = app.terrain
-        if terrain and layer.sliceMesh:
-            self.slice(obj, terrain, app)
-        if layer.modifiers:
-            if not terrain.envelope:
-                terrain.createEnvelope()
-            self.addBoolenModifier(obj, terrain.envelope)
-            self.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
+            layer.finalizeBlenderObject(obj)
     
     @classmethod
     def end(self, app):
         for layer in app.layers:
-            if layer.obj:
+            if layer.bm:
                 setBmesh(layer.obj, layer.bm)
         
         #bpy.context.scene.update()
         # Go through <app.layers> once again after <bpy.context.scene.update()>
         # to get correct results for <layer.obj.bound_box>
-        if not app.mode is app.realistic:
+        if not app.mode is app.realistic and app.singleObject:
             for layer in app.layers:
                 if layer.obj:
-                    self.finalizeBlenderObject(layer.obj, layer, app)
+                    layer.finalizeBlenderObject(layer.obj)
         
         self.join()
      
@@ -215,78 +201,6 @@ class Renderer:
         else:
             materialIndex = None
         return materialIndex
-    
-    @staticmethod
-    def addShrinkwrapModifier(obj, target, offset):
-        m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
-        m.wrap_method = "PROJECT"
-        m.use_positive_direction = False
-        m.use_negative_direction = True
-        m.use_project_z = True
-        m.target = target
-        m.offset = offset
-    
-    @staticmethod
-    def addBoolenModifier(obj, operand):
-        m = obj.modifiers.new(name="Boolean", type='BOOLEAN')
-        m.object = operand
-    
-    @staticmethod
-    def slice(obj, terrain, app):
-        sliceSize = app.sliceSize
-        bm = getBmesh(obj)
-        
-        def _slice(index, plane_no, terrainMin, terrainMax):
-            # min and max value along the axis defined by <index>
-            # 1) terrain
-            # a simple conversion from the world coordinate system to the local one
-            terrainMin = terrainMin - obj.location[index]
-            terrainMax = terrainMax - obj.location[index]
-            # 2) <bm>, i.e. Blender mesh
-            minValue = min(obj.bound_box, key = lambda v: v[index])[index]
-            maxValue = max(obj.bound_box, key = lambda v: v[index])[index]
-            
-            # cut everything off outside the terrain bounding box
-            if minValue < terrainMin:
-                minValue = terrainMin
-                bmesh.ops.bisect_plane(
-                    bm,
-                    geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
-                    plane_co=(0., minValue, 0.) if index else (minValue, 0., 0.),
-                    plane_no=plane_no,
-                    clear_inner=True
-                )
-            
-            if maxValue > terrainMax:
-                maxValue = terrainMax
-                bmesh.ops.bisect_plane(
-                    bm,
-                    geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
-                    plane_co=(0., maxValue, 0.) if index else (maxValue, 0., 0.),
-                    plane_no=plane_no,
-                    clear_outer=True
-                )
-            
-            # now cut the slices
-            width = maxValue - minValue
-            if width > sliceSize:
-                numSlices = math.ceil(width/sliceSize)
-                _sliceSize = width/numSlices
-                coord = minValue
-                sliceIndex = 1
-                while sliceIndex < numSlices:
-                    coord += _sliceSize
-                    bmesh.ops.bisect_plane(
-                        bm,
-                        geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
-                        plane_co=(0., coord, 0.) if index else (coord, 0., 0.),
-                        plane_no=plane_no
-                    )
-                    sliceIndex += 1
-        
-        _slice(0, (1., 0., 0.), terrain.minX, terrain.maxX)
-        _slice(1, (0., 1., 0.), terrain.minY, terrain.maxY)
-        setBmesh(obj, bm)
 
 
 class Renderer2d(Renderer):
