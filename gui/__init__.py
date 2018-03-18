@@ -246,7 +246,7 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "highways")
         box.prop(addon, "railways")
         
-        if addon.mode3d == "realistic":
+        if app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic":
             box = layout.box()
             box.prop(addon, "bldgMaterialsFilepath")
             box.prop(addon, "litWindows")
