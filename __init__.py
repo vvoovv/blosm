@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 2, 0),
-    "blender": (2, 7, 8),
+    "version": (2, 3, 0),
+    "blender": (2, 7, 9),
     "location": "File > Import > OpenStreetMap (.osm)",
     "description": "Import a file in the OpenStreetMap format (.osm)",
     "warning": "",
@@ -106,23 +106,21 @@ class ImportData(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        # path to the directory for assets
-        basePath = os.path.dirname(os.path.realpath(__file__))
         dataType = context.scene.blender_osm.dataType
         
         if dataType == "osm":
-            return self.importOsm(context, basePath)
+            return self.importOsm(context)
         elif dataType == "terrain":
-            return self.importTerrain(context, basePath)
+            return self.importTerrain(context)
         elif dataType == "overlay":
-            return self.importOverlay(context, basePath)
+            return self.importOverlay(context)
         
         return {'FINISHED'}
     
-    def importOsm(self, context, basePath):
+    def importOsm(self, context):
         a = app.app
         try:
-            a.initOsm(self, context, basePath, BlenderOsmPreferences.bl_idname)
+            a.initOsm(self, context, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
@@ -185,9 +183,6 @@ class ImportData(bpy.types.Operator):
             # <kwargs["lat"]> and <kwargs["lon"]> have been set in osm.parse(..)
             self.setCenterLatLon(context, osm.lat, osm.lon)
         
-        if not a.has(Keys.mode3d):
-            a.show()
-        
         a.clean()
         
         return {'FINISHED'}
@@ -209,10 +204,10 @@ class ImportData(bpy.types.Operator):
         context.scene["lat"] = lat
         context.scene["lon"] = lon
     
-    def importTerrain(self, context, basePath):
+    def importTerrain(self, context):
         a = app.app
         try:
-            a.initTerrain(context, basePath, BlenderOsmPreferences.bl_idname)
+            a.initTerrain(context, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
@@ -227,10 +222,10 @@ class ImportData(bpy.types.Operator):
             self.setCenterLatLon(context, lat, lon)
         return {'FINISHED'}
     
-    def importOverlay(self, context, basePath):
+    def importOverlay(self, context):
         a = app.app
         try:
-            a.initOverlay(context, basePath, BlenderOsmPreferences.bl_idname)
+            a.initOverlay(context, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
@@ -257,16 +252,14 @@ class ImportData(bpy.types.Operator):
 
 def register():
     bpy.utils.register_module(__name__)
-    app.register()
     gui.register()
-    if app.app.has(Keys.mode3d):
+    if app.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.register()
 
 def unregister():
     bpy.utils.unregister_module(__name__)
-    app.unregister()
     gui.unregister()
-    if app.app.has(Keys.mode3d):
+    if app.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.unregister()

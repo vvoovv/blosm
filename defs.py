@@ -20,21 +20,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class Keys:
     mode3d = "mode3d"
     mode3dRealistic = "mode3dRealistic"
-
-
-class Bundles:
-    pass
-
-
-price = 5.90
-class App:
-    file = "4fea502"
-    price = price
-    url = "https://gumroad.com/l/blender-osm"
-    description = "Buy OSM importer without this popup for just {}$".format(price)
-    popupStrings = (
-        "Support OSM importer!",
-        "The free version is 2D only!",
-        "Buy paid version with 3D support",
-        "for just {}$".format(price)
-    )
+    overlay = "overlay"

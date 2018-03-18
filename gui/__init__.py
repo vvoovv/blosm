@@ -23,7 +23,9 @@ from mathutils import Vector
 from app import app
 from defs import Keys
 from util.transverse_mercator import TransverseMercator
-from realistic.material.renderer import FacadeWithColor
+
+if app.has(Keys.mode3dRealistic):
+    from realistic.material.renderer import FacadeWithColor
 
 
 def getDataTypes():
@@ -35,7 +37,7 @@ def getDataTypes():
             items[0],
             items[1],
             ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map")
-        ) if app.has(Keys.mode3dRealistic) else items
+        ) if app.has(Keys.overlay) else items
 
 
 _blenderMaterials = (
@@ -230,10 +232,9 @@ class PanelSettings(bpy.types.Panel):
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
             
-        if app.has(Keys.mode3d):
-            layout.prop(addon, "mode", expand=True)
-            if addon.mode == "3D" and app.has(Keys.mode3dRealistic):
-                layout.prop(addon, "mode3d", expand=True)
+        layout.prop(addon, "mode", expand=True)
+        if addon.mode == "3D" and app.has(Keys.mode3dRealistic):
+            layout.prop(addon, "mode3d", expand=True)
         
         layout.prop(addon, "setupScript")
         
@@ -556,7 +557,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         max = 100,
         subtype = 'UNSIGNED',
         default = 0,
-        update = FacadeWithColor.updateLitWindows
+        update = FacadeWithColor.updateLitWindows if app.has(Keys.mode3dRealistic) else None
     )
     
     #    

@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-import os, json, webbrowser, base64, math, gzip, struct
+import os, json, webbrowser, math, gzip, struct
 from urllib import request
 
 import defs
@@ -126,12 +126,23 @@ class App:
     voidSubstitution = 0
     
     def __init__(self):
+        # path to the top directiy of the addon
+        self.basePath = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            os.pardir
+        )
+        # a cache for the license keys
+        self._keys = {}
+        # fill in the cache <self._keys> for the license keys
+        for licenseKey in (getattr(defs.Keys, attr) for attr in dir(defs.Keys) if not attr.startswith("__")):
+            self.has(licenseKey)
+        
         self.version = None
         self.layerIndices = {}
         self.layers = []
-        self.load()
     
-    def initOsm(self, op, context, basePath, addonName):
+    def initOsm(self, op, context, addonName):
+        basePath = self.basePath
         self.op = op
         self.assetPath = os.path.join(basePath, "assets")
         self.setDataDir(context, basePath, addonName)
@@ -207,8 +218,8 @@ class App:
         if self.terrain:
             terrain.init(createBvhTree)
     
-    def initTerrain(self, context, basePath, addonName):
-        self.setDataDir(context, basePath, addonName)
+    def initTerrain(self, context, addonName):
+        self.setDataDir(context, self.basePath, addonName)
         # create a sub-directory under <self.dataDir> for OSM files
         terrainDir = os.path.join(self.dataDir, self.terrainSubDir)
         self.terrainDir = terrainDir
@@ -231,7 +242,7 @@ class App:
                 missingPath
             )
     
-    def initOverlay(self, context, basePath, addonName):
+    def initOverlay(self, context, addonName):
         from overlay import Overlay, overlayTypeData
         addon = context.scene.blender_osm
         data = overlayTypeData[addon.overlayType]
@@ -245,7 +256,7 @@ class App:
         )
         self.overlay = overlay
         
-        self.setDataDir(context, basePath, addonName)
+        self.setDataDir(context, self.basePath, addonName)
         # create a sub-directory under <self.dataDir> for overlay tiles
         j = os.path.join
         overlayDir = j( j(self.dataDir, self.overlaySubDir), overlay.getOverlaySubDir() )
@@ -341,26 +352,17 @@ class App:
         self.managers = None
     
     def has(self, key):
-        return self.license and (self.all or key in self.keys)
-    
-    def load(self):
-        # this directory
-        directory = os.path.dirname(os.path.realpath(__file__))
-        # app/..
-        directory = os.path.realpath( os.path.join(directory, os.pardir) )
-        path = os.path.join(directory, defs.App.file)
-        self.license = os.path.isfile(path)
-        if not self.license:
-            return
-        
-        with open(path, "r", encoding="ascii") as data:
-            data = json.loads( base64.b64decode( bytes.fromhex(data.read()) ).decode('ascii') )
-        
-        self.all = data.get("all", False)
-        self.keys = set(data.get("keys", ()))
-    
-    def show(self):
-        bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
+        has = self._keys.get(key)
+        if has is None:
+            if key == "mode3d":
+                has = True
+            elif key == "mode3dRealistic":
+                has = os.path.isdir(os.path.join(self.basePath, "realistic"))
+            elif key == "overlay":
+                has = os.path.isdir(os.path.join(self.basePath, "overlay"))
+            self._keys[key] = has
+            
+        return has
     
     def download(self, url, filepath, data=None):
         print("Downloading the file from %s..." % url)
@@ -575,44 +577,6 @@ class App:
             prevYsize = y2-y
         
         return minHeight if heightOffset is None else heightOffset
-
-
-class OperatorPopup(bpy.types.Operator):
-    bl_idname = "prk.check_version_osm"
-    bl_label = ""
-    bl_description = defs.App.description
-    bl_options = {'INTERNAL'}
-    
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
-    
-    def execute(self, context):
-        webbrowser.open_new_tab(defs.App.url)
-        return {'FINISHED'}
-    
-    def cancel(self, context):
-        webbrowser.open_new_tab(defs.App.url)
-    
-    def draw(self, context):
-        layout = self.layout
-        
-        iconPlaced = False
-        for label in defs.App.popupStrings:
-            if iconPlaced:
-                self.label(label)
-            else:
-                self.label(label, icon='INFO')
-                iconPlaced = True
-        
-        layout.separator()
-        layout.separator()
-        
-        self.label("Click to buy")
-    
-    def label(self, text, **kwargs):
-        row = self.layout.row()
-        row.alignment = "CENTER"
-        row.label(text, **kwargs)
 
 
 app = App()
