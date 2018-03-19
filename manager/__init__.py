@@ -35,6 +35,9 @@ class Manager:
     
     def setRenderer(self, renderer):
         self.renderer = renderer
+    
+    def setNodeRenderer(self, nodeRenderer):
+        self.nodeRenderer = nodeRenderer
         
     def process(self):
         pass
@@ -214,8 +217,7 @@ class BaseManager(Manager):
                 renderer.postRender(way)
         
         for node in osm.rNodes:
-            if node.valid and node.rr:
-                renderer = node.rr
-                renderer.preRender(node)
-                renderer.renderNode(node, osm)
-                renderer.postRender(node)
+            renderer = node.rr or self.nodeRenderer
+            renderer.preRender(node)
+            renderer.renderNode(node, osm)
+            renderer.postRender(node)

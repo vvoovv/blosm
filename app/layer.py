@@ -64,14 +64,14 @@ class Layer:
             location = Vector((0., 0., _z))
         elif not self.singleObject:
             location = None
-            # it's the only case when <self.parentLocation> is needed if a terrain is't set
+            # it's the only case when <self.parentLocation> is needed if a terrain isn't set
             self.parentLocation = Vector((0., 0., _z))
         self.location = location
         self.meshZ = meshZ
         
     def getParent(self):
         # The method is called currently in the single place of the code:
-        # in <Renderer.prerender(..)> if (not layer.singleObject)
+        # in <Renderer.preRender(..)> if (not layer.singleObject)
         parent = self.parent
         if not self.parent:
             parent = createEmptyObject(

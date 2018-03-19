@@ -298,29 +298,58 @@ class App:
     def prepareLayers(self, osm):
         layerIndices = self.layerIndices
         kwargs = dict(swOffset=self.swOffsetDp) if self.mode is App.realistic else {}
-        # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
-        for c in osm.conditions:
-            manager = c[1]
-            layerId = c[3]
-            if layerId and not layerId in layerIndices:
-                if manager:
-                    manager.createLayer(
-                        layerId,
-                        self,
-                        **kwargs
-                    )
-                else:  
-                    self.createLayer(
-                        layerId,
-                        Layer,
-                        **kwargs
-                    )
-        # Replace <osm.conditions> with new entries
-        # where <layerId> is replaced by the related instance of <Layer>
-        osm.conditions = tuple(
-            (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
-            for c in osm.conditions
-        )
+        
+        if osm.conditions:
+            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+            for c in osm.conditions:
+                manager = c[1]
+                layerId = c[3]
+                if layerId and not layerId in layerIndices:
+                    if manager:
+                        manager.createLayer(
+                            layerId,
+                            self,
+                            **kwargs
+                        )
+                    else:  
+                        self.createLayer(
+                            layerId,
+                            Layer,
+                            **kwargs
+                        )
+            # Replace <osm.conditions> with new entries
+            # where <layerId> is replaced by the related instance of <Layer>
+            osm.conditions = tuple(
+                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+                for c in osm.conditions
+            )
+        
+        # the same for <osm.nodeConditions> 
+        if osm.nodeConditions:
+            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+            for c in osm.nodeConditions:
+                manager = c[1]
+                layerId = c[3]
+                if layerId and not layerId in layerIndices:
+                    if manager:
+                        manager.createLayer(
+                            layerId,
+                            self,
+                            **kwargs
+                        )
+                    else:  
+                        self.createLayer(
+                            layerId,
+                            Layer,
+                            **kwargs
+                        )
+            # Replace <osm.nodeConditions> with new entries
+            # where <layerId> is replaced by the related instance of <Layer>
+            osm.nodeConditions = tuple(
+                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+                for c in osm.nodeConditions
+            )
+        
     
     def process(self):
         logger = self.logger
@@ -392,11 +421,11 @@ class App:
         Download missing OSM ways with ids stored in <self.missingWays>,
         add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
         """
-        for relation, _id, members, tags, ci in self.incompleteRelations:
+        for relation, _id, members, tags, condition in self.incompleteRelations:
             # below there is the same code for a relation as in osm.parse(..)
             relation.process(members, tags, osm)
             if relation.valid:
-                skip = osm.processCondition(ci, relation, _id, osm.parseRelation)
+                skip = osm.processCondition(condition, relation, _id, osm.parseRelation)
                 if not _id in osm.relations and not skip:
                     osm.relations[_id] = relation
         # cleanup

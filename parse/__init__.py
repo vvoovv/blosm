@@ -106,10 +106,9 @@ class Osm:
                         tags[c.get("k")] = c.get("v")
                 node = Node(float(attrs["lat"]), float(attrs["lon"]), tags)
                 if tags:
-                    # <ci> stands for <condition index>
-                    ci = self.checkNodeConditions(tags, node)
-                    if not ci is None:
-                        self.processCondition(ci, node, _id, Osm.node)
+                    condition = self.checkNodeConditions(tags, node)
+                    if condition:
+                        self.processCondition(condition, node, _id, self.parseNode)
                         # set <node> for rendering by appending it to <self.rNodes>
                         self.rNodes.append(node)
                 self.nodes[_id] = node
@@ -130,10 +129,9 @@ class Osm:
                     skip = False
                     if tags:
                         #tags["id"] = _id #DEBUG OSM id
-                        # <ci> stands for <condition index>
-                        ci = self.checkConditions(tags, way)
-                        if not ci is None:
-                            skip = self.processCondition(ci, way, _id, self.parseWay)
+                        condition = self.checkConditions(tags, way)
+                        if condition:
+                            skip = self.processCondition(condition, way, _id, self.parseWay)
                             if not self.projection and way.valid:
                                 self.updateBounds(way)
                     if not skip:
@@ -170,17 +168,16 @@ class Osm:
                     else:
                         relation = relation(self)
                     if relation.valid:
-                        # <ci> stands for <condition index>
-                        ci = self.checkConditions(tags, relation)
-                        if not ci is None:
+                        condition = self.checkConditions(tags, relation)
+                        if condition:
                             complete = relation.process(members, tags, self)
                             if complete:
                                 if relation.valid:
-                                    skip = self.processCondition(ci, relation, _id, self.parseRelation)
+                                    skip = self.processCondition(condition, relation, _id, self.parseRelation)
                                     if not createdBefore and not skip:
                                         relations[_id] = relation
                             else:
-                                self.app.incompleteRelations.append((relation, _id, members, tags, ci))
+                                self.app.incompleteRelations.append((relation, _id, members, tags, condition))
             elif e.tag == "bounds":
                 # If <projectionClass> is present in <kwargs>,
                 # it means we need to set <self.projection> here,
@@ -198,23 +195,22 @@ class Osm:
             self.setProjection(kwargs["projectionClass"], lat, lon, kwargs)
     
     def checkConditions(self, tags, element):
-        for i,c in enumerate(self.conditions):
+        for c in self.conditions:
             if c[0](tags, element):
                 # setting manager
                 element.m = c[1]
-                return i
+                return c
 
     def checkNodeConditions(self, tags, element):
-        for i,c in enumerate(self.nodeConditions):
+        for c in self.nodeConditions:
             if c[0](tags, element):
                 # setting manager
                 element.m = c[1]
-                return i
+                return c
     
-    def processCondition(self, ci, element, elementId, parseElement):
+    def processCondition(self, condition, element, elementId, parseElement):
         # do we need to skip the OSM <element> from storing in <self.ways> or <self.relations>
         skip = False
-        condition = self.conditions[ci]
         # always set <layer>
         # layer = condition[3]
         element.l = condition[3]
