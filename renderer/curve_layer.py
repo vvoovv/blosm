@@ -40,7 +40,9 @@ class CurveLayer(Layer):
         # the material name is simply <id> of the layer
         name = self.id
         material = bpy.data.materials.get(name)
-        curve.materials.append(material or createDiffuseMaterial(name, self.app.colors[name]))
+        curve.materials.append(
+            material or createDiffuseMaterial(name, self.app.colors.get(name, self.app.defaultColor))
+        )
         
         terrain = self.app.terrain
         if self.modifiers:

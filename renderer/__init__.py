@@ -181,7 +181,9 @@ class Renderer:
         materialIndex = self.getMaterialIndexByName(name)
         if materialIndex is None:
             # create Blender material
-            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, self.app.colors[name]) )
+            materialIndex = self.getMaterialIndex(
+                createDiffuseMaterial(name, self.app.colors.get(name, self.app.defaultColor))
+            )
         return materialIndex
     
     def getMaterialIndex(self, material):

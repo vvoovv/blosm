@@ -29,9 +29,6 @@ from util.blender import makeActive
 from util.polygon import Polygon
 
 
-_asphaltColor = (0.0865, 0.090842, 0.088656)
-
-
 class App:
     
     #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
@@ -82,6 +79,9 @@ class App:
         "railways": 0.2
     }
     
+    # default color (asphalt)
+    defaultColor = (0.0865, 0.090842, 0.088656)
+    
     # diffuse colors for some layers
     colors = {
         "buildings": (0.309, 0.013, 0.012),
@@ -89,27 +89,7 @@ class App:
         "forest": (0.02, 0.208, 0.007),
         "vegetation": (0.007, 0.558, 0.005),
         
-        "areas_service": _asphaltColor,
-        "areas_pedestrian": _asphaltColor,
-        "areas_footway": _asphaltColor,
-        "areas_steps": _asphaltColor,
-        "areas_railways": _asphaltColor,
-        
-        "roads_motorway": _asphaltColor,
-        "roads_trunk": _asphaltColor,
-        "roads_primary": _asphaltColor,
-        "roads_secondary": _asphaltColor,
-        "roads_tertiary": _asphaltColor,
-        "roads_unclassified": _asphaltColor,
-        "roads_residential": _asphaltColor,
-        "paths_footway": _asphaltColor,
-        "roads_service": _asphaltColor,
-        "roads_pedestrian": _asphaltColor,
         "roads_track": (0.564712, 0.332452, 0.066626),
-        "paths_steps": _asphaltColor,
-        "paths_cycleway": _asphaltColor,
-        "paths_bridleway": _asphaltColor,
-        "roads_other": _asphaltColor,
         
         "railways": (0.2, 0.2, 0.2)
     }
