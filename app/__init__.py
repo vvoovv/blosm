@@ -23,6 +23,7 @@ from urllib import request
 
 import defs
 from .layer import Layer
+from renderer.node_layer import NodeLayer
 from renderer import Renderer
 from terrain import Terrain
 from util.blender import makeActive
@@ -312,7 +313,7 @@ class App:
                 layerId = c[3]
                 if layerId and not layerId in layerIndices:
                     if manager:
-                        manager.createLayer(
+                        manager.createNodeLayer(
                             layerId,
                             self,
                             **kwargs
@@ -320,7 +321,7 @@ class App:
                     else:  
                         self.createLayer(
                             layerId,
-                            Layer,
+                            NodeLayer,
                             **kwargs
                         )
             # Replace <osm.nodeConditions> with new entries

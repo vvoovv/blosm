@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from renderer import Renderer
 from app.layer import Layer
+from renderer.node_layer import NodeLayer
 from renderer.curve_layer import CurveLayer
 from material import colors
 
@@ -54,6 +55,9 @@ class Manager:
         
     def createLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, Layer, **kwargs)
+
+    def createNodeLayer(self, layerId, app, **kwargs):
+        return app.createLayer(layerId, NodeLayer, **kwargs)
     
     @staticmethod
     def getColor(color):
