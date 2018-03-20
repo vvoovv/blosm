@@ -22,7 +22,7 @@ import os, json, webbrowser, math, gzip, struct
 from urllib import request
 
 import defs
-from .layer import Layer
+from renderer.layer import Layer
 from renderer.node_layer import NodeLayer
 from renderer import Renderer
 from terrain import Terrain
