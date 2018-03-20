@@ -29,16 +29,41 @@ class Layer:
     def __init__(self, layerId, app):
         self.app = app
         self.id = layerId
-        terrain = app.terrain
-        hasTerrain = bool(terrain)
         self.singleObject = app.singleObject
         # instance of BMesh
         self.bm = None
         # Blender object
         self.obj = None
-        self.materialIndices = []
         # Blender parent object
         self.parent = None
+
+    @property
+    def name(self):
+        return "%s_%s" % (Renderer.name, self.id)
+
+    def getParent(self):
+        # The method is called currently in the single place of the code:
+        # in <Renderer.preRender(..)> if (not layer.singleObject)
+        parent = self.parent
+        if not self.parent:
+            parent = createEmptyObject(
+                self.name,
+                self.parentLocation.copy(),
+                empty_draw_size=0.01
+            )
+            parent.parent = Renderer.parent
+            self.parent = parent
+        return parent
+
+
+class MeshLayer(Layer):
+    
+    def __init__(self, layerId, app):
+        super().__init__(layerId, app)
+        
+        terrain = app.terrain
+        hasTerrain = bool(terrain)
+        self.materialIndices = {}
         # does the layer represents an area (natural or landuse)
         self.area = True
         # apply Blender modifiers (BOOLEAND AND SHRINKWRAP) if a terrain is set
@@ -68,28 +93,9 @@ class Layer:
             self.parentLocation = Vector((0., 0., _z))
         self.location = location
         self.meshZ = meshZ
-        
-    def getParent(self):
-        # The method is called currently in the single place of the code:
-        # in <Renderer.preRender(..)> if (not layer.singleObject)
-        parent = self.parent
-        if not self.parent:
-            parent = createEmptyObject(
-                self.name,
-                self.parentLocation.copy(),
-                empty_draw_size=0.01
-            )
-            parent.parent = Renderer.parent
-            self.parent = parent
-        return parent
     
     def prepare(self, instance):
         instance.bm = getBmesh(instance.obj)
-        instance.materialIndices = {}
-    
-    @property
-    def name(self):
-        return "%s_%s" % (Renderer.name, self.id)
     
     def finalizeBlenderObject(self, obj):
         """

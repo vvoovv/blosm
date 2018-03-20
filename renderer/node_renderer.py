@@ -9,10 +9,6 @@ class BaseNodeRenderer(Renderer):
     def __init__(self, app):
         self.app = app
     
-    def preRender(self, element):
-        if not element.l.parentLocation:
-            element.l.parentLocation = zeroVector()
-    
     def renderNode(self, node, osm):
         tags = node.tags
         layer = node.l
@@ -28,17 +24,16 @@ class BaseNodeRenderer(Renderer):
                 return
             z += terrainOffset[2]
         
-        self.obj = self.createBlenderObject(
+        obj = self.createBlenderObject(
             self.getName(node),
             (coords[0], coords[1], z),
             layer.getParent(),
             layer.id
         )
         
-    def postRender(self, element):
-        if self.obj:
+        if obj:
             # assign OSM tags to the blender object
-            assignTags(self.obj, element.tags)
+            assignTags(obj, node.tags)
 
     @classmethod
     def createBlenderObject(self, name, location, parent, sourceName):

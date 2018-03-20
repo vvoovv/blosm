@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from renderer import Renderer
-from app.layer import Layer
+from renderer.layer import MeshLayer
 from renderer.node_layer import NodeLayer
 from renderer.curve_layer import CurveLayer
 from material import colors
@@ -54,7 +54,7 @@ class Manager:
         element.r = True
         
     def createLayer(self, layerId, app, **kwargs):
-        return app.createLayer(layerId, Layer, **kwargs)
+        return app.createLayer(layerId, MeshLayer, **kwargs)
 
     def createNodeLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, NodeLayer, **kwargs)
@@ -161,7 +161,7 @@ class WayManager(Manager):
         # Set the new <layerId>
         layerId = "areas_%s" % layerId[_index+1:]
         app = self.renderer.app
-        return app.getLayer(layerId) if layerId in app.layerIndices else app.createLayer(layerId, Layer)
+        return app.getLayer(layerId) if layerId in app.layerIndices else app.createLayer(layerId, MeshLayer)
 
 
 class Polygon(Manager):
@@ -222,6 +222,6 @@ class BaseManager(Manager):
         
         for node in osm.rNodes:
             renderer = node.rr or self.nodeRenderer
-            renderer.preRender(node)
+            #renderer.preRender(node)
             renderer.renderNode(node, osm)
-            renderer.postRender(node)
+            #renderer.postRender(node)

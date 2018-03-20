@@ -31,7 +31,7 @@ from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
 
-from app.layer import Layer
+from renderer.layer import MeshLayer
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -44,7 +44,7 @@ defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 class BuildingRenderer(Renderer3d):
     
-    def __init__(self, app, layerId, layerConstructor=Layer):
+    def __init__(self, app, layerId, layerConstructor=MeshLayer):
         super().__init__(app)
         
         layer = app.createLayer(

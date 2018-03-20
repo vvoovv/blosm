@@ -1,7 +1,7 @@
-from app.layer import Layer
+from renderer.layer import MeshLayer
 
 
-class BuildingLayer(Layer):
+class BuildingLayer(MeshLayer):
     
     # the name for the base UV map
     uvName = "UVMap"

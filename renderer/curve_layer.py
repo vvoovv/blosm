@@ -1,10 +1,10 @@
 import os
 import bpy
-from app.layer import Layer
+from .layer import MeshLayer
 from util.blender import appendObjectsFromFile, createDiffuseMaterial
 
 
-class CurveLayer(Layer):
+class CurveLayer(MeshLayer):
     
     # Blender layer index to place a way profile
     profileLayerIndex = 1
@@ -19,7 +19,6 @@ class CurveLayer(Layer):
 
     def prepare(self, instance):
         instance.curve = instance.obj.data
-        instance.materialIndices = {}
 
     def finalizeBlenderObject(self, obj):
         """
