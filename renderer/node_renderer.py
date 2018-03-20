@@ -6,8 +6,8 @@ from util.osm import parseNumber
 
 class BaseNodeRenderer(Renderer):
     
-    def __init__(self):
-        pass
+    def __init__(self, app):
+        self.app = app
     
     def preRender(self, element):
         if not element.l.parentLocation:
@@ -18,9 +18,19 @@ class BaseNodeRenderer(Renderer):
         layer = node.l
         
         coords = node.getData(osm)
+        
+        # calculate z-coordinate of the object
+        z = parseNumber(tags["min_height"], 0.) if "min_height" in tags else 0.
+        if self.app.terrain:
+            terrainOffset = self.app.terrain.project(coords)
+            if terrainOffset is None:
+                # the point is outside of the terrain
+                return
+            z += terrainOffset[2]
+        
         self.obj = self.createBlenderObject(
             self.getName(node),
-            (coords[0], coords[1], parseNumber(tags["min_height"], 0.) if "min_height" in tags else 0.),
+            (coords[0], coords[1], z),
             layer.getParent(),
             layer.id
         )

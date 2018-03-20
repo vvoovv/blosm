@@ -21,12 +21,18 @@ from parse.relation.building import Building
 
 from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken, WayManager
 from renderer import Renderer2d
+from renderer.node_renderer import BaseNodeRenderer
 from renderer.curve_renderer import CurveRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
 from building.renderer import BuildingRenderer
 
 from manager.logging import Logger
+
+
+# point objects in OSM
+#def tree(tags, e):
+#    return tags.get("natural") == "tree"
 
 
 def building(tags, e):
@@ -123,6 +129,9 @@ def setup(app, osm):
     polygon = Polygon(osm)
     polygonAcceptBroken = PolygonAcceptBroken(osm)
     
+    # conditions for point objects in OSM
+    #osm.addNodeCondition(tree, "tree")
+    
     if app.buildings:
         if app.mode is app.twoD:
             osm.addCondition(building, "buildings", polygon)
@@ -184,4 +193,5 @@ def setup(app, osm):
     if numConditions:
         m = BaseManager(osm)
         m.setRenderer(Renderer2d(app))
+        m.setNodeRenderer(BaseNodeRenderer(app))
         app.managers.append(m)
