@@ -14,11 +14,7 @@ class CurveLayer(MeshLayer):
     
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
-        self.curve = None
         self.assetPath = os.path.join(app.assetPath, self.assetFile)
-
-    def prepare(self, instance):
-        instance.curve = instance.obj.data
 
     def finalizeBlenderObject(self, obj):
         """

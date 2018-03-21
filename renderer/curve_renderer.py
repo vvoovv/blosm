@@ -13,23 +13,19 @@ class CurveRenderer(Renderer):
         self.layer = layer
         
         if layer.singleObject:
-            if not layer.curve:
+            if not layer.obj:
                 layer.obj = self.createBlenderObject(
                     layer.name,
                     layer.location,
                     self.parent
                 )
-                layer.prepare(layer)
-            self.curve = layer.curve
             self.obj = layer.obj
-            self.materialIndices = layer.materialIndices
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ or self.offset or layer.location,
                 layer.getParent()
             )
-            layer.prepare(self)
 
     def renderLineString(self, element, data):
         self._renderLineString(element, element.getData(data), element.isClosed())
@@ -39,7 +35,7 @@ class CurveRenderer(Renderer):
             self._renderLineString(element, l, element.isClosed(i))
     
     def _renderLineString(self, element, coords, closed):
-        spline = self.curve.splines.new('POLY')
+        spline = self.obj.data.splines.new('POLY')
         z = self.layer.meshZ
         for i,coord in enumerate(coords):
             if i:

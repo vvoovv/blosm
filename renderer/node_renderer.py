@@ -1,6 +1,5 @@
 import bpy
 from . import Renderer, assignTags
-from util import zeroVector
 from util.osm import parseNumber
 
 

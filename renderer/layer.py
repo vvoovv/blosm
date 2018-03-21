@@ -63,7 +63,6 @@ class MeshLayer(Layer):
         
         terrain = app.terrain
         hasTerrain = bool(terrain)
-        self.materialIndices = {}
         # does the layer represents an area (natural or landuse)
         self.area = True
         # apply Blender modifiers (BOOLEAND AND SHRINKWRAP) if a terrain is set
@@ -96,6 +95,7 @@ class MeshLayer(Layer):
     
     def prepare(self, instance):
         instance.bm = getBmesh(instance.obj)
+        instance.materialIndices = {}
     
     def finalizeBlenderObject(self, obj):
         """
