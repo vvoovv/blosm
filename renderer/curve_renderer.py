@@ -7,6 +7,12 @@ class CurveRenderer(Renderer):
     
     def __init__(self, app):
         super().__init__(app)
+    
+    def prepare(self):
+        terrain = self.app.terrain
+        if terrain:
+            if not terrain.envelope:
+                terrain.createEnvelope()
 
     def preRender(self, element):
         layer = element.l

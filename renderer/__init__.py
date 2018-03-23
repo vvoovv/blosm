@@ -37,6 +37,7 @@ class Renderer:
     
     def __init__(self, app, **kwargs):
         self.app = app
+        app.addRenderer(self)
         # offset for a Blender object created if <layer.singleObject is False>
         self.offset = None
         # offset if a terrain is set (used instead of <self.offset>)
@@ -44,6 +45,9 @@ class Renderer:
         self.applyMaterial = True
         for k in kwargs:
             setattr(self, k, kwargs[k])
+    
+    def prepare(self):
+        pass
     
     @classmethod
     def begin(self, app):
@@ -211,6 +215,11 @@ class Renderer2d(Renderer):
         super().__init__(app, **kwargs)
         # vertical position for polygons and multipolygons
         self.z = 0.
+    
+    def prepare(self):
+        terrain = self.app.terrain
+        if terrain and not terrain.envelope:
+                terrain.createEnvelope()
     
     def renderLineString(self, element, data):
         self._renderLineString(element, element.getData(data), element.isClosed())

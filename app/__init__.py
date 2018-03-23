@@ -176,8 +176,11 @@ class App:
         # check if have a terrain Blender object set
         self.setTerrain(context, True)
         
-        # manager (derived from manager.Manager) performing some processing
+        # managers (derived from manager.Manager) performing some processing
         self.managers = []
+        
+        # renderers (derived from renderer.Renderer) actually making 3D objects
+        self.renderers = []
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
@@ -345,6 +348,9 @@ class App:
         logger = self.logger
         if logger: logger.renderStart()
         
+        for r in self.renderers:
+            r.prepare()
+        
         Renderer.begin(self)
         for m in self.managers:
             m.render()
@@ -357,9 +363,13 @@ class App:
         
         if logger: logger.renderEnd()
     
+    def addRenderer(self, renderer):
+        self.renderers.append(renderer)
+    
     def clean(self):
         self.meshes = None
         self.managers = None
+        self.renderers = None
     
     def has(self, key):
         has = self._keys.get(key)

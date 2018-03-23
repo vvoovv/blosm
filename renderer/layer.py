@@ -106,8 +106,6 @@ class MeshLayer(Layer):
         if terrain and self.sliceMesh:
             self.slice(obj, terrain, app)
         if self.modifiers:
-            if not terrain.envelope:
-                terrain.createEnvelope()
             self.addBoolenModifier(obj, terrain.envelope)
             self.addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
     

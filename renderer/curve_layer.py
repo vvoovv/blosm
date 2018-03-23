@@ -39,8 +39,5 @@ class CurveLayer(MeshLayer):
             material or createDiffuseMaterial(name, self.app.colors.get(name, self.app.defaultColor))
         )
         
-        terrain = self.app.terrain
         if self.modifiers:
-            if not terrain.envelope:
-                terrain.createEnvelope()
-            self.addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
+            self.addShrinkwrapModifier(obj, self.app.terrain.terrain, self.swOffset)
