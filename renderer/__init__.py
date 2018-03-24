@@ -119,11 +119,11 @@ class Renderer:
                     layer.finalizeBlenderObject(layer.obj)
         
         self.join()
-     
-    @classmethod   
-    def cleanup(self, app):
-        if app.terrain:
-            app.terrain.cleanup()
+    
+    def cleanup(self):
+        terrain = self.app.terrain
+        if terrain and terrain.terrain:
+            terrain.cleanup()
     
     @classmethod
     def join(self):

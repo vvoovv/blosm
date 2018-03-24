@@ -93,7 +93,7 @@ class Terrain:
     
     def project(self, coords):
         # Cast a ray from the point with horizontal coords equal to <coords> and
-        # z = 10000. in the direction of <direction>
+        # z = <self.projectLocation> in the direction of <direction>
         return self.bvhTree.ray_cast((coords[0], coords[1], self.projectLocation), direction)[0]
     
     def setOrigin(self, origin):
@@ -137,6 +137,7 @@ class Terrain:
         else:
             # create new envelope for the terrain
             envelope = createMeshObject(name, (0., 0., self.minZ), terrain.data.copy())
+            envelope.data.name = name
             # flatten the terrain envelope
             envelope.scale[2] = 0.
             makeActive(envelope)

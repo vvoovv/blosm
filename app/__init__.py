@@ -359,7 +359,8 @@ class App:
         for m in self.managers:
             m.renderExtra()
         
-        Renderer.cleanup(self)
+        for r in self.renderers:
+            r.cleanup()
         
         if logger: logger.renderEnd()
     
