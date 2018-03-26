@@ -1,4 +1,6 @@
+import math
 import bpy, bmesh
+from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from . import Renderer
 from terrain import direction
@@ -17,6 +19,11 @@ class CurveRenderer(Renderer):
     def prepare(self):
         terrain = self.app.terrain
         if terrain:
+            # Do we need to add extra points for a long curve segment
+            # to ensure that it lies above the terrain after the SHRINKWRAP modifier
+            # is applied?
+            self.addPoints = self.app.sliceFlatLayers
+            
             if not terrain.envelope:
                 terrain.createEnvelope()
             # BMesh <bm> is used to check if a way's node is located
@@ -64,26 +71,58 @@ class CurveRenderer(Renderer):
             self._renderLineString(element, l, element.isClosed(i))
     
     def _renderLineString(self, element, coords, closed):
-        spline = self.obj.data.splines.new('POLY')
         z = self.layer.meshZ
         if self.app.terrain:
+            spline = None
+            # the first point in the spline
+            point0 = None
             index = 0
-            for coord in coords:
+            _index = 0
+            for i, coord in enumerate(coords):
                 # Cast a ray from the point with horizontal coords equal to <coords> and
                 # z = <z> in the direction of <direction>
-                if self.bvhTree.ray_cast((coord[0], coord[1], z), direction)[0]:
-                    if index:
-                        spline.points.add(1)
-                    spline.points[index].co = (coord[0], coord[1], z, 1.)
-                    index += 1
+                point = Vector((coord[0], coord[1], z))
+                if self.bvhTree.ray_cast(point, direction)[0]:
+                    if point0:
+                        if not spline:
+                            spline = self.obj.data.splines.new('POLY')
+                            spline.points[0].co = (point0[0], point0[1], point0[2], 1.,)
+                            index = 1
+                            _index = 1
+                        if self.addPoints:
+                            vec = point - point0
+                            vecLength = vec.length
+                            numPoints = math.floor(vecLength/10.)
+                            if numPoints:
+                                step = vecLength/(numPoints+1)/vecLength * vec 
+                                spline.points.add(numPoints+1)
+                                vec /= vecLength
+                                vec = point0
+                                for _ in range(numPoints):
+                                    vec = vec + step
+                                    spline.points[index].co = (vec[0], vec[1], vec[2], 1.)
+                                    index += 1
+                            else:
+                                spline.points.add(1)
+                        else:
+                            spline.points.add(1)
+                        spline.points[index].co = (point[0], point[1], point[2], 1.,)
+                        index += 1
+                        _index += 1
+                    point0 = point
+                else:
+                    spline = None
+                    point0 = None
+            # <i+1> is equa to the number of nodes in the OSM way
+            if closed and _index != i+1:
+                closed = False
         else:
+            spline = self.obj.data.splines.new('POLY')
             for i, coord in enumerate(coords):
                 if i:
                     spline.points.add(1)
                 spline.points[i].co = (coord[0], coord[1], z, 1.)
-        if len(spline.points) == 1:
-            self.obj.data.splines.remove(spline)
-        elif closed:
+        if closed:
             spline.use_cyclic_u = True
     
     def postRender(self, element):
