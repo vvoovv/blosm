@@ -120,14 +120,14 @@ class CurveRenderer(Renderer):
                     # <i+1> is equal to the number of nodes in the OSM way
                     if self.nodeCounter != i+1:
                         closed = False
-                    numPoints, vec = self.getSubdivisionParams(point0, point)
+                    numPoints, vec = self.getSubdivisionParams(point0, _point)
                     if onTerrain0 and _onTerrain:
                         self.processOnTerrainOnTerrain(point0, _point, numPoints, vec, closed)
                     elif numPoints:
                         if onTerrain0:
                             self.processOnTerrainNoTerrain(point0, _point, numPoints, vec)
                         elif _onTerrain:
-                            self.processNoTerrainOnTerrain(point0, point, numPoints, vec)
+                            self.processNoTerrainOnTerrain(point0, _point, numPoints, vec)
             else:
                 for i, coord in enumerate(coords):
                     # Cast a ray from the point with horizontal coords equal to <coords> and
