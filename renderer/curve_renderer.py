@@ -10,11 +10,22 @@ from util.osm import assignTags
 class CurveRenderer(Renderer):
     
     # <insetValue> the maximum way width in <assets/way_profiles.blend>
-    insetValue = 10.
+    insetValue = 5.
     
     def __init__(self, app):
         super().__init__(app)
         self.bvhTree = None
+        # the current spline for the Blender curve
+        self.spline = None
+        # point index of the current point in <self.spline>
+        self.pointIndex = 0
+        # Node counter for the nodes of an OSM way actually added to <self.spline>;
+        # used only
+        # 1) in the presense of the terrain
+        # 2) AND if the OSM way is closed;
+        # If <self.nodeCounter> isn't equal to the number of nodes in the OSM way,
+        # then the OSM way will have open ends instead of being closed
+        self.nodeCounter = 0
     
     def prepare(self):
         terrain = self.app.terrain
@@ -22,7 +33,8 @@ class CurveRenderer(Renderer):
             # Do we need to add extra points for a long curve segment
             # to ensure that it lies above the terrain after the SHRINKWRAP modifier
             # is applied?
-            self.addPoints = self.app.sliceFlatLayers
+            self.subdivideSegment = self.app.sliceFlatLayers
+            self.subdivideLength = 10.
             
             if not terrain.envelope:
                 terrain.createEnvelope()
@@ -73,57 +85,164 @@ class CurveRenderer(Renderer):
     def _renderLineString(self, element, coords, closed):
         z = self.layer.meshZ
         if self.app.terrain:
-            spline = None
-            # the first point in the spline
+            self.spline = None
+            # the preceding point of the spline segment
             point0 = None
-            index = 0
-            _index = 0
-            for i, coord in enumerate(coords):
-                # Cast a ray from the point with horizontal coords equal to <coords> and
-                # z = <z> in the direction of <direction>
-                point = Vector((coord[0], coord[1], z))
-                if self.bvhTree.ray_cast(point, direction)[0]:
-                    if point0:
-                        if not spline:
-                            spline = self.obj.data.splines.new('POLY')
-                            spline.points[0].co = (point0[0], point0[1], point0[2], 1.,)
-                            index = 1
-                            _index = 1
-                        if self.addPoints:
-                            vec = point - point0
-                            vecLength = vec.length
-                            numPoints = math.floor(vecLength/10.)
-                            if numPoints:
-                                step = vecLength/(numPoints+1)/vecLength * vec 
-                                spline.points.add(numPoints+1)
-                                vec /= vecLength
-                                vec = point0
-                                for _ in range(numPoints):
-                                    vec = vec + step
-                                    spline.points[index].co = (vec[0], vec[1], vec[2], 1.)
-                                    index += 1
-                            else:
-                                spline.points.add(1)
-                        else:
-                            spline.points.add(1)
-                        spline.points[index].co = (point[0], point[1], point[2], 1.,)
-                        index += 1
-                        _index += 1
+            onTerrain0 = None
+            if self.subdivideSegment:
+                for i, coord in enumerate(coords):
+                    # Cast a ray from the point with horizontal coords equal to <coords> and
+                    # z = <z> in the direction of <direction>
+                    point = Vector((coord[0], coord[1], z))
+                    onTerrain = self.isPointOnTerrain(point)
+                    if closed and not i:
+                        # remember the original point
+                        _point = point
+                        _onTerrain = onTerrain
+                    #
+                    # Perform calculations for the segment subdivision
+                    #
+                    if point0 and (onTerrain0 or onTerrain):
+                        numPoints, vec = self.getSubdivisionParams(point0, point)
+                    if onTerrain:
+                        if onTerrain0:
+                            self.processOnTerrainOnTerrain(point0, point, numPoints, vec, closed)
+                        elif point0 and numPoints:
+                            self.processNoTerrainOnTerrain(point0, point, numPoints, vec)
+                    elif onTerrain0:
+                        if point0 and numPoints:
+                            self.processOnTerrainNoTerrain(point0, point, numPoints, vec)
+                    elif self.spline:
+                        self.spline = None
                     point0 = point
-                else:
-                    spline = None
-                    point0 = None
-            # <i+1> is equa to the number of nodes in the OSM way
-            if closed and _index != i+1:
-                closed = False
+                    onTerrain0 = onTerrain
+                if closed:
+                    # <i+1> is equal to the number of nodes in the OSM way
+                    if self.nodeCounter != i+1:
+                        closed = False
+                    numPoints, vec = self.getSubdivisionParams(point0, point)
+                    if onTerrain0 and _onTerrain:
+                        self.processOnTerrainOnTerrain(point0, _point, numPoints, vec, closed)
+                    elif numPoints:
+                        if onTerrain0:
+                            self.processOnTerrainNoTerrain(point0, _point, numPoints, vec)
+                        elif _onTerrain:
+                            self.processNoTerrainOnTerrain(point0, point, numPoints, vec)
+            else:
+                for i, coord in enumerate(coords):
+                    # Cast a ray from the point with horizontal coords equal to <coords> and
+                    # z = <z> in the direction of <direction>
+                    point = Vector((coord[0], coord[1], z))
+                    onTerrain = self.isPointOnTerrain(point)
+                    if onTerrain and onTerrain0:
+                            if not self.spline:
+                                self.createSpline()
+                                self.setSplinePoint(point0)
+                                if closed: self.nodeCounter = 1
+                            self.spline.points.add(1)
+                            self.setSplinePoint(point)
+                            if closed: self.nodeCounter += 1
+                    elif self.spline:
+                        self.spline = None
+                    point0 = point
+                    onTerrain0 = onTerrain
+                # <i+1> is equal to the number of nodes in the OSM way
+                if closed and self.nodeCounter != i+1:
+                    closed = False
         else:
-            spline = self.obj.data.splines.new('POLY')
+            self.createSpline()
             for i, coord in enumerate(coords):
                 if i:
-                    spline.points.add(1)
-                spline.points[i].co = (coord[0], coord[1], z, 1.)
+                    self.spline.points.add(1)
+                self.setSplinePoint((coord[0], coord[1], z))
         if closed:
-            spline.use_cyclic_u = True
+            self.spline.use_cyclic_u = True
+    
+    def getSubdivisionParams(self, point0, point):
+        vec = point - point0
+        numPoints = math.floor(vec.length/self.subdivideLength)
+        # subdivision step (a vector) is equal to <vec/(numPoints+1)>
+        return numPoints, vec/(numPoints+1) if numPoints else None
+    
+    def createSpline(self):
+        self.spline = self.obj.data.splines.new('POLY')
+        self.pointIndex = 0
+
+    def setSplinePoint(self, point):
+        self.spline.points[self.pointIndex].co = (point[0], point[1], point[2], 1.)
+        self.pointIndex += 1
+    
+    def processOnTerrainOnTerrain(self, point0, point, numPoints, vec, closed):
+        if not self.spline:
+            self.createSpline()
+            self.setSplinePoint(point0)
+            if closed: self.nodeCounter = 1
+        if numPoints:
+            self.spline.points.add(numPoints+1)
+            p = point0
+            for _ in range(numPoints):
+                p = p + vec
+                self.setSplinePoint(p)
+        else:
+            self.spline.points.add(1)
+        self.setSplinePoint(point)
+        if closed: self.nodeCounter += 1
+    
+    def processNoTerrainOnTerrain(self, point0, point, numPoints, vec):
+        firstTerrainPointIndex = 0
+        bound1 = 0
+        bound2 = numPoints + 1
+        # index of subdivision points starting from 1
+        pointIndex = math.ceil((bound1 + bound2)/2)
+        while True:
+            # coordinates of the subdivision point with the index <pointIndex>
+            if self.isPointOnTerrain(point0 + pointIndex * vec):
+                firstTerrainPointIndex = pointIndex
+                if pointIndex == bound1+1:
+                    break
+                bound2 = pointIndex
+                pointIndex = math.floor((bound1 + bound2)/2)
+            else:
+                if pointIndex==bound2-1:
+                    break
+                bound1 = pointIndex
+                pointIndex = math.ceil((bound1 + bound2)/2)
+        if firstTerrainPointIndex:
+            self.createSpline()
+            self.spline.points.add(numPoints - firstTerrainPointIndex + 1)
+            for pointIndex in range(firstTerrainPointIndex, numPoints+1):
+                p = point0 + pointIndex * vec
+                self.setSplinePoint(p)
+            self.setSplinePoint(point)
+    
+    def processOnTerrainNoTerrain(self, point0, point, numPoints, vec):
+        lastTerrainPointIndex = 0
+        bound1 = 0
+        bound2 = numPoints + 1
+        # index of subdivision points starting from 1
+        pointIndex = math.floor((bound1 + bound2)/2)
+        while True:
+            # coordinates of the subdivision point with the index <pointIndex>
+            if self.isPointOnTerrain(point0 + pointIndex * vec):
+                lastTerrainPointIndex = pointIndex
+                if pointIndex == bound2-1:
+                    break
+                bound1 = pointIndex
+                pointIndex = math.ceil((bound1 + bound2)/2)
+            else:
+                if pointIndex==bound1+1:
+                    break
+                bound2 = pointIndex
+                pointIndex = math.floor((bound1 + bound2)/2)
+        if lastTerrainPointIndex:
+            if not self.spline:
+                self.createSpline()
+                self.setSplinePoint(point0)
+            self.spline.points.add(lastTerrainPointIndex)
+            for pointIndex in range(1, lastTerrainPointIndex+1):
+                p = point0 + pointIndex * vec
+                self.setSplinePoint(p)
+        self.spline = None
     
     def postRender(self, element):
         layer = element.l
@@ -150,3 +269,6 @@ class CurveRenderer(Renderer):
             # perform parenting
             obj.parent = parent
         return obj
+    
+    def isPointOnTerrain(self, point):
+        return self.bvhTree.ray_cast(point, direction)[0]
