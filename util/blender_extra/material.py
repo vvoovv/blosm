@@ -1,5 +1,7 @@
 import webbrowser, time, os
 import bpy
+from app import app
+from defs import Keys
 
 
 # <FO> means 'facade with overlay'
@@ -380,6 +382,11 @@ class PanelMaterialCreate(bpy.types.Panel):
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
     bl_category = "osm"
+
+    @classmethod
+    def poll(cls, context):
+        addon = context.scene.blender_osm
+        return app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic"
     
     def draw(self, context):
         addon = context.scene.blender_osm
