@@ -173,6 +173,12 @@ class CurveRenderer(Renderer):
         self.pointIndex += 1
     
     def processOnTerrainOnTerrain(self, point0, point, numPoints, vec, closed):
+        """
+        A method to process the case:
+        the terrain is available and <self.subdivideSegment == True>
+        and both <point0> (the first one in the spline segment)
+        and <point> (the second on in the spline segment) are located on the terrain
+        """
         if not self.spline:
             self.createSpline()
             self.setSplinePoint(point0)
@@ -189,6 +195,12 @@ class CurveRenderer(Renderer):
         if closed: self.nodeCounter += 1
     
     def processNoTerrainOnTerrain(self, point0, point, numPoints, vec):
+        """
+        A method to process the case:
+        the terrain is available and <self.subdivideSegment == True>
+        and <point0> (the first one in the spline segment) is located outside the terrain
+        and <point> (the second on in the spline segment) is located on the terrain
+        """
         firstTerrainPointIndex = 0
         bound1 = 0
         bound2 = numPoints + 1
@@ -216,6 +228,12 @@ class CurveRenderer(Renderer):
             self.setSplinePoint(point)
     
     def processOnTerrainNoTerrain(self, point0, point, numPoints, vec):
+        """
+        A method to process the case:
+        the terrain is available and <self.subdivideSegment == True>
+        and <point0> (the first one in the spline segment) is located on the terrain
+        and <point> (the second on in the spline segment) is located outside the terrain
+        """
         lastTerrainPointIndex = 0
         bound1 = 0
         bound2 = numPoints + 1
