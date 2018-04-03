@@ -236,8 +236,6 @@ class PanelSettings(bpy.types.Panel):
         if addon.mode == "3D" and app.has(Keys.mode3dRealistic):
             layout.prop(addon, "mode3d", expand=True)
         
-        layout.prop(addon, "setupScript")
-        
         box = layout.box()
         box.prop(addon, "buildings")
         box.prop(addon, "water")
@@ -245,6 +243,8 @@ class PanelSettings(bpy.types.Panel):
         box.prop(addon, "vegetation")
         box.prop(addon, "highways")
         box.prop(addon, "railways")
+        
+        layout.box().prop(addon, "setupScript")
         
         if app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic":
             box = layout.box()
