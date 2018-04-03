@@ -266,9 +266,9 @@ class PanelSettings(bpy.types.Panel):
         
         if addon.terrainObject and addon.terrainObject in context.scene.objects:
             box = layout.box()
-            box.prop(addon, "sliceFlatLayers")
-            if addon.sliceFlatLayers:
-                box.prop(addon, "sliceSize")
+            box.prop(addon, "subdivide")
+            if addon.subdivide:
+                box.prop(addon, "subdivisionSize")
     
     def drawTerrain(self, context):
         self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")
@@ -393,7 +393,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     highways = bpy.props.BoolProperty(
         name = "Import roads and paths",
         description = "Import roads and paths",
-        default = False
+        default = True
     )
     
     railways = bpy.props.BoolProperty(
@@ -454,18 +454,19 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = True
     )
     
-    sliceFlatLayers = bpy.props.BoolProperty(
-        name = "Slice flat layers",
-        description = "Slice mesh of flat layers (water, forest, vegetaion) " +
+    subdivide = bpy.props.BoolProperty(
+        name = "Subdivide curves, flat layers",
+        description = "Subdivide Blender curves representing roads and paths and " +
+        "polygons representing flat layers (water, forest, vegetation) " +
         "to project them on the terrain correctly",
         default = True
     )
     
-    sliceSize = bpy.props.FloatProperty(
-        name = "Slice size",
-        description = "Slice size in meters",
-        default = 30.,
-        min = 10.,
+    subdivisionSize = bpy.props.FloatProperty(
+        name = "Subdivision size",
+        description = "Subdivision size in meters",
+        default = 10.,
+        min = 5.,
         step = 100 # i.e. step/100 == 1.
     )
     

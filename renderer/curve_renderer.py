@@ -33,8 +33,8 @@ class CurveRenderer(Renderer):
             # Do we need to add extra points for a long curve segment
             # to ensure that it lies above the terrain after the SHRINKWRAP modifier
             # is applied?
-            self.subdivideSegment = self.app.sliceFlatLayers
-            self.subdivideLength = 10.
+            self.subdivideSegment = self.app.subdivide
+            self.subdivideSize = self.app.subdivisionSize
             
             if not terrain.envelope:
                 terrain.createEnvelope()
@@ -160,7 +160,7 @@ class CurveRenderer(Renderer):
     
     def getSubdivisionParams(self, point0, point):
         vec = point - point0
-        numPoints = math.floor(vec.length/self.subdivideLength)
+        numPoints = math.floor(vec.length/self.subdivideSize)
         # subdivision step (a vector) is equal to <vec/(numPoints+1)>
         return numPoints, vec/(numPoints+1) if numPoints else None
     

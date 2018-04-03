@@ -68,7 +68,7 @@ class MeshLayer(Layer):
         # apply Blender modifiers (BOOLEAND AND SHRINKWRAP) if a terrain is set
         self.modifiers = hasTerrain
         # slice flat mesh to project it on the terrain correctly
-        self.sliceMesh = hasTerrain and app.sliceFlatLayers
+        self.sliceMesh = hasTerrain and app.subdivide
         # set layer offsets <self.location>, <self.meshZ> and <self.parentLocation>
         # <self.location> is used for a Blender object
         # <self.meshZ> is used for vertices of a BMesh
@@ -123,7 +123,7 @@ class MeshLayer(Layer):
         m.object = operand
     
     def slice(self, obj, terrain, app):
-        sliceSize = app.sliceSize
+        sliceSize = app.subdivisionSize
         bm = getBmesh(obj)
         
         def _slice(index, plane_no, terrainMin, terrainMax):
