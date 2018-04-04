@@ -16,6 +16,12 @@ class CurveLayer(MeshLayer):
         super().__init__(layerId, app)
         self.assetPath = os.path.join(app.assetPath, self.assetFile)
 
+    def getDefaultZ(self, app):
+        return app.wayZ
+
+    def getDefaultSwOffset(self, app):
+        return app.swWayOffset
+
     def finalizeBlenderObject(self, obj):
         """
         Slice Blender MESH object, add modifiers

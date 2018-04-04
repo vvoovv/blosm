@@ -75,9 +75,7 @@ class App:
         "buildings": 0.2,
         "water": 0.2,
         "forest": 0.1,
-        "vegetation": 0.,
-        "highways": 0.2,
-        "railways": 0.2
+        "vegetation": 0.
     }
     
     # default color (asphalt)
@@ -98,6 +96,13 @@ class App:
     # Default value for <offset> parameter of the SHRINKWRAP modifier;
     # it's used to project flat meshes onto a terrain
     swOffset = 0.05
+    
+    # default z-coordinate of Blender objects (curves) representing OSM ways
+    wayZ = 0.3
+    
+    # Default value for <offset> parameter of the SHRINKWRAP modifier;
+    # it's used to project OSM ways represented as Blender curves onto a terrain
+    swWayOffset = 0.3
     
     # Value for <offset> parameter of the SHRINKWRAP modifier in the realistic mode
     # to ensure correct results for dynamic paint. <dp> stands for dynamic paint.

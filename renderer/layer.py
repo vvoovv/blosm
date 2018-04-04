@@ -80,18 +80,24 @@ class MeshLayer(Layer):
         if hasTerrain:
             # here we have <self.singleObject is True>
             location = Vector((0., 0., terrain.maxZ + terrain.layerOffset))
-            self.swOffset = _z if _z else app.swOffset
+            self.swOffset = _z or self.getDefaultSwOffset(app)
             if not self.singleObject:
                 # it's the only case when <self.parentLocation> is needed if a terrain is set
                 self.parentLocation = Vector((0., 0., _z))
         elif self.singleObject:
-            location = Vector((0., 0., _z))
+            location = Vector((0., 0., _z or self.getDefaultZ(app)))
         elif not self.singleObject:
             location = None
             # it's the only case when <self.parentLocation> is needed if a terrain isn't set
-            self.parentLocation = Vector((0., 0., _z))
+            self.parentLocation = Vector((0., 0., _z or self.getDefaultZ(app)))
         self.location = location
         self.meshZ = meshZ
+    
+    def getDefaultZ(self, app):
+        return 0.
+    
+    def getDefaultSwOffset(self, app):
+        return app.swOffset
     
     def prepare(self, instance):
         instance.bm = getBmesh(instance.obj)
