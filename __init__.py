@@ -23,7 +23,7 @@ bl_info = {
     "version": (2, 3, 3),
     "blender": (2, 7, 9),
     "location": "File > Import > OpenStreetMap (.osm)",
-    "description": "Import a file in the OpenStreetMap format (.osm)",
+    "description": "One click download and import of OpenStreetMap and terrain",
     "warning": "",
     "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Documentation",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
