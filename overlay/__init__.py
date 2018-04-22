@@ -1,4 +1,5 @@
 import math, os
+from threading import Thread
 import numpy
 from urllib import request
 import bpy
@@ -82,27 +83,8 @@ class Overlay:
         self.urlMid = urlMid
         self.urlEnd = urlEnd
     
-    def doImport(self, left, bottom, right, top):
-        def toTileCoord(coord, zoom, tileSize=0):
-            """
-            An auxiliary method used in the code
-            
-            Returns:
-            A single integer tile coordinate if <tileSize>==0.
-            A Python tuple with two elements otherwise:
-                0) a single integer tile coordinate
-                1) number of pixels converted from the fractional part of the tile coordinate,
-                    using <tileSize>
-            """
-            coord = coord * math.pow(2., zoom) / equator
-            floor = math.floor(coord)
-            return int(floor)
-            #return ( int(floor), int(math.ceil((coord - floor) * tileSize)) )\
-            #    if tileSize else\
-            #    int(floor)
-        
-        def fromTileCoord(coord, zoom):
-            return coord * equator / math.pow(2., zoom)
+    def prepareImport(self, left, bottom, right, top):
+        app.print("Preparing overlay for import...")
         
         # Convert the coordinates from degrees to spherical Mercator coordinate system
         # and move zero to the top left corner (that's why the 3d argument in the function below)
@@ -120,46 +102,73 @@ class Overlay:
             _zoom = zoom + 1
             while _zoom <= self.maxZoom:
                 # convert <l>, <b>, <r>, <t> to tile coordinates
-                _l, _b, _r, _t = tuple(toTileCoord(coord, _zoom) for coord in (l, b, r, t))
+                _l, _b, _r, _t = tuple(Overlay.toTileCoord(coord, _zoom) for coord in (l, b, r, t))
                 if (_r - _l + 1) * (_b - _t + 1) > self.maxNumTiles:
                     break
                 zoom = _zoom
                 _zoom += 1
         
+        self.zoom = zoom
+        
         # convert <l>, <b>, <r>, <t> to tile coordinates
-        l, b, r, t = tuple(toTileCoord(coord, zoom, self.tileWidth) for coord in (l, b, r, t))
-        numTilesX = r - l + 1
-        numTilesY = b - t + 1
+        l, b, r, t = tuple(Overlay.toTileCoord(coord, zoom) for coord in (l, b, r, t))
+        self.l = l
+        self.b = b
+        self.r = r
+        self.t = t
+        self.numTilesX = numTilesX = r - l + 1
+        self.numTilesY = numTilesY = b - t + 1
         self.numTiles = numTilesX * numTilesY
         # a numpy array for the resulting image stitched out of all tiles
-        imageData = numpy.zeros(4*numTilesX*self.tileWidth * numTilesY*self.tileHeight)
-        w = 4 * self.tileWidth
-        # get individual tiles
-        for x in range(l, r+1):
-            for y in range(t, b+1):
-                self.tileCounter += 1
-                tileData = self.getTileData(zoom, x, y)
-                if not tileData is None:
-                    for _y in range(self.tileHeight):
-                        i1 = w * ( (numTilesY-1-y+t) * self.tileHeight*numTilesX + _y*numTilesX + x-l )
-                        imageData[i1:i1+w] = tileData[_y*w:(_y+1)*w]
+        self.imageData = numpy.zeros(4*numTilesX*self.tileWidth * numTilesY*self.tileHeight)
+        # four because of red, blue, green and opacity
+        self.w = 4 * self.tileWidth
+        # <self.x> and <self.y> are the current tile coordinates
+        self.x = l
+        self.y = t
+    
+    def importNextTile(self):
+        w = self.w
+        self.tileCounter += 1
+        x = self.x
+        y = self.y
+        tileData = self.getTileData(self.zoom, x, y)
+        if not tileData is None:
+            for _y in range(self.tileHeight):
+                i1 = w * ( (self.numTilesY-1-y+self.t) * self.tileHeight*self.numTilesX + _y*self.numTilesX + x - self.l )
+                self.imageData[i1:i1+w] = tileData[_y*w:(_y+1)*w]
+        if y == self.b:
+            if x == self.r:
+                return False
+            else:
+                self.x += 1
+                self.y = self.t
+        else:
+            self.y += 1
+        return True
+    
+    def finalizeImport(self):
+        app.print("Stitching tile images...")
+        
         # create the resulting Blender image stitched out of all tiles
         image = bpy.data.images.new(
             self.blenderImageName,
-            width = (r - l + 1) * self.tileWidth,
-            height = (b - t + 1) * self.tileHeight
+            width = (self.r - self.l + 1) * self.tileWidth,
+            height = (self.b - self.t + 1) * self.tileHeight
         )
-        image.pixels = imageData
+        image.pixels = self.imageData
+        # cleanup
+        self.imageData = None
         # pack the image into .blend file
         image.pack(as_png=True)
         
         if app.terrain:
             self.setUvForTerrain(
                 app.terrain.terrain,
-                fromTileCoord(l, zoom) - halfEquator,
-                halfEquator - fromTileCoord(b+1, zoom),
-                fromTileCoord(r+1, zoom) - halfEquator,
-                halfEquator - fromTileCoord(t, zoom)
+                Overlay.fromTileCoord(self.l, self.zoom) - halfEquator,
+                halfEquator - Overlay.fromTileCoord(self.b+1, self.zoom),
+                Overlay.fromTileCoord(self.r+1, self.zoom) - halfEquator,
+                halfEquator - Overlay.fromTileCoord(self.t, self.zoom)
             )
         # load and append the default material
         if app.setOverlayMaterial:
@@ -188,19 +197,19 @@ class Overlay:
         tilePath = j(tileDir, "%s.%s" % (y, self.imageExtension))
         tileUrl = self.getTileUrl(zoom, x, y)
         if os.path.exists(tilePath):
-            print(
-                "Using the cached version of the tile image %s (%s of %s)" %
-                (tileUrl, self.tileCounter, self.numTiles)
+            app.print(
+                "(%s of %s) Using the cached version of the tile image %s" %
+                (self.tileCounter, self.numTiles, tileUrl)
             )
         else:
-            print(
+            app.print(
                 "Downloading the tile image %s (%s if %s)" %
                 (tileUrl, self.tileCounter, self.numTiles)
             )
             try:
                 tileData = request.urlopen(tileUrl).read()
             except:
-                print("\tUnable to download the tile image %s" % tileUrl)
+                app.print("Unable to download the tile image %s" % tileUrl)
                 return None
             # ensure that all directories in <tileDir> exist
             if not os.path.exists(tileDir):
@@ -215,7 +224,6 @@ class Overlay:
         # delete the temporary Blender image
         bpy.data.images.remove(tmpImage, True)
         return tileData
-        
     
     def getOverlaySubDir(self):
         urlStart = self.urlStart
@@ -282,6 +290,27 @@ class Overlay:
             lat = halfEquator - lat
             lon = lon + halfEquator
         return lat, lon
+    
+    @staticmethod
+    def toTileCoord(coord, zoom):
+        """
+        An auxiliary method used in the code.
+        
+        Converts a coordinate <coord> in the spherical Mercator coordinate system
+        with the origin moved to the top left corner, to the integer tile coordinate.
+        The same tile coordinates are used be the map at http://osm.org
+        """
+        coord = coord * math.pow(2., zoom) / equator
+        return int(math.floor(coord))
+    
+    @staticmethod
+    def fromTileCoord(coord, zoom):
+        """
+        An auxiliary method used in the code.
+        
+        Reversed to <Overlay.toTileCoord>
+        """
+        return coord * equator / math.pow(2., zoom)
 
 
 from .mapbox import Mapbox

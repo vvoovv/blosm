@@ -31,7 +31,7 @@ bl_info = {
     "category": "Import-Export",
 }
 
-import os, sys
+import os, sys, textwrap
 
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
@@ -48,7 +48,8 @@ def _checkPath():
     sys.path.insert(0, path)
 _checkPath()
 
-import bpy, bmesh
+
+import bpy, bmesh, bgl, blf
 
 from util.transverse_mercator import TransverseMercator
 from renderer import Renderer
@@ -225,20 +226,33 @@ class ImportData(bpy.types.Operator):
     
     def importOverlay(self, context):
         a = app.app
+        
+        # find the Blender area holding 3D View
+        for area in bpy.context.screen.areas:
+            if area.type == "VIEW_3D":
+                a.area = area
+                break
+        else:
+            a.area = None
+        
         try:
             a.initOverlay(context, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
-            return {'FINISHED'}
+            return {'CANCELLED'}
         
         lat, lon, setLatLon = self.getCenterLatLon(context)
         
         a.projection = TransverseMercator(lat=lat, lon=lon)
-        a.importOverlay(context)
         
         # set custom parameter "lat" and "lon" to the active scene
         if setLatLon:
             self.setCenterLatLon(context, lat, lon)
+        
+        a.overlay.prepareImport(a.minLon, a.minLat, a.maxLon, a.maxLat)
+        
+        bpy.ops.blender_osm.control_overlay()
+        
         return {'FINISHED'}
     
     def setObjectMode(self, context):
@@ -249,6 +263,74 @@ class ImportData(bpy.types.Operator):
             if not scene.objects.active:
                 scene.objects.active = scene.objects[0]
             bpy.ops.object.mode_set(mode="OBJECT")
+
+
+class OperatorControlOverlay(bpy.types.Operator):
+    bl_idname = "blender_osm.control_overlay"
+    bl_label = ""
+    bl_description = "Control overlay import and display progress in the 3D View"
+    bl_options = {'INTERNAL'}
+    
+    lineWidth = 70 # in characters
+
+    def modal(self, context, event):
+        if event.type == 'TIMER':
+            hasTiles = app.app.overlay.importNextTile()
+            if not hasTiles:
+                self.stop(context)
+                app.app.overlay.finalizeImport()
+                self.report({'INFO'}, "Overlay import is finished!")
+                # cleanup
+                app.app.area = None
+                return {'FINISHED'}
+
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        wm = context.window_manager
+        
+        self._drawHandle = bpy.types.SpaceView3D.draw_handler_add(
+            self.drawMessage,
+            tuple(),
+            'WINDOW',
+            'POST_PIXEL'
+        )
+        
+        self._timer = wm.event_timer_add(0.1, context.window)
+        wm.modal_handler_add(self)
+        
+        return {'RUNNING_MODAL'}
+
+    def stop(self, context):
+        context.window_manager.event_timer_remove(self._timer)
+        bpy.types.SpaceView3D.draw_handler_remove(self._drawHandle, 'WINDOW')
+        app.app.stateMessage = None
+        self._timer = None
+        self._drawHandle = None
+
+    def drawMessage(self):
+        message = app.app.stateMessage
+        if message:
+            # draw message
+            bgl.glColor4f(0., 1., 0., 1.)
+            if len(message)<=self.lineWidth:
+                self.drawLine(message, 60)
+            else:
+                for i,line in enumerate(reversed(textwrap.wrap(message, self.lineWidth))):
+                    self.drawLine(line, 60+35*i)
+    
+    def drawLine(self, content, yPosition):
+        fontId = 0
+        blf.position(fontId, 15, yPosition, 0)
+        blf.size(fontId, 20, 72)
+        blf.draw(fontId, content)
+    
+    def setHeaderText(self, context):
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.header_text_set(app.app.stateMessage)
+                app.app.stateMessage = ''
+                return
 
 
 def register():

@@ -486,9 +486,6 @@ class App:
         # force smooth shading
         makeActive(obj, context)
         bpy.ops.object.shade_smooth()
-    
-    def importOverlay(self, context):
-        self.overlay.doImport(self.minLon, self.minLat, self.maxLon, self.maxLat)
 
     def buildTerrain(self, verts, indices, heightOffset):
         """
@@ -603,6 +600,11 @@ class App:
             prevYsize = y2-y
         
         return minHeight if heightOffset is None else heightOffset
+    
+    def print(self, value):
+        self.stateMessage = value
+        if self.area:
+            self.area.tag_redraw()
 
 
 app = App()
