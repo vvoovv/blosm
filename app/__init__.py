@@ -17,9 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
 import os, json, webbrowser, math, gzip, struct
 from urllib import request
+import bpy
+from mathutils import Vector
 
 import defs
 from renderer.layer import Layer
@@ -605,6 +606,25 @@ class App:
         self.stateMessage = value
         if self.area:
             self.area.tag_redraw()
+    
+    def getExtentFromObject(self, obj, context, projection):
+        """
+        Returns a tuple minLon, minLat, maxLon, maxLat
+        """
+        # transform <obj.bound_box> to the world system of coordinates
+        bound_box = tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
+        bbox = []
+        for i in (0,1):
+            for f in (min, max):
+                bbox.append(
+                    f( bound_box, key=lambda v: v[i] )[i]
+                )
+        bbox = (
+            projection.toGeographic(bbox[0], bbox[2]),
+            projection.toGeographic(bbox[1], bbox[3])
+        )
+        # minLon, minLat, maxLon, maxLat
+        return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]
 
 
 app = App()

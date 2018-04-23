@@ -249,7 +249,12 @@ class ImportData(bpy.types.Operator):
         if setLatLon:
             self.setCenterLatLon(context, lat, lon)
         
-        a.overlay.prepareImport(a.minLon, a.minLat, a.maxLon, a.maxLat)
+        terrainObject = bpy.data.objects.get(context.scene.blender_osm.terrainObject)
+        minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObject, context, a.projection)\
+            if terrainObject else\
+            (a.minLon, a.minLat, a.maxLon, a.maxLat)
+        
+        a.overlay.prepareImport(minLon, minLat, maxLon, maxLat)
         
         bpy.ops.blender_osm.control_overlay()
         

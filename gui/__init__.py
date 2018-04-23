@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 import webbrowser
-from mathutils import Vector
 from app import app
 from defs import Keys
 from util.transverse_mercator import TransverseMercator
@@ -87,7 +86,7 @@ class OperatorPasteExtent(bpy.types.Operator):
         
         if not coords:
             self.report({'ERROR'}, "Nothing to paste!")
-            return {'FINISHED'}
+            return {'CANCELLED'}
         try:
             # parse the string from the clipboard to get coordinates of the extent
             coords = tuple( map(lambda s: float(s), coords[(coords.find('=')+1):].split(',')) )
@@ -95,7 +94,7 @@ class OperatorPasteExtent(bpy.types.Operator):
                 raise ValueError
         except ValueError:
             self.report({'ERROR'}, "Invalid string to paste!")
-            return {'FINISHED'}
+            return {'CANCELLED'}
         
         addon.minLon = coords[0]
         addon.minLat = coords[1]
@@ -118,24 +117,13 @@ class OperatorExtentFromActive(bpy.types.Operator):
     def invoke(self, context, event):
         scene = context.scene
         addon = scene.blender_osm
-        obj = context.object
-        projection = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
-        # transform <obj.bound_box> to the world system of coordinates
-        bound_box = tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
-        bbox = []
-        for i in (0,1):
-            for f in (min, max):
-                bbox.append(
-                    f( bound_box, key=lambda v: v[i] )[i]
-                )
-        bbox = (
-            projection.toGeographic(bbox[0], bbox[2]),
-            projection.toGeographic(bbox[1], bbox[3])
+        
+        addon.minLon, addon.minLat, addon.maxLon, addon.maxLat = app.getExtentFromObject(
+            context.object,
+            context,
+            TransverseMercator(lat=scene["lat"], lon=scene["lon"])
         )
-        addon.minLat = bbox[0][0]
-        addon.maxLat = bbox[1][0]
-        addon.minLon = bbox[0][1]
-        addon.maxLon = bbox[1][1]
+        
         return {'FINISHED'}
 
 
@@ -150,7 +138,9 @@ class PanelExtent(bpy.types.Panel):
         layout = self.layout
         addon = context.scene.blender_osm
         
-        if addon.osmSource == "server" or addon.dataType != "osm":
+        if (addon.dataType == "osm" and addon.osmSource == "server") or\
+            (addon.dataType == "overlay" and not bpy.data.objects.get(addon.terrainObject)) or\
+            addon.dataType == "terrain":
             box = layout.box()
             row = box.row()
             row.alignment = "CENTER"
@@ -186,7 +176,8 @@ class PanelRealisticTools(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         addon = context.scene.blender_osm
-        return app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic"
+        return app.has(Keys.mode3dRealistic) and addon.dataType == "osm"\
+            and addon.mode == "3D" and addon.mode3d == "realistic"
     
     def draw(self, context):
         layout = self.layout
@@ -276,12 +267,18 @@ class PanelSettings(bpy.types.Panel):
     def drawOverlay(self, context):
         layout = self.layout
         addon = context.scene.blender_osm
-        layout.prop(addon, "overlayType")
+        
+        layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
+        
+        
+        box = layout.box()
+        box.prop(addon, "overlayType")
         if addon.overlayType == "custom":
-            box = layout.box()
+            #box = layout.box()
             box.label("Paste overlay URL here:")
             box.prop(addon, "overlayUrl")
-        layout.prop(addon, "setOverlayMaterial")
+        
+        layout.box().prop(addon, "setOverlayMaterial")
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
@@ -493,13 +490,14 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     overlayType = bpy.props.EnumProperty(
         name = "Overlay",
         items = (
-            ("bing-aerial", "Bing Aerial", "Bing Aerial"),
+            #("bing-aerial", "Bing Aerial", "Bing Aerial"),
             ("mapbox-satellite", "Mapbox Satellite", "Mapbox Satellite"),
             ("osm-mapnik", "OSM Mapnik", "OpenStreetMap Mapnik"),
             ("mapbox-streets", "Mapbox Streets", "Mapbox Streets"),
             ("custom", "Custom URL", "A URL template for the custom image overlay")
         ),
-        description = "Image overlay type"
+        description = "Image overlay type",
+        default = "mapbox-satellite"
     )
     
     overlayUrl = bpy.props.StringProperty(

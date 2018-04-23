@@ -203,13 +203,16 @@ class Overlay:
             )
         else:
             app.print(
-                "Downloading the tile image %s (%s if %s)" %
-                (tileUrl, self.tileCounter, self.numTiles)
+                "(%s of %s) Downloading the tile image %s" %
+                (self.tileCounter, self.numTiles, tileUrl)
             )
             try:
                 tileData = request.urlopen(tileUrl).read()
             except:
-                app.print("Unable to download the tile image %s" % tileUrl)
+                app.print(
+                    "(%s of %s) Unable to download the tile image %s" %
+                    (self.tileCounter, self.numTiles, tileUrl)
+                )
                 return None
             # ensure that all directories in <tileDir> exist
             if not os.path.exists(tileDir):
