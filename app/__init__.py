@@ -146,8 +146,6 @@ class App:
         self.layerIndices = {}
         self.layers = []
         
-        self.setAttributes(context)
-        
         addon = context.scene.blender_osm
         if addon.osmSource == "server":
             # find a file name for the OSM file
@@ -180,7 +178,7 @@ class App:
             self.mode = App.twoD
         
         # check if have a terrain Blender object set
-        self.setTerrain(context, True)
+        self.setTerrain(addon.terrainObject, context, True)
         
         # managers (derived from manager.Manager) performing some processing
         self.managers = []
@@ -201,9 +199,9 @@ class App:
             else:
                 raise Exception("A valid directory for a Blender file with materials for buildings isn't set!")
     
-    def setTerrain(self, context, createBvhTree=False):
+    def setTerrain(self, terrainObjectName, context, createBvhTree=False):
         # check if have a terrain Blender object set
-        terrain = Terrain(context)
+        terrain = Terrain(terrainObjectName, context)
         self.terrain = terrain if terrain.terrain else None
         if self.terrain:
             terrain.init(createBvhTree)
@@ -216,7 +214,6 @@ class App:
         if not os.path.exists(terrainDir):
             os.makedirs(terrainDir)
         
-        self.setAttributes(context)
         self.terrainSize = 3600//int(self.terrainResolution)
         
         # we are going from top to down, that's why we call reversed()
@@ -254,9 +251,16 @@ class App:
             os.makedirs(overlayDir)
         overlay.overlayDir = overlayDir
         
-        self.setAttributes(context)
+        terrainObjectName =\
+            addon.terrainObject\
+            if context.scene.objects.get(addon.terrainObject) else\
+            Terrain.createFlatTerrain(
+                self.minLon, self.minLat, self.maxLon, self.maxLat,
+                self.projection,
+                context
+            )
         
-        self.setTerrain(context, False)
+        self.setTerrain(terrainObjectName, context, False)
     
     def setAttributes(self, context):
         """
@@ -607,7 +611,7 @@ class App:
         if self.area:
             self.area.tag_redraw()
     
-    def getExtentFromObject(self, obj, context, projection):
+    def getExtentFromObject(self, obj, context):
         """
         Returns a tuple minLon, minLat, maxLon, maxLat
         """
@@ -620,8 +624,8 @@ class App:
                     f( bound_box, key=lambda v: v[i] )[i]
                 )
         bbox = (
-            projection.toGeographic(bbox[0], bbox[2]),
-            projection.toGeographic(bbox[1], bbox[3])
+            self.projection.toGeographic(bbox[0], bbox[2]),
+            self.projection.toGeographic(bbox[1], bbox[3])
         )
         # minLon, minLat, maxLon, maxLat
         return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]

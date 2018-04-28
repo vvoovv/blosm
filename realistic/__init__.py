@@ -35,7 +35,7 @@ class OperatorMakeRealistic(bpy.types.Operator):
         setBmesh(obj, bm)
         
         app.setAttributes(context)
-        app.setTerrain(context, False)
+        app.setTerrain(addon.terrainObject, context, False)
         layer = app.getLayer(self.layerId)
         if not layer:
             layer = app.createLayer(self.layerId, swOffset = app.swOffsetDp)

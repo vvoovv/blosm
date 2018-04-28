@@ -39,18 +39,20 @@ class Terrain:
     # used for <thickness> parameter of bmesh.ops.inset_region(..)
     envelopeInset = 0.5
     
-    def __init__(self, context):
+    flatTerrainStepX = 30.
+    flatTerrainStepY = 30.
+    
+    def __init__(self, terrainObjectName, context):
         """
         The method performs some initialization, namely checks if a Blender object for the terrain is set.
         """
         terrain = None
-        name = context.scene.blender_osm.terrainObject
-        if name:
-            terrain = context.scene.objects.get(name)
+        if terrainObjectName:
+            terrain = context.scene.objects.get(terrainObjectName)
             if not terrain:
-                raise Exception("Blender object %s for the terrain doesn't exist. " % name)
+                raise Exception("Blender object %s for the terrain doesn't exist. " % terrainObjectName)
             if terrain.type != "MESH":
-                raise Exception("Blender object %s for the terrain doesn't exist. " % name)
+                raise Exception("Blender object %s for the terrain doesn't exist. " % terrainObjectName)
         self.terrain = terrain
         self.envelope = None
     
@@ -182,3 +184,48 @@ class Terrain:
         envelope.hide_render = True
         # hide <envelope> after all Blender operator
         envelope.hide = True
+    
+    @staticmethod
+    def createFlatTerrain(minLon, minLat, maxLon, maxLat, projection, context):
+        verts = []
+        indices = []
+        vertsCounter = 0
+        
+        xMin, yMin, _ = projection.fromGeographic(minLat, minLon)
+        xMax, yMax, _ = projection.fromGeographic(maxLat, maxLon)
+        
+        # the number of quads along x-axis
+        xSize = math.ceil((xMax-xMin)/Terrain.flatTerrainStepX)
+        # the number of quads along y-axis
+        ySize = math.ceil((yMax-yMin)/Terrain.flatTerrainStepY)
+        
+        stepX = (xMax-xMin)/xSize
+        stepY = (yMax-yMin)/ySize
+        
+        # indices of the horizontal latice:
+        x1 = 0
+        x2 = xSize
+        y1 = 0
+        y2 = ySize
+        
+        for y in range(y2, y1-1, -1):
+            for x in range(x1, x2+1):
+                # add a new vertex to the verts array
+                verts.append((
+                    xMin + x*stepX,
+                    yMin + y*stepY,
+                    0.
+                ))
+                if x>x1 and y<y2:
+                    topNeighborIndex = vertsCounter-xSize-1
+                    leftTopNeighborIndex = vertsCounter-xSize-2
+                    indices.append((vertsCounter, topNeighborIndex, leftTopNeighborIndex, vertsCounter-1))
+                vertsCounter += 1
+        
+        # create a mesh object in Blender
+        mesh = bpy.data.meshes.new("Terrain")
+        mesh.from_pydata(verts, [], indices)
+        mesh.update()
+        obj = bpy.data.objects.new("Terrain", mesh)
+        context.scene.objects.link(obj)
+        return obj.name

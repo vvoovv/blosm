@@ -109,6 +109,8 @@ class ImportData(bpy.types.Operator):
     def execute(self, context):
         dataType = context.scene.blender_osm.dataType
         
+        app.app.setAttributes(context)
+        
         if dataType == "osm":
             return self.importOsm(context)
         elif dataType == "terrain":
@@ -234,6 +236,9 @@ class ImportData(bpy.types.Operator):
                 break
         else:
             a.area = None
+            
+        lat, lon, setLatLon = self.getCenterLatLon(context)
+        a.projection = TransverseMercator(lat=lat, lon=lon)
         
         try:
             a.initOverlay(context, BlenderOsmPreferences.bl_idname)
@@ -241,22 +246,19 @@ class ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
-        lat, lon, setLatLon = self.getCenterLatLon(context)
+        terrainObjectName = context.scene.objects.get(context.scene.blender_osm.terrainObject)
         
-        a.projection = TransverseMercator(lat=lat, lon=lon)
-        
-        # set custom parameter "lat" and "lon" to the active scene
-        if setLatLon:
-            self.setCenterLatLon(context, lat, lon)
-        
-        terrainObject = bpy.data.objects.get(context.scene.blender_osm.terrainObject)
-        minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObject, context, a.projection)\
-            if terrainObject else\
+        minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObjectName, context)\
+            if terrainObjectName else\
             (a.minLon, a.minLat, a.maxLon, a.maxLat)
         
         a.overlay.prepareImport(minLon, minLat, maxLon, maxLat)
         
         bpy.ops.blender_osm.control_overlay()
+        
+        # set custom parameter "lat" and "lon" to the active scene
+        if setLatLon:
+            self.setCenterLatLon(context, lat, lon)
         
         return {'FINISHED'}
     
