@@ -293,7 +293,7 @@ class PanelBpyProj(bpy.types.Panel):
         return app.bpyproj
     
     def draw(self, context):
-        app.bpyproj.draw(context)
+        app.bpyproj.draw(context, self.layout)
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
