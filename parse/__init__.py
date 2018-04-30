@@ -84,7 +84,7 @@ class Osm:
         
         # <self.projection> could be set during a previous call of <self.parse(..)>
         if not self.projection:
-            self.projection = kwargs.get("projection")
+            self.projection = self.app.projection
         if not self.projection:
             self.minLat = 90.
             self.maxLat = -90.
@@ -179,20 +179,19 @@ class Osm:
                             else:
                                 self.app.incompleteRelations.append((relation, _id, members, tags, condition))
             elif e.tag == "bounds":
-                # If <projectionClass> is present in <kwargs>,
+                # If <self.projection> isn't set,
                 # it means we need to set <self.projection> here,
-                # adding to kwargs the center of <bounds>
-                projectionClass = kwargs.get("projectionClass")
-                if projectionClass:
+                # using <bounds> from the OSM file
+                if not self.projection:
                     lat = ( float(attrs["minlat"]) + float(attrs["maxlat"]) )/2.
                     lon = ( float(attrs["minlon"]) + float(attrs["maxlon"]) )/2.
-                    self.setProjection(projectionClass, lat, lon, kwargs)
+                    self.setProjection(lat, lon)
         
         if not self.projection:
             # set projection using the calculated bounds (self.minLat, self.maxLat, self.minLon, self.maxLon)
             lat = (self.minLat + self.maxLat)/2.
             lon = (self.minLon + self.maxLon)/2.
-            self.setProjection(kwargs["projectionClass"], lat, lon, kwargs)
+            self.setProjection(lat, lon)
     
     def checkConditions(self, tags, element):
         for c in self.conditions:
@@ -267,12 +266,11 @@ class Osm:
             relations[_id] = relation
         return relation
     
-    def setProjection(self, projectionClass, lat, lon, kwargs):
+    def setProjection(self, lat, lon):
         self.lat = lat
         self.lon = lon
-        kwargs["lat"] = lat
-        kwargs["lon"] = lon
-        self.projection = projectionClass(**kwargs)
+        self.app.setProjection(lat, lon)
+        self.projection = self.app.projection
 
 
 from .relation.multipolygon import Multipolygon

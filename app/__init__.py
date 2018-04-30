@@ -127,6 +127,8 @@ class App:
         self.version = None
         self.layerIndices = {}
         self.layers = []
+                
+        self.loadExtensions()
     
     def initOsm(self, op, context, addonName):
         basePath = self.basePath
@@ -629,6 +631,21 @@ class App:
         )
         # minLon, minLat, maxLon, maxLat
         return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]
+    
+    def loadExtensions(self):
+        import sys
+        # check if have sys.modules
+        self.bpyproj = sys.modules.get("bpyproj")
+    
+    def setProjection(self, lat, lon):
+        projection = None
+        if self.bpyproj:
+            projection = self.bpyproj.getProjection(lat, lon)
+        if not projection:
+            from util.transverse_mercator import TransverseMercator
+            # fall back to the Transverse Mercator
+            self.projection = TransverseMercator(lat=lat, lon=lon)
+        self.projection = projection
 
 
 app = App()

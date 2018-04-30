@@ -107,9 +107,11 @@ class ImportData(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
+        a = app.app
         dataType = context.scene.blender_osm.dataType
         
-        app.app.setAttributes(context)
+        a.projection = None
+        a.setAttributes(context)
         
         if dataType == "osm":
             return self.importOsm(context)
@@ -126,7 +128,7 @@ class ImportData(bpy.types.Operator):
             a.initOsm(self, context, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
-            return {'FINISHED'}
+            return {'CANCELLED'}
         
         setupScript = context.scene.blender_osm.setupScript
         if setupScript:
@@ -135,7 +137,7 @@ class ImportData(bpy.types.Operator):
                 self.report({'ERROR'},
                     "The script file doesn't exist"
                 )
-                return {'FINISHED'}
+                return {'CANCELLED'}
             import imp
             # remove extension from the path
             setupScript = os.path.splitext(setupScript)[0]
@@ -149,7 +151,7 @@ class ImportData(bpy.types.Operator):
                 self.report({'ERROR'},
                     "Unable to execute the setup script!"
                 )
-                return {'FINISHED'}
+                return {'CANCELLED'}
         else:
             if a.mode is a.realistic:
                 from setup.premium_default import setup as setup_function
@@ -167,9 +169,10 @@ class ImportData(bpy.types.Operator):
         a.prepareLayers(osm)
         
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
-            kwargs["projection"] = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
+            a.setProjection(scene["lat"], scene["lon"])
+            setLatLon = False
         else:
-            kwargs["projectionClass"] = TransverseMercator
+            setLatLon = True
         
         osm.parse(a.osmFilepath, **kwargs)
         if a.loadMissingMembers and a.incompleteRelations:
@@ -183,8 +186,8 @@ class ImportData(bpy.types.Operator):
         a.render()
         
         # setting 'lon' and 'lat' attributes for <scene> if necessary
-        if not "projection" in kwargs:
-            # <kwargs["lat"]> and <kwargs["lon"]> have been set in osm.parse(..)
+        if setLatLon:
+            # <osm.lat> and <osm.lon> have been set in osm.parse(..)
             self.setCenterLatLon(context, osm.lat, osm.lon)
         
         a.clean()
@@ -217,8 +220,8 @@ class ImportData(bpy.types.Operator):
             return {'FINISHED'}
         
         lat, lon, setLatLon = self.getCenterLatLon(context)
+        a.setProjection(lat, lon)
         
-        a.projection = TransverseMercator(lat=lat, lon=lon)
         a.importTerrain(context)
         
         # set custom parameter "lat" and "lon" to the active scene
@@ -238,7 +241,7 @@ class ImportData(bpy.types.Operator):
             a.area = None
             
         lat, lon, setLatLon = self.getCenterLatLon(context)
-        a.projection = TransverseMercator(lat=lat, lon=lon)
+        a.setProjection(lat, lon)
         
         try:
             a.initOverlay(context, BlenderOsmPreferences.bl_idname)
