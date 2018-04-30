@@ -281,6 +281,21 @@ class PanelSettings(bpy.types.Panel):
         layout.box().prop(addon, "setOverlayMaterial")
 
 
+class PanelBpyProj(bpy.types.Panel):
+    bl_label = "Projection"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_context = "objectmode"
+    bl_category = "osm"
+    
+    @classmethod
+    def poll(cls, context):
+        return app.bpyproj
+    
+    def draw(self, context):
+        app.bpyproj.draw(context)
+
+
 class BlenderOsmProperties(bpy.types.PropertyGroup):
     
     terrainObject = bpy.props.StringProperty(
