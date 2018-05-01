@@ -644,7 +644,7 @@ class App:
         if not projection:
             from util.transverse_mercator import TransverseMercator
             # fall back to the Transverse Mercator
-            self.projection = TransverseMercator(lat=lat, lon=lon)
+            projection = TransverseMercator(lat=lat, lon=lon)
         self.projection = projection
 
 
