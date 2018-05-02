@@ -83,6 +83,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
             split = layout.split(percentage=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
+        layout.box().operator("blosm.load_extensions", text="Load extensions")
 
 
 class OperatorGetMapboxToken(bpy.types.Operator):
@@ -96,6 +97,17 @@ class OperatorGetMapboxToken(bpy.types.Operator):
     def execute(self, context):
         import webbrowser
         webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
+
+
+class OperatorLoadExtensions(bpy.types.Operator):
+    bl_idname = "blosm.load_extensions"
+    bl_label = ""
+    bl_description = "Scan Blender addons, find extensions for blender-osm and load them"
+    bl_options = {'INTERNAL'}
+    
+    def execute(self, context):
+        app.app.loadExtensions()
         return {'FINISHED'}
 
 
