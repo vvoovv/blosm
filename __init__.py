@@ -83,7 +83,8 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
             split = layout.split(percentage=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
-        layout.box().operator("blosm.load_extensions", text="Load extensions")
+        layout.separator()
+        layout.operator("blosm.load_extensions", text="Load extensions")
 
 
 class OperatorGetMapboxToken(bpy.types.Operator):
