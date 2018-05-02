@@ -108,7 +108,11 @@ class OperatorLoadExtensions(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def execute(self, context):
-        app.app.loadExtensions()
+        numExtensions = app.app.loadExtensions()
+        self.report({'INFO'},
+            "No extension found" if not numExtensions else\
+            ("Loaded 1 extension" if numExtensions==1 else "Loaded %s extensions" % numExtensions)
+        )
         return {'FINISHED'}
 
 

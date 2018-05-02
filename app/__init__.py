@@ -633,9 +633,13 @@ class App:
         return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]
     
     def loadExtensions(self):
+        numExtensions = 0
         import sys
         # check if have sys.modules
         self.bpyproj = sys.modules.get("bpyproj")
+        if self.bpyproj:
+            numExtensions += 1
+        return numExtensions
     
     def setProjection(self, lat, lon):
         projection = None
