@@ -127,7 +127,7 @@ class OperatorExtentFromActive(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class PanelExtent(bpy.types.Panel):
+class PanelBlosmExtent(bpy.types.Panel):
     bl_label = "blender-osm"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
@@ -194,7 +194,7 @@ class PanelRealisticTools(bpy.types.Panel):
         layout.operator("blosm.make_polygon")
 
 
-class PanelSettings(bpy.types.Panel):
+class PanelBlosmSettings(bpy.types.Panel):
     bl_label = "Settings"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
