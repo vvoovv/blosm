@@ -113,7 +113,7 @@ class BuildingRenderer(Renderer3d):
         elif app.terrain:
             self.projectOnTerrain(outline, osm)
         
-        if app.terrain and not self.offsetZ:
+        if app.terrain and self.offsetZ is None:
             # The building is located outside the terrain.
             # Perform cleanup and exit
             if not app.singleObject:
