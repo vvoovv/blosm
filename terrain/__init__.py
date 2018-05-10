@@ -139,6 +139,8 @@ class Terrain:
         else:
             # create new envelope for the terrain
             envelope = createMeshObject(name, (0., 0., self.minZ), terrain.data.copy())
+            # materials aren't needed for the envelope
+            envelope.data.materials.clear()
             envelope.data.name = name
             # flatten the terrain envelope
             envelope.scale[2] = 0.
