@@ -75,16 +75,34 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         description = "A string token to access overlays from Mapbox company"
     )
     
+    osmServer = bpy.props.EnumProperty(
+        name = "OSM data server",
+        items = (
+            ("overpass-api.de", "overpass-api.de: 8 cores, 96 GB RAM", "overpass-api.de: 8 cores, 96 GB RAM"),
+            #("openstreetmap.ru", "openstreetmap.ru: 8 cores, 64 GB RAM", "openstreetmap.ru: 8 cores, 64 GB RAM"),
+            #("openstreetmap.fr", "openstreetmap.fr: 8 cores, 16 GB RAM", "openstreetmap.fr: 8 cores, 16 GB RAM"),
+            ("kumi.systems", "kumi.systems: 20 cores, 256GB RAM", "kumi.systems: 20 cores, 256GB RAM")
+        ),
+        description = "OSM data server if the default one is inaccessible",
+        default = "overpass-api.de"
+    )
+    
     def draw(self, context):
         layout = self.layout
         layout.label("Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
+        
+        layout.separator()
         if app.app.has(Keys.mode3dRealistic):
             split = layout.split(percentage=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
+        
         layout.separator()
-        layout.operator("blosm.load_extensions", text="Load extensions")
+        layout.box().label("Advanced settings:")
+        # Extensions might come later
+        #layout.operator("blosm.load_extensions", text="Load extensions")
+        layout.prop(self, "osmServer")
 
 
 class OperatorGetMapboxToken(bpy.types.Operator):
@@ -108,7 +126,7 @@ class OperatorLoadExtensions(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def execute(self, context):
-        numExtensions = app.app.loadExtensions()
+        numExtensions = app.app.loadExtensions(context)
         self.report({'INFO'},
             "No extension found" if not numExtensions else\
             ("Loaded 1 extension" if numExtensions==1 else "Loaded %s extensions" % numExtensions)

@@ -48,9 +48,18 @@ class App:
         "beach" # sand, gravel, pebbles
     ]
     
-    osmUrl = "http://overpass-api.de/api/map?bbox=%s,%s,%s,%s"
+    osmServers = {
+        "overpass-api.de": "http://overpass-api.de",
+        "openstreetmap.ru": "http://overpass.openstreetmap.ru",
+        "openstreetmap.fr": "http://overpass.openstreetmap.fr",
+        "kumi.systems": "https://overpass.kumi.systems"
+    }
     
-    osmUrl2 = "http://overpass-api.de/api/interpreter"
+    devOsmServer = "kumi.systems"
+    
+    osmUrlPath = "/api/map?bbox=%s,%s,%s,%s"
+    
+    osmUrlPath2 = "/api/interpreter"
     
     terrainUrl = "http://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
     
@@ -127,10 +136,11 @@ class App:
         self.version = None
         self.layerIndices = {}
         self.layers = []
-                
-        self.loadExtensions()
     
     def initOsm(self, op, context, addonName):
+        addon = context.scene.blender_osm
+        prefs = context.user_preferences.addons
+        
         basePath = self.basePath
         self.op = op
         self.assetPath = os.path.join(basePath, "assets")
@@ -148,7 +158,10 @@ class App:
         self.layerIndices = {}
         self.layers = []
         
-        addon = context.scene.blender_osm
+        self.osmServer = self.osmServers[
+            prefs[addonName].preferences.osmServer if addonName in prefs else self.devOsmServer
+        ]
+        
         if addon.osmSource == "server":
             # find a file name for the OSM file
             osmFileName = self.osmFileName % ""
@@ -162,7 +175,7 @@ class App:
                     break
             self.osmFilepath = osmFilepath
             self.download(
-                self.osmUrl % (app.minLon, app.minLat, app.maxLon, app.maxLat),
+                self.osmServer + self.osmUrlPath % (app.minLon, app.minLat, app.maxLon, app.maxLat),
                 osmFilepath
             )
         else:
@@ -406,7 +419,7 @@ class App:
     
     def downloadOsmWays(self, ways, filepath):
         self.download(
-            self.osmUrl2,
+            self.osmServer + self.osmUrlPath2,
             filepath,
             self.overpassWays % ");way(".join(ways)
         )
@@ -632,19 +645,26 @@ class App:
         # minLon, minLat, maxLon, maxLat
         return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]
     
-    def loadExtensions(self):
+    def loadExtensions(self, context=bpy.context):
+        """
+        Currently not used. Might be revisited later when a true extension appears
+        """
         numExtensions = 0
         import sys
-        # check if have sys.modules
-        self.bpyproj = sys.modules.get("bpyproj")
+        # check if <bpyproj> is activated and is available in sys.modules
+        self.bpyproj = "bpyproj" in context.user_preferences.addons and sys.modules.get("bpyproj")
         if self.bpyproj:
             numExtensions += 1
         return numExtensions
     
     def setProjection(self, lat, lon):
+        import sys
+        
         projection = None
-        if self.bpyproj:
-            projection = self.bpyproj.getProjection(lat, lon)
+        # check if <bpyproj> is activated and is available in sys.modules
+        bpyproj = "bpyproj" in bpy.context.user_preferences.addons and sys.modules.get("bpyproj")
+        if bpyproj:
+            projection = bpyproj.getProjection(lat, lon)
         if not projection:
             from util.transverse_mercator import TransverseMercator
             # fall back to the Transverse Mercator

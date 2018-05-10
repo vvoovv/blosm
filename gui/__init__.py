@@ -290,10 +290,11 @@ class PanelBpyProj(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return app.bpyproj
+        return "bpyproj" in context.user_preferences.addons
     
     def draw(self, context):
-        app.bpyproj.draw(context, self.layout)
+        import bpyproj
+        bpyproj.draw(context, self.layout)
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
