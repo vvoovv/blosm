@@ -166,7 +166,7 @@ class PanelBlosmExtent(bpy.types.Panel):
         row.operator("blender_osm.import_data", text="import")
 
 
-class PanelRealisticTools(bpy.types.Panel):
+class PanelRealisticTools():#(bpy.types.Panel):
     bl_label = "Realistic mode"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
@@ -215,6 +215,7 @@ class PanelBlosmSettings(bpy.types.Panel):
     def drawOsm(self, context):
         layout = self.layout
         addon = context.scene.blender_osm
+        mode3dRealistic = app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic"
         
         box = layout.box()
         box.prop(addon, "osmSource", text="Import from")
@@ -224,23 +225,23 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
             
         layout.prop(addon, "mode", expand=True)
-        if addon.mode == "3D" and app.has(Keys.mode3dRealistic):
+        if mode3dRealistic:
             layout.prop(addon, "mode3d", expand=True)
-        
-        box = layout.box()
-        box.prop(addon, "buildings")
-        box.prop(addon, "water")
-        box.prop(addon, "forests")
-        box.prop(addon, "vegetation")
-        box.prop(addon, "highways")
-        box.prop(addon, "railways")
-        
-        layout.box().prop(addon, "setupScript")
-        
-        if app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic":
+        else:
+            box = layout.box()
+            box.prop(addon, "buildings")
+            box.prop(addon, "water")
+            box.prop(addon, "forests")
+            box.prop(addon, "vegetation")
+            box.prop(addon, "highways")
+            box.prop(addon, "railways")
+
+        if mode3dRealistic:
             box = layout.box()
             box.prop(addon, "bldgMaterialsFilepath")
             box.prop(addon, "litWindows")
+        
+        layout.box().prop(addon, "setupScript")
         
         box = layout.box()
         split = box.split(percentage=0.67)
@@ -255,7 +256,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         
         layout.box().prop(addon, "ignoreGeoreferencing")
         
-        if addon.terrainObject and addon.terrainObject in context.scene.objects:
+        if not mode3dRealistic and addon.terrainObject in context.scene.objects:
             box = layout.box()
             box.prop(addon, "subdivide")
             if addon.subdivide:
