@@ -388,7 +388,7 @@ class PanelMaterialCreate(bpy.types.Panel):
     def poll(cls, context):
         addon = context.scene.blender_osm
         return app.has(Keys.mode3dRealistic) and addon.dataType == "osm"\
-            and addon.mode == "3D" and addon.mode3d == "realistic"
+            and addon.mode == "3Drealistic"
     
     def draw(self, context):
         addon = context.scene.blender_osm

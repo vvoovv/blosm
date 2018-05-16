@@ -23,7 +23,9 @@ from app import app
 from defs import Keys
 from util.transverse_mercator import TransverseMercator
 
-if app.has(Keys.mode3dRealistic):
+_has3dRealistic = app.has(Keys.mode3dRealistic)
+
+if _has3dRealistic:
     from realistic.material.renderer import FacadeWithColor
 
 
@@ -176,8 +178,8 @@ class PanelRealisticTools():#(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         addon = context.scene.blender_osm
-        return app.has(Keys.mode3dRealistic) and addon.dataType == "osm"\
-            and addon.mode == "3D" and addon.mode3d == "realistic"
+        return _has3dRealistic and addon.dataType == "osm"\
+            and addon.mode == "3Drealistic"
     
     def draw(self, context):
         layout = self.layout
@@ -215,7 +217,7 @@ class PanelBlosmSettings(bpy.types.Panel):
     def drawOsm(self, context):
         layout = self.layout
         addon = context.scene.blender_osm
-        mode3dRealistic = app.has(Keys.mode3dRealistic) and addon.mode == "3D" and addon.mode3d == "realistic"
+        mode3dRealistic = _has3dRealistic and addon.mode == "3Drealistic"
         
         box = layout.box()
         box.prop(addon, "osmSource", text="Import from")
@@ -225,9 +227,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
             
         layout.prop(addon, "mode", expand=True)
-        if mode3dRealistic:
-            layout.prop(addon, "mode3d", expand=True)
-        else:
+        if not mode3dRealistic:
             box = layout.box()
             box.prop(addon, "buildings")
             box.prop(addon, "water")
@@ -329,17 +329,21 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     )
     
     mode = bpy.props.EnumProperty(
-        name = "Mode: 3D or 2D",
-        items = (("3D","3D","3D"), ("2D","2D","2D")),
-        description = "Import data in 3D or 2D mode",
-        default = "3D"
-    )
-    
-    mode3d = bpy.props.EnumProperty(
-        name = "3D Mode: realistic or simple",
-        items = (("realistic","realistic","realistic"), ("simple","simple","simple")),
-        description = "Import data with textures and 3D objects (realistic) or without them (simple)",
-        default = "realistic"
+        name = "Mode: 3D realistic, 3D simple or 2D"\
+            if _has3dRealistic else\
+            "Mode: 3D or 2D",
+        items = (
+                ("3Drealistic","3D realistic","3D realistic"),
+                ("3Dsimple","3D simple","3D simple"),
+                ("2D","2D","2D")
+            ) if _has3dRealistic else\
+            (("3Dsimple","3D","3D"), ("2D","2D","2D")),
+        description = ("Import data with textures and 3D objects (3D realistic) " +
+            "or without them (3D simple) " +
+            "or 2D only")\
+            if _has3dRealistic else\
+            "Import data in 3D or 2D mode",
+        default = "3Dsimple"
     )
     
     # extent bounds: minLat, maxLat, minLon, maxLon
@@ -573,7 +577,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         max = 100,
         subtype = 'UNSIGNED',
         default = 0,
-        update = FacadeWithColor.updateLitWindows if app.has(Keys.mode3dRealistic) else None
+        update = FacadeWithColor.updateLitWindows if _has3dRealistic else None
     )
     
     #    

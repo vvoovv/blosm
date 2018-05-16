@@ -187,7 +187,7 @@ class App:
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
             self.mode = App.realistic\
-                if app.has(defs.Keys.mode3dRealistic) and self.mode3d == "realistic"\
+                if app.has(defs.Keys.mode3dRealistic) and self.mode == "3Drealistic"\
                 else App.simple
         else:
             self.mode = App.twoD
@@ -283,7 +283,8 @@ class App:
         """
         addon = context.scene.blender_osm
         for p in dir(addon):
-            if not (p.startswith("__") or p in ("bl_rna", "rna_type")):
+            # don't know why <int> started to appear in <dir(addon)>
+            if not (p.startswith("__") or p in ("bl_rna", "rna_type", "int")):
                 setattr(self, p, getattr(addon, p))
     
     def setDataDir(self, context, basePath, addonName):
