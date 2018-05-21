@@ -4,7 +4,7 @@ import numpy
 from urllib import request
 import bpy
 
-from util.blender import getBmesh, setBmesh, appendMaterialsFromFile
+from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
 from app import app
 
 
@@ -173,12 +173,13 @@ class Overlay:
         # load and append the default material
         if app.setOverlayMaterial:
             materials = app.terrain.terrain.data.materials
-            material = appendMaterialsFromFile(
+            material = loadMaterialsFromFile(
                 os.path.join(
                     os.path.dirname(os.path.realpath(__file__)),
                     os.pardir,
                     self.materialPath
                 ),
+                False, # i.e. append rather than link
                 self.defaultMaterial
             )[0]
             material.node_tree.nodes["Image Texture"].image = image

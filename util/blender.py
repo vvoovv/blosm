@@ -174,8 +174,8 @@ def getMaterialByName(obj, name, filepath=None):
     return material
 
 
-def appendMaterialsFromFile(filepath, *names):
-    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+def loadMaterialsFromFile(filepath, link, *names):
+    with bpy.data.libraries.load(filepath, link=link) as (data_from, data_to):
         # a Python list (not a Python tuple!) must be set to <data_to.objects>
         data_to.materials = list(names)
     return data_to.materials

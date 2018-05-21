@@ -1,6 +1,6 @@
 import math
 import bpy
-from util.blender import appendMaterialsFromFile
+from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import setCustomNodeValue
 
 
@@ -83,7 +83,7 @@ class MaterialRenderer:
         with the name <name>
         """
         if not name in bpy.data.materials:
-            if not appendMaterialsFromFile(self.r.app.bldgMaterialsFilepath, name):
+            if not loadMaterialsFromFile(self.r.app.bldgMaterialsFilepath, True, name):
                 print("The material %s doesn't exist!" % name)
     
     def setupMaterials(self, groupName, numMaterials=20):
@@ -100,8 +100,9 @@ class MaterialRenderer:
             else:
                 materialsToLoad.append(name)
         if materialsToLoad:
-            loadedMaterials = appendMaterialsFromFile(
+            loadedMaterials = loadMaterialsFromFile(
                 self.r.app.bldgMaterialsFilepath,
+                True,
                 *materialsToLoad
             )
             materials.extend(m.name for m in loadedMaterials if not m is None)
