@@ -91,32 +91,56 @@ def createMaterialsForFacadesOverlay(
         fileName = fileName.name
         textureDataEntry = textureData.get(fileName)
         if textureDataEntry:
-            # calculate parameters out of input values
-            textureWidthPx,\
-            textureHeightPx,\
-            windowWidthM,\
-            windowCentalLpx,\
-            windowCentalRpx,\
-            windowCentralIndex,\
-            windowCental2Lpx,\
-            numberOfTilesU,\
-            levelCentralTpx,\
-            levelCentralBpx,\
-            textureVoffsetPx,\
-            numberOfTilesV\
-                = textureDataEntry
-            
+            fractionalTileNumber = len(textureDataEntry) == 12
+            # Calculate parameters out of input values.
+            if fractionalTileNumber:
+                # <windowCentralIndex> starts from zero
+                textureWidthPx,\
+                textureHeightPx,\
+                windowWidthM,\
+                windowCentalLpx,\
+                windowCentalRpx,\
+                windowCentralIndex,\
+                windowCental2Lpx,\
+                numberOfTilesU,\
+                levelCentralTpx,\
+                levelCentralBpx,\
+                textureVoffsetPx,\
+                numberOfTilesV\
+                    = textureDataEntry
+                
+                tileWidthPx = windowCental2Lpx-windowCentalLpx
+            else:
+                textureWidthPx,\
+                textureHeightPx,\
+                windowWidthM,\
+                windowCentalLpx,\
+                windowCentalRpx,\
+                numberOfTilesU,\
+                numberOfTilesV\
+                    = textureDataEntry
+                
+                tileWidthPx = textureWidthPx/numberOfTilesU
+
             windowWidthPx = windowCentalRpx-windowCentalLpx
-            tileWidthPx = windowCental2Lpx-windowCentalLpx
             factor = windowWidthM/windowWidthPx
             
             textureWidthM = factor*textureWidthPx
             tileSizeUdefaultM = factor*tileWidthPx
-            textureUoffsetM = factor*(windowCentalLpx - (windowCentralIndex-1)*tileWidthPx - (tileWidthPx - windowWidthPx)/2.)
+            textureUoffsetM =\
+                factor*(windowCentalLpx - windowCentralIndex*tileWidthPx - (tileWidthPx - windowWidthPx)/2.)\
+                if fractionalTileNumber else\
+                0.
             
-            textureLevelHeightM = factor*(levelCentralBpx-levelCentralTpx)
+            textureLevelHeightM =\
+                factor*(levelCentralBpx-levelCentralTpx)\
+                if fractionalTileNumber else\
+                factor*textureHeightPx/numberOfTilesV
             textureHeightM = factor*textureHeightPx
-            textureVoffsetM = factor*(textureHeightPx - textureVoffsetPx)
+            textureVoffsetM =\
+                factor*(textureHeightPx - textureVoffsetPx)\
+                if fractionalTileNumber else\
+                0.
             
             for m, materialTemplate, customNode in\
                 zip(_materialFamilyFO, materialTemplates, _customNodeFO):
