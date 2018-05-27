@@ -40,15 +40,19 @@ def createFacadeMaterialsForSeamlessTextures(
         directory,
         listOfTextures,
         materialTemplate1,
-        materialTemplate2
+        materialTemplate2,
+        # additional image textures as kwargs
+        **kwargs
     ):
     def createMaterials(materialBaseName, materialTemplate):
         materialName = "%s.%s" % (materialBaseName, (i+1))
         if not materialName in bpy.data.materials:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             
-            setImage(fileName, directory, nodes["Image Texture"])
-            setMasksImage(fileName, directory, nodes)
+            setImage(fileName, directory, nodes, "Image Texture")
+            # set additional image textures
+            for suffix in kwargs:
+                setImage(fileName, directory, nodes, kwargs[suffix], suffix)
             node = nodes["FacadePart"]
             setCustomNodeValue(node, "Number of Tiles U", textureDataEntry[0])
             setCustomNodeValue(node, "Number of Tiles V", textureDataEntry[1])
@@ -152,14 +156,14 @@ def createMaterialsForFacadesOverlay(
                 if not materialName in bpy.data.materials:
                     nodes = createMaterialFromTemplate(materialTemplate, materialName)
                     # the overlay texture
-                    setImage(fileName, directory, nodes["Overlay"])
+                    setImage(fileName, directory, nodes, "Overlay")
                     # The wall material (i.e. background) texture,
                     # set it just in case
-                    setImage(wallTexturePath, None, nodes["Wall Material"])
+                    setImage(wallTexturePath, None, nodes, "Wall Material")
                     nodes["Mapping"].scale[0] = 1./wallTextureWidthM
                     nodes["Mapping"].scale[1] = 1./wallTextureHeightM
-                    # the masks for the overlay and for the emission
-                    setMasksImage(fileName, directory, nodes)
+                    # the mask for the emission
+                    setImage(fileName, directory, nodes, "Emission Mask", "emissive")
                     # setting nodes
                     n = nodes[customNode]
                     setCustomNodeValue(n, "Texture Width", textureWidthM)
@@ -178,7 +182,7 @@ def createMaterialsForFacadesOverlay(
             materialName = "%s_color" % wallMaterial
             if not materialName in bpy.data.materials:
                 nodes = createMaterialFromTemplate(materialTemplate, materialName)
-                setImage(wallTexturePath, None, nodes["Image Texture"])
+                setImage(wallTexturePath, None, nodes, "Image Texture")
                 nodes["Mapping"].scale[0] = 1./wallTextureWidthM
                 nodes["Mapping"].scale[1] = 1./wallTextureHeightM
         else:
@@ -206,7 +210,7 @@ def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listO
                 if not materialName in bpy.data.materials:
                     nodes = createMaterialFromTemplate(materialTemplate, materialName)
                     
-                    setImage(fileName, directory, nodes["Image Texture"])
+                    setImage(fileName, directory, nodes, "Image Texture")
                     nodes["Mapping"].scale[0] = 1./textureDataEntry[0]
                     nodes["Mapping"].scale[1] = 1./textureDataEntry[1]
         else:
@@ -224,16 +228,15 @@ def readTextures(listOfTextures):
     return textureData
 
 
-def setImage(fileName, directory, node):
-    image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
-    if not image:
-        image = bpy.data.images.load(os.path.join(directory, fileName) if directory else fileName)
-    node.image = image
-
-
-def setMasksImage(fileName, directory, nodes):
-    if "Masks" in nodes:
-        setImage("%s_masks.png" % fileName[:-4], directory, nodes["Masks"])
+def setImage(fileName, directory, nodes, nodeName, imageSuffix=None):
+    node = nodes.get(nodeName)
+    if node:
+        if imageSuffix:
+            fileName = "%s_%s.png" % (fileName[:-4], imageSuffix)
+        image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
+        if not image:
+            image = bpy.data.images.load(os.path.join(directory, fileName) if directory else fileName)
+        node.image = image
 
 
 def setCustomNodeValue(node, inputName, value):
@@ -368,7 +371,10 @@ class OperatorCreateMaterials(bpy.types.Operator):
                     self.directory,
                     "textures_glass",
                     "glass_emission_template",
-                    "glass_ground_level_emission_template"
+                    "glass_ground_level_emission_template",
+                    # additional image textures as kwargs
+                    emission = "Emission Texture",
+                    diffuse = "Diffuse Mask"
                 )
         return {'FINISHED'}
 
