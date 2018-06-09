@@ -82,8 +82,8 @@ class RoofRealistic:
                 f.loops[i][uvLayer].uv = (u, v)
             self.mrr.renderRoof(f)
 
-    def setMaterialWalls(self, name, useColor=True):
-        if useColor and self.wallsColor:
+    def setMaterialWalls(self, name, addColorSuffix=False):
+        if addColorSuffix and self.wallsColor:
             name += "_color"
         # mrw stands for "material renderer for walls"
         mrw = self.r.getMaterialRenderer(name)
@@ -93,8 +93,8 @@ class RoofRealistic:
             mrw.b = self
             self.mrw = mrw
     
-    def setMaterialRoof(self, name, useColor=True):
-        if useColor and self.roofColor:
+    def setMaterialRoof(self, name, addColorSuffix=True):
+        if addColorSuffix and self.roofColor:
             name += "_color"
         # mrr stands for "material renderer for roof"
         mrr = self.r.getMaterialRenderer(name)

@@ -102,8 +102,8 @@ def createMaterialsForFacadesOverlay(
                 textureWidthPx,\
                 textureHeightPx,\
                 windowWidthM,\
-                windowCentalLpx,\
-                windowCentalRpx,\
+                windowCentralLpx,\
+                windowCentralRpx,\
                 windowCentralIndex,\
                 windowCental2Lpx,\
                 numberOfTilesU,\
@@ -113,26 +113,26 @@ def createMaterialsForFacadesOverlay(
                 numberOfTilesV\
                     = textureDataEntry
                 
-                tileWidthPx = windowCental2Lpx-windowCentalLpx
+                tileWidthPx = windowCental2Lpx-windowCentralLpx
             else:
                 textureWidthPx,\
                 textureHeightPx,\
                 windowWidthM,\
-                windowCentalLpx,\
-                windowCentalRpx,\
+                windowCentralLpx,\
+                windowCentralRpx,\
                 numberOfTilesU,\
                 numberOfTilesV\
                     = textureDataEntry
                 
                 tileWidthPx = textureWidthPx/numberOfTilesU
 
-            windowWidthPx = windowCentalRpx-windowCentalLpx
+            windowWidthPx = windowCentralRpx-windowCentralLpx
             factor = windowWidthM/windowWidthPx
             
             textureWidthM = factor*textureWidthPx
             tileSizeUdefaultM = factor*tileWidthPx
             textureUoffsetM =\
-                factor*(windowCentalLpx - windowCentralIndex*tileWidthPx - (tileWidthPx - windowWidthPx)/2.)\
+                factor*(windowCentralLpx - windowCentralIndex*tileWidthPx - (tileWidthPx - windowWidthPx)/2.)\
                 if fractionalTileNumber else\
                 0.
             
@@ -235,7 +235,11 @@ def setImage(fileName, directory, nodes, nodeName, imageSuffix=None):
             fileName = "%s_%s.png" % (fileName[:-4], imageSuffix)
         image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
         if not image:
-            image = bpy.data.images.load(os.path.join(directory, fileName) if directory else fileName)
+            imagePath = os.path.join(directory, fileName) if directory else fileName
+            try:
+                image = bpy.data.images.load(imagePath)
+            except Exception:
+                print("Unable to load the image %s" % imagePath)
         node.image = image
 
 
