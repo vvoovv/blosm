@@ -284,10 +284,10 @@ class ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
-        terrainObjectName = context.scene.objects.get(context.scene.blender_osm.terrainObject)
+        terrainObject = context.scene.objects.get(context.scene.blender_osm.terrainObject)
         
-        minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObjectName, context)\
-            if terrainObjectName else\
+        minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObject, context)\
+            if terrainObject else\
             (a.minLon, a.minLat, a.maxLon, a.maxLat)
         
         a.overlay.prepareImport(minLon, minLat, maxLon, maxLat)

@@ -52,10 +52,10 @@ class App:
         "overpass-api.de": "http://overpass-api.de",
         "openstreetmap.ru": "http://overpass.openstreetmap.ru",
         "openstreetmap.fr": "http://overpass.openstreetmap.fr",
-        "kumi.systems": "https://overpass.kumi.systems"
+        "kumi.systems": "http://overpass.kumi.systems"
     }
     
-    devOsmServer = "kumi.systems"
+    devOsmServer = "kumi.systems" #"overpass-api.de"
     
     osmUrlPath = "/api/map?bbox=%s,%s,%s,%s"
     

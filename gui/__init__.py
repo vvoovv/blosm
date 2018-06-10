@@ -123,8 +123,7 @@ class OperatorExtentFromActive(bpy.types.Operator):
         
         addon.minLon, addon.minLat, addon.maxLon, addon.maxLat = app.getExtentFromObject(
             context.object,
-            context,
-            TransverseMercator(lat=scene["lat"], lon=scene["lon"])
+            context
         )
         
         return {'FINISHED'}
