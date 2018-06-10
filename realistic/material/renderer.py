@@ -229,6 +229,8 @@ class FacadeWithColor(MaterialRenderer):
 
     @staticmethod
     def setWindowEmissionRatio(material, percentage):
+        if not material.node_tree:
+            return
         nodes = material.node_tree.nodes
         if "WindowEmissionState" in nodes:
             setCustomNodeValue(
