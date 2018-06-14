@@ -93,7 +93,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                         l[uvLayerSize].uv = size
                 self.mrw.renderWalls(f, w)
         else:
-            super().renderWalls()
+            RoofProfile.renderWalls(self)
 
     def renderRoofTextured(self):
         r = self.r

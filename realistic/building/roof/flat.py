@@ -26,7 +26,7 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
                     l[uvLayerSize].uv = size
                 self.mrw.renderWalls(f, w)
         else:
-            super().renderWalls()
+            RoofFlat.renderWalls(self)
     
     def renderRoofTextured(self):
         r = self.r
@@ -34,9 +34,9 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
         verts = self.verts
         uvLayer = bm.loops.layers.uv[0]
         # Create BMesh face (exactly one) for the building roof.
-        # The code below is simplify to take into acctount that
+        # The code below is simplify to take into account that
         # exactly one face is available.
-        # For the general case with multiple face see the code
+        # For the general case with multiple faces see the code
         # in RoofFlatMultiRealistic.renderRoofTexturedMulti(..).
         for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
             loops = f.loops
@@ -64,27 +64,30 @@ class RoofFlatMultiRealistic(RoofRealistic, RoofFlatMulti):
         RoofFlatRealistic.renderWalls(self)
     
     def renderRoofTexturedMulti(self, geom):
-        uvLayer = self.r.bm.loops.layers.uv[0]
-        offset = None
-        # check the normal direction of the created faces and assign material to all BMesh faces
-        for f in geom["geom"]:
-            if isinstance(f, bmesh.types.BMFace):
-                pointNormalUpward(f)
-                loops = f.loops
-                # Arrange the texture along the first edge,
-                # so the first edges surve as u-axis for the texture
-                if offset:
-                    startIndex = 0
-                else:
-                    offset = loops[0].vert.co
-                    uVec = loops[1].vert.co - offset
-                    uVecLength = uVec.length
-                    uVec = uVec/uVecLength
-                    vVec = zAxis.cross(uVec)
-                    loops[0][uvLayer].uv = (0., 0.)
-                    loops[1][uvLayer].uv = (uVecLength, 0.)
-                    startIndex = 2
-                for i in range(startIndex, len(loops)):
-                    vec = loops[i].vert.co - offset
-                    loops[i][uvLayer].uv = (vec.dot(uVec), vec.dot(vVec))
-                self.mrr.renderRoof(f)
+        if self.mrr:
+            uvLayer = self.r.bm.loops.layers.uv[0]
+            offset = None
+            # check the normal direction of the created faces and assign material to all BMesh faces
+            for f in geom["geom"]:
+                if isinstance(f, bmesh.types.BMFace):
+                    pointNormalUpward(f)
+                    loops = f.loops
+                    # Arrange the texture along the first edge,
+                    # so the first edges surve as u-axis for the texture
+                    if offset:
+                        startIndex = 0
+                    else:
+                        offset = loops[0].vert.co
+                        uVec = loops[1].vert.co - offset
+                        uVecLength = uVec.length
+                        uVec = uVec/uVecLength
+                        vVec = zAxis.cross(uVec)
+                        loops[0][uvLayer].uv = (0., 0.)
+                        loops[1][uvLayer].uv = (uVecLength, 0.)
+                        startIndex = 2
+                    for i in range(startIndex, len(loops)):
+                        vec = loops[i].vert.co - offset
+                        loops[i][uvLayer].uv = (vec.dot(uVec), vec.dot(vVec))
+                    self.mrr.renderRoof(f)
+        else:
+            RoofFlatMulti.renderRoofTexturedMulti(self, geom)

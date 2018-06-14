@@ -32,4 +32,4 @@ class RoofSkillionRealistic(RoofRealistic, RoofSkillion):
                         l[uvLayerSize].uv = size
                 self.mrw.renderWalls(f, w)
         else:
-            super().renderWalls()
+            RoofSkillion.renderWalls(self)
