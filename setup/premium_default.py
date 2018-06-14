@@ -24,9 +24,9 @@ def getMaterials():
         plaster_color = SeamlessTextureWithColor,
         roof_tiles = SeamlessTexture,
         roof_tiles_color = SeamlessTextureWithColor,
-        metal_without_uv = MaterialWithColor,
         metal = SeamlessTexture,
         metal_color = SeamlessTextureWithColor,
+        metal_without_uv = MaterialWithColor,
         metal_scaled = SeamlessTextureScaled,
         metal_scaled_color = SeamlessTextureScaledWithColor
     )
@@ -40,13 +40,14 @@ def bldgPreRender(building):
     material = building.wallsMaterial
     if not material in ("plaster", "brick", "metal", "glass", "mirror"):
         material = "plaster"
+    material += "_color" 
     # tb stands for "OSM tag building"
     tb = building.getOsmTagValue("building")
     
     if tb in ("cathedral", "wall") or\
         building.getOsmTagValue("amenity") == "place_of_worship" or\
         building.getOsmTagValue("man_made") == "tower":
-        building.setMaterialWalls(material, addColorSuffix=True)
+        building.setMaterialWalls(material)
     else:
         if material == "glass" or material == "mirror":
             building.setMaterialWalls("glass")
@@ -61,14 +62,14 @@ def bldgPreRender(building):
         material = "metal"
     
     if material == "concrete":
-        building.setMaterialRoof("concrete")
+        building.setMaterialRoof("concrete_color")
     elif material == "roof_tiles":
-        building.setMaterialRoof("roof_tiles")
+        building.setMaterialRoof("roof_tiles_color")
     elif material == "metal":
         roofShape = tags.get("roof:shape")
         if roofShape == "onion":
-            building.setMaterialRoof("metal_without_uv", addColorSuffix=False)
+            building.setMaterialRoof("metal_without_uv")
         elif roofShape == "dome":
-            building.setMaterialRoof("metal_scaled")
+            building.setMaterialRoof("metal_scaled_color")
         else:
-            building.setMaterialRoof("metal")
+            building.setMaterialRoof("metal_color")

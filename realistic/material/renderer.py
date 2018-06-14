@@ -4,7 +4,7 @@ from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import setCustomNodeValue
 
 
-_wallColors = (
+_colors = (
     (0.502, 0., 0.502), # purple
     (0.604, 0.804, 0.196), # yellowgreen
     (0.529, 0.808, 0.922), # skyblue
@@ -20,7 +20,7 @@ class MaterialRenderer:
     # default roof color used by some material renderers
     roofColor = (0.29, 0.25, 0.21)
     
-    def __init__(self, renderer, baseMaterialName, wallColors = None):
+    def __init__(self, renderer, baseMaterialName, colors = None):
         self.valid = True
         self.r = renderer
         # base name for Blender materials
@@ -36,8 +36,14 @@ class MaterialRenderer:
         self.multipleGroups = False
         # variables for the default colors
         self.colorIndex = -1
-        self.wallColors = wallColors or _wallColors
-        self.numColors = len(self.wallColors)
+        # a list of colors used for walls or for a roof if a colors wasn't set in OSM
+        self.colors = colors or _colors
+        self.numColors = len(self.colors)
+        # We need to distinguish, if we are dealing with the material
+        # for walls or for a roof. That will be set after creating
+        # an instance of <MaterialRenderer>
+        self.isForWalls = False
+        self.isForRoof = False
     
     def requireUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
@@ -67,12 +73,14 @@ class MaterialRenderer:
     
     def setColor(self, face, layerName, color):
         if not color:
-            color = self.wallColors[self.colorIndex]
+            color = self.colors[self.colorIndex]
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
     
     def setColorForObject(self, obj, layerName, color):
+        if not color:
+            color = self.colors[self.colorIndex]
         vertexColorLayer = obj.data.vertex_colors[layerName]
         for d in vertexColorLayer.data:
             d.color = color
@@ -177,11 +185,24 @@ class MaterialRenderer:
             self.onBuildingChanged()
     
     def onBuildingChanged(self):
+        self.updateMaterialIndex()
+        self.updateColorIndex()
+    
+    def updateMaterialIndex(self):
         # increase <self.materialIndex> to use the next material
         self.materialIndex += 1
         if self.materialIndex == self.numMaterials:
             # all available materials have been used, so set <self.materialIndex> to zero
             self.materialIndex = 0
+    
+    def updateColorIndex(self):
+        if (self.isForWalls and not self.b.wallsColor) or (self.isForRoof and not self.b.roofColor):
+            # Increase <self.colorIndex> to use it the next time when color for the walls
+            # wasn't set
+            self.colorIndex += 1
+            if self.colorIndex == self.numColors:
+                # all available colors have been used, so set <self.colorIndex> to zero
+                self.colorIndex = 0
     
     def setSingleMaterial(self, face, name):
         r = self.r
@@ -198,8 +219,8 @@ class MaterialRenderer:
 
 class FacadeWithColor(MaterialRenderer):
     
-    def __init__(self, renderer, baseMaterialName, wallColors = None):
-        super().__init__(renderer, baseMaterialName, wallColors)
+    def __init__(self, renderer, baseMaterialName, colors = None):
+        super().__init__(renderer, baseMaterialName,colors)
         if self.r.app.litWindows:
             self.materialName += "_emission"
             self.materialName2 = "%s_ground_level_emission" % baseMaterialName
@@ -210,16 +231,6 @@ class FacadeWithColor(MaterialRenderer):
         app = self.r.app
         if app.litWindows:
             FacadeWithColor.setWindowEmissionRatio(bpy.data.materials[name], app.litWindows)
-    
-    def onBuildingChanged(self):
-        super().onBuildingChanged()
-        if not self.b.wallsColor:
-            # Increase <self.colorIndex> to use it the mext time when color for the walls
-            # wasn't set
-            self.colorIndex += 1
-            if self.colorIndex == self.numColors:
-                # all available colors have been used, so set <self.colorIndex> to zero
-                self.colorIndex = 0
 
     @staticmethod
     def updateLitWindows(addon, context):
@@ -253,9 +264,8 @@ class MaterialWithColor(MaterialRenderer):
         self.setColorForObject(obj, self.vertexColorLayer, self.b.roofColor)
         slot.material = self.getSingleMaterial()
     
-    def checkBuildingChanged(self):
-        # no actions are required here
-        return
+    def onBuildingChanged(self):
+        self.updateColorIndex()
 
 
 class SeamlessTexture(MaterialRenderer):
@@ -271,6 +281,9 @@ class SeamlessTexture(MaterialRenderer):
     
     def renderForObject(self, obj, slot):
         slot.material = self.getMaterial()
+
+    def onBuildingChanged(self):
+        self.updateColorIndex()
 
 
 class SeamlessTextureWithColor(MaterialRenderer):
@@ -306,6 +319,9 @@ class SeamlessTextureScaled(MaterialRenderer):
         s = obj.scale
         self.setDataForObject(obj, self.uvLayer, (math.sqrt(s[0]*s[0] + s[1]*s[1]), s[2]))
         slot.material = self.getMaterial()
+
+    def onBuildingChanged(self):
+        self.updateColorIndex()
 
 
 class SeamlessTextureScaledWithColor(MaterialRenderer):
