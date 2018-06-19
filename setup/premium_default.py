@@ -7,7 +7,8 @@ def setup(app, osm):
 from realistic.material.renderer import\
     SeamlessTexture, SeamlessTextureWithColor, MaterialWithColor,\
     SeamlessTextureScaledWithColor, SeamlessTextureScaled, FacadeSeamlessTexture, FacadeWithOverlay
-from realistic.material.colors import brickColors, plasterColors, glassColors
+from realistic.material.colors import\
+    brickColors, plasterColors, glassColors, concreteColors, roofTilesColors, metalColors
 
 
 def getMaterials():
@@ -17,18 +18,18 @@ def getMaterials():
         commercial = (FacadeWithOverlay, "brick", brickColors),
         residential = (FacadeWithOverlay, "plaster", plasterColors),
         brick = SeamlessTexture,
-        brick_color = SeamlessTextureWithColor,
+        brick_color = (SeamlessTextureWithColor, brickColors),
         concrete = SeamlessTexture,
-        concrete_color = SeamlessTextureWithColor,
+        concrete_color = (SeamlessTextureWithColor, concreteColors),
         plaster = SeamlessTexture,
-        plaster_color = SeamlessTextureWithColor,
+        plaster_color = (SeamlessTextureWithColor, plasterColors),
         roof_tiles = SeamlessTexture,
-        roof_tiles_color = SeamlessTextureWithColor,
+        roof_tiles_color = (SeamlessTextureWithColor, roofTilesColors),
         metal = SeamlessTexture,
-        metal_color = SeamlessTextureWithColor,
+        metal_color = (SeamlessTextureWithColor, metalColors),
         metal_without_uv = MaterialWithColor,
         metal_scaled = SeamlessTextureScaled,
-        metal_scaled_color = SeamlessTextureScaledWithColor
+        metal_scaled_color = (SeamlessTextureScaledWithColor, metalColors)
     )
 
 
@@ -40,7 +41,7 @@ def bldgPreRender(building):
     material = building.wallsMaterial
     if not material in ("plaster", "brick", "metal", "glass", "mirror"):
         material = "plaster"
-    material += "_color" 
+    material += "_color"
     # tb stands for "OSM tag building"
     tb = building.getOsmTagValue("building")
     
@@ -57,16 +58,14 @@ def bldgPreRender(building):
             building.setMaterialWalls("commercial")
     
     # material for roof
-    material = building.roofMaterial
-    if not material in ("metal", "concrete", "roof_tiles"):
-        material = "metal"
+    material = building.roofMaterial  
+    roofShape = tags.get("roof:shape")
     
-    if material == "concrete":
+    if material == "concrete" or roofShape == "flat":
         building.setMaterialRoof("concrete_color")
     elif material == "roof_tiles":
         building.setMaterialRoof("roof_tiles_color")
     elif material == "metal":
-        roofShape = tags.get("roof:shape")
         if roofShape == "onion":
             building.setMaterialRoof("metal_without_uv")
         elif roofShape == "dome":
