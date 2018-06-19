@@ -41,14 +41,13 @@ def bldgPreRender(building):
     material = building.wallsMaterial
     if not material in ("plaster", "brick", "metal", "glass", "mirror"):
         material = "plaster"
-    material += "_color"
     # tb stands for "OSM tag building"
     tb = building.getOsmTagValue("building")
     
     if tb in ("cathedral", "wall") or\
         building.getOsmTagValue("amenity") == "place_of_worship" or\
         building.getOsmTagValue("man_made") == "tower":
-        building.setMaterialWalls(material)
+        building.setMaterialWalls("%s_color" % material)
     else:
         if material == "glass" or material == "mirror":
             building.setMaterialWalls("glass")
