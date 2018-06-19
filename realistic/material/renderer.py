@@ -13,6 +13,27 @@ _colors = (
 )
 
 
+class UvOnly:
+    
+    def __init__(self, renderer, baseMaterialName):
+        self.valid = True
+    
+    def renderWalls(self, face, width):
+        return
+    
+    def renderRoof(self, face):
+        return
+    
+    def renderForObject(self, obj, slot):
+        return
+    
+    def init(self):
+        return
+    
+    def checkBuildingChanged(self):
+        return
+
+
 class MaterialRenderer:
     
     vertexColorLayer = "Col"
