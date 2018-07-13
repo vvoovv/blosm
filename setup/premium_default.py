@@ -21,6 +21,8 @@ def getMaterials():
         brick_color = (SeamlessTextureWithColor, brickColors),
         concrete = SeamlessTexture,
         concrete_color = (SeamlessTextureWithColor, concreteColors),
+        gravel = SeamlessTexture,
+        gravel_color = (SeamlessTextureWithColor, concreteColors),
         plaster = SeamlessTexture,
         plaster_color = (SeamlessTextureWithColor, plasterColors),
         roof_tiles = SeamlessTexture,
@@ -58,13 +60,17 @@ def bldgPreRender(building):
     
     # material for roof
     material = building.roofMaterial  
-    roofShape = tags.get("roof:shape")
+    roofShape = tags.get("roof:shape") or "flat"
     
-    if material == "concrete" or roofShape == "flat":
+    if material == "concrete":
         building.setMaterialRoof("concrete_color")
     elif material == "roof_tiles":
         building.setMaterialRoof("roof_tiles_color")
-    elif material == "metal":
+    elif material == "gravel":
+        building.setMaterialRoof("gravel_color")
+    elif roofShape == "flat":
+        building.setMaterialRoof("concrete_color")
+    else: # roof:material is metal or metal␣sheet
         if roofShape == "onion":
             building.setMaterialRoof("metal_without_uv")
         elif roofShape == "dome":
