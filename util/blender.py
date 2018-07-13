@@ -122,8 +122,9 @@ def appendObjectsFromFile(filepath, *names):
         data_to.objects = list(names)
     # append the objects to the Blender scene
     for obj in data_to.objects:
-        obj.select = False
-        bpy.context.scene.objects.link(obj)
+        if obj:
+            obj.select = False
+            bpy.context.scene.objects.link(obj)
     # return the appended Blender objects
     return data_to.objects
 

@@ -52,10 +52,12 @@ class CurveLayer(MeshLayer):
         bevelObj = bpy.data.objects.get(bevelName)
         if not (bevelObj and bevelObj.type == 'CURVE'):
             bevelObj = appendObjectsFromFile(self.assetPath, bevelName)[0]
-            # move <obj> to the Blender layer with the index <self.profileLayerIndex>
-            bevelObj.layers[self.profileLayerIndex] = True
-            bevelObj.layers[0] = False
-        curve.bevel_object = bevelObj
+            if bevelObj:
+                # move <obj> to the Blender layer with the index <self.profileLayerIndex>
+                bevelObj.layers[self.profileLayerIndex] = True
+                bevelObj.layers[0] = False
+        if bevelObj and bevelObj.type == 'CURVE':
+            curve.bevel_object = bevelObj
         # set a material
         # the material name is simply <id> of the layer
         name = self.id
