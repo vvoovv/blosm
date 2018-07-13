@@ -51,7 +51,9 @@ _blenderMaterials = (
     ("brick", "ms"),
     ("plaster", "ms"),
     ("metal", "ms"),
-    ("roof_tiles", "ms")
+    ("roof_tiles", "ms"),
+    ("concrete", "ms"),
+    ("gravel", "ms")
 )
 
 def getBlenderMaterials(self, context):
