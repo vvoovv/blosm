@@ -85,22 +85,24 @@ class RoofRealistic:
     def setMaterialWalls(self, name):
         # mrw stands for "material renderer for walls"
         mrw = self.r.getMaterialRenderer(name)
-        mrw.init()
-        if mrw.valid:
-            # set building <b> attribute to <self>
-            mrw.b = self
-            self.mrw = mrw
-            mrw.isForWalls = True
+        if mrw:
+            mrw.init()
+            if mrw.valid:
+                # set building <b> attribute to <self>
+                mrw.b = self
+                self.mrw = mrw
+                mrw.isForWalls = True
     
     def setMaterialRoof(self, name):
         # mrr stands for "material renderer for roof"
         mrr = self.r.getMaterialRenderer(name)
-        mrr.init()
-        if mrr.valid:
-            # set building <b> attribute to <self>
-            mrr.b = self
-            self.mrr = mrr
-            mrr.isForRoof = True
+        if mrr:
+            mrr.init()
+            if mrr.valid:
+                # set building <b> attribute to <self>
+                mrr.b = self
+                self.mrr = mrr
+                mrr.isForRoof = True
 
     @property
     def numLevels(self):

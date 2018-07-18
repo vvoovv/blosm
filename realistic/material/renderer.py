@@ -112,7 +112,8 @@ class MaterialRenderer:
         with the name <name>
         """
         if not name in bpy.data.materials:
-            if not loadMaterialsFromFile(self.r.app.bldgMaterialsFilepath, True, name):
+            if not loadMaterialsFromFile(self.r.app.bldgMaterialsFilepath, True, name)[0]:
+                self.valid = False
                 print("The material %s doesn't exist!" % name)
     
     def setupMaterials(self, groupName, numMaterials=20):

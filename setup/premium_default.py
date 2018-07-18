@@ -41,7 +41,7 @@ def bldgPreRender(building):
     
     # material for walls
     material = building.wallsMaterial
-    if not material in ("plaster", "brick", "metal", "glass", "mirror"):
+    if not material in ("plaster", "brick", "glass", "mirror"):
         material = "plaster"
     # tb stands for "OSM tag building"
     tb = building.getOsmTagValue("building")
