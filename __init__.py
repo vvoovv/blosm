@@ -183,8 +183,11 @@ class ImportData(bpy.types.Operator):
                 _file.close()
                 setup_function = module.setup
             except Exception as e:
+                print("File \"%s\", line %s" % (e.filename, e.lineno))
+                print(e.text)
+                print("Error: %s", e.msg)
                 self.report({'ERROR'},
-                    "Unable to execute the setup script!"
+                    "Unable to execute the setup script! See the error message in the Blender console!"
                 )
                 return {'CANCELLED'}
         else:
