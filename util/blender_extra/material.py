@@ -235,7 +235,9 @@ def setImage(fileName, directory, nodes, nodeName, imageSuffix=None):
             fileName = "%s_%s.png" % (fileName[:-4], imageSuffix)
         image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
         if not image:
-            imagePath = os.path.join(directory, fileName) if directory else fileName
+            imagePath = bpy.path.relpath(
+                os.path.join(directory, fileName) if directory else fileName
+            )
             try:
                 image = bpy.data.images.load(imagePath)
             except Exception:
@@ -247,6 +249,7 @@ def setCustomNodeValue(node, inputName, value):
     node.inputs[inputName].default_value = value
 
 
+"""
 class OperatorDownloadTextures(bpy.types.Operator):
     bl_idname = "blosm.download_textures"
     bl_label = "download textures"
@@ -272,7 +275,6 @@ class OperatorDownloadTextures(bpy.types.Operator):
         return {'FINISHED'}
 
 
-"""
 class OperatorCreateMaterials(bpy.types.Operator):
     bl_idname = "blosm.create_materials"
     bl_label = "Create materials..."
@@ -310,10 +312,16 @@ class OperatorCreateMaterials(bpy.types.Operator):
     files = bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
     
     def invoke(self, context, event):
+        if not bpy.data.is_saved:
+            self.report({'ERROR'}, "Save the Blender file before creating materials!")
+            return {'CANCELLED'}
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
     
     def execute(self, context):
+        if not bpy.data.is_saved:
+            self.report({'ERROR'}, "Save the Blender file before creating materials!")
+            return {'CANCELLED'}
         addon = context.scene.blender_osm
         materialType = addon.materialType
         # <ms> means 'seamless materials'
@@ -441,8 +449,8 @@ class PanelMaterialCreate(bpy.types.Panel):
         layout.prop_search(addon, "listOfTextures", bpy.data, "texts")
         
         # <ms> stands for 'material seamless'
-        if addon.materialType == "ms":
-            layout.operator("blosm.download_textures")
+        #if addon.materialType == "ms":
+        #    layout.operator("blosm.download_textures")
 
         #layout.prop_search(addon, "materialScript", bpy.data, "texts")
         row = layout.row(align=True)
@@ -451,13 +459,13 @@ class PanelMaterialCreate(bpy.types.Panel):
 
 
 def register():
-    bpy.utils.register_class(OperatorDownloadTextures)
+    #bpy.utils.register_class(OperatorDownloadTextures)
     bpy.utils.register_class(OperatorCreateMaterials)
     bpy.utils.register_class(OperatorDeleteMaterials)
     bpy.utils.register_class(PanelMaterialCreate)
 
 def unregister():
-    bpy.utils.unregister_class(OperatorDownloadTextures)
+    #bpy.utils.unregister_class(OperatorDownloadTextures)
     bpy.utils.unregister_class(OperatorCreateMaterials)
     bpy.utils.unregister_class(OperatorDeleteMaterials)
     bpy.utils.unregister_class(PanelMaterialCreate)
