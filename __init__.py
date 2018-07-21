@@ -22,6 +22,7 @@ bl_info = {
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
     "version": (1, 0, 0),
     "blender": (2, 7, 9),
+    "location": "Left side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
     "warning": "",
     "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
