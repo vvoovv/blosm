@@ -345,7 +345,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
             "or 2D only")\
             if _has3dRealistic else\
             "Import data in 3D or 2D mode",
-        default = "3Dsimple"
+        default = "3Drealistic" if _has3dRealistic else "3Dsimple"
     )
     
     # extent bounds: minLat, maxLat, minLon, maxLon
