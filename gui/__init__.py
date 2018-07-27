@@ -356,7 +356,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -89.,
         max = 89.,
-        default=55.748
+        default=55.7457 if _has3dRealistic else 55.748
     )
 
     maxLat = bpy.props.FloatProperty(
@@ -365,7 +365,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -89.,
         max = 89.,
-        default=55.756
+        default=55.7527 if _has3dRealistic else 55.756
     )
 
     minLon = bpy.props.FloatProperty(
@@ -374,7 +374,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -180.,
         max = 180.,
-        default=37.6117
+        default= 37.5321 if _has3dRealistic else 37.6117
     )
 
     maxLon = bpy.props.FloatProperty(
@@ -383,7 +383,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -180.,
         max = 180.,
-        default=37.624
+        default= 37.5447 if _has3dRealistic else 37.624
     )
     
     buildings = bpy.props.BoolProperty(
@@ -533,7 +533,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     setOverlayMaterial = bpy.props.BoolProperty(
         name = "Set default material",
         description = "Set the default Cycles material and " +
-            "use the image overlay in the \"Image Texture\" node.",
+            "use the image overlay in the \"Image Texture\" node",
         default = True
     )
     
