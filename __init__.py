@@ -18,14 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 bl_info = {
-    "name": "Import OpenStreetMap (.osm)",
+    "name": "Import OpenStreetMap (.osm) (Premium)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 3, 6),
+    "version": (1, 0, 0),
     "blender": (2, 7, 9),
     "location": "Left side panel > \"osm\" tab",
-    "description": "One click download and import of OpenStreetMap and terrain",
+    "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
     "warning": "",
-    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Documentation",
+    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
@@ -111,7 +111,7 @@ class OperatorGetMapboxToken(bpy.types.Operator):
     bl_description = "Get Mapbox access token"
     bl_options = {'INTERNAL'}
     
-    url = "https://www.mapbox.com/signin/?route-to=https://www.mapbox.com/studio/account/tokens/"
+    url = "https://www.mapbox.com/account/access-tokens"
     
     def execute(self, context):
         import webbrowser

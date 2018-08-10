@@ -394,7 +394,9 @@ class OperatorCreateMaterials(bpy.types.Operator):
                     self.directory,
                     "textures_glass",
                     "glass_template",
-                    "glass_ground_level_template"
+                    "glass_ground_level_template",
+                    # additional image textures as kwargs
+                    diffuse = "Diffuse Mask"
                 )
                 # emission
                 createFacadeMaterialsForSeamlessTextures(
