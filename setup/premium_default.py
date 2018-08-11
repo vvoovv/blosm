@@ -72,7 +72,7 @@ def bldgPreRender(building):
     else:
         if material == "glass" or material == "mirror":
             building.setMaterialWalls("glass")
-        elif tb in ("residential", "apartments"):
+        elif tb in ("residential", "apartments", "house", "detached"):
             building.setMaterialWalls("residential")
         else:
             building.setMaterialWalls("commercial")
