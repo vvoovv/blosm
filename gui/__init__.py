@@ -42,12 +42,13 @@ def getDataTypes():
 
 
 _blenderMaterials = (
-    ("neoclassical", "fo"),
     ("residential", "fo"),
     ("residential", "fs"),
     ("commercial", "fo"),
     ("commercial", "fs"),
     ("glass", "fs"),
+    ("neoclassical", "fo"),
+    ("neoclassical", "fs"),
     ("brick", "ms"),
     ("plaster", "ms"),
     ("metal", "ms"),

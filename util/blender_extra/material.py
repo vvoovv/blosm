@@ -392,7 +392,7 @@ class OperatorCreateMaterials(bpy.types.Operator):
                 createFacadeMaterialsForSeamlessTextures(
                     self.files,
                     self.directory,
-                    "textures_glass",
+                    addon.listOfTextures,
                     "glass_template",
                     "glass_ground_level_template",
                     # additional image textures as kwargs
@@ -402,12 +402,31 @@ class OperatorCreateMaterials(bpy.types.Operator):
                 createFacadeMaterialsForSeamlessTextures(
                     self.files,
                     self.directory,
-                    "textures_glass",
+                    addon.listOfTextures,
                     "glass_emission_template",
                     "glass_ground_level_emission_template",
                     # additional image textures as kwargs
                     emission = "Emission Texture",
                     diffuse = "Diffuse Mask"
+                )
+            else:
+                # no emission
+                createFacadeMaterialsForSeamlessTextures(
+                    self.files,
+                    self.directory,
+                    addon.listOfTextures,
+                    "facade_seamless_template",
+                    "facade_seamless_ground_level_template"
+                )
+                # emission
+                createFacadeMaterialsForSeamlessTextures(
+                    self.files,
+                    self.directory,
+                    addon.listOfTextures,
+                    "facade_seamless_emission_template",
+                    "facade_seamless_ground_level_emission_template",
+                    # additional image textures as kwargs
+                    emission = "Emission Texture"
                 )
         return {'FINISHED'}
 
