@@ -441,11 +441,11 @@ class OperatorDeleteMaterials(bpy.types.Operator):
 
 class PanelMaterialCreate(bpy.types.Panel):
     bl_label = "Material Utilities"
-    bl_space_type = "VIEW_3D"
+    bl_space_type = "NODE_EDITOR"
     bl_region_type = "TOOLS"
     bl_context = "objectmode"
     bl_category = "osm"
-    bl_options = {'DEFAULT_CLOSED'}
+    #bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
     def poll(cls, context):
