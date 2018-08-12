@@ -77,8 +77,8 @@ class MaterialRenderer:
         # variables for the default colors
         self.colorIndex = -1
         # a list of colors used for walls or for a roof if a colors wasn't set in OSM
-        self.colors = colors or _colors
-        self.numColors = len(self.colors)
+        self.colors = colors
+        self.numColors = len(colors) if colors else 0
         # We need to distinguish, if we are dealing with the material
         # for walls or for a roof. That will be set after creating
         # an instance of <MaterialRenderer>
@@ -387,14 +387,16 @@ class FacadeSeamlessTexture(FacadeWithColor):
         
     def init(self):
         self.requireUvLayer(self.uvLayer)
-        self.requireVertexColorLayer(self.vertexColorLayer)
+        if self.colors:
+            self.requireVertexColorLayer(self.vertexColorLayer)
         self.setupMaterials(self.materialName)
         self.setupMaterials(self.materialName2)
     
     def renderWalls(self, face, width):
         # building
         b = self.b
-        self.setColor(face, self.vertexColorLayer, b.wallsColor)
+        if self.colors:
+            self.setColor(face, self.vertexColorLayer, b.wallsColor)
         if b.z1:
             self.setData(face, self.uvLayer, b.numLevels)
             self.setMaterial(face, self.materialName)
