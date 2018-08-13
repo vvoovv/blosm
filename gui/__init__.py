@@ -592,13 +592,13 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         items = (
             # <fo> stands for 'facade with overlays'
             ("fo", "facades with window overlays", 
-                "Seamless textures for wall materials, windows are placed on walls via overlay textures"),
+                "Seamless textures for wall cladding, windows are placed on walls via overlay textures"),
             # <fs> stands for 'facade seamless'
             ("fs", "seamless facades",
-                "Seamless facades with windows"),
+                "Seamless facade textures with windows"),
             # <ms> stands for 'material seamless'
-            ("ms", "seamless materials",
-                "Simple seamless materials for roofs and walls without windows")
+            ("ms", "seamless cladding",
+                "Seamless cladding textures for walls and roofs")
             #("custom", "custom script", "Custom script")
         ),
         description = "Type of Blender material to create",
