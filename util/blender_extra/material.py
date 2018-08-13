@@ -58,6 +58,8 @@ def createFacadeMaterialsForSeamlessTextures(
         files,
         directory,
         listOfTextures,
+        materialBaseName1,
+        materialBaseName2,
         materialTemplate1,
         materialTemplate2,
         # additional image textures as kwargs
@@ -78,10 +80,6 @@ def createFacadeMaterialsForSeamlessTextures(
             setCustomNodeValue(node, "Tile Size U Default", textureDataEntry[2])
     
     textureData = readTextures(listOfTextures)
-    
-    # strip off the suffix '_template'
-    materialBaseName1 = materialTemplate1[:-9]
-    materialBaseName2 = materialTemplate2[:-9]
     
     materialTemplate1 = bpy.data.materials.get(materialTemplate1)
     materialTemplate2 = bpy.data.materials.get(materialTemplate2)
@@ -243,7 +241,13 @@ def readTextures(listOfTextures):
     textureData = {}
     for line in bpy.data.texts[listOfTextures].lines:
         entry = line.body.split(',')
-        textureData[entry[0]] = tuple(float(entry[i]) for i in range(1, len(entry)))
+        if len(entry) < 3:
+            continue
+        # texture size in meters along U-axis
+        entry[1] = float(entry[1])
+        # texture size in meters along V-axis
+        entry[2] = float(entry[1])
+        textureData[entry[0]] = tuple(entry[i] for i in range(1, len(entry)))
     return textureData
 
 
@@ -356,23 +360,23 @@ class OperatorCreateMaterials(bpy.types.Operator):
         elif materialType == "fo":
             wallTexturePath = os.path.realpath(bpy.path.abspath(addon.wallTexture))
             if not os.path.isfile(wallTexturePath):
-                self.report({'ERROR'}, "Set a valid wall texture listed in in the Blender text data-block \"wall_textures\"")
+                self.report({'ERROR'}, "Set a valid wall texture listed in in the Blender text data-block \"textures_cladding\"")
                 return {'CANCELLED'}
             
             wallTextureFileName = os.path.basename(wallTexturePath)
-            textBlock = bpy.data.texts.get("wall_textures")
+            textBlock = bpy.data.texts.get("textures_cladding")
             if not textBlock:
-                self.report({'ERROR'}, "The Blender text data-block \"wall_textures\" is not found!")
+                self.report({'ERROR'}, "The Blender text data-block \"textures_cladding\" is not found!")
                 return {'CANCELLED'}
             
             for line in textBlock.lines:
-                fileName, wallMaterial, width, height =  map(lambda s: s.strip(), line.body.split(','))
+                fileName, width, height, wallMaterial =  map(lambda s: s.strip(), line.body.split(','))
                 if fileName == wallTextureFileName:
                     width = float(width)
                     height = float(height)
                     break
             else:
-                self.report({'ERROR'}, "Unable to find a valid entry for the texture %s in the Blender text data-block \"wall_textures\"!" % wallTextureFileName)
+                self.report({'ERROR'}, "Unable to find a valid entry for the texture %s in the Blender text data-block \"textures_cladding\"!" % wallTextureFileName)
                 return {'CANCELLED'}
             createMaterialsForFacadesOverlay(
                 self.files,
@@ -393,6 +397,8 @@ class OperatorCreateMaterials(bpy.types.Operator):
                     self.files,
                     self.directory,
                     addon.listOfTextures,
+                    "glass",
+                    "glass_ground_level",
                     "glass_template",
                     "glass_ground_level_template",
                     # additional image textures as kwargs
@@ -403,6 +409,8 @@ class OperatorCreateMaterials(bpy.types.Operator):
                     self.files,
                     self.directory,
                     addon.listOfTextures,
+                    "glass_emission",
+                    "glass_ground_level_emission",
                     "glass_emission_template",
                     "glass_ground_level_emission_template",
                     # additional image textures as kwargs
@@ -415,6 +423,8 @@ class OperatorCreateMaterials(bpy.types.Operator):
                     self.files,
                     self.directory,
                     addon.listOfTextures,
+                    addon.blenderMaterials,
+                    "%s_ground_level" % addon.blenderMaterials,
                     "facade_seamless_template",
                     "facade_seamless_ground_level_template"
                 )
@@ -423,10 +433,12 @@ class OperatorCreateMaterials(bpy.types.Operator):
                     self.files,
                     self.directory,
                     addon.listOfTextures,
+                    "%s_emission" % addon.blenderMaterials,
+                    "%s_ground_level_emission" % addon.blenderMaterials,
                     "facade_seamless_emission_template",
                     "facade_seamless_ground_level_emission_template",
                     # additional image textures as kwargs
-                    emission = "Emission Texture"
+                    emissive = "Emission Mask"
                 )
         return {'FINISHED'}
 
