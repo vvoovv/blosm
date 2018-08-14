@@ -238,16 +238,13 @@ def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listO
 
 
 def readTextures(listOfTextures):
+    from ..osm import parseNumber
     textureData = {}
     for line in bpy.data.texts[listOfTextures].lines:
         entry = line.body.split(',')
         if len(entry) < 3:
             continue
-        # texture size in meters along U-axis
-        entry[1] = float(entry[1])
-        # texture size in meters along V-axis
-        entry[2] = float(entry[1])
-        textureData[entry[0]] = tuple(entry[i] for i in range(1, len(entry)))
+        textureData[entry[0]] = tuple(parseNumber(entry[i], entry[i]) for i in range(1, len(entry)))
     return textureData
 
 
