@@ -601,7 +601,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
                 "Seamless cladding textures for walls and roofs")
             #("custom", "custom script", "Custom script")
         ),
-        description = "Type of Blender material to create",
+        description = "Type of Blender materials to create",
         default = "fo"
     )
     
