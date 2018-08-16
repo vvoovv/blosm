@@ -31,6 +31,8 @@ class RoofRealistic:
     
     def init(self, element, data, osm, app):
         super().init(element, data, osm, app)
+        if not self.valid:
+            return
         # material renderer for walls
         self.mrw = None
         # material renderer for roof
