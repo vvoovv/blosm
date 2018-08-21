@@ -352,11 +352,32 @@ class Slot:
                 # Basically, that case means that there is an island between
                 # the vertices <part[0]> and <part[-1]>
                 # We need to process that island in line below
-                index = self.trackDown(roofIndices, index, part[-1])
-            if not destVertIndex is None and parts[index-1][1][0] == destVertIndex:
-                # No example for that case on the image <Main>. However the idea is completely similar to
-                # the related example in <self.trackUp(..)>.
-                return index
+                index = self.trackDown(
+                    roofIndices,
+                    # The edge case:
+                    # if there is a reflection to the right (i.e. <reflection is True>),
+                    # correct the index given as the parameter to <self.trackDown>
+                    index+1 if reflection is True else index,
+                    part[-1]
+                )
+                if reflection is True:
+                    # The edge case:
+                    # the reflection to the right (i.e. <reflection is True>) forms
+                    # an island between the vertices <part[0]> and <part[-1]>.
+                    # The island has been already visited during the call
+                    # of <self.trackDown(..)> a few lines above.
+                    # So we set <reflection> to <None>
+                    reflection = None
+            if not destVertIndex is None:
+                if parts[index-1][1][0] == destVertIndex:
+                    # No example for that case on the image <Main>. However the idea is completely similar to
+                    # the related example in <self.trackUp(..)>.
+                    return index
+                elif reflection is True and part[0]==destVertIndex:
+                    # The edge case:
+                    # if there is a reflection to the right (i.e. <reflection is True>)
+                    # and <part[0]==destVertIndex>, correct the returned index
+                    return index+1
             # Proceed to the previous part downwards by decreasing <index>.
             # <True> for the reflection means reflection to the right
             # The example of case with <reflection is True> on the image <Main> for <slots[3]>:
