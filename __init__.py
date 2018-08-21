@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "Import OpenStreetMap (.osm) (Premium)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (1, 0, 1),
+    "version": (1, 0, 2),
     "blender": (2, 7, 9),
     "location": "Left side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
