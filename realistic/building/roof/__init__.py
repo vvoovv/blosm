@@ -47,7 +47,7 @@ class RoofRealistic:
     def render(self):
         r = self.r
         if r.bldgPreRender:
-            r.bldgPreRender(self)
+            r.bldgPreRender(self, r.app)
         
         mrw = self.mrw
         mrr = self.mrr

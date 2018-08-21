@@ -32,6 +32,6 @@ def getMaterials():
     )
 
 
-def bldgPreRender(building):
+def bldgPreRender(building, app):
     building.setMaterialWalls("uv_only")
     building.setMaterialRoof("uv_only")
