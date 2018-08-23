@@ -33,7 +33,6 @@ The detailed documentation is available [here](https://github.com/vvoovv/blender
 
 ## Links and contacts
 * Purchase: [premium version](https://gumroad.com/l/blosm), [base version](https://gumroad.com/l/blender-osm)
-* [Installation instructions](https://github.com/vvoovv/blender-osm/wiki/Documentation#installation)
 * Documentation: [premium version](https://github.com/vvoovv/blender-osm/wiki/Premium-Version), [base version](https://github.com/vvoovv/blender-osm/wiki/Documentation)
 * e-mail: [prokitektura+support@gmail.com](mailto:prokitektura+support@gmail.com)
 * facebook: [prokitektura](https://www.facebook.com/prokitektura)
