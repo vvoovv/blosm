@@ -52,7 +52,8 @@ class Overlay:
         
     maxNumTiles = 256 # i.e. 4096x4096 pixels
     
-    tileCoordsTemplate = "{z}/{x}/{y}"
+    # default template
+    tileCoordsTemplate = "{z}/{x}/{y}.png"
     
     blenderImageName = "overlay"
     
@@ -73,34 +74,23 @@ class Overlay:
         self.numTiles = 0
         self.imageExtension = "png"
         
-        # where to stop searching for sundomains {suddomain1,subdomain2}
-        subdomainsEnd = len(url)
-        # check if have {z}/{x}/{y} in <url> (i.e. tile coords)
-        coordsPosition = url.find(self.tileCoordsTemplate)
-        if coordsPosition > 0:
-            subdomainsEnd = coordsPosition
-            urlEnd = url[coordsPosition+len(self.tileCoordsTemplate):]
-        else:
-            if url[-1] != '/':
-                url = url + '/'
-            urlEnd = ".png"
-        leftBracketPosition = url.find("{", 0, subdomainsEnd)
-        rightBracketPosition = url.find("}", leftBracketPosition+2, subdomainsEnd)
-        if leftBracketPosition > -1 and rightBracketPosition > -1:
-            self.subdomains = tuple(
+        # check we have subdomains
+        leftBracketPosition = url.find("[")
+        rightBracketPosition = url.find("]", leftBracketPosition+2)
+        if leftBracketPosition > -1 and rightBracketPosition > -1: 
+            subdomains = tuple(
                 s.strip() for s in url[leftBracketPosition+1:rightBracketPosition].split(',')
             )
-            self.numSubdomains = len(self.subdomains)
-            urlStart = url[:leftBracketPosition]
-            urlMid = url[rightBracketPosition+1:coordsPosition]\
-                if coordsPosition > 0 else\
-                url[rightBracketPosition+1:]
-        else:
-            urlStart = url[rightBracketPosition+1:coordsPosition] if coordsPosition > 0 else url
-            urlMid = None
-        self.urlStart = urlStart
-        self.urlMid = urlMid
-        self.urlEnd = urlEnd
+            if subdomains:
+                self.subdomains = subdomains
+                self.numSubdomains = len(self.subdomains)
+                url = "%s{sub}%s" % (url[:leftBracketPosition], url[rightBracketPosition+1:])
+        # check if have {z} and {x} and {y} in <url> (i.e. tile coords)
+        if not ("{z}" in url and "{x}" in url and "{y}" in url):
+            if url[-1] != '/':
+                url = url + '/'
+            url = url + self.tileCoordsTemplate
+        self.url = url
     
     def prepareImport(self, left, bottom, right, top):
         app.print("Preparing overlay for import...")
@@ -249,37 +239,22 @@ class Overlay:
         return tileData
     
     def getOverlaySubDir(self):
-        urlStart = self.urlStart
-        if urlStart[:7] == "http://":
-            urlStart = urlStart[7:]
-        elif urlStart[:8] == "https://":
-            urlStart = urlStart[8:]
-        urlStart = urlStart.translate(prohibitedCharacters)
-        return\
-            "%s%s%s" % (urlStart, ''.join(self.subdomains), self.urlMid[:-1].translate(prohibitedCharacters))\
-            if self.subdomains else\
-            urlStart
+        url = self.url
+        urlOffset = 0
+        if url[:7] == "http://":
+            urlOffset = 7
+        elif url[:8] == "https://":
+            urlOffset = 8
+        else:
+            urlOffset = 0
+        return url[urlOffset:].translate(prohibitedCharacters)
     
     def getTileUrl(self, zoom, x, y):
-        if self.subdomains:
-            url = "%s%s%s%s/%s/%s%s" % (
-                self.urlStart,
-                self.subdomains[self.tileCounter % self.numSubdomains],
-                self.urlMid,
-                zoom,
-                x,
-                y,
-                self.urlEnd
-            )
-        else:
-            url = "%s%s/%s/%s%s" % (
-                self.urlStart,
-                zoom,
-                x,
-                y,
-                self.urlEnd
-            )
-        return url
+        return self.url.format(
+                sub=self.subdomains[self.tileCounter % self.numSubdomains],
+                z=zoom, x=x, y=y
+            ) if self.subdomains else\
+            self.url.format(z=zoom, x=x, y=y)
     
     def setUvForTerrain(self, terrain, l, b, r, t):
         bm = getBmesh(terrain)
@@ -341,7 +316,7 @@ from .mapbox import Mapbox
 
 overlayTypeData = {
     'mapbox-satellite': (Mapbox, "mapbox.satellite", 19),
-    'osm-mapnik': (Overlay, "http://{a,b,c}.tile.openstreetmap.org", 19),
+    'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
     'mapbox-streets': (Mapbox, "mapbox.streets", 19),
     'custom': (Overlay, '', 19)
 }
