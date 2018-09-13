@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, math
 import bpy, bmesh
-from renderer import Renderer
+from app import app
 from util.blender import makeActive, createMeshObject, getBmesh,\
     loadParticlesFromFile, loadNodeGroupsFromFile, getMaterialIndexByName, getMaterialByName, getModifier
     
@@ -157,7 +157,7 @@ class AreaRenderer:
         # add modifiers, slice flat mesh
         if not terrain.envelope:
             terrain.createEnvelope()
-        Renderer.addBoolenModifier(obj, terrain.envelope)
+        layer.addBoolenModifier(obj, terrain.envelope)
         makeActive(obj)
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
         # calculate area after the BOOLEAND modifier has been applied
@@ -165,8 +165,8 @@ class AreaRenderer:
             bm = getBmesh(obj)
             layer.surfaceArea = sum(face.calc_area() for face in bm.faces)
             bm.free()
-        Renderer.slice(obj, terrain, app)
-        Renderer.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
+        layer.slice(obj, terrain, app)
+        layer.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
         obj.select = False
 
@@ -278,7 +278,7 @@ class VertexGroupBaker(AreaRenderer):
         # add modifiers, slice flat mesh
         if not terrain.envelope:
             terrain.createEnvelope()
-        Renderer.addBoolenModifier(obj, terrain.envelope)
+        layer.addBoolenModifier(obj, terrain.envelope)
         makeActive(obj)
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
         bpy.ops.object.mode_set(mode='EDIT')
@@ -292,8 +292,8 @@ class VertexGroupBaker(AreaRenderer):
         objEnvelope = createMeshObject("%s_envelope" % obj.name, obj.location, obj.data.copy())
         objEnvelope.parent = obj.parent
         
-        Renderer.slice(obj, terrain, app)
-        Renderer.addShrinkwrapModifier(obj, terrainObj, layer.swOffset)
+        layer.slice(obj, terrain, app)
+        layer.addShrinkwrapModifier(obj, terrainObj, layer.swOffset)
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
         super().renderArea(layer, app)
         obj.select = False
@@ -399,7 +399,7 @@ class ForestRenderer(AreaRenderer):
         name = self.particles
         particles = bpy.data.particles.get(name)\
             if name in bpy.data.particles else\
-            loadParticlesFromFile(self.assetPath, name)
+            loadParticlesFromFile(app.bldgMaterialsFilepath, name)
         # the total number of particles
         count = math.ceil(app.treeDensity/10000*layer.surfaceArea)
         if count > self.maxDisplayCount:
