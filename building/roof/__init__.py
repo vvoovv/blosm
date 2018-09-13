@@ -88,7 +88,7 @@ class Roof:
         self.valid = True
         
         # minimum height
-        z1 = self.getMinHeight(element, app)
+        z1 = self.r.getMinHeight(element)
         
         self.element = element
         
@@ -109,11 +109,13 @@ class Roof:
         """
         Calculate numerical dimensions for the building or building part
         """
+        r = self.r
+        
         roofHeight = self.getRoofHeight(app)
-        z2 = self.getHeight(element)
+        z2 = r.getHeight(element)
         if z2 is None:
             # no tag <height> or invalid value
-            roofMinHeight = self.getRoofMinHeight(element, app)
+            roofMinHeight = r.getRoofVerticalPosition(element)
             z2 = roofMinHeight + roofHeight
         elif not z2:
             # the tag <height> is equal to zero 
@@ -137,20 +139,6 @@ class Roof:
         self.z2 = z2
         self.roofMinHeight = z1 if self.noWalls else roofMinHeight
         self.roofHeight = roofHeight
-
-    def getHeight(self, element):
-        return parseNumber(element.tags["height"]) if "height" in element.tags else None
-
-    def getMinHeight(self, element, app):
-        tags = element.tags
-        if "min_height" in tags:
-            z0 = parseNumber(tags["min_height"], 0.)
-        elif "building:min_level" in tags:
-            numLevels = parseNumber(tags["building:min_level"])
-            z0 = 0. if numLevels is None else app.levelHeight * (numLevels-1+Roof.groundLevelFactor)
-        else:
-            z0 = 0.
-        return z0
     
     def getRoofHeight(self, app):
         tags = self.element.tags
@@ -161,15 +149,6 @@ class Roof:
                 h = parseNumber(tags["roof:levels"])
             h = self.defaultHeight if h is None else h * app.levelHeight
         return h
-
-    def getRoofMinHeight(self, element, app):
-        # getting the number of levels
-        n = element.tags.get("building:levels")
-        if not n is None:
-            n = parseNumber(n)
-        if n is None:
-            n = app.defaultNumLevels
-        return app.levelHeight * (n-1+Roof.groundLevelFactor)
     
     def render(self):
         r = self.r

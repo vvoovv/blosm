@@ -64,7 +64,7 @@ class RoofFlatMulti(RoofFlat):
         
         self.element = element
         
-        self.calculateDimensions(element, app, self.getMinHeight(element, app))
+        self.calculateDimensions(element, app, self.r.getMinHeight(element))
     
     def make(self, osm):
         element = self.element

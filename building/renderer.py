@@ -337,3 +337,29 @@ class BuildingRenderer(Renderer3d):
         elif not self.offsetZ is None:
             vert[2] += self.offsetZ
         return vert
+    
+    def getHeight(self, element):
+        return parseNumber(element.tags["height"]) if "height" in element.tags else None
+
+    def getMinHeight(self, element):
+        tags = element.tags
+        if "min_height" in tags:
+            z0 = parseNumber(tags["min_height"], 0.)
+        elif "building:min_level" in tags:
+            numLevels = parseNumber(tags["building:min_level"])
+            z0 = 0. if numLevels is None else self.app.levelHeight * (numLevels-1+Roof.groundLevelFactor)
+        else:
+            z0 = 0.
+        return z0
+
+    def getRoofVerticalPosition(self, element):
+        """
+        Returns roof vertical position relative to the ground
+        """
+        # getting the number of levels
+        n = element.tags.get("building:levels")
+        if not n is None:
+            n = parseNumber(n)
+        if n is None:
+            n = self.app.defaultNumLevels
+        return self.app.levelHeight * (n-1+Roof.groundLevelFactor)
