@@ -157,11 +157,11 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
                 f.loops[i][uvLayer].uv = (u, v)
             self.mrr.renderRoof(f)
 
-    def getProfiledVert(self, i, roofMinHeight, noWalls):
+    def getProfiledVert(self, i, roofVerticalPosition, noWalls):
         """
         The override of the parent class method
         """
-        pv = super().getProfiledVert(i, roofMinHeight, noWalls)
+        pv = super().getProfiledVert(i, roofVerticalPosition, noWalls)
         y = pv.y
         texCoords = (
             pv.onSlot,

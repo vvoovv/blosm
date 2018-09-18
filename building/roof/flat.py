@@ -62,9 +62,12 @@ class RoofFlatMulti(RoofFlat):
         self.wallIndices.clear()
         self.polygons.clear()
         
+        self._levelHeight = None
+        self._levels = None
+        
         self.element = element
         
-        self.calculateDimensions(element, app, self.r.getMinHeight(element))
+        self.calculateDimensions(self.getMinHeight())
     
     def make(self, osm):
         element = self.element

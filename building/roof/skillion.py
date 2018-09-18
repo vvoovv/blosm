@@ -50,7 +50,7 @@ class RoofSkillion(Roof):
         indices = polygon.indices
         n = polygon.n
         wallIndices = self.wallIndices
-        roofMinHeight = self.roofMinHeight
+        roofVerticalPosition = self.roofVerticalPosition
         
         # simply take <polygon> indices for the roof
         self.roofIndices.append(indices)
@@ -64,7 +64,7 @@ class RoofSkillion(Roof):
         tan = self.roofHeight/self.polygonWidth
         # update <polygon.verts> with vertices moved along z-axis
         for i in range(n):
-            verts[indices[i]].z = roofMinHeight + (maxProj - projections[i]) * tan
+            verts[indices[i]].z = roofVerticalPosition + (maxProj - projections[i]) * tan
         # <polygon.normal> won't be used, so it won't be updated
         
         # Imprtant: ensure that the first two vertices of each wall face will be always
@@ -73,18 +73,18 @@ class RoofSkillion(Roof):
         
         indexOffset = len(verts)
         if self.noWalls:
-            # <roofMinHeight> is exactly equal to the height of the bottom part of the building
+            # <roofVerticalPosition> is exactly equal to the height of the bottom part of the building
             # check height of the neighbors of the vertex with the index <minZindex>
             
             # index of the left neighbor
             leftIndex = polygon.prev(minZindex)
             # index of the right neighbor
             rightIndex = polygon.next(minZindex)
-            if verts[ indices[leftIndex] ].z - roofMinHeight < zero:
+            if verts[ indices[leftIndex] ].z - roofVerticalPosition < zero:
                 # Not only the vertex <minZindex> preserves its height,
                 # but also its left neighbor
                 rightIndex = minZindex
-            elif verts[ indices[rightIndex] ].z - roofMinHeight < zero:
+            elif verts[ indices[rightIndex] ].z - roofVerticalPosition < zero:
                 # Not only the vertex <minZindex> preserves its height,
                 # but also its right neighbor
                 leftIndex = minZindex
@@ -99,7 +99,7 @@ class RoofSkillion(Roof):
             verts.append(Vector((
                 verts[indices[index]].x,
                 verts[indices[index]].y,
-                roofMinHeight
+                roofVerticalPosition
             )))
             # a triangle that starts at the vertex <rightIndex>
             wallIndices.append((indices[rightIndex], indexOffset, indices[index]))
@@ -112,7 +112,7 @@ class RoofSkillion(Roof):
                 verts.append(Vector((
                     verts[indices[index]].x,
                     verts[indices[index]].y,
-                    roofMinHeight
+                    roofVerticalPosition
                 )))
                 wallIndices.append((indexOffset, indexOffset + 1, indices[index], indices[prevIndex]))
                 indexOffset += 1
@@ -130,5 +130,5 @@ class RoofSkillion(Roof):
         
         return True
     
-    def getRoofHeight(self, op):
-        return RoofProfile.getRoofHeight(self, op)
+    def getRoofHeight(self):
+        return RoofProfile.getRoofHeight(self)

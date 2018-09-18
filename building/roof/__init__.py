@@ -85,12 +85,15 @@ class Roof:
         self.roofIndices.clear()
         self.wallIndices.clear()
         
+        self._levelHeight = None
+        self._levels = None
+        
         self.valid = True
         
-        # minimum height
-        z1 = self.r.getMinHeight(element)
-        
         self.element = element
+        
+        # minimum height
+        z1 = self.getMinHeight()
         
         verts = self.verts
         self.verts.extend( Vector((coord[0], coord[1], z1)) for coord in data )
@@ -103,27 +106,25 @@ class Roof:
         self.polygon.checkDirection()
         
         # calculate numerical dimensions for the building or building part
-        self.calculateDimensions(element, app, z1)
+        self.calculateDimensions(z1)
     
-    def calculateDimensions(self, element, app, z1):
+    def calculateDimensions(self, z1):
         """
         Calculate numerical dimensions for the building or building part
-        """
-        r = self.r
-        
-        roofHeight = self.getRoofHeight(app)
-        z2 = r.getHeight(element)
+        """        
+        roofHeight = self.getRoofHeight()
+        z2 = self.getHeight()
         if z2 is None:
             # no tag <height> or invalid value
-            roofMinHeight = r.getRoofVerticalPosition(element)
-            z2 = roofMinHeight + roofHeight
+            roofVerticalPosition = self.levelHeight * (self.getLevels()-1+Roof.groundLevelFactor)
+            z2 = roofVerticalPosition + roofHeight
         elif not z2:
             # the tag <height> is equal to zero 
             self.valid = False
             return
         else:
-            roofMinHeight = z2 - roofHeight
-        wallHeight = roofMinHeight - z1
+            roofVerticalPosition = z2 - roofHeight
+        wallHeight = roofVerticalPosition - z1
         # validity check
         if wallHeight < 0.:
             self.valid = False
@@ -137,18 +138,64 @@ class Roof:
         
         self.z1 = z1
         self.z2 = z2
-        self.roofMinHeight = z1 if self.noWalls else roofMinHeight
+        self.roofVerticalPosition = z1 if self.noWalls else roofVerticalPosition
         self.roofHeight = roofHeight
     
-    def getRoofHeight(self, app):
+    def getRoofHeight(self):
         tags = self.element.tags
         h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
         if h is None:
             # get the number of levels
             if "roof:levels" in tags:
                 h = parseNumber(tags["roof:levels"])
-            h = self.defaultHeight if h is None else h * app.levelHeight
+            h = self.defaultHeight if h is None else h * self.levelHeight
         return h
+
+    def getHeight(self):
+        element = self.element
+        return parseNumber(element.tags["height"]) if "height" in element.tags else None
+    
+    def getLevels(self, getDefault=True):
+        """
+        Returns the number of levels from the ground as defined by the OSM tag <building:levels>
+        """
+        if self._levels is None:
+            n = self.element.tags.get("building:levels")
+            if not n is None:
+                n = parseNumber(n)
+                if not n is None:
+                    n = math.ceil(n)
+                    if n < 1.:
+                        n = None
+            if n is None and getDefault:
+                n = self.r.getDefaultLevels(self.element)
+            self._levels = n
+        return self._levels
+    
+    def getMinLevel(self):
+        n = self.element.tags.get("building:min_level")
+        if not n is None:
+            n = parseNumber(n)
+            if not n is None:
+                n = math.ceil(n)
+                if n < 1.:
+                    n = None
+        return n
+    
+    def getMinHeight(self):
+        tags = self.element.tags
+        if "min_height" in tags:
+            z0 = parseNumber(tags["min_height"], 0.)
+        else:
+            numLevels = self.getMinLevel()
+            z0 = 0. if numLevels is None else self.levelHeight * (numLevels-1+Roof.groundLevelFactor)
+        return z0
+    
+    @property
+    def levelHeight(self):
+        if self._levelHeight is None:
+            self._levelHeight = self.r.getLevelHeight(self.element)
+        return self._levelHeight
     
     def render(self):
         r = self.r

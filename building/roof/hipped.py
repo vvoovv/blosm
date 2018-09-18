@@ -46,10 +46,10 @@ class RoofHipped(RoofProfile):
         else:
             self.makeFlat = True
     
-    def getRoofHeight(self, app):
+    def getRoofHeight(self):
         # this is a hack, but we have to set <self.defaultHeight> here to calculate the roof height correctly
         self.defaultHeight = RoofProfile.defaultHeight if self.polygon.n == 4 else RoofFlat.defaultHeight
-        return super().getRoofHeight(app) if self.polygon.n == 4 else RoofFlat.getRoofHeight(self, app)
+        return super().getRoofHeight() if self.polygon.n == 4 else RoofFlat.getRoofHeight(self)
     
     def make(self, osm):
         if self.makeFlat:

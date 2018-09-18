@@ -41,7 +41,7 @@ class RoofMansard(RoofHipped):
             
             if not self.noWalls:
                 indexOffset = len(verts)
-                polygon.extrude(self.roofMinHeight, wallIndices)
+                polygon.extrude(self.roofVerticalPosition, wallIndices)
                 # new values for the polygon indices
                 polygon.indices = tuple(indexOffset + i for i in range(polygon.n))
             
@@ -51,7 +51,7 @@ class RoofMansard(RoofHipped):
             # new values for the polygon indices
             polygon.indices = tuple(indexOffset + i for i in range(polygon.n))
             self.wallIndices = roofIndices
-            self.roofMinHeight += self.roofHeight
+            self.roofVerticalPosition += self.roofHeight
             self.noWalls = True
             super().make(osm)
             self.wallIndices = wallIndices

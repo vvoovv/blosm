@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 from renderer import Renderer, Renderer3d
+from renderer.layer import MeshLayer
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
@@ -30,8 +31,7 @@ from .roof.half_hipped import RoofHalfHipped
 from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
-
-from renderer.layer import MeshLayer
+from util.random import RandomNormal
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -80,6 +80,8 @@ class BuildingRenderer(Renderer3d):
         # References to Blender materials used by roof Blender meshes
         # loaded from a .blend library file
         self.defaultMaterials = [None, None]
+        
+        self.levelHeight = RandomNormal(app.levelHeight)
     
     def initRoofs(self):
         """
@@ -338,28 +340,8 @@ class BuildingRenderer(Renderer3d):
             vert[2] += self.offsetZ
         return vert
     
-    def getHeight(self, element):
-        return parseNumber(element.tags["height"]) if "height" in element.tags else None
-
-    def getMinHeight(self, element):
-        tags = element.tags
-        if "min_height" in tags:
-            z0 = parseNumber(tags["min_height"], 0.)
-        elif "building:min_level" in tags:
-            numLevels = parseNumber(tags["building:min_level"])
-            z0 = 0. if numLevels is None else self.app.levelHeight * (numLevels-1+Roof.groundLevelFactor)
-        else:
-            z0 = 0.
-        return z0
-
-    def getRoofVerticalPosition(self, element):
-        """
-        Returns roof vertical position relative to the ground
-        """
-        # getting the number of levels
-        n = element.tags.get("building:levels")
-        if not n is None:
-            n = parseNumber(n)
-        if n is None:
-            n = self.app.defaultNumLevels
-        return self.app.levelHeight * (n-1+Roof.groundLevelFactor)
+    def getLevelHeight(self, element):
+        return self.levelHeight.value
+    
+    def getDefaultLevels(self, element):
+        return self.app.defaultNumLevels

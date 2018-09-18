@@ -46,12 +46,12 @@ class RoofMesh(Roof):
         
         if not self.noWalls:
             # Extrude <polygon> in the direction of <z> axis to bring
-            # the extruded part to the height <roofMinHeight>
-            polygon.extrude(self.roofMinHeight, self.wallIndices)
+            # the extruded part to the height <roofVerticalPosition>
+            polygon.extrude(self.roofVerticalPosition, self.wallIndices)
         
         c = polygon.center
         # location of the Blender mesh for the roof
-        self.location = Vector((c[0], c[1], self.roofMinHeight))
+        self.location = Vector((c[0], c[1], self.roofVerticalPosition))
         
         return True
     

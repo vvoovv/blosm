@@ -226,7 +226,7 @@ class RoofHalfHipped(RoofProfile):
         # Relative displacement for the ridge vertex
         # calculated through the tangent of the roof inclination angle
         # We assume that the hipped roof face has the same pitch as the gabled roof faces
-        d = (self.roofHeight - z + self.roofMinHeight) * self.angleToHeight * self.polygonWidth / self.roofHeight / ridgeLength
+        d = (self.roofHeight - z + self.roofVerticalPosition) * self.angleToHeight * self.polygonWidth / self.roofHeight / ridgeLength
         if d >= 0.5:
             d = 0.45
         

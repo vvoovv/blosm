@@ -136,25 +136,27 @@ class RoofRealistic:
         the heights in meters. See the code below.
         """
         if not self._numLevels:
-            tags = self.element.tags
-            n = tags.get("building:levels")
-            if not n is None:
-                n = parseNumber(n)
-            # the second condition is a sanity check
-            if n is None or n <= 0.:
+            n = self._levels
+            if n is None:
+                n = self.getLevels(False)
+            if n is None:
+                # calculate the number of levels out of heights
                 n = math.floor(
-                    (self.roofMinHeight-self.z1)/self.r.app.levelHeight\
+                    (self.roofVerticalPosition-self.z1)/self.levelHeight\
                     if self.z1 else\
-                    self.roofMinHeight/self.r.app.levelHeight + 1 - Roof.groundLevelFactor
+                    self.roofVerticalPosition/self.levelHeight + 1 - Roof.groundLevelFactor
                 )
                 if not n:
                     n = 1.
             else:
-                _n = tags.get("building:min_level")
-                if not _n is None:
-                    _n = parseNumber(_n)
-                    # the second condition is a sanity check
-                    if not _n is None and _n < n:
+                # processing <building:min_level> and <building:min_height>
+                _n = self.getMinLevel()
+                # the second condition is a sanity check
+                if not _n is None and _n < n:
+                    n -= _n
+                elif self.z1:
+                    _n = math.floor(self.z1/self.levelHeight + 1 - Roof.groundLevelFactor)
+                    if _n:
                         n -= _n
             self._numLevels = n
         return self._numLevels
@@ -162,9 +164,9 @@ class RoofRealistic:
     @property
     def levelHeights(self):
         if not self._levelHeights:
-            h = (self.roofMinHeight - self.z1)/self.numLevels\
+            h = (self.roofVerticalPosition - self.z1)/self.numLevels\
                 if self.z1 else\
-                self.roofMinHeight/(Roof.groundLevelFactor + self.numLevels - 1)
+                self.roofVerticalPosition/(Roof.groundLevelFactor + self.numLevels - 1)
             self._levelHeights = (h, Roof.groundLevelFactor*h)
         return self._levelHeights
 
