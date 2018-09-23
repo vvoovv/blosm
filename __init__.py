@@ -59,6 +59,7 @@ from defs import Keys
 
 # set addon version
 app.app.version = bl_info["version"]
+app.app.isPremium = "Premium" in bl_info["name"]
 
 
 class BlenderOsmPreferences(bpy.types.AddonPreferences):
