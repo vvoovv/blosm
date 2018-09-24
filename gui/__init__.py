@@ -57,12 +57,53 @@ _blenderMaterials = (
     ("gravel", "ms")
 )
 
+# default number of levels and its relative weight
+_defaultLevels = (
+    (4, 10),
+    (5, 40),
+    (6, 10)
+)
+
 def getBlenderMaterials(self, context):
     materialType = context.scene.blender_osm.materialType
     return tuple((m[0], m[0], m[0]) for m in _blenderMaterials if m[1] == materialType)
 
 
-class OperatorSelectExtent(bpy.types.Operator):
+def addDefaultLevels():
+    defaultLevels = bpy.context.scene.blender_osm.defaultLevels
+    if not defaultLevels:
+        for n, w in _defaultLevels:
+            e = bpy.context.scene.blender_osm.defaultLevels.add()
+            e.levels = n
+            e.weight = w
+
+
+class BLOSM_UL_DefaultLevels(bpy.types.UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_property):
+        row = layout.row()
+        row.prop(item, "levels")
+        row.prop(item, "weight")
+
+
+class BlosmDefaultLevelsEntry(bpy.types.PropertyGroup):
+    levels = bpy.props.IntProperty(
+        subtype='UNSIGNED',
+        min = 1,
+        max = 50,
+        default = 5,
+        description="Default number of levels"
+    )
+    weight = bpy.props.IntProperty(
+        subtype='UNSIGNED',
+        min = 1,
+        max = 100,
+        default = 10,
+        description="Weight between 1 and 100 for the default number of levels"
+    )
+
+
+class OperatorBlosmSelectExtent(bpy.types.Operator):
     bl_idname = "blender_osm.select_extent"
     bl_label = "select"
     bl_description = "Select extent for your area of interest on a geographical map"
@@ -73,14 +114,15 @@ class OperatorSelectExtent(bpy.types.Operator):
     def invoke(self, context, event):
         bv = bpy.app.version
         av = app.version
+        isPremium = "premium" if app.isPremium else ""
         webbrowser.open_new_tab(
-            "%s?blender_version=%s.%s&addon=blender-osm&addon_version=%s.%s.%s" %
-            (self.url, bv[0], bv[1], av[0], av[1], av[2])
+            "%s?blender_version=%s.%s&addon=blender-osm&addon_version=%s%s.%s.%s" %
+            (self.url, bv[0], bv[1], isPremium, av[0], av[1], av[2])
         )
         return {'FINISHED'}
 
 
-class OperatorPasteExtent(bpy.types.Operator):
+class OperatorBlosmPasteExtent(bpy.types.Operator):
     bl_idname = "blender_osm.paste_extent"
     bl_label = "paste"
     bl_description = "Paste extent (chosen on the geographical map) for your area of interest from the clipboard"
@@ -109,7 +151,7 @@ class OperatorPasteExtent(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OperatorExtentFromActive(bpy.types.Operator):
+class OperatorBlosmExtentFromActive(bpy.types.Operator):
     bl_idname = "blender_osm.extent_from_active"
     bl_label = "from active"
     bl_description = "Use extent from the active Blender object"
@@ -129,6 +171,37 @@ class OperatorExtentFromActive(bpy.types.Operator):
             context
         )
         
+        return {'FINISHED'}
+
+
+class OperatorBlosmLevelsAdd(bpy.types.Operator):
+    bl_idname = "blender_osm.default_levels_add"
+    bl_label = "+"
+    bl_description = "Add an entry for the default number of levels. " +\
+        "Enter both the number of levels and its relative weight between 1 and 100"
+    bl_options = {'INTERNAL'}
+    
+    def invoke(self, context, event):
+        context.scene.blender_osm.defaultLevels.add()
+        return {'FINISHED'}
+
+
+class OperatorBlosmLevelsDelete(bpy.types.Operator):
+    bl_idname = "blender_osm.default_levels_delete"
+    bl_label = "-"
+    bl_description = "Delete the selected entry for the default number of levels"
+    bl_options = {'INTERNAL'}
+    
+    @classmethod
+    def poll(cls, context):
+        return len(context.scene.blender_osm.defaultLevels) > 1
+    
+    def invoke(self, context, event):
+        addon = context.scene.blender_osm
+        defaultLevels = addon.defaultLevels
+        defaultLevels.remove(addon.defaultLevelsIndex)
+        if addon.defaultLevelsIndex >= len(defaultLevels):
+            addon.defaultLevelsIndex = 0
         return {'FINISHED'}
 
 
@@ -252,7 +325,19 @@ class PanelBlosmSettings(bpy.types.Panel):
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
         box.prop(addon, "defaultNumLevels")
-        box.prop(addon, "straightAngleThreshold")
+        
+        column = box.column()
+        split = column.split(percentage=0.67, align=True)
+        split.label("Default number of levels:")
+        split.operator("blender_osm.default_levels_add")
+        split.operator("blender_osm.default_levels_delete")
+        
+        column.template_list(
+            "BLOSM_UL_DefaultLevels", "",
+            addon, "defaultLevels", addon, "defaultLevelsIndex",
+            rows=3
+        )
+        #box.prop(addon, "straightAngleThreshold")
         
         box = layout.box()
         box.prop(addon, "singleObject")
@@ -285,7 +370,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop(addon, "setOverlayMaterial")
 
 
-class PanelBpyProj(bpy.types.Panel):
+class PanelBlosmBpyProj(bpy.types.Panel):
     bl_label = "Projection"
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
@@ -447,13 +532,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = 3.
     )
     
-    defaultNumLevels = bpy.props.IntProperty(
-        name = "Default number of levels",
-        description = "Default number of levels for a building if the number of levels or " +
-            "the building height aren't set in OSM tags",
-        min = 1,
-        subtype = 'UNSIGNED',
-        default = 2
+    defaultLevels = bpy.props.CollectionProperty(type = BlosmDefaultLevelsEntry)
+    
+    defaultLevelsIndex = bpy.props.IntProperty(
+        subtype='UNSIGNED',
+        default = 0,
+        description = "Index of the active entry for the default number of levels"
     )
     
     straightAngleThreshold = bpy.props.FloatProperty(
@@ -632,6 +716,7 @@ def register():
     bpy.utils.register_module(__name__)
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
+    addDefaultLevels()
 
 def unregister():
     bpy.utils.unregister_module(__name__)
