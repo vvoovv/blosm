@@ -134,6 +134,7 @@ class App:
             self.has(licenseKey)
         
         self.version = None
+        self.isPremium = False
         self.layerIndices = {}
         self.layers = []
     
