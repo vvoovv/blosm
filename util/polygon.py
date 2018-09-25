@@ -109,6 +109,19 @@ class Polygon:
         """
         return sum(tuple(self.verts), zeroVector())/self.n
     
+    @property
+    def area(self):
+        verts = self.allVerts
+        indices = self.indices
+        vertFirst = verts[indices[0]]
+        vertLast = verts[indices[-1]]
+        # the shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
+        return 0.5 * abs(
+            sum( (v0[0]*v1[1] - v1[0]*v0[1]) for (v0, v1) in\
+                ( (verts[indices[i]],verts[indices[i+1]]) for i in range(self.n-1))
+            ) + vertLast[0]*vertFirst[1] - vertFirst[0]*vertLast[1]
+        )
+    
     def extrude(self, z, indices):
         """
         Extrude the polygon along <z>-axis to the target height <z>
