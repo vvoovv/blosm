@@ -527,7 +527,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     
     levelHeight = bpy.props.FloatProperty(
         name = "Level height",
-        description = "Height of a level in meters to use for OSM tags building:levels and building:min_level",
+        description = "Average height of a level in meters to use for OSM tags building:levels and building:min_level",
         default = 3.
     )
     
