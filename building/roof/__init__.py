@@ -168,7 +168,7 @@ class Roof:
                     if n < 1.:
                         n = None
             if n is None and getDefault:
-                n = self.r.getDefaultLevels(self.element)
+                n = self.r.getDefaultLevels(self.element, self.polygon)
             self._levels = n
         return self._levels
     

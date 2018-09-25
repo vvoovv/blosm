@@ -324,7 +324,6 @@ class PanelBlosmSettings(bpy.types.Panel):
         split.label("Default roof shape:")
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
-        box.prop(addon, "defaultNumLevels")
         
         column = box.column()
         split = column.split(percentage=0.67, align=True)

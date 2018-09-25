@@ -44,6 +44,19 @@ defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 class BuildingRenderer(Renderer3d):
     
+    # default number of levels for a single family house and its relative weight between 1 and 100
+    defaultLevelsHouse = (
+        (1, 15),
+        (2, 15),
+        (3, 1)
+    )
+    
+    # an upper limit for the area of one family house
+    houseArea = 200.
+    
+    # an upper limit for the area of a small one level building (e.g. a kiosk)
+    oneLevelBuildingArea = 20.
+    
     def __init__(self, app, layerId, layerConstructor=MeshLayer):
         super().__init__(app)
         
@@ -89,6 +102,7 @@ class BuildingRenderer(Renderer3d):
             from gui import addDefaultLevels
             addDefaultLevels()
         self.randomLevels = RandomWeightedValue(tuple((e.levels, e.weight) for e in defaultLevels))
+        self.randomLevelsHouse = RandomWeightedValue(self.defaultLevelsHouse)
     
     def initRoofs(self):
         """
@@ -350,5 +364,18 @@ class BuildingRenderer(Renderer3d):
     def getLevelHeight(self, element):
         return self.randomLevelHeight.value
     
-    def getDefaultLevels(self, element):
-        return self.randomLevels.value
+    def getDefaultLevels(self, element, polygon):
+        b = element.tags.get("building") or element.tags.get("building:part")
+        if b in ("house", "detached", "semidetached_house"):
+            levels = self.randomLevelsHouse.value
+        elif b in ("static_caravan", "bungalow"):
+            levels = 1
+        else:
+            area = polygon.area
+            if area > self.houseArea:
+                levels = self.randomLevels.value
+            elif area > self.oneLevelBuildingArea:
+                levels = self.randomLevelsHouse.value
+            else:
+                levels = 1
+        return levels
