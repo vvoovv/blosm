@@ -70,10 +70,12 @@ def getBlenderMaterials(self, context):
 
 
 def addDefaultLevels():
-    defaultLevels = bpy.context.scene.blender_osm.defaultLevels
+    context = bpy.context
+    scene = context.scene if hasattr(context, "scene") else bpy.data.scenes[0]
+    defaultLevels = scene.blender_osm.defaultLevels
     if not defaultLevels:
         for n, w in _defaultLevels:
-            e = bpy.context.scene.blender_osm.defaultLevels.add()
+            e = defaultLevels.add()
             e.levels = n
             e.weight = w
 
