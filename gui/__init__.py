@@ -80,7 +80,6 @@ def addDefaultLevels():
 def _handler(dummy):
     if not hasattr(bpy, "context"):
         print("test message")
-bpy.app.handlers.scene_update_post.append(_handler)
 
 
 class BLOSM_UL_DefaultLevels(bpy.types.UIList):
@@ -720,6 +719,7 @@ def register():
     bpy.utils.register_module(__name__)
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
+    bpy.app.handlers.scene_update_post.append(_handler)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
