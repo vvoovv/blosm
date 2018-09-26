@@ -78,10 +78,8 @@ def addDefaultLevels():
             e.weight = w
 
 def _onRegister(dummy):
-    print("test message1")
     addDefaultLevels()
     bpy.app.handlers.scene_update_post.remove(_onRegister)
-    print("test message2")
 
 
 class BLOSM_UL_DefaultLevels(bpy.types.UIList):
@@ -726,3 +724,4 @@ def register():
 def unregister():
     bpy.utils.unregister_module(__name__)
     del bpy.types.Scene.blender_osm
+    bpy.app.handlers.scene_update_post.remove(_onRegister)
