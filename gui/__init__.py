@@ -70,9 +70,7 @@ def getBlenderMaterials(self, context):
 
 
 def addDefaultLevels():
-    context = bpy.context
-    scene = context.scene if hasattr(context, "scene") else bpy.data.scenes[0]
-    defaultLevels = scene.blender_osm.defaultLevels
+    defaultLevels = bpy.context.scene.blender_osm.defaultLevels
     if not defaultLevels:
         for n, w in _defaultLevels:
             e = defaultLevels.add()
@@ -332,6 +330,9 @@ class PanelBlosmSettings(bpy.types.Panel):
         split.label("Default number of levels:")
         split.operator("blender_osm.default_levels_add")
         split.operator("blender_osm.default_levels_delete")
+        
+        if not context.scene.blender_osm.defaultLevels:
+            addDefaultLevels()
         
         column.template_list(
             "BLOSM_UL_DefaultLevels", "",
