@@ -77,6 +77,11 @@ def addDefaultLevels():
             e.levels = n
             e.weight = w
 
+def _handler(dummy):
+    if not hasattr(bpy, "context"):
+        print("test message")
+bpy.app.handlers.scene_update_post.append(_handler)
+
 
 class BLOSM_UL_DefaultLevels(bpy.types.UIList):
     

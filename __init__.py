@@ -381,11 +381,6 @@ class OperatorControlOverlay(bpy.types.Operator):
                 app.app.stateMessage = ''
                 return
 
-def handler(dummy):
-    print("Load Handler:", bpy.data.filepath)
-
-bpy.app.handlers.scene_update_post.append(handler)
-
 
 def register():
     bpy.utils.register_module(__name__)
