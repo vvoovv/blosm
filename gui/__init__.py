@@ -78,16 +78,18 @@ def addDefaultLevels():
             e.levels = n
             e.weight = w
 
+# This handler is needed to set the defaults for <context.scene.blender_osm.defaultLevels>
+# just after the addon registration
 def _onRegister(scene):
-    print("test1")
     addDefaultLevels()
+    # the handler isn't needed anymore, so we remove it
     bpy.app.handlers.scene_update_post.remove(_onRegister)
-    print("test2")
+# This handler is needed to set the defaults for <context.scene.blender_osm.defaultLevels>
+# after each start of Blender or reloading the start-up file via Ctrl N or loading any Blender file.
+# That's why the persistent decorator is used
 @persistent
 def _onFileLoaded(scene):
-    print("test21")
     addDefaultLevels()
-    print("test22")
 
 
 class BLOSM_UL_DefaultLevels(bpy.types.UIList):
@@ -727,7 +729,9 @@ def register():
     bpy.utils.register_module(__name__)
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
+    # see the notes near the code for <_onRegister>
     bpy.app.handlers.scene_update_post.append(_onRegister)
+    # see the notes near the code for <_onFileLoaded>
     bpy.app.handlers.load_post.append(_onFileLoaded)
 
 def unregister():
