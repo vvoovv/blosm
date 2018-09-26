@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 import webbrowser
+from bpy.app.handlers import persistent
 from app import app
 from defs import Keys
 from util.transverse_mercator import TransverseMercator
@@ -77,8 +78,6 @@ def addDefaultLevels():
             e.levels = n
             e.weight = w
 
-from bpy.app.handlers import persistent
-@persistent
 def _onRegister(scene):
     print("test1")
     addDefaultLevels()
