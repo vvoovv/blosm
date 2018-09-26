@@ -722,7 +722,7 @@ def register():
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
     bpy.app.handlers.scene_update_post.append(_onRegister)
-    bpy.app.handlers.load_post.appen(_onRegister)
+    bpy.app.handlers.load_post.append(_onRegister)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
