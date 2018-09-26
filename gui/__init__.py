@@ -724,4 +724,3 @@ def register():
 def unregister():
     bpy.utils.unregister_module(__name__)
     del bpy.types.Scene.blender_osm
-    bpy.app.handlers.scene_update_post.remove(_onRegister)
