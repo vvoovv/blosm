@@ -77,11 +77,18 @@ def addDefaultLevels():
             e.levels = n
             e.weight = w
 
+from bpy.app.handlers import persistent
+@persistent
 def _onRegister(dummy):
     print("test1")
     addDefaultLevels()
     bpy.app.handlers.scene_update_post.remove(_onRegister)
     print("test2")
+@persistent
+def _onRegister2(dummy):
+    print("test21")
+    addDefaultLevels()
+    print("test22")
 
 
 class BLOSM_UL_DefaultLevels(bpy.types.UIList):
@@ -722,7 +729,7 @@ def register():
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
     bpy.app.handlers.scene_update_post.append(_onRegister)
-    bpy.app.handlers.load_post.append(_onRegister)
+    bpy.app.handlers.load_post.append(_onRegister2)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
