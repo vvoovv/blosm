@@ -78,7 +78,7 @@ def addDefaultLevels():
             e.weight = w
 
 def _handler(dummy):
-    if not hasattr(bpy, "context"):
+    if not hasattr(bpy.context, "scene"):
         print("test message")
 
 
