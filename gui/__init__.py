@@ -331,9 +331,6 @@ class PanelBlosmSettings(bpy.types.Panel):
         split.operator("blender_osm.default_levels_add")
         split.operator("blender_osm.default_levels_delete")
         
-        if not context.scene.blender_osm.defaultLevels:
-            addDefaultLevels()
-        
         column.template_list(
             "BLOSM_UL_DefaultLevels", "",
             addon, "defaultLevels", addon, "defaultLevelsIndex",
