@@ -370,6 +370,10 @@ class BuildingRenderer(Renderer3d):
             levels = self.randomLevelsHouse.value
         elif b in ("static_caravan", "bungalow"):
             levels = 1
+        elif not polygon:
+            # <polygon==None> means that we have a multipolygon and its area is
+            # large enough not be a one family house
+            levels = self.randomLevels.value
         else:
             area = polygon.area
             if area > self.houseArea:

@@ -55,6 +55,10 @@ class RoofFlatMulti(RoofFlat):
         self.verts = []
         self.wallIndices = []
         self.polygons = []
+        # The line below is needed for consistency;
+        # it can be interpreted as the attribute that a roof is defined be the multipolygon
+        # rather than a polygon
+        self.polygon = None
     
     def init(self, element, data, osm, app):
         # <data> isn't used it this class
