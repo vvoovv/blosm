@@ -157,7 +157,7 @@ class App:
                     raise Exception("The Blender file set in the field \"Materials for buildings\" doesn't exist")
                 self.bldgMaterialsFilepath = materialsPath
             else:
-                raise Exception("A valid directory for a Blender file with materials for buildings isn't set!")
+                raise Exception("A valid Blender file with materials for buildings isn't set!")
         
         basePath = self.basePath
         self.op = op
