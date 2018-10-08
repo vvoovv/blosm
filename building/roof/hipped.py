@@ -45,6 +45,8 @@ class RoofHipped(RoofProfile):
             self.initProfile()
         else:
             self.makeFlat = True
+            if self.noWalls:
+                self.wallHeight = self.z2 - self.z1
     
     def getRoofHeight(self):
         # this is a hack, but we have to set <self.defaultHeight> here to calculate the roof height correctly
