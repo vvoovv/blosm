@@ -31,7 +31,7 @@ from .roof.half_hipped import RoofHalfHipped
 from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
 from util import zeroVector
-from util.random import RandomNormal, RandomWeightedValue
+from util.random import RandomNormal, RandomWeighted
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -101,8 +101,8 @@ class BuildingRenderer(Renderer3d):
         if not defaultLevels:
             from gui import addDefaultLevels
             addDefaultLevels()
-        self.randomLevels = RandomWeightedValue(tuple((e.levels, e.weight) for e in defaultLevels))
-        self.randomLevelsHouse = RandomWeightedValue(self.defaultLevelsHouse)
+        self.randomLevels = RandomWeighted(tuple((e.levels, e.weight) for e in defaultLevels))
+        self.randomLevelsHouse = RandomWeighted(self.defaultLevelsHouse)
     
     def initRoofs(self):
         """

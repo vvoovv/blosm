@@ -41,7 +41,7 @@ class RandomNormal:
         return self.values[self.index]
 
 
-class RandomWeightedValue:
+class RandomWeighted:
     
     # the number of random indices for <self.distrList>
     numIndices = 1000
