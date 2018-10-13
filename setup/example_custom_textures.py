@@ -48,7 +48,7 @@ def getMaterials():
         roof_tiles_color = (SeamlessTextureWithColor, roofTilesColors),
         #metal = SeamlessTexture,
         metal_color = (SeamlessTextureWithColor, metalColors),
-        metal_without_uv = MaterialWithColor,
+        metal_without_uv = (MaterialWithColor, metalColors),
         #metal_scaled = SeamlessTextureScaled,
         metal_scaled_color = (SeamlessTextureScaledWithColor, metalColors)
     )
