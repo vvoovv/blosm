@@ -164,9 +164,11 @@ class RoofRealistic:
     @property
     def levelHeights(self):
         if not self._levelHeights:
-            h = (self.roofVerticalPosition - self.z1)/self.numLevels\
-                if self.z1 else\
-                self.roofVerticalPosition/(Roof.groundLevelFactor + self.numLevels - 1)
+            h = self._levelHeight
+            if h is None:
+                h = (self.roofVerticalPosition - self.z1)/self.numLevels\
+                    if self.z1 else\
+                    self.roofVerticalPosition/(Roof.groundLevelFactor + self.numLevels - 1)
             self._levelHeights = (h, Roof.groundLevelFactor*h)
         return self._levelHeights
 
