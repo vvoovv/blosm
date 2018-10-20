@@ -19,24 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from parse.relation.building import Building
 
-from building.manager import BuildingManager, BuildingParts, BuildingRelations
+from building.manager import BuildingParts, BuildingRelations
 
 from manager.logging import Logger
 
+from realistic.building.manager import RealisticBuildingManager
 from realistic.building.renderer import RealisticBuildingRenderer
-
-
-def building(tags, e):
-    return "building" in tags
-
-def buildingPart(tags, e):
-    return "building:part" in tags
-
-def buildingRelation(tags, e):
-    return isinstance(e, Building)
-
-def forest(tags, e):
-    return tags.get("natural") == "wood" or tags.get("landuse") == "forest"
 
 
 def setup_base(app, osm, getMaterials, bldgPreRender):
@@ -46,23 +34,28 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
     # the code below was under the condition: if app.buildings:
     buildingParts = BuildingParts()
     buildingRelations = BuildingRelations()
-    buildings = BuildingManager(osm, buildingParts)
+    buildings = RealisticBuildingManager(osm, buildingParts)
     
     # Important: <buildingRelation> beform <building>,
     # since there may be a tag building=* in an OSM relation of the type 'building'
     osm.addCondition(
-        buildingRelation, None, buildingRelations
+        lambda tags, e: isinstance(e, Building),
+        None,
+        buildingRelations
     )
     osm.addCondition(
-        building, None, buildings
+        lambda tags, e: "building" in tags,
+        "buildings",
+        buildings
     )
     osm.addCondition(
-        buildingPart, None, buildingParts
+        lambda tags, e: "building:part" in tags,
+        None,
+        buildingParts
     )
     # set building renderer
     br = RealisticBuildingRenderer(
         app,
-        "buildings",
         bldgPreRender = bldgPreRender,
         materials = getMaterials()
     )
@@ -84,7 +77,11 @@ def setup_forests(app, osm):
     # create managers
     polygon = Polygon(osm)
     
-    osm.addCondition(forest, "forest", polygon)
+    osm.addCondition(
+        lambda tags, e: tags.get("natural") == "wood" or tags.get("landuse") == "forest",
+        "forest",
+        polygon
+    )
     areaRenderers["forest"] = ForestRenderer()
     
     m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)

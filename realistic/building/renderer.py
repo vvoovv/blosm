@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from building.renderer import *
-from realistic.building.layer import BuildingLayer
 
 from .roof.flat import RoofFlatRealistic, RoofFlatMultiRealistic
 from .roof.profile import RoofProfileRealistic
@@ -32,9 +31,9 @@ from .roof.mesh import RoofMeshRealistic
 
 class RealisticBuildingRenderer(BuildingRenderer):
     
-    def __init__(self, app, layerId, **kwargs):
+    def __init__(self, app, **kwargs):
         self.bldgPreRender = None
-        super().__init__(app, layerId, BuildingLayer)
+        super().__init__(app)
         for k in kwargs:
             setattr(self, k, kwargs[k])
         # A Python dictionary for mapping between material names and material renderers;

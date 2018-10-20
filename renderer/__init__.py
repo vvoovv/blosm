@@ -62,9 +62,9 @@ class Renderer:
         # store here Blender object that are to be joined
         self.toJoin = {}
     
-    def preRender(self, element, layer=None):
-        layer = element.l if layer is None else layer
-        self.layer = layer
+    def preRender(self, element):
+        layer = element.l
+        self.layer = element.l
         
         if layer.singleObject:
             if not layer.bm:

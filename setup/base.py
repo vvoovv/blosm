@@ -30,93 +30,11 @@ from building.renderer import BuildingRenderer
 from manager.logging import Logger
 
 
-# point objects in OSM
-#def tree(tags, e):
-#    return tags.get("natural") == "tree"
-
-
-def building(tags, e):
-    return "building" in tags
-
-def buildingPart(tags, e):
-    return "building:part" in tags
-
-def buildingRelation(tags, e):
-    return isinstance(e, Building)
-
 def tunnel(tags, e):
     if tags.get("tunnel") == "yes":
         e.valid = False
         return True
     return False
-
-
-#
-# highway = *
-#
-def highway_motorway(tags, e):
-    return tags.get("highway") in ("motorway", "motorway_link")
-
-def highway_trunk(tags, e):
-    return tags.get("highway") in ("trunk", "trunk_link")
-
-def highway_primary(tags, e):
-    return tags.get("highway") in ("primary", "primary_link")
-
-def highway_secondary(tags, e):
-    return tags.get("highway") in ("secondary", "secondary_link")
-
-def highway_tertiary(tags, e):
-    return tags.get("highway") in ("tertiary", "tertiary_link")
-
-def highway_unclassified(tags, e):
-    return tags.get("highway") == "unclassified"
-
-def highway_residential(tags, e):
-    return tags.get("highway") in ("residential", "living_street")
-
-def highway_service(tags, e):
-    return tags.get("highway") == "service"
-
-def highway_pedestrian(tags, e):
-    return tags.get("highway") == "pedestrian"
-
-def highway_track(tags, e):
-    return tags.get("highway") == "track"
-
-def highway_footway(tags, e):
-    return tags.get("highway") in ("footway", "path")
-
-def highway_steps(tags, e):
-    return tags.get("highway") == "steps"
-
-def highway_bridleway(tags, e):
-    return tags.get("highway") == "bridleway"
-
-def highway_cycleway(tags, e):
-    return tags.get("highway") == "cycleway"
-
-def highway_other(tags, e):
-    return tags.get("highway") in ("road", "escape", "raceway")
-
-
-def railway(tags, e):
-    return "railway" in tags
-
-def water(tags, e):
-    return tags.get("natural") == "water" or\
-        tags.get("waterway") == "riverbank" or\
-        tags.get("landuse") == "reservoir"
-
-def coastline(tags, e):
-    return tags.get("natural") == "coastline" 
-
-def forest(tags, e):
-    return tags.get("natural") == "wood" or tags.get("landuse") == "forest"
-
-def vegetation(tags, e):
-    return ( "landuse" in tags and tags["landuse"] in ("grass", "meadow", "farmland") ) or\
-        ( "natural" in tags and tags["natural"] in ("scrub", "grassland", "heath") )
 
 
 def setup(app, osm):
@@ -130,11 +48,18 @@ def setup(app, osm):
     polygonAcceptBroken = PolygonAcceptBroken(osm)
     
     # conditions for point objects in OSM
-    #osm.addNodeCondition(tree, "tree")
+    #osm.addNodeCondition(
+    #    lambda tags, e: tags.get("natural") == "tree",
+    #    "tree"
+    #)
     
     if app.buildings:
         if app.mode is app.twoD:
-            osm.addCondition(building, "buildings", polygon)
+            osm.addCondition(
+                lambda tags, e: "building" in tags,
+                "buildings", 
+                polygon
+            )
         else: # 3D
             buildingParts = BuildingParts()
             buildingRelations = BuildingRelations()
@@ -143,16 +68,22 @@ def setup(app, osm):
             # Important: <buildingRelation> beform <building>,
             # since there may be a tag building=* in an OSM relation of the type 'building'
             osm.addCondition(
-                buildingRelation, None, buildingRelations
+                lambda tags, e: isinstance(e, Building),
+                None,
+                buildingRelations
             )
             osm.addCondition(
-                building, None, buildings
+                lambda tags, e: "building" in tags,
+                "buildings",
+                buildings
             )
             osm.addCondition(
-                buildingPart, None, buildingParts
+                lambda tags, e: "building:part" in tags,
+                None,
+                buildingParts
             )
             buildings.setRenderer(
-                BuildingRenderer(app, "buildings")
+                BuildingRenderer(app)
             )
             app.managers.append(buildings)
     
@@ -160,31 +91,111 @@ def setup(app, osm):
         osm.addCondition(tunnel)
     
     if app.highways:
-        osm.addCondition(highway_motorway, "roads_motorway", wayManager)
-        osm.addCondition(highway_trunk, "roads_trunk", wayManager)
-        osm.addCondition(highway_primary, "roads_primary", wayManager)
-        osm.addCondition(highway_secondary, "roads_secondary", wayManager)
-        osm.addCondition(highway_tertiary, "roads_tertiary", wayManager)
-        osm.addCondition(highway_unclassified, "roads_unclassified", wayManager)
-        osm.addCondition(highway_residential, "roads_residential", wayManager)
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("motorway", "motorway_link"),
+            "roads_motorway",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("trunk", "trunk_link"),
+            "roads_trunk",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("primary", "primary_link"),
+            "roads_primary",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("secondary", "secondary_link"),
+            "roads_secondary",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("tertiary", "tertiary_link"),
+            "roads_tertiary",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "unclassified",
+            "roads_unclassified",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("residential", "living_street"),
+            "roads_residential",
+            wayManager
+        )
         # footway to optimize the walk through conditions
-        osm.addCondition(highway_footway, "paths_footway", wayManager)
-        osm.addCondition(highway_service, "roads_service", wayManager)
-        osm.addCondition(highway_pedestrian, "roads_pedestrian", wayManager)
-        osm.addCondition(highway_track, "roads_track", wayManager)
-        osm.addCondition(highway_steps, "paths_steps", wayManager)
-        osm.addCondition(highway_cycleway, "paths_cycleway", wayManager)
-        osm.addCondition(highway_bridleway, "paths_bridleway", wayManager)
-        osm.addCondition(highway_other, "roads_other", wayManager)
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("footway", "path"),
+            "paths_footway",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "service",
+            "roads_service",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "pedestrian",
+            "roads_pedestrian",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "track",
+            "roads_track",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "steps",
+            "paths_steps",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "cycleway",
+            "paths_cycleway",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") == "bridleway",
+            "paths_bridleway",
+            wayManager
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("highway") in ("road", "escape", "raceway"),
+            "roads_other",
+            wayManager
+        )
     if app.railways:
-        osm.addCondition(railway, "railways", wayManager)
+        osm.addCondition(
+            lambda tags, e: "railway" in tags,
+            "railways",
+            wayManager
+        )
     if app.water:
-        osm.addCondition(water, "water", polygonAcceptBroken)
-        osm.addCondition(coastline, "coastlines", linestring)
+        osm.addCondition(
+            lambda tags, e: tags.get("natural") == "water" or tags.get("waterway") == "riverbank" or tags.get("landuse") == "reservoir",
+            "water",
+            polygonAcceptBroken
+        )
+        osm.addCondition(
+            lambda tags, e: tags.get("natural") == "coastline",
+            "coastlines",
+            linestring
+        )
     if app.forests:
-        osm.addCondition(forest, "forest", polygon)
+        osm.addCondition(
+            lambda tags, e: tags.get("natural") == "wood" or tags.get("landuse") == "forest",
+            "forest",
+            polygon
+        )
     if app.vegetation:
-        osm.addCondition(vegetation, "vegetation", polygon)
+        osm.addCondition(
+            lambda tags, e: ("landuse" in tags and tags["landuse"] in ("grass", "meadow", "farmland")) or ("natural" in tags and tags["natural"] in ("scrub", "grassland", "heath")),
+            "vegetation",
+            polygon
+        )
     
     numConditions = len(osm.conditions)
     if not app.mode is app.twoD and app.buildings:

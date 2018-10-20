@@ -19,8 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from manager import Manager
 from renderer import Renderer
+from renderer.layer import MeshLayer
 from parse import Osm
-from util import zAxis
+from util import zAxis, zeroVector
 from . import Building
 
 from mathutils.bvhtree import BVHTree
@@ -35,8 +36,29 @@ class BuildingManager(Manager):
             buildingParts (BuildingParts): A manager for 3D parts of an OSM building
         """
         super().__init__(osm)
+        self.layerConstructor = MeshLayer
         self.buildings = []
         self.parts = buildingParts.parts
+
+    def createLayer(self, layerId, app, **kwargs):
+        layer = app.createLayer(layerId, self.layerConstructor, area=False)
+        
+        # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
+        layer.location = None
+        layer.meshZ = 0.
+        if layer.parentLocation:
+            layer.parentLocation[2] = 0.
+        else:
+            layer.parentLocation = zeroVector()
+        
+        if app.terrain:
+            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
+            # no need to apply any Blender modifier for buildings
+            layer.modifiers = False
+            # no need to slice Blender mesh
+            layer.sliceMesh = False
+        
+        return layer
 
     def parseWay(self, element, elementId):
         if element.closed:

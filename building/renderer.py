@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 from renderer import Renderer, Renderer3d
-from renderer.layer import MeshLayer
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
@@ -30,7 +29,6 @@ from .roof.hipped import RoofHipped
 from .roof.half_hipped import RoofHalfHipped
 from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
-from util import zeroVector
 from util.random import RandomNormal, RandomWeighted
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
@@ -57,29 +55,8 @@ class BuildingRenderer(Renderer3d):
     # an upper limit for the area of a small one level building (e.g. a kiosk)
     oneLevelBuildingArea = 20.
     
-    def __init__(self, app, layerId, layerConstructor=MeshLayer):
+    def __init__(self, app):
         super().__init__(app)
-        
-        layer = app.createLayer(
-            layerId,
-            layerConstructor,
-            area=False
-        )
-        self.layer = layer
-        # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
-        layer.location = None
-        layer.meshZ = 0.
-        if layer.parentLocation:
-            layer.parentLocation[2] = 0.
-        else:
-            layer.parentLocation = zeroVector()
-        
-        if app.terrain:
-            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-            # no need to apply any Blender modifier for buildings
-            layer.modifiers = False
-            # no need to slice Blender mesh
-            layer.sliceMesh = False
         
         self.initRoofs()
         self.defaultRoof = self.roofs[app.defaultRoofShape]
@@ -143,7 +120,7 @@ class BuildingRenderer(Renderer3d):
                 self.offset = None
             return
         
-        self.preRender(outline, self.layer)
+        self.preRender(outline)
         
         if parts:
             # reset material indices and Blender materials derived from <outline>
