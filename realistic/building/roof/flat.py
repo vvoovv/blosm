@@ -64,6 +64,9 @@ class RoofFlatRealistic(RoofRealistic, RoofFlat):
             offset = loops[0].vert.co
             uVec = loops[1].vert.co - offset
             uVecLength = uVec.length
+            # sometimes uVecLength appears as zero
+            if not uVecLength:
+                uVecLength = 0.0001
             uVec = uVec/uVecLength
             vVec = zAxis.cross(uVec)
             loops[0][uvLayer].uv = (0., 0.)
@@ -99,6 +102,9 @@ class RoofFlatMultiRealistic(RoofRealistic, RoofFlatMulti):
                         offset = loops[0].vert.co
                         uVec = loops[1].vert.co - offset
                         uVecLength = uVec.length
+                        # sometimes uVecLength appears as zero
+                        if not uVecLength:
+                            uVecLength = 0.0001
                         uVec = uVec/uVecLength
                         vVec = zAxis.cross(uVec)
                         loops[0][uvLayer].uv = (0., 0.)

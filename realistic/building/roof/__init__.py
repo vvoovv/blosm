@@ -148,16 +148,21 @@ class RoofRealistic:
                 )
                 if not n:
                     n = 1.
-            else:
+            # The condition below means:
+            # it doesn't make sense to process <building:min_level> if <n> is equal to 1.
+            elif n>1:
                 # processing <building:min_level> and <building:min_height>
                 _n = self.getMinLevel()
                 # the second condition is a sanity check
                 if not _n is None and _n < n:
                     n -= _n
                 elif self.z1:
-                    _n = math.floor(self.z1/self.levelHeight + 1 - Roof.groundLevelFactor)
+                    levelHeight = self.roofVerticalPosition/(Roof.groundLevelFactor - 1 + n)
+                    _n = math.floor(self.z1/levelHeight + 1 - Roof.groundLevelFactor)
                     if _n:
                         n -= _n
+                if not n:
+                    n = 1.
             self._numLevels = n
         return self._numLevels
     
