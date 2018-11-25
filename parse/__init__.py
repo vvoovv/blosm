@@ -80,12 +80,14 @@ class Osm:
         )
     
     def parse(self, filepath, **kwargs):
+        forceExtentCalculation = kwargs.get("forceExtentCalculation")
+        
         osm = etree.parse(filepath).getroot()
         
         # <self.projection> could be set during a previous call of <self.parse(..)>
         if not self.projection:
             self.projection = self.app.projection
-        if not self.projection:
+        if not self.projection or forceExtentCalculation:
             self.minLat = 90.
             self.maxLat = -90.
             self.minLon = 180.
@@ -132,7 +134,7 @@ class Osm:
                         condition = self.checkConditions(tags, way)
                         if condition:
                             skip = self.processCondition(condition, way, _id, self.parseWay)
-                            if not self.projection and way.valid:
+                            if (not self.projection or forceExtentCalculation) and way.valid:
                                 self.updateBounds(way)
                     if not skip:
                         self.ways[_id] = way
@@ -183,15 +185,22 @@ class Osm:
                 # it means we need to set <self.projection> here,
                 # using <bounds> from the OSM file
                 if not self.projection:
-                    lat = ( float(attrs["minlat"]) + float(attrs["maxlat"]) )/2.
-                    lon = ( float(attrs["minlon"]) + float(attrs["maxlon"]) )/2.
+                    # also set the area extent
+                    self.minLat = float(attrs["minlat"])
+                    self.maxLat = float(attrs["maxlat"])
+                    self.minLon = float(attrs["minlon"])
+                    self.maxLon = float(attrs["maxlon"])
+                    lat = ( self.minLat + self.maxLat )/2.
+                    lon = ( self.minLon + self.maxLon )/2.
                     self.setProjection(lat, lon)
+                    forceExtentCalculation = False
         
         if not self.projection:
             # set projection using the calculated bounds (self.minLat, self.maxLat, self.minLon, self.maxLon)
             lat = (self.minLat + self.maxLat)/2.
             lon = (self.minLon + self.maxLon)/2.
             self.setProjection(lat, lon)
+        
     
     def checkConditions(self, tags, element):
         for c in self.conditions:

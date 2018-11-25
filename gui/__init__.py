@@ -330,6 +330,12 @@ class PanelBlosmSettings(bpy.types.Panel):
             box = layout.box()
             box.prop(addon, "bldgMaterialsFilepath")
             box.prop(addon, "litWindows")
+            
+            # forests and trees
+            box = layout.box()
+            box.prop(addon, "forests", text="Import forests and separate trees")
+            box.prop(addon, "treeDensity")
+            
         
         layout.box().prop(addon, "setupScript")
         
@@ -500,7 +506,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     forests = bpy.props.BoolProperty(
         name = "Import forests",
         description = "Import forests and woods",
-        default = True
+        default = not _has3dRealistic
     )
     
     vegetation = bpy.props.BoolProperty(
@@ -656,7 +662,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
             "e.g. a plot 100m x 100m) for forests",
         min = 1,
         subtype = 'UNSIGNED',
-        default = 1000#1500
+        default = 500
     )
     
     makeRealisticLayer = bpy.props.EnumProperty(

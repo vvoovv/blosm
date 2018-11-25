@@ -203,9 +203,6 @@ class App:
             self.incompleteRelations = []
             self.missingWays = set()
         
-        # check if have a terrain Blender object set
-        self.setTerrain(addon.terrainObject, context, True)
-        
         # managers (derived from manager.Manager) performing some processing
         self.managers = []
         
@@ -215,7 +212,21 @@ class App:
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
     
-    def setTerrain(self, terrainObjectName, context, createBvhTree=False):
+    def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
+        addon = context.scene.blender_osm
+        
+        terrainObjectName =\
+            addon.terrainObject\
+            if context.scene.objects.get(addon.terrainObject) else\
+            (
+                Terrain.createFlatTerrain(
+                    self.minLon, self.minLat, self.maxLon, self.maxLat,
+                    self.projection,
+                    context
+                )
+                if createFlatTerrain else None
+            )
+        
         # check if have a terrain Blender object set
         terrain = Terrain(terrainObjectName, context)
         self.terrain = terrain if terrain.terrain else None
@@ -267,16 +278,7 @@ class App:
             os.makedirs(overlayDir)
         overlay.overlayDir = overlayDir
         
-        terrainObjectName =\
-            addon.terrainObject\
-            if context.scene.objects.get(addon.terrainObject) else\
-            Terrain.createFlatTerrain(
-                self.minLon, self.minLat, self.maxLon, self.maxLat,
-                self.projection,
-                context
-            )
-        
-        self.setTerrain(terrainObjectName, context, False)
+        self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
     
     def setAttributes(self, context):
         """
@@ -306,7 +308,7 @@ class App:
             # set <self.dataDir> to basePath/../../../data (development version)
             self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
     
-    def prepareLayers(self, osm):
+    def createLayers(self, osm):
         layerIndices = self.layerIndices
         kwargs = dict(swOffset=self.swOffsetDp) if self.mode is App.realistic else {}
         
@@ -360,7 +362,10 @@ class App:
                 (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
                 for c in osm.nodeConditions
             )
-        
+    
+    def initLayers(self):
+        for layer in self.layers:
+            layer.init()
     
     def process(self):
         logger = self.logger

@@ -60,11 +60,20 @@ class MeshLayer(Layer):
     
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
+        # does the layer represents an area (natural or landuse)?
+        self.area = True
+    
+    def init(self):
+        # The code in this method has been moved from the constructor,
+        # since a flat terrain can be set only after OSM parsing if the flat terrain is needed
+        # to plant forests. If OSM import is performed from a local file, the area extent becomes
+        # known only after OSM parsing, so the flat terrain (if needed) can be created only after
+        # OSM parsing
+        app = self.app
+        layerId = self.id
         
         terrain = app.terrain
         hasTerrain = bool(terrain)
-        # does the layer represents an area (natural or landuse)
-        self.area = True
         # apply Blender modifiers (BOOLEAND AND SHRINKWRAP) if a terrain is set
         self.modifiers = hasTerrain
         # slice flat mesh to project it on the terrain correctly

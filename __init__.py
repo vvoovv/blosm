@@ -160,13 +160,15 @@ class ImportData(bpy.types.Operator):
     
     def importOsm(self, context):
         a = app.app
+        addon = context.scene.blender_osm
+        
         try:
             a.initOsm(self, context, BlenderOsmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
-        setupScript = context.scene.blender_osm.setupScript
+        setupScript = addon.setupScript
         if setupScript:
             setupScript = os.path.realpath(bpy.path.abspath(setupScript))
             if not os.path.isfile(setupScript):
@@ -198,22 +200,26 @@ class ImportData(bpy.types.Operator):
                 from setup.base import setup as setup_function
         
         scene = context.scene
-        kwargs = {}
         
         self.setObjectMode(context)
         bpy.ops.object.select_all(action="DESELECT")
         
         osm = Osm(a)
         setup_function(a, osm)
-        a.prepareLayers(osm)
+        a.createLayers(osm)
         
+        setLatLon = False
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
             a.setProjection(scene["lat"], scene["lon"])
-            setLatLon = False
+        elif a.osmSource == "server":
+            a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
         else:
             setLatLon = True
         
-        osm.parse(a.osmFilepath, **kwargs)
+        createFlatTerrain = a.mode is a.realistic and a.forests
+        forceExtentCalculation = createFlatTerrain and a.osmSource == "file"
+        
+        osm.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)
         if a.loadMissingMembers and a.incompleteRelations:
             try:
                 a.loadMissingWays(osm)
@@ -221,10 +227,26 @@ class ImportData(bpy.types.Operator):
                 self.report({'ERROR'}, str(e))
                 a.loadMissingMembers = False
             a.processIncompleteRelations(osm)
+        
+        if forceExtentCalculation:
+            a.minLat = osm.minLat
+            a.maxLat = osm.maxLat
+            a.minLon = osm.minLon
+            a.maxLon = osm.maxLon
+
+        # check if have a terrain Blender object set
+        a.setTerrain(
+            context,
+            createFlatTerrain = createFlatTerrain,
+            createBvhTree = True
+        )
+        
+        a.initLayers()
+        
         a.process()
         a.render()
         
-        # setting 'lon' and 'lat' attributes for <scene> if necessary
+        # setting <lon> and <lat> attributes for <scene> if necessary
         if setLatLon:
             # <osm.lat> and <osm.lon> have been set in osm.parse(..)
             self.setCenterLatLon(context, osm.lat, osm.lon)
@@ -263,7 +285,7 @@ class ImportData(bpy.types.Operator):
         
         a.importTerrain(context)
         
-        # set custom parameter "lat" and "lon" to the active scene
+        # set the custom parameters <lat> and <lon> to the active scene
         if setLatLon:
             self.setCenterLatLon(context, lat, lon)
         return {'FINISHED'}
@@ -298,7 +320,7 @@ class ImportData(bpy.types.Operator):
         
         bpy.ops.blender_osm.control_overlay()
         
-        # set custom parameter "lat" and "lon" to the active scene
+        # set the custom parameters <lat> and <lon> to the active scene
         if setLatLon:
             self.setCenterLatLon(context, lat, lon)
         
