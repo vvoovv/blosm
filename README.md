@@ -3,7 +3,7 @@
 * [blender-osm (premium)](https://gumroad.com/l/blosm)
 * [blender-osm](https://gumroad.com/l/blender-osm) (the base version)
 
-They are brielfy described below.
+They are briefly described below.
 
 ## [blender-osm (premium)](https://gumroad.com/l/blosm)
 [![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm.png)](https://gumroad.com/l/blosm)
