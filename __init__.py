@@ -135,7 +135,7 @@ class OperatorLoadExtensions(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ImportData(bpy.types.Operator):
+class OperatorImportData(bpy.types.Operator):
     """Import data: OpenStreetMap or terrain"""
     bl_idname = "blender_osm.import_data"  # important since its how bpy.ops.blender_osm.import_data is constructed
     bl_label = "blender-osm"
@@ -404,15 +404,25 @@ class OperatorControlOverlay(bpy.types.Operator):
                 return
 
 
+_classes = (
+    BlenderOsmPreferences,
+    OperatorGetMapboxToken,
+    OperatorLoadExtensions,
+    OperatorImportData,
+    OperatorControlOverlay
+)
+
 def register():
-    bpy.utils.register_module(__name__)
+    for c in _classes:
+        bpy.utils.register_class(c)
     gui.register()
     if app.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.register()
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
+    for c in _classes:
+        bpy.utils.unregister_class(c)
     gui.unregister()
     if app.app.has(Keys.mode3dRealistic):
         import realistic

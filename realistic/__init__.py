@@ -162,10 +162,8 @@ class OperatorFlattenSelected(bpy.types.Operator):
 
 def register():
     from util import blender_extra
-    bpy.utils.register_module(__name__)
     blender_extra.material.register()
 
 def unregister():
     from util import blender_extra
-    bpy.utils.unregister_module(__name__)
     blender_extra.material.unregister()

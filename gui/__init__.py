@@ -222,7 +222,7 @@ class OperatorBlosmLevelsDelete(bpy.types.Operator):
 class PanelBlosmExtent(bpy.types.Panel):
     bl_label = "blender-osm"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
     bl_context = "objectmode"
     bl_category = "osm"
 
@@ -289,7 +289,7 @@ class PanelRealisticTools():#(bpy.types.Panel):
 class PanelBlosmSettings(bpy.types.Panel):
     bl_label = "Settings"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
     bl_context = "objectmode"
     bl_category = "osm"
     
@@ -392,7 +392,7 @@ class PanelBlosmSettings(bpy.types.Panel):
 class PanelBlosmBpyProj(bpy.types.Panel):
     bl_label = "Projection"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI"
     bl_context = "objectmode"
     bl_category = "osm"
     
@@ -731,8 +731,23 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     )
 
 
+_classes = (
+    BLOSM_UL_DefaultLevels,
+    BlosmDefaultLevelsEntry,
+    OperatorBlosmSelectExtent,
+    OperatorBlosmPasteExtent,
+    OperatorBlosmExtentFromActive,
+    OperatorBlosmLevelsAdd,
+    OperatorBlosmLevelsDelete,
+    PanelBlosmExtent,
+    PanelBlosmSettings,
+    PanelBlosmBpyProj,
+    BlenderOsmProperties
+)
+
 def register():
-    bpy.utils.register_module(__name__)
+    for c in _classes:
+        bpy.utils.register_class(c)
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
     # see the notes near the code for <_onRegister>
@@ -741,6 +756,7 @@ def register():
     bpy.app.handlers.load_post.append(_onFileLoaded)
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
+    for c in _classes:
+        bpy.utils.unregister_class(c)
     del bpy.types.Scene.blender_osm
     bpy.app.handlers.load_post.remove(_onFileLoaded)

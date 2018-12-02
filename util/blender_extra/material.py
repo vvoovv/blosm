@@ -505,16 +505,18 @@ class PanelMaterialCreate(bpy.types.Panel):
         row = layout.row(align=True)
         row.operator("blosm.create_materials")
         row.operator("blosm.delete_materials")
+        
 
+_classes = (
+    OperatorCreateMaterials,
+    OperatorDeleteMaterials,
+    PanelMaterialCreate
+)
 
 def register():
-    #bpy.utils.register_class(OperatorDownloadTextures)
-    bpy.utils.register_class(OperatorCreateMaterials)
-    bpy.utils.register_class(OperatorDeleteMaterials)
-    bpy.utils.register_class(PanelMaterialCreate)
+    for c in _classes:
+        bpy.utils.register_class(c)
 
 def unregister():
-    #bpy.utils.unregister_class(OperatorDownloadTextures)
-    bpy.utils.unregister_class(OperatorCreateMaterials)
-    bpy.utils.unregister_class(OperatorDeleteMaterials)
-    bpy.utils.unregister_class(PanelMaterialCreate)
+    for c in _classes:
+        bpy.utils.unregister_class(c)
