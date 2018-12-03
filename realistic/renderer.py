@@ -22,7 +22,9 @@ import bpy, bmesh
 from app import app
 from util.blender import makeActive, createMeshObject, getBmesh,\
     loadParticlesFromFile, loadNodeGroupsFromFile, getMaterialIndexByName, getMaterialByName, getModifier
-    
+
+_isBlender280 = bpy.app.version[1] >= 80
+  
 
 class TerrainRenderer:
     """
@@ -218,7 +220,10 @@ class AreaRenderer:
         brush.use_proximity_project = True
         brush.ray_direction = 'Z_AXIS'
         brush.proximity_falloff = 'CONSTANT'
-        obj.hide = True
+        if _isBlender280:
+            obj.hide_viewport = True
+        else:
+            obj.hide = True
         obj.hide_render = True
         # deselect <obj> to ensure correct work of subsequent operators
         obj.select = False

@@ -25,6 +25,7 @@ from defs import Keys
 from util.transverse_mercator import TransverseMercator
 
 _has3dRealistic = app.has(Keys.mode3dRealistic)
+_isBlender280 = bpy.app.version[1] >= 80
 
 if _has3dRealistic:
     from realistic.material.renderer import FacadeWithColor
@@ -84,6 +85,9 @@ def _onRegister(scene):
     addDefaultLevels()
     # the handler isn't needed anymore, so we remove it
     bpy.app.handlers.scene_update_post.remove(_onRegister)
+def _onRegister280():
+    addDefaultLevels()
+    return
 # This handler is needed to set the defaults for <context.scene.blender_osm.defaultLevels>
 # after each start of Blender or reloading the start-up file via Ctrl N or loading any Blender file.
 # That's why the persistent decorator is used
@@ -222,7 +226,7 @@ class OperatorBlosmLevelsDelete(bpy.types.Operator):
 class PanelBlosmExtent(bpy.types.Panel):
     bl_label = "blender-osm"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
+    bl_region_type = "UI" if _isBlender280 else "TOOLS"
     bl_context = "objectmode"
     bl_category = "osm"
 
@@ -236,21 +240,21 @@ class PanelBlosmExtent(bpy.types.Panel):
             box = layout.box()
             row = box.row()
             row.alignment = "CENTER"
-            row.label("Extent:")
+            row.label(text="Extent:")
             row = box.row(align=True)
             row.operator("blender_osm.select_extent")
             row.operator("blender_osm.paste_extent")
             row.operator("blender_osm.extent_from_active")
             
-            split = box.split(percentage=0.25)
-            split.label()
-            split.split(percentage=0.67).prop(addon, "maxLat")
+            split = box.split(factor=0.25) if _isBlender280 else box.split(percentage=0.25)
+            split.label(text="")
+            ( split.split(factor=0.67) if _isBlender280 else split.split(percentage=0.67) ).prop(addon, "maxLat")
             row = box.row()
             row.prop(addon, "minLon")
             row.prop(addon, "maxLon")
-            split = box.split(percentage=0.25)
-            split.label()
-            split.split(percentage=0.67).prop(addon, "minLat")
+            split = box.split(factor=0.25) if _isBlender280 else box.split(percentage=0.25)
+            split.label(text="")
+            ( split.split(factor=0.67) if _isBlender280 else split.split(percentage=0.67) ).prop(addon, "minLat")
         
         box = layout.box()
         row = box.row(align=True)
@@ -289,7 +293,7 @@ class PanelRealisticTools():#(bpy.types.Panel):
 class PanelBlosmSettings(bpy.types.Panel):
     bl_label = "Settings"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
+    bl_region_type = "UI" if _isBlender280 else "TOOLS"
     bl_context = "objectmode"
     bl_category = "osm"
     
@@ -340,14 +344,14 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop(addon, "setupScript")
         
         box = layout.box()
-        split = box.split(percentage=0.67)
-        split.label("Default roof shape:")
+        split = box.split(factor=0.67) if _isBlender280 else box.split(percentage=0.67)
+        split.label(text="Default roof shape:")
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
         
         column = box.column()
-        split = column.split(percentage=0.67, align=True)
-        split.label("Default number of levels:")
+        split = column.split(factor=0.67, align=True) if _isBlender280 else column.split(percentage=0.67, align=True)
+        split.label(text="Default number of levels:")
         split.operator("blender_osm.default_levels_add")
         split.operator("blender_osm.default_levels_delete")
         
@@ -383,7 +387,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         box.prop(addon, "overlayType")
         if addon.overlayType == "custom":
             #box = layout.box()
-            box.label("Paste overlay URL here:")
+            box.label(text="Paste overlay URL here:")
             box.prop(addon, "overlayUrl")
         
         layout.box().prop(addon, "setOverlayMaterial")
@@ -392,7 +396,7 @@ class PanelBlosmSettings(bpy.types.Panel):
 class PanelBlosmBpyProj(bpy.types.Panel):
     bl_label = "Projection"
     bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
+    bl_region_type = "UI" if _isBlender280 else "TOOLS"
     bl_context = "objectmode"
     bl_category = "osm"
     
@@ -750,8 +754,12 @@ def register():
         bpy.utils.register_class(c)
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
-    # see the notes near the code for <_onRegister>
-    bpy.app.handlers.scene_update_post.append(_onRegister)
+    if _isBlender280:
+        addDefaultLevels()
+        #bpy.app.timers.register(_onRegister280)
+    else:
+        # see the notes near the code for <_onRegister>
+        bpy.app.handlers.scene_update_post.append(_onRegister)
     # see the notes near the code for <_onFileLoaded>
     bpy.app.handlers.load_post.append(_onFileLoaded)
 

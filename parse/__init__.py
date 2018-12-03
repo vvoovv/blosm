@@ -24,15 +24,20 @@ from .node import Node
 from .way import Way
 
 
+_values = (
+    (1,), (1,), (1,), (1,), (1,), (1,), (1,)
+)
+
+
 class Osm:
     """
     Representation of data in an OSM file
     """
     
     # OSM data type
-    node = (1,)
-    way = (1,)
-    relation = (1,)
+    node = _values[0]
+    way = _values[1]
+    relation = _values[2]
     # <types> is set in the constructor
     types = None
     
@@ -40,10 +45,10 @@ class Osm:
     relationTypes = None
     
     # roles of members of an OSM relation
-    outer = (1,)
-    inner = (1,)
-    outline = (1,)
-    part = (1,)
+    outer = _values[3]
+    inner = _values[4]
+    outline = _values[5]
+    part = _values[6]
     # <roles> is set in the constructor
     roles = None
     

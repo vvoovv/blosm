@@ -24,6 +24,9 @@ from mathutils.bvhtree import BVHTree
 from util import zAxis, zeroVector
 from util.blender import makeActive, createMeshObject, getBmesh, setBmesh, pointNormalUpward
 
+_isBlender280 = bpy.app.version[1] >= 80
+
+
 direction = -zAxis # downwards
 
 
@@ -48,7 +51,7 @@ class Terrain:
         """
         terrain = None
         if terrainObjectName:
-            terrain = context.scene.objects.get(terrainObjectName)
+            terrain = context.scene.objects.get(terrainObjectName.strip())
             if not terrain:
                 raise Exception("Blender object %s for the terrain doesn't exist. " % terrainObjectName)
             if terrain.type != "MESH":
@@ -60,7 +63,9 @@ class Terrain:
         terrain = self.terrain
         
         # transform <terrain.bound_box> to the world system of coordinates
-        bound_box = tuple(terrain.matrix_world*Vector(v) for v in terrain.bound_box)
+        bound_box = tuple(terrain.matrix_world @ Vector(v) for v in terrain.bound_box)\
+            if _isBlender280 else\
+            tuple(terrain.matrix_world*Vector(v) for v in terrain.bound_box)
         self.minZ = min(bound_box, key = lambda v: v[2])[2]
         self.maxZ = max(bound_box, key = lambda v: v[2])[2]
         
@@ -174,7 +179,7 @@ class Terrain:
                 use_relative_offset=False, use_edge_rail=False, use_outset=False,
                 thickness=self.envelopeInset, depth=0.
             )['faces']
-            bmesh.ops.delete(bm, geom=insetFaces, context=5)
+            bmesh.ops.delete(bm, geom=insetFaces, context='FACES' if _isBlender280 else 5)
             setBmesh(envelope, bm)
             # SOLIDIFY modifier instead of BMesh extrude operator
             m = envelope.modifiers.new(name="Solidify", type='SOLIDIFY')
@@ -182,10 +187,14 @@ class Terrain:
             m.thickness = self.maxZ - self.minZ + self.envelopeOffset
         
         self.envelope = envelope
-        envelope.select = False
         envelope.hide_render = True
-        # hide <envelope> after all Blender operator
-        envelope.hide = True
+        # hide <envelope> after all Blender operators
+        if _isBlender280:
+            envelope.select_set(False)
+            envelope.hide_viewport = True
+        else:
+            envelope.select = False
+            envelope.hide = True
     
     @staticmethod
     def createFlatTerrain(minLon, minLat, maxLon, maxLat, projection, context):
@@ -229,5 +238,8 @@ class Terrain:
         mesh.from_pydata(verts, [], indices)
         mesh.update()
         obj = bpy.data.objects.new("Terrain", mesh)
-        context.scene.objects.link(obj)
+        if _isBlender280:
+            bpy.context.scene.collection.objects.link(obj)
+        else:
+            context.scene.objects.link(obj)
         return obj.name

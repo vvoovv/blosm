@@ -24,6 +24,8 @@ from . import Roof
 from renderer import Renderer
 from util.blender import loadMeshFromFile
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 class RoofMesh(Roof):
     """
@@ -83,7 +85,10 @@ class RoofMesh(Roof):
         o = bpy.data.objects.new(self.mesh, mesh.copy())
         o.location = r.getVert(self.location)
         o.scale = scale
-        bpy.context.scene.objects.link(o)
+        if _isBlender280:
+            bpy.context.scene.collection.objects.link(o)
+        else:
+            bpy.context.scene.objects.link(o)
         # perform Blender parenting
         o.parent = r.obj
         # link Blender material to the Blender object <o> instead of <o.data>

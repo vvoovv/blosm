@@ -17,7 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import bpy
 from building.layer import BuildingLayer
+
+_isBlender280 = bpy.app.version[1] >= 80
 
 
 class RealisticBuildingLayer(BuildingLayer):
@@ -29,7 +32,7 @@ class RealisticBuildingLayer(BuildingLayer):
     uvNameSize = "size"
     
     def prepare(self, instance):
-        uv_textures = instance.obj.data.uv_textures
-        uv_textures.new(self.uvName)
-        uv_textures.new(self.uvNameSize)
+        uv_layers = instance.obj.data.uv_layers if _isBlender280 else instance.obj.data.uv_textures
+        uv_layers.new(name=self.uvName)
+        uv_layers.new(name=self.uvNameSize)
         super().prepare(instance)

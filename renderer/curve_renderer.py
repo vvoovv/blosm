@@ -25,6 +25,8 @@ from . import Renderer
 from terrain import direction
 from util.osm import assignTags
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 class CurveRenderer(Renderer):
     
@@ -70,7 +72,7 @@ class CurveRenderer(Renderer):
                 use_relative_offset=False, use_edge_rail=False, use_outset=False,
                 thickness=self.insetValue, depth=0.
             )['faces']
-            bmesh.ops.delete(bm, geom=insetFaces, context=5)
+            bmesh.ops.delete(bm, geom=insetFaces, context='FACES' if _isBlender280 else 5)
             self.bvhTree = BVHTree.FromBMesh(bm)
             # <bm> isn't needed anymore
             bm.free()
@@ -301,7 +303,10 @@ class CurveRenderer(Renderer):
         obj = bpy.data.objects.new(name, curve)
         if location:
             obj.location = location
-        bpy.context.scene.objects.link(obj)
+        if _isBlender280:
+            bpy.context.scene.collection.objects.link(obj)
+        else:
+            bpy.context.scene.objects.link(obj)
         if parent:
             # perform parenting
             obj.parent = parent

@@ -486,7 +486,7 @@ class PanelMaterialCreate(bpy.types.Panel):
         layout = self.layout
         
         box = layout.box()
-        box.label("Material type:")
+        box.label(text="Material type:")
         box.prop(addon, "materialType", text='')
         
         layout.prop(addon, "blenderMaterials")

@@ -30,6 +30,15 @@ from terrain import Terrain
 from util.blender import makeActive
 from util.polygon import Polygon
 
+_isBlender280 = bpy.app.version[1] >= 80
+
+
+_values = (
+    (1,),
+    (1,),
+    (1,)
+)
+
 
 class App:
     
@@ -77,9 +86,9 @@ class App:
     overpassWays = "((way(%s););node(w););out;"
     
     # app mode
-    twoD = (1,)
-    simple = (1,)
-    realistic = (1,)
+    twoD = _values[0]
+    simple = _values[1]
+    realistic = _values[2]
     
     layerOffsets = {
         "buildings": 0.2,
@@ -217,7 +226,7 @@ class App:
         
         terrainObjectName =\
             addon.terrainObject\
-            if context.scene.objects.get(addon.terrainObject) else\
+            if context.scene.objects.get(addon.terrainObject.strip()) else\
             (
                 Terrain.createFlatTerrain(
                     self.minLon, self.minLat, self.maxLon, self.maxLat,
@@ -508,7 +517,10 @@ class App:
         mesh.update()
         obj = bpy.data.objects.new("Terrain", mesh)
         obj["height_offset"] = minHeight
-        context.scene.objects.link(obj)
+        if _isBlender280:
+            context.scene.collection.objects.link(obj)
+        else:
+            context.scene.objects.link(obj)
         context.scene.blender_osm.terrainObject = obj.name
         # force smooth shading
         makeActive(obj, context)
@@ -638,7 +650,9 @@ class App:
         Returns a tuple minLon, minLat, maxLon, maxLat
         """
         # transform <obj.bound_box> to the world system of coordinates
-        bound_box = tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
+        bound_box = tuple(obj.matrix_world @ Vector(v) for v in obj.bound_box)\
+            if _isBlender280 else\
+            tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
         bbox = []
         for i in (0,1):
             for f in (min, max):

@@ -60,6 +60,7 @@ from defs import Keys
 # set addon version
 app.app.version = bl_info["version"]
 app.app.isPremium = "Premium" in bl_info["name"]
+_isBlender280 = bpy.app.version[1] >= 80
 
 
 class BlenderOsmPreferences(bpy.types.AddonPreferences):
@@ -90,17 +91,17 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     
     def draw(self, context):
         layout = self.layout
-        layout.label("Directory to store downloaded OpenStreetMap and terrain files:")
+        layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
         
         layout.separator()
         if app.app.has(Keys.mode3dRealistic):
-            split = layout.split(percentage=0.9)
+            split = layout.split(factor=0.9) if _isBlender280 else layout.split(percentage=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
         
         layout.separator()
-        layout.box().label("Advanced settings:")
+        layout.box().label(text="Advanced settings:")
         # Extensions might come later
         #layout.operator("blosm.load_extensions", text="Load extensions")
         layout.prop(self, "osmServer")
@@ -367,7 +368,7 @@ class OperatorControlOverlay(bpy.types.Operator):
             'POST_PIXEL'
         )
         
-        self._timer = wm.event_timer_add(0.1, context.window)
+        self._timer = wm.event_timer_add(0.1, window=context.window)
         wm.modal_handler_add(self)
         
         return {'RUNNING_MODAL'}

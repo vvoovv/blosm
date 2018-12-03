@@ -26,6 +26,8 @@ import bpy
 from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
 from app import app
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 earthRadius = 6378137.
 halfEquator = math.pi * earthRadius
@@ -235,7 +237,7 @@ class Overlay:
         tmpImage = bpy.data.images.load(tilePath)
         tileData = numpy.array(tmpImage.pixels)
         # delete the temporary Blender image
-        bpy.data.images.remove(tmpImage, True)
+        bpy.data.images.remove(tmpImage, do_unlink=True)
         return tileData
     
     def getOverlaySubDir(self):
@@ -272,7 +274,7 @@ class Overlay:
         projection = app.projection
         for vert in bm.verts:
             for loop in vert.link_loops:
-                x, y = (worldMatrix * vert.co)[:2]
+                x, y = (worldMatrix @ vert.co)[:2] if _isBlender280 else (worldMatrix * vert.co)[:2]
                 lat, lon = projection.toGeographic(x, y)
                 lat, lon = Overlay.toSphericalMercator(lat, lon, False)
                 loop[uvLayer].uv = (lon - l)/width, (lat - b)/height

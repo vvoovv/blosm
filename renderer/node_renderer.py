@@ -21,6 +21,8 @@ import bpy
 from . import Renderer, assignTags
 from util.osm import parseNumber
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 class BaseNodeRenderer(Renderer):
     
@@ -59,7 +61,10 @@ class BaseNodeRenderer(Renderer):
             obj = bpy.data.objects.new(name, bpy.data.objects[sourceName].data)
             if location:
                 obj.location = location
-            bpy.context.scene.objects.link(obj)
+            if _isBlender280:
+                bpy.context.scene.collection.objects.link(obj)
+            else:
+                bpy.context.scene.objects.link(obj)
             if parent:
                 # perform parenting
                 obj.parent = parent

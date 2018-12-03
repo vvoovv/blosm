@@ -23,14 +23,21 @@ from util.blender import createEmptyObject, createDiffuseMaterial, pointNormalUp
     getBmesh, setBmesh
 from util.osm import assignTags
 
+_isBlender280 = bpy.app.version[1] >= 80
+
+
+_values = (
+    (1,), (1,), (1,), (1,)
+)
+
 
 class Renderer:
     
     # types of data
-    linestring = (1,)
-    multilinestring = (1,)
-    polygon = (1,)
-    multipolygon = (1,)
+    linestring = _values[0]
+    multilinestring = _values[1]
+    polygon = _values[2]
+    multipolygon = _values[3]
     
     parent = None
     name = None
@@ -134,12 +141,22 @@ class Renderer:
         if join:
             for target in join:
                 for o in join[target]:
-                    o.select = True
+                    if _isBlender280:
+                        o.select_set(True)
+                    else:
+                        o.select = True
                 target = bpy.data.objects[target]
-                target.select = True
-                bpy.context.scene.objects.active = target
+                if _isBlender280:
+                    target.select_set(True)
+                    bpy.context.view_layer.objects.active = target
+                else:
+                    target.select = True
+                    bpy.context.scene.objects.active = target
                 bpy.ops.object.join()
-                target.select = False
+                if _isBlender280:
+                    target.select_set(False)
+                else:
+                    target.select = False
         join.clear()
     
     @classmethod
@@ -159,7 +176,10 @@ class Renderer:
         obj = bpy.data.objects.new(name, mesh)
         if location:
             obj.location = location
-        bpy.context.scene.objects.link(obj)
+        if _isBlender280:
+            bpy.context.scene.collection.objects.link(obj)
+        else:
+            bpy.context.scene.objects.link(obj)
         if parent:
             # perform parenting
             obj.parent = parent

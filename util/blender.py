@@ -19,12 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy, bmesh
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 def makeActive(obj, context=None):
     if not context:
         context = bpy.context
-    obj.select = True
-    context.scene.objects.active = obj
+    if _isBlender280:
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+    else:
+        obj.select = True
+        context.scene.objects.active = obj
 
 
 def createMeshObject(name, location=(0., 0., 0.), mesh=None):
@@ -32,20 +38,31 @@ def createMeshObject(name, location=(0., 0., 0.), mesh=None):
         mesh = bpy.data.meshes.new(name)
     obj = bpy.data.objects.new(name, mesh)
     obj.location = location
-    bpy.context.scene.objects.link(obj)
+    if _isBlender280:
+        bpy.context.scene.collection.objects.link(obj)
+    else:
+        bpy.context.scene.objects.link(obj)
     return obj
 
 
 def createEmptyObject(name, location, hide=False, **kwargs):
     obj = bpy.data.objects.new(name, None)
     obj.location = location
-    obj.hide = hide
+    if _isBlender280:
+        obj.hide_viewport = hide
+    else:
+        obj.hide = hide
     obj.hide_select = hide
     obj.hide_render = True
     if kwargs:
         for key in kwargs:
+            if _isBlender280 and key=="empty_draw_size":
+                continue
             setattr(obj, key, kwargs[key])
-    bpy.context.scene.objects.link(obj)
+    if _isBlender280:
+        bpy.context.scene.collection.objects.link(obj)
+    else:
+        bpy.context.scene.objects.link(obj)
     return obj
 
 
@@ -124,7 +141,10 @@ def appendObjectsFromFile(filepath, *names):
     for obj in data_to.objects:
         if obj:
             obj.select = False
-            bpy.context.scene.objects.link(obj)
+            if _isBlender280:
+                bpy.context.scene.collection.objects.link(obj)
+            else:
+                bpy.context.scene.objects.link(obj)
     # return the appended Blender objects
     return data_to.objects
 
