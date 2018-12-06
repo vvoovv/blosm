@@ -17,8 +17,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import bpy
 from manager import BaseManager
 from .renderer import AreaRenderer, TerrainRenderer
+
+_isBlender280 = bpy.app.version[1] >= 80
 
 
 class AreaManager(BaseManager):
@@ -78,4 +81,7 @@ class AreaManager(BaseManager):
         # set material for the terrain
         self.terrainRenderer.render(app)
         
-        terrain.select = False
+        if _isBlender280:
+            terrain.select_set(False)
+        else:
+            terrain.select = False

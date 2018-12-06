@@ -203,7 +203,7 @@ class OperatorImportData(bpy.types.Operator):
         scene = context.scene
         
         self.setObjectMode(context)
-        bpy.ops.object.select_all(action="DESELECT")
+        bpy.ops.object.select_all(action='DESELECT')
         
         osm = Osm(a)
         setup_function(a, osm)
@@ -328,13 +328,26 @@ class OperatorImportData(bpy.types.Operator):
         return {'FINISHED'}
     
     def setObjectMode(self, context):
+        scene = context.scene
         # setting active object if there is no active object
         if context.mode != "OBJECT":
-            scene = context.scene
             # if there is no object in the scene, only "OBJECT" mode is available
-            if not scene.objects.active:
-                scene.objects.active = scene.objects[0]
+            if _isBlender280:
+                if not context.view_layer.objects.active:
+                    context.view_layer.objects.active = scene.objects[0]
+            else:
+                if not scene.objects.active:
+                    scene.objects.active = scene.objects[0]
             bpy.ops.object.mode_set(mode="OBJECT")
+        # Also deselect the active object since the operator
+        # <bpy.ops.object.select_all(action='DESELECT')> does not affect hidden objects and
+        # the hidden active object
+        if _isBlender280:
+            if context.view_layer.objects.active:
+                context.view_layer.objects.active.select_set(False)
+        else:
+            if scene.objects.active:
+                scene.objects.active.select = False
 
 
 class OperatorControlOverlay(bpy.types.Operator):
@@ -384,7 +397,11 @@ class OperatorControlOverlay(bpy.types.Operator):
         message = app.app.stateMessage
         if message:
             # draw message
-            bgl.glColor4f(0., 1., 0., 1.)
+            if _isBlender280:
+                fontId = 0
+                blf.color(fontId, 0., 1., 0., 1.)
+            else:
+                bgl.glColor4f(0., 1., 0., 1.)
             if len(message)<=self.lineWidth:
                 self.drawLine(message, 60)
             else:

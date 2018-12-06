@@ -55,9 +55,10 @@ def createEmptyObject(name, location, hide=False, **kwargs):
     obj.hide_select = hide
     obj.hide_render = True
     if kwargs:
+        if _isBlender280 and "empty_draw_size" in kwargs:
+            kwargs["empty_display_size"] = kwargs["empty_draw_size"]
+            del kwargs["empty_draw_size"]
         for key in kwargs:
-            if _isBlender280 and key=="empty_draw_size":
-                continue
             setattr(obj, key, kwargs[key])
     if _isBlender280:
         bpy.context.scene.collection.objects.link(obj)
@@ -140,10 +141,11 @@ def appendObjectsFromFile(filepath, *names):
     # append the objects to the Blender scene
     for obj in data_to.objects:
         if obj:
-            obj.select = False
             if _isBlender280:
                 bpy.context.scene.collection.objects.link(obj)
+                obj.select_set(False)
             else:
+                obj.select = False
                 bpy.context.scene.objects.link(obj)
     # return the appended Blender objects
     return data_to.objects

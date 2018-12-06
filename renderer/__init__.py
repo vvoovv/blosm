@@ -135,7 +135,7 @@ class Renderer:
     @classmethod
     def join(self):
         """
-        Join Blender object collect during rendering
+        Join Blender objects collected during rendering
         """
         join = self.toJoin
         if join:
