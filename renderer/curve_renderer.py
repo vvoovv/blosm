@@ -86,14 +86,16 @@ class CurveRenderer(Renderer):
                 layer.obj = self.createBlenderObject(
                     layer.name,
                     layer.location,
-                    self.parent
+                    collection = self.collection,
+                    parent = None if _isBlender280 else self.parent
                 )
             self.obj = layer.obj
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ or self.offset or layer.location,
-                layer.getParent()
+                collection = layer.getCollection(self.collection),
+                parent = layer.getParent(layer.getCollection(self.collection))
             )
 
     def renderLineString(self, element, data):
@@ -297,14 +299,17 @@ class CurveRenderer(Renderer):
         self.bvhTree = None
 
     @classmethod
-    def createBlenderObject(self, name, location, parent):
+    def createBlenderObject(self, name, location, collection=None, parent=None):
         curve = bpy.data.curves.new(name, 'CURVE')
         curve.fill_mode = 'NONE'
         obj = bpy.data.objects.new(name, curve)
         if location:
             obj.location = location
         if _isBlender280:
-            bpy.context.scene.collection.objects.link(obj)
+            if not collection:
+                collection = bpy.context.scene.collection
+            # adding to the collection
+            collection.objects.link(obj)
         else:
             bpy.context.scene.objects.link(obj)
         if parent:

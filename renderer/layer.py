@@ -18,10 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import math
-import bmesh
+import bpy, bmesh
 from mathutils import Vector
 from renderer import Renderer
-from util.blender import createEmptyObject, getBmesh, setBmesh
+from util.blender import createCollection, createEmptyObject, getBmesh, setBmesh
+
+_isBlender280 = bpy.app.version[1] >= 80
 
 
 class Layer:
@@ -34,14 +36,25 @@ class Layer:
         self.bm = None
         # Blender object
         self.obj = None
+        # Blender collection for the layer objects; used only if <not layer.singleObject>
+        self.collection = None
         # Blender parent object
         self.parent = None
 
     @property
     def name(self):
         return "%s_%s" % (Renderer.name, self.id)
+    
+    def getCollection(self, parentCollection):
+        # The method is called currently in the single place of the code:
+        # in <Renderer.preRender(..)> if (not layer.singleObject)
+        collection = self.collection
+        if not collection:
+            collection = createCollection(self.name, parent=parentCollection)
+            self.collection = collection
+        return collection
 
-    def getParent(self):
+    def getParent(self, collection=None):
         # The method is called currently in the single place of the code:
         # in <Renderer.preRender(..)> if (not layer.singleObject)
         parent = self.parent
@@ -49,9 +62,11 @@ class Layer:
             parent = createEmptyObject(
                 self.name,
                 self.parentLocation.copy(),
+                collection = collection,
                 empty_draw_size=0.01
             )
-            parent.parent = Renderer.parent
+            if not _isBlender280:
+                parent.parent = Renderer.parent
             self.parent = parent
         return parent
 

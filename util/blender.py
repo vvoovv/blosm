@@ -33,19 +33,21 @@ def makeActive(obj, context=None):
         context.scene.objects.active = obj
 
 
-def createMeshObject(name, location=(0., 0., 0.), mesh=None):
+def createMeshObject(name, location=(0., 0., 0.), mesh=None, collection=None):
     if not mesh:
         mesh = bpy.data.meshes.new(name)
     obj = bpy.data.objects.new(name, mesh)
     obj.location = location
     if _isBlender280:
-        bpy.context.scene.collection.objects.link(obj)
+        if not collection:
+            collection = bpy.context.scene.collection
+        collection.objects.link(obj)
     else:
         bpy.context.scene.objects.link(obj)
     return obj
 
 
-def createEmptyObject(name, location, hide=False, **kwargs):
+def createEmptyObject(name, location, hide=False, collection=None, **kwargs):
     obj = bpy.data.objects.new(name, None)
     obj.location = location
     if _isBlender280:
@@ -61,10 +63,23 @@ def createEmptyObject(name, location, hide=False, **kwargs):
         for key in kwargs:
             setattr(obj, key, kwargs[key])
     if _isBlender280:
-        bpy.context.scene.collection.objects.link(obj)
+        if not collection:
+            collection = bpy.context.scene.collection
+        collection.objects.link(obj)
     else:
         bpy.context.scene.objects.link(obj)
     return obj
+
+
+def createCollection(name, parent=None, hide_viewport=False, hide_select=False, hide_render=False):
+    collection = bpy.data.collections.new(name)
+    if not parent:
+        parent = bpy.context.scene.collection
+    parent.children.link(collection)
+    collection.hide_viewport = hide_viewport
+    collection.hide_select = hide_select
+    collection.hide_render = hide_render
+    return collection
 
 
 def getBmesh(obj):
@@ -134,7 +149,7 @@ def loadNodeGroupsFromFile(filepath, *names):
         ]
 
 
-def appendObjectsFromFile(filepath, *names):
+def appendObjectsFromFile(filepath, collection, *names):
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
         # a Python list (not a Python tuple!) must be set to <data_to.objects>
         data_to.objects = list(names)
@@ -142,8 +157,9 @@ def appendObjectsFromFile(filepath, *names):
     for obj in data_to.objects:
         if obj:
             if _isBlender280:
-                bpy.context.scene.collection.objects.link(obj)
-                obj.select_set(False)
+                if collection:
+                    collection.objects.link(obj)
+                    obj.select_set(False)
             else:
                 obj.select = False
                 bpy.context.scene.objects.link(obj)

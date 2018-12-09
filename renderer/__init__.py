@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, bpy, bmesh
 from util import zeroVector
-from util.blender import createEmptyObject, createDiffuseMaterial, pointNormalUpward,\
+from util.blender import createCollection, createEmptyObject, createDiffuseMaterial, pointNormalUpward,\
     getBmesh, setBmesh
 from util.osm import assignTags
 
@@ -39,7 +39,9 @@ class Renderer:
     polygon = _values[2]
     multipolygon = _values[3]
     
+    # _isBlender280 delete below
     parent = None
+    collection = None
     name = None
     
     def __init__(self, app, **kwargs):
@@ -60,12 +62,15 @@ class Renderer:
     def begin(self, app):
         self.name = os.path.basename(app.osmFilepath)
         
-        self.parent = createEmptyObject(
-            self.name,
-            zeroVector(),
-            empty_draw_size=0.01
-        )
-
+        if _isBlender280:
+            self.collection = createCollection(self.name)
+        else:
+            self.parent = createEmptyObject(
+                self.name,
+                zeroVector(),
+                empty_draw_size=0.01
+            )
+        
         # store here Blender object that are to be joined
         self.toJoin = {}
     
@@ -78,7 +83,8 @@ class Renderer:
                 layer.obj = self.createBlenderObject(
                     layer.name,
                     layer.location,
-                    self.parent
+                    collection = self.collection if _isBlender280 else None,
+                    parent = None if _isBlender280 else self.parent
                 )
                 layer.prepare(layer)
             self.bm = layer.bm
@@ -88,7 +94,8 @@ class Renderer:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
-                layer.getParent()
+                collection = layer.getCollection(self.collection),
+                parent = layer.getParent(layer.getCollection(self.collection))
             )
             layer.prepare(self)
     
@@ -171,13 +178,16 @@ class Renderer:
         join[target.name].append(o)
     
     @classmethod
-    def createBlenderObject(self, name, location, parent):
+    def createBlenderObject(self, name, location, collection=None, parent=None):
         mesh = bpy.data.meshes.new(name)
         obj = bpy.data.objects.new(name, mesh)
         if location:
             obj.location = location
         if _isBlender280:
-            bpy.context.scene.collection.objects.link(obj)
+            if not collection:
+                collection = bpy.context.scene.collection
+            # adding to the collection
+            collection.objects.link(obj)
         else:
             bpy.context.scene.objects.link(obj)
         if parent:

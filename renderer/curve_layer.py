@@ -20,7 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import bpy
 from .layer import MeshLayer
-from util.blender import appendObjectsFromFile, createDiffuseMaterial
+from util.blender import appendObjectsFromFile, createDiffuseMaterial, createCollection
+
+_isBlender280 = bpy.app.version[1] >= 80
 
 
 class CurveLayer(MeshLayer):
@@ -30,6 +32,8 @@ class CurveLayer(MeshLayer):
     
     # Blender file with way profiles
     assetFile = "way_profiles.blend"
+    
+    collectionName = "way_profiles"
     
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
@@ -51,11 +55,25 @@ class CurveLayer(MeshLayer):
         bevelName = "profile_%s" % self.id
         bevelObj = bpy.data.objects.get(bevelName)
         if not (bevelObj and bevelObj.type == 'CURVE'):
-            bevelObj = appendObjectsFromFile(self.assetPath, bevelName)[0]
+            bevelObj = appendObjectsFromFile(self.assetPath, None, bevelName)[0]
             if bevelObj:
-                # move <obj> to the Blender layer with the index <self.profileLayerIndex>
-                bevelObj.layers[self.profileLayerIndex] = True
-                bevelObj.layers[0] = False
+                if _isBlender280:
+                    collection = bpy.data.collections.get(self.collectionName)
+                    if not collection:
+                        collection = createCollection(
+                            self.collectionName,
+                            hide_viewport=True,
+                            hide_select=True,
+                            hide_render=True
+                        )
+                    collection.objects.link(bevelObj)
+                    bevelObj.hide_viewport = True
+                    bevelObj.hide_select = True
+                    bevelObj.hide_render = True
+                else:
+                    # move <obj> to the Blender layer with the index <self.profileLayerIndex>
+                    bevelObj.layers[self.profileLayerIndex] = True
+                    bevelObj.layers[0] = False
         if bevelObj and bevelObj.type == 'CURVE':
             curve.bevel_object = bevelObj
         # set a material
