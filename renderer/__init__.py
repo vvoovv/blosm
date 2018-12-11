@@ -83,7 +83,7 @@ class Renderer:
                 layer.obj = self.createBlenderObject(
                     layer.name,
                     layer.location,
-                    collection = self.collection if _isBlender280 else None,
+                    collection = self.collection,
                     parent = None if _isBlender280 else self.parent
                 )
                 layer.prepare(layer)
@@ -94,8 +94,8 @@ class Renderer:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
-                collection = layer.getCollection(self.collection),
-                parent = layer.getParent(layer.getCollection(self.collection))
+                collection = layer.getCollection(self.collection) if _isBlender280 else None,
+                parent = layer.getParent(layer.getCollection(self.collection) if _isBlender280 else None)
             )
             layer.prepare(self)
     

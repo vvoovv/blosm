@@ -94,8 +94,8 @@ class CurveRenderer(Renderer):
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ or self.offset or layer.location,
-                collection = layer.getCollection(self.collection),
-                parent = layer.getParent(layer.getCollection(self.collection))
+                collection = layer.getCollection(self.collection) if _isBlender280 else None,
+                parent = layer.getParent(layer.getCollection(self.collection) if _isBlender280 else None)
             )
 
     def renderLineString(self, element, data):

@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 from manager import BaseManager
+from renderer import Renderer
 from .renderer import AreaRenderer, TerrainRenderer
 
 _isBlender280 = bpy.app.version[1] >= 80
@@ -36,6 +37,21 @@ class AreaManager(BaseManager):
         self.defaultRenderer = defaultRenderer
         self.renderers = renderers
         self.terrainRenderer = TerrainRenderer()
+
+    def createLayer(self, layerId, app, **kwargs):
+        if not app.singleObject:
+            # patching kwargs: forcing single object mode
+            kwargs["singleObject"] = True
+        return super().createLayer(layerId, app, **kwargs)
+
+    def parseWay(self, element, elementId):
+        # exactly the same code as in manager.Polygon.parseWay(..)
+        if element.closed:
+            element.t = Renderer.polygon
+            # render it in <BaseManager.render(..)>
+            element.r = True
+        else:
+            element.valid = False
     
     def renderExtra(self):
         app = self.app

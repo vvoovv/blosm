@@ -68,22 +68,19 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
 
 
 def setup_forests(app, osm):
-    from manager import Polygon
     from renderer import Renderer2d
     from realistic.manager import AreaManager
     from realistic.renderer import AreaRenderer, ForestRenderer
     
-    areaRenderers = {}
+    areaRenderers = dict(forest=ForestRenderer())
     # create managers
-    polygon = Polygon(osm)
+    m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)
     
     osm.addCondition(
         lambda tags, e: tags.get("natural") == "wood" or tags.get("landuse") == "forest",
         "forest",
-        polygon
+        m
     )
-    areaRenderers["forest"] = ForestRenderer()
     
-    m = AreaManager(osm, app, AreaRenderer(), **areaRenderers)
     m.setRenderer(Renderer2d(app, applyMaterial=False))
     app.managers.append(m)
