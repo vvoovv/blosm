@@ -22,6 +22,8 @@ import bpy
 from app import app
 from defs import Keys
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 # <FO> means 'facade with overlay'
 _materialFamilyFO = (
@@ -470,7 +472,7 @@ class OperatorDeleteMaterials(bpy.types.Operator):
 class PanelMaterialCreate(bpy.types.Panel):
     bl_label = "Material Utilities"
     bl_space_type = "NODE_EDITOR"
-    bl_region_type = "TOOLS"
+    bl_region_type = "UI" if _isBlender280 else "TOOLS"
     bl_context = "objectmode"
     bl_category = "osm"
     #bl_options = {'DEFAULT_CLOSED'}
