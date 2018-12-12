@@ -756,8 +756,7 @@ def register():
     # a group for all GUI attributes related to blender-osm
     bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
     if _isBlender280:
-        addDefaultLevels()
-        #bpy.app.timers.register(_onRegister280)
+        bpy.app.timers.register(_onRegister280, first_interval=2)
     else:
         # see the notes near the code for <_onRegister>
         bpy.app.handlers.scene_update_post.append(_onRegister)
