@@ -335,10 +335,11 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "bldgMaterialsFilepath")
             box.prop(addon, "litWindows")
             
-            # forests and trees
-            box = layout.box()
-            box.prop(addon, "forests", text="Import forests and separate trees")
-            box.prop(addon, "treeDensity")
+            if False:
+                # forests and trees
+                box = layout.box()
+                box.prop(addon, "forests", text="Import forests and separate trees")
+                box.prop(addon, "treeDensity")
             
         
         layout.box().prop(addon, "setupScript")
