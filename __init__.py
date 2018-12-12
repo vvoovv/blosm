@@ -21,7 +21,7 @@ bl_info = {
     "name": "Import OpenStreetMap (.osm) (Premium)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
     "version": (1, 0, 11),
-    "blender": (2, 7, 9),
+    "blender": (2, 80, 0),
     "location": "Left side panel for Blender 2.79 (right side panel for Blender 2.8)> \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
     "warning": "",
