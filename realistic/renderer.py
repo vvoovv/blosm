@@ -430,7 +430,7 @@ class ForestRenderer(AreaRenderer):
         name = self.particles
         particles = bpy.data.particles.get(name)\
             if name in bpy.data.particles else\
-            loadParticlesFromFile(app.bldgMaterialsFilepath, name)
+            loadParticlesFromFile(app.vegetationFilepath, name)
         # the total number of particles
         count = math.ceil(app.treeDensity/10000*layer.surfaceArea)
         if count > self.maxDisplayCount:

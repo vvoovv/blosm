@@ -658,7 +658,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     assetsDir = bpy.props.StringProperty(
         name = "Directory with assets",
         subtype = 'DIR_PATH',
-        description = "Directory with assets (materials.blend, vegetation.blend). "+
+        description = "Directory with assets (building_materials.blend, vegetation.blend). "+
             "Overrides the one from the addon settings"
     )
     

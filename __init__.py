@@ -75,7 +75,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     assetsDir = bpy.props.StringProperty(
         name = '',
         subtype = 'DIR_PATH',
-        description = "Directory with assets (materials.blend, vegetation.blend). "+
+        description = "Directory with assets (building_materials.blend, vegetation.blend). "+
             "It can be also set in the addon GUI"
     )
     
@@ -101,7 +101,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
         
-        layout.label(text="Directory with assets (materials.blend, vegetation.blend):")
+        layout.label(text="Directory with assets (building_materials.blend, vegetation.blend):")
         layout.prop(self, "assetsDir")
         
         layout.separator()

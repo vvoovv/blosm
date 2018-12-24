@@ -85,6 +85,10 @@ class App:
     # request to the Overpass server to get both ways and their nodes for the given way ids
     overpassWays = "((way(%s););node(w););out;"
     
+    bldgMaterialsFileName = "building_materials.blend"
+    
+    vegetationFileName = "vegetation.blend"
+    
     # app mode
     twoD = _values[0]
     simple = _values[1]
@@ -159,14 +163,36 @@ class App:
             self.mode = App.twoD
             
         if self.mode is App.realistic:
-            materialsPath = self.bldgMaterialsFilepath
-            if materialsPath:
-                materialsPath = os.path.realpath(bpy.path.abspath(materialsPath))
-                if not os.path.isfile(materialsPath):
-                    raise Exception("The Blender file set in the field \"Materials for buildings\" doesn't exist")
-                self.bldgMaterialsFilepath = materialsPath
+            _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
+            # first try the <assetsDir> from the addon GUI
+            assetsDir = self.assetsDir
+            if not assetsDir:
+                # second try the <assetsDir> from the addon preferences
+                assetsDir = prefs[addonName].preferences.mapboxAccessToken if addonName in prefs else None
+            if assetsDir:
+                assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
+                if not os.path.isdir(assetsDir):
+                    raise Exception(
+                        "The directory with assets %s doesn't exist. " % assetsDir +
+                        _setAssetsDirStr
+                    )
+                bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
+                if not os.path.isfile(bldgMaterialsFilepath):
+                    raise Exception(
+                        "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
+                        _setAssetsDirStr
+                    )
+                self.bldgMaterialsFilepath = bldgMaterialsFilepath
+                if self.forests:
+                    vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
+                    if not os.path.isfile(vegetationFilepath):
+                        raise Exception(
+                            "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
+                            _setAssetsDirStr
+                        )
+                    self.vegetationFilepath = vegetationFilepath
             else:
-                raise Exception("A valid Blender file with materials for buildings isn't set!")
+                raise Exception(_setAssetsDirStr)
         
         basePath = self.basePath
         self.op = op
