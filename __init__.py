@@ -73,7 +73,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     )
     
     assetsDir = bpy.props.StringProperty(
-        name = "Directory with assets",
+        name = '',
         subtype = 'DIR_PATH',
         description = "Directory with assets (materials.blend, vegetation.blend). "+
             "It can be also set in the addon GUI"
