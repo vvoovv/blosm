@@ -72,6 +72,13 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         description = "Directory to store downloaded OpenStreetMap and terrain files"
     )
     
+    assetsDir = bpy.props.StringProperty(
+        name = "Directory with assets",
+        subtype = 'DIR_PATH',
+        description = "Directory with assets (materials.blend, vegetation.blend). "+
+            "It can be also set in the addon GUI"
+    )
+    
     mapboxAccessToken = bpy.props.StringProperty(
         name = "Mapbox access token",
         description = "A string token to access overlays from Mapbox company"
@@ -93,6 +100,9 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         layout = self.layout
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
+        
+        layout.label(text="Directory with assets (materials.blend, vegetation.blend):")
+        layout.prop(self, "assetsDir")
         
         layout.separator()
         if app.app.has(Keys.mode3dRealistic):

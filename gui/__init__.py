@@ -655,10 +655,11 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         description = "Path to a setup script. Leave blank for default."
     )
     
-    bldgMaterialsFilepath = bpy.props.StringProperty(
-        name = "Materials for buildings",
-        subtype = 'FILE_PATH',
-        description = "Path to a Blender file with materials for buildings"
+    assetsDir = bpy.props.StringProperty(
+        name = "Directory with assets",
+        subtype = 'DIR_PATH',
+        description = "Directory with assets (materials.blend, vegetation.blend). "+
+            "Overrides the one from the addon settings"
     )
     
     treeDensity = bpy.props.IntProperty(
