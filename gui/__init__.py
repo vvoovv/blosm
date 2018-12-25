@@ -331,18 +331,17 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "railways")
 
         if mode3dRealistic:
+            layout.box().prop(addon, "litWindows")
+            
+            # forests and trees
             box = layout.box()
-            box.prop(addon, "assetsDir")
-            box.prop(addon, "litWindows")
-            
-            if False:
-                # forests and trees
-                box = layout.box()
-                box.prop(addon, "forests", text="Import forests and separate trees")
-                box.prop(addon, "treeDensity")
-            
+            box.prop(addon, "forests", text="Import forests and separate trees")
+            box.prop(addon, "treeDensity") 
         
         layout.box().prop(addon, "setupScript")
+        
+        if mode3dRealistic:
+            layout.box().prop(addon, "assetsDir")
         
         box = layout.box()
         split = box.split(factor=0.67) if _isBlender280 else box.split(percentage=0.67)

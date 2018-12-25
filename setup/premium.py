@@ -64,7 +64,6 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
     app.managers.append(buildings)
     
     if app.forests:
-        return
         setup_forests(app, osm)
 
 
