@@ -332,7 +332,7 @@ class PanelBlosmSettings(bpy.types.Panel):
 
         if mode3dRealistic:
             box = layout.box()
-            box.prop(addon, "bldgMaterialsFilepath")
+            box.prop(addon, "assetsDir")
             box.prop(addon, "litWindows")
             
             if False:

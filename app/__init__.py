@@ -322,7 +322,7 @@ class App:
         addon = context.scene.blender_osm
         for p in dir(addon):
             # don't know why <int> started to appear in <dir(addon)>
-            if not (p.startswith("__") or p in ("bl_rna", "rna_type", "int")):
+            if not (p.startswith("__") or p in ("bl_rna", "rna_type", "int", "string")):
                 setattr(self, p, getattr(addon, p))
     
     def setDataDir(self, context, basePath, addonName):
