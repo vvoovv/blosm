@@ -101,6 +101,11 @@ class Overlay:
         # and move zero to the top left corner (that's why the 3d argument in the function below)
         b, l = Overlay.toSphericalMercator(bottom, left, True)
         t, r = Overlay.toSphericalMercator(top, right, True)
+        # remember <l>, <b>, <r>, <t>
+        self.left = l
+        self.bottom = b
+        self.right = r
+        self.top = t
         # find the maximum zoom
         zoom = int(math.floor(
             0.5 * math.log2(
@@ -119,10 +124,15 @@ class Overlay:
                 zoom = _zoom
                 _zoom += 1
         
+        self.prepareParameters(zoom)
+        
+    def prepareParameters(self, zoom):
         self.zoom = zoom
         
         # convert <l>, <b>, <r>, <t> to tile coordinates
-        l, b, r, t = tuple(Overlay.toTileCoord(coord, zoom) for coord in (l, b, r, t))
+        l, b, r, t = tuple(
+            Overlay.toTileCoord(coord, zoom) for coord in (self.left, self.bottom, self.right, self.top)
+        )
         self.l = l
         self.b = b
         self.r = r

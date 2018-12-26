@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import bpy
 from . import Overlay
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 class Mapbox(Overlay):
     
@@ -40,7 +42,7 @@ class Mapbox(Overlay):
     
     @staticmethod
     def getAccessToken(addonName):
-        prefs = bpy.context.user_preferences.addons
+        prefs = bpy.context.preferences.addons if _isBlender280 else bpy.context.user_preferences.addons
         if addonName in prefs:
             accessToken = prefs[addonName].preferences.mapboxAccessToken
             if not accessToken:

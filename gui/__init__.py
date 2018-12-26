@@ -402,7 +402,7 @@ class PanelBlosmBpyProj(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return "bpyproj" in context.user_preferences.addons
+        return "bpyproj" in (context.preferences.addons if _isBlender280 else context.user_preferences.addons)
     
     def draw(self, context):
         import bpyproj

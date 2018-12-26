@@ -153,7 +153,7 @@ class App:
     
     def initOsm(self, op, context, addonName):
         addon = context.scene.blender_osm
-        prefs = context.user_preferences.addons
+        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
             self.mode = App.realistic\
@@ -329,7 +329,7 @@ class App:
         """
         Sets <self.dataDir>, i.e. path to data
         """
-        prefs = context.user_preferences.addons
+        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         j = os.path.join
         if addonName in prefs:
             dataDir = prefs[addonName].preferences.dataDir
@@ -699,7 +699,7 @@ class App:
         numExtensions = 0
         import sys
         # check if <bpyproj> is activated and is available in sys.modules
-        self.bpyproj = "bpyproj" in context.user_preferences.addons and sys.modules.get("bpyproj")
+        self.bpyproj = "bpyproj" in (context.preferences.addons if _isBlender280 else context.user_preferences.addons) and sys.modules.get("bpyproj")
         if self.bpyproj:
             numExtensions += 1
         return numExtensions
@@ -709,7 +709,7 @@ class App:
         
         projection = None
         # check if <bpyproj> is activated and is available in sys.modules
-        bpyproj = "bpyproj" in bpy.context.user_preferences.addons and sys.modules.get("bpyproj")
+        bpyproj = "bpyproj" in (bpy.context.preferences.addons if _isBlender280 else bpy.context.user_preferences.addons) and sys.modules.get("bpyproj")
         if bpyproj:
             projection = bpyproj.getProjection(lat, lon)
         if not projection:
