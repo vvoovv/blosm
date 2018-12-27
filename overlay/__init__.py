@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import math, os
+import math, os, sys
 from threading import Thread
 import numpy
 from urllib import request
@@ -127,6 +127,7 @@ class Overlay:
         self.setParameters(zoom)
         
     def setParameters(self, zoom):
+        self.tileCounter = 0
         self.zoom = zoom
         
         # convert <l>, <b>, <r>, <t> to tile coordinates
@@ -154,6 +155,11 @@ class Overlay:
         x = self.x
         y = self.y
         tileData = self.getTileData(self.zoom, x, y)
+        if tileData is True or tileData is False:
+            # Boolean in <tileData> means that we have to restart everything from the beginning since 
+            # the tiles aren't available for the given zoom.
+            # Return immediately.
+            return tileData
         if not tileData is None:
             for _y in range(self.tileHeight):
                 i1 = w * ( (self.numTilesY-1-y+self.t) * self.tileHeight*self.numTilesX + _y*self.numTilesX + x - self.l )
@@ -231,6 +237,14 @@ class Overlay:
             try:
                 tileData = request.urlopen(tileUrl).read()
             except:
+                if getattr(sys.exc_info()[1], "code", None) == 404:
+                    # The error code 404 means that the tile doesn't exist
+                    # Probably the tiles for <self.zoom> aren't available at all
+                    # Let's try to decrease <self.zoom>
+                    self.setParameters(self.zoom-1)
+                    # Returning Python boolean means that we have to restart everything from the beginning since 
+                    # the tiles aren't available for the given zoom.
+                    return True
                 app.print(
                     "(%s of %s) Unable to download the tile image %s" %
                     (self.tileCounter, self.numTiles, tileUrl)
