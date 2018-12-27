@@ -124,9 +124,9 @@ class Overlay:
                 zoom = _zoom
                 _zoom += 1
         
-        self.prepareParameters(zoom)
+        self.setParameters(zoom)
         
-    def prepareParameters(self, zoom):
+    def setParameters(self, zoom):
         self.zoom = zoom
         
         # convert <l>, <b>, <r>, <t> to tile coordinates
