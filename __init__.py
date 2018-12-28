@@ -373,8 +373,10 @@ class OperatorControlOverlay(bpy.types.Operator):
             hasTiles = app.app.overlay.importNextTile()
             if not hasTiles:
                 self.stop(context)
-                app.app.overlay.finalizeImport()
-                self.report({'INFO'}, "Overlay import is finished!")
+                if app.app.overlay.finalizeImport():
+                    self.report({'INFO'}, "Overlay import is finished!")
+                else:
+                    self.report({'ERROR'}, "Probably something is wrong with the tile server!")
                 # cleanup
                 app.app.area = None
                 return {'FINISHED'}

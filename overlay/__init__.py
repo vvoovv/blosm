@@ -49,6 +49,8 @@ prohibitedCharacters = {
 
 class Overlay:
     
+    minZoom = 1
+    
     tileWidth = 256
     tileHeight = 256
         
@@ -175,6 +177,8 @@ class Overlay:
         return True
     
     def finalizeImport(self):
+        if self.imageData is None:
+            return False 
         app.print("Stitching tile images...")
         
         # create the resulting Blender image stitched out of all tiles
@@ -217,6 +221,7 @@ class Overlay:
                 materials[0] = material
             else:
                 materials.append(material)
+        return True
     
     def getTileData(self, zoom, x, y):
         # check if we the tile in the file cache
@@ -241,6 +246,10 @@ class Overlay:
                     # The error code 404 means that the tile doesn't exist
                     # Probably the tiles for <self.zoom> aren't available at all
                     # Let's try to decrease <self.zoom>
+                    if self.zoom == self.minZoom:
+                        # probably something is wrong with the server
+                        self.imageData = None
+                        return False
                     self.setParameters(self.zoom-1)
                     # Returning Python boolean means that we have to restart everything from the beginning since 
                     # the tiles aren't available for the given zoom.
