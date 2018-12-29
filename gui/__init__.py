@@ -331,19 +331,41 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "railways")
 
         if mode3dRealistic:
-            layout.box().prop(addon, "litWindows")
+            box = layout.box()
+            box.prop(addon, "buildings")
+            if addon.buildings:
+                box.prop(addon, "litWindows")
+                box.separator()
+                self._drawBuildingSettings(box, addon)
             
             # forests and trees
             box = layout.box()
             box.prop(addon, "forests", text="Import forests and separate trees")
-            box.prop(addon, "treeDensity") 
+            if addon.forests:
+                box.prop(addon, "treeDensity") 
         
         layout.box().prop(addon, "setupScript")
         
         if mode3dRealistic:
             layout.box().prop(addon, "assetsDir")
         
+        if not mode3dRealistic:
+            self._drawBuildingSettings(layout.box(), addon)
+        
+        #box.prop(addon, "straightAngleThreshold")
+        
         box = layout.box()
+        box.prop(addon, "singleObject")
+        
+        layout.box().prop(addon, "ignoreGeoreferencing")
+        
+        if not mode3dRealistic and addon.terrainObject in context.scene.objects:
+            box = layout.box()
+            box.prop(addon, "subdivide")
+            if addon.subdivide:
+                box.prop(addon, "subdivisionSize")
+    
+    def _drawBuildingSettings(self, box, addon):
         split = box.split(factor=0.67) if _isBlender280 else box.split(percentage=0.67)
         split.label(text="Default roof shape:")
         split.prop(addon, "defaultRoofShape", text="")
@@ -360,18 +382,6 @@ class PanelBlosmSettings(bpy.types.Panel):
             addon, "defaultLevels", addon, "defaultLevelsIndex",
             rows=3
         )
-        #box.prop(addon, "straightAngleThreshold")
-        
-        box = layout.box()
-        box.prop(addon, "singleObject")
-        
-        layout.box().prop(addon, "ignoreGeoreferencing")
-        
-        if not mode3dRealistic and addon.terrainObject in context.scene.objects:
-            box = layout.box()
-            box.prop(addon, "subdivide")
-            if addon.subdivide:
-                box.prop(addon, "subdivisionSize")
     
     def drawTerrain(self, context):
         self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")

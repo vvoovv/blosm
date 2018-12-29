@@ -30,38 +30,38 @@ from realistic.building.renderer import RealisticBuildingRenderer
 def setup_base(app, osm, getMaterials, bldgPreRender):
     # comment the next line if logging isn't needed
     Logger(app, osm)
-        
-    # the code below was under the condition: if app.buildings:
-    buildingParts = BuildingParts()
-    buildingRelations = BuildingRelations()
-    buildings = RealisticBuildingManager(osm, buildingParts)
     
-    # Important: <buildingRelation> beform <building>,
-    # since there may be a tag building=* in an OSM relation of the type 'building'
-    osm.addCondition(
-        lambda tags, e: isinstance(e, Building),
-        None,
-        buildingRelations
-    )
-    osm.addCondition(
-        lambda tags, e: "building" in tags,
-        "buildings",
-        buildings
-    )
-    osm.addCondition(
-        lambda tags, e: "building:part" in tags,
-        None,
-        buildingParts
-    )
-    # set building renderer
-    br = RealisticBuildingRenderer(
-        app,
-        bldgPreRender = bldgPreRender,
-        materials = getMaterials()
-    )
-    # <br> stands for "building renderer"
-    buildings.setRenderer(br)
-    app.managers.append(buildings)
+    if app.buildings:
+        buildingParts = BuildingParts()
+        buildingRelations = BuildingRelations()
+        buildings = RealisticBuildingManager(osm, buildingParts)
+        
+        # Important: <buildingRelation> beform <building>,
+        # since there may be a tag building=* in an OSM relation of the type 'building'
+        osm.addCondition(
+            lambda tags, e: isinstance(e, Building),
+            None,
+            buildingRelations
+        )
+        osm.addCondition(
+            lambda tags, e: "building" in tags,
+            "buildings",
+            buildings
+        )
+        osm.addCondition(
+            lambda tags, e: "building:part" in tags,
+            None,
+            buildingParts
+        )
+        # set building renderer
+        br = RealisticBuildingRenderer(
+            app,
+            bldgPreRender = bldgPreRender,
+            materials = getMaterials()
+        )
+        # <br> stands for "building renderer"
+        buildings.setRenderer(br)
+        app.managers.append(buildings)
     
     if app.forests:
         setup_forests(app, osm)
