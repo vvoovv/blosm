@@ -168,7 +168,7 @@ class App:
             assetsDir = self.assetsDir
             if not assetsDir:
                 # second try the <assetsDir> from the addon preferences
-                assetsDir = prefs[addonName].preferences.mapboxAccessToken if addonName in prefs else None
+                assetsDir = prefs[addonName].preferences.assetsDir if addonName in prefs else None
             if assetsDir:
                 assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
                 if not os.path.isdir(assetsDir):
