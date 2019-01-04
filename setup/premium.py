@@ -71,6 +71,7 @@ def setup_forests(app, osm):
     from renderer import Renderer2d
     from realistic.manager import AreaManager
     from realistic.renderer import AreaRenderer, ForestRenderer
+    from renderer.node_renderer import SingleTreeRenderer
     
     areaRenderers = dict(forest=ForestRenderer())
     # create managers
@@ -80,6 +81,13 @@ def setup_forests(app, osm):
         lambda tags, e: tags.get("natural") == "wood" or tags.get("landuse") == "forest",
         "forest",
         m
+    )
+    
+    osm.addNodeCondition(
+        lambda tags, e: tags.get("natural") == "tree",
+        "trees",
+        None,
+        SingleTreeRenderer(app)
     )
     
     m.setRenderer(Renderer2d(app, applyMaterial=False))

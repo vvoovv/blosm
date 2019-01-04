@@ -40,6 +40,8 @@ class Layer:
         self.collection = None
         # Blender parent object
         self.parent = None
+        # does the layer represents an area (natural or landuse)?
+        self.area = False
 
     @property
     def name(self):

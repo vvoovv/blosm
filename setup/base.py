@@ -50,7 +50,9 @@ def setup(app, osm):
     # conditions for point objects in OSM
     #osm.addNodeCondition(
     #    lambda tags, e: tags.get("natural") == "tree",
-    #    "tree"
+    #    "trees",
+    #    None,
+    #    BaseNodeRenderer(app, path, filename, collection)
     #)
     
     if app.buildings:
@@ -204,5 +206,4 @@ def setup(app, osm):
     if numConditions:
         m = BaseManager(osm)
         m.setRenderer(Renderer2d(app))
-        m.setNodeRenderer(BaseNodeRenderer(app))
         app.managers.append(m)

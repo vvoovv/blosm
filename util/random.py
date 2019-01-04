@@ -23,15 +23,13 @@ from builtins import property
 
 class RandomNormal:
     
-    sigmaRatio = 0.05
-    
-    def __init__(self, mean, numValues=100):
+    def __init__(self, mean, sigmaRatio=0.05, numValues=100):
         self.numValues = numValues
-        sigma = abs(self.sigmaRatio*mean)
+        sigma = abs(sigmaRatio*mean)
         self.values = tuple(normalvariate(mean, sigma) for _ in range(numValues))
         # the current index
         self.index = -1
-        
+    
     @property
     def value(self):
         self.index += 1
