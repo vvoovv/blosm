@@ -101,8 +101,9 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
         
-        layout.label(text="Directory with assets (building_materials.blend, vegetation.blend):")
-        layout.prop(self, "assetsDir")
+        if app.app.isPremium:
+            layout.label(text="Directory with assets (building_materials.blend, vegetation.blend):")
+            layout.prop(self, "assetsDir")
         
         layout.separator()
         if app.app.has(Keys.mode3dRealistic):
