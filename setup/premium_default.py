@@ -84,14 +84,12 @@ def bldgPreRender(building, app):
     
     if material == "concrete":
         building.setMaterialRoof("concrete_color")
-    elif material == "roof_tiles":
+    elif material == "roof_tiles" or (not material and roofShape == "gabled"):
         building.setMaterialRoof("roof_tiles_color")
     elif material == "gravel":
         building.setMaterialRoof("gravel_color")
     elif roofShape == "flat":
         building.setMaterialRoof("concrete_color")
-    elif roofShape == "gabled":
-        building.setMaterialRoof("roof_tiles_color")
     else: # roof:material is metal or metal␣sheet
         if roofShape == "onion":
             building.setMaterialRoof("metal_without_uv")
