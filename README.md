@@ -11,6 +11,7 @@ They are briefly described below.
 In addition to the features of the base version, the premium one provides:
 * Import of buildings from OpenStreetMap with default materials, tileable building textures and UV-mapping applied
 * Default materials and textures to mimic lit windows for a late evening setting
+* Import of forests and single trees as 3D objects
 * Options to use custom tileable building textures (e.g. from textures.com)
 * Satellite imagery and web maps projected on a terrain
 
