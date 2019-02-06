@@ -100,7 +100,7 @@ def pointNormalUpward(face):
 
 def createDiffuseMaterial(name, color):
     material = bpy.data.materials.new(name)
-    material.diffuse_color = color
+    material.diffuse_color = (color[0], color[1], color[2], 1.) if _isBlender280 else color
     return material
 
 
