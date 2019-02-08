@@ -53,7 +53,7 @@ import bpy, bmesh, bgl, blf
 
 from util.transverse_mercator import TransverseMercator
 from renderer import Renderer
-from parse import Osm
+from parse.osm import Osm
 import app, gui
 from defs import Keys
 

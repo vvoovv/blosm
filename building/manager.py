@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from manager import Manager
 from renderer import Renderer
 from .layer import BuildingLayer
-from parse import Osm
+from parse.osm import Osm
 from util import zAxis
 from . import Building
 
