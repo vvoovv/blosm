@@ -38,7 +38,8 @@ class BuildingManager(Manager):
         super().__init__(osm)
         self.layerConstructor = BuildingLayer
         self.buildings = []
-        self.parts = buildingParts.parts
+        if buildingParts:
+            self.parts = buildingParts.parts
 
     def createLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, self.layerConstructor)

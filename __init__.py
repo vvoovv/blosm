@@ -167,6 +167,8 @@ class OperatorImportData(bpy.types.Operator):
             return self.importTerrain(context)
         elif dataType == "overlay":
             return self.importOverlay(context)
+        elif dataType == "geojson":
+            return self.importGeoJson(context)
         
         return {'FINISHED'}
     
@@ -182,28 +184,8 @@ class OperatorImportData(bpy.types.Operator):
         
         setupScript = addon.setupScript
         if setupScript:
-            setupScript = os.path.realpath(bpy.path.abspath(setupScript))
-            if not os.path.isfile(setupScript):
-                self.report({'ERROR'},
-                    "The script file doesn't exist"
-                )
-                return {'CANCELLED'}
-            import imp
-            # remove extension from the path
-            setupScript = os.path.splitext(setupScript)[0]
-            moduleName = os.path.basename(setupScript)
-            try:
-                _file, _pathname, _description = imp.find_module(moduleName, [os.path.dirname(setupScript)])
-                module = imp.load_module(moduleName, _file, _pathname, _description)
-                _file.close()
-                setup_function = module.setup
-            except Exception as e:
-                print("File \"%s\", line %s" % (e.filename, e.lineno))
-                print(e.text)
-                print("Error: %s", e.msg)
-                self.report({'ERROR'},
-                    "Unable to execute the setup script! See the error message in the Blender console!"
-                )
+            setup_function = self.loadSetupScript(setupScript)
+            if not setup_function:
                 return {'CANCELLED'}
         else:
             if a.mode is a.realistic:
@@ -284,6 +266,31 @@ class OperatorImportData(bpy.types.Operator):
         context.scene["lat"] = lat
         context.scene["lon"] = lon
     
+    def loadSetupScript(self, setupScript):
+        setupScript = os.path.realpath(bpy.path.abspath(setupScript))
+        if not os.path.isfile(setupScript):
+            self.report({'ERROR'},
+                "The script file doesn't exist"
+            )
+            return {'CANCELLED'}
+        import imp
+        # remove extension from the path
+        setupScript = os.path.splitext(setupScript)[0]
+        moduleName = os.path.basename(setupScript)
+        try:
+            _file, _pathname, _description = imp.find_module(moduleName, [os.path.dirname(setupScript)])
+            module = imp.load_module(moduleName, _file, _pathname, _description)
+            _file.close()
+            return module.setup
+        except Exception as e:
+            print("File \"%s\", line %s" % (e.filename, e.lineno))
+            print(e.text)
+            print("Error: %s", e.msg)
+            self.report({'ERROR'},
+                "Unable to execute the setup script! See the error message in the Blender console!"
+            )
+            return None
+    
     def importTerrain(self, context):
         a = app.app
         try:
@@ -335,6 +342,78 @@ class OperatorImportData(bpy.types.Operator):
         # set the custom parameters <lat> and <lon> to the active scene
         if setLatLon:
             self.setCenterLatLon(context, lat, lon)
+        
+        return {'FINISHED'}
+
+    def importGeoJson(self, context):
+        from parse.geojson import GeoJson
+        
+        a = app.app
+        addon = context.scene.blender_osm
+        
+        try:
+            a.initGeoJson(self, context, BlenderOsmPreferences.bl_idname)
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+        
+        setupScript = addon.setupScript
+        if setupScript:
+            setup_function = self.loadSetupScript(setupScript)
+            if not setup_function:
+                return {'CANCELLED'}
+        else:
+            if a.mode is a.realistic:
+                from setup.premium_default import setup as setup_function
+            else:
+                from setup.geojson_base import setup as setup_function
+        
+        scene = context.scene
+        
+        self.setObjectMode(context)
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        data = GeoJson(a)
+        setup_function(a, data)
+        a.createLayers(data)
+        
+        setLatLon = False
+        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+            a.setProjection(scene["lat"], scene["lon"])
+        elif a.coordinatesAsFilter:
+            a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
+        else:
+            setLatLon = True
+        
+        createFlatTerrain = a.mode is a.realistic and a.forests
+        forceExtentCalculation = createFlatTerrain
+        
+        data.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)
+        
+        if forceExtentCalculation:
+            a.minLat = data.minLat
+            a.maxLat = data.maxLat
+            a.minLon = data.minLon
+            a.maxLon = data.maxLon
+
+        # check if have a terrain Blender object set
+        a.setTerrain(
+            context,
+            createFlatTerrain = createFlatTerrain,
+            createBvhTree = True
+        )
+        
+        a.initLayers()
+        
+        a.process()
+        a.render()
+        
+        # setting <lon> and <lat> attributes for <scene> if necessary
+        if setLatLon:
+            # <osm.lat> and <osm.lon> have been set in osm.parse(..)
+            self.setCenterLatLon(context, data.lat, data.lon)
+        
+        a.clean()
         
         return {'FINISHED'}
     
