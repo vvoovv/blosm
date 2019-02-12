@@ -29,8 +29,9 @@ class Manager:
     # <hexdigits> are used to check validity of colors in the hex form
     hexdigits = set("0123456789abcdef")
     
-    def __init__(self, osm):
-        self.osm = osm
+    def __init__(self, data):
+        self.data = data
+        self.osm = data
         # don't accept broken multipolygons
         self.acceptBroken = False
     
@@ -117,8 +118,8 @@ class Linestring(Manager):
 
 class WayManager(Manager):
     
-    def __init__(self, osm, renderer):
-        super().__init__(osm)
+    def __init__(self, data, renderer):
+        super().__init__(data)
         # the special renderer
         self.renderer = renderer
 
@@ -188,8 +189,8 @@ class PolygonAcceptBroken(Polygon):
 
 class BaseManager(Manager):
     
-    def __init__(self, osm):
-        super().__init__(osm)
+    def __init__(self, data):
+        super().__init__(data)
     
     def render(self):
         osm = self.osm

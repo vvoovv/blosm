@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from manager import Manager
 from renderer import Renderer
 from .layer import BuildingLayer
-from parse import Osm
+from parse.osm import Osm
 from util import zAxis
 from . import Building
 
@@ -38,7 +38,8 @@ class BuildingManager(Manager):
         super().__init__(osm)
         self.layerConstructor = BuildingLayer
         self.buildings = []
-        self.parts = buildingParts.parts
+        if buildingParts:
+            self.parts = buildingParts.parts
 
     def createLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, self.layerConstructor)

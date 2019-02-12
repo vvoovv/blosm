@@ -197,7 +197,7 @@ class Renderer:
     
     def getName(self, element):
         tags = element.tags
-        return tags["name"] if "name" in tags else "element"
+        return tags["name"] if tags.get("name") else "element"
     
     def getMaterial(self, element):
         # the material name is simply <id> of the layer
