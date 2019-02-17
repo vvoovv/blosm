@@ -38,6 +38,7 @@ class BuildingManager(Manager):
         super().__init__(osm)
         self.layerConstructor = BuildingLayer
         self.buildings = []
+        self.buildingCounter = 0
         if buildingParts:
             self.parts = buildingParts.parts
 
@@ -47,20 +48,20 @@ class BuildingManager(Manager):
     def parseWay(self, element, elementId):
         if element.closed:
             element.t = Renderer.polygon
-            # create a wrapper for the OSM way <element>
-            building = Building(element)
-            # store the related wrapper in the attribute <b>
-            element.b = building
-            self.buildings.append(building)
+            self.createBuilding(element)
         else:
             element.valid = False
     
     def parseRelation(self, element, elementId):
-        # create a wrapper for the OSM relation <element>
-        building = Building(element)
+        self.createBuilding(element)
+    
+    def createBuilding(self, element):
+        # create a wrapper for the OSM way <element>
+        building = Building(element, self.buildingCounter, self.osm)
         # store the related wrapper in the attribute <b>
         element.b = building
         self.buildings.append(building)
+        self.buildingCounter += 1
     
     def process(self):
         # create a Python set for each OSM node to store indices of the entries from <self.buildings>,
@@ -68,12 +69,6 @@ class BuildingManager(Manager):
         buildings = self.buildings
         osm = self.osm
         nodes = osm.nodes
-        for n in nodes:
-            nodes[n].b = set()
-        
-        # iterate through buildings (building=*) to mark nodes used by the building
-        for i,building in enumerate(buildings):
-            building.markUsedNodes(i, osm)
         
         # Iterate through building parts (building:part=*)
         # to find a building from <self.buildings> to which

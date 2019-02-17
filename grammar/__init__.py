@@ -27,7 +27,7 @@ class Roof(Item):
         super().__init__(markup, condition, defs, attrs)
 
 
-class Section(Item):
+class Div(Item):
     
     def __init__(self, markup=None, condition=None, defs=None, **attrs):
         super().__init__(markup, condition, defs, attrs)
@@ -59,5 +59,11 @@ class Door(Item):
 
 class Chimney(Item):
     
+    def __init__(self, markup=None, condition=None, defs=None, **attrs):
+        super().__init__(markup, condition, defs, attrs)
+
+
+class RoofSide(Item):
+
     def __init__(self, markup=None, condition=None, defs=None, **attrs):
         super().__init__(markup, condition, defs, attrs)

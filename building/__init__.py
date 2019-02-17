@@ -24,9 +24,10 @@ class Building:
     """
     A wrapper for a OSM building
     """
-    def __init__(self, element):
-        self.element = element
+    def __init__(self, element, buildingIndex, osm):
+        self.outline = element
         self.parts = []
+        self.markUsedNodes(buildingIndex, osm)
     
     def addPart(self, part):
         self.parts.append(part)
@@ -38,4 +39,4 @@ class Building:
         of <BuildingManager>) to Python set <b> of the node 
         """
         for nodeId in self.element.nodeIds(osm):
-            osm.nodes[nodeId].b.add(buildingIndex)
+            osm.nodes[nodeId].b[buildingIndex] = 1

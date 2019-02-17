@@ -1,0 +1,4 @@
+
+
+class Door:
+    pass

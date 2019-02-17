@@ -1,4 +1,4 @@
-from ..grammar import *
+from grammar import *
 
 
 style = []
@@ -16,10 +16,10 @@ style.add("mid rise residential zaandam", [
     Facade(
         name = "front facade",
         condition = lambda facade: facade.front,
-        symmetry = None or last_midle or last_right,
+        symmetry = None or last_middle or last_right,
         id = "main_section",
         [
-            Section(
+            Div(
                 name = "Window and Balcony",
                 [
                     Level(
@@ -30,7 +30,7 @@ style.add("mid rise residential zaandam", [
                     )
                 ]
             ),
-            Section(
+            Div(
                 name = "Staircase",
                 [
                     Level(
@@ -83,7 +83,7 @@ style.add("mid rise residential zaandam", [
             RoofSide(
                 condition = lambda side: side.index == 0,
                 # width of the section
-                width = from("main_section"),
+                width = _from("main_section"),
                 [
                     Dormer(), Dormer()
                 ]
@@ -91,14 +91,14 @@ style.add("mid rise residential zaandam", [
             RoofSide(
                 condition = lambda side: side.index == 1,
                 # width of the section
-                width = from("main_section"),
+                width = _from("main_section"),
                 [
                     # operable skylight or roof window
                     Window(), Window()
                 ]
             ),
             Ridge(
-                width = from("main_section"),
+                width = _from("main_section"),
                 [
                     Chimney()    
                 ]    

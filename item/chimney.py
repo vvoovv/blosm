@@ -1,0 +1,4 @@
+
+
+class Chimney:
+    pass

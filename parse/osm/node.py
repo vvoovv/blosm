@@ -27,17 +27,22 @@ class Node:
         m: A manager used during the rendering; if None, <manager.BaseManager> applies defaults
             during the rendering
         rr: A special renderer for the OSM node
-        b (set): Here we store building indices (i.e. the indices of instances of
+        b (dict): Here we store building indices (i.e. the indices of instances of
+            the wrapper class <building.manager.Building> in Python list <buildings> of an instance
+            of <building.manager.BuildingManager>)
+        f (dict): Here we store footprint indices of building parts (i.e. the indices of instances of
             the wrapper class <building.manager.Building> in Python list <buildings> of an instance
             of <building.manager.BuildingManager>)
         rr: A renderer for the OSM node
     """
-    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "m", "rr", "valid")
+    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "f", "m", "rr", "valid")
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
         self.lat = lat
         self.lon = lon
+        self.b = dict()
+        self.f = dict()
         # projected coordinates
         self.coords = None
         self.rr = None
