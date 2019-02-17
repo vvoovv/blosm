@@ -23,8 +23,8 @@ class ItemFactory:
             _items.extend( referenceItem.clone() for _ in range(1, numItems) )
             items[referenceItem.__class__.__name__] = [_items, 1, numItems]
     
-    def getItem(self, itemType):
-        itemsEntry = self.items[itemType]
+    def getItem(self, itemClass):
+        itemsEntry = self.items[itemClass.__name__]
         items, itemIndex, numItems = itemsEntry
         if itemIndex==numItems:
             referenceItem = items[0]

@@ -1,4 +1,5 @@
 from building.renderer import Renderer
+from .item_store import ItemStore
 from .item_factory import ItemFactory
 
 from item.footprint import Footprint
@@ -15,7 +16,7 @@ from item.chimney import Chimney
 
 def _createReferenceItems():
     return (
-        Building(),
+        (Building(), 5),
         Footprint(),
         Facade(),
         Level(),
@@ -43,7 +44,19 @@ class Building:
 class BuildingRendererNew(Renderer):
     
     def __init__(self, app):
-        self.itemFactory = ItemFactory(_createReferenceItems(self))
+        referenceItems = _createReferenceItems()
+        self.itemStore = ItemStore(referenceItems)
+        self.itemFactory = ItemFactory(referenceItems)
     
-    def render(self, building, data):
-        
+    def render(self, buildingP, data):
+        parts = buildingP.parts
+        itemFactory = self.itemFactory
+        # <buildingP> means "building from the parser"
+        building = itemFactory.getItem(Building)
+        partTag = buildingP.outline.tags.get("building:part")
+        if not parts or (partTag and partTag != "no"):
+            # the building has no parts
+            footprint = itemFactory.getItem(Footprint, building)
+        if parts:
+            for part in parts:
+                self.renderElement(part, building, osm)
