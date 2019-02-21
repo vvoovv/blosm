@@ -1,6 +1,7 @@
+from . import Item
 
 
-class Facade:
+class Facade(Item):
     """
     Represents a building facade.
     It's typically composed of one or more faces (in the most cases rectangular ones)

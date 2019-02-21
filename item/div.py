@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Div:
+class Div(Item):
     pass

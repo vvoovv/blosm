@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Chimney:
+class Chimney(Item):
     pass

@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Door:
+class Door(Item):
     pass

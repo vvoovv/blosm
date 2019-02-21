@@ -154,10 +154,10 @@ class BuildingManager(Manager):
         
         for building in self.buildings:
             # OSM element (a OSM way or an OSM relation of the type 'multipolygon')
-            element = building.element
+            outline = building.outline
             # In the case of a multipolygon we consider the only outer linestring that defines the outline
             # of the polygon
-            polygon = element.getData(osm) if element.t is Renderer.polygon else element.getOuterData(osm)
+            polygon = outline.getData(osm) if outline.t is Renderer.polygon else outline.getOuterData(osm)
             if not polygon:
                 # no outer linestring, so skip it
                 continue

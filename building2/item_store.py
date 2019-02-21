@@ -40,3 +40,10 @@ class ItemStore:
             # no item is left
             item = None
         return item
+    
+    def clear(self):
+        for itemType in self.stores:
+            items = self.items[itemType]
+            items[0].clear()
+            items[1] = 0
+            items[2] = 0

@@ -23,12 +23,12 @@ class ItemFactory:
             _items.extend( referenceItem.clone() for _ in range(1, numItems) )
             items[referenceItem.__class__.__name__] = [_items, 1, numItems]
     
-    def getItem(self, itemClass):
+    def getItem(self, itemClass, attr, building):
         itemsEntry = self.items[itemClass.__name__]
         items, itemIndex, numItems = itemsEntry
         if itemIndex==numItems:
             referenceItem = items[0]
-            items.extend(referenceItem.clone() for _ in range(ItemFactory.numItemsIncreaseStep))
+            items.extend(referenceItem.clone(attr) for _ in range(ItemFactory.numItemsIncreaseStep))
             itemsEntry[2] += ItemFactory.numItemsIncreaseStep
         itemsEntry[1] += 1
         return items[itemIndex]

@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Roof:
+class Roof(Item):
     pass

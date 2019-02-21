@@ -1,6 +1,7 @@
-from .loop import Loop
+from . import Item
 
-class Footprint(Loop):
+
+class Footprint(Item):
     
-    def __init__(self, element):
-        self.element = element
+    def init(self, part):
+        

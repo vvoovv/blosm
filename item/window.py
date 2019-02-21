@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Window:
+class Window(Item):
     pass

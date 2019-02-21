@@ -13,6 +13,8 @@ from item.door import Door
 from item.balcony import Balcony
 from item.chimney import Chimney
 
+from action.terrain import Terrain
+
 
 def _createReferenceItems():
     return (
@@ -39,24 +41,40 @@ class Building:
         self.verts = []
         self.faces = []
         self.uvs = []
+    
+    def init(self, outline):
+        self.outline = outline
+        self.offsetZ = None
+    
+    def clone(self, outline):
+        building = Building()
+        building.init(outline)
+        return building
 
 
 class BuildingRendererNew(Renderer):
     
-    def __init__(self, app):
+    def __init__(self, app, actions=None):
+        self.app = app
         referenceItems = _createReferenceItems()
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
+        if actions:
+            self.actions = actions
+        else:
+            terrainAction = Terrain(app, self.itemStore, self.itemFactory)
     
     def render(self, buildingP, data):
         parts = buildingP.parts
         itemFactory = self.itemFactory
+        itemStore = self.itemStore
         # <buildingP> means "building from the parser"
-        building = itemFactory.getItem(Building)
-        partTag = buildingP.outline.tags.get("building:part")
+        outline = buildingP.outline
+        building = itemFactory.getItem(Building, outline)
+        partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
-            footprint = itemFactory.getItem(Footprint, building)
+            footprint = itemFactory.getItem(Footprint, outline, building)
+            itemStore.add(footprint)
         if parts:
-            for part in parts:
-                self.renderElement(part, building, osm)
+            itemStore.add(itemFactory.getItem(Footprint, part, building) for part in parts)

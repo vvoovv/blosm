@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Balcony:
+class Balcony(Item):
     pass

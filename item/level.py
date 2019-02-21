@@ -1,4 +1,5 @@
+from . import Item
 
 
-class Level:
+class Level(Item):
     pass

@@ -38,5 +38,5 @@ class Building:
         <buildingIndex> (i.e. the index of <self> in Python list <buildings> of an instance
         of <BuildingManager>) to Python set <b> of the node 
         """
-        for nodeId in self.element.nodeIds(osm):
+        for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
