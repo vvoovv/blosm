@@ -1,9 +1,6 @@
 from grammar import *
 
 
-style = []
-
-
 style.add("mid rise residential zaandam", [
     Footprint(
         levels = RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
@@ -11,7 +8,9 @@ style.add("mid rise residential zaandam", [
     Footprint(
         levels = lambda i: i.data["building:levels"],
         minLevel = lambda i: i.data["building:min_level"],
-        levelHeight = RandomNormal(levelHeight)
+        levelHeight = RandomNormal(levelHeight),
+        shape = Roof.gabled,
+        height = 5.
     ),
     Facade(
         name = "front facade",
@@ -67,42 +66,19 @@ style.add("mid rise residential zaandam", [
         ],
         defs = [
             Window(
-                panels=(50, Panel(50, true)), width=1.4, height=1.6
+                panels=(50, Panel(50, True)), width=1.4, height=1.6
             ),
             Balcony(
                 fencing = "bars"
             )
         ]
     ),
-    Roof(
-        shape = Roof.gabled,
-        height = 5.,
-        # pitch = 30,
-        # orientation = "across" or "along"
+    RoofSide(
+        condition = lambda side: side.index == 0,
+        # width of the section
+        width = _from("main_section"),
         [
-            RoofSide(
-                condition = lambda side: side.index == 0,
-                # width of the section
-                width = _from("main_section"),
-                [
-                    Dormer(), Dormer()
-                ]
-            ),
-            RoofSide(
-                condition = lambda side: side.index == 1,
-                # width of the section
-                width = _from("main_section"),
-                [
-                    # operable skylight or roof window
-                    Window(), Window()
-                ]
-            ),
-            Ridge(
-                width = _from("main_section"),
-                [
-                    Chimney()    
-                ]    
-            )
+            Dormer(), Dormer()
         ],
         defs = [
             Dormer(
@@ -112,10 +88,27 @@ style.add("mid rise residential zaandam", [
                 ],
                 defs = [
                     Window(
-                        panels=(50, Panel(50, true)), width=1., height=1.6
+                        panels=(50, Panel(50, true)),
+                        width=1.,
+                        height=1.6
                     )
                 ]
             )
         ]
+    ),
+    RoofSide(
+        condition = lambda side: side.index == 1,
+        # width of the section
+        width = _from("main_section"),
+        [
+            # operable skylight or roof window
+            Window(), Window()
+        ]
+    ),
+    Ridge(
+        width = _from("main_section"),
+        [
+            Chimney()    
+        ]    
     )
 ])
