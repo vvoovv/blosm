@@ -43,7 +43,7 @@ class Polygon:
         Returns a Python generator
         """
         if not self._coords:
-            self._coords = (geojson.projection.fromGeographic(c[1], c[0]) for c in self.coords)
+            self._coords = tuple(geojson.projection.fromGeographic(c[1], c[0]) for c in self.coords)
         return self._coords
 
 
