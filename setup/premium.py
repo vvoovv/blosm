@@ -24,7 +24,6 @@ from building.manager import BuildingParts, BuildingRelations
 from manager.logging import Logger
 
 from realistic.building.manager import RealisticBuildingManager
-from realistic.building.renderer import RealisticBuildingRenderer
 from building2.renderer import BuildingRendererNew
 
 

@@ -54,8 +54,10 @@ class Building:
 
 class BuildingRendererNew(Renderer):
     
-    def __init__(self, app, actions=None):
+    def __init__(self, app, styleStore, getStyle=None, actions=None):
         self.app = app
+        self.styleStore = styleStore
+        self.getStyle = None
         referenceItems = _createReferenceItems()
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
@@ -63,11 +65,16 @@ class BuildingRendererNew(Renderer):
             self.actions = actions
         else:
             terrainAction = Terrain(app, self.itemStore, self.itemFactory)
+            self.actions = [terrainAction]
     
     def render(self, buildingP, data):
         parts = buildingP.parts
         itemFactory = self.itemFactory
         itemStore = self.itemStore
+        
+        # get the style of the building
+        style = self.styleStore.get(self.getStyle(buildingP, self.app))
+        
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
         building = itemFactory.getItem(Building, outline)
