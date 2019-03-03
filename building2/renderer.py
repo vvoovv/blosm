@@ -46,9 +46,8 @@ class Building:
         self.outline = outline
         self.offsetZ = None
     
-    def clone(self, outline):
+    def clone(self):
         building = Building()
-        building.init(outline)
         return building
 
 
@@ -57,7 +56,7 @@ class BuildingRendererNew(Renderer):
     def __init__(self, app, styleStore, getStyle=None, actions=None):
         self.app = app
         self.styleStore = styleStore
-        self.getStyle = None
+        self.getStyle = getStyle
         referenceItems = _createReferenceItems()
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)

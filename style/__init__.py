@@ -9,3 +9,6 @@ class StyleStore:
     def add(self, styleName, style):
         style = Grammar(defs=style)
         self.styles[styleName] = style
+    
+    def get(self, styleName):
+        return self.styles[styleName]
