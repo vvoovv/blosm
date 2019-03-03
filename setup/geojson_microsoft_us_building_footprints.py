@@ -29,6 +29,9 @@ from util.blender import getBmesh
 from util import zeroVector, zAxis
 
 
+_isBlender280 = bpy.app.version[1] >= 80
+
+
 filterMeshObjectName = "filter_mesh"
 
 
@@ -71,7 +74,7 @@ class GeoJsonBuildingRenderer(BuildingRenderer):
             bm.faces.new(
                 bm.verts.new((coord[0], coord[1], 0.)) for coord in outlineData
             )
-            for triangle in bm.calc_tessface():
+            for triangle in (bm.calc_loop_triangles() if _isBlender280 else bm.calc_tessface()):
                 # project the geometrical center of <triangle> on filter mesh
                 center = sum((bmLoop.vert.co for bmLoop in triangle), zeroVector())/3.
                 # if at least one center of the triangle hits the filter mesh, skip it
