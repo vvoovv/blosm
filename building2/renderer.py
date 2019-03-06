@@ -49,6 +49,13 @@ class Building:
     def clone(self):
         building = Building()
         return building
+    
+    @classmethod
+    def getItem(cls, itemFactory, outline):
+        item = itemFactory.getItem(cls)
+        item.init(outline)
+        return item
+        
 
 
 class BuildingRendererNew(Renderer):
@@ -76,11 +83,15 @@ class BuildingRendererNew(Renderer):
         
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
-        building = itemFactory.getItem(Building, outline)
+        building = Building.getItem(itemFactory, outline)
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
-            footprint = itemFactory.getItem(Footprint, outline, building)
-            itemStore.add(footprint)
+            itemStore.add(Footprint.getItem(itemFactory, outline))
         if parts:
-            itemStore.add(itemFactory.getItem(Footprint, part, building) for part in parts)
+            itemStore.add((Footprint.getItem(itemFactory, part) for part in parts), Footprint, len(parts))
+        
+        for itemClass in (Footprint, Facade):
+            while itemStore.hasItems(itemClass):
+                item = itemStore.getItem(itemClass)
+        itemStore.clear()
