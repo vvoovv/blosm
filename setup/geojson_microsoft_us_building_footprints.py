@@ -25,6 +25,7 @@ from manager.logging import Logger
 
 import bpy, bmesh
 from mathutils.bvhtree import BVHTree
+from mathutils import Vector
 from util.blender import getBmesh
 from util import zeroVector, zAxis
 
@@ -65,7 +66,7 @@ class GeoJsonBuildingRenderer(BuildingRenderer):
         # check if we have a quadrangle or a triangle
         numPoints = len(outlineData)
         if numPoints < 5:
-            center = sum(outlineData, zeroVector())/numPoints
+            center = sum((Vector(coord) for coord in outlineData), zeroVector())/numPoints
             if self.hitFilterMesh(center):
                 return
         else:
@@ -74,14 +75,14 @@ class GeoJsonBuildingRenderer(BuildingRenderer):
             bm.faces.new(
                 bm.verts.new((coord[0], coord[1], 0.)) for coord in outlineData
             )
-            for triangle in (bm.calc_loop_triangles() if _isBlender280 else bm.calc_tessface()):
+            bmesh.ops.triangulate(bm, faces=bm.faces)
+            for face in bm.faces:
                 # project the geometrical center of <triangle> on filter mesh
-                center = sum((bmLoop.vert.co for bmLoop in triangle), zeroVector())/3.
+                center = sum((vert.co for vert in face.verts), zeroVector())/3.
                 # if at least one center of the triangle hits the filter mesh, skip it
                 if self.hitFilterMesh(center):
                     bm.clear()
                     return
-            # clean the BMesh up
             bm.clear()
         super().render(building, data)
     

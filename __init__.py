@@ -272,7 +272,7 @@ class OperatorImportData(bpy.types.Operator):
             self.report({'ERROR'},
                 "The script file doesn't exist"
             )
-            return {'CANCELLED'}
+            return None
         import imp
         # remove extension from the path
         setupScript = os.path.splitext(setupScript)[0]
