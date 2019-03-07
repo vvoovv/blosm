@@ -46,7 +46,7 @@ class Polygon:
             coords = self.coords
             numCoords = len(coords)
             self._coords = tuple(geojson.projection.fromGeographic(coords[index][1], coords[index][0]) for index in range(numCoords-1))
-        return self._coords
+        return (coord for coord in self._coords)
 
 
 class Multipolygon:

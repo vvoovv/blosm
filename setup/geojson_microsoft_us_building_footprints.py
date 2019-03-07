@@ -61,7 +61,7 @@ class GeoJsonBuildingRenderer(BuildingRenderer):
     
     def render(self, building, data):
         outline = building.element
-        outlineData = outline.getData(data) if outline.t is Renderer.polygon else outline.getOuterData(data)
+        outlineData = tuple(outline.getData(data) if outline.t is Renderer.polygon else outline.getOuterData(data))
         
         # check if we have a quadrangle or a triangle
         numPoints = len(outlineData)
