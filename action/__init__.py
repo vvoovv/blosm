@@ -2,7 +2,10 @@
 
 class Action:
     
-    def __init__(self, app, itemStore, itemAction):
+    def __init__(self, app, data, itemStore):
         self.app = app
+        self.data = data
         self.itemStore = itemStore
-        self.itemAction = itemAction
+    
+    def process(self, building, itemClass):
+        pass

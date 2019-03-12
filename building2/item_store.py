@@ -1,9 +1,11 @@
 from types import GeneratorType
+from Tools.scripts.dutree import store
 
 
 class ItemStore:
     
     def __init__(self, referenceItems):
+        self.skip = False
         store = {}
         self.store = store
         for referenceItem in referenceItems:

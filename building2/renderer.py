@@ -13,8 +13,6 @@ from item.door import Door
 from item.balcony import Balcony
 from item.chimney import Chimney
 
-from action.terrain import Terrain
-
 
 def _createReferenceItems():
     return (
@@ -60,18 +58,13 @@ class Building:
 
 class BuildingRendererNew(Renderer):
     
-    def __init__(self, app, styleStore, getStyle=None, actions=None):
+    def __init__(self, app, styleStore, getStyle=None):
         self.app = app
         self.styleStore = styleStore
         self.getStyle = getStyle
         referenceItems = _createReferenceItems()
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
-        if actions:
-            self.actions = actions
-        else:
-            terrainAction = Terrain(app, self.itemStore, self.itemFactory)
-            self.actions = [terrainAction]
     
     def render(self, buildingP, data):
         parts = buildingP.parts
@@ -91,7 +84,12 @@ class BuildingRendererNew(Renderer):
         if parts:
             itemStore.add((Footprint.getItem(itemFactory, part) for part in parts), Footprint, len(parts))
         
-        for itemClass in (Footprint, Facade):
-            while itemStore.hasItems(itemClass):
-                item = itemStore.getItem(itemClass)
+        for itemClass in (Footprint,):
+            for action in itemClass.actions:
+                action.do(building, itemClass)
+                if itemStore.skip:
+                    break
+            if itemStore.skip:
+                itemStore.skip = True
+                break
         itemStore.clear()

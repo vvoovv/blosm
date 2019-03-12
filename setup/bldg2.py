@@ -10,6 +10,19 @@ from manager.logging import Logger
 from realistic.building.manager import RealisticBuildingManager
 from building2.renderer import BuildingRendererNew
 
+from item.footprint import Footprint
+from item.facade import Facade
+from item.level import Level
+from item.div import Div
+from item.roof import Roof
+from item.roof_side import RoofSide
+from item.window import Window
+from item.door import Door
+from item.balcony import Balcony
+from item.chimney import Chimney
+
+from action.terrain import Terrain
+
 
 def setup(app, data):
     styleStore = StyleStore()
@@ -47,6 +60,7 @@ def setup(app, data):
         #    bldgPreRender = bldgPreRender,
         #    materials = getMaterials()
         #)
+        Footprint.actions = (Terrain(app, data, itemStore),)
         br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
