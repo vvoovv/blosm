@@ -84,12 +84,12 @@ class BuildingRendererNew(Renderer):
         if parts:
             itemStore.add((Footprint.getItem(itemFactory, part) for part in parts), Footprint, len(parts))
         
-        for itemClass in (Footprint,):
+        for itemClass in (Building,):
             for action in itemClass.actions:
                 action.do(building, itemClass)
                 if itemStore.skip:
                     break
             if itemStore.skip:
-                itemStore.skip = True
+                itemStore.skip = False
                 break
         itemStore.clear()

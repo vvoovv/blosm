@@ -9,7 +9,8 @@ class Terrain(Action):
 
     def do(self, building, itemClass):
         if self.app.terrain:
-            self.projectSingleVertex(building)
+            #self.projectSingleVertex(building)
+            self.projectAllVertices(building)
     
     def projectSingleVertex(self, building):
         outline = building.outline
@@ -29,7 +30,8 @@ class Terrain(Action):
         basementMin = math.inf
         basementMax = -math.inf
         for coord in coords:
-            z = self.app.terrain.project(coord)[2]
+            coord = self.app.terrain.project(coord)
+            if coord:
             if z < basementMin:
                 basementMin = z
             if z > basementMax:

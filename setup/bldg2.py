@@ -1,14 +1,14 @@
 from style import StyleStore
 from style.default import styles
 
-from parse.osm.relation.building import Building
+from parse.osm.relation.building import Building as BuildingRelation
 
 from building.manager import BuildingParts, BuildingRelations
 
 from manager.logging import Logger
 
 from realistic.building.manager import RealisticBuildingManager
-from building2.renderer import BuildingRendererNew
+from building2.renderer import BuildingRendererNew, Building
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -40,7 +40,7 @@ def setup(app, data):
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
         data.addCondition(
-            lambda tags, e: isinstance(e, Building),
+            lambda tags, e: isinstance(e, BuildingRelation),
             None,
             buildingRelations
         )
@@ -60,8 +60,8 @@ def setup(app, data):
         #    bldgPreRender = bldgPreRender,
         #    materials = getMaterials()
         #)
-        Footprint.actions = (Terrain(app, data, itemStore),)
         br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
+        Building.actions = (Terrain(app, data, br.itemStore),)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
         app.managers.append(buildings)
