@@ -7,5 +7,5 @@ class Action:
         self.data = data
         self.itemStore = itemStore
     
-    def process(self, building, itemClass):
+    def do(self, building, itemClass):
         pass

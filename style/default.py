@@ -1,4 +1,5 @@
 from grammar import *
+from grammar.value import Value, FromAttr
 from util.random import RandomWeighted, RandomNormal
 
 levelHeight = 3.
@@ -6,12 +7,12 @@ levelHeight = 3.
 styles = {
 "mid rise residential zaandam": [
     Footprint(
-        levels = RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
+        levels = Value( RandomWeighted(( (4, 10), (5, 40), (6, 10) )) )
     ),
     Footprint(
-        levels = lambda i: i.data["building:levels"],
-        minLevel = lambda i: i.data["building:min_level"],
-        levelHeight = RandomNormal(levelHeight),
+        levels = Value( FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive) ),
+        minLevel = Value( FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative) ),
+        levelHeight = Value( RandomNormal(levelHeight) ),
         shape = Roof.gabled,
         height = 5.
     ),

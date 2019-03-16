@@ -2,12 +2,10 @@ import math
 from . import Action
 from renderer import Renderer
 
-#while itemStore.hasItems(itemClass):
-#    item = itemStore.getItem(itemClass)
 
 class Terrain(Action):
 
-    def do(self, building, itemClass):
+    def do(self, building, itemClass, style):
         if self.app.terrain:
             #self.projectSingleVertex(building)
             self.projectAllVertices(building)
@@ -29,12 +27,22 @@ class Terrain(Action):
         coords = outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data)
         basementMin = math.inf
         basementMax = -math.inf
+        skip = True
         for coord in coords:
             coord = self.app.terrain.project(coord)
+            # If at least one point is on the terrain,
+            # keep the whole building for consideration
             if coord:
-            if z < basementMin:
-                basementMin = z
-            if z > basementMax:
-                basementMax = z
-        building.basementMin = basementMin
-        building.basementMax = basementMax
+                if skip:
+                    skip = False
+                z = coord[2]
+                if z < basementMin:
+                    basementMin = z
+                if z > basementMax:
+                    basementMax = z
+        if skip:
+            # the building is outside the terrain so skip the whole building
+            self.itemStore.skip = True
+        else:
+            building.basementMin = basementMin
+            building.basementMax = basementMax

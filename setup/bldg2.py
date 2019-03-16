@@ -22,6 +22,7 @@ from item.balcony import Balcony
 from item.chimney import Chimney
 
 from action.terrain import Terrain
+from action.volume import Volume
 
 
 def setup(app, data):
@@ -61,7 +62,9 @@ def setup(app, data):
         #    materials = getMaterials()
         #)
         br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
+        itemStore = br.itemStore
         Building.actions = (Terrain(app, data, br.itemStore),)
+        Footprint.actions = (Volume(app, data, br.itemStore),)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
         app.managers.append(buildings)
