@@ -13,8 +13,7 @@ styles = {
         levels = Value( FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive) ),
         minLevel = Value( FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative) ),
         levelHeight = Value( RandomNormal(levelHeight) ),
-        shape = Roof.gabled,
-        height = 5.
+        roofShape = Roof.gabled
     ),
     Facade(
         name = "front facade",
