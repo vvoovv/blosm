@@ -32,6 +32,11 @@ styles = {
                             Window(rows=1, colums=2),
                             Balcony()
                         ]
+                    ),
+                    Basement(
+                        markup = [
+                            Window(rows=1, colums=1)
+                        ]
                     )
                 ]
             ),
@@ -48,11 +53,6 @@ styles = {
                         condition = lambda level: level.index == 0,
                         markup = [
                             Door()
-                        ]
-                    ),
-                    Basement(
-                        markup = [
-                            Window(rows=1, colums=1)
                         ]
                     )
                 ]
