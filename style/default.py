@@ -81,10 +81,13 @@ styles = {
     ),
     RoofSide(
         condition = lambda side: side.index == 0,
-        # width of the section
-        width = useFrom("main_section"),
         markup = [
-            Dormer(), Dormer()
+            Div(
+                width = useFrom("main_section"),
+                markup = [
+                    Dormer(), Dormer()
+                ]
+            )
         ],
         defs = [
             Dormer(
@@ -104,17 +107,24 @@ styles = {
     ),
     RoofSide(
         condition = lambda side: side.index == 1,
-        # width of the section
-        width = useFrom("main_section"),
         markup = [
-            # operable skylight or roof window
-            Window(), Window()
+            Div(
+                width = useFrom("main_section"),
+                markup = [
+                    # openable skylight or roof window
+                    Window(), Window()
+                ]
+            )
         ]
     ),
     Ridge(
-        width = useFrom("main_section"),
         markup = [
-            Chimney()    
+            Div(
+                width = useFrom("main_section"),
+                markup = [
+                    Chimney()
+                ]
+            )  
         ]    
     )
 ]
