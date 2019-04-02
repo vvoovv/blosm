@@ -63,9 +63,9 @@ class GeoJsonBuildingRenderer(BuildingRenderer):
         outline = building.element
         outlineData = tuple(outline.getData(data) if outline.t is Renderer.polygon else outline.getOuterData(data))
         
-        # check if we have a quadrangle or a triangle
+        # check if we have a triangle
         numPoints = len(outlineData)
-        if numPoints < 5:
+        if numPoints == 3:
             center = sum((Vector(coord) for coord in outlineData), zeroVector())/numPoints
             if self.hitFilterMesh(center):
                 return
