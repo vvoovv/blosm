@@ -71,6 +71,10 @@ class Multipolygon:
     def hasInner(self):
         # a multipolygon alsways has at least one inner part
         return True
+    
+    def getOuterData(self, osm):
+        self._projectCoords()
+        return self._coords[0]
 
     def getLinestringData(self, linestring, geojson):
         """
@@ -85,11 +89,14 @@ class Multipolygon:
         """
         A fake property to match the attribute <ls> of <parse.osm.relation.multipolygon.Multipolygon>
         """
+        self._projectCoords()
+        return self._coords
+    
+    def _projectCoords(self):
         if not self._coords:
             self._coords = tuple(
                 tuple( self.geojson.projection.fromGeographic(_coords[index][1], _coords[index][0]) for index in range(len(_coords)-1) ) for _coords in self.coords
             )
-        return self._coords
 
 
 class Node:
