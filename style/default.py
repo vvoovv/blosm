@@ -80,7 +80,7 @@ styles = {
         ]
     ),
     RoofSide(
-        condition = lambda side: side.index == 0,
+        condition = lambda side: side.back,
         markup = [
             Div(
                 width = useFrom("main_section"),
@@ -106,7 +106,7 @@ styles = {
         ]
     ),
     RoofSide(
-        condition = lambda side: side.index == 1,
+        condition = lambda side: side.front,
         markup = [
             Div(
                 width = useFrom("main_section"),
