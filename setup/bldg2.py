@@ -63,8 +63,8 @@ def setup(app, data):
         #)
         br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
         itemStore = br.itemStore
-        Building.actions = (Terrain(app, data, br.itemStore),)
-        Footprint.actions = (Volume(app, data, br.itemStore),)
+        Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
+        Footprint.actions = (Volume(app, data, br.itemStore, br.itemFactory),)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
         app.managers.append(buildings)

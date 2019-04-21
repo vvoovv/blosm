@@ -23,7 +23,12 @@ from util import zero, zAxis, zeroVector
 
 class Polygon:
     
-    def __init__(self, allVerts, indices=None, removeStraightAngles=True):
+    def __init__(self):
+        self.allVerts = None
+        # normal to the polygon
+        self.normal = zAxis
+    
+    def init(self, allVerts):
         self.allVerts = allVerts
         # Not all vertices from <allVerts> will be used to create BMesh vertices,
         # since they may have a straight angle.
@@ -31,11 +36,9 @@ class Polygon:
         # a BMesh vertex will be created. To distinguish between those two groups of <allVerts>,
         # we need to keep the border between them as <self.indexOffset>
         self.indexOffset = len(allVerts)
-        self.indices = indices
-        self.n = len(indices if indices else allVerts)
+        self.indices = None
+        self.n = len(allVerts)
         self.removeStraightAngles()
-        # normal to the polygon
-        self.normal = zAxis
     
     def prev(self, index):
         """

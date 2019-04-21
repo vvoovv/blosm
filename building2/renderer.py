@@ -41,8 +41,13 @@ class Building:
         self.uvs = []
     
     def init(self, outline):
+        # <outline> is an instance of the class as defined by the data model (e.g. parse.osm.way.Way) 
         self.outline = outline
         self.offsetZ = None
+        # Instance of item.footprint.Footprint, it's only used if the building definition
+        # in the data model doesn't contain building parts, i.e. the building is defined completely
+        # by its outline
+        self.footprint = None
     
     def clone(self):
         building = Building()
@@ -80,7 +85,10 @@ class BuildingRendererNew(Renderer):
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
-            itemStore.add(Footprint.getItem(itemFactory, outline))
+            footprint = Footprint.getItem(itemFactory, outline)
+            # this attribute <footprint> below may be used in <action.terrain.Terrain>
+            building.footprint = footprint
+            itemStore.add(footprint)
         if parts:
             itemStore.add((Footprint.getItem(itemFactory, part) for part in parts), Footprint, len(parts))
         

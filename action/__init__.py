@@ -2,10 +2,11 @@
 
 class Action:
     
-    def __init__(self, app, data, itemStore):
+    def __init__(self, app, data, itemStore, itemFactory):
         self.app = app
         self.data = data
         self.itemStore = itemStore
+        self.itemFactory = itemFactory
     
     def do(self, building, itemClass):
         pass

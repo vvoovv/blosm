@@ -24,7 +24,15 @@ class Terrain(Action):
     
     def projectAllVertices(self, building):
         outline = building.outline
-        coords = outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data)
+        if outline.t is Renderer.multipolygon:
+            coords = outline.getOuterData(self.data)
+        else:
+            coords = outline.getData(self.data)
+            if building.footprint:
+                # building definition has no building parts
+                polygon = building.footprint.polygon
+                polygon.init(coords)
+                coords = polygon.verts
         basementMin = math.inf
         basementMax = -math.inf
         skip = True

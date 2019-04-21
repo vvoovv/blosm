@@ -61,7 +61,9 @@ class Facade(Item):
 
 class Roof(Item):
     
-    gabled = _values[0]
+    flat = "flat"
+    
+    gabled = "gabled"
     
     def __init__(self, markup=None, condition=None, defs=None, **attrs):
         super().__init__(markup, condition, defs, attrs)

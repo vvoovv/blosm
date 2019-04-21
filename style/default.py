@@ -7,13 +7,14 @@ levelHeight = 3.
 styles = {
 "mid rise residential zaandam": [
     Footprint(
-        levels = Value( RandomWeighted(( (4, 10), (5, 40), (6, 10) )) )
+        levels = Value( RandomWeighted(( (4, 10), (5, 40), (6, 10) )) ),
+        roofShape = Value( RandomWeighted(( ("gabled", 10), ("flat", 40) )) )
     ),
     Footprint(
         levels = Value( FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive) ),
         minLevel = Value( FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative) ),
         levelHeight = Value( RandomNormal(levelHeight) ),
-        roofShape = Roof.gabled
+        roofShape = Value( FromAttr("roof:shape", FromAttr.String, None) )
     ),
     Facade(
         name = "front facade",

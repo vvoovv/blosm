@@ -17,6 +17,7 @@ class FromAttr:
     
     Integer = _values[0]
     Float = _values[1]
+    String = _values[2]
     
     Positive = _values[0]
     NonNegative = _values[1]
