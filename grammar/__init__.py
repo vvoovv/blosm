@@ -1,8 +1,4 @@
 
-_values = (
-    (1,), (1,)
-)
-
 
 class Item:
     
@@ -35,10 +31,6 @@ class Grammar(Item):
     """
     The top level element for the building style
     """
-    
-    # constants for symmetry
-    MiddleOfLast = _values[0]
-    RightmostOfLast = _values[1]
     
     def __init__(self, defs):
         super().__init__(None, None, defs, {})
