@@ -1,5 +1,6 @@
 from grammar import *
-from grammar.value import Value, FromAttr, Alternatives
+from grammar import units, symmetry
+from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal
 
 levelHeight = 3.
@@ -13,7 +14,7 @@ styles = {
         )),
         minLevel = Value(Alternatives(
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
-            0
+            Constant(0)
         )),
         levelHeight = Value( RandomNormal(levelHeight) ),
         roofShape = Value(Alternatives(

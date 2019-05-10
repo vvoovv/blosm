@@ -9,8 +9,6 @@ class Value:
     
     def __init__(self, value):
         self.value = value
-        self.fromItem = getattr(value, "fromItem", False)
-        self.prev = None
 
 
 class Alternatives:
@@ -19,15 +17,33 @@ class Alternatives:
     """
     def __init__(self, *values):
         self.values = values
+        self.item = None
+    
+    def setData(self, item):
+        self.item = item
     
     @property
     def value(self):
         for value in self.values:
-            if hasattr(value, "value"):
-                value = value.value
+            value.setData(self.item)
+            value = value.value
             if not value is None:
                 break
         return value
+
+
+class Constant:
+    
+    def __init__(self, value):
+        self._value = value
+    
+    @property
+    def value(self):
+        return self._value
+
+    def setData(self, data):
+        # the method is needed for consistency with the other classes providing functionality of "value"
+        return
 
 
 class FromAttr:
@@ -43,9 +59,8 @@ class FromAttr:
         self.attr = attr
         self.valueType = valueType
         self.valueCondition = valueCondition
+        # if the attribute <self.item> is set, it means that the value is data driven
         self.item = None
-        self.fromItem = True
-        self.prev = None
     
     @property
     def value(self):
@@ -60,3 +75,6 @@ class FromAttr:
                     elif self.valueCondition is FromAttr.NonNegative and value < 0.:
                         value = None
         return value
+    
+    def setData(self, item):
+        self.item = item

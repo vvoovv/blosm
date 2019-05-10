@@ -18,27 +18,27 @@ class Volume(Action):
         super().__init__(app, data, itemStore, itemFactory)
         self.setVolumeGenerators(data)
     
-    def do(self, building, itemClass, styleDefs):
+    def do(self, building, itemClass, style):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
             item = itemStore.getItem(itemClass)
-            item.calculateStyle(styleDefs)
+            item.calculateStyle(style)
             if not item.element:
                 item.calculateFootprint()
             if item.markupStyle:
                 # If one or more footprints are defined in the markup definition,
                 # it actually means, that those footprints are to be generated
-                for style in self.markupStyle.markup:
-                    item = Footprint.getItem(self.itemFactory, None, style)
+                for styleBlock in self.markupStyle.markup:
+                    item = Footprint.getItem(self.itemFactory, None, styleBlock)
                     item.parent = self
                     itemStore.add(item)
             # now time to create the building volume itself
-            style = item.calculatedStyle
+            calculatedStyle = item.calculatedStyle
             volumeGenerator = self.volumeGenerators.get(
-                style["roofShape"],
+                calculatedStyle["roofShape"],
                 self.volumeGenerators[self.defaultRoofShape]
             )
-            volumeGenerator.do(item, style, building)
+            volumeGenerator.do(item, calculatedStyle, building)
     
     def setVolumeGenerators(self, data):
         #self.flatRoofMulti = RoofFlatMulti()

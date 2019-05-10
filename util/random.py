@@ -37,6 +37,10 @@ class RandomNormal:
             self.index = 0
 
         return self.values[self.index]
+    
+    def setData(self, data):
+        # the method is needed for consistency with the code in grammar/value
+        return
 
 
 class RandomWeighted:
@@ -62,7 +66,7 @@ class RandomWeighted:
             self.indices = tuple(randrange(lenDistrList) for _ in range(self.numIndices))
             # the current index in <self.indices> which in turn points to <self.distrList>
             self.index = -1
-
+    
     @property
     def value(self):
         if self.singleValue is None:
@@ -72,3 +76,7 @@ class RandomWeighted:
             return self.distrList[ self.indices[self.index] ]
         else:
             return self.singleValue
+    
+    def setData(self, data):
+        # the method is needed for consistency with the code in grammar/value
+        return
