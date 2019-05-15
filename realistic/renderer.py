@@ -443,9 +443,6 @@ class ForestRenderer(AreaRenderer):
         particles.count = count
         ps.vertex_group_density = layerId
         ps.settings = particles
-        if _isBlender280:
-            # a hack, otherwise trees aren't shown
-            particles.instance_collection = particles.instance_collection
 
 
 class WaterRenderer(VertexGroupBaker):
