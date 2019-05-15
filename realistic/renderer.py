@@ -229,14 +229,15 @@ class AreaRenderer:
         brush.ray_direction = 'Z_AXIS'
         brush.proximity_falloff = 'CONSTANT'
         if _isBlender280:
-            obj.hide_viewport = True
+            obj.hide_viewport = False
+            obj.hide_render = False
             # deselect <obj> to ensure correct work of subsequent operators
             obj.select_set(False)
         else:
             obj.hide = True
             # deselect <obj> to ensure correct work of subsequent operators
             obj.select = False
-        obj.hide_render = True
+            obj.hide_render = True
     
     @staticmethod
     def addSubsurfModifier(terrain):
@@ -269,7 +270,8 @@ class AreaRenderer:
         # DYNAMIC_PAINT modifier of <terrain>
         m = getModifier(terrain, 'DYNAMIC_PAINT')
         # setup a DYNAMIC_PAINT modifier for <terrain> with canvas surfaces
-        m.canvas_settings.canvas_surfaces[-1].show_preview = False
+        if not _isBlender280:
+            m.canvas_settings.canvas_surfaces[-1].show_preview = False
         m.canvas_settings.canvas_surfaces.active_index = 0
         if _isBlender280:
             terrain.select_set(False)
@@ -416,7 +418,7 @@ class ForestRenderer(AreaRenderer):
         
         layerId = layer.id
         
-        # make the Blender object for the terrain the acrive one
+        # make the Blender object for the terrain the active one
         if not ((_isBlender280 and terrain.select_get()) or (not _isBlender280 and terrain.select)):
             makeActive(terrain)
         

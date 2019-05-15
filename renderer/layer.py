@@ -152,6 +152,7 @@ class MeshLayer(Layer):
     
     def addBoolenModifier(self, obj, operand):
         m = obj.modifiers.new(name="Boolean", type='BOOLEAN')
+        m.operation = "INTERSECT"
         m.object = operand
     
     def slice(self, obj, terrain, app):

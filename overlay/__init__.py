@@ -191,7 +191,10 @@ class Overlay:
         # cleanup
         self.imageData = None
         # pack the image into .blend file
-        image.pack(as_png=True)
+        if _isBlender280:
+            image.pack()
+        else:
+            image.pack(as_png=True)
         
         if app.terrain:
             self.setUvForTerrain(
