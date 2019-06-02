@@ -2,8 +2,8 @@ from grammar import *
 from grammar import units, symmetry
 from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal
+from action.volume.roof import Roof
 
-levelHeight = 3.
 
 styles = {
 "mid rise residential zaandam": [
@@ -12,14 +12,35 @@ styles = {
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
         )),
+        roofLevels = 1,
         minLevel = Value(Alternatives(
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
             Constant(0)
         )),
-        levelHeight = Value( RandomNormal(levelHeight) ),
+        lastLevelHeight = Value( RandomNormal(0.7*3.) ),
+        levelHeight = Value( RandomNormal(3.) ),
+        groundLevelHeight = Value( RandomNormal(1.4*3) ),
+        basementHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
-            FromAttr("roof:shape", FromAttr.String, None),
-            RandomWeighted(( ("gabled", 10), ("flat", 40) ))
+            FromAttr("roof:shape", FromAttr.String, Roof.shapes),
+            "gabled"
+            #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
+        )),
+        roofHeight = Value(Alternatives(
+            FromAttr("roof:height", FromAttr.Float, FromAttr.NonNegative),
+            RandomNormal(3.7)
+        )),
+        roofAngle = Value(FromAttr("roof:angle", FromAttr.Float)),
+        roofDirection = Value(Alternatives(
+            FromAttr("roof:direction", FromAttr.String, Roof.directions),
+            FromAttr("roof:direction", FromAttr.Float),
+            FromAttr("roof:slope:direction", FromAttr.String, Roof.directions),
+            FromAttr("roof:slope:direction", FromAttr.Float)
+        )),
+        roofOrientation = Value( FromAttr("roof:orientation", FromAttr.String) ),
+        lastLevelOffsetFactor = RandomWeighted((
+            (0., 50), (0.05, 3), (0.1, 5), (0.15, 5), (0.2, 5), (0.25, 5), (0.3, 5),
+            (0.35, 5), (0.4, 5), (0.45, 5), (0.5, 3), (0.55, 2), (0.6, 2)
         ))
     ),
     Facade(
