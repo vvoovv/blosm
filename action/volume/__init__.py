@@ -43,7 +43,7 @@ class Volume(Action):
     def setVolumeGenerators(self, data):
         #self.flatRoofMulti = RoofFlatMulti()
         self.volumeGenerators = {
-            'flat': RoofFlat(data),
+            'flat': RoofFlat(data, self.itemStore, self.itemFactory),
             #'gabled': RoofGabled()# RoofProfile(gabledRoof),
             #'pyramidal': RoofPyramidal(),
             #'skillion': RoofSkillion(),

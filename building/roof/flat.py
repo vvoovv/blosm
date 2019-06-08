@@ -42,6 +42,9 @@ class RoofFlat(Roof):
         # fill the extruded part
         self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
+    
+    def getRoofItem(self):
+        return 
 
 
 class RoofFlatMulti(RoofFlat):

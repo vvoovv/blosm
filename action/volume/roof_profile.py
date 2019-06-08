@@ -19,9 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
 from mathutils import Vector
-from . import Roof
+from .roof import Roof
 from util import zero
-from util.osm import parseNumber
 
 
 # Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
@@ -476,7 +475,7 @@ class Slot:
         pass
 
 
-class RoofProfile:
+class RoofProfile(Roof):
     """
     The class deals with so called profiled roofs (i.e. roofs defined be a profile):
     gabled, round, gambrel, saltbox
@@ -486,18 +485,18 @@ class RoofProfile:
     used a number of times to illustrate the code.
     """
     
-    def __init__(self, data):
+    def __init__(self, roofData, data, itemStore, itemFactory):
         """
         Args:
             data (tuple): profile values and some attributes to define a profiled roof,
                 e.g. gabledRoof, roundRoof, gambrelRoof, saltboxRoof
         """
-        super().__init__()
+        super().__init__(data, itemStore, itemFactory)
         self.hasRidge = True
-        self.projections = []
+        self.hasGable = True
         
         # actual profile values as a Python tuple of (x, y)
-        profile = data[0]
+        profile = roofData[0]
         self.profile = profile
         numProfilesPoints = len(profile)
         self.numSlots = numProfilesPoints
@@ -509,8 +508,8 @@ class RoofProfile:
             slots[i].n = slots[i+1]
         self.slots = slots
         
-        for attr in data[1]:
-            setattr(self, attr, data[1][attr])
+        for attr in roofData[1]:
+            setattr(self, attr, roofData[1][attr])
         
         # is the y-coordinate at <x=0.0> (the left end of the profile) is equal to zero?
         self.lEndZero = not profile[0][1]
@@ -530,7 +529,7 @@ class RoofProfile:
             profileQ.append(index)
         profileQ.append(index)
         self.profileQ = profileQ
-
+    
     def init(self, element, data, osm, app):
         self.projections.clear()
         super().init(element, data, osm, app)
@@ -861,22 +860,19 @@ class RoofProfile:
         # remember the current slot
         self.slot = slot
     
-    def getRoofHeight(self):
-        tags = self.element.tags
-        
-        h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
+    def calculateRoofHeight(self, footprint, style):
+        h = style.get("roofHeight")
         if h is None:
-            if not self.angleToHeight is None and "roof:angle" in tags:
-                angle = parseNumber(tags["roof:angle"])
+            if not self.angleToHeight is None and "roofAngle" in style:
+                angle = style["roofAngle"]
                 if not angle is None:
                     self.processDirection()
-                    h = self.angleToHeight * self.polygonWidth * math.tan(math.radians(angle))
+                    h = self.angleToHeight * footprint.polygonWidth * math.tan(math.radians(angle))
             if h is None:
                 # get the number of levels
-                if "roof:levels" in tags:
-                    h = parseNumber(tags["roof:levels"])
-                h = self.defaultHeight if h is None else h * self.levelHeight
-        return h
+                h = style.get("roofLevels")
+                h = self.height if h is None else h * self.levelHeight
+        footprint.roofHeight = h
     
     def onNewSlotVertex(self, slotIndex, vertIndex, y):
         """

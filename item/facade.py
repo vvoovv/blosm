@@ -18,3 +18,8 @@ class Facade(Item):
         self.neighborR = None
         self.neighborT = None
         self.neighborB = None
+
+    @classmethod
+    def getItem(cls, itemFactory):
+        item = itemFactory.getItem(cls)
+        item.init()

@@ -55,7 +55,7 @@ class FromAttr:
     Positive = _values[0]
     NonNegative = _values[1]
     
-    def __init__(self, attr, valueType, valueCondition):
+    def __init__(self, attr, valueType, valueCondition=None):
         self.attr = attr
         self.valueType = valueType
         self.valueCondition = valueCondition
@@ -65,15 +65,29 @@ class FromAttr:
     @property
     def value(self):
         value = self.item.attr(self.attr)
+        valueCondition = self.valueCondition
         if self.valueType is FromAttr.Integer:
             if not value is None:
                 value = parseNumber(value)
                 if not value is None:
                     value = math.ceil(value)
-                    if self.valueCondition is FromAttr.Positive and value < 1.:
+                    if valueCondition is FromAttr.Positive and value < 1.:
                         value = None
-                    elif self.valueCondition is FromAttr.NonNegative and value < 0.:
+                    elif valueCondition is FromAttr.NonNegative and value < 0.:
                         value = None
+        elif self.valueType is FromAttr.Float:
+            if not value is None:
+                value = parseNumber(value)
+                if not value is None:
+                    if valueCondition is FromAttr.Positive and value <= 0.:
+                        value = None
+                    elif valueCondition is FromAttr.NonNegative and value < 0.:
+                        value = None
+        elif valueCondition:
+            # We have a string and <valueCondition> is dictionary
+            # where the keys are the possible values for the string
+            if not value in valueCondition:
+                value = None
         return value
     
     def setData(self, item):

@@ -18,5 +18,8 @@ _gabledRoof = (
 
 class RoofGabled(RoofProfile):
     
+    # default roof height
+    height = 4
+    
     def __init__(self):
         super().__init__(_gabledRoof)  
