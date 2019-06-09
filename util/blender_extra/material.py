@@ -459,13 +459,13 @@ class OperatorDeleteMaterials(bpy.types.Operator):
                 materialName = "%s%s.%s" % (addon.blenderMaterials, m, (i+1))
                 material = bpy.data.materials.get(materialName)
                 if material:
-                    bpy.data.materials.remove(material, True)
+                    bpy.data.materials.remove(material, do_unlink=True)
         
         if addon.materialType == "ms":
             # also delete wall materials used by facade overlays
             wallMaterial = bpy.data.materials.get("%s_color" % addon.blenderMaterials)
             if wallMaterial:
-                bpy.data.materials.remove(wallMaterial, True)
+                bpy.data.materials.remove(wallMaterial, do_unlink=True)
         return {'FINISHED'}
 
 
