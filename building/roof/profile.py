@@ -888,7 +888,7 @@ class RoofProfile(Roof):
                 # get the number of levels
                 if "roof:levels" in tags:
                     h = parseNumber(tags["roof:levels"])
-                h = self.defaultHeight if h is None else h * self.levelHeight
+                h = h * self.levelHeight if h else self.defaultHeight
         return h
     
     def onNewSlotVertex(self, slotIndex, vertIndex, y):
