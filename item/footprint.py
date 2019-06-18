@@ -11,11 +11,13 @@ class Footprint(Item):
         self.minProjIndex = 0
         self.maxProjIndex = 0
         self.polygonWidth = 0.
-        self.lastLevelOffsetFactor = 0.
+        self.lastLevelOffset = 0.
+        # for example, church parts may not have levels
+        self.hasLevels = True
     
     def init(self):
         super().init()
-        self.lastLevelOffsetFactor = 0.
+        self.lastLevelOffset = 0.
         # reset <self.polygon>
         self.polygon.allVerts = None
         self.projections.clear()

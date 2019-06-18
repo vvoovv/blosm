@@ -64,6 +64,10 @@ class Roof:
     groundLevelHeight = 1.4*3
     basementHeight = 1.
     
+    roofLevelHeight0 = 2.7
+    levelHeight = 2.7
+    lastRoofLevelHeight = 2.7
+    
     def __init__(self, data, itemStore, itemFactory):
         self.data = data
         self.itemStore = itemStore
@@ -81,10 +85,11 @@ class Roof:
         self.roofIndices.clear()
         self.wallIndices.clear()
         
-        self.valid = True
+        footprint.valid = True
         
-        # minimum height
-        z1 = self.getMinHeight()
+        # calculate numerical dimensions for the building or building part
+        self.calculateDimensions(footprint, style)
+        z1 = footprint.minHeight
         
         verts = self.verts
         verts.extend( Vector((coord[0], coord[1], z1)) for coord in footprint.element.getData(self.data) )
@@ -100,96 +105,152 @@ class Roof:
             return
         # check the direction of vertices, it must be counterclockwise
         polygon.checkDirection()
-        
-        # calculate numerical dimensions for the building or building part
-        self.calculateDimensions(z1)
-
-    def getMinHeight(self):
-        style = self.style
+    
+    def calculateMinHeight(self, footprint, style):
         minLevel = style.get("minLevel")
         if minLevel:
-            # calculate the height based on the <minLevel>
-            # z0 = 0. if numLevels is None else self.levelHeight * (numLevels-1+Roof.groundLevelFactor)
-            z0 = minLevel*style.get("levelHeight", 0)
+            footprint.minLevel = minLevel
+            # calculate the height for <minLevel>
+            levelHeight = style.get("levelHeight")
+            # either <levelHeight> or <levelHeights> is given
+            levelHeights = style.get("levelHeights") if levelHeight is None else None
+            h = style.get("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
+            groundLevelHeight = style.get(
+                "groundLevelHeight",
+                levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else self.groundLevelHeight)
+            )
+            h += groundLevelHeight
+            
+            if minLevel > 1.:
+                # the height of the middle levels
+                if levelHeight:
+                    h += (minLevel-1.)*levelHeight
+                else:
+                    h += levelHeights.getHeight(1, minLevel)
         else:
-            z0 = style.get("minHeight", 0)
-        return z0
-
-    def calculateDimensions(self, z1, footprint, style):
+            h = style.get("minHeight", 0.)
+        footprint.minHeight = h
+        return h
+    
+    def calculateDimensions(self, footprint, style):
         """
         Calculate numerical dimensions for the building or building part
         """
         if self.hasGable:
-            footprint.lastLevelOffsetFactor = style.get("lastLevelOffsetFactor") 
-        self.calculateRoofLevels(footprint, style)
-        self.calculateRoofHeight(footprint, style)
-        self.calculateHeight(footprint, style)
+            # temporarily keep <lastLevelOffsetFactor> int the attribute <footprint.lastLevelOffset>
+            footprint.lastLevelOffset = style.get("lastLevelOffsetFactor")
         
-        z2 = self.getHeight()
-        if z2 is None:
-            # no tag <height> or invalid value
-            roofVerticalPosition = self.levelHeight * (self.getLevels()-1+Roof.groundLevelFactor)
-            z2 = roofVerticalPosition + roofHeight
-        elif not z2:
-            # the tag <height> is equal to zero 
-            self.valid = False
+        z2 = self.calculateHeight(footprint, style)
+        z1 = self.calculateMinHeight(footprint, style)
+        
+        if not z2:
+            # the height is equal to zero 
+            footprint.valid = False
             return
         else:
-            roofVerticalPosition = z2 - roofHeight
+            roofVerticalPosition = z2 - footprint.roofHeight
         wallHeight = roofVerticalPosition - z1
         # validity check
         if wallHeight < 0.:
-            self.valid = False
+            footprint.valid = False
             return
         elif wallHeight < zero:
             # no building walls, just a roof
-            self.noWalls = True
+            footprint.noWalls = True
         else:
-            self.noWalls = False
-            self.wallHeight = wallHeight
+            footprint.noWalls = False
+            footprint.wallHeight = wallHeight
         
-        self.z1 = z1
-        self.z2 = z2
-        self.roofVerticalPosition = z1 if self.noWalls else roofVerticalPosition
-        self.roofHeight = roofHeight
-
-    def calculateRoofLevels(self, footprint, style):
-        footprint.roofLevels = style.get("roofLevels")
-        
+        footprint.roofVerticalPosition = z1 if footprint.noWalls else roofVerticalPosition
+    
     def calculateRoofHeight(self, footprint, style):
         h = style.get("roofHeight")
         if h is None:
-            roofLevels = footprint.roofLevels
-            if roofLevels is None:
-                h = self.height
+            if "roofLevels" in style:
+                h = self.calculateRoofLevelsHeight(footprint, style)
+                if footprint.lastLevelOffset:
+                    h += footprint.lastLevelOffset
             else:
-                roofLevelHeights = style.get("roofLevelHeights")
-                if roofLevels:
+                # default height of the roof
+                h = self.height
+        footprint.roofHeight = h
+        return h
+
+    def calculateRoofLevelsHeight(self, footprint, style):
+        levels = style.get("roofLevels") if self.hasRoofLevels else None
+        footprint.roofLevels = levels
+        
+        levelHeight = style.get("roofLevelHeight")
+        # either <roofLevelHeight> or <roofLevelHeights> is given
+        if levelHeight is None:
+            levelHeights = style.get("rooflevelHeights")
+        h = style.get(
+            "roofLevelHeight0",
+            levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else self.roofLevelHeight0)
+        )
+        
+        if levels > 1.:
+            # the height of the last level
+            lastLevelHeight = style.get(
+                "lastRoofLevelHeight",
+                levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else self.lastRoofLevelHeight)
+            )
+            h += lastLevelHeight
+            if levels > 2.:
+                # the height of the middle levels
+                if levelHeights:
+                    h += levelHeights.getHeight(1, -2)
+                else:
+                    h += (levels-2.)*levelHeight
+        return h
+    
+    def calculateLevelsHeight(self, footprint, style):
+        levels = style.get("levels", 0.)
+        footprint.levels = levels
+        if not levels:
+            return 0.
+        levelHeight = style.get("levelHeight")
+        # either <levelHeight> or <levelHeights> is given
+        levelHeights = style.get("levelHeights") if levelHeight is None else None
+        h = style.get("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
+        groundLevelHeight = style.get(
+            "groundLevelHeight",
+            levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else self.groundLevelHeight)
+        )
+        h += groundLevelHeight
+        
+        if levels == 1.:
+            # the special case
+            lastLevelHeight = groundLevelHeight
+        else:
+            # the height of the last level
+            lastLevelHeight = style.get(
+                "lastLevelHeight",
+                levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else self.lastLevelHeight)
+            )
+            h += lastLevelHeight
+            if levels > 2.:
+                # the height of the middle levels
+                if levelHeights:
+                    h += levelHeights.getHeight(1, -2)
+                else:
+                    h += (levels-2.)*levelHeight
+        if footprint.lastLevelOffset:
+            footprint.lastLevelOffset *= lastLevelHeight
+        return h
     
     def calculateHeight(self, footprint, style):
         h = style.get("height")
-        lastLevelHeight = None
         if h is None:
-            levels = footprint.levels
-            levelHeights = style.get("levelHeights")
-            h = style.get("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
-            # Use the variable <lastLevelHeight> for the ground level height
-            # it will be used for the calculation of the last level offset if
-            # number of levels is equal to 1
-            lastLevelHeight = style.get("groundLevelHeight", levelHeights.getLevelHeight(0) if levelHeights else self.groundLevelHeight)
-            h += lastLevelHeight
-            if levels > 1.:
-                lastLevelHeight = style.get("lastLevelHeight", levelHeights.getLevelHeight(-1) if levelHeights else self.lastLevelHeight)
-                h += lastLevelHeight
-                if levels > 2.:
-                    if levelHeights:
-                        h += levelHeights.getHeight(1, -2)
-                    else:
-                        h += (levels-2.)*style.get("levelHeight", self.levelHeight)
-            if footprint.lastLevelOffsetFactor:
-                # subtract
-                
+            h = self.calculateLevelsHeight(footprint, style)
+            h += self.calculateRoofHeight(footprint, style)
+        else:
+            # calculate roof height
+            # calculate last level offset in the function below
+            self.calculateLevelsHeight(footprint, style)
+            self.calculateRoofHeight(footprint, style)
         footprint.height = h
+        return h
 
     def processDirection(self, footprint, style):
         polygon = footprint.polygon

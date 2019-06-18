@@ -23,7 +23,7 @@ styles = {
         basementHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
             FromAttr("roof:shape", FromAttr.String, Roof.shapes),
-            "gabled"
+            Constant("gabled")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
         roofHeight = Value(Alternatives(

@@ -62,8 +62,7 @@ class Item:
             value = calculatedStyle[attr]
             if isinstance(value, Value):
                 value = value.value
-                if hasattr(value, "item"):
-                    value.item = self
+                value.setData(self)
                 calculatedStyle[attr] = value.value
     
     def _calculateStyle(self, styleBlock):
