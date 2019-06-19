@@ -18,14 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 bl_info = {
-    "name": "Import OpenStreetMap (.osm) (Premium)",
+    "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (1, 0, 17),
+    "version": (2, 3, 14),
     "blender": (2, 80, 0),
     "location": "Left side panel for Blender 2.79 (right side panel for Blender 2.8)> \"osm\" tab",
-    "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
+    "description": "One click download and import of OpenStreetMap and terrain",
     "warning": "",
-    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
+    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Documentation",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
