@@ -11,15 +11,11 @@ from realistic.building.manager import RealisticBuildingManager
 from building2.renderer import BuildingRendererNew, Building
 
 from item.footprint import Footprint
-from item.facade import Facade
-from item.level import Level
-from item.div import Div
-from item.roof import Roof
-from item.roof_side import RoofSide
-from item.window import Window
-from item.door import Door
-from item.balcony import Balcony
-from item.chimney import Chimney
+
+# item renderers
+from item_renderer.facade import Facade as FacadeRenderer
+from item_renderer.div import Div as DivRenderer
+from item_renderer.level import Level as LevelRenderer
 
 from action.terrain import Terrain
 from action.volume import Volume
@@ -62,7 +58,6 @@ def setup(app, data):
         #    materials = getMaterials()
         #)
         br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
-        itemStore = br.itemStore
         Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
         Footprint.actions = (Volume(app, data, br.itemStore, br.itemFactory),)
         # <br> stands for "building renderer"
