@@ -73,7 +73,7 @@ class Item:
             self.calculatedStyle[attr] = styleBlock.attrs[attr]
         
         if styleBlock.use:
-            # note the reverse iterator
+            # note the reversed iterator
             for defName in reversed(styleBlock.use):
                 _styleBlock = library.getStyleBlock(
                     defName, self.__class__.__name__, styleBlock.styleId

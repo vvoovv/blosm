@@ -16,6 +16,7 @@ from item.footprint import Footprint
 from item_renderer.facade import Facade as FacadeRenderer
 from item_renderer.div import Div as DivRenderer
 from item_renderer.level import Level as LevelRenderer
+from item_renderer.basement import Basement as BasementRenderer
 
 from action.terrain import Terrain
 from action.volume import Volume
@@ -57,9 +58,24 @@ def setup(app, data):
         #    bldgPreRender = bldgPreRender,
         #    materials = getMaterials()
         #)
+        
+        # deal with item renderers
+        itemRenderers = dict(
+            facade = FacadeRenderer(),
+            div = DivRenderer(),
+            level = LevelRenderer(),
+            basement = BasementRenderer()
+        )
+        for item in itemRenderers:
+            itemRenderers[item].itemRenderers = itemRenderers
+        
         br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
+        
         Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
-        Footprint.actions = (Volume(app, data, br.itemStore, br.itemFactory),)
+        
+        volumeAction = Volume(app, data, br.itemStore, br.itemFactory)
+        volumeAction.setRenderer(itemRenderers["facade"])
+        Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
         app.managers.append(buildings)

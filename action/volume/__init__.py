@@ -18,9 +18,18 @@ class Volume(Action):
         super().__init__(app, data, itemStore, itemFactory)
         self.setVolumeGenerators(data)
     
+    def setRenderer(self, renderer):
+        """
+        Sets a renderer.
+        For the 3D mode it's typically a Facade renderer.
+        For the 2D mode it's a dedicated 3D renderer that creates footprints only
+        """
+        self.renderer = renderer
+    
     def do(self, building, itemClass, style):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
+            # <item> is actually a fooprint
             item = itemStore.getItem(itemClass)
             item.calculateStyle(style)
             if not item.element:
@@ -39,6 +48,7 @@ class Volume(Action):
                 self.volumeGenerators[self.defaultRoofShape]
             )
             volumeGenerator.do(item, calculatedStyle, building)
+            self.renderer.render(item, calculatedStyle, building)
     
     def setVolumeGenerators(self, data):
         #self.flatRoofMulti = RoofFlatMulti()

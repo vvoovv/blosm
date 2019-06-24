@@ -79,6 +79,10 @@ class Roof:
         self.allVerts = self.verts
         self.roofIndices = []
         self.wallIndices = []
+
+    def do(self, footprint, style, building):
+        self.init(footprint, style)
+        self.make(footprint, style, building)
     
     def init(self, footprint, style):
         self.verts.clear()
