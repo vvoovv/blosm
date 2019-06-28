@@ -34,10 +34,10 @@ class Volume(Action):
             item.calculateStyle(style)
             if not item.element:
                 item.calculateFootprint()
-            if item.markupStyle:
+            if item.markup:
                 # If one or more footprints are defined in the markup definition,
                 # it actually means, that those footprints are to be generated
-                for styleBlock in self.markupStyle.markup:
+                for styleBlock in self.markup:
                     item = Footprint.getItem(self.itemFactory, None, styleBlock)
                     item.parent = self
                     itemStore.add(item)
@@ -48,7 +48,7 @@ class Volume(Action):
                 self.volumeGenerators[self.defaultRoofShape]
             )
             volumeGenerator.do(item, calculatedStyle, building)
-            self.renderer.render(item, calculatedStyle, building)
+            #self.renderer.render(item, calculatedStyle, building)
     
     def setVolumeGenerators(self, data):
         #self.flatRoofMulti = RoofFlatMulti()

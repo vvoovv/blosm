@@ -7,25 +7,19 @@ class Item:
     def __init__(self):
         # For example, a parent for a facade is a footprint
         self.parent = None
-        # A style block (an instance of grammar.Item) that has markup definition.
-        # If <self.markupStyle> is not <None>, it means that resulting style for
-        # the element has a markup definition
-        self.markupStyle = None
+        # Markup definitin for the item. It's a Python list of style blocks
+        self.markup = None
         # A style block (an instance of grammar.Item) that defines the style for the item
         # within a markup definition.
-        # If <self.styleBlock> is not <None>, it means that the item is defined in a markup,
-        # and <self.styleBlock> is the style block for the item in the markup definition
+        # Typically a style block is defined in the markup definition, however it can be also defined
+        # at the very top if the style definition for the item Footprint, Facade, RoofSide, Ridge, Roof
         self.styleBlock = None
         self.calculatedStyle = {}
-        # The attribute below is used in calculation of <self.calculatedStyle>.
-        # See the related code in <self.calculatedStyle(..)>
-        self.auxMarkupStyle = {}
     
     def init(self):
         self.parent = None
         self.calculatedStyle.clear()
-        self.auxMarkupStyle.clear()
-        self.markupStyle = None
+        self.markup = None
         self.styleBlock = None
 
     def calculateStyle(self, style):
@@ -40,19 +34,26 @@ class Item:
         
         styleBlock = self.styleBlock
         if styleBlock:
-            # If <self.styleBlock> is not None, it means that the item is defined in the markup
+            # If <self.styleBlock> is not None, it means that the item is defined in the markup.
+            # That's the case for the most of item. However, Footprint, Facade, RoofSide, Ridge, Roof can
+            # defined right at the top of the style definition
             
             # evaluate the condition if it's available
             if styleBlock.condition and not styleBlock.condition(self):
+                # the condition isn't satisfied
                 # empty style
                 return
             
             self._calculateStyle(styleBlock)
         else:
+            # Some items (Footprint, Facade, Roofside, Ridge, Roof) can be defined right at the top
+            # of the style definition. We treat that case below in the code
             if className in style.styleBlocks:
                 for _styleBlock in style.styleBlocks[className]:
                     if not _styleBlock.condition or _styleBlock.condition(self):
+                        self.styleBlock = _styleBlock
                         self._calculateStyle(_styleBlock)
+                        # the rest of the style blocks is ignored, so break the "for" cycle
                         break
                 else:
                     # empty style
@@ -66,7 +67,7 @@ class Item:
                 calculatedStyle[attr] = value.value
     
     def _calculateStyle(self, styleBlock):
-        markupStyle = styleBlock.markup
+        markup = styleBlock.markup
 
         # copy attributes from <styleBlock> to <self.calculatedStyle>
         for attr in styleBlock.attrs:
@@ -82,10 +83,10 @@ class Item:
                     for attr in _styleBlock.attrs:
                         if not attr in self.calculatedStyle:
                             self.calculatedStyle[attr] = _styleBlock.attrs[attr]
-                    if not markupStyle:
-                        markupStyle = _styleBlock
-        if markupStyle:
-            self.markupStyle = markupStyle
+                    if not markup:
+                        markup = _styleBlock.markup
+        if markup:
+            self.markup = markup
     
     def clone(self):
         item = self.__class__()

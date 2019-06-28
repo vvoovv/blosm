@@ -23,8 +23,11 @@ class Item:
         if self.use:
             self.styleId = styleId
         if self.markup:
-            for styleBlock in self.markup:
-                styleBlock.build(styleId)
+            self.buildMarkup(styleId)
+    
+    def buildMarkup(self, styleId):
+        for styleBlock in self.markup:
+            styleBlock.build(styleId)
 
 
 class Grammar:
@@ -63,6 +66,21 @@ class Footprint(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+        # The following Python dictionary is created to serve instead of <self.markup>,
+        # since the markup in a <Footprint> is a very specific one. It can contain items of the type
+        # <Footrpint>, <Facade>, <RoofSide>, <Ridge>, <Roof> in any order.
+        self.styleBlocks = {}
+        
+    def buildMarkup(self, styleId):
+        styleBlocks = self.styleBlocks
+        for styleBlock in self.markup:
+            className = styleBlock.__class__.__name__
+            if not className in styleBlocks:
+                styleBlocks[className] = []
+            styleBlocks[className].append(styleBlock)
+            styleBlock.build(styleId)
+        # <self.markup> isn't needed anymore
+        self.markup = None
 
 
 class Facade(Item):

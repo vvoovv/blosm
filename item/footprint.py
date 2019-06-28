@@ -2,6 +2,9 @@ from . import Item
 from util.polygon import Polygon
 
 
+_facadeClassName = "Facade"
+
+
 class Footprint(Item):
     
     def __init__(self):
@@ -14,6 +17,9 @@ class Footprint(Item):
         self.lastLevelOffset = 0.
         # for example, church parts may not have levels
         self.hasLevels = True
+        # A pointer to the Python list that contains style blocks for the facades generated out of the footprint;
+        # see the code in the method <self.calculateStyle(..)> for the details
+        self.facadeStyle = None
     
     def init(self):
         super().init()
@@ -21,6 +27,7 @@ class Footprint(Item):
         # reset <self.polygon>
         self.polygon.allVerts = None
         self.projections.clear()
+        self.facadeStyle = None
     
     @classmethod
     def getItem(cls, itemFactory, element, styleBlock=None):
@@ -40,3 +47,19 @@ class Footprint(Item):
         Calculate footprint out of its <self.calculatedStyle>
         """
         return
+
+    def calculateStyle(self, style):
+        """
+        Calculates a specific style for the item out of the set of style definitions <styleDefs>
+        
+        Args:
+            style (grammar.Grammar): a set of style definitions
+        """
+        super().calculateStyle(style)
+        
+        # Find <Facade> style blocks in <markup> (actually in <self.styleBlock.styleBlocks>),
+        # also try to find them at the very top of the style definitions
+        self.facadeStyle = self.styleBlock.styleBlocks.get(
+            _facadeClassName,
+            style.styleBlocks.get(_facadeClassName)
+        )
