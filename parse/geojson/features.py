@@ -84,6 +84,15 @@ class Multipolygon:
         """
         return (coord for coord in linestring)
     
+    def getDataMulti(self, geojson):
+        """
+        Get projected data for the multipolygon coordinates
+        
+        Returns a Python generator
+        """
+        self._projectCoords()
+        return (self.getLinestringData(_l, geojson) for _l in self._coords)
+    
     @property
     def ls(self):
         """
