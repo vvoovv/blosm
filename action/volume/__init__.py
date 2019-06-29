@@ -29,26 +29,26 @@ class Volume(Action):
     def do(self, building, itemClass, style):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
-            # <item> is actually a fooprint
-            item = itemStore.getItem(itemClass)
-            item.calculateStyle(style)
-            if not item.element:
-                item.calculateFootprint()
-            if item.markup:
-                # If one or more footprints are defined in the markup definition,
-                # it actually means, that those footprints are to be generated
-                for styleBlock in self.markup:
-                    item = Footprint.getItem(self.itemFactory, None, styleBlock)
-                    item.parent = self
-                    itemStore.add(item)
+            footprint = itemStore.getItem(itemClass)
+            footprint.calculateStyle(style)
+            if not footprint.element:
+                footprint.calculateFootprint()
+            # Check if have one or more footprints are defined in the markup definition,
+            # it actually means, that those footprints are to be generated
+            styleBlocks = footprint.styleBlock.styleBlocks.get("Footprint")
+            if styleBlocks:
+                for styleBlock in styleBlocks:
+                    _footprint = Footprint.getItem(self.itemFactory, None, styleBlock)
+                    _footprint.parent = footprint
+                    itemStore.add(_footprint)
             # now time to create the building volume itself
-            calculatedStyle = item.calculatedStyle
+            calculatedStyle = footprint.calculatedStyle
             volumeGenerator = self.volumeGenerators.get(
                 calculatedStyle["roofShape"],
                 self.volumeGenerators[self.defaultRoofShape]
             )
-            volumeGenerator.do(item, calculatedStyle, building)
-            #self.renderer.render(item, calculatedStyle, building)
+            volumeGenerator.do(footprint, calculatedStyle, building)
+            self.renderer.render(footprint, building)
     
     def setVolumeGenerators(self, data):
         #self.flatRoofMulti = RoofFlatMulti()
