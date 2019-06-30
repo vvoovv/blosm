@@ -7,4 +7,5 @@ class Facade(Container):
         super().__init__()
     
     def render(self, footprint, building):
-        pass
+        polygon = footprint.polygon
+        

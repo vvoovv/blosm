@@ -12,6 +12,10 @@ class RoofFlat(Roof):
         super().__init__(data, itemStore, itemFactory)
         self.hasRoofLevels = False
     
+    def render(self, footprint, building, renderer):
+        style = footprint.calculatedStyle
+        self.extrude(footprint, building, renderer)
+    
     def make(self, footprint, style, building):
         verts = building.verts
         #Facade.getItem(self.itemFactory, part)
@@ -26,14 +30,16 @@ class RoofFlat(Roof):
         #self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
     
-    def extrude(self, footprint, style, building):
-        verts = self.allVerts
-        _indices = self.indices
+    def extrude(self, footprint, building, renderer):
+        verts = building.verts
         indexOffset = len(verts)
+        _indices = self.indices
         # verts
         z = footprint.height
-        verts.extend(v for v in self.verts)
-        verts.extend(Vector((v.x, v.y, z)) for v in self.verts)
+        # verts for the lower cap
+        verts.extend(v for v in footprint.polygon.verts)
+        # verts for the upper cap
+        verts.extend(Vector((v.x, v.y, z)) for v in verts)
         # the starting side
         #indices.append((_indices[-1], _indices[0], indexOffset, indexOffset + self.n - 1))
         #indices.extend(
