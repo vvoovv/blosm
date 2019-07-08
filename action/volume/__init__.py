@@ -30,9 +30,13 @@ class Volume(Action):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
             footprint = itemStore.getItem(itemClass)
-            footprint.calculateStyle(style)
-            if not footprint.element:
+            
+            if footprint.styleBlock:
+                # the footprint has been generated
                 footprint.calculateFootprint()
+            else:
+                # the footprint is defined in the external data (e.g. OpenStreetMap)
+                footprint.calculateStyling(style)
             # Check if have one or more footprints are defined in the markup definition,
             # it actually means, that those footprints are to be generated
             styleBlocks = footprint.styleBlock.styleBlocks.get("Footprint")
@@ -41,10 +45,8 @@ class Volume(Action):
                     _footprint = Footprint.getItem(self.itemFactory, None, styleBlock)
                     _footprint.parent = footprint
                     itemStore.add(_footprint)
-            # now time to create the building volume itself
-            calculatedStyle = footprint.calculatedStyle
             volumeGenerator = self.volumeGenerators.get(
-                calculatedStyle["roofShape"],
+                footprint.getStyleBlockAttr("roofShape"),
                 self.volumeGenerators[self.defaultRoofShape]
             )
             volumeGenerator.do(footprint, building, self.renderer)

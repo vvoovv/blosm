@@ -1,4 +1,23 @@
 from .library import library
+from .value import Value
+
+
+_values = (
+    (1,),
+    (1,),
+    (1,)
+)
+
+
+# constants
+
+# An attribute in the style block can be defined in the form <tuple(value, attributeScope)>,
+# where <value> is an instance of <grammar.value.Value>,
+# and <attributeScope> is one of the constants below
+# <perBuilding> means that <value> is evaluated once per building
+perBuilding = _values[0]
+# <perFootprint> means that <value> is evaluated for every footprint in the building
+perFootprint = _values[0]
 
 
 class Item:
@@ -12,9 +31,20 @@ class Item:
         self.init()
     
     def init(self):
+        self.initAttrs()
         if self.markup:
             for styleBlock in self.markup:
                 self.setParent(styleBlock)
+    
+    def initAttrs(self):
+        # restructure <self.attrs>
+        for attr in self.attrs:
+            if isinstance(attr, tuple):
+                value, scope = attr
+            else:
+                value, scope = attr, perFootprint
+            isComplexValue = isinstance(value, Value)
+            self.attrs[attr] = (value, scope, isComplexValue)
     
     def setParent(self, styleBlock):
         styleBlock.parent = self
@@ -22,12 +52,33 @@ class Item:
     def build(self, styleId):
         if self.use:
             self.styleId = styleId
+            self._applyUse()
         if self.markup:
             self.buildMarkup(styleId)
     
     def buildMarkup(self, styleId):
         for styleBlock in self.markup:
             styleBlock.build(styleId)
+    
+    def _applyUse(self):
+        markup = self.markup
+        # note the reversed iterator
+        for defName in reversed(self.use):
+            _styleBlock = library.getStyleBlock(
+                defName, self.__class__.__name__, self.styleId
+            )
+            if _styleBlock:
+                for attr in _styleBlock.attrs:
+                    if not attr in self.attrs:
+                        self.attrs[attr] = _styleBlock.attrs[attr]
+                if not markup:
+                    markup = _styleBlock.markup
+        # set the markup if it was defined in a definition style block referenced in <self.use>
+        if not self.markup and markup:
+            self.markup = markup
+    
+    def __contains__(self, attr):
+        return attr in self.attrs
 
 
 class Grammar:
@@ -47,16 +98,28 @@ class Grammar:
         
         styleId = library.getStyleId()
         
+        # style block with <defName> (i.e. style definitions)
+        defStyleBlocks = []
+        # ordinary style blocks (without <defName>)
+        normalStyleBlocks = []
+        
         for styleBlock in inputStyleBlocks:
             if styleBlock.defName:
                 library.addStyleBlock(styleBlock.defName, styleBlock, styleId)
+                defStyleBlocks.append(styleBlock)
             else:
                 className = styleBlock.__class__.__name__
                 if not className in styleBlocks:
                     styleBlocks[className] = []
                 styleBlocks[className].append(styleBlock)
                 styleBlock.parent = None
-                styleBlock.build(styleId)
+                normalStyleBlocks.append(styleBlock)
+        
+        for styleBlock in defStyleBlocks:
+            styleBlock.build(styleId)
+        
+        for styleBlock in normalStyleBlocks:
+            styleBlock.build(styleId)
 
     def setParent(self, item):
         item.parent = None

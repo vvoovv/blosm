@@ -20,6 +20,7 @@ class Footprint(Item):
         # A pointer to the Python list that contains style blocks for the facades generated out of the footprint;
         # see the code in the method <self.calculateStyle(..)> for the details
         self.facadeStyle = None
+        self.facades = []
     
     def init(self):
         super().init()
@@ -28,6 +29,7 @@ class Footprint(Item):
         self.polygon.allVerts = None
         self.projections.clear()
         self.facadeStyle = None
+        self.facades.clear()
     
     @classmethod
     def getItem(cls, itemFactory, element, styleBlock=None):

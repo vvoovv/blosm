@@ -13,36 +13,49 @@ class RoofFlat(Roof):
         self.hasRoofLevels = False
     
     def render(self, footprint, building, renderer):
-        style = footprint.calculatedStyle
-        self.extrude(footprint, building, renderer)
+        facadeStyle = footprint.facadeStyle
+        self.extrude(footprint, building)
+        if facadeStyle:
+            for facade in footprint.facades:
+                for styleBlock in facadeStyle:
+                    if facade.evaluateCondition(styleBlock) and facade.checkWidth(styleBlock):
+                        pass
+                        
     
-    def make(self, footprint, style, building):
-        verts = building.verts
-        #Facade.getItem(self.itemFactory, part)
-        #for edge in footprint.polygon:
-        #    polygon = self.polygon
-        n = len(self.verts)
-        
-        # Extrude <polygon> in the direction of <z> axis to bring
-        # the extruded part to the height <bldgMaxHeight>
-        #polygon.extrude(self.z2, self.wallIndices)
-        # fill the extruded part
-        #self.roofIndices.append( tuple(range(n, n+polygon.n)) )
-        return True
-    
-    def extrude(self, footprint, building, renderer):
+    def extrude(self, footprint, building):
+        facades = footprint.facades
         verts = building.verts
         indexOffset = len(verts)
-        _indices = self.indices
-        # verts
+        polygon = footprint.polygon
+        numVerts = polygon.n
+        
+        # create vertices
         z = footprint.height
         # verts for the lower cap
-        verts.extend(v for v in footprint.polygon.verts)
+        verts.extend(v for v in polygon.verts)
         # verts for the upper cap
-        verts.extend(Vector((v.x, v.y, z)) for v in verts)
+        verts.extend(Vector((v.x, v.y, z)) for v in polygon.verts)
+        
+        print(footprint.valid)
         # the starting side
         #indices.append((_indices[-1], _indices[0], indexOffset, indexOffset + self.n - 1))
-        #indices.extend(
-        #    (_indices[i-1], _indices[i], indexOffset + i, indexOffset + i - 1) for i in range(1, self.n)
-        #)
-        
+        _in = indexOffset+numVerts
+        facades.append(Facade.getItem(
+            self.itemFactory,
+            footprint,
+            (_in-1, indexOffset, _in, _in+numVerts-1),
+            (verts[indexOffset] - verts[_in-1]).length,
+            footprint.wallHeight,
+            0
+        ))
+        # the rest of the sides
+        facades.extend(
+            Facade.getItem(
+                self.itemFactory,
+                footprint,
+                (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
+                (verts[indexOffset+i] - verts[indexOffset+i-1]).length,
+                footprint.wallHeight,
+                0
+            ) for i in range(1, numVerts)
+        )

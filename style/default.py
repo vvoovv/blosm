@@ -17,7 +17,7 @@ styles = {
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
             Constant(0)
         )),
-        lastLevelHeight = Value( RandomNormal(0.7*3.) ),
+        lastLevelHeight = perBuilding( Value( RandomNormal(0.7*3.) ) ),
         levelHeight = Value( RandomNormal(3.) ),
         groundLevelHeight = Value( RandomNormal(1.4*3) ),
         basementHeight = Value( RandomNormal(1.) ),

@@ -81,11 +81,11 @@ class Roof:
         self.wallIndices = []
 
     def do(self, footprint, building, renderer):
-        style = footprint.calculatedStyle
-        self.init(footprint, style)
+        styleBlock = footprint.styleBlock
+        self.init(footprint, styleBlock)
         self.render(footprint, building, renderer)
     
-    def init(self, footprint, style):
+    def init(self, footprint, styleBlock):
         self.verts.clear()
         self.roofIndices.clear()
         self.wallIndices.clear()
@@ -93,7 +93,7 @@ class Roof:
         footprint.valid = True
         
         # calculate numerical dimensions for the building or building part
-        self.calculateDimensions(footprint, style)
+        self.calculateDimensions(footprint, styleBlock)
         z1 = footprint.minHeight
         
         verts = self.verts
@@ -111,16 +111,16 @@ class Roof:
         # check the direction of vertices, it must be counterclockwise
         polygon.checkDirection()
     
-    def calculateMinHeight(self, footprint, style):
-        minLevel = style.get("minLevel")
+    def calculateMinHeight(self, footprint, styleBlock):
+        minLevel = footprint.getStyleBlockAttr("minLevel")
         if minLevel:
             footprint.minLevel = minLevel
             # calculate the height for <minLevel>
-            levelHeight = style.get("levelHeight")
+            levelHeight = footprint.getStyleBlockAttr("levelHeight")
             # either <levelHeight> or <levelHeights> is given
-            levelHeights = style.get("levelHeights") if levelHeight is None else None
-            h = style.get("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
-            groundLevelHeight = style.get(
+            levelHeights = footprint.getStyleBlockAttr("levelHeights") if levelHeight is None else None
+            h = footprint.getStyleBlockAttr("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
+            groundLevelHeight = footprint.getStyleBlockAttr(
                 "groundLevelHeight",
                 levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else self.groundLevelHeight)
             )
@@ -133,20 +133,20 @@ class Roof:
                 else:
                     h += levelHeights.getHeight(1, minLevel)
         else:
-            h = style.get("minHeight", 0.)
+            h = footprint.getStyleBlockAttr("minHeight", 0.)
         footprint.minHeight = h
         return h
     
-    def calculateDimensions(self, footprint, style):
+    def calculateDimensions(self, footprint, styleBlock):
         """
         Calculate numerical dimensions for the building or building part
         """
         if self.hasGable:
             # temporarily keep <lastLevelOffsetFactor> int the attribute <footprint.lastLevelOffset>
-            footprint.lastLevelOffset = style.get("lastLevelOffsetFactor")
+            footprint.lastLevelOffset = footprint.getStyleBlockAttr("lastLevelOffsetFactor")
         
-        z2 = self.calculateHeight(footprint, style)
-        z1 = self.calculateMinHeight(footprint, style)
+        z2 = self.calculateHeight(footprint, styleBlock)
+        z1 = self.calculateMinHeight(footprint, styleBlock)
         
         if not z2:
             # the height is equal to zero 
@@ -168,11 +168,11 @@ class Roof:
         
         footprint.roofVerticalPosition = z1 if footprint.noWalls else roofVerticalPosition
     
-    def calculateRoofHeight(self, footprint, style):
-        h = style.get("roofHeight")
+    def calculateRoofHeight(self, footprint, styleBlock):
+        h = footprint.getStyleBlockAttr("roofHeight")
         if h is None:
-            if "roofLevels" in style:
-                h = self.calculateRoofLevelsHeight(footprint, style)
+            if "roofLevels" in styleBlock:
+                h = self.calculateRoofLevelsHeight(footprint, styleBlock)
                 if footprint.lastLevelOffset:
                     h += footprint.lastLevelOffset
             else:
@@ -181,22 +181,22 @@ class Roof:
         footprint.roofHeight = h
         return h
 
-    def calculateRoofLevelsHeight(self, footprint, style):
-        levels = style.get("roofLevels") if self.hasRoofLevels else None
+    def calculateRoofLevelsHeight(self, footprint, styleBlock):
+        levels = footprint.getStyleBlockAttr("roofLevels") if self.hasRoofLevels else None
         footprint.roofLevels = levels
         
-        levelHeight = style.get("roofLevelHeight")
+        levelHeight = footprint.getStyleBlockAttr("roofLevelHeight")
         # either <roofLevelHeight> or <roofLevelHeights> is given
         if levelHeight is None:
-            levelHeights = style.get("rooflevelHeights")
-        h = style.get(
+            levelHeights = footprint.getStyleBlockAttr("rooflevelHeights")
+        h = footprint.getStyleBlockAttr(
             "roofLevelHeight0",
             levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else self.roofLevelHeight0)
         )
         
         if levels > 1.:
             # the height of the last level
-            lastLevelHeight = style.get(
+            lastLevelHeight = footprint.getStyleBlockAttr(
                 "lastRoofLevelHeight",
                 levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else self.lastRoofLevelHeight)
             )
@@ -209,16 +209,16 @@ class Roof:
                     h += (levels-2.)*levelHeight
         return h
     
-    def calculateLevelsHeight(self, footprint, style):
-        levels = style.get("levels", 0.)
+    def calculateLevelsHeight(self, footprint, styleBlock):
+        levels = footprint.getStyleBlockAttr("levels", 0.)
         footprint.levels = levels
         if not levels:
             return 0.
-        levelHeight = style.get("levelHeight")
+        levelHeight = footprint.getStyleBlockAttr("levelHeight")
         # either <levelHeight> or <levelHeights> is given
-        levelHeights = style.get("levelHeights") if levelHeight is None else None
-        h = style.get("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
-        groundLevelHeight = style.get(
+        levelHeights = footprint.getStyleBlockAttr("levelHeights") if levelHeight is None else None
+        h = footprint.getStyleBlockAttr("basementHeight", levelHeights.getBasementHeight() if levelHeights else self.basementHeight)
+        groundLevelHeight = footprint.getStyleBlockAttr(
             "groundLevelHeight",
             levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else self.groundLevelHeight)
         )
@@ -229,7 +229,7 @@ class Roof:
             lastLevelHeight = groundLevelHeight
         else:
             # the height of the last level
-            lastLevelHeight = style.get(
+            lastLevelHeight = footprint.getStyleBlockAttr(
                 "lastLevelHeight",
                 levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else self.lastLevelHeight)
             )
@@ -244,26 +244,26 @@ class Roof:
             footprint.lastLevelOffset *= lastLevelHeight
         return h
     
-    def calculateHeight(self, footprint, style):
-        h = style.get("height")
+    def calculateHeight(self, footprint, styleBlock):
+        h = footprint.getStyleBlockAttr("height")
         if h is None:
-            h = self.calculateLevelsHeight(footprint, style)
-            h += self.calculateRoofHeight(footprint, style)
+            h = self.calculateLevelsHeight(footprint, styleBlock)
+            h += self.calculateRoofHeight(footprint, styleBlock)
         else:
             # calculate roof height
             # calculate last level offset in the function below
-            self.calculateLevelsHeight(footprint, style)
-            self.calculateRoofHeight(footprint, style)
+            self.calculateLevelsHeight(footprint, styleBlock)
+            self.calculateRoofHeight(footprint, styleBlock)
         footprint.height = h
         return h
 
-    def processDirection(self, footprint, style):
+    def processDirection(self, footprint, styleBlock):
         polygon = footprint.polygon
         # <d> stands for direction
-        d = style.get("roofDirection")
+        d = footprint.getStyleBlockAttr("roofDirection")
         # getting a direction vector with the unit length
         if d is None:
-            if self.hasRidge and style.get("roofOrientation") == "across":
+            if self.hasRidge and footprint.getStyleBlockAttr("roofOrientation") == "across":
                 # The roof ridge is across the longest side of the building outline,
                 # i.e. the profile direction is along the longest side
                 d = max(polygon.edges).normalized()
