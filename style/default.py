@@ -1,4 +1,5 @@
 from grammar import *
+from grammar.util import perBuilding, perFootprint
 from grammar import units, symmetry
 from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal

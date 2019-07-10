@@ -64,9 +64,9 @@ class Roof:
     groundLevelHeight = 1.4*3
     basementHeight = 1.
     
-    roofLevelHeight0 = 2.7
-    levelHeight = 2.7
     lastRoofLevelHeight = 2.7
+    levelHeight = 2.7
+    roofLevelHeight0 = 2.7
     
     def __init__(self, data, itemStore, itemFactory):
         self.data = data

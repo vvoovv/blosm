@@ -1,4 +1,3 @@
-from grammar.value import Value
 
 
 class Item:
@@ -24,19 +23,24 @@ class Item:
         return not styleBlock.condition or styleBlock.condition(self)
 
     def getStyleBlockAttr(self, attr, defaultValue=None):
-        value = self.styleBlock.attrs.get(attr)
-        if value is None:
+        attrs = self.styleBlock.attrs
+        if not attr in attrs:
             return defaultValue
-        if isinstance(value, Value):
-            if attr in self._styleBlockCache:
-                value = self._styleBlockCache[attr]
+        value, scope, isComplexValue = attrs.get(attr)
+        if isComplexValue:
+            styleBlockCache = self.getStyleBlockCache(scope)
+            if attr in styleBlockCache:
+                value = styleBlockCache[attr]
             else:
                 value = value.value
                 value.setData(self)
                 value = value.value
                 # keep the entry for <attr> in the cache
-                self._styleBlockCache[attr] = value
+                styleBlockCache[attr] = value
         return value
+    
+    def getStyleBlockCache(self, scope):
+        return self._styleBlockCache
     
     def calculateStyling(self, style):
         """

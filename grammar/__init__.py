@@ -2,6 +2,19 @@ from .library import library
 from .value import Value
 
 
+# style attributes that are evaluated once per building by default
+_perBuildingByDefault = {
+    "lastLevelHeight": 1,
+    "levelHeight": 1,
+    "groundLevelHeight": 1,
+    "basementHeight": 1,
+    "levelHeights": 1,
+    "lastRoofLevelHeight": 1,
+    "levelHeight": 1,
+    "roofLevelHeight0": 1,
+    "roofLevelHeights": 1
+}
+
 _values = (
     (1,),
     (1,),
@@ -37,14 +50,16 @@ class Item:
                 self.setParent(styleBlock)
     
     def initAttrs(self):
+        attrs = self.attrs
         # restructure <self.attrs>
-        for attr in self.attrs:
+        for attr in attrs:
+            # a Python tuple containg two elements
             if isinstance(attr, tuple):
                 value, scope = attr
             else:
-                value, scope = attr, perFootprint
+                value, scope = attrs[attr], perBuilding if attr in _perBuildingByDefault else perFootprint
             isComplexValue = isinstance(value, Value)
-            self.attrs[attr] = (value, scope, isComplexValue)
+            attrs[attr] = (value, scope, isComplexValue)
     
     def setParent(self, styleBlock):
         styleBlock.parent = self

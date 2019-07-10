@@ -1,5 +1,6 @@
 from . import Item
 from util.polygon import Polygon
+from grammar import perBuilding
 
 
 _facadeClassName = "Facade"
@@ -32,13 +33,14 @@ class Footprint(Item):
         self.facades.clear()
     
     @classmethod
-    def getItem(cls, itemFactory, element, styleBlock=None):
+    def getItem(cls, itemFactory, element, building, styleBlock=None):
         # <styleBlock> is the style block within the markup definition,
         # if the footprint is generated through the markup definition
         item = itemFactory.getItem(cls)
         item.styleBlock = styleBlock
         item.init()
         item.element = element
+        item.building = building
         return item
     
     def attr(self, attr):
@@ -65,3 +67,6 @@ class Footprint(Item):
             _facadeClassName,
             style.styleBlocks.get(_facadeClassName)
         )
+    
+    def getStyleBlockCache(self, scope):
+        return self.building._styleBlockCache if scope is perBuilding else self._styleBlockCache

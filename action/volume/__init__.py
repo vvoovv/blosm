@@ -42,7 +42,7 @@ class Volume(Action):
             styleBlocks = footprint.styleBlock.styleBlocks.get("Footprint")
             if styleBlocks:
                 for styleBlock in styleBlocks:
-                    _footprint = Footprint.getItem(self.itemFactory, None, styleBlock)
+                    _footprint = Footprint.getItem(self.itemFactory, None, building, styleBlock)
                     _footprint.parent = footprint
                     itemStore.add(_footprint)
             volumeGenerator = self.volumeGenerators.get(
