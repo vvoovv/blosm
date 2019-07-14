@@ -12,17 +12,12 @@ class RoofFlat(Roof):
         super().__init__(data, itemStore, itemFactory)
         self.hasRoofLevels = False
     
-    def render(self, footprint, building, renderer):
-        facadeStyle = footprint.facadeStyle
-        self.extrude(footprint, building)
-        if facadeStyle:
-            for facade in footprint.facades:
-                for styleBlock in facadeStyle:
-                    if facade.evaluateCondition(styleBlock) and facade.checkWidth(styleBlock):
-                        pass
-                        
+    def render(self, footprint, building, facadeRenderer):
+        self.extrude(footprint)
+        facadeRenderer.render(footprint)
     
-    def extrude(self, footprint, building):
+    def extrude(self, footprint):
+        building = footprint.building
         facades = footprint.facades
         verts = building.verts
         indexOffset = len(verts)
@@ -35,8 +30,8 @@ class RoofFlat(Roof):
         verts.extend(v for v in polygon.verts)
         # verts for the upper cap
         verts.extend(Vector((v.x, v.y, z)) for v in polygon.verts)
+        building.appendBmVerts(2*numVerts)
         
-        print(footprint.valid)
         # the starting side
         #indices.append((_indices[-1], _indices[0], indexOffset, indexOffset + self.n - 1))
         _in = indexOffset+numVerts

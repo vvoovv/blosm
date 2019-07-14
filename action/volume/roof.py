@@ -256,7 +256,7 @@ class Roof:
             self.calculateRoofHeight(footprint, styleBlock)
         footprint.height = h
         return h
-
+    
     def processDirection(self, footprint, styleBlock):
         polygon = footprint.polygon
         # <d> stands for direction

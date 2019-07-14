@@ -37,11 +37,13 @@ class Building:
     
     def __init__(self):
         self.verts = []
-        self.faces = []
-        self.uvs = []
+        # counterparts for <self.verts> in the BMesh
+        self.bmVerts = []
         self._styleBlockCache = {}
     
     def init(self, outline):
+        self.verts.clear()
+        self.bmVerts.clear()
         # <outline> is an instance of the class as defined by the data model (e.g. parse.osm.way.Way) 
         self.outline = outline
         self.offsetZ = None
@@ -60,7 +62,12 @@ class Building:
         item = itemFactory.getItem(cls)
         item.init(outline)
         return item
-        
+    
+    def appendBmVerts(self, num):
+        """
+        Appends <num> empty placeholders to be filled with BMesh counterpars of <self.verts>
+        """
+        self.bmVerts.extend(None for _ in range(num))
 
 
 class BuildingRendererNew(Renderer):
@@ -83,6 +90,9 @@ class BuildingRendererNew(Renderer):
         
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
+        
+        self.preRender(outline)
+        
         building = Building.getItem(itemFactory, outline)
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
@@ -103,3 +113,15 @@ class BuildingRendererNew(Renderer):
                 itemStore.skip = False
                 break
         itemStore.clear()
+        
+        self.postRender(outline)
+    
+    def createFace(self, building, indices, uvs):
+        bm = self.bm
+        bmVerts = building.bmVerts
+        # first check if we have BMVerts for for all <indices>
+        for index in indices:
+            if not bmVerts[index]:
+                bmVerts[index] = bm.verts.new( building.verts[index] )
+        
+        face = bm.faces.new(bmVerts[index] for index in indices)

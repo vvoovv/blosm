@@ -35,6 +35,8 @@ class Item:
                 value = value.value
                 value.setData(self)
                 value = value.value
+                if value is None:
+                    value = defaultValue
                 # keep the entry for <attr> in the cache
                 styleBlockCache[attr] = value
         return value

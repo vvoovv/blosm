@@ -1,5 +1,5 @@
 from grammar import *
-from grammar.util import perBuilding, perFootprint
+from grammar.scope import PerBuilding, PerFootprint
 from grammar import units, symmetry
 from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal
@@ -9,6 +9,8 @@ from action.volume.roof import Roof
 styles = {
 "mid rise residential zaandam": [
     Footprint(
+        height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
+        minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
         levels = Value(Alternatives(
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
@@ -18,7 +20,7 @@ styles = {
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
             Constant(0)
         )),
-        lastLevelHeight = perBuilding( Value( RandomNormal(0.7*3.) ) ),
+        lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
         levelHeight = Value( RandomNormal(3.) ),
         groundLevelHeight = Value( RandomNormal(1.4*3) ),
         basementHeight = Value( RandomNormal(1.) ),
@@ -186,7 +188,7 @@ styles = {
                 markup = [
                     Chimney()
                 ]
-            )  
+            )
         ]    
     )
 ]

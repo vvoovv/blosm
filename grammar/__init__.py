@@ -1,5 +1,6 @@
 from .library import library
 from .value import Value
+from .scope import *
 
 
 # style attributes that are evaluated once per building by default
@@ -14,23 +15,6 @@ _perBuildingByDefault = {
     "roofLevelHeight0": 1,
     "roofLevelHeights": 1
 }
-
-_values = (
-    (1,),
-    (1,),
-    (1,)
-)
-
-
-# constants
-
-# An attribute in the style block can be defined in the form <tuple(value, attributeScope)>,
-# where <value> is an instance of <grammar.value.Value>,
-# and <attributeScope> is one of the constants below
-# <perBuilding> means that <value> is evaluated once per building
-perBuilding = _values[0]
-# <perFootprint> means that <value> is evaluated for every footprint in the building
-perFootprint = _values[0]
 
 
 class Item:
@@ -53,11 +37,13 @@ class Item:
         attrs = self.attrs
         # restructure <self.attrs>
         for attr in attrs:
+            value = attrs[attr]
             # a Python tuple containg two elements
-            if isinstance(attr, tuple):
-                value, scope = attr
+            if isinstance(value, Scope):
+                scope = value.scope
+                value = value.value
             else:
-                value, scope = attrs[attr], perBuilding if attr in _perBuildingByDefault else perFootprint
+                value, scope = value, perBuilding if attr in _perBuildingByDefault else perFootprint
             isComplexValue = isinstance(value, Value)
             attrs[attr] = (value, scope, isComplexValue)
     
