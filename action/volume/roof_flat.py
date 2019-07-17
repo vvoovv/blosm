@@ -12,7 +12,7 @@ class RoofFlat(Roof):
         super().__init__(data, itemStore, itemFactory)
         self.hasRoofLevels = False
     
-    def render(self, footprint, building, facadeRenderer):
+    def render(self, footprint, facadeRenderer):
         self.extrude(footprint)
         facadeRenderer.render(footprint)
     

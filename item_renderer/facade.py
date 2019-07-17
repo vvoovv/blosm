@@ -16,12 +16,11 @@ class Facade(Container):
             for facade in footprint.facades:
                 for styleBlock in facadeStyle:
                     if facade.evaluateCondition(styleBlock) and facade.checkWidth(styleBlock):
-                        if facade.markup:
-                            self.renderMarkup(facade)
+                        if styleBlock.markup:
+                            self.renderMarkup(facade, styleBlock)
                         else:
                             pass
         else:
             # simply create BMFaces here
             for facade in footprint.facades:
                 r.createFace(building, facade.indices, facade.uvs)
-                

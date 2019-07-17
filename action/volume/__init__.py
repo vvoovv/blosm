@@ -49,7 +49,7 @@ class Volume(Action):
                 footprint.getStyleBlockAttr("roofShape"),
                 self.volumeGenerators[self.defaultRoofShape]
             )
-            volumeGenerator.do(footprint, building, self.renderer)
+            volumeGenerator.do(footprint, self.renderer)
     
     def setVolumeGenerators(self, data):
         #self.flatRoofMulti = RoofFlatMulti()

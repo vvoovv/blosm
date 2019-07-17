@@ -25,6 +25,7 @@ class Item:
         self.markup = markup
         self.condition = condition
         self.attrs = attrs
+        self.isLevel = False
         self.init()
     
     def init(self):
@@ -173,6 +174,7 @@ class Level(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+        self.isLevel = True
 
 
 class Window(Item):
@@ -228,6 +230,7 @@ class Basement(Item):
 
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+        self.isLevel = True
         
 
 def useFrom(itemId):

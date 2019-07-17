@@ -125,3 +125,8 @@ class BuildingRendererNew(Renderer):
                 bmVerts[index] = bm.verts.new( building.verts[index] )
         
         face = bm.faces.new(bmVerts[index] for index in indices)
+        # assign uv coordinates
+        uvLayer = bm.loops.layers.uv[0]
+        loops = face.loops
+        for loop,uv in zip(loops, uvs):
+            loop[uvLayer].uv = uv
