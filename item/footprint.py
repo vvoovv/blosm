@@ -10,6 +10,7 @@ class Footprint(Item):
     
     def __init__(self):
         super().__init__()
+        self.valid = True
         self.polygon = Polygon()
         self.projections = []
         self.minProjIndex = 0
@@ -25,9 +26,10 @@ class Footprint(Item):
     
     def init(self):
         super().init()
+        self.valid = True
         self.lastLevelOffset = 0.
         # reset <self.polygon>
-        self.polygon.allVerts = None
+        self.polygon.allVerts.clear()
         self.projections.clear()
         self.facadeStyle = None
         self.facades.clear()

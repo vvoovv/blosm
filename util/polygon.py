@@ -24,20 +24,24 @@ from util import zero, zAxis, zeroVector
 class Polygon:
     
     def __init__(self):
-        self.allVerts = None
+        self.allVerts = []
+        self.indices = None
         # normal to the polygon
         self.normal = zAxis
     
     def init(self, allVerts):
-        self.allVerts = allVerts
+        """
+        Args:
+            allVerts (generator): Polygon vertices
+        """
+        self.allVerts.extend(allVerts)
         # Not all vertices from <allVerts> will be used to create BMesh vertices,
         # since they may have a straight angle.
         # Later new vertices may be added to <allVerts>, for each of those vertices
         # a BMesh vertex will be created. To distinguish between those two groups of <allVerts>,
         # we need to keep the border between them as <self.indexOffset>
-        self.indexOffset = len(allVerts)
-        self.indices = None
-        self.n = len(allVerts)
+        #self.indexOffset = len(allVerts)
+        self.n = len(self.allVerts)
         self.removeStraightAngles()
     
     def prev(self, index):
@@ -192,8 +196,7 @@ class Polygon:
                 newIndices.append(indices[i] if indices else i)
         if newIndices is None:
             # no straight angles found
-            if not indices:
-                self.indices = tuple(range(self.n))
+            self.indices = tuple(range(self.n))
         else:
             # set new indices without straight angles to <self.indices>
             self.indices = newIndices

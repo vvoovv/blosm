@@ -78,22 +78,22 @@ class Roof:
 
     def do(self, footprint, renderer):
         self.init(footprint)
-        self.render(footprint, renderer)
+        if footprint.valid:
+            self.render(footprint, renderer)
     
     def init(self, footprint):
         # calculate numerical dimensions for the building or building part
         self.calculateDimensions(footprint)
+        if not footprint.valid:
+            return
         z1 = footprint.minHeight
-        
-        verts = self.verts
-        verts.extend( Vector((coord[0], coord[1], z1)) for coord in footprint.element.getData(self.data) )
         
         # create a polygon located at <minHeight>
         
         # check if a polygon has been already set (e.g. when placing the building on a terrain)
         polygon = footprint.polygon
         if not polygon.allVerts:
-            polygon.init(verts)
+            polygon.init( Vector((coord[0], coord[1], z1)) for coord in footprint.element.getData(self.data) )
         if polygon.n < 3:
             footprint.valid = False
             return
