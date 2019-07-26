@@ -1,6 +1,7 @@
 from . import Item
 from util.polygon import Polygon
 from grammar import perBuilding
+from action.volume.level_heights import LevelHeights
 
 
 _facadeClassName = "Facade"
@@ -23,6 +24,7 @@ class Footprint(Item):
         # see the code in the method <self.calculateStyle(..)> for the details
         self.facadeStyle = None
         self.facades = []
+        self.levelHeights = LevelHeights(self)
     
     def init(self):
         super().init()
@@ -33,6 +35,7 @@ class Footprint(Item):
         self.projections.clear()
         self.facadeStyle = None
         self.facades.clear()
+        self.levelHeights.init()
     
     @classmethod
     def getItem(cls, itemFactory, element, building, styleBlock=None):

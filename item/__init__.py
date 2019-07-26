@@ -22,10 +22,10 @@ class Item:
     def evaluateCondition(self, styleBlock):
         return not styleBlock.condition or styleBlock.condition(self)
 
-    def getStyleBlockAttr(self, attr, defaultValue=None):
+    def getStyleBlockAttr(self, attr):
         attrs = self.styleBlock.attrs
         if not attr in attrs:
-            return defaultValue
+            return
         value, scope, isComplexValue = attrs.get(attr)
         if isComplexValue:
             styleBlockCache = self.getStyleBlockCache(scope)
@@ -36,7 +36,7 @@ class Item:
                 value.setData(self)
                 value = value.value
                 if value is None:
-                    value = defaultValue
+                    return
                 # keep the entry for <attr> in the cache
                 styleBlockCache[attr] = value
         return value

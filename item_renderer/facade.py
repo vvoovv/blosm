@@ -12,7 +12,7 @@ class Facade(Container):
         building = footprint.building
         
         facadeStyle = footprint.facadeStyle
-        if footprint.facadeStyle:
+        if False: #footprint.facadeStyle:
             for facade in footprint.facades:
                 for styleBlock in facadeStyle:
                     if facade.evaluateCondition(styleBlock) and facade.checkWidth(styleBlock):
