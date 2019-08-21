@@ -21,7 +21,7 @@ class Footprint(Item):
         # for example, church parts may not have levels
         self.hasLevels = True
         # A pointer to the Python list that contains style blocks for the facades generated out of the footprint;
-        # see the code in the method <self.calculateStyle(..)> for the details
+        # see the code in the method <self.calculateStyling(..)> for the details
         self.facadeStyle = None
         self.facades = []
         self.levelHeights = LevelHeights(self)
@@ -42,8 +42,8 @@ class Footprint(Item):
         # <styleBlock> is the style block within the markup definition,
         # if the footprint is generated through the markup definition
         item = itemFactory.getItem(cls)
-        item.styleBlock = styleBlock
         item.init()
+        item.styleBlock = styleBlock
         item.element = element
         item.building = building
         return item
@@ -57,14 +57,14 @@ class Footprint(Item):
         """
         return
 
-    def calculateStyle(self, style):
+    def calculateStyling(self, style):
         """
         Calculates a specific style for the item out of the set of style definitions <styleDefs>
         
         Args:
             style (grammar.Grammar): a set of style definitions
         """
-        super().calculateStyle(style)
+        super().calculateStyling(style)
         
         # Find <Facade> style blocks in <markup> (actually in <self.styleBlock.styleBlocks>),
         # also try to find them at the very top of the style definitions

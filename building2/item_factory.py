@@ -15,6 +15,8 @@ class ItemFactory:
                 referenceItem, numItems = referenceItem
             else:
                 numItems = defaultNumItems
+            # set item factory to be used in <item.calculateMarkupDivision(..)>
+            referenceItem.itemFactory = self
             # A list:
             # - a list of items
             # - the index of the current item (i.e. used the last time)

@@ -12,14 +12,28 @@ class Facade(Container):
         building = footprint.building
         
         facadeStyle = footprint.facadeStyle
-        if False: #footprint.facadeStyle:
+        if footprint.facadeStyle:
             for facade in footprint.facades:
                 for styleBlock in facadeStyle:
-                    if facade.evaluateCondition(styleBlock) and facade.checkWidth(styleBlock):
-                        if styleBlock.markup:
-                            self.renderMarkup(facade, styleBlock)
-                        else:
-                            pass
+                    if facade.evaluateCondition(styleBlock):
+                        facade.styleBlock = styleBlock
+                        # check if <minWidth> attribute is given in the styleBlock
+                        minWidth = facade.getStyleBlockAttr("minWidth")
+                        if (minWidth and facade.width > minWidth) or not minWidth:
+                            if styleBlock.markup:
+                                self.renderMarkup(facade)
+                                if facade.valid:
+                                    break
+                                else:
+                                    # <styleBlock> does not suit for <facade>
+                                    # Make <facade> valid again to try it
+                                    # with the next <styleBlock> from <facadeStyle>
+                                    facade.valid = True
+                            else:
+                                pass
+                        # Clean up the styleBlock for the next attempt with
+                        # the next style block from <facadeStyle>
+                        facade.styleBlock = None
         else:
             # simply create BMFaces here
             for facade in footprint.facades:

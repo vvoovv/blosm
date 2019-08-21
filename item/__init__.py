@@ -10,6 +10,9 @@ class Item:
         # Typically a style block is defined in the markup definition, however it can be also defined
         # at the very top if the style definition for the item Footprint, Facade, RoofSide, Ridge, Roof
         self.styleBlock = None
+        self.width = None
+        self.relativeWidth = None
+        self.hasFlexWidth = False
         # Python dictionary to cache attributes from <self.styleBlock> that are derived
         # from <grammar.value.Value>
         self._styleBlockCache = {}
@@ -17,6 +20,9 @@ class Item:
     def init(self):
         self.parent = None
         self.styleBlock = None
+        self.width = None
+        self.relativeWidth = None
+        self.hasFlexWidth = False
         self._styleBlockCache.clear()
     
     def evaluateCondition(self, styleBlock):
@@ -68,4 +74,6 @@ class Item:
     
     def clone(self):
         item = self.__class__()
+        # set item factory to be used inside <item.calculateMarkupDivision(..s)>
+        item.itemFactory = self.itemFactory
         return item

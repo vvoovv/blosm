@@ -6,6 +6,7 @@ from item.footprint import Footprint
 from item.facade import Facade
 from item.level import Level
 from item.div import Div
+from item.basement import Basement
 from item.roof import Roof
 from item.roof_side import RoofSide
 from item.window import Window
@@ -21,6 +22,7 @@ def _createReferenceItems():
         Facade(),
         Level(),
         Div(),
+        Basement(),
         Roof(),
         RoofSide(),
         Window(),

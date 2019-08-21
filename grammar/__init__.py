@@ -2,6 +2,12 @@ from .library import library
 from .value import Value
 from .scope import *
 
+from item.div import Div as ItemDiv
+from item.level import Level as ItemLevel
+from item.basement import Basement as ItemBasement
+from item.window import Window as ItemWindow
+from item.balcony import Balcony as ItemBalcony
+
 
 # style attributes that are evaluated once per building by default
 _perBuildingByDefault = {
@@ -168,6 +174,9 @@ class Div(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+    
+    def getItem(self, itemFactory, parent):
+        return ItemDiv.getItem(itemFactory, parent, self)
 
 
 class Level(Item):
@@ -176,11 +185,17 @@ class Level(Item):
         super().__init__(defName, use, markup, condition, attrs)
         self.isLevel = True
 
+    def getItem(self, itemFactory, parent):
+        return ItemLevel.getItem(itemFactory, parent, self)
+
 
 class Window(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+
+    def getItem(self, itemFactory, parent):
+        return ItemWindow.getItem(itemFactory, parent, self)
 
 
 class WindowPanel:
@@ -194,6 +209,9 @@ class Balcony(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+
+    def getItem(self, itemFactory, parent):
+        return ItemWindow.getItem(itemFactory, parent, self)
 
 
 class Door(Item):
@@ -231,6 +249,9 @@ class Basement(Item):
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         self.isLevel = True
+        
+    def getItem(self, itemFactory, parent):
+        return ItemBasement.getItem(itemFactory, parent, self)
         
 
 def useFrom(itemId):
