@@ -219,6 +219,9 @@ class Door(Item):
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         
+    def getItem(self, itemFactory, parent):
+        return ItemWindow.getItem(itemFactory, parent, self)
+        
 
 class Chimney(Item):
     

@@ -1,4 +1,4 @@
-from grammar.arrangement import Horizontal
+from grammar.arrangement import Horizontal, Vertical
 
 
 class Container:
@@ -13,25 +13,18 @@ class Container:
         pass
     
     def renderMarkup(self, item):
-        styleBlock = item.styleBlock
-        # check if have levels or divs
-        for _styleBlock in styleBlock.markup:
-            if _styleBlock.isLevel:
-                self.renderLevels(item)
-            else:
-                self.renderDivs(item)
-            break
+        item.getMarkupItems()
+        
+        if item.styleBlock.markup[0].isLevel:
+            self.renderLevels(item)
+        else:
+            self.renderDivs(item)
     
-    def renderLevels(self, item, styleBlock):
+    def renderLevels(self, item):
         pass
     
     def renderDivs(self, item):
-        # get the arrangement (horizontal or vertical) of the markup elements
-        arrangement = item.getStyleBlockAttr("arrangement")
-        if not arrangement:
-            # the default arrangement of the markup elements
-            arrangement = item.arrangement
-        if arrangement is Horizontal:
+        if item.arrangement is Horizontal:
             # get markup width and number of repeats
             item.calculateMarkupDivision()
         else:

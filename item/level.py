@@ -6,8 +6,6 @@ class Level(Container):
     
     def __init__(self):
         super().__init__()
-        # the arrangement of markup items is always vertical
-        self.arrangement = Vertical
 
     @classmethod
     def getItem(cls, itemFactory, parent, styleBlock):
