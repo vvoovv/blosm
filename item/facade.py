@@ -11,24 +11,24 @@ class Facade(Container):
     def __init__(self):
         super().__init__()
         self.valid = True
+        self.faces = []
+        self.levelStyles = LevelStyles()
     
     def init(self):
         self.valid = True
-        self.faces = []
+        self.faces.clear()
         self.normal = None
-        self.levelStyles = LevelStyles()
         
         self.type = ("front", "back", "side")
         self.neighborL = None
         self.neighborR = None
-        self.neighborT = None
-        self.neighborB = None
 
     @classmethod
     def getItem(cls, itemFactory, parent, indices, width, heightLeft, heightRightOffset):
         item = itemFactory.getItem(cls)
         item.init()
         item.parent = parent
+        item.building = parent.building
         item.indices = indices
         item.width = width
         # assign uv-coordinates

@@ -33,7 +33,6 @@ class RoofFlat(Roof):
         building.appendBmVerts(2*numVerts)
         
         # the starting side
-        #indices.append((_indices[-1], _indices[0], indexOffset, indexOffset + self.n - 1))
         _in = indexOffset+numVerts
         facades.append(Facade.getItem(
             self.itemFactory,

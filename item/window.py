@@ -14,6 +14,7 @@ class Window(Item):
         item = itemFactory.getItem(cls)
         item.init()
         item.parent = parent
+        item.building = parent.building
         item.styleBlock = styleBlock
         return item
     

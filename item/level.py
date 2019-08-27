@@ -1,5 +1,4 @@
 from .container import Container
-from grammar.arrangement import Vertical
 
 
 class Level(Container):
@@ -12,5 +11,6 @@ class Level(Container):
         item = itemFactory.getItem(cls)
         item.init()
         item.parent = parent
+        item.building = parent.building
         item.styleBlock = styleBlock
         return item

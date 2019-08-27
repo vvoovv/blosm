@@ -1,6 +1,7 @@
 import math
 from . import Item
 from grammar.arrangement import Horizontal, Vertical
+from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
 
 class ItemSize:
@@ -41,6 +42,14 @@ class Container(Item):
         
         # the default arrangement of markup items
         self.arrangement = Horizontal
+        
+        # Do we have a symmetry for the markup items?
+        # Allowed values: None or symmetry.MiddleOfLast or symmetry.RightmostOfLast
+        self.symmetry = None
+        
+        # indices of vertices in the <verts> and <bmVerts>
+        self.indices = None
+        self.uvs = None
     
     def init(self):
         super().init()
@@ -49,16 +58,17 @@ class Container(Item):
         self.height = None
         self.repeat = True
         self.arrangement = Horizontal
+        self.symmetry = None
     
     def getWidth(self):
         if not self.markup:
-            self.getMarkupItems()
+            self.prepareMarkupItems()
         return self.width or (
             self.calculateMarkupDivision() if self.arrangement is Horizontal else\
                 self.getWidthForVerticalArrangement()
         )
     
-    def getMarkupItems(self):
+    def prepareMarkupItems(self):
         """
         Get items for the markup style blocks
         """
@@ -76,6 +86,11 @@ class Container(Item):
             arrangement = self.getStyleBlockAttr("arrangement")
             if arrangement:
                 self.arrangement = arrangement
+                
+        # check if have symmetry for the markup items
+        symmetry = self.getStyleBlockAttr("symmetry")
+        if symmetry:
+            self.symmetry = symmetry
     
     def calculateMarkupDivision(self):
         markup = self.markup
@@ -108,6 +123,27 @@ class Container(Item):
                     item.hasFlexWidth = True
                     totalFlexWidth += width
         
+        # treat the case with the symmetry
+        symmetry = self.getStyleBlockAttr("symmetry")
+        if symmetry:
+            self.symmetry = symmetry
+            if totalFixedWidth:
+                totalFixedWidth *= 2.
+            if totalFlexWidth:
+                totalFlexWidth *= 2.
+            if totalRelativeWidth:
+                totalRelativeWidth *= 2.
+            # the special case if <symmetry> is <MiddleOfLast>
+            if symmetry is MiddleOfLast:
+                middleItem = markup[-1]
+                if middleItem.width:
+                    if middleItem.hasFlexWidth:
+                        totalFlexWidth -= middleItem.width
+                    else:
+                        totalFixedWidth -= middleItem.width
+                else:
+                    totalRelativeWidth -= middleItem.relativeWidth
+        
         totalNonRelativeWidth = totalFixedWidth+totalFlexWidth
         
         # perform sanity check
@@ -132,7 +168,7 @@ class Container(Item):
             if totalRelativeWidth:
                 if totalNonRelativeWidth:
                     # width of a single markup pattern without any repeats
-                    width = totalRelativeWidth * totalNonRelativeWidth / (1. - totalRelativeWidth)
+                    width = totalNonRelativeWidth / (1. - totalRelativeWidth)
                 else:
                     # All markup items has relative width
                     # Calculate the width estimate for the markup items, it's also the width of
@@ -170,7 +206,21 @@ class Container(Item):
                 # <totalFixedWidth>, <totalFlexWidth> and <totalRelativeWidth>
                 if self.width:
                     # <_width> is the total width of the markup items with the relative width
-                    _width = self.width - totalNonRelativeWidth
+                    _width = totalRelativeWidth * self.width
+                    # sanity check
+                    if _width > (self.width - totalNonRelativeWidth):
+                        self.valid = False
+                        return
+                    extraWidth = self.width - _width - totalNonRelativeWidth
+                    if totalFlexWidth:
+                        _totalFlexWidth = totalFlexWidth + extraWidth
+                        # distribute the excessive width among the markup items with the flexible width
+                        for item in markup:
+                            if item.hasFlexWidth:
+                                item.width *= _totalFlexWidth/totalFlexWidth
+                    else:
+                        # distribute the excessive width to the left and right margins
+                        pass # TODO
                 else:
                     # <width> is the total width of all markup elements
                     width = totalNonRelativeWidth / (1. - totalRelativeWidth)
@@ -198,11 +248,11 @@ class Container(Item):
                 if totalNonRelativeWidth < self.width:
                     extraWidth = self.width - totalNonRelativeWidth
                     if totalFlexWidth:
+                        _totalFlexWidth = totalFlexWidth + extraWidth
                         # distribute the excessive width among the markup items with the flexible width
                         for item in markup:
                             if item.hasFlexWidth:
-                                _width = totalFlexWidth + extraWidth
-                                item.width *= _width/totalFlexWidth
+                                item.width *= _totalFlexWidth/totalFlexWidth
                     else:
                         # distribute the excessive width to the left and right margins
                         pass # TODO
