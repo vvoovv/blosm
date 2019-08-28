@@ -34,6 +34,9 @@ class Facade(Container):
                         # Clean up the styleBlock for the next attempt with
                         # the next style block from <facadeStyle>
                         facade.styleBlock = None
+                else:
+                    # no style block suits the <facade>
+                    r.createFace(building, facade.indices, facade.uvs)
         else:
             # simply create BMFaces here
             for facade in footprint.facades:
