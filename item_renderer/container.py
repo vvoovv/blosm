@@ -52,7 +52,11 @@ class Container:
             else:
                 symmetry = item.symmetry
                 building.appendBmVerts(
-                    2*( numItems if symmetry else (numItems-1) )
+                    2*(
+                        (2*numItems - 2) if symmetry is MiddleOfLast else (
+                            (2*numItems-1) if symmetry is RightmostOfLast else (numItems-1)
+                        )
+                    )
                 )
                 verts = building.verts
                 indexOffset = len(verts)
@@ -63,10 +67,8 @@ class Container:
                 unitVector = (verts[parentIndices[1]] - self.v1) / item.width
                 self.index1 = indexOffset
                 self.index2 = indexOffset + 1
-                # process the very first item
-                _item = item.markup[0]
-                _item.indices = (self.prevIndex1, self.index1, self.index2, self.prevIndex2)
-                # process the other items but the last one
+                # Generate Div items but the last one;
+                # the special case is when a symmetry is available
                 self.generateDivs(
                     building, item, unitVector,
                     0, numItems if symmetry else numItems-1, 1
@@ -74,7 +76,7 @@ class Container:
                 if symmetry:
                     self.generateDivs(
                         building, item, unitVector,
-                        numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1
+                        numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1
                     )
                 # process the last item
                 _item = item.markup[-1]
