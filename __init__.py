@@ -28,7 +28,7 @@ bl_info = {
     "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
-    "category": "Import-Export",
+    "category": "Import-Export"
 }
 
 import os, sys, textwrap
