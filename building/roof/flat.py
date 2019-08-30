@@ -51,7 +51,6 @@ class RoofFlatMulti(RoofFlat):
     """
     
     def __init__(self):
-        self.valid = True
         self.verts = []
         self.wallIndices = []
         self.polygons = []
@@ -68,6 +67,8 @@ class RoofFlatMulti(RoofFlat):
         
         self._levelHeight = None
         self._levels = None
+        
+        self.valid = True
         
         self.element = element
         
