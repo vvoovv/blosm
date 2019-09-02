@@ -16,6 +16,11 @@ class Container:
         self.index2 = 0
         self.v1 = None
         self.v2 = None
+        # the current U-coordinate for texturing
+        self.texU = 0.
+        # the lower and upper V-coordinates for texturing
+        self.texV1 = 0.
+        self.texV2 = 0.
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -28,7 +33,12 @@ class Container:
                 return
     
     def renderLevels(self, item):
-        pass
+        item.levelGroups.init()
+        # sanity check
+        width = item.getWidthForVerticalArrangement()
+        if width > item.width:
+            item.valid = False
+            return
     
     def renderDivs(self, item):
         # <r> is the global building renderer
@@ -48,7 +58,7 @@ class Container:
                 _item = item.markup[0]
                 _item.indices = parentIndices
                 _item.uvs = item.uvs
-                r.createFace(building, _item.indices, None)
+                r.createFace(building, _item.indices, _item.uvs)
             else:
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
@@ -69,6 +79,8 @@ class Container:
                 unitVector = (verts[parentIndices[1]] - self.v1) / item.width
                 self.index1 = indexOffset
                 self.index2 = indexOffset + 1
+                self.texU, self.texV1 = item.uvs[0]
+                self.texV2 = item.uvs[3][1]
                 
                 # Generate Div items but the last one;
                 # the special case is when a symmetry is available
@@ -95,12 +107,20 @@ class Container:
                 # process the last item
                 _item = item.markup[-1]
                 _item.indices = (self.prevIndex1, parentIndices[1], parentIndices[2], self.prevIndex2)
-                r.createFace(building, _item.indices, None)
+                texU = item.uvs[1][0]
+                r.createFace(
+                    building,
+                    _item.indices,
+                    (
+                        (self.texU, self.texV1), (texU, self.texV1), (texU, self.texV2), (self.texU, self.texV2)
+                    )
+                )
         else:
             pass
         
     def generateDivs(self, building, item, unitVector, itemIndex1, itemIndex2, step):
         verts = building.verts
+        texU = self.texU
         for _i in range(itemIndex1, itemIndex2, step):
             _item = item.markup[_i]
             incrementVector = _item.width * unitVector
@@ -113,4 +133,12 @@ class Container:
             self.prevIndex2 = self.index2
             self.index1 += 2
             self.index2 += 2
-            self.r.createFace(building, _item.indices, None)
+            texU = self.texU + _item.width
+            self.r.createFace(
+                building,
+                _item.indices,
+                (
+                    (self.texU, self.texV1), (texU, self.texV1), (texU, self.texV2), (self.texU, self.texV2)
+                )
+            )
+            self.texU = texU

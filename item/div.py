@@ -1,12 +1,16 @@
 from .container import Container
-from .level_styles import LevelStyles
+from .level_groups import LevelGroups
 
 
 class Div(Container):
     
     def __init__(self):
         super().__init__()
-        self.levelStyles = LevelStyles()
+        self.levelGroups = LevelGroups(self)
+        
+    def init(self):
+        super().init()
+        self.levelGroups.clear()
     
     @classmethod
     def getItem(cls, itemFactory, parent, styleBlock):

@@ -184,6 +184,7 @@ class Level(Item):
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         self.isLevel = True
+        self.isBasement = False
 
     def getItem(self, itemFactory, parent):
         return ItemLevel.getItem(itemFactory, parent, self)
@@ -211,7 +212,7 @@ class Balcony(Item):
         super().__init__(defName, use, markup, condition, attrs)
 
     def getItem(self, itemFactory, parent):
-        return ItemWindow.getItem(itemFactory, parent, self)
+        return ItemBalcony.getItem(itemFactory, parent, self)
 
 
 class Door(Item):
@@ -252,6 +253,7 @@ class Basement(Item):
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         self.isLevel = True
+        self.isBasement = True
         
     def getItem(self, itemFactory, parent):
         return ItemBasement.getItem(itemFactory, parent, self)

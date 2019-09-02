@@ -29,6 +29,7 @@ class Facade(Container):
                                     # Make <facade> valid again to try it
                                     # with the next <styleBlock> from <facadeStyle>
                                     facade.valid = True
+                                    facade.markup.clear()
                             else:
                                 pass
                         # Clean up the styleBlock for the next attempt with

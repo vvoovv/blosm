@@ -1,5 +1,5 @@
 from .container import Container
-from .level_styles import LevelStyles
+from .level_groups import LevelGroups
 
 
 class Facade(Container):
@@ -12,13 +12,14 @@ class Facade(Container):
         super().__init__()
         self.valid = True
         self.faces = []
-        self.levelStyles = LevelStyles()
+        self.levelGroups = LevelGroups(self)
     
     def init(self):
         self.valid = True
         self.faces.clear()
-        self.normal = None
+        self.levelGroups.clear()
         
+        self.normal = None
         self.type = ("front", "back", "side")
         self.neighborL = None
         self.neighborR = None

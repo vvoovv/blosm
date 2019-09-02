@@ -33,11 +33,8 @@ class Container(Item):
         # the the given item boundaries along the dimension.
         self.width = None
         self.height = None
-                
-        # do we need to repeat the markup items, if the item has a fixed width?
-        self.repeat = True
-        # The number of repeats if the markup items if the item has a fixed width and
-        # <self.repeat> is True
+        
+        # the number of repeats if the markup items if the item has a fixed width
         self.numRepeats = 1
         
         # the default arrangement of markup items
@@ -56,7 +53,6 @@ class Container(Item):
         self.markup.clear()
         self.width = None
         self.height = None
-        self.repeat = True
         self.arrangement = Horizontal
         self.symmetry = None
     
@@ -101,8 +97,7 @@ class Container(Item):
         
         if self.width:
             repeat = self.getStyleBlockAttr("repeat")
-            if not repeat is None:
-                self.repeat = bool(repeat)
+            repeat = True if repeat is None else bool(repeat)
         
         # iterate through the markup items
         for item in markup:
@@ -164,7 +159,7 @@ class Container(Item):
         # process the results of the first iteration through the markup items
         
         # treat the case with repeats first
-        if self.width and self.repeat:
+        if self.width and repeat:
             if totalRelativeWidth:
                 if totalNonRelativeWidth:
                     # width of a single markup pattern without any repeats
