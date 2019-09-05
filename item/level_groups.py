@@ -15,7 +15,7 @@ class LevelGroups:
         groupCounter = 0
         for item in self.item.markup:
             if item.styleBlock.isBasement:
-                self.basement = None
+                self.basement = item
             else:
                 self.groups[groupCounter].item = item
         self.numActiveGroups = groupCounter

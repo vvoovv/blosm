@@ -195,6 +195,7 @@ class LevelHeights:
                 else:
                     h += levelHeights.getHeight(1, minLevel)
         else:
+            footprint.minLevel = 0
             h = footprint.getStyleBlockAttr("minHeight")
             if h is None:
                 h = 0.

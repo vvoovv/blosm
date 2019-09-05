@@ -3,8 +3,10 @@
 class Item:
     
     def __init__(self):
-        # For example, a parent for a facade is a footprint
+        # for example, a parent for a facade is a footprint
         self.parent = None
+        # a direct access to the footprint
+        self.footprint = None
         # A style block (an instance of grammar.Item) that defines the style for the item
         # within a markup definition.
         # Typically a style block is defined in the markup definition, however it can be also defined
@@ -19,6 +21,7 @@ class Item:
     
     def init(self):
         self.parent = None
+        self.footprint = None
         self.styleBlock = None
         self.width = None
         self.relativeWidth = None

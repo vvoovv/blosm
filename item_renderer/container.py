@@ -1,6 +1,7 @@
-from mathutils import Vector
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
+
+from util import zAxis
 
 
 class Container:
@@ -29,16 +30,59 @@ class Container:
             self.renderLevels(item)
         else:
             self.renderDivs(item)
-            if not item.valid:
-                return
+        if not item.valid:
+            return
     
     def renderLevels(self, item):
-        item.levelGroups.init()
+        # <r> is the global building renderer
+        r = self.r
+        parentIndices = item.indices
+        levelGroups = item.levelGroups
+        levelGroups.init()
         # sanity check
         width = item.getWidthForVerticalArrangement()
         if width > item.width:
             item.valid = False
             return
+        
+        footprint = item.footprint
+        building = item.building
+        verts = building.verts
+        levelHeights = footprint.levelHeights
+        
+        self.prevIndex1 = parentIndices[0]
+        self.prevIndex2 = parentIndices[1]
+        self.v1 = verts[self.prevIndex1]
+        self.v2 = verts[self.prevIndex2]
+        self.index1 = len(verts)
+        self.index2 = self.index1 + 1
+        
+        # treat the basement
+        if not footprint.minHeight:
+            basementHeight = levelHeights.basementHeight
+            if basementHeight:
+                building.appendBmVerts(2)
+                verts.append(self.v1 + basementHeight*zAxis)
+                verts.append(self.v2 + basementHeight*zAxis)
+                indices = (self.prevIndex1, self.prevIndex2, self.index2, self.index1)
+                self.prevIndex1 = self.index1
+                self.prevIndex2 = self.index2
+                basement = levelGroups.basement
+                if basement:
+                    basement.indices = indices
+                r.createFace(building, indices, None)
+        
+        # treat the level groups
+        groups = levelGroups.groups
+        numGroups = levelGroups.numActiveGroups
+        if numGroups > 1:
+            for i in range(numGroups-1):
+                group = groups[i]
+        
+        # the last level group
+        indices = (self.prevIndex1, self.prevIndex2, parentIndices[2], parentIndices[3])
+        groups[-1].indices = indices
+        r.createFace(building, indices, None)
     
     def renderDivs(self, item):
         # <r> is the global building renderer
@@ -71,14 +115,13 @@ class Container:
                     )
                 )
                 verts = building.verts
-                indexOffset = len(verts)
                 self.prevIndex1 = parentIndices[0]
                 self.prevIndex2 = parentIndices[3]
                 self.v1 = verts[self.prevIndex1]
                 self.v2 = verts[self.prevIndex2]
                 unitVector = (verts[parentIndices[1]] - self.v1) / item.width
-                self.index1 = indexOffset
-                self.index2 = indexOffset + 1
+                self.index1 = len(verts)
+                self.index2 = self.index1 + 1
                 self.texU, self.texV1 = item.uvs[0]
                 self.texV2 = item.uvs[3][1]
                 
