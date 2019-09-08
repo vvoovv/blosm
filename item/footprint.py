@@ -11,7 +11,6 @@ class Footprint(Item):
     
     def __init__(self):
         super().__init__()
-        self.valid = True
         self.building = None
         self.polygon = Polygon()
         self.projections = []
@@ -29,7 +28,6 @@ class Footprint(Item):
     
     def init(self):
         super().init()
-        self.valid = True
         self.building = None
         self.lastLevelOffset = 0.
         # reset <self.polygon>

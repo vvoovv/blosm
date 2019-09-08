@@ -68,6 +68,9 @@ class Container(Item):
         """
         Get items for the markup style blocks
         """
+        if self.markup:
+            return
+        
         self.markup.extend(
             _styleBlock.getItem(self.itemFactory, self)\
                 for _styleBlock in self.styleBlock.markup if self.evaluateCondition(_styleBlock)

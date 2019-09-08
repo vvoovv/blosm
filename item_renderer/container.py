@@ -9,19 +9,8 @@ class Container:
     The base class for the item renderers Facade, Div, Layer, Basement
     """
     
-    def __init__(self):
-        # the variables below are used to generate Divs
-        self.prevIndex1 = 0
-        self.prevIndex2 = 0
-        self.index1 = 0
-        self.index2 = 0
-        self.v1 = None
-        self.v2 = None
-        # the current U-coordinate for texturing
-        self.texU = 0.
-        # the lower and upper V-coordinates for texturing
-        self.texV1 = 0.
-        self.texV2 = 0.
+    def getItemRenderer(self, item):
+        return self.itemRenderers[item.__class__.__name__]
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -50,23 +39,24 @@ class Container:
         verts = building.verts
         levelHeights = footprint.levelHeights
         
-        self.prevIndex1 = parentIndices[0]
-        self.prevIndex2 = parentIndices[1]
-        self.v1 = verts[self.prevIndex1]
-        self.v2 = verts[self.prevIndex2]
-        self.index1 = len(verts)
-        self.index2 = self.index1 + 1
+        prevIndex1 = parentIndices[0]
+        prevIndex2 = parentIndices[1]
+        v1 = verts[prevIndex1]
+        v2 = verts[prevIndex2]
+        index1 = len(building.verts)
+        index2 = index1 + 1
         
         # treat the basement
         if not footprint.minHeight:
             basementHeight = levelHeights.basementHeight
             if basementHeight:
-                building.appendBmVerts(2)
-                verts.append(self.v1 + basementHeight*zAxis)
-                verts.append(self.v2 + basementHeight*zAxis)
-                indices = (self.prevIndex1, self.prevIndex2, self.index2, self.index1)
-                self.prevIndex1 = self.index1
-                self.prevIndex2 = self.index2
+                verts.append(v1 + basementHeight*zAxis)
+                verts.append(v2 + basementHeight*zAxis)
+                indices = (prevIndex1, prevIndex2, index2, index1)
+                prevIndex1 = index1
+                prevIndex2 = index2
+                index1 += 2
+                index2 += 2
                 basement = levelGroups.basement
                 if basement:
                     basement.indices = indices
@@ -80,7 +70,7 @@ class Container:
                 group = groups[i]
         
         # the last level group
-        indices = (self.prevIndex1, self.prevIndex2, parentIndices[2], parentIndices[3])
+        indices = (prevIndex1, prevIndex2, parentIndices[2], parentIndices[3])
         groups[-1].indices = indices
         r.createFace(building, indices, None)
     
@@ -106,82 +96,83 @@ class Container:
             else:
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
-                building.appendBmVerts(
-                    2*(
-                        (numRepeats*(2*numItems-1) - 1) if symmetry is MiddleOfLast else (
-                            (numRepeats*2*numItems-1) if symmetry is RightmostOfLast\
-                            else (numRepeats*numItems-1)
-                        )
-                    )
-                )
                 verts = building.verts
-                self.prevIndex1 = parentIndices[0]
-                self.prevIndex2 = parentIndices[3]
-                self.v1 = verts[self.prevIndex1]
-                self.v2 = verts[self.prevIndex2]
-                unitVector = (verts[parentIndices[1]] - self.v1) / item.width
-                self.index1 = len(verts)
-                self.index2 = self.index1 + 1
-                self.texU, self.texV1 = item.uvs[0]
-                self.texV2 = item.uvs[3][1]
+                prevIndex1 = parentIndices[0]
+                prevIndex2 = parentIndices[3]
+                #self.v1 = verts[self.prevIndex1]
+                #self.v2 = verts[self.prevIndex2]
+                unitVector = (verts[parentIndices[1]] - verts[prevIndex1]) / item.width
+                index1 = len(building.verts)
+                index2 = index1 + 1
+                # <texU> is the current U-coordinate for texturing
+                # <texV1> and <texV2> are the lower and upper V-coordinates for texturing
+                texU, texV1 = item.uvs[0]
+                texV2 = item.uvs[3][1]
                 
                 # Generate Div items but the last one;
                 # the special case is when a symmetry is available
                 if numRepeats>1:
                     for _ in range(numRepeats-1):
-                        self.generateDivs(
+                        prevIndex1, prevIndex2, index1, index2, texU = self.generateDivs(
                             building, item, unitVector,
-                            0, numItems, 1
+                            0, numItems, 1,
+                            prevIndex1, prevIndex2, index1, index2,
+                            texU, texV1, texV2
                         )
                         if symmetry:
-                            self.generateDivs(
+                            prevIndex1, prevIndex2, index1, index2, texU = self.generateDivs(
                                 building, item, unitVector,
-                                numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1
+                                numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1,
+                                prevIndex1, prevIndex2, index1, index2,
+                                texU, texV1, texV2
                             )
-                self.generateDivs(
+                prevIndex1, prevIndex2, index1, index2, texU = self.generateDivs(
                     building, item, unitVector,
-                    0, numItems if symmetry else numItems-1, 1
+                    0, numItems if symmetry else numItems-1, 1,
+                    prevIndex1, prevIndex2, index1, index2,
+                    texU, texV1, texV2
                 )
                 if symmetry:
-                    self.generateDivs(
+                    prevIndex1, prevIndex2, index1, index2, texU = self.generateDivs(
                         building, item, unitVector,
-                        numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1
+                        numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1,
+                        prevIndex1, prevIndex2, index1, index2,
+                        texU, texV1, texV2
                     )
                 # process the last item
-                _item = item.markup[-1]
-                _item.indices = (self.prevIndex1, parentIndices[1], parentIndices[2], self.prevIndex2)
-                texU = item.uvs[1][0]
-                r.createFace(
-                    building,
-                    _item.indices,
-                    (
-                        (self.texU, self.texV1), (texU, self.texV1), (texU, self.texV2), (self.texU, self.texV2)
-                    )
+                
+                texU2 = item.uvs[1][0]
+                self.getItemRenderer(item.markup[-1]).render(
+                    item.markup[-1],
+                    (prevIndex1, parentIndices[1], parentIndices[2], prevIndex2),
+                    ( (texU, texV1), (texU2, texV1), (texU2, texV2), (texU, texV2) )
                 )
         else:
             pass
         
-    def generateDivs(self, building, item, unitVector, itemIndex1, itemIndex2, step):
+    def generateDivs(self,
+            building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
+            prevIndex1, prevIndex2, index1, index2, texU, texV1, texV2
+        ):
         verts = building.verts
-        texU = self.texU
-        for _i in range(itemIndex1, itemIndex2, step):
+        v1 = verts[prevIndex1]
+        v2 = verts[prevIndex2]
+        for _i in range(markupItemIndex1, markupItemIndex2, step):
             _item = item.markup[_i]
             incrementVector = _item.width * unitVector
-            self.v1 = self.v1 + incrementVector
-            verts.append(self.v1)
-            self.v2 = self.v2 + incrementVector
-            verts.append(self.v2)
-            _item.indices = (self.prevIndex1, self.index1, self.index2, self.prevIndex2)
-            self.prevIndex1 = self.index1
-            self.prevIndex2 = self.index2
-            self.index1 += 2
-            self.index2 += 2
-            texU = self.texU + _item.width
-            self.r.createFace(
-                building,
-                _item.indices,
-                (
-                    (self.texU, self.texV1), (texU, self.texV1), (texU, self.texV2), (self.texU, self.texV2)
-                )
+            v1 = v1 + incrementVector
+            verts.append(v1)
+            v2 = v2 + incrementVector
+            verts.append(v2)
+            texU2 = texU + _item.width
+            self.getItemRenderer(_item).render(
+                _item,
+                (prevIndex1, index1, index2, prevIndex2),
+                ( (texU, texV1), (texU2, texV1), (texU2, texV2), (texU, texV2) )
             )
-            self.texU = texU
+            prevIndex1 = index1
+            prevIndex2 = index2
+            index1 = len(building.verts)
+            index2 = index1 + 1
+            texU = texU2
+        return prevIndex1, prevIndex2, index1, index2, texU

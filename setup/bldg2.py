@@ -63,10 +63,10 @@ def setup(app, data):
         
         # deal with item renderers
         itemRenderers = dict(
-            facade = FacadeRenderer(),
-            div = DivRenderer(),
-            level = LevelRenderer(),
-            basement = BasementRenderer()
+            Facade = FacadeRenderer(),
+            Div = DivRenderer(),
+            Level = LevelRenderer(),
+            Basement = BasementRenderer()
         )
         for item in itemRenderers:
             itemRenderers[item].itemRenderers = itemRenderers
@@ -75,7 +75,7 @@ def setup(app, data):
         Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
         
         volumeAction = Volume(app, data, br.itemStore, br.itemFactory)
-        volumeAction.setRenderer(itemRenderers["facade"])
+        volumeAction.setRenderer(itemRenderers["Facade"])
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)

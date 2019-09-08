@@ -10,13 +10,9 @@ class Facade(Container):
     
     def __init__(self):
         super().__init__()
-        self.valid = True
-        self.faces = []
         self.levelGroups = LevelGroups(self)
     
     def init(self):
-        self.valid = True
-        self.faces.clear()
         self.levelGroups.clear()
         
         self.normal = None

@@ -30,7 +30,6 @@ class RoofFlat(Roof):
         verts.extend(v for v in polygon.verts)
         # verts for the upper cap
         verts.extend(Vector((v.x, v.y, z)) for v in polygon.verts)
-        building.appendBmVerts(2*numVerts)
         
         # the starting side
         _in = indexOffset+numVerts

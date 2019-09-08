@@ -3,6 +3,7 @@
 class Item:
     
     def __init__(self):
+        self.valid = True
         # for example, a parent for a facade is a footprint
         self.parent = None
         # a direct access to the footprint
@@ -20,6 +21,7 @@ class Item:
         self._styleBlockCache = {}
     
     def init(self):
+        self.valid = True
         self.parent = None
         self.footprint = None
         self.styleBlock = None

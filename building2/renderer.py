@@ -64,12 +64,6 @@ class Building:
         item = itemFactory.getItem(cls)
         item.init(outline)
         return item
-    
-    def appendBmVerts(self, num):
-        """
-        Appends <num> empty placeholders to be filled with BMesh counterpars of <self.verts>
-        """
-        self.bmVerts.extend(None for _ in range(num))
 
 
 class BuildingRendererNew(Renderer):
@@ -120,11 +114,16 @@ class BuildingRendererNew(Renderer):
     
     def createFace(self, building, indices, uvs):
         bm = self.bm
+        verts = building.verts
         bmVerts = building.bmVerts
-        # first check if we have BMVerts for for all <indices>
+        
+        # extend <bmVerts> to have the same number of vertices as in <verts>
+        bmVerts.extend(None for _ in range(len(verts)-len(bmVerts)))
+        
+        # check if we have BMVerts for for all <indices>
         for index in indices:
             if not bmVerts[index]:
-                bmVerts[index] = bm.verts.new( building.verts[index] )
+                bmVerts[index] = bm.verts.new( verts[index] )
         
         face = bm.faces.new(bmVerts[index] for index in indices)
         if uvs:
