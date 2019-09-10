@@ -36,43 +36,54 @@ class Container:
         
         footprint = item.footprint
         building = item.building
-        verts = building.verts
         levelHeights = footprint.levelHeights
         
         prevIndex1 = parentIndices[0]
         prevIndex2 = parentIndices[1]
-        v1 = verts[prevIndex1]
-        v2 = verts[prevIndex2]
         index1 = len(building.verts)
         index2 = index1 + 1
+        texU1, texV = item.uvs[0]
+        texU2 = item.uvs[1][0]
         
         # treat the basement
         if not footprint.minHeight:
-            basementHeight = levelHeights.basementHeight
+            basementHeight = item.getStyleBlockAttr("basementHeight")
+            if basementHeight is None:
+                basementHeight = levelHeights.basementHeight
             if basementHeight:
-                verts.append(v1 + basementHeight*zAxis)
-                verts.append(v2 + basementHeight*zAxis)
-                indices = (prevIndex1, prevIndex2, index2, index1)
-                prevIndex1 = index1
-                prevIndex2 = index2
-                index1 += 2
-                index2 += 2
-                basement = levelGroups.basement
-                if basement:
-                    basement.indices = indices
-                r.createFace(building, indices, None)
+                prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
+                    building, basementHeight, prevIndex1, prevIndex2, index1, index2,
+                    texU1, texU2, texV
+                )
+                #basement = levelGroups.basement
+                #if basement:
+                #    basement.indices = indices
         
         # treat the level groups
         groups = levelGroups.groups
         numGroups = levelGroups.numActiveGroups
+        minLevel = footprint.minLevel
+        groupFound = not minLevel
         if numGroups > 1:
             for i in range(numGroups-1):
                 group = groups[i]
+                if not groupFound and group.index1 <= minLevel <= group.index2:
+                    groupFound = True
+                if groupFound:
+                    height = levelHeights.getHeight(group.index1, group.index2)
+                    prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
+                        building, height, prevIndex1, prevIndex2, index1, index2,
+                        texU1, texU2, texV
+                    )
         
         # the last level group
         indices = (prevIndex1, prevIndex2, parentIndices[2], parentIndices[3])
-        groups[-1].indices = indices
-        r.createFace(building, indices, None)
+        texV2 = item.uvs[2][1]
+        r.createFace(
+            building,
+            indices,
+            ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
+        )
     
     def renderDivs(self, item):
         # <r> is the global building renderer
@@ -140,10 +151,10 @@ class Container:
                         texU, texV1, texV2
                     )
                 # process the last item
-                
+                lastItem = item.markup[0] if symmetry else item.markup[-1]
                 texU2 = item.uvs[1][0]
-                self.getItemRenderer(item.markup[-1]).render(
-                    item.markup[-1],
+                self.getItemRenderer(lastItem).render(
+                    lastItem,
                     (prevIndex1, parentIndices[1], parentIndices[2], prevIndex2),
                     ( (texU, texV1), (texU2, texV1), (texU2, texV2), (texU, texV2) )
                 )
@@ -176,3 +187,22 @@ class Container:
             index2 = index1 + 1
             texU = texU2
         return prevIndex1, prevIndex2, index1, index2, texU
+    
+    def generateDiv(self,
+            building, height,
+            prevIndex1, prevIndex2, index1, index2, texU1, texU2, texV
+        ):
+            verts = building.verts
+            verts.append(verts[prevIndex1] + height*zAxis)
+            verts.append(verts[prevIndex2] + height*zAxis)
+            texV2 = texV + height
+            self.r.createFace(
+                building,
+                (prevIndex1, prevIndex2, index2, index1),
+                ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
+            )
+            prevIndex1 = index1
+            prevIndex2 = index2
+            index1 += 2
+            index2 = index1 + 1
+            return prevIndex1, prevIndex2, index1, index2, texV2

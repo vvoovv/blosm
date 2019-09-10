@@ -181,8 +181,9 @@ class Div(Item):
 
 class Level(Item):
     
-    def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
+    def __init__(self, defName=None, use=None, markup=None, condition=None, indices=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+        self.indices = indices
         self.isLevel = True
         self.isBasement = False
 

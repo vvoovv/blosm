@@ -201,3 +201,36 @@ class LevelHeights:
                 h = 0.
         footprint.minHeight = h
         return h
+    
+    def getLevelHeight(self, index):
+        numLevels = self.footprint.levels
+        if index < 0:
+            index += numLevels
+        if self.levelHeight:
+            if not index:
+                return self.groundLevelHeight
+            elif index == numLevels-1:
+                return self.lastLevelHeight
+            else:
+                return self.levelHeight
+        else:
+            return self.levelHeights.getLevelHeight(index)
+    
+    def getHeight(self, index1, index2):
+        """
+        Get the height of the building part starting from the level <index1> till the level <index2>
+        """
+        numLevels = self.footprint.levels
+        if self.levelHeight:
+            h = 0.
+            if not index1:
+                h += self.groundLevelHeight
+                index1 += 1
+            if index2 == numLevels-1:
+                h += self.lastLevelHeight
+                index2 -= 1
+            if index2 >= index1:
+                h += (index2-index1)*self.levelHeight
+            return h
+        else:
+            return self.levelHeights.getHeight(index1, index2)

@@ -73,6 +73,7 @@ styles = {
         label = "Window and Balcony",
         markup = [
             Level(
+                indices = (0, -1),
                 markup = [
                     Window(
                         width = 1.8,
@@ -98,8 +99,16 @@ styles = {
     Div(
         defName = "staircase",
         label = "Staircase",
+        basementHeight = 0,
         markup = [
             Level(
+                indices = (0, 0),
+                markup = [
+                    Door(label = "entrance door")
+                ]
+            ),
+            Level(
+                indices = (1, -1),
                 markup = [
                     Window(
                         width = 0.8,
@@ -107,12 +116,6 @@ styles = {
                         rows = 1,
                         panels = 1
                     )
-                ]
-            ),
-            Level(
-                index = 0,
-                markup = [
-                    Door(label = "entrance door")
                 ]
             )
         ]
@@ -148,6 +151,7 @@ styles = {
         condition = lambda facade: facade.back,
         markup = [
             Level(
+                indices = (0, -1),
                 markup = [
                     Balcony(),
                     Window(use = "back_facade_window"),
