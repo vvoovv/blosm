@@ -204,8 +204,6 @@ class LevelHeights:
     
     def getLevelHeight(self, index):
         numLevels = self.footprint.levels
-        if index < 0:
-            index += numLevels
         if self.levelHeight:
             if not index:
                 return self.groundLevelHeight

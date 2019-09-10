@@ -70,7 +70,9 @@ class Container:
                 if not groupFound and group.index1 <= minLevel <= group.index2:
                     groupFound = True
                 if groupFound:
-                    height = levelHeights.getHeight(group.index1, group.index2)
+                    height = levelHeights.getLevelHeight(group.index1)\
+                        if group.singleLevel else\
+                        levelHeights.getHeight(group.index1, group.index2)
                     prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
                         building, height, prevIndex1, prevIndex2, index1, index2,
                         texU1, texU2, texV
