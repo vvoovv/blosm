@@ -3,6 +3,10 @@ from .container import Container
 
 class Facade(Container):
     
+    def init(self, itemRenderers, globalRenderer):
+        super().init(itemRenderers, globalRenderer)
+        self.levelRenderer = itemRenderers["Level"]
+    
     def render(self, footprint):
         # <r> is the global building renderer
         r = self.r

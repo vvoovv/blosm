@@ -9,6 +9,10 @@ class Container:
     The base class for the item renderers Facade, Div, Layer, Basement
     """
     
+    def init(self, itemRenderers, globalRenderer):
+        self.itemRenderers = itemRenderers
+        self.r = globalRenderer
+    
     def getItemRenderer(self, item):
         return self.itemRenderers[item.__class__.__name__]
     
@@ -52,7 +56,7 @@ class Container:
                 basementHeight = levelHeights.basementHeight
             if basementHeight:
                 prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                    building, basementHeight, prevIndex1, prevIndex2, index1, index2,
+                    building, item, basementHeight, prevIndex1, prevIndex2, index1, index2,
                     texU1, texU2, texV
                 )
                 #basement = levelGroups.basement
@@ -74,15 +78,15 @@ class Container:
                         if group.singleLevel else\
                         levelHeights.getHeight(group.index1, group.index2)
                     prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                        building, height, prevIndex1, prevIndex2, index1, index2,
+                        building, item, height, prevIndex1, prevIndex2, index1, index2,
                         texU1, texU2, texV
                     )
         
         # the last level group
         indices = (prevIndex1, prevIndex2, parentIndices[2], parentIndices[3])
         texV2 = item.uvs[2][1]
-        r.createFace(
-            building,
+        self.levelRenderer.render(
+            item,
             indices,
             ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
         )
@@ -191,15 +195,15 @@ class Container:
         return prevIndex1, prevIndex2, index1, index2, texU
     
     def generateDiv(self,
-            building, height,
+            building, item, height,
             prevIndex1, prevIndex2, index1, index2, texU1, texU2, texV
         ):
             verts = building.verts
             verts.append(verts[prevIndex1] + height*zAxis)
             verts.append(verts[prevIndex2] + height*zAxis)
             texV2 = texV + height
-            self.r.createFace(
-                building,
+            self.levelRenderer.render(
+                item,
                 (prevIndex1, prevIndex2, index2, index1),
                 ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
             )

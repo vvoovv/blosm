@@ -99,6 +99,7 @@ class Grammar:
         # Besides a Footprint, those style blocks can be of the types Facade,
         # RoofSide, Ridge, i.e. the items generated through volume extrusion
         self.styleBlocks = {}
+        self.meta = None
         self.build(styleBlocks)
     
     def build(self, inputStyleBlocks):
@@ -112,11 +113,13 @@ class Grammar:
         normalStyleBlocks = []
         
         for styleBlock in inputStyleBlocks:
-            if styleBlock.defName:
+            className = styleBlock.__class__.__name__
+            if className == "Meta":
+                self.meta = styleBlock
+            elif styleBlock.defName:
                 library.addStyleBlock(styleBlock.defName, styleBlock, styleId)
                 defStyleBlocks.append(styleBlock)
             else:
-                className = styleBlock.__class__.__name__
                 if not className in styleBlocks:
                     styleBlocks[className] = []
                 styleBlocks[className].append(styleBlock)
@@ -131,6 +134,12 @@ class Grammar:
 
     def setParent(self, item):
         item.parent = None
+
+
+class Meta:
+    
+    def __init__(self, **attrs):
+        self.attrs = attrs
 
 
 class Footprint(Item):

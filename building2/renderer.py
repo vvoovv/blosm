@@ -1,6 +1,7 @@
 from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
+from .texture_store import TextureStore
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -54,15 +55,18 @@ class Building:
         # by its outline
         self.footprint = None
         self._styleBlockCache.clear()
+        self.metaStyleBlock = None
     
     def clone(self):
         building = Building()
         return building
     
     @classmethod
-    def getItem(cls, itemFactory, outline):
+    def getItem(cls, itemFactory, outline, style):
         item = itemFactory.getItem(cls)
         item.init(outline)
+        if style.meta:
+            item.metaStyleBlock = style.meta
         return item
 
 
@@ -75,6 +79,8 @@ class BuildingRendererNew(Renderer):
         referenceItems = _createReferenceItems()
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
+        
+        self.textureStore = TextureStore()
     
     def render(self, buildingP, data):
         parts = buildingP.parts
@@ -89,7 +95,7 @@ class BuildingRendererNew(Renderer):
         
         self.preRender(outline)
         
-        building = Building.getItem(itemFactory, outline)
+        building = Building.getItem(itemFactory, outline, style)
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts

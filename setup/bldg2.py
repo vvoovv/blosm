@@ -69,8 +69,7 @@ def setup(app, data):
             Basement = BasementRenderer()
         )
         for item in itemRenderers:
-            itemRenderers[item].itemRenderers = itemRenderers
-            itemRenderers[item].r = br
+            itemRenderers[item].init(itemRenderers, br)
         
         Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
         

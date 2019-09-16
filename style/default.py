@@ -8,6 +8,10 @@ from action.volume.roof import Roof
 
 styles = {
 "mid rise residential zaandam": [
+    Meta(
+        buildingType = "residential",
+        height = "mid rise"
+    ),
     Footprint(
         height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
         minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
