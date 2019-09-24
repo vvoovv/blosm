@@ -56,7 +56,7 @@ class Container:
                 basementHeight = levelHeights.basementHeight
             if basementHeight:
                 prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                    building, item, basementHeight, prevIndex1, prevIndex2, index1, index2,
+                    building, levelGroups.basement, basementHeight, prevIndex1, prevIndex2, index1, index2,
                     texU1, texU2, texV
                 )
                 #basement = levelGroups.basement
@@ -78,7 +78,7 @@ class Container:
                         if group.singleLevel else\
                         levelHeights.getHeight(group.index1, group.index2)
                     prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                        building, item, height, prevIndex1, prevIndex2, index1, index2,
+                        building, group.item, height, prevIndex1, prevIndex2, index1, index2,
                         texU1, texU2, texV
                     )
         
@@ -86,7 +86,7 @@ class Container:
         indices = (prevIndex1, prevIndex2, parentIndices[2], parentIndices[3])
         texV2 = item.uvs[2][1]
         self.levelRenderer.render(
-            item,
+            building, groups[numGroups-1].item,
             indices,
             ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
         )
@@ -203,7 +203,7 @@ class Container:
             verts.append(verts[prevIndex2] + height*zAxis)
             texV2 = texV + height
             self.levelRenderer.render(
-                item,
+                building, item,
                 (prevIndex1, prevIndex2, index2, index1),
                 ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
             )

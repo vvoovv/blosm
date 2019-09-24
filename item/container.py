@@ -47,6 +47,9 @@ class Container(Item):
         # indices of vertices in the <verts> and <bmVerts>
         self.indices = None
         self.uvs = None
+
+        # the following variable is used to cache a material id (e.g a string name) 
+        self.materialId = 0
     
     def init(self):
         super().init()
@@ -55,6 +58,7 @@ class Container(Item):
         self.height = None
         self.arrangement = Horizontal
         self.symmetry = None
+        self.materialId = None
     
     def getWidth(self):
         if not self.markup:

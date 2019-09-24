@@ -36,3 +36,28 @@ class TextureStore:
             if not buildingType in byBuildingType:
                 byBuildingType[buildingType] = []
             byBuildingType[buildingType].append(texture)
+    
+    def getTextureInfo(self, building, facadePatternInfo):
+        buildingAttrs = building.metaStyleBlock.attrs
+        textures = self.byBuildingType[ buildingAttrs.get("buildingType") ]
+        bestScore = 0
+        bestFit = None
+        for texture in textures:
+            # calculate the score
+            score = 0
+            for _item in facadePatternInfo:
+                if _item in texture["content"]:
+                    # difference in the number of items in the texture and in the style block
+                    dif = abs(texture["content"][_item] - facadePatternInfo[_item])
+                    if not dif:
+                        score += 10
+                    elif dif == 1:
+                        score += 5
+                    elif dif == 2:
+                        score += 3
+                    else:
+                        score +=1
+            if score > bestScore:
+                bestScore = score
+                bestFit = texture
+        return bestFit

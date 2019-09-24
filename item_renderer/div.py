@@ -8,7 +8,7 @@ class Div(Container):
         self.levelRenderer = itemRenderers["Level"]
     
     def render(self, item, indices, uvs):
-        if item.markup or item.styleBlock.markup:
+        if item.markup:
             item.indices = indices
             item.uvs = uvs
             self.renderMarkup(item)
