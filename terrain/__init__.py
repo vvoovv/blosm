@@ -85,7 +85,8 @@ class Terrain:
                 # set origin of the terrain Blender object to zero
                 self.setOrigin(zeroVector())
                 # execute the line below to get correct results (i.e. update transformation matrix)
-                bpy.context.scene.update()
+                if not _isBlender280:
+                    bpy.context.scene.update()
             bm = bmesh.new()
             bm.from_mesh(terrain.data)
             self.bvhTree = BVHTree.FromBMesh(bm)
