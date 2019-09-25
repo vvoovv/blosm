@@ -229,8 +229,8 @@ class AreaRenderer:
         brush.ray_direction = 'Z_AXIS'
         brush.proximity_falloff = 'CONSTANT'
         if _isBlender280:
-            obj.hide_viewport = False
-            obj.hide_render = False
+            obj.hide_viewport = True
+            obj.hide_render = True
             # deselect <obj> to ensure correct work of subsequent operators
             obj.select_set(False)
         else:
