@@ -2,6 +2,10 @@ from .container import Container
 
 
 class Basement(Container):
+    
+    def __init__(self):
+        super().__init__()
+        self.buildingPart = "basement"
 
     @classmethod
     def getItem(cls, itemFactory, parent, styleBlock):

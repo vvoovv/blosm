@@ -9,7 +9,8 @@ from action.volume.roof import Roof
 styles = {
 "mid rise residential zaandam": [
     Meta(
-        buildingType = "residential",
+        buildingUse = "residential",
+        buildingLaf = "modern",
         height = "mid rise"
     ),
     Footprint(

@@ -1,3 +1,4 @@
+import bpy
 from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
@@ -72,9 +73,15 @@ class Building:
 
 class BuildingRendererNew(Renderer):
     
-    def __init__(self, app, styleStore, getStyle=None):
+    def __init__(self, app, styleStore, itemRenderers, getStyle=None):
         self.app = app
         self.styleStore = styleStore
+        
+        self.itemRenderers = itemRenderers
+        # initialize item renderers
+        for item in itemRenderers:
+            itemRenderers[item].init(itemRenderers, self)
+        
         self.getStyle = getStyle
         referenceItems = _createReferenceItems()
         self.itemStore = ItemStore(referenceItems)
@@ -94,6 +101,8 @@ class BuildingRendererNew(Renderer):
         outline = buildingP.outline
         
         self.preRender(outline)
+        for itemRenderer in self.itemRenderers:
+            self.itemRenderers[itemRenderer].preRender()
         
         building = Building.getItem(itemFactory, outline, style)
         partTag = outline.tags.get("building:part")
@@ -138,3 +147,16 @@ class BuildingRendererNew(Renderer):
             loops = face.loops
             for loop,uv in zip(loops, uvs):
                 loop[uvLayer].uv = uv
+        return face
+
+    def setMaterial(self, face, materialName):
+        """
+        Set material (actually material index) for the given <face>.
+        """
+        materialIndices = self.materialIndices
+        materials = self.obj.data.materials
+        
+        if not materialName in materialIndices:
+            materialIndices[materialName] = len(materials)
+            materials.append(bpy.data.materials[materialName] if materialName else None)
+        face.material_index = materialIndices[materialName]

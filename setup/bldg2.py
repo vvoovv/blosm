@@ -59,8 +59,6 @@ def setup(app, data):
         #    materials = getMaterials()
         #)
         
-        br = BuildingRendererNew(app, styleStore, getStyle=getStyle)
-        
         # deal with item renderers
         itemRenderers = dict(
             Facade = FacadeRenderer(),
@@ -68,8 +66,8 @@ def setup(app, data):
             Level = LevelRenderer(),
             Basement = BasementRenderer()
         )
-        for item in itemRenderers:
-            itemRenderers[item].init(itemRenderers, br)
+        
+        br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
         
         Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
         

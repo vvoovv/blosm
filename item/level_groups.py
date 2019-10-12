@@ -9,6 +9,8 @@ class LevelGroups:
         self.item = item
         self.groups = tuple(LevelGroup() for _ in range(_numGroups))
         self.basement = None
+        # a wrapper for the basement
+        self.basementGroup = LevelGroup()
         self.numActiveGroups = 0
     
     def init(self):
@@ -17,7 +19,8 @@ class LevelGroups:
         for item in self.item.markup:
             styleBlock = item.styleBlock
             if styleBlock.isBasement:
-                self.basement = item
+                self.basement = self.basementGroup
+                self.basement.item = item
             else:
                 group = self.groups[groupCounter]
                 group.item = item

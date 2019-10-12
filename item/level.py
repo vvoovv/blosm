@@ -5,6 +5,7 @@ class Level(Container):
     
     def __init__(self):
         super().__init__()
+        self.buildingPart = None
 
     @classmethod
     def getItem(cls, itemFactory, parent, styleBlock):

@@ -12,9 +12,16 @@ class Container:
     def init(self, itemRenderers, globalRenderer):
         self.itemRenderers = itemRenderers
         self.r = globalRenderer
+        
+        self.uvLayer = "data.1"
+        self.vertexColorLayer = "Col"
     
     def getItemRenderer(self, item):
         return self.itemRenderers[item.__class__.__name__]
+    
+    def preRender(self):
+        self.requireUvLayer(self.uvLayer)
+        self.requireVertexColorLayer(self.vertexColorLayer)
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -27,8 +34,6 @@ class Container:
             return
     
     def renderLevels(self, item):
-        # <r> is the global building renderer
-        r = self.r
         parentIndices = item.indices
         levelGroups = item.levelGroups
         levelGroups.init()
@@ -78,7 +83,7 @@ class Container:
                         if group.singleLevel else\
                         levelHeights.getHeight(group.index1, group.index2)
                     prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                        building, group.item, height, prevIndex1, prevIndex2, index1, index2,
+                        building, group, height, prevIndex1, prevIndex2, index1, index2,
                         texU1, texU2, texV
                     )
         
@@ -86,7 +91,7 @@ class Container:
         indices = (prevIndex1, prevIndex2, parentIndices[2], parentIndices[3])
         texV2 = item.uvs[2][1]
         self.levelRenderer.render(
-            building, groups[numGroups-1].item,
+            building, groups[numGroups-1],
             indices,
             ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
         )
@@ -195,7 +200,7 @@ class Container:
         return prevIndex1, prevIndex2, index1, index2, texU
     
     def generateDiv(self,
-            building, item, height,
+            building, levelGroup, height,
             prevIndex1, prevIndex2, index1, index2, texU1, texU2, texV
         ):
             verts = building.verts
@@ -203,7 +208,7 @@ class Container:
             verts.append(verts[prevIndex2] + height*zAxis)
             texV2 = texV + height
             self.levelRenderer.render(
-                building, item,
+                building, levelGroup,
                 (prevIndex1, prevIndex2, index2, index1),
                 ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
             )
@@ -212,3 +217,29 @@ class Container:
             index1 += 2
             index2 = index1 + 1
             return prevIndex1, prevIndex2, index1, index2, texV2
+
+    def requireUvLayer(self, name):
+        uv = self.r.bm.loops.layers.uv
+        # create a data UV layer
+        if not name in uv:
+            uv.new(name)
+
+    def requireVertexColorLayer(self, name):
+        vertex_colors = self.r.bm.loops.layers.color
+        # create a vertex color layer for data
+        if not name in vertex_colors:
+            vertex_colors.new(name)
+
+    def setData(self, face, layerName, uv):
+        if not isinstance(uv, tuple):
+            uv = (uv, uv)
+        uvLayer = self.r.bm.loops.layers.uv[layerName]
+        for loop in face.loops:
+            loop[uvLayer].uv = uv
+            
+    def setColor(self, face, layerName, color):
+        if not color:
+            color = self.colors[self.colorIndex]
+        vertexColorLayer = self.r.bm.loops.layers.color[layerName]
+        for loop in face.loops:
+            loop[vertexColorLayer] = color
