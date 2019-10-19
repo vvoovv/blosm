@@ -5,6 +5,7 @@ from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage, setCustomNodeValue
 
 
+_materialTemplateFilename = "building_material_templates.blend"
 _materialTemplateName = "facade_overlay_template"
 
 
@@ -18,7 +19,7 @@ class Level(Container):
     def init(self, itemRenderers, globalRenderer):
         super().init(itemRenderers, globalRenderer)
     
-    def render(self, building, levelGroup, indices, uvs):
+    def render(self, building, levelGroup, indices, uvs, texOffsetU):
         item = levelGroup.item
         face = self.r.createFace(item.building, indices, uvs)
         if item.markup:
@@ -49,8 +50,28 @@ class Level(Container):
                 else:
                     item.materialId = ""
         if item.materialId:
-            self.setData(face, self.uvLayer, 2.7)
-            self.setData(face, self.r.layer.uvNameSize, item.width)
+            levelHeights = item.footprint.levelHeights
+            self.setData(
+                face,
+                self.r.layer.uvNameSize,
+                (
+                    # face width
+                    item.width,
+                    # level height
+                    levelHeights.getLevelHeight(levelGroup.index1)\
+                    if levelGroup.singleLevel else\
+                    levelHeights.getHeight(levelGroup.index1, levelGroup.index2)/(levelGroup.index2-levelGroup.index1),
+                )
+            )
+            self.setData(
+                face,
+                self.uvLayer,
+                (
+                    # offset for the texture U-coordinate
+                    texOffsetU,
+                    0.
+                )
+            )
             self.setColor(face, self.vertexColorLayer, (0.7, 0.3, 0.3, 1.))
         self.r.setMaterial(face, item.materialId) 
     
@@ -80,7 +101,8 @@ class Level(Container):
         
         materialTemplate = bpy.data.materials.get(materialTemplateName)
         if not materialTemplate:
-            materialTemplate = loadMaterialsFromFile(self.r.app.bldgMaterialsFilepath, True, materialTemplateName)[0]
+            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
+            materialTemplate = loadMaterialsFromFile(os.path.join(bldgMaterialsDirectory, _materialTemplateFilename), True, materialTemplateName)[0]
         if not materialName in bpy.data.materials:
             bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
             nodes = createMaterialFromTemplate(materialTemplate, materialName)

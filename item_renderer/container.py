@@ -93,7 +93,8 @@ class Container:
         self.levelRenderer.render(
             building, groups[numGroups-1],
             indices,
-            ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
+            ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
+            texU1
         )
     
     def renderDivs(self, item):
@@ -210,7 +211,8 @@ class Container:
             self.levelRenderer.render(
                 building, levelGroup,
                 (prevIndex1, prevIndex2, index2, index1),
-                ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
+                ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
+                texU1
             )
             prevIndex1 = index1
             prevIndex2 = index2
@@ -238,8 +240,6 @@ class Container:
             loop[uvLayer].uv = uv
             
     def setColor(self, face, layerName, color):
-        if not color:
-            color = self.colors[self.colorIndex]
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color

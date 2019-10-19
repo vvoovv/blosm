@@ -56,6 +56,7 @@ class Container(Item):
         self.markup.clear()
         self.width = None
         self.height = None
+        self.numRepeats = 1
         self.arrangement = Horizontal
         self.symmetry = None
         self.materialId = None
@@ -188,8 +189,10 @@ class Container(Item):
             self.numRepeats = numRepeats
             factor = self.width/numRepeats/width
             if numRepeats > 1:
-                # the corrected and final width of a single markup patter without any repeats
+                # the corrected and final width of a single markup pattern without any repeats
                 width *= factor
+                # store the pattern width for the case <numRepeats> > 1
+                self.patternWidth = width
             else:
                 width = self.width
             

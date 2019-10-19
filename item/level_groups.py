@@ -14,7 +14,9 @@ class LevelGroups:
         self.numActiveGroups = 0
     
     def init(self):
-        numLevels = self.item.footprint.levels
+        footprint = self.item.footprint
+        numLevels = footprint.levels
+        minLevel = footprint.minLevel
         groupCounter = 0
         for item in self.item.markup:
             styleBlock = item.styleBlock
@@ -25,6 +27,8 @@ class LevelGroups:
                 group = self.groups[groupCounter]
                 group.item = item
                 index1, index2 = styleBlock.indices
+                if index1 < minLevel:
+                    index1 = minLevel
                 if index1 == index2:
                     group.singleLevel = True
                     if index1 < 0:
@@ -36,7 +40,10 @@ class LevelGroups:
                     if index2 < 0:
                         index2 += numLevels
                     group.index1 = index1
-                    group.index2 = index2
+                    if index1 == index2:
+                        group.singleLevel = True
+                    else:
+                        group.index2 = index2
                 groupCounter += 1
         self.numActiveGroups = groupCounter
     
