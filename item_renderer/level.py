@@ -19,7 +19,7 @@ class Level(Container):
     def init(self, itemRenderers, globalRenderer):
         super().init(itemRenderers, globalRenderer)
     
-    def render(self, building, levelGroup, indices, uvs, texOffsetU):
+    def render(self, building, levelGroup, indices, uvs, texOffsetU, texOffsetV):
         item = levelGroup.item
         face = self.r.createFace(item.building, indices, uvs)
         if item.markup:
@@ -69,7 +69,8 @@ class Level(Container):
                 (
                     # offset for the texture U-coordinate
                     texOffsetU,
-                    0.
+                    # offset for the texture V-coordinate
+                    texOffsetV
                 )
             )
             self.setColor(face, self.vertexColorLayer, (0.7, 0.3, 0.3, 1.))

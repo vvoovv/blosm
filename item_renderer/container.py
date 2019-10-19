@@ -94,7 +94,8 @@ class Container:
             building, groups[numGroups-1],
             indices,
             ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
-            texU1
+            texU1,
+            texV
         )
     
     def renderDivs(self, item):
@@ -212,7 +213,8 @@ class Container:
                 building, levelGroup,
                 (prevIndex1, prevIndex2, index2, index1),
                 ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
-                texU1
+                texU1,
+                texV
             )
             prevIndex1 = index1
             prevIndex2 = index2
