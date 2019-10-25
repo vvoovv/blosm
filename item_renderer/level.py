@@ -14,7 +14,7 @@ class Level(Container):
     def __init__(self):
         # The following Python dictionary is used to calculated the number of windows and balconies
         # in the Level pattern
-        self.facadePatternInfo = dict(Window=0, Balcony=0)
+        self.facadePatternInfo = dict(Window=0, Balcony=0, Door=0)
     
     def init(self, itemRenderers, globalRenderer):
         super().init(itemRenderers, globalRenderer)
@@ -23,46 +23,59 @@ class Level(Container):
         item = levelGroup.item
         face = self.r.createFace(item.building, indices, uvs)
         if item.markup:
-            facadePatternInfo = self.facadePatternInfo
-            if item.materialId is None:
-                # reset <facadePatternInfo>
-                for key in facadePatternInfo:
-                    facadePatternInfo[key] = 0
-                for _item in item.markup:
-                    className = _item.__class__.__name__
-                    if className in facadePatternInfo:
-                        facadePatternInfo[className] += 1
-                # get a texture that fits to the Level markup pattern
-                textureInfo = self.r.textureStore.getTextureInfo(
+            # process the special case: the door which the only item in the markup
+            isSingleDoor = len(item.markup) == 1 and item.markup[0].__class__.__name__ == "Door"
+            if isSingleDoor:
+                self.setMaterialId(
+                    item,
+                    building,
+                    # building part
+                    "door",
+                    # item renderer
+                    self.itemRenderers["Door"]
+                )
+            else:
+                self.setMaterialId(
+                    item,
                     building,
                     # getting building part
                     item.buildingPart if item.buildingPart else (
-                            "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
-                        ),
-                    facadePatternInfo
+                        "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
+                    ),
+                    self
                 )
-                if textureInfo:
-                    materialId = self.getMaterialId(textureInfo)
-                    if self.createMaterial(materialId, textureInfo):
-                        item.materialId = materialId
-                    else:
-                        item.materialId = ""
-                else:
-                    item.materialId = ""
         if item.materialId:
-            levelHeights = item.footprint.levelHeights
-            self.setData(
-                face,
-                self.r.layer.uvNameSize,
-                (
+            if isSingleDoor:
+                self.setData(
+                    face,
+                    self.r.layer.uvNameSize,
                     # face width
-                    item.width,
-                    # level height
-                    levelHeights.getLevelHeight(levelGroup.index1)\
-                    if levelGroup.singleLevel else\
-                    levelHeights.getHeight(levelGroup.index1, levelGroup.index2)/(levelGroup.index2-levelGroup.index1),
+                    item.width
                 )
-            )
+                self.setData(
+                    face,
+                    self.uvLayer,
+                    (
+                        # offset for the texture U-coordinate
+                        texOffsetU,
+                        # offset for the texture V-coordinate
+                        texOffsetV
+                    )
+                )
+            else:
+                levelHeights = item.footprint.levelHeights
+                self.setData(
+                    face,
+                    self.r.layer.uvNameSize,
+                    (
+                        # face width
+                        item.width,
+                        # level height
+                        levelHeights.getLevelHeight(levelGroup.index1)\
+                        if levelGroup.singleLevel else\
+                        levelHeights.getHeight(levelGroup.index1, levelGroup.index2)/(levelGroup.index2-levelGroup.index1)
+                    )
+                )
             self.setData(
                 face,
                 self.uvLayer,
@@ -137,7 +150,6 @@ class Level(Container):
             setCustomNodeValue(n, "Texture Height", textureHeightM)
             setCustomNodeValue(n, "Texture V-Offset", textureVoffsetM)
         return True
-
     
     def getMaterialId(self, textureInfo):
         return textureInfo["name"]

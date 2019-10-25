@@ -1,27 +1,17 @@
+from . import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
 from util import zAxis
 
 
-class Container:
+class Container(ItemRenderer):
     """
     The base class for the item renderers Facade, Div, Layer, Basement
     """
     
-    def init(self, itemRenderers, globalRenderer):
-        self.itemRenderers = itemRenderers
-        self.r = globalRenderer
-        
-        self.uvLayer = "data.1"
-        self.vertexColorLayer = "Col"
-    
     def getItemRenderer(self, item):
         return self.itemRenderers[item.__class__.__name__]
-    
-    def preRender(self):
-        self.requireUvLayer(self.uvLayer)
-        self.requireVertexColorLayer(self.vertexColorLayer)
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -59,7 +49,7 @@ class Container:
             basementHeight = item.getStyleBlockAttr("basementHeight")
             if basementHeight is None:
                 basementHeight = levelHeights.basementHeight
-            if basementHeight:
+            if basementHeight and levelGroups.basement:
                 prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
                     building, levelGroups.basement, basementHeight, prevIndex1, prevIndex2, index1, index2,
                     texU1, texU2, texV
@@ -222,18 +212,6 @@ class Container:
             index2 = index1 + 1
             return prevIndex1, prevIndex2, index1, index2, texV2
 
-    def requireUvLayer(self, name):
-        uv = self.r.bm.loops.layers.uv
-        # create a data UV layer
-        if not name in uv:
-            uv.new(name)
-
-    def requireVertexColorLayer(self, name):
-        vertex_colors = self.r.bm.loops.layers.color
-        # create a vertex color layer for data
-        if not name in vertex_colors:
-            vertex_colors.new(name)
-
     def setData(self, face, layerName, uv):
         if not isinstance(uv, tuple):
             uv = (uv, uv)
@@ -245,3 +223,28 @@ class Container:
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
+    
+    def setMaterialId(self, item, building, buildingPart, itemRenderer):
+        facadePatternInfo = self.facadePatternInfo
+        if item.materialId is None:
+            # reset <facadePatternInfo>
+            for key in facadePatternInfo:
+                facadePatternInfo[key] = 0
+            for _item in item.markup:
+                className = _item.__class__.__name__
+                if className in facadePatternInfo:
+                    facadePatternInfo[className] += 1
+            # get a texture that fits to the Level markup pattern
+            textureInfo = self.r.textureStore.getTextureInfo(
+                building,
+                buildingPart,
+                facadePatternInfo
+            )
+            if textureInfo:
+                materialId = self.getMaterialId(textureInfo)
+                if itemRenderer.createMaterial(materialId, textureInfo):
+                    item.materialId = materialId
+                else:
+                    item.materialId = ""
+            else:
+                item.materialId = ""

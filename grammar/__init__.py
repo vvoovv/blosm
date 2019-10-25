@@ -7,6 +7,7 @@ from item.level import Level as ItemLevel
 from item.basement import Basement as ItemBasement
 from item.window import Window as ItemWindow
 from item.balcony import Balcony as ItemBalcony
+from item.door import Door as ItemDoor
 
 
 # style attributes that are evaluated once per building by default
@@ -231,7 +232,7 @@ class Door(Item):
         super().__init__(defName, use, markup, condition, attrs)
         
     def getItem(self, itemFactory, parent):
-        return ItemWindow.getItem(itemFactory, parent, self)
+        return ItemDoor.getItem(itemFactory, parent, self)
         
 
 class Chimney(Item):

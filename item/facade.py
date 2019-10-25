@@ -14,11 +14,6 @@ class Facade(Container):
     
     def init(self):
         self.levelGroups.clear()
-        
-        self.normal = None
-        self.type = ("front", "back", "side")
-        self.neighborL = None
-        self.neighborR = None
 
     @classmethod
     def getItem(cls, itemFactory, parent, indices, width, heightLeft, heightRightOffset):

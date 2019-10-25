@@ -113,6 +113,7 @@ styles = {
                 ]
             ),
             Level(
+                repeat = False,
                 indices = (1, -1),
                 markup = [
                     Window(

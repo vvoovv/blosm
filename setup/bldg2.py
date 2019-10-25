@@ -17,6 +17,7 @@ from item_renderer.facade import Facade as FacadeRenderer
 from item_renderer.div import Div as DivRenderer
 from item_renderer.level import Level as LevelRenderer
 from item_renderer.basement import Basement as BasementRenderer
+from item_renderer.door import Door as DoorRenderer
 
 from action.terrain import Terrain
 from action.volume import Volume
@@ -64,7 +65,8 @@ def setup(app, data):
             Facade = FacadeRenderer(),
             Div = DivRenderer(),
             Level = LevelRenderer(),
-            Basement = BasementRenderer()
+            Basement = BasementRenderer(),
+            Door = DoorRenderer()
         )
         
         br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
