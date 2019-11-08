@@ -1,6 +1,6 @@
 import os
 import bpy
-from . import ItemRenderer
+from .container import Container
 from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage, setCustomNodeValue
 
@@ -9,8 +9,50 @@ _materialTemplateFilename = "building_material_templates.blend"
 _materialTemplateName = "door_overlay_template"
 
 
-class Door(ItemRenderer):
-
+class Door(Container):
+    """
+    The Door renderer is the special case of the <item_renderer.level.Level> when
+    a door in the only element in the level markup
+    """
+    
+    def __init__(self):
+        self.materialTemplateFilename = _materialTemplateFilename
+        self.materialTemplateName = _materialTemplateName
+        # do we need to initialize <self.facadePatternInfo>
+        self.initFacadePatternInfo = False
+        self.facadePatternInfo = dict(Door=1)
+    
+    def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
+        item = levelGroup.item
+        face = self.r.createFace(item.building, indices, uvs)
+        self.setMaterialId(
+            item,
+            building,
+            # building part
+            "door",
+            # item renderer
+            self
+        )
+        if item.materialId:
+            self.setData(
+                face,
+                self.r.layer.uvNameSize,
+                # face width
+                parentItem.width
+            )
+            self.setData(
+                face,
+                self.uvLayer,
+                (
+                    # offset for the texture U-coordinate
+                    texOffsetU,
+                    # offset for the texture V-coordinate
+                    texOffsetV
+                )
+            )
+            self.setColor(face, self.vertexColorLayer, (0.7, 0.3, 0.3, 1.))
+        self.r.setMaterial(face, item.materialId)
+    
     def createMaterial(self, materialName, textureInfo):
         materialTemplateName = _materialTemplateName
         wallTextureWidthM = 1.5

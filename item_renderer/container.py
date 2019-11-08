@@ -1,6 +1,11 @@
+import os
+import bpy
 from . import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
+
+from util.blender import loadMaterialsFromFile
+from util.blender_extra.material import createMaterialFromTemplate, setImage, setCustomNodeValue
 
 from util import zAxis
 
@@ -9,7 +14,7 @@ class Container(ItemRenderer):
     """
     The base class for the item renderers Facade, Div, Layer, Basement
     """
-    
+        
     def getItemRenderer(self, item):
         return self.itemRenderers[item.__class__.__name__]
     
@@ -50,13 +55,11 @@ class Container(ItemRenderer):
             if basementHeight is None:
                 basementHeight = levelHeights.basementHeight
             if basementHeight and levelGroups.basement:
-                prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                    building, levelGroups.basement, basementHeight, prevIndex1, prevIndex2, index1, index2,
+                prevIndex1, prevIndex2, index1, index2, texV = self.generateLevelDiv(
+                    building, levelGroups.basement, item, self.basementRenderer, basementHeight,
+                    prevIndex1, prevIndex2, index1, index2,
                     texU1, texU2, texV
                 )
-                #basement = levelGroups.basement
-                #if basement:
-                #    basement.indices = indices
         
         # treat the level groups
         groups = levelGroups.groups
@@ -72,16 +75,18 @@ class Container(ItemRenderer):
                     height = levelHeights.getLevelHeight(group.index1)\
                         if group.singleLevel else\
                         levelHeights.getHeight(group.index1, group.index2)
-                    prevIndex1, prevIndex2, index1, index2, texV = self.generateDiv(
-                        building, group, height, prevIndex1, prevIndex2, index1, index2,
+                    prevIndex1, prevIndex2, index1, index2, texV = self.generateLevelDiv(
+                        building, group, item, self.levelRenderer.getRenderer(group), height,
+                        prevIndex1, prevIndex2, index1, index2,
                         texU1, texU2, texV
                     )
         
         # the last level group
+        group = groups[numGroups-1]
         indices = (prevIndex1, prevIndex2, parentIndices[2], parentIndices[3])
         texV2 = item.uvs[2][1]
-        self.levelRenderer.render(
-            building, groups[numGroups-1],
+        self.levelRenderer.getRenderer(group).render(
+            building, group, item,
             indices,
             ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
             texU1,
@@ -191,16 +196,16 @@ class Container(ItemRenderer):
             texU = texU2
         return prevIndex1, prevIndex2, index1, index2, texU
     
-    def generateDiv(self,
-            building, levelGroup, height,
+    def generateLevelDiv(self,
+            building, levelGroup, parentItem, renderer, height,
             prevIndex1, prevIndex2, index1, index2, texU1, texU2, texV
         ):
             verts = building.verts
             verts.append(verts[prevIndex1] + height*zAxis)
             verts.append(verts[prevIndex2] + height*zAxis)
             texV2 = texV + height
-            self.levelRenderer.render(
-                building, levelGroup,
+            renderer.render(
+                building, levelGroup, parentItem,
                 (prevIndex1, prevIndex2, index2, index1),
                 ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
                 texU1,
@@ -227,13 +232,15 @@ class Container(ItemRenderer):
     def setMaterialId(self, item, building, buildingPart, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
         if item.materialId is None:
-            # reset <facadePatternInfo>
-            for key in facadePatternInfo:
-                facadePatternInfo[key] = 0
-            for _item in item.markup:
-                className = _item.__class__.__name__
-                if className in facadePatternInfo:
-                    facadePatternInfo[className] += 1
+            if self.initFacadePatternInfo:
+                # reset <facadePatternInfo>
+                for key in facadePatternInfo:
+                    facadePatternInfo[key] = 0
+                # initalize <facadePatternInfo>
+                for _item in item.markup:
+                    className = _item.__class__.__name__
+                    if className in facadePatternInfo:
+                        facadePatternInfo[className] += 1
             # get a texture that fits to the Level markup pattern
             textureInfo = self.r.textureStore.getTextureInfo(
                 building,
@@ -248,3 +255,103 @@ class Container(ItemRenderer):
                     item.materialId = ""
             else:
                 item.materialId = ""
+    
+    def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
+        item = levelGroup.item
+        face = self.r.createFace(item.building, indices, uvs)
+        if item.markup:
+            self.setMaterialId(
+                item,
+                building,
+                # getting building part
+                item.buildingPart if item.buildingPart else (
+                    "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
+                ),
+                self
+            )
+        if item.materialId:
+            self.setData(
+                face,
+                self.r.layer.uvNameSize,
+                (
+                    # face width
+                    parentItem.width,
+                    self.getHeightForMaterial(levelGroup)
+                )
+            )
+            self.setData(
+                face,
+                self.uvLayer,
+                (
+                    # offset for the texture U-coordinate
+                    texOffsetU,
+                    # offset for the texture V-coordinate
+                    texOffsetV
+                )
+            )
+            self.setColor(face, self.vertexColorLayer, (0.7, 0.3, 0.3, 1.))
+        self.r.setMaterial(face, item.materialId)
+    
+    def getMaterialId(self, textureInfo):
+        return textureInfo["name"]
+    
+    def createMaterial(self, materialName, textureInfo):
+        textureWidthPx = textureInfo["textureWidthPx"]
+        textureHeightPx = textureInfo["textureHeightPx"]
+        numberOfTilesU = textureInfo["numTilesU"]
+        numberOfTilesV = textureInfo["numTilesV"]
+        tileWidthPx = textureWidthPx/numberOfTilesU
+        # factor = windowWidthM/windowWidthPx
+        factor = textureInfo["windowWidthM"]/(textureInfo["windowRpx"]-textureInfo["windowLpx"])
+
+        textureWidthM = factor*textureWidthPx
+        tileSizeUdefaultM = factor*tileWidthPx
+        textureUoffsetM = 0.
+        
+        textureLevelHeightM = factor*textureHeightPx/numberOfTilesV
+        textureHeightM = factor*textureHeightPx
+        textureVoffsetM = 0.
+        
+        customNode = "FacadeOverlay"
+        wallTextureWidthM = 1.5
+        wallTextureHeightM = 1.5
+        wallTextureFilename = "cc0textures_bricks11_col.jpg"
+        wallTexturePath = "textures/cladding/brick"
+        
+        materialTemplate = bpy.data.materials.get(self.materialTemplateName)
+        if not materialTemplate:
+            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
+            materialTemplate = loadMaterialsFromFile(os.path.join(bldgMaterialsDirectory, self.materialTemplateFilename), True, self.materialTemplateName)[0]
+        if not materialName in bpy.data.materials:
+            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
+            nodes = createMaterialFromTemplate(materialTemplate, materialName)
+            # the overlay texture
+            setImage(
+                textureInfo["name"],
+                os.path.join(bldgMaterialsDirectory, textureInfo["path"]),
+                nodes,
+                "Overlay"
+            )
+            # The wall material (i.e. background) texture,
+            # set it just in case
+            setImage(
+                wallTextureFilename,
+                os.path.join(bldgMaterialsDirectory, wallTexturePath),
+                nodes,
+                "Wall Material"
+            )
+            nodes["Mapping"].scale[0] = 1./wallTextureWidthM
+            nodes["Mapping"].scale[1] = 1./wallTextureHeightM
+            # the mask for the emission
+            #setImage(fileName, directory, nodes, "Emission Mask", "emissive")
+            # setting nodes
+            n = nodes[customNode]
+            setCustomNodeValue(n, "Texture Width", textureWidthM)
+            setCustomNodeValue(n, "Number of Tiles U", numberOfTilesU)
+            setCustomNodeValue(n, "Tile Size U Default", tileSizeUdefaultM)
+            setCustomNodeValue(n, "Texture U-Offset", textureUoffsetM)
+            setCustomNodeValue(n, "Number of Tiles V", numberOfTilesV)
+            setCustomNodeValue(n, "Texture Level Height", textureLevelHeightM)
+            setCustomNodeValue(n, "Texture Height", textureHeightM)
+            setCustomNodeValue(n, "Texture V-Offset", textureVoffsetM)
+        return True

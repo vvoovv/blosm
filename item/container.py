@@ -191,8 +191,6 @@ class Container(Item):
             if numRepeats > 1:
                 # the corrected and final width of a single markup pattern without any repeats
                 width *= factor
-                # store the pattern width for the case <numRepeats> > 1
-                self.patternWidth = width
             else:
                 width = self.width
             
