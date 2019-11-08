@@ -32,7 +32,7 @@ def _getContentKeyWithoutNumbers(content, sortedContentKeys):
     return "".join(key[0] for key in sortedContentKeys if content[key])
 
 
-class TextureStore:
+class FacadeTextureStore:
     
     textureInfoFilename = "texture_info.blend"
     

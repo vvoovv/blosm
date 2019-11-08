@@ -2,7 +2,7 @@ import bpy
 from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
-from .texture_store import TextureStore
+from .texture_store_facade import FacadeTextureStore
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -87,7 +87,7 @@ class BuildingRendererNew(Renderer):
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
         
-        self.textureStore = TextureStore()
+        self.facadeTextureStore = FacadeTextureStore()
     
     def render(self, buildingP, data):
         parts = buildingP.parts

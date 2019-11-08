@@ -242,7 +242,7 @@ class Container(ItemRenderer):
                     if className in facadePatternInfo:
                         facadePatternInfo[className] += 1
             # get a texture that fits to the Level markup pattern
-            textureInfo = self.r.textureStore.getTextureInfo(
+            textureInfo = self.r.facadeTextureStore.getTextureInfo(
                 building,
                 buildingPart,
                 facadePatternInfo
