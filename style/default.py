@@ -54,7 +54,7 @@ styles = {
     Facade(
         defName = "brown_brick",
         claddingMaterial = "brick",
-        claddingColor = "brown",
+        claddingColor = "brown"
     ),
     Level(
         defName = "staircase",

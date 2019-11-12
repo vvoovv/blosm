@@ -169,6 +169,16 @@ def loadNodeGroupsFromFile(filepath, *names):
         ]
 
 
+def loadTextFromFile(filepath, name):
+    """
+    Loads a Blender text with the given <name> from the .blend file with the given <filepath>
+    """
+    with bpy.data.libraries.load(filepath) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
+        data_to.texts = [name]
+    return data_to.texts[0]
+
+
 def appendObjectsFromFile(filepath, collection, *names):
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
         # a Python list (not a Python tuple!) must be set to <data_to.objects>

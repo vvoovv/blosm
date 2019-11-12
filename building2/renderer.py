@@ -3,6 +3,7 @@ from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
 from .texture_store_facade import FacadeTextureStore
+from .texture_store_cladding import CladdingTextureStore
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -88,6 +89,7 @@ class BuildingRendererNew(Renderer):
         self.itemFactory = ItemFactory(referenceItems)
         
         self.facadeTextureStore = FacadeTextureStore()
+        self.claddingTextureStore = CladdingTextureStore()
     
     def render(self, buildingP, data):
         parts = buildingP.parts

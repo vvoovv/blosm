@@ -1,5 +1,6 @@
 import os
 import bpy
+from manager import Manager
 from . import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
@@ -8,6 +9,9 @@ from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage, setCustomNodeValue
 
 from util import zAxis
+
+
+_customNode = "FacadeOverlay"
 
 
 class Container(ItemRenderer):
@@ -227,48 +231,53 @@ class Container(ItemRenderer):
     def setColor(self, face, layerName, color):
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
-            loop[vertexColorLayer] = color
+            loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
     
     def setMaterialId(self, item, building, buildingPart, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
-        if item.materialId is None:
-            if self.initFacadePatternInfo:
-                # reset <facadePatternInfo>
-                for key in facadePatternInfo:
-                    facadePatternInfo[key] = 0
-                # initalize <facadePatternInfo>
-                for _item in item.markup:
-                    className = _item.__class__.__name__
-                    if className in facadePatternInfo:
-                        facadePatternInfo[className] += 1
-            # get a texture that fits to the Level markup pattern
-            textureInfo = self.r.facadeTextureStore.getTextureInfo(
-                building,
-                buildingPart,
-                facadePatternInfo
-            )
-            if textureInfo:
-                materialId = self.getMaterialId(textureInfo)
-                if itemRenderer.createMaterial(materialId, textureInfo):
-                    item.materialId = materialId
-                else:
-                    item.materialId = ""
+        if self.initFacadePatternInfo:
+            # reset <facadePatternInfo>
+            for key in facadePatternInfo:
+                facadePatternInfo[key] = 0
+            # initalize <facadePatternInfo>
+            for _item in item.markup:
+                className = _item.__class__.__name__
+                if className in facadePatternInfo:
+                    facadePatternInfo[className] += 1
+        # get a texture that fits to the Level markup pattern
+        facadeTextureInfo = self.r.facadeTextureStore.getTextureInfo(
+            building,
+            buildingPart,
+            facadePatternInfo
+        )
+        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
+        claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)\
+            if claddingMaterial\
+            else None
+        
+        if facadeTextureInfo:
+            materialId = self.getMaterialId(facadeTextureInfo, claddingTextureInfo)
+            if itemRenderer.createMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
+                item.materialId = materialId
             else:
                 item.materialId = ""
+        else:
+            item.materialId = ""
     
     def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
         item = levelGroup.item
         face = self.r.createFace(item.building, indices, uvs)
-        if item.markup:
-            self.setMaterialId(
-                item,
-                building,
-                # getting building part
-                item.buildingPart if item.buildingPart else (
-                    "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
-                ),
-                self
-            )
+        if item.materialId is None:
+            if item.markup:
+                self.setMaterialId(
+                    item,
+                    building,
+                    # getting building part
+                    item.buildingPart if item.buildingPart else (
+                        "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
+                    ),
+                    self
+                )
         if item.materialId:
             self.setData(
                 face,
@@ -289,20 +298,24 @@ class Container(ItemRenderer):
                     texOffsetV
                 )
             )
-            self.setColor(face, self.vertexColorLayer, (0.7, 0.3, 0.3, 1.))
+            claddingColor = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
+            if claddingColor:
+                self.setColor(face, self.vertexColorLayer, Manager.getColor(claddingColor))
         self.r.setMaterial(face, item.materialId)
     
-    def getMaterialId(self, textureInfo):
-        return textureInfo["name"]
+    def getMaterialId(self, facadeTextureInfo, claddingTextureInfo):
+        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["name"])\
+            if claddingTextureInfo\
+            else facadeTextureInfo["name"]
     
-    def createMaterial(self, materialName, textureInfo):
-        textureWidthPx = textureInfo["textureWidthPx"]
-        textureHeightPx = textureInfo["textureHeightPx"]
-        numberOfTilesU = textureInfo["numTilesU"]
-        numberOfTilesV = textureInfo["numTilesV"]
+    def createMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
+        textureWidthPx = facadeTextureInfo["textureWidthPx"]
+        textureHeightPx = facadeTextureInfo["textureHeightPx"]
+        numberOfTilesU = facadeTextureInfo["numTilesU"]
+        numberOfTilesV = facadeTextureInfo["numTilesV"]
         tileWidthPx = textureWidthPx/numberOfTilesU
         # factor = windowWidthM/windowWidthPx
-        factor = textureInfo["windowWidthM"]/(textureInfo["windowRpx"]-textureInfo["windowLpx"])
+        factor = facadeTextureInfo["windowWidthM"]/(facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])
 
         textureWidthM = factor*textureWidthPx
         tileSizeUdefaultM = factor*tileWidthPx
@@ -311,12 +324,6 @@ class Container(ItemRenderer):
         textureLevelHeightM = factor*textureHeightPx/numberOfTilesV
         textureHeightM = factor*textureHeightPx
         textureVoffsetM = 0.
-        
-        customNode = "FacadeOverlay"
-        wallTextureWidthM = 1.5
-        wallTextureHeightM = 1.5
-        wallTextureFilename = "cc0textures_bricks11_col.jpg"
-        wallTexturePath = "textures/cladding/brick"
         
         materialTemplate = bpy.data.materials.get(self.materialTemplateName)
         if not materialTemplate:
@@ -327,25 +334,26 @@ class Container(ItemRenderer):
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
             setImage(
-                textureInfo["name"],
-                os.path.join(bldgMaterialsDirectory, textureInfo["path"]),
+                facadeTextureInfo["name"],
+                os.path.join(bldgMaterialsDirectory, facadeTextureInfo["path"]),
                 nodes,
                 "Overlay"
             )
-            # The wall material (i.e. background) texture,
-            # set it just in case
-            setImage(
-                wallTextureFilename,
-                os.path.join(bldgMaterialsDirectory, wallTexturePath),
-                nodes,
-                "Wall Material"
-            )
-            nodes["Mapping"].scale[0] = 1./wallTextureWidthM
-            nodes["Mapping"].scale[1] = 1./wallTextureHeightM
+            if claddingTextureInfo:
+                # The wall material (i.e. background) texture,
+                # set it just in case
+                setImage(
+                    claddingTextureInfo["name"],
+                    os.path.join(bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                    nodes,
+                    "Wall Material"
+                )
+                nodes["Mapping"].scale[0] = 1./claddingTextureInfo["textureWidthM"]
+                nodes["Mapping"].scale[1] = 1./claddingTextureInfo["textureHeightM"]
             # the mask for the emission
             #setImage(fileName, directory, nodes, "Emission Mask", "emissive")
             # setting nodes
-            n = nodes[customNode]
+            n = nodes[_customNode]
             setCustomNodeValue(n, "Texture Width", textureWidthM)
             setCustomNodeValue(n, "Number of Tiles U", numberOfTilesU)
             setCustomNodeValue(n, "Tile Size U Default", tileSizeUdefaultM)

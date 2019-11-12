@@ -1,6 +1,6 @@
 import os, json
-import bpy
 from app import app
+from util.blender import loadTextFromFile
 
 
 _parts = ("level", "groundlevel", "entrance-door")
@@ -13,16 +13,6 @@ _uses = (
 _lafs = (
     "modern", "neoclassical"
 )
-
-
-def loadTextFromFile(filepath, name):
-    """
-    Loads a Blender collection with the given <name> from the .blend file with the given <filepath>
-    """
-    with bpy.data.libraries.load(filepath) as (data_from, data_to):
-        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
-        data_to.texts = [name]
-    return data_to.texts[0]
 
 
 def _getContentKeyWithNumbers(content, sortedContentKeys):
