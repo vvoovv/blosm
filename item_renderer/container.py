@@ -250,10 +250,14 @@ class Container(ItemRenderer):
             buildingPart,
             facadePatternInfo
         )
+        
         claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
-        claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)\
-            if claddingMaterial\
-            else None
+        if claddingMaterial:
+            if claddingMaterial in building._cache:
+                claddingTextureInfo = building._cache[claddingMaterial]
+            else:
+                claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)
+                building._cache[claddingMaterial] = claddingTextureInfo
         
         if facadeTextureInfo:
             materialId = self.getMaterialId(facadeTextureInfo, claddingTextureInfo)
@@ -304,7 +308,7 @@ class Container(ItemRenderer):
         self.r.setMaterial(face, item.materialId)
     
     def getMaterialId(self, facadeTextureInfo, claddingTextureInfo):
-        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["name"])\
+        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["material"])\
             if claddingTextureInfo\
             else facadeTextureInfo["name"]
     

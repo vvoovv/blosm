@@ -44,7 +44,9 @@ class Building:
         self.verts = []
         # counterparts for <self.verts> in the BMesh
         self.bmVerts = []
-        self._styleBlockCache = {}
+        # A cache to store different stuff:
+        # attributes evaluated per building rather than per footprint, cladding texture info
+        self._cache = {}
     
     def init(self, outline):
         self.verts.clear()
@@ -56,7 +58,7 @@ class Building:
         # in the data model doesn't contain building parts, i.e. the building is defined completely
         # by its outline
         self.footprint = None
-        self._styleBlockCache.clear()
+        self._cache.clear()
         self.metaStyleBlock = None
     
     def clone(self):

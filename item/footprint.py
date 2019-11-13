@@ -74,4 +74,4 @@ class Footprint(Item):
         )
     
     def getStyleBlockCache(self, scope):
-        return self.building._styleBlockCache if scope is perBuilding else self._styleBlockCache
+        return self.building._cache if scope is perBuilding else self._styleBlockCache
