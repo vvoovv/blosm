@@ -8,8 +8,8 @@ _materialTemplateName = "facade_overlay_template"
 class Basement(Container):
     
     def __init__(self):
-        self.materialTemplateFilename = _materialTemplateFilename
-        self.materialTemplateName = _materialTemplateName
+        self.facadeMaterialTemplateFilename = _materialTemplateFilename
+        self.facadeMaterialTemplateName = _materialTemplateName
         
         # do we need to initialize <self.facadePatternInfo>
         self.initFacadePatternInfo = True

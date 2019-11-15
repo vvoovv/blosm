@@ -6,6 +6,7 @@ class Facade(Container):
     def init(self, itemRenderers, globalRenderer):
         super().init(itemRenderers, globalRenderer)
         self.levelRenderer = itemRenderers["Level"]
+        self.basementRenderer = itemRenderers["Basement"]
     
     def preRender(self):
         pass

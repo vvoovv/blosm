@@ -5,13 +5,15 @@ from . import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
-from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage, setCustomNodeValue
 
 from util import zAxis
 
 
 _customNode = "FacadeOverlay"
+
+_claddingMaterialTemplateFilename = "building_material_templates.blend"
+_claddingMaterialTemplateName = "tiles_color_template"
 
 
 class Container(ItemRenderer):
@@ -58,7 +60,7 @@ class Container(ItemRenderer):
             basementHeight = item.getStyleBlockAttr("basementHeight")
             if basementHeight is None:
                 basementHeight = levelHeights.basementHeight
-            if basementHeight and levelGroups.basement:
+            if basementHeight:
                 prevIndex1, prevIndex2, index1, index2, texV = self.generateLevelDiv(
                     building, levelGroups.basement, item, self.basementRenderer, basementHeight,
                     prevIndex1, prevIndex2, index1, index2,
@@ -228,10 +230,13 @@ class Container(ItemRenderer):
         for loop in face.loops:
             loop[uvLayer].uv = uv
             
-    def setColor(self, face, layerName, color):
-        vertexColorLayer = self.r.bm.loops.layers.color[layerName]
-        for loop in face.loops:
-            loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
+    def setVertexColor(self, item, face):
+        color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
+        if color:
+            color = Manager.getColor(color)
+            vertexColorLayer = self.r.bm.loops.layers.color[self.vertexColorLayer]
+            for loop in face.loops:
+                loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
     
     def setMaterialId(self, item, building, buildingPart, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
@@ -252,16 +257,11 @@ class Container(ItemRenderer):
         )
         
         claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
-        if claddingMaterial:
-            if claddingMaterial in building._cache:
-                claddingTextureInfo = building._cache[claddingMaterial]
-            else:
-                claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)
-                building._cache[claddingMaterial] = claddingTextureInfo
+        claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
         
         if facadeTextureInfo:
-            materialId = self.getMaterialId(facadeTextureInfo, claddingTextureInfo)
-            if itemRenderer.createMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
+            materialId = self.getFacadeMaterialId(facadeTextureInfo, claddingTextureInfo)
+            if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
                 item.materialId = materialId
             else:
                 item.materialId = ""
@@ -269,50 +269,67 @@ class Container(ItemRenderer):
             item.materialId = ""
     
     def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
-        item = levelGroup.item
-        face = self.r.createFace(item.building, indices, uvs)
-        if item.materialId is None:
-            if item.markup:
-                self.setMaterialId(
-                    item,
-                    building,
-                    # getting building part
-                    item.buildingPart if item.buildingPart else (
-                        "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
-                    ),
-                    self
+        face = self.r.createFace(building, indices, uvs)
+        if levelGroup:
+            item = levelGroup.item
+            if item.materialId is None:
+                if item.markup:
+                    self.setMaterialId(
+                        item,
+                        building,
+                        # getting building part
+                        item.buildingPart if item.buildingPart else (
+                            "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
+                        ),
+                        self
+                    )
+                else:
+                    self.renderCladding(building, item, face)
+            if item.materialId:
+                self.setData(
+                    face,
+                    self.r.layer.uvNameSize,
+                    (
+                        # face width
+                        parentItem.width,
+                        self.getHeightForMaterial(levelGroup)
+                    )
                 )
-        if item.materialId:
-            self.setData(
-                face,
-                self.r.layer.uvNameSize,
-                (
-                    # face width
-                    parentItem.width,
-                    self.getHeightForMaterial(levelGroup)
+                self.setData(
+                    face,
+                    self.uvLayer,
+                    (
+                        # offset for the texture U-coordinate
+                        texOffsetU,
+                        # offset for the texture V-coordinate
+                        texOffsetV
+                    )
                 )
-            )
-            self.setData(
-                face,
-                self.uvLayer,
-                (
-                    # offset for the texture U-coordinate
-                    texOffsetU,
-                    # offset for the texture V-coordinate
-                    texOffsetV
-                )
-            )
-            claddingColor = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
-            if claddingColor:
-                self.setColor(face, self.vertexColorLayer, Manager.getColor(claddingColor))
-        self.r.setMaterial(face, item.materialId)
+                self.setVertexColor(item, face)
+            self.r.setMaterial(face, item.materialId)
+        else:
+            self.renderCladding(building, parentItem, face)
     
-    def getMaterialId(self, facadeTextureInfo, claddingTextureInfo):
+    def renderCladding(self, building, parentItem, face):
+        materialId = ''
+        claddingMaterial = parentItem.getStyleBlockAttrDeep("claddingMaterial")
+        if claddingMaterial:
+            claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
+            if claddingTextureInfo:
+                materialId = self.getCladdingMaterialId(claddingTextureInfo)
+                self.createCladdingMaterial(materialId, claddingTextureInfo)
+                self.setVertexColor(parentItem, face)
+        self.r.setMaterial(face, materialId)
+    
+    def getFacadeMaterialId(self, facadeTextureInfo, claddingTextureInfo):
         return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["material"])\
             if claddingTextureInfo\
             else facadeTextureInfo["name"]
     
-    def createMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
+    def getCladdingMaterialId(self, claddingTextureInfo):
+        return claddingTextureInfo["name"]
+    
+    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
         textureWidthPx = facadeTextureInfo["textureWidthPx"]
         textureHeightPx = facadeTextureInfo["textureHeightPx"]
         numberOfTilesU = facadeTextureInfo["numTilesU"]
@@ -329,10 +346,10 @@ class Container(ItemRenderer):
         textureHeightM = factor*textureHeightPx
         textureVoffsetM = 0.
         
-        materialTemplate = bpy.data.materials.get(self.materialTemplateName)
-        if not materialTemplate:
-            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
-            materialTemplate = loadMaterialsFromFile(os.path.join(bldgMaterialsDirectory, self.materialTemplateFilename), True, self.materialTemplateName)[0]
+        materialTemplate = self.getMaterialTemplate(
+            self.facadeMaterialTemplateFilename,
+            self.facadeMaterialTemplateName
+        )
         if not materialName in bpy.data.materials:
             bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
@@ -367,3 +384,35 @@ class Container(ItemRenderer):
             setCustomNodeValue(n, "Texture Height", textureHeightM)
             setCustomNodeValue(n, "Texture V-Offset", textureVoffsetM)
         return True
+    
+    def createCladdingMaterial(self, materialName, claddingTextureInfo):
+        materialTemplate = self.getMaterialTemplate(
+            _claddingMaterialTemplateFilename,
+            _claddingMaterialTemplateName
+        )
+        if not materialName in bpy.data.materials:
+            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
+            nodes = createMaterialFromTemplate(materialTemplate, materialName)
+            # The wall material (i.e. background) texture,
+            # set it just in case
+            setImage(
+                claddingTextureInfo["name"],
+                os.path.join(bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                nodes,
+                "Cladding Texture"
+            )
+            nodes["Mapping"].scale[0] = 1./claddingTextureInfo["textureWidthM"]
+            nodes["Mapping"].scale[1] = 1./claddingTextureInfo["textureHeightM"]
+        # return True for consistency with <self.getFacadeMaterialId(..)>
+        return True
+    
+    def getCladdingTextureInfo(self, claddingMaterial, building):
+        if claddingMaterial:
+            if claddingMaterial in building._cache:
+                claddingTextureInfo = building._cache[claddingMaterial]
+            else:
+                claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)
+                building._cache[claddingMaterial] = claddingTextureInfo
+        else:
+            claddingTextureInfo = None
+        return claddingTextureInfo

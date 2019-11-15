@@ -1,3 +1,7 @@
+import os
+import bpy
+
+from util.blender import loadMaterialsFromFile
 
 
 class ItemRenderer:
@@ -24,3 +28,10 @@ class ItemRenderer:
     def preRender(self):
         self.requireUvLayer(self.uvLayer)
         self.requireVertexColorLayer(self.vertexColorLayer)
+    
+    def getMaterialTemplate(self, materialTemplateFilename, materialTemplateName):
+        materialTemplate = bpy.data.materials.get(materialTemplateName)
+        if not materialTemplate:
+            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
+            materialTemplate = loadMaterialsFromFile(os.path.join(bldgMaterialsDirectory, materialTemplateFilename), True, materialTemplateName)[0]
+        return materialTemplate
