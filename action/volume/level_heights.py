@@ -228,7 +228,7 @@ class LevelHeights:
                 h += self.lastLevelHeight
                 index2 -= 1
             if index2 >= index1:
-                h += (index2-index1)*self.levelHeight
+                h += (index2-index1+1)*self.levelHeight
             return h
         else:
             return self.levelHeights.getHeight(index1, index2)

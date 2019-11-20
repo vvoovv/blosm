@@ -24,7 +24,8 @@ class Door(Container):
         self.facadePatternInfo = dict(Door=1)
     
     def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
-        face = self.r.createFace(building, indices, uvs)
+        face = self.r.createFace(building, indices)
+        return
         item = levelGroup.item
         if item.materialId is None:
             self.setMaterialId(

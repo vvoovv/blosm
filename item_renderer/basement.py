@@ -19,3 +19,6 @@ class Basement(Container):
     
     def getHeightForMaterial(self, levelGroup):
         return levelGroup.item.footprint.levelHeights.basementHeight
+    
+    def getNumLevelsInFace(self, levelGroup):
+        return 1

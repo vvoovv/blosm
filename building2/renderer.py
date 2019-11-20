@@ -131,7 +131,7 @@ class BuildingRendererNew(Renderer):
         
         self.postRender(outline)
     
-    def createFace(self, building, indices, uvs):
+    def createFace(self, building, indices):
         bm = self.bm
         verts = building.verts
         bmVerts = building.bmVerts
@@ -144,14 +144,14 @@ class BuildingRendererNew(Renderer):
             if not bmVerts[index]:
                 bmVerts[index] = bm.verts.new( verts[index] )
         
-        face = bm.faces.new(bmVerts[index] for index in indices)
-        if uvs:
-            # assign uv coordinates
-            uvLayer = bm.loops.layers.uv[0]
-            loops = face.loops
-            for loop,uv in zip(loops, uvs):
-                loop[uvLayer].uv = uv
-        return face
+        return bm.faces.new(bmVerts[index] for index in indices)
+    
+    def setUvs(self, face, uvs):
+        # assign uv coordinates
+        uvLayer = self.bm.loops.layers.uv[0]
+        loops = face.loops
+        for loop,uv in zip(loops, uvs):
+            loop[uvLayer].uv = uv
 
     def setMaterial(self, face, materialName):
         """

@@ -16,7 +16,7 @@ class Facade(Container):
         self.levelGroups.clear()
 
     @classmethod
-    def getItem(cls, itemFactory, parent, indices, width, heightLeft, heightRightOffset):
+    def getItem(cls, itemFactory, parent, geometry, indices, width, heightLeft, heightRightOffset):
         item = itemFactory.getItem(cls)
         item.init()
         item.parent = parent
@@ -25,6 +25,7 @@ class Facade(Container):
         item.building = parent.building
         item.indices = indices
         item.width = width
+        item.geometry = geometry
         # assign uv-coordinates
         item.uvs = ( (0., 0.), (width, heightRightOffset), (width, heightLeft), (0., heightLeft) )
         return item

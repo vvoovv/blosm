@@ -26,7 +26,10 @@ class Level(Container):
         # return level height
         return levelHeights.getLevelHeight(levelGroup.index1)\
             if levelGroup.singleLevel else\
-            levelHeights.getHeight(levelGroup.index1, levelGroup.index2)/(levelGroup.index2-levelGroup.index1)
+            levelHeights.getHeight(levelGroup.index1, levelGroup.index2)/(levelGroup.index2-levelGroup.index1+1)
+    
+    def getNumLevelsInFace(self, levelGroup):
+        return 1 if levelGroup.singleLevel else (levelGroup.index2-levelGroup.index1+1)
     
     def getRenderer(self, levelGroup):
         item = levelGroup.item

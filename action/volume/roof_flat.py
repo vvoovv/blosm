@@ -1,5 +1,6 @@
 from .roof import Roof
 from item.facade import Facade
+from item_renderer.geometry.rectangle import Rectangle
 from mathutils import Vector
 
 
@@ -11,6 +12,7 @@ class RoofFlat(Roof):
     def __init__(self, data, itemStore, itemFactory):
         super().__init__(data, itemStore, itemFactory)
         self.hasRoofLevels = False
+        self.rectangleGeometry = Rectangle()
     
     def render(self, footprint, facadeRenderer):
         self.extrude(footprint)
@@ -36,6 +38,7 @@ class RoofFlat(Roof):
         facades.append(Facade.getItem(
             self.itemFactory,
             footprint,
+            self.rectangleGeometry,
             (_in-1, indexOffset, _in, _in+numVerts-1),
             (verts[indexOffset] - verts[_in-1]).length,
             footprint.wallHeight,
@@ -46,6 +49,7 @@ class RoofFlat(Roof):
             Facade.getItem(
                 self.itemFactory,
                 footprint,
+                self.rectangleGeometry,
                 (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
                 (verts[indexOffset+i] - verts[indexOffset+i-1]).length,
                 footprint.wallHeight,

@@ -20,4 +20,5 @@ class Div(Container):
         item.footprint = parent.footprint
         item.building = parent.building
         item.styleBlock = styleBlock
+        item.geometry = parent.geometry
         return item

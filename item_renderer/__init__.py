@@ -10,8 +10,7 @@ class ItemRenderer:
         self.itemRenderers = itemRenderers
         self.r = globalRenderer
         
-        self.uvLayer = "data.1"
-        self.vertexColorLayer = "Col"
+        self.vertexColorLayer = "cladding_color"
 
     def requireUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
@@ -26,7 +25,6 @@ class ItemRenderer:
             vertex_colors.new(name)
     
     def preRender(self):
-        self.requireUvLayer(self.uvLayer)
         self.requireVertexColorLayer(self.vertexColorLayer)
     
     def getMaterialTemplate(self, materialTemplateFilename, materialTemplateName):

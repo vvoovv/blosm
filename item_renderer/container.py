@@ -5,12 +5,10 @@ from . import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
-from util.blender_extra.material import createMaterialFromTemplate, setImage, setCustomNodeValue
+from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 from util import zAxis
 
-
-_customNode = "FacadeOverlay"
 
 _claddingMaterialTemplateFilename = "building_material_templates.blend"
 _claddingMaterialTemplateName = "tiles_color_template"
@@ -263,13 +261,14 @@ class Container(ItemRenderer):
             materialId = self.getFacadeMaterialId(facadeTextureInfo, claddingTextureInfo)
             if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
                 item.materialId = materialId
+                item.materialData = (facadeTextureInfo, claddingTextureInfo)
             else:
                 item.materialId = ""
         else:
             item.materialId = ""
     
-    def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
-        face = self.r.createFace(building, indices, uvs)
+    def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):        
+        face = self.r.createFace(building, indices)
         if levelGroup:
             item = levelGroup.item
             if item.materialId is None:
@@ -286,23 +285,14 @@ class Container(ItemRenderer):
                 else:
                     self.renderCladding(building, item, face)
             if item.materialId:
-                self.setData(
+                facadeTextureInfo, claddingTextureInfo = item.materialData
+                self.r.setUvs(
                     face,
-                    self.r.layer.uvNameSize,
-                    (
-                        # face width
-                        parentItem.width,
-                        self.getHeightForMaterial(levelGroup)
-                    )
-                )
-                self.setData(
-                    face,
-                    self.uvLayer,
-                    (
-                        # offset for the texture U-coordinate
-                        texOffsetU,
-                        # offset for the texture V-coordinate
-                        texOffsetV
+                    item.geometry.getUvs(
+                        item,
+                        self.getNumLevelsInFace(levelGroup),
+                        facadeTextureInfo["numTilesU"],
+                        facadeTextureInfo["numTilesV"]
                     )
                 )
                 self.setVertexColor(item, face)
@@ -330,22 +320,6 @@ class Container(ItemRenderer):
         return claddingTextureInfo["name"]
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
-        textureWidthPx = facadeTextureInfo["textureWidthPx"]
-        textureHeightPx = facadeTextureInfo["textureHeightPx"]
-        numberOfTilesU = facadeTextureInfo["numTilesU"]
-        numberOfTilesV = facadeTextureInfo["numTilesV"]
-        tileWidthPx = textureWidthPx/numberOfTilesU
-        # factor = windowWidthM/windowWidthPx
-        factor = facadeTextureInfo["windowWidthM"]/(facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])
-
-        textureWidthM = factor*textureWidthPx
-        tileSizeUdefaultM = factor*tileWidthPx
-        textureUoffsetM = 0.
-        
-        textureLevelHeightM = factor*textureHeightPx/numberOfTilesV
-        textureHeightM = factor*textureHeightPx
-        textureVoffsetM = 0.
-        
         materialTemplate = self.getMaterialTemplate(
             self.facadeMaterialTemplateFilename,
             self.facadeMaterialTemplateName
@@ -371,18 +345,6 @@ class Container(ItemRenderer):
                 )
                 nodes["Mapping"].scale[0] = 1./claddingTextureInfo["textureWidthM"]
                 nodes["Mapping"].scale[1] = 1./claddingTextureInfo["textureHeightM"]
-            # the mask for the emission
-            #setImage(fileName, directory, nodes, "Emission Mask", "emissive")
-            # setting nodes
-            n = nodes[_customNode]
-            setCustomNodeValue(n, "Texture Width", textureWidthM)
-            setCustomNodeValue(n, "Number of Tiles U", numberOfTilesU)
-            setCustomNodeValue(n, "Tile Size U Default", tileSizeUdefaultM)
-            setCustomNodeValue(n, "Texture U-Offset", textureUoffsetM)
-            setCustomNodeValue(n, "Number of Tiles V", numberOfTilesV)
-            setCustomNodeValue(n, "Texture Level Height", textureLevelHeightM)
-            setCustomNodeValue(n, "Texture Height", textureHeightM)
-            setCustomNodeValue(n, "Texture V-Offset", textureVoffsetM)
         return True
     
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
