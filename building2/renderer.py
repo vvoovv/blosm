@@ -105,8 +105,8 @@ class BuildingRendererNew(Renderer):
         outline = buildingP.outline
         
         self.preRender(outline)
-        for itemRenderer in self.itemRenderers:
-            self.itemRenderers[itemRenderer].preRender()
+        #for itemRenderer in self.itemRenderers:
+        #    self.itemRenderers[itemRenderer].preRender()
         
         building = Building.getItem(itemFactory, outline, style)
         partTag = outline.tags.get("building:part")
@@ -146,12 +146,17 @@ class BuildingRendererNew(Renderer):
         
         return bm.faces.new(bmVerts[index] for index in indices)
     
-    def setUvs(self, face, uvs):
+    def setUvs(self, face, uvs, layerName):
         # assign uv coordinates
-        uvLayer = self.bm.loops.layers.uv[0]
+        uvLayer = self.bm.loops.layers.uv[layerName]
         loops = face.loops
         for loop,uv in zip(loops, uvs):
             loop[uvLayer].uv = uv
+    
+    def setVertexColor(self, face, color, layerName):
+        vertexColorLayer = self.bm.loops.layers.color[layerName]
+        for loop in face.loops:
+            loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
 
     def setMaterial(self, face, materialName):
         """

@@ -49,7 +49,9 @@ class Container(Item):
         self.uvs = None
 
         # the following variable is used to cache a material id (e.g a string name) 
-        self.materialId = 0
+        self.materialId = None
+        # an item renderer might need some data related to the material with <self.materialId>
+        self.materialData = None
     
     def getStyleBlockAttrDeep(self, attr):
         # the values are seemingly cached per item rather than per building
@@ -81,6 +83,7 @@ class Container(Item):
         self.arrangement = Horizontal
         self.symmetry = None
         self.materialId = None
+        self.materialData = None
     
     def getWidth(self):
         if not self.markup:

@@ -8,9 +8,6 @@ class Facade(Container):
         self.levelRenderer = itemRenderers["Level"]
         self.basementRenderer = itemRenderers["Basement"]
     
-    def preRender(self):
-        pass
-    
     def render(self, footprint):
         # <r> is the global building renderer
         r = self.r

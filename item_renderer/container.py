@@ -232,9 +232,7 @@ class Container(ItemRenderer):
         color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
         if color:
             color = Manager.getColor(color)
-            vertexColorLayer = self.r.bm.loops.layers.color[self.vertexColorLayer]
-            for loop in face.loops:
-                loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
+            self.r.setVertexColor(face, color, self.r.layer.vertexColorLayerNameCladding)
     
     def setMaterialId(self, item, building, buildingPart, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
@@ -261,7 +259,7 @@ class Container(ItemRenderer):
             materialId = self.getFacadeMaterialId(facadeTextureInfo, claddingTextureInfo)
             if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
                 item.materialId = materialId
-                item.materialData = (facadeTextureInfo, claddingTextureInfo)
+                item.materialData = facadeTextureInfo
             else:
                 item.materialId = ""
         else:
@@ -269,6 +267,12 @@ class Container(ItemRenderer):
     
     def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):        
         face = self.r.createFace(building, indices)
+        # set UV-coordinates for the cladding textures
+        self.r.setUvs(
+            face,
+            uvs,
+            self.r.layer.uvLayerNameCladding
+        )
         if levelGroup:
             item = levelGroup.item
             if item.materialId is None:
@@ -285,7 +289,7 @@ class Container(ItemRenderer):
                 else:
                     self.renderCladding(building, item, face)
             if item.materialId:
-                facadeTextureInfo, claddingTextureInfo = item.materialData
+                facadeTextureInfo = item.materialData
                 self.r.setUvs(
                     face,
                     item.geometry.getUvs(
@@ -293,7 +297,8 @@ class Container(ItemRenderer):
                         self.getNumLevelsInFace(levelGroup),
                         facadeTextureInfo["numTilesU"],
                         facadeTextureInfo["numTilesV"]
-                    )
+                    ),
+                    self.r.layer.uvLayerNameFacade
                 )
                 self.setVertexColor(item, face)
             self.r.setMaterial(face, item.materialId)
@@ -343,8 +348,8 @@ class Container(ItemRenderer):
                     nodes,
                     "Wall Material"
                 )
-                nodes["Mapping"].scale[0] = 1./claddingTextureInfo["textureWidthM"]
-                nodes["Mapping"].scale[1] = 1./claddingTextureInfo["textureHeightM"]
+                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
+                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureHeightM"]
         return True
     
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
@@ -363,8 +368,8 @@ class Container(ItemRenderer):
                 nodes,
                 "Cladding Texture"
             )
-            nodes["Mapping"].scale[0] = 1./claddingTextureInfo["textureWidthM"]
-            nodes["Mapping"].scale[1] = 1./claddingTextureInfo["textureHeightM"]
+            nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
+            nodes["Mapping"].inputs[3].default_value[1] = 1./claddingTextureInfo["textureHeightM"]
         # return True for consistency with <self.getFacadeMaterialId(..)>
         return True
     

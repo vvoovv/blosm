@@ -25,7 +25,12 @@ class Door(Container):
     
     def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
         face = self.r.createFace(building, indices)
-        return
+        # set UV-coordinates for the cladding textures
+        self.r.setUvs(
+            face,
+            uvs,
+            self.r.layer.uvLayerNameCladding
+        )
         item = levelGroup.item
         if item.materialId is None:
             self.setMaterialId(
@@ -37,21 +42,20 @@ class Door(Container):
                 self
             )
         if item.materialId:
-            self.setData(
+            facadeTextureInfo = item.materialData
+            faceWidth = uvs[1][0] - texOffsetU
+            faceHeight = uvs[2][1] - texOffsetV
+            doorWidth = facadeTextureInfo["textureWidthM"]
+            doorHeight = facadeTextureInfo["textureHeightM"]
+            u1 = 0.5 - 0.5*faceWidth/doorWidth
+            u2 = 1. - u1
+            v = faceHeight/doorHeight
+            self.r.setUvs(
                 face,
-                self.r.layer.uvNameSize,
-                # face width
-                parentItem.width
-            )
-            self.setData(
-                face,
-                self.uvLayer,
                 (
-                    # offset for the texture U-coordinate
-                    texOffsetU,
-                    # offset for the texture V-coordinate
-                    texOffsetV
-                )
+                    (u1, 0.), (u2, 0.), (u2, v), (u1, v)
+                ),
+                self.r.layer.uvLayerNameFacade
             )
             self.setVertexColor(item, face)
         self.r.setMaterial(face, item.materialId)
@@ -71,8 +75,6 @@ class Door(Container):
                 nodes,
                 "Overlay"
             )
-            nodes["Door Width"].outputs[0].default_value = facadeTextureInfo["textureWidthM"]
-            nodes["Door Height"].outputs[0].default_value = facadeTextureInfo["textureHeightM"]
             if claddingTextureInfo:
                 # The wall material (i.e. background) texture,
                 # set it just in case
@@ -82,6 +84,6 @@ class Door(Container):
                     nodes,
                     "Wall Material"
                 )
-                nodes["Mapping"].scale[0] = 1./claddingTextureInfo["textureWidthM"]
-                nodes["Mapping"].scale[1] = 1./claddingTextureInfo["textureHeightM"]
+                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
+                nodes["Mapping"].inputs[3].default_value[1] = 1./claddingTextureInfo["textureHeightM"]
         return True
