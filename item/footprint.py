@@ -51,6 +51,9 @@ class Footprint(Item):
     def attr(self, attr):
         return self.element.tags.get(attr)
     
+    def getStyleBlockAttrDeep(self, attr):
+        return self.getStyleBlockAttr(attr)
+    
     def calculateFootprint(self):
         """
         Calculate footprint out of its <self.calculatedStyle>

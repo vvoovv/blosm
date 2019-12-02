@@ -49,12 +49,16 @@ styles = {
         lastLevelOffsetFactor = Value(RandomWeighted((
             (0., 50), (0.05, 3), (0.1, 5), (0.15, 5), (0.2, 5), (0.25, 5), (0.3, 5),
             (0.35, 5), (0.4, 5), (0.45, 5), (0.5, 3), (0.55, 2), (0.6, 2)
+        ))),
+        claddingColor = PerBuilding(Value(RandomWeighted((
+            ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
+        )))),
+        claddingMaterial = Value(RandomWeighted((
+            ("brick", 1), ("plaster", 1), ("gravel", 1)
         )))
     ),
     Facade(
-        defName = "brown_brick",
-        claddingMaterial = "brick",
-        claddingColor = "brown"
+        defName = "brown_brick"
     ),
     Level(
         defName = "staircase",
