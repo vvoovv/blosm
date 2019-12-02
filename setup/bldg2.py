@@ -13,11 +13,11 @@ from building2.renderer import BuildingRendererNew, Building
 from item.footprint import Footprint
 
 # item renderers
-from item_renderer.facade import Facade as FacadeRenderer
-from item_renderer.div import Div as DivRenderer
-from item_renderer.level import Level as LevelRenderer
-from item_renderer.basement import Basement as BasementRenderer
-from item_renderer.door import Door as DoorRenderer
+from item_renderer.texture.base.facade import Facade as FacadeRenderer
+from item_renderer.texture.base.div import Div as DivRenderer
+from item_renderer.texture.base.level import Level as LevelRenderer
+from item_renderer.texture.base.basement import Basement as BasementRenderer
+from item_renderer.texture.base.door import Door as DoorRenderer
 
 from action.terrain import Terrain
 from action.volume import Volume

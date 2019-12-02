@@ -66,12 +66,11 @@ class Door(Container):
             self.facadeMaterialTemplateName
         )
         if not materialName in bpy.data.materials:
-            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
             setImage(
                 facadeTextureInfo["name"],
-                os.path.join(bldgMaterialsDirectory, facadeTextureInfo["path"]),
+                os.path.join(self.r.bldgMaterialsDirectory, facadeTextureInfo["path"]),
                 nodes,
                 "Overlay"
             )
@@ -80,7 +79,7 @@ class Door(Container):
                 # set it just in case
                 setImage(
                     claddingTextureInfo["name"],
-                    os.path.join(bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                    os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
                     nodes,
                     "Wall Material"
                 )

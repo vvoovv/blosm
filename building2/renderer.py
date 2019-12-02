@@ -1,9 +1,11 @@
+import os
 import bpy
 from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
 from .texture_store_facade import FacadeTextureStore
 from .texture_store_cladding import CladdingTextureStore
+from .material_export_manager import MaterialExportManager
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -78,12 +80,25 @@ class BuildingRendererNew(Renderer):
     
     def __init__(self, app, styleStore, itemRenderers, getStyle=None):
         self.app = app
+        app.addRenderer(self)
         self.styleStore = styleStore
+        
+        self.bldgMaterialsDirectory = os.path.dirname(app.bldgMaterialsFilepath)
+        
+        # do we need export materials?
+        exportMaterials = False
         
         self.itemRenderers = itemRenderers
         # initialize item renderers
         for item in itemRenderers:
-            itemRenderers[item].init(itemRenderers, self)
+            item = itemRenderers[item]
+            # If at least one item renderer creates materials for export,
+            # then we set <self.exportMaterial> (i.e. for the global renderer) to <True>
+            if not exportMaterials and item.exportMaterials:
+                exportMaterials = True
+            item.init(itemRenderers, self)
+        
+        self.exportMaterials = exportMaterials
         
         self.getStyle = getStyle
         referenceItems = _createReferenceItems()
@@ -92,6 +107,14 @@ class BuildingRendererNew(Renderer):
         
         self.facadeTextureStore = FacadeTextureStore()
         self.claddingTextureStore = CladdingTextureStore()
+    
+    def prepare(self):
+        if self.exportMaterials:
+            self.materialExportManager = MaterialExportManager(self.bldgMaterialsDirectory)
+    
+    def cleanup(self):
+        if self.exportMaterials:
+            self.materialExportManager.cleanup()
     
     def render(self, buildingP, data):
         parts = buildingP.parts

@@ -1,7 +1,7 @@
 import os
 import bpy
 from manager import Manager
-from . import ItemRenderer
+from ... import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
@@ -330,12 +330,11 @@ class Container(ItemRenderer):
             self.facadeMaterialTemplateName
         )
         if not materialName in bpy.data.materials:
-            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
             setImage(
                 facadeTextureInfo["name"],
-                os.path.join(bldgMaterialsDirectory, facadeTextureInfo["path"]),
+                os.path.join(self.r.bldgMaterialsDirectory, facadeTextureInfo["path"]),
                 nodes,
                 "Overlay"
             )
@@ -344,7 +343,7 @@ class Container(ItemRenderer):
                 # set it just in case
                 setImage(
                     claddingTextureInfo["name"],
-                    os.path.join(bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                    os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
                     nodes,
                     "Wall Material"
                 )
@@ -358,13 +357,12 @@ class Container(ItemRenderer):
             _claddingMaterialTemplateName
         )
         if not materialName in bpy.data.materials:
-            bldgMaterialsDirectory = os.path.dirname(self.r.app.bldgMaterialsFilepath)
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # The wall material (i.e. background) texture,
             # set it just in case
             setImage(
                 claddingTextureInfo["name"],
-                os.path.join(bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
                 nodes,
                 "Cladding Texture"
             )
