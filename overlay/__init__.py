@@ -191,7 +191,10 @@ class Overlay:
         # cleanup
         self.imageData = None
         # pack the image into .blend file
-        image.pack(as_png=True)
+        if _isBlender280:
+            image.pack()
+        else:
+            image.pack(as_png=True)
         
         if app.terrain:
             self.setUvForTerrain(
@@ -239,8 +242,15 @@ class Overlay:
                 "(%s of %s) Downloading the tile image %s" %
                 (self.tileCounter, self.numTiles, tileUrl)
             )
+            req = request.Request(
+                tileUrl,
+                data = None,
+                headers = {
+                    "User-Agent": "custom"
+                }
+            )
             try:
-                tileData = request.urlopen(tileUrl).read()
+                tileData = request.urlopen(req).read()
             except:
                 if getattr(sys.exc_info()[1], "code", None) == 404:
                     # The error code 404 means that the tile doesn't exist

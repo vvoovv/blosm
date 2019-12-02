@@ -27,7 +27,7 @@ class Manager(_Manager):
             if multipolygon.valid and multipolygon.r:
                 renderer = multipolygon.rr or self.renderer
                 renderer.preRender(multipolygon)
-                renderer.renderPolygon(multipolygon, data)
+                renderer.renderMultiPolygon(multipolygon, data)
                 renderer.postRender(multipolygon)
         
         for node in data.nodes:

@@ -84,13 +84,13 @@ class GeoJson:
                 if len(coords) == 1:
                     self.processPolygon(coords[0], tags)
                 else: # len(coords) > 1
-                    self.processMultipolygons(coords, tags)
+                    self.processMultipolygon(coords, tags)
             elif t == "MultiPolygon":
                 for c in coords:
                     if len(c) == 1:
                         self.processPolygon(c[0], tags)
                     else: # len(c) > 1
-                        self.processMultipolygons(c, tags)
+                        self.processMultipolygon(c, tags)
             elif t == "Node":
                 node = Node(coords, tags)
                 condition = self.checkNodeConditions(tags, node)
@@ -139,6 +139,8 @@ class GeoJson:
         multipolygon = Multipolygon(coords, tags)
         skip = self.processFeature(multipolygon, tags, self.parseMultipolygon)
         if not skip:
+            # the line below is needed in order for <ls> property to work
+            multipolygon.geojson = self
             self.multipolygons.append(multipolygon)
     
     def processFeature(self, feature, tags, parseElement):

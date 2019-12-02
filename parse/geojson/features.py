@@ -43,8 +43,10 @@ class Polygon:
         Returns a Python generator
         """
         if not self._coords:
-            self._coords = (geojson.projection.fromGeographic(c[1], c[0]) for c in self.coords)
-        return self._coords
+            coords = self.coords
+            numCoords = len(coords)
+            self._coords = tuple(geojson.projection.fromGeographic(coords[index][1], coords[index][0]) for index in range(numCoords-1))
+        return (coord for coord in self._coords)
 
 
 class Multipolygon:
@@ -55,6 +57,8 @@ class Multipolygon:
     def __init__(self, coords, tags):
         self.valid = True
         self.coords = coords
+        # preserved projected coordinates
+        self._coords = None
         self.tags = tags
         self.r = False
         self.rr = None
@@ -63,6 +67,45 @@ class Multipolygon:
     def updateBounds(self, bounds):
         # only the outer ring matters, so we <self.coords[0]>
         Feature.updateBounds(bounds, self.coords[0])
+        
+    def hasInner(self):
+        # a multipolygon alsways has at least one inner part
+        return True
+    
+    def getOuterData(self, osm):
+        self._projectCoords()
+        return self._coords[0]
+
+    def getLinestringData(self, linestring, geojson):
+        """
+        Get projected data for the polygon coordinates
+        
+        Returns a Python generator
+        """
+        return (coord for coord in linestring)
+    
+    def getDataMulti(self, geojson):
+        """
+        Get projected data for the multipolygon coordinates
+        
+        Returns a Python generator
+        """
+        self._projectCoords()
+        return (self.getLinestringData(_l, geojson) for _l in self._coords)
+    
+    @property
+    def ls(self):
+        """
+        A fake property to match the attribute <ls> of <parse.osm.relation.multipolygon.Multipolygon>
+        """
+        self._projectCoords()
+        return self._coords
+    
+    def _projectCoords(self):
+        if not self._coords:
+            self._coords = tuple(
+                tuple( self.geojson.projection.fromGeographic(_coords[index][1], _coords[index][0]) for index in range(len(_coords)-1) ) for _coords in self.coords
+            )
 
 
 class Node:

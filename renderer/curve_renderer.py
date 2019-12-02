@@ -178,7 +178,7 @@ class CurveRenderer(Renderer):
                 if i:
                     self.spline.points.add(1)
                 self.setSplinePoint((coord[0], coord[1], z))
-        if closed:
+        if closed and self.spline:
             self.spline.use_cyclic_u = True
     
     def getSubdivisionParams(self, point0, point):
