@@ -81,6 +81,12 @@ class BuildingRendererNew(Renderer):
     def __init__(self, app, styleStore, itemRenderers, getStyle=None):
         self.app = app
         app.addRenderer(self)
+        
+        # offset for a Blender object created if <layer.singleObject is False>
+        self.offset = None
+        # offset if a terrain is set (used instead of <self.offset>)
+        self.offsetZ = None
+        
         self.styleStore = styleStore
         
         self.bldgMaterialsDirectory = os.path.dirname(app.bldgMaterialsFilepath)

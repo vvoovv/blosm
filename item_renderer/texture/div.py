@@ -1,10 +1,12 @@
-from .container import Container
 
 
-class Div(Container):
+class Div:
+    """
+    A mixin class for Div texture based item renderers
+    """
     
     def init(self, itemRenderers, globalRenderer):
-        super().init(itemRenderers, globalRenderer)
+        self.Container.init(self, itemRenderers, globalRenderer)
         self.levelRenderer = itemRenderers["Level"]
         self.basementRenderer = itemRenderers["Basement"]
     

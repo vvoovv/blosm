@@ -7,17 +7,15 @@ from building.manager import BuildingParts, BuildingRelations
 
 from manager.logging import Logger
 
-from realistic.building.manager import RealisticBuildingManager
+from building2.manager import RealisticBuildingManager, RealisticBuildingManagerExport
 from building2.renderer import BuildingRendererNew, Building
 
 from item.footprint import Footprint
 
 # item renderers
-from item_renderer.texture.base.facade import Facade as FacadeRenderer
-from item_renderer.texture.base.div import Div as DivRenderer
-from item_renderer.texture.base.level import Level as LevelRenderer
-from item_renderer.texture.base.basement import Basement as BasementRenderer
-from item_renderer.texture.base.door import Door as DoorRenderer
+from item_renderer.texture.base import\
+    Facade as FacadeRenderer, Div as DivRenderer, Level as LevelRenderer,\
+    Basement as BasementRenderer, Door as DoorRenderer
 
 from action.terrain import Terrain
 from action.volume import Volume

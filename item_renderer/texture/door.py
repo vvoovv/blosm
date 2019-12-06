@@ -1,8 +1,5 @@
 import os
 import bpy
-from manager import Manager
-from .container import Container
-from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
@@ -10,10 +7,12 @@ _materialTemplateFilename = "building_material_templates.blend"
 _materialTemplateName = "door_overlay_template"
 
 
-class Door(Container):
+class Door:
     """
     The Door renderer is the special case of the <item_renderer.level.Level> when
     a door in the only element in the level markup
+    
+    A mixin class for Door texture based item renderers
     """
     
     def __init__(self):
@@ -26,11 +25,8 @@ class Door(Container):
     def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):
         face = self.r.createFace(building, indices)
         # set UV-coordinates for the cladding textures
-        self.r.setUvs(
-            face,
-            uvs,
-            self.r.layer.uvLayerNameCladding
-        )
+        if not self.exportMaterials:
+            self.setCladdingUvs(face, uvs)
         item = levelGroup.item
         if item.materialId is None:
             self.setMaterialId(

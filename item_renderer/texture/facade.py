@@ -1,10 +1,9 @@
-from .container import Container
 
 
-class Facade(Container):
+class Facade:
     
     def init(self, itemRenderers, globalRenderer):
-        super().init(itemRenderers, globalRenderer)
+        self.Container.init(self, itemRenderers, globalRenderer)
         self.levelRenderer = itemRenderers["Level"]
         self.basementRenderer = itemRenderers["Basement"]
     
