@@ -64,3 +64,8 @@ class Container(ContainerBase):
             nodes["Mapping"].inputs[3].default_value[1] = 1./claddingTextureInfo["textureHeightM"]
         # return True for consistency with <self.getFacadeMaterialId(..)>
         return True
+
+    def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
+        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["material"])\
+            if claddingTextureInfo\
+            else facadeTextureInfo["name"]

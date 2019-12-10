@@ -6,8 +6,8 @@ from util.blender import loadMaterialsFromFile
 
 class ItemRenderer:
     
-    def __init__(self):
-        self.exportMaterials = False
+    def __init__(self, exportMaterials=False):
+        self.exportMaterials = exportMaterials
     
     def init(self, itemRenderers, globalRenderer):
         self.itemRenderers = itemRenderers

@@ -256,7 +256,7 @@ class Container(ItemRenderer):
         claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
         
         if facadeTextureInfo:
-            materialId = self.getFacadeMaterialId(facadeTextureInfo, claddingTextureInfo)
+            materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
             if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
                 item.materialId = materialId
                 item.materialData = facadeTextureInfo
@@ -320,40 +320,8 @@ class Container(ItemRenderer):
             self.r.layer.uvLayerNameCladding
         )
     
-    def getFacadeMaterialId(self, facadeTextureInfo, claddingTextureInfo):
-        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["material"])\
-            if claddingTextureInfo\
-            else facadeTextureInfo["name"]
-    
     def getCladdingMaterialId(self, claddingTextureInfo):
         return claddingTextureInfo["name"]
-    
-    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
-        materialTemplate = self.getMaterialTemplate(
-            self.facadeMaterialTemplateFilename,
-            self.facadeMaterialTemplateName
-        )
-        if not materialName in bpy.data.materials:
-            nodes = createMaterialFromTemplate(materialTemplate, materialName)
-            # the overlay texture
-            setImage(
-                facadeTextureInfo["name"],
-                os.path.join(self.r.bldgMaterialsDirectory, facadeTextureInfo["path"]),
-                nodes,
-                "Overlay"
-            )
-            if claddingTextureInfo:
-                # The wall material (i.e. background) texture,
-                # set it just in case
-                setImage(
-                    claddingTextureInfo["name"],
-                    os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
-                    nodes,
-                    "Wall Material"
-                )
-                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
-                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureHeightM"]
-        return True
     
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
         materialTemplate = self.getMaterialTemplate(
