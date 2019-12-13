@@ -53,9 +53,10 @@ styles = {
         claddingColor = PerBuilding(Value(RandomWeighted((
             ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
         )))),
-        claddingMaterial = Value(RandomWeighted((
-            ("brick", 1), ("plaster", 1), ("gravel", 1)
-        )))
+        claddingMaterial = "brick"
+        #claddingMaterial = Value(RandomWeighted((
+        #    ("brick", 1), ("plaster", 1), ("gravel", 1)
+        #)))
     ),
     Facade(
         defName = "brown_brick"

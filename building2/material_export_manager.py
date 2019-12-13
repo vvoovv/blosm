@@ -65,7 +65,7 @@ class FacadeExporter(Exporter):
         # scale for the cladding texture
         scaleInputs = nodes["Scale"].inputs
         scaleFactor = claddingTextureInfo["textureWidthM"]/\
-        facadeTextureInfo["textureWidthPx"]*\
+        claddingTextureInfo["textureWidthPx"]*\
         (facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])/\
         facadeTextureInfo["windowWidthM"]
         scaleInputs[1].default_value = scaleFactor
