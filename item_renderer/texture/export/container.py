@@ -35,19 +35,46 @@ class Container(ContainerBase):
             uvs,
             self.r.layer.uvLayerNameFacade
         )
+    
+    def getCladdingColor(self, item):
+        color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
+        # remember the color for a future use in the next funtion call
+        self.claddingColor = color
+        return color
+    
+    def getTextureFilepath(self, materialName):
+        return os.path.join(self.r.app.dataDir, _textureDir, materialName)
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
-        color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
-        # remember the color for a future use
-        self.claddingColor = color
+        color = self.getCladdingColor(item)
         return "%s_%s_%s" % (claddingTextureInfo["material"], color, facadeTextureInfo["name"])\
             if claddingTextureInfo and color\
             else facadeTextureInfo["name"]
-
+    
+    def getCladdingMaterialId(self, item, claddingTextureInfo):
+        color = self.getCladdingColor(item)
+        return "%s_%s%s" % (color, claddingTextureInfo["material"], os.path.splitext(claddingTextureInfo["name"])[1])\
+            if claddingTextureInfo and color\
+            else claddingTextureInfo["name"]
+    
+    def createMaterialFromTemplate(self, materialName, textureFilepath):
+        materialTemplate = self.getMaterialTemplate(
+            _facadeMaterialTemplateFilename,
+            _facadeMaterialTemplateName
+        )
+        nodes = createMaterialFromTemplate(materialTemplate, materialName)
+        # the overlay texture
+        setImage(
+            textureFilepath,
+            None,
+            nodes,
+            "Image Texture"
+        )
+    
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
         if not materialName in bpy.data.materials:
             # check if have texture in the data directory
-            textureFilepath = os.path.join(self.r.app.dataDir, _textureDir, materialName)
+            textureFilepath = self.getTextureFilepath(materialName)
             if not os.path.isfile(textureFilepath):
                 self.r.materialExportManager.facadeExporter.makeTexture(
                     materialName, # the file name of the texture
@@ -57,16 +84,20 @@ class Container(ContainerBase):
                     claddingTextureInfo
                 )
             
-            materialTemplate = self.getMaterialTemplate(
-                _facadeMaterialTemplateFilename,
-                _facadeMaterialTemplateName
-            )
-            nodes = createMaterialFromTemplate(materialTemplate, materialName)
-            # the overlay texture
-            setImage(
-                textureFilepath,
-                None,
-                nodes,
-                "Image Texture"
-            )
+            self.createMaterialFromTemplate(materialName, textureFilepath)
+        return True
+    
+    def createCladdingMaterial(self, materialName, claddingTextureInfo):
+        if not materialName in bpy.data.materials:
+            # check if have texture in the data directory
+            textureFilepath = self.getTextureFilepath(materialName)
+            if not os.path.isfile(textureFilepath):
+                self.r.materialExportManager.claddingExporter.makeTexture(
+                    materialName, # the file name of the texture
+                    os.path.join(self.r.app.dataDir, _textureDir),
+                    self.claddingColor,
+                    claddingTextureInfo
+                )
+            
+            self.createMaterialFromTemplate(materialName, textureFilepath)
         return True

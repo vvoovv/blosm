@@ -58,6 +58,34 @@ class Exporter:
     def setColor(self, textColor, nodes, nodeName):
         color = Manager.getColor(textColor)
         nodes[nodeName].outputs[0].default_value = (color[0], color[1], color[2], 1.)
+
+    def makeCommonPreparations(self, textureFilename, textureDir, textColor, claddingTextureInfo):
+        self.verifyPath(textureDir)
+        self.setTmpTextureDir(textureDir)
+        nodes = self.scene.node_tree.nodes
+        fileOutputNode = nodes["File Output"]
+        fileOutputNode.base_path = Exporter.tmpTextureDir
+        fileOutputNode.file_slots[0].path = os.path.splitext(textureFilename)[0]
+        # cladding texture
+        setImage(
+            claddingTextureInfo["name"],
+            os.path.join(self.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+            nodes,
+            "cladding_texture"
+        )
+        # cladding color
+        self.setColor(textColor, nodes, "cladding_color")
+        return nodes
+    
+    def setCladdingTextureScale(self, facadeTextureInfo, claddingTextureInfo, nodes):
+        # scale for the cladding texture
+        scaleInputs = nodes["Scale"].inputs
+        scaleFactor = claddingTextureInfo["textureWidthM"]/\
+            claddingTextureInfo["textureWidthPx"]*\
+            (facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])/\
+            facadeTextureInfo["windowWidthM"]
+        scaleInputs[1].default_value = scaleFactor
+        scaleInputs[2].default_value = scaleFactor
     
     def renderTexture(self, textureFilename, textureDir):
         tmpTextureDir = Exporter.tmpTextureDir
@@ -72,12 +100,7 @@ class Exporter:
 class FacadeExporter(Exporter):
     
     def makeTexture(self, textureFilename, textureDir, textColor, facadeTextureInfo, claddingTextureInfo):
-        self.verifyPath(textureDir)
-        self.setTmpTextureDir(textureDir)
-        nodes = self.scene.node_tree.nodes
-        fileOutputNode = nodes["File Output"]
-        fileOutputNode.base_path = Exporter.tmpTextureDir
-        fileOutputNode.file_slots[0].path = os.path.splitext(textureFilename)[0]
+        nodes = self.makeCommonPreparations(textureFilename, textureDir, textColor, claddingTextureInfo)
         # facade texture
         setImage(
             facadeTextureInfo["name"],
@@ -85,23 +108,15 @@ class FacadeExporter(Exporter):
             nodes,
             "facade_texture"
         )
-        # cladding texture
-        setImage(
-            claddingTextureInfo["name"],
-            os.path.join(self.bldgMaterialsDirectory, claddingTextureInfo["path"]),
-            nodes,
-            "cladding_texture"
-        )
-        # scale for the cladding texture
-        scaleInputs = nodes["Scale"].inputs
-        scaleFactor = claddingTextureInfo["textureWidthM"]/\
-        claddingTextureInfo["textureWidthPx"]*\
-        (facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])/\
-        facadeTextureInfo["windowWidthM"]
-        scaleInputs[1].default_value = scaleFactor
-        scaleInputs[2].default_value = scaleFactor
-        # cladding color
-        self.setColor(textColor, nodes, "cladding_color")
+        self.setCladdingTextureScale(facadeTextureInfo, claddingTextureInfo, nodes)
+        # render the resulting texture
+        self.renderTexture(textureFilename, textureDir)
+
+
+class CladdingExporter(Exporter):
+
+    def makeTexture(self, textureFilename, textureDir, textColor, claddingTextureInfo):
+        self.makeCommonPreparations(textureFilename, textureDir, textColor, claddingTextureInfo)
         # render the resulting texture
         self.renderTexture(textureFilename, textureDir)
 
@@ -113,7 +128,7 @@ class MaterialExportManager:
     
     def init(self, bldgMaterialsDirectory):
         self.facadeExporter = FacadeExporter(bldgMaterialsDirectory, "compositing_facade")
-        self.claddingExporter = Exporter(bldgMaterialsDirectory, "compositing_cladding")
+        self.claddingExporter = CladdingExporter(bldgMaterialsDirectory, "compositing_cladding")
         self.doorExporter = Exporter(bldgMaterialsDirectory, "compositing_door")
     
     def cleanup(self):

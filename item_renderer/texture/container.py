@@ -302,15 +302,17 @@ class Container(ItemRenderer):
         else:
             self.renderCladding(building, parentItem, face, uvs)
     
-    def renderCladding(self, building, parentItem, face, uvs):
+    def renderCladding(self, building, item, face, uvs):
+        # <item> could be the current item or its parent item.
+        # The latter is the case if there is no style block for the basement
         materialId = ''
-        claddingMaterial = parentItem.getStyleBlockAttrDeep("claddingMaterial")
+        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
         if claddingMaterial:
             claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
             if claddingTextureInfo:
-                materialId = self.getCladdingMaterialId(claddingTextureInfo)
+                materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
                 self.createCladdingMaterial(materialId, claddingTextureInfo)
-                self.setVertexColor(parentItem, face)
+                self.setVertexColor(item, face)
         self.r.setMaterial(face, materialId)
     
     def setCladdingUvs(self, face, uvs):
@@ -320,7 +322,7 @@ class Container(ItemRenderer):
             self.r.layer.uvLayerNameCladding
         )
     
-    def getCladdingMaterialId(self, claddingTextureInfo):
+    def getCladdingMaterialId(self, item, claddingTextureInfo):
         return claddingTextureInfo["name"]
     
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
