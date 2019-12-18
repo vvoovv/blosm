@@ -669,6 +669,14 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = True
     )
     
+    maxNumTiles = bpy.props.IntProperty(
+        name = "Maximum number of overlay tiles",
+        subtype = 'UNSIGNED',
+        min = 128,
+        default = 256,
+        description = "Maximum number of overlay tiles. Each tile has dimensions 256x246 pixels"
+    )
+    
     ####################################
     # Settings for the realistic 3D mode
     ####################################

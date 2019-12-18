@@ -53,8 +53,6 @@ class Overlay:
     
     tileWidth = 256
     tileHeight = 256
-        
-    maxNumTiles = 256 # i.e. 4096x4096 pixels
     
     # default template
     tileCoordsTemplate = "{z}/{x}/{y}.png"
@@ -99,6 +97,7 @@ class Overlay:
     def prepareImport(self, left, bottom, right, top):
         app.print("Preparing overlay for import...")
         
+        maxNumTiles = app.maxNumTiles
         # Convert the coordinates from degrees to spherical Mercator coordinate system
         # and move zero to the top left corner (that's why the 3d argument in the function below)
         b, l = Overlay.toSphericalMercator(bottom, left, True)
@@ -111,7 +110,7 @@ class Overlay:
         # find the maximum zoom
         zoom = int(math.floor(
             0.5 * math.log2(
-                self.maxNumTiles * equator * equator / (b-t) / (r-l)
+                maxNumTiles * equator * equator / (b-t) / (r-l)
             )
         ))
         if zoom >= self.maxZoom:
@@ -121,7 +120,7 @@ class Overlay:
             while _zoom <= self.maxZoom:
                 # convert <l>, <b>, <r>, <t> to tile coordinates
                 _l, _b, _r, _t = tuple(Overlay.toTileCoord(coord, _zoom) for coord in (l, b, r, t))
-                if (_r - _l + 1) * (_b - _t + 1) > self.maxNumTiles:
+                if (_r - _l + 1) * (_b - _t + 1) > maxNumTiles:
                     break
                 zoom = _zoom
                 _zoom += 1
