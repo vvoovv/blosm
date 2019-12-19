@@ -2,6 +2,7 @@ import os
 import bpy
 from manager import Manager
 from ..container import Container as ContainerBase
+from ...geometry.rectangle import Rectangle
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
@@ -21,18 +22,24 @@ class Container(ContainerBase):
         self.claddingColor = None
         super().__init__(exportMaterials)
     
-    def renderCladding(self, building, parentItem, face, uvs):
-        self.setCladdingUvs(face, uvs)
-        super().renderCladding(building, parentItem, face, uvs)
+    def renderCladding(self, building, item, face, uvs):
+        # <item> could be the current item or its parent item.
+        # The latter is the case if there is no style block for the basement
+        claddingTextureInfo = super().renderCladding(building, item, face, uvs)
+        self.setCladdingUvs(face, uvs, claddingTextureInfo)
     
     def setVertexColor(self, parentItem, face):
         # do nothing here
         pass
 
-    def setCladdingUvs(self, face, uvs):
+    def setCladdingUvs(self, face, uvs, claddingTextureInfo):
         self.r.setUvs(
             face,
-            uvs,
+            Rectangle.getCladdingUvsExport(
+                uvs,
+                claddingTextureInfo["textureWidthM"],
+                claddingTextureInfo["textureHeightM"]
+            ),
             self.r.layer.uvLayerNameFacade
         )
     

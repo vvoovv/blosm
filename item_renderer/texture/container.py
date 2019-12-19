@@ -307,6 +307,7 @@ class Container(ItemRenderer):
         # The latter is the case if there is no style block for the basement
         materialId = ''
         claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
+        claddingTextureInfo = None
         if claddingMaterial:
             claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
             if claddingTextureInfo:
@@ -314,6 +315,9 @@ class Container(ItemRenderer):
                 self.createCladdingMaterial(materialId, claddingTextureInfo)
                 self.setVertexColor(item, face)
         self.r.setMaterial(face, materialId)
+        # Return <claddingTextureInfo>, since it may be used by
+        # the <renderCladding(..)> of a child class
+        return claddingTextureInfo
     
     def setCladdingUvs(self, face, uvs):
         self.r.setUvs(
