@@ -17,10 +17,14 @@ class Container(ContainerBase):
     """
     
     def __init__(self, exportMaterials):
+        super().__init__(exportMaterials)
         # The following variable is used to cache the cladding color as as string:
         # either a base colors (e.g. red, green) or a hex string
         self.claddingColor = None
-        super().__init__(exportMaterials)
+    
+    def init(self, itemRenderers, globalRenderer):
+        super().init(itemRenderers, globalRenderer)
+        self.exporter = globalRenderer.materialExportManager.facadeExporter
     
     def renderCladding(self, building, item, face, uvs):
         # <item> could be the current item or its parent item.
@@ -78,17 +82,18 @@ class Container(ContainerBase):
             "Image Texture"
         )
     
-    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
+    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         if not materialName in bpy.data.materials:
             # check if have texture in the data directory
             textureFilepath = self.getTextureFilepath(materialName)
             if not os.path.isfile(textureFilepath):
-                self.r.materialExportManager.facadeExporter.makeTexture(
+                self.exporter.makeTexture(
                     materialName, # the file name of the texture
                     os.path.join(self.r.app.dataDir, _textureDir),
                     self.claddingColor,
                     facadeTextureInfo,
-                    claddingTextureInfo
+                    claddingTextureInfo,
+                    uvs
                 )
             
             self.createMaterialFromTemplate(materialName, textureFilepath)

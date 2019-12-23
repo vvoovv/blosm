@@ -95,16 +95,20 @@ class BuildingRendererNew(Renderer):
         exportMaterials = False
         
         self.itemRenderers = itemRenderers
-        # initialize item renderers
+        # check if need to export materials
         for item in itemRenderers:
-            item = itemRenderers[item]
             # If at least one item renderer creates materials for export,
             # then we set <self.exportMaterial> (i.e. for the global renderer) to <True>
-            if not exportMaterials and item.exportMaterials:
+            if not exportMaterials and itemRenderers[item].exportMaterials:
                 exportMaterials = True
-            item.init(itemRenderers, self)
         
         self.exportMaterials = exportMaterials
+        if exportMaterials:
+            self.materialExportManager = MaterialExportManager(self.bldgMaterialsDirectory)
+        
+        # initialize item renderers
+        for item in itemRenderers:
+            itemRenderers[item].init(itemRenderers, self)
         
         self.getStyle = getStyle
         referenceItems = _createReferenceItems()
@@ -115,8 +119,8 @@ class BuildingRendererNew(Renderer):
         self.claddingTextureStore = CladdingTextureStore()
     
     def prepare(self):
-        if self.exportMaterials:
-            self.materialExportManager = MaterialExportManager(self.bldgMaterialsDirectory)
+        # nothing to be done here for now
+        pass
     
     def cleanup(self):
         if self.exportMaterials:

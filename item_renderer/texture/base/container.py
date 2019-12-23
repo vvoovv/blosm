@@ -18,7 +18,7 @@ class Container(ContainerBase):
     The base class for the item renderers Facade, Div, Layer, Basement
     """
     
-    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo):
+    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         materialTemplate = self.getMaterialTemplate(
             self.facadeMaterialTemplateFilename,
             self.facadeMaterialTemplateName

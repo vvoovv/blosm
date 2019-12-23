@@ -8,6 +8,8 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 _exportTemplateFilename = "building_material_templates.blend"
 
+_doorFaceWidthPx = 1028
+
 
 class Exporter:
     
@@ -77,15 +79,15 @@ class Exporter:
         self.setColor(textColor, nodes, "cladding_color")
         return nodes
     
-    def setCladdingTextureScale(self, facadeTextureInfo, claddingTextureInfo, nodes):
-        # scale for the cladding texture
-        scaleInputs = nodes["Scale"].inputs
-        scaleFactor = claddingTextureInfo["textureWidthM"]/\
-            claddingTextureInfo["textureWidthPx"]*\
-            (facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])/\
-            facadeTextureInfo["windowWidthM"]
-        scaleInputs[1].default_value = scaleFactor
-        scaleInputs[2].default_value = scaleFactor
+    def setScaleNode(self, nodes, nodeName, scaleX, scaleY):
+        scaleInputs = nodes[nodeName].inputs
+        scaleInputs[1].default_value = scaleX
+        scaleInputs[2].default_value = scaleY
+    
+    def setTranslateNode(self, nodes, nodeName, translateX, translateY):
+        translateInputs = nodes[nodeName].inputs
+        translateInputs[1].default_value = translateX
+        translateInputs[2].default_value = translateY
     
     def renderTexture(self, textureFilename, textureDir):
         tmpTextureDir = Exporter.tmpTextureDir
@@ -99,7 +101,7 @@ class Exporter:
 
 class FacadeExporter(Exporter):
     
-    def makeTexture(self, textureFilename, textureDir, textColor, facadeTextureInfo, claddingTextureInfo):
+    def makeTexture(self, textureFilename, textureDir, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
         nodes = self.makeCommonPreparations(textureFilename, textureDir, textColor, claddingTextureInfo)
         # facade texture
         setImage(
@@ -108,7 +110,12 @@ class FacadeExporter(Exporter):
             nodes,
             "facade_texture"
         )
-        self.setCladdingTextureScale(facadeTextureInfo, claddingTextureInfo, nodes)
+        # scale for the cladding texture
+        scaleFactor = claddingTextureInfo["textureWidthM"]/\
+            claddingTextureInfo["textureWidthPx"]*\
+            (facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])/\
+            facadeTextureInfo["windowWidthM"]
+        self.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
         # render the resulting texture
         self.renderTexture(textureFilename, textureDir)
 
@@ -121,6 +128,53 @@ class CladdingExporter(Exporter):
         self.renderTexture(textureFilename, textureDir)
 
 
+class DoorExporter(Exporter):
+
+    def makeTexture(self, textureFilename, textureDir, textColor, doorTextureInfo, claddingTextureInfo, uvs):
+        nodes = self.makeCommonPreparations(textureFilename, textureDir, textColor, claddingTextureInfo)
+        faceWidthM = uvs[1][0] - uvs[0][0]
+        faceHeightM = uvs[2][1] - uvs[1][1]
+        faceWidthPx = _doorFaceWidthPx
+        faceHeightPx = faceHeightM / faceWidthM * faceWidthPx
+        # the size of the empty image
+        image = nodes["empty_image"].image
+        image.generated_width = faceWidthPx
+        image.generated_height = faceHeightPx
+        # facade texture
+        setImage(
+            doorTextureInfo["name"],
+            os.path.join(self.bldgMaterialsDirectory, doorTextureInfo["path"]),
+            nodes,
+            "door_texture"
+        )
+        # scale for the door texture
+        scaleY = doorTextureInfo["textureHeightM"]/doorTextureInfo["textureHeightPx"]*faceHeightPx/faceHeightM
+        self.setScaleNode(
+            nodes,
+            "door_scale",
+            doorTextureInfo["textureWidthM"]/doorTextureInfo["textureWidthPx"]*faceWidthPx/faceWidthM,
+            scaleY
+        )
+        # translate for the door texture
+        self.setTranslateNode(
+            nodes,
+            "door_translate",
+            0,
+            (scaleY*doorTextureInfo["textureHeightPx"] - faceHeightPx)/2
+        )
+        # scale for the cladding texture
+        scaleFactor = claddingTextureInfo["textureWidthM"]/claddingTextureInfo["textureWidthPx"]*\
+            faceWidthPx/faceWidthM
+        self.setScaleNode(
+            nodes,
+            "cladding_scale",
+            scaleFactor,
+            scaleFactor
+        )
+        # render the resulting texture
+        self.renderTexture(textureFilename, textureDir)
+
+
 class MaterialExportManager:
     
     def __init__(self, bldgMaterialsDirectory):
@@ -129,7 +183,7 @@ class MaterialExportManager:
     def init(self, bldgMaterialsDirectory):
         self.facadeExporter = FacadeExporter(bldgMaterialsDirectory, "compositing_facade")
         self.claddingExporter = CladdingExporter(bldgMaterialsDirectory, "compositing_cladding")
-        self.doorExporter = Exporter(bldgMaterialsDirectory, "compositing_door")
+        self.doorExporter = DoorExporter(bldgMaterialsDirectory, "compositing_door")
     
     def cleanup(self):
         self.facadeExporter.cleanup()

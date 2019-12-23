@@ -92,9 +92,7 @@ class Container(ItemRenderer):
         self.levelRenderer.getRenderer(group).render(
             building, group, item,
             indices,
-            ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
-            texU1,
-            texV
+            ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
         )
     
     def renderDivs(self, item):
@@ -211,9 +209,7 @@ class Container(ItemRenderer):
             renderer.render(
                 building, levelGroup, parentItem,
                 (prevIndex1, prevIndex2, index2, index1),
-                ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) ),
-                texU1,
-                texV
+                ( (texU1, texV), (texU2, texV), (texU2, texV2), (texU1, texV2) )
             )
             prevIndex1 = index1
             prevIndex2 = index2
@@ -234,7 +230,7 @@ class Container(ItemRenderer):
             color = Manager.getColor(color)
             self.r.setVertexColor(face, color, self.r.layer.vertexColorLayerNameCladding)
     
-    def setMaterialId(self, item, building, buildingPart, itemRenderer):
+    def setMaterialId(self, item, building, buildingPart, uvs, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
         if self.initFacadePatternInfo:
             # reset <facadePatternInfo>
@@ -257,7 +253,7 @@ class Container(ItemRenderer):
         
         if facadeTextureInfo:
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
-            if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo):
+            if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo, uvs):
                 item.materialId = materialId
                 item.materialData = facadeTextureInfo
             else:
@@ -265,7 +261,7 @@ class Container(ItemRenderer):
         else:
             item.materialId = ""
     
-    def render(self, building, levelGroup, parentItem, indices, uvs, texOffsetU, texOffsetV):        
+    def render(self, building, levelGroup, parentItem, indices, uvs):        
         face = self.r.createFace(building, indices)
         # set UV-coordinates for the cladding textures
         if not self.exportMaterials:
@@ -281,6 +277,7 @@ class Container(ItemRenderer):
                         item.buildingPart if item.buildingPart else (
                             "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
                         ),
+                        uvs,
                         self
                     )
                 else:
