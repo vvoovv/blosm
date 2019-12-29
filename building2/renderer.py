@@ -12,12 +12,14 @@ from item.facade import Facade
 from item.level import Level
 from item.div import Div
 from item.basement import Basement
-from item.roof import Roof
-from item.roof_side import RoofSide
 from item.window import Window
 from item.door import Door
 from item.balcony import Balcony
 from item.chimney import Chimney
+
+from item.roof_flat import RoofFlat
+from item.roof_pyramidal import RoofPyramidal
+from item.roof_side import RoofSide
 
 
 def _createReferenceItems():
@@ -28,12 +30,13 @@ def _createReferenceItems():
         Level(),
         Div(),
         Basement(),
-        Roof(),
-        RoofSide(),
         Window(),
         Door(),
         Balcony(),
-        Chimney()
+        Chimney(),
+        RoofFlat(),
+        
+        RoofSide()
     )
 
 

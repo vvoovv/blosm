@@ -5,6 +5,9 @@ from ..level import Level as LevelBase
 from ..basement import Basement as BasementBase
 from .door import Door
 
+from ..roof_flat import RoofFlat as RoofFlatBase
+from ..roof_pyramidal import RoofPyramidal as RoofPyramidalBase
+
 
 class Facade(FacadeBase, Container):
     
@@ -38,3 +41,11 @@ class Basement(BasementBase, Container):
         self.Container = Container
         Container.__init__(self)
         BasementBase.__init__(self)
+
+
+class RoofFlat(RoofFlatBase):
+    pass
+
+
+class RoofPyramidal(RoofPyramidalBase):
+    pass

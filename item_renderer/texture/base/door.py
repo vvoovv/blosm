@@ -15,8 +15,6 @@ class Door(DoorBase, Container):
     
     def render(self, building, levelGroup, parentItem, indices, uvs):
         face = self.r.createFace(building, indices)
-        # set UV-coordinates for the cladding textures
-        self.setCladdingUvs(face, uvs)
         item = levelGroup.item
         if item.materialId is None:
             self.setMaterialId(
@@ -29,7 +27,7 @@ class Door(DoorBase, Container):
                 self
             )
         if item.materialId:
-            facadeTextureInfo = item.materialData
+            facadeTextureInfo, claddingTextureInfo = item.materialData
             faceWidth = uvs[1][0] - uvs[0][0]
             faceHeight = uvs[2][1] - uvs[1][1]
             doorWidth = facadeTextureInfo["textureWidthM"]
@@ -45,6 +43,8 @@ class Door(DoorBase, Container):
                 ),
                 self.r.layer.uvLayerNameFacade
             )
+            # set UV-coordinates for the cladding texture
+            self.setCladdingUvs(face, uvs, claddingTextureInfo)
             self.setVertexColor(item, face)
         self.r.setMaterial(face, item.materialId)
     

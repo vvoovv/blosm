@@ -1,5 +1,6 @@
 from .roof import Roof
 from item.facade import Facade
+from item.roof_flat import RoofFlat as ItemRoofFlat
 from item_renderer.geometry.rectangle import Rectangle
 from mathutils import Vector
 
@@ -9,14 +10,34 @@ class RoofFlat(Roof):
     # default roof height
     height = 1.
     
-    def __init__(self, data, itemStore, itemFactory):
+    def __init__(self, data, itemStore, itemFactory, roofRenderer):
         super().__init__(data, itemStore, itemFactory)
         self.hasRoofLevels = False
+        self.roofRenderer = roofRenderer
         self.rectangleGeometry = Rectangle()
     
     def render(self, footprint, facadeRenderer):
+        # <indexOffset> is needed to created a Python tuple of indices that defines the roof base;
+        # since it depends on the total number of building vertices, we calculated it before any operation
+        # that creates building geometry 
+        indexOffset = len(footprint.building.verts)
+        n = footprint.polygon.n
+        
         self.extrude(footprint)
         facadeRenderer.render(footprint)
+        self.roofRenderer.render(
+            self.getRoofItem(
+                footprint,
+                tuple(range(indexOffset + n, indexOffset + 2*n))
+            )
+        )
+    
+    def getRoofItem(self, footprint, indices):
+        return ItemRoofFlat.getItem(
+            self.itemFactory,
+            footprint,
+            indices
+        )
     
     def extrude(self, footprint):
         building = footprint.building

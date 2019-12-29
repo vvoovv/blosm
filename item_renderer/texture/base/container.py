@@ -41,8 +41,6 @@ class Container(ContainerBase):
                     nodes,
                     "Wall Material"
                 )
-                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
-                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureHeightM"]
         return True
     
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
@@ -60,8 +58,6 @@ class Container(ContainerBase):
                 nodes,
                 "Cladding Texture"
             )
-            nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
-            nodes["Mapping"].inputs[3].default_value[1] = 1./claddingTextureInfo["textureHeightM"]
         # return True for consistency with <self.getFacadeMaterialId(..)>
         return True
 

@@ -30,3 +30,31 @@ class ItemRenderer:
         if not materialTemplate:
             materialTemplate = loadMaterialsFromFile(os.path.join(self.r.bldgMaterialsDirectory, materialTemplateFilename), True, materialTemplateName)[0]
         return materialTemplate
+    
+    def renderCladding(self, building, item, face, uvs):
+        # <item> could be the current item or its parent item.
+        # The latter is the case if there is no style block for the basement
+        
+        materialId = ''
+        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
+        claddingTextureInfo = None
+        if claddingMaterial:
+            claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
+            if claddingTextureInfo:
+                self.setCladdingUvs(face, uvs, claddingTextureInfo)
+                materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
+                self.createCladdingMaterial(materialId, claddingTextureInfo)
+                self.setVertexColor(item, face)
+        self.r.setMaterial(face, materialId)
+        # Return <claddingTextureInfo>, since it may be used by
+        # the <renderCladding(..)> of a child class
+        return claddingTextureInfo
+
+    def setCladdingUvs(self, face, uvs, claddingTextureInfo):
+        textureWidthM = claddingTextureInfo["textureWidthM"]
+        textureHeightM = claddingTextureInfo["textureHeightM"]
+        self.r.setUvs(
+            face,
+            tuple((uv[0]/textureWidthM, uv[1]/textureHeightM) for uv in uvs),
+            self.r.layer.uvLayerNameCladding
+        )

@@ -5,6 +5,7 @@ from item.footprint import Footprint
 # import roof generators
 from .roof_flat import RoofFlat
 #from .roof_gabled import RoofGabled
+from .roof_pyramidal import RoofPyramidal
 
 
 class Volume(Action):
@@ -14,9 +15,10 @@ class Volume(Action):
     
     defaultRoofShape = "flat"
     
-    def __init__(self, app, data, itemStore, itemFactory):
+    def __init__(self, app, data, itemStore, itemFactory, itemRenderers):
         super().__init__(app, data, itemStore, itemFactory)
-        self.setVolumeGenerators(data)
+        if itemRenderers:
+            self.setVolumeGenerators(data, itemRenderers)
     
     def setRenderer(self, renderer):
         """
@@ -51,12 +53,12 @@ class Volume(Action):
             )
             volumeGenerator.do(footprint, self.renderer)
     
-    def setVolumeGenerators(self, data):
+    def setVolumeGenerators(self, data, itemRenderers):
         #self.flatRoofMulti = RoofFlatMulti()
         self.volumeGenerators = {
-            'flat': RoofFlat(data, self.itemStore, self.itemFactory),
+            'flat': RoofFlat(data, self.itemStore, self.itemFactory, itemRenderers["RoofFlat"]),
             #'gabled': RoofGabled()# RoofProfile(gabledRoof),
-            #'pyramidal': RoofPyramidal(),
+            'pyramidal': RoofPyramidal(data, self.itemStore, self.itemFactory, itemRenderers["RoofPyramidal"]),
             #'skillion': RoofSkillion(),
             #'hipped': RoofHipped(),
             #'dome': RoofMesh("roof_dome"),

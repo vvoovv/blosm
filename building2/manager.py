@@ -30,7 +30,10 @@ class RealisticBuildingLayerExport(BuildingLayer):
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
         
-        # the name for the base UV map used for facade textures
+        # The name for the base UV map used for facade textures
+        self.uvLayerNameFacade = "facade"
+        # The name for the base UV map used for cladding textures.
+        # The same UV-map is used for both the facade and cladding textures
         self.uvLayerNameFacade = "facade"
     
     def prepare(self, instance):

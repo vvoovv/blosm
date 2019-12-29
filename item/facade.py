@@ -21,7 +21,6 @@ class Facade(Container):
         item.init()
         item.parent = parent
         item.footprint = parent
-        item.footprint = parent
         item.building = parent.building
         item.indices = indices
         item.width = width

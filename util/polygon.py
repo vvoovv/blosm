@@ -28,6 +28,7 @@ class Polygon:
         self.indices = None
         # normal to the polygon
         self.normal = zAxis
+        self._maxEdgeIndex = None
     
     def init(self, allVerts):
         """
@@ -288,6 +289,17 @@ class Polygon:
             if translate:
                 vert = vert + translate
             self.allVerts.append(vert)
+    
+    @property
+    def maxEdgeIndex(self):
+        if self._maxEdgeIndex is None:
+            verts = self.allVerts
+            indices = self.indices
+            self._maxEdgeIndex = max(
+                range(-1, self.n-1),
+                key = lambda i: (verts[indices[i+1]-verts[indices[i]]]).length_squared
+            ) + 1
+        return self._maxEdgeIndex
 
 
 class Edge:

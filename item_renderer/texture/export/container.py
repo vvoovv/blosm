@@ -26,26 +26,9 @@ class Container(ContainerBase):
         super().init(itemRenderers, globalRenderer)
         self.exporter = globalRenderer.materialExportManager.facadeExporter
     
-    def renderCladding(self, building, item, face, uvs):
-        # <item> could be the current item or its parent item.
-        # The latter is the case if there is no style block for the basement
-        claddingTextureInfo = super().renderCladding(building, item, face, uvs)
-        self.setCladdingUvs(face, uvs, claddingTextureInfo)
-    
     def setVertexColor(self, parentItem, face):
         # do nothing here
         pass
-
-    def setCladdingUvs(self, face, uvs, claddingTextureInfo):
-        self.r.setUvs(
-            face,
-            Rectangle.getCladdingUvsExport(
-                uvs,
-                claddingTextureInfo["textureWidthM"],
-                claddingTextureInfo["textureHeightM"]
-            ),
-            self.r.layer.uvLayerNameFacade
-        )
     
     def getCladdingColor(self, item):
         color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
