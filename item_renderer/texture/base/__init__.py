@@ -1,3 +1,4 @@
+from .item_renderer import ItemRenderer
 from .container import Container
 from ..facade import Facade as FacadeBase
 from ..div import Div as DivBase
@@ -43,7 +44,7 @@ class Basement(BasementBase, Container):
         BasementBase.__init__(self)
 
 
-class RoofFlat(RoofFlatBase):
+class RoofFlat(RoofFlatBase, ItemRenderer):
     pass
 
 

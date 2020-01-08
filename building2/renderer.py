@@ -135,7 +135,7 @@ class BuildingRendererNew(Renderer):
         itemStore = self.itemStore
         
         # get the style of the building
-        style = self.styleStore.get(self.getStyle(buildingP, self.app))
+        buildingStyle = self.styleStore.get(self.getStyle(buildingP, self.app))
         
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
@@ -144,7 +144,7 @@ class BuildingRendererNew(Renderer):
         #for itemRenderer in self.itemRenderers:
         #    self.itemRenderers[itemRenderer].preRender()
         
-        building = Building.getItem(itemFactory, outline, style)
+        building = Building.getItem(itemFactory, outline, buildingStyle)
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
@@ -157,7 +157,7 @@ class BuildingRendererNew(Renderer):
         
         for itemClass in (Building, Footprint):
             for action in itemClass.actions:
-                action.do(building, itemClass, style)
+                action.do(building, itemClass, buildingStyle)
                 if itemStore.skip:
                     break
             if itemStore.skip:

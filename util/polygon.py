@@ -292,13 +292,16 @@ class Polygon:
     
     @property
     def maxEdgeIndex(self):
+        """
+        Returns -1 if the last edge is the longest one
+        """
         if self._maxEdgeIndex is None:
             verts = self.allVerts
             indices = self.indices
             self._maxEdgeIndex = max(
                 range(-1, self.n-1),
-                key = lambda i: (verts[indices[i+1]-verts[indices[i]]]).length_squared
-            ) + 1
+                key = lambda i: (verts[indices[i+1]]-verts[indices[i]]).length_squared
+            )
         return self._maxEdgeIndex
 
 

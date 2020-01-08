@@ -3,7 +3,7 @@ from grammar.scope import PerBuilding, PerFootprint
 from grammar import units, symmetry
 from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal
-from action.volume.roof import Roof
+from action.volume.roof import Roof as RoofDefs
 
 
 styles = {
@@ -30,7 +30,8 @@ styles = {
         groundLevelHeight = Value( RandomNormal(1.4*3) ),
         basementHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
-            FromAttr("roof:shape", FromAttr.String, Roof.shapes),
+            #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
+            Constant("flat"),
             Constant("gabled")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
@@ -40,9 +41,9 @@ styles = {
         )),
         roofAngle = Value(FromAttr("roof:angle", FromAttr.Float)),
         roofDirection = Value(Alternatives(
-            FromAttr("roof:direction", FromAttr.String, Roof.directions),
+            FromAttr("roof:direction", FromAttr.String, RoofDefs.directions),
             FromAttr("roof:direction", FromAttr.Float),
-            FromAttr("roof:slope:direction", FromAttr.String, Roof.directions),
+            FromAttr("roof:slope:direction", FromAttr.String, RoofDefs.directions),
             FromAttr("roof:slope:direction", FromAttr.Float)
         )),
         roofOrientation = Value( FromAttr("roof:orientation", FromAttr.String) ),
@@ -170,6 +171,10 @@ styles = {
                 ]
             )
         ]
+    ),
+    Roof(
+        claddingMaterial = "concrete",
+        claddingColor = "lightgray"
     ),
     RoofSide(
         condition = lambda side: side.front,

@@ -53,27 +53,6 @@ class Container(Item):
         # an item renderer might need some data related to the material with <self.materialId>
         self.materialData = None
     
-    def getStyleBlockAttrDeep(self, attr):
-        # the values are seemingly cached per item rather than per building
-        styleBlockCache = self._styleBlockCache
-        if attr in styleBlockCache:
-            value = styleBlockCache[attr]
-        else:
-            attrs = self.styleBlock.attrs
-            if attr in attrs:
-                value, _, isComplexValue = attrs.get(attr)
-                if isComplexValue:
-                    value = value.value
-                    value.setData(self)
-                    value = value.value
-            else:
-                # try to get the attribute from <self.parent>
-                value = self.parent.getStyleBlockAttrDeep(attr) if self.parent else None
-            
-            # keep the entry for <attr> in the cache
-            styleBlockCache[attr] = value
-        return value
-    
     def init(self):
         super().init()
         self.markup.clear()

@@ -1,19 +1,12 @@
 import os
 import bpy
+from .item_renderer import ItemRenderer
 from ..container import Container as ContainerBase
-from grammar.arrangement import Horizontal, Vertical
-from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
-from util import zAxis
 
-
-_claddingMaterialTemplateFilename = "building_material_templates.blend"
-_claddingMaterialTemplateName = "tiles_color_template"
-
-
-class Container(ContainerBase):
+class Container(ContainerBase, ItemRenderer):
     """
     The base class for the item renderers Facade, Div, Layer, Basement
     """
@@ -41,24 +34,6 @@ class Container(ContainerBase):
                     nodes,
                     "Wall Material"
                 )
-        return True
-    
-    def createCladdingMaterial(self, materialName, claddingTextureInfo):
-        materialTemplate = self.getMaterialTemplate(
-            _claddingMaterialTemplateFilename,
-            _claddingMaterialTemplateName
-        )
-        if not materialName in bpy.data.materials:
-            nodes = createMaterialFromTemplate(materialTemplate, materialName)
-            # The wall material (i.e. background) texture,
-            # set it just in case
-            setImage(
-                claddingTextureInfo["name"],
-                os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
-                nodes,
-                "Cladding Texture"
-            )
-        # return True for consistency with <self.getFacadeMaterialId(..)>
         return True
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):

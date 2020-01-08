@@ -1,17 +1,8 @@
-import os
-import bpy
-from manager import Manager
 from .. import ItemRenderer
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
-from util.blender_extra.material import createMaterialFromTemplate, setImage
-
 from util import zAxis
-
-
-_claddingMaterialTemplateFilename = "building_material_templates.blend"
-_claddingMaterialTemplateName = "tiles_color_template"
 
 
 class Container(ItemRenderer):
@@ -223,12 +214,6 @@ class Container(ItemRenderer):
         uvLayer = self.r.bm.loops.layers.uv[layerName]
         for loop in face.loops:
             loop[uvLayer].uv = uv
-            
-    def setVertexColor(self, item, face):
-        color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
-        if color:
-            color = Manager.getColor(color)
-            self.r.setVertexColor(face, color, self.r.layer.vertexColorLayerNameCladding)
     
     def setMaterialId(self, item, building, buildingPart, uvs, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
@@ -293,40 +278,8 @@ class Container(ItemRenderer):
                 )
                 # set UV-coordinates for the cladding texture
                 if not self.exportMaterials:
-                    self.setCladdingUvs(face, uvs, claddingTextureInfo)
+                    self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
                 self.setVertexColor(item, face)
             self.r.setMaterial(face, item.materialId)
         else:
             self.renderCladding(building, parentItem, face, uvs)
-    
-    def getCladdingMaterialId(self, item, claddingTextureInfo):
-        return claddingTextureInfo["name"]
-    
-    def createCladdingMaterial(self, materialName, claddingTextureInfo):
-        materialTemplate = self.getMaterialTemplate(
-            _claddingMaterialTemplateFilename,
-            _claddingMaterialTemplateName
-        )
-        if not materialName in bpy.data.materials:
-            nodes = createMaterialFromTemplate(materialTemplate, materialName)
-            # The wall material (i.e. background) texture,
-            # set it just in case
-            setImage(
-                claddingTextureInfo["name"],
-                os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
-                nodes,
-                "Cladding Texture"
-            )
-        # return True for consistency with <self.getFacadeMaterialId(..)>
-        return True
-    
-    def getCladdingTextureInfo(self, claddingMaterial, building):
-        if claddingMaterial:
-            if claddingMaterial in building._cache:
-                claddingTextureInfo = building._cache[claddingMaterial]
-            else:
-                claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)
-                building._cache[claddingMaterial] = claddingTextureInfo
-        else:
-            claddingTextureInfo = None
-        return claddingTextureInfo

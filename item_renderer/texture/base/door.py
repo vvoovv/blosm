@@ -44,7 +44,7 @@ class Door(DoorBase, Container):
                 self.r.layer.uvLayerNameFacade
             )
             # set UV-coordinates for the cladding texture
-            self.setCladdingUvs(face, uvs, claddingTextureInfo)
+            self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
             self.setVertexColor(item, face)
         self.r.setMaterial(face, item.materialId)
     
@@ -71,6 +71,4 @@ class Door(DoorBase, Container):
                     nodes,
                     "Wall Material"
                 )
-                nodes["Mapping"].inputs[3].default_value[0] = 1./claddingTextureInfo["textureWidthM"]
-                nodes["Mapping"].inputs[3].default_value[1] = 1./claddingTextureInfo["textureHeightM"]
         return True

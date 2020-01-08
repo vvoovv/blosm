@@ -41,7 +41,7 @@ class ItemRenderer:
         if claddingMaterial:
             claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
             if claddingTextureInfo:
-                self.setCladdingUvs(face, uvs, claddingTextureInfo)
+                self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
                 materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
                 self.createCladdingMaterial(materialId, claddingTextureInfo)
                 self.setVertexColor(item, face)
@@ -50,11 +50,23 @@ class ItemRenderer:
         # the <renderCladding(..)> of a child class
         return claddingTextureInfo
 
-    def setCladdingUvs(self, face, uvs, claddingTextureInfo):
+    def setCladdingUvs(self, item, face, claddingTextureInfo, uvs):
         textureWidthM = claddingTextureInfo["textureWidthM"]
         textureHeightM = claddingTextureInfo["textureHeightM"]
         self.r.setUvs(
             face,
-            tuple((uv[0]/textureWidthM, uv[1]/textureHeightM) for uv in uvs),
+            # a generator!
+            ((uv[0]/textureWidthM, uv[1]/textureHeightM) for uv in uvs),
             self.r.layer.uvLayerNameCladding
         )
+    
+    def getCladdingTextureInfo(self, claddingMaterial, building):
+        if claddingMaterial:
+            if claddingMaterial in building._cache:
+                claddingTextureInfo = building._cache[claddingMaterial]
+            else:
+                claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)
+                building._cache[claddingMaterial] = claddingTextureInfo
+        else:
+            claddingTextureInfo = None
+        return claddingTextureInfo

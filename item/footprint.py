@@ -12,6 +12,8 @@ class Footprint(Item):
     def __init__(self):
         super().__init__()
         self.building = None
+        # all style blocks that define the style for the building
+        self.buildingStyle = None
         self.polygon = Polygon()
         self.projections = []
         self.minProjIndex = 0
@@ -29,6 +31,7 @@ class Footprint(Item):
     def init(self):
         super().init()
         self.building = None
+        self.buildingStyle = None
         self.lastLevelOffset = 0.
         # reset <self.polygon>
         self.polygon.allVerts.clear()
@@ -60,20 +63,17 @@ class Footprint(Item):
         """
         return
 
-    def calculateStyling(self, style):
+    def calculateStyling(self):
         """
         Calculates a specific style for the item out of the set of style definitions <styleDefs>
-        
-        Args:
-            style (grammar.Grammar): a set of style definitions
         """
-        super().calculateStyling(style)
+        super().calculateStyling()
         
         # Find <Facade> style blocks in <markup> (actually in <self.styleBlock.styleBlocks>),
         # also try to find them at the very top of the style definitions
         self.facadeStyle = self.styleBlock.styleBlocks.get(
             _facadeClassName,
-            style.styleBlocks.get(_facadeClassName)
+            self.buildingStyle.styleBlocks.get(_facadeClassName)
         )
     
     def getStyleBlockCache(self, scope):

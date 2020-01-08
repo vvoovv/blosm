@@ -51,24 +51,43 @@ class Item:
                 # keep the entry for <attr> in the cache
                 styleBlockCache[attr] = value
         return value
+
+    def getStyleBlockAttrDeep(self, attr):
+        # the values are seemingly cached per item rather than per building
+        styleBlockCache = self._styleBlockCache
+        if attr in styleBlockCache:
+            value = styleBlockCache[attr]
+        else:
+            attrs = self.styleBlock.attrs
+            if attr in attrs:
+                value, _, isComplexValue = attrs.get(attr)
+                if isComplexValue:
+                    value = value.value
+                    value.setData(self)
+                    value = value.value
+            else:
+                # try to get the attribute from <self.parent>
+                value = self.parent.getStyleBlockAttrDeep(attr) if self.parent else None
+            
+            # keep the entry for <attr> in the cache
+            styleBlockCache[attr] = value
+        return value
     
     def getStyleBlockCache(self, scope):
         return self._styleBlockCache
     
-    def calculateStyling(self, style):
+    def calculateStyling(self):
         """
         Lookups the style for the item at the very top of style definitions.
         It may perform other styling calculations
-        
-        Args:
-            style (grammar.Grammar): a set of style definitions
         """
         
         className = self.__class__.__name__
+        buildingStyle = self.buildingStyle
         # Some items (Footprint, Facade, Roofside, Ridge, Roof) can be defined right at the top
         # of the style definition. We treat that case below in the code
-        if className in style.styleBlocks:
-            for _styleBlock in style.styleBlocks[className]:
+        if className in buildingStyle.styleBlocks:
+            for _styleBlock in buildingStyle.styleBlocks[className]:
                 if self.evaluateCondition(_styleBlock):
                     self.styleBlock = _styleBlock
                     # the rest of the style blocks is ignored, so break the "for" cycle
