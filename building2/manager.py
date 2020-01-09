@@ -34,7 +34,7 @@ class RealisticBuildingLayerExport(BuildingLayer):
         self.uvLayerNameFacade = "facade"
         # The name for the base UV map used for cladding textures.
         # The same UV-map is used for both the facade and cladding textures
-        self.uvLayerNameFacade = "facade"
+        self.uvLayerNameCladding = "facade"
     
     def prepare(self, instance):
         mesh = instance.obj.data

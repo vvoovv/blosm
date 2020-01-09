@@ -28,7 +28,9 @@ from item_renderer.texture.export import\
     Div as DivRenderer,\
     Level as LevelRenderer,\
     Basement as BasementRenderer,\
-    Door as DoorRenderer
+    Door as DoorRenderer,\
+    RoofFlat as RoofFlatRenderer,\
+    RoofPyramidal as RoofPyramidalRenderer
 """
 
 from action.terrain import Terrain

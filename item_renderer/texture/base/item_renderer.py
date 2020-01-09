@@ -12,6 +12,7 @@ class ItemRenderer:
     """
     A mixin class
     """
+    
     def getCladdingMaterialId(self, item, claddingTextureInfo):
         return claddingTextureInfo["name"]
 
