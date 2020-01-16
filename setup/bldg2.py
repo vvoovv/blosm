@@ -12,6 +12,9 @@ from building2.renderer import BuildingRendererNew, Building
 
 from item.footprint import Footprint
 
+from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion
+from item_renderer.texture.roof_generatrix import RoofGeneratrix
+
 # item renderers
 from item_renderer.texture.base import\
     Facade as FacadeRenderer,\
@@ -82,6 +85,8 @@ def setup(app, data):
             Basement = BasementRenderer(),
             Door = DoorRenderer(),
             RoofFlat = RoofFlatRenderer(),
+            RoofDome = RoofGeneratrix(generatrix_dome(7)),
+            RoofOnion = RoofGeneratrix(generatrix_onion),
             RoofPyramidal = RoofPyramidalRenderer()
         )
         

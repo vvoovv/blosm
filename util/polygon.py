@@ -110,12 +110,23 @@ class Polygon:
             yield v - _v
             _v = v
     
-    @property
-    def center(self):
+    def center(self, z=0.):
         """
         Returns geometric center of the polygon
         """
-        return sum(tuple(self.verts), zeroVector())/self.n
+        center = sum(self.verts, zeroVector())/self.n
+        center[2] = z
+        return center
+    
+    def centerBB(self, z=0.):
+        """
+        Return the center of the poygon bounding box alligned along the global X and Y axes
+        """
+        return Vector((
+            ( min(self.verts, key=lambda v: v[0])[0] + max(self.verts, key=lambda v: v[0])[0] )/2.,
+            ( min(self.verts, key=lambda v: v[1])[1] + max(self.verts, key=lambda v: v[1])[1] )/2.,
+            z
+        ))
     
     @property
     def area(self):

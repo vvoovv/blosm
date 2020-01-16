@@ -1,6 +1,6 @@
 from grammar import *
 from grammar.scope import PerBuilding, PerFootprint
-from grammar import units, symmetry
+from grammar import units, symmetry, smoothness
 from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal
 from action.volume.roof import Roof as RoofDefs
@@ -31,13 +31,14 @@ styles = {
         basementHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
+            Constant("dome"),
             Constant("flat"),
             Constant("gabled")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
         roofHeight = Value(Alternatives(
             FromAttr("roof:height", FromAttr.Float, FromAttr.NonNegative),
-            RandomNormal(3.7)
+            Constant(5)#RandomNormal(3.7)
         )),
         roofAngle = Value(FromAttr("roof:angle", FromAttr.Float)),
         roofDirection = Value(Alternatives(
@@ -174,7 +175,9 @@ styles = {
     ),
     Roof(
         claddingMaterial = "concrete",
-        claddingColor = "lightgray"
+        claddingColor = "lightgray",
+        faces = smoothness.Smooth,
+        smoothEdges = smoothness.Vertical
     ),
     RoofSide(
         condition = lambda side: side.front,

@@ -4,9 +4,6 @@ from util import zAxis
 
 class RoofFlat(ItemRenderer):
     
-    def __init__(self):
-        self.exportMaterials = False
-    
     def render(self, roofItem):
         building = roofItem.building
         face = self.r.createFace(building, roofItem.indices)

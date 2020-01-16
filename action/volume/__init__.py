@@ -5,7 +5,7 @@ from item.footprint import Footprint
 # import roof generators
 from .roof_flat import RoofFlat
 #from .roof_gabled import RoofGabled
-from .roof_pyramidal import RoofPyramidal
+from .roof_generatrix import RoofGeneratrix
 
 
 class Volume(Action):
@@ -60,11 +60,11 @@ class Volume(Action):
         self.volumeGenerators = {
             'flat': RoofFlat(data, self.itemStore, self.itemFactory, itemRenderers["RoofFlat"]),
             #'gabled': RoofGabled()# RoofProfile(gabledRoof),
-            'pyramidal': RoofPyramidal(data, self.itemStore, self.itemFactory, itemRenderers["RoofPyramidal"]),
+            'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofPyramidal"]),
             #'skillion': RoofSkillion(),
             #'hipped': RoofHipped(),
-            #'dome': RoofMesh("roof_dome"),
-            #'onion': RoofMesh("roof_onion"),
+            'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofDome"]),
+            'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofOnion"]),
             #'round': RoofProfile(roundRoof),
             #'half-hipped': RoofHalfHipped(),
             #'gambrel': RoofProfile(gambrelRoof),

@@ -72,7 +72,7 @@ class Roof:
         self.itemFactory = itemFactory
         self.hasGable = False
         self.hasRoofLevels = True
-
+    
     def do(self, footprint, renderer):
         self.init(footprint)
         if footprint.valid:

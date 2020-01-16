@@ -15,6 +15,7 @@ class RoofFlat(Roof):
         self.hasRoofLevels = False
         self.roofRenderer = roofRenderer
         self.rectangleGeometry = Rectangle()
+        self.extrudeTillRoof = False
     
     def render(self, footprint, facadeRenderer):
         # <indexOffset> is needed to created a Python tuple of indices that defines the roof base;
@@ -48,7 +49,7 @@ class RoofFlat(Roof):
         numVerts = polygon.n
         
         # create vertices
-        z = footprint.height
+        z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
         # verts for the lower cap
         verts.extend(v for v in polygon.verts)
         # verts for the upper cap

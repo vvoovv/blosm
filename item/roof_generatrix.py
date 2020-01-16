@@ -1,7 +1,7 @@
 from .roof_item import RoofItem
 
 
-class RoofFlat(RoofItem):
+class RoofGeneratrix(RoofItem):
     
     @classmethod
     def getItem(cls, itemFactory, parent, indices):
