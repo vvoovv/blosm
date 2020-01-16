@@ -1,5 +1,6 @@
 import math
 from .. import ItemRenderer
+from grammar import smoothness
 
 from util import zAxis
 
@@ -42,12 +43,16 @@ class RoofGeneratrix(ItemRenderer):
         self.hasCenter = not self.generatrix[-1][0]
     
     def render(self, roofItem):
+        smoothFaces = roofItem.getStyleBlockAttr("faces") is smoothness.Smooth
+        sharpVerticalEdges = roofItem.getStyleBlockAttr("sharpEdges") is smoothness.Vertical
+        
         gen = self.generatrix
         footprint = roofItem.footprint
         polygon = footprint.polygon
         building = roofItem.building
         verts = building.verts
-        indices = roofItem.indices
+        # the index of the first vertex of the polygon that defines the roof base
+        firstVertIndex = roofItem.firstVertIndex
         
         roofHeight = footprint.roofHeight
         roofVerticalPosition = footprint.roofVerticalPosition
@@ -60,7 +65,7 @@ class RoofGeneratrix(ItemRenderer):
         vertIndexOffset = len(verts)
         
         verts.extend(
-            center + gen[gi][0]*(verts[indices[vi]]-center) + gen[gi][1]*roofHeight*zAxis\
+            center + gen[gi][0]*(verts[firstVertIndex+vi]-center) + gen[gi][1]*roofHeight*zAxis\
             for gi in range(1, numRows-1 if self.hasCenter else numRows) for vi in range(n)
         )
         # Also create a vertex at the center if the last point of the generatrix is located at zero,
@@ -72,10 +77,13 @@ class RoofGeneratrix(ItemRenderer):
         for vi in range(n-1):
             self.createFace(
                 building,
-                (indices[vi], indices[vi+1], vertIndexOffset+vi+1, vertIndexOffset+vi)
+                (firstVertIndex+vi, firstVertIndex+vi+1, vertIndexOffset+vi+1, vertIndexOffset+vi)
             )
         # and the closing quad for the ring
-        self.createFace(building, (indices[-1], indices[0], vertIndexOffset, vertIndexOffset+n-1))
+        self.createFace(
+            building,
+            (firstVertIndex+n-1, firstVertIndex, vertIndexOffset, vertIndexOffset+n-1)
+        )
         
         # The rest of rows except the last row made of triangles ending at the center of
         # the underlying triangle

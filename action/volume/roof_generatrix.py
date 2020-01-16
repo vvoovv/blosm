@@ -13,9 +13,9 @@ class RoofGeneratrix(RoofFlat):
             return
         super().extrude(footprint)
     
-    def getRoofItem(self, footprint, indices):
+    def getRoofItem(self, footprint, firstVertIndex):
         return ItemRoofGeneratrix.getItem(
             self.itemFactory,
             footprint,
-            indices
+            firstVertIndex
         )

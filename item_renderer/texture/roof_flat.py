@@ -6,7 +6,10 @@ class RoofFlat(ItemRenderer):
     
     def render(self, roofItem):
         building = roofItem.building
-        face = self.r.createFace(building, roofItem.indices)
+        face = self.r.createFace(
+            building,
+            range(roofItem.firstVertIndex, roofItem.firstVertIndex+roofItem.footprint.polygon.n)
+        )
         
         self.renderCladding(building, roofItem, face, None)
     

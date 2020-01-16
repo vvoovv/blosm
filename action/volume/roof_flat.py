@@ -18,26 +18,25 @@ class RoofFlat(Roof):
         self.extrudeTillRoof = False
     
     def render(self, footprint, facadeRenderer):
-        # <indexOffset> is needed to created a Python tuple of indices that defines the roof base;
+        # <firstVertIndex> is needed to created a Python tuple of indices that defines the roof base;
         # since it depends on the total number of building vertices, we calculated it before any operation
         # that creates building geometry 
-        indexOffset = len(footprint.building.verts)
-        n = footprint.polygon.n
+        firstVertIndex = len(footprint.building.verts) + footprint.polygon.n
         
         self.extrude(footprint)
         facadeRenderer.render(footprint)
         self.roofRenderer.render(
             self.getRoofItem(
                 footprint,
-                tuple(range(indexOffset + n, indexOffset + 2*n))
+                firstVertIndex
             )
         )
     
-    def getRoofItem(self, footprint, indices):
+    def getRoofItem(self, footprint, firstVertIndex):
         return ItemRoofFlat.getItem(
             self.itemFactory,
             footprint,
-            indices
+            firstVertIndex
         )
     
     def extrude(self, footprint):
