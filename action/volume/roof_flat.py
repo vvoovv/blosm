@@ -18,7 +18,7 @@ class RoofFlat(Roof):
         self.extrudeTillRoof = False
     
     def render(self, footprint, facadeRenderer):
-        # <firstVertIndex> is needed to created a Python tuple of indices that defines the roof base;
+        # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base;
         # since it depends on the total number of building vertices, we calculated it before any operation
         # that creates building geometry 
         firstVertIndex = len(footprint.building.verts) + footprint.polygon.n
