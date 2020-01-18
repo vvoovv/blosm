@@ -177,7 +177,7 @@ styles = {
         claddingMaterial = "concrete",
         claddingColor = "lightgray",
         faces = smoothness.Smooth,
-        sharpEdges = smoothness.Vertical
+        sharpEdges = smoothness.Side
     ),
     RoofSide(
         condition = lambda side: side.front,

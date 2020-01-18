@@ -44,8 +44,14 @@ class RoofGeneratrix(ItemRenderer):
     
     def render(self, roofItem):
         smoothFaces = roofItem.getStyleBlockAttr("faces") is smoothness.Smooth
-        sharpVerticalEdges = roofItem.getStyleBlockAttr("sharpEdges") is smoothness.Vertical
+        sharpSideEdges = smoothFaces and roofItem.getStyleBlockAttr("sharpEdges") is smoothness.Side
         
+        if sharpSideEdges:
+            self.renderSharpSideEdges(roofItem)
+        else:
+            self.renderIgnoreEdges(roofItem, smoothFaces)
+        
+    def renderIgnoreEdges(self, roofItem, smoothFaces):
         gen = self.generatrix
         footprint = roofItem.footprint
         polygon = footprint.polygon
@@ -77,11 +83,13 @@ class RoofGeneratrix(ItemRenderer):
         for vi in range(n-1):
             self.createFace(
                 building,
+                smoothFaces,
                 (firstVertIndex+vi, firstVertIndex+vi+1, vertIndexOffset+vi+1, vertIndexOffset+vi)
             )
         # and the closing quad for the ring
         self.createFace(
             building,
+            smoothFaces,
             (firstVertIndex+n-1, firstVertIndex, vertIndexOffset, vertIndexOffset+n-1)
         )
         
@@ -89,10 +97,11 @@ class RoofGeneratrix(ItemRenderer):
         # the underlying triangle
         for gi in range(1, numRows-2 if self.hasCenter else numRows-1):
             for vi in range(vertIndexOffset, vertIndexOffset+n-1):
-                self.createFace(building, (vi, vi+1, vi+n+1, vi+n))
+                self.createFace(building, smoothFaces, (vi, vi+1, vi+n+1, vi+n))
             # and the closing quad for the ring
             self.createFace(
                 building,
+                smoothFaces,
                 (vertIndexOffset+n-1, vertIndexOffset, vertIndexOffset+n, vertIndexOffset+2*n-1)
             )
             vertIndexOffset += n
@@ -100,10 +109,13 @@ class RoofGeneratrix(ItemRenderer):
         if self.hasCenter:
             # The last row made of triangles ending at the center of the underlying triangle
             for vi in range(vertIndexOffset, vertIndexOffset+n-1):
-                self.createFace(building, (vi, vi+1, -1))
+                self.createFace(building, smoothFaces, (vi, vi+1, -1))
             # and the closing triangle for the ring
-            self.createFace(building, (vertIndexOffset+n-1, vertIndexOffset, -1))
+            self.createFace(building, smoothFaces, (vertIndexOffset+n-1, vertIndexOffset, -1))
     
-    def createFace(self, building, indices):
+    def renderSharpSideEdges(self, roofItem):
+        pass
+    
+    def createFace(self, building, smooth, indices):
         face = self.r.createFace(building, indices)
-        face.smooth = True
+        face.smooth = smooth
