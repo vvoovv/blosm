@@ -135,6 +135,8 @@ class RoofGeneratrix(ItemRenderer):
         
         n = polygon.n
         numRows = len(self.generatrix)
+        if self.hasCenter:
+            numRows -= 1
         
         vertIndexOffset = len(verts)
         
@@ -143,36 +145,45 @@ class RoofGeneratrix(ItemRenderer):
         # of the vertices that define the top part of facades
         verts.extend(
             center + gen[gi][0]*(verts[firstVertIndex+vi]-center) + gen[gi][1]*roofHeight*zAxis\
-            for gi in range(numRows-1 if self.hasCenter else numRows) for vi in range(n) for _ in range(2)
+            for vi in range(n) for gi in range(numRows) for _ in range(2)
         )
-        
-        # In contrast to <self.renderIgnoreEdges(..)> we do not treat the very first row separately
-        
-        # All rows except the last row made of triangles ending at the center of
-        # the underlying polygon
-        for gi in range(numRows-2 if self.hasCenter else numRows-1):
-            for vi in range(vertIndexOffset+1, vertIndexOffset+2*n-1, 2):
-                self.createFace(building, True, (vi, vi+1, vi+2*n+1, vi+2*n))
-            # and the closing quad for the ring
-            self.createFace(
-                building,
-                True,
-                (vertIndexOffset+2*n-1, vertIndexOffset, vertIndexOffset+2*n, vertIndexOffset+4*n-1)
-            )
-            vertIndexOffset += 2*n
-        
         if self.hasCenter:
             # Also create vertices at the center if the last point of the generatrix is located at zero,
             # i.e. in the center of the underlying polygon. We create <n> copies of the vertex.
             center = center + gen[-1][1]*roofHeight*zAxis
+            centerIndexOffset = len(verts)
             verts.extend(center for _ in range(n))
-            
-            centerIndex = vertIndexOffset+2*n
-            # the last row made of triangles ending at the center of the underlying polygon
-            for vi,centerIndex in zip( range(vertIndexOffset+1, centerIndex-1, 2), range(centerIndex, centerIndex+n) ):
-                self.createFace(building, True, (vi, vi+1, centerIndex))
-            # and the closing triangle for the ring
-            self.createFace(building, True, (vertIndexOffset+2*n-1, vertIndexOffset, -1))
+        
+        # In contrast to <self.renderIgnoreEdges(..)> we do not treat the very first row separately
+        _vertIndexOffset = vertIndexOffset
+        for pi in range(n-1):
+            for vi in range(vertIndexOffset+1, vertIndexOffset+2*numRows-1, 2):
+                self.createFace(
+                    building,
+                    True,
+                    (vi, vi+2*numRows-1, vi+2*numRows+1, vi+2)
+                )
+            if self.hasCenter:
+                self.createFace(
+                    building,
+                    True,
+                    (vi+2, vi+2*numRows+1, centerIndexOffset+pi)
+                )
+            vertIndexOffset += 2*numRows
+        
+        # and the closing quad for the all rings
+        for vi in range(numRows-1):
+            self.createFace(
+                building,
+                True,
+                (vertIndexOffset+2*vi+1, _vertIndexOffset+2*vi, _vertIndexOffset+2*vi+2, vertIndexOffset+2*vi+3)
+            )
+        if self.hasCenter:
+            self.createFace(
+                building,
+                True,
+                (vertIndexOffset+2*numRows-1, _vertIndexOffset+2*numRows-2, -1)
+            )
     
     def createFace(self, building, smooth, indices):
         face = self.r.createFace(building, indices)
