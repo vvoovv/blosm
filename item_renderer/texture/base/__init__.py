@@ -7,6 +7,7 @@ from ..basement import Basement as BasementBase
 from .door import Door
 
 from ..roof_flat import RoofFlat as RoofFlatBase
+from ..roof_generatrix import RoofGeneratrix as RoofGeneratrixBase
 from ..roof_pyramidal import RoofPyramidal as RoofPyramidalBase
 
 
@@ -45,6 +46,10 @@ class Basement(BasementBase, Container):
 
 
 class RoofFlat(RoofFlatBase, ItemRenderer):
+    pass
+
+
+class RoofGeneratrix(RoofGeneratrixBase, ItemRenderer):
     pass
 
 

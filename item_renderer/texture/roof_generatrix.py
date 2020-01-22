@@ -164,14 +164,14 @@ class RoofGeneratrix(ItemRenderer):
             uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, pi, pi+1)
             for vi, vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2, vertIndexOffset2+numRows-1)):
                 uv0, uv1 = self.createFace(
-                    building,
+                    building, roofItem,
                     True,
                     (vi, vi2, vi2+1, vi+1),
                     uVec, uv0, uv1
                 )
             if self.hasCenter:
                 self.createFace(
-                    building,
+                    building, roofItem,
                     True,
                     (vi+1, vi2+1, centerIndexOffset+pi),
                     uVec, uv0, uv1
@@ -185,20 +185,20 @@ class RoofGeneratrix(ItemRenderer):
         uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
         for vi,vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2_, vertIndexOffset2_+numRows-1)):
             uv0, uv1 = self.createFace(
-                building,
+                building, roofItem,
                 True,
                 (vi, vi2, vi2+1, vi+1),
                 uVec, uv0, uv1
             )
         if self.hasCenter:
             self.createFace(
-                building,
+                building, roofItem,
                 True,
                 (vertIndexOffset+numRows-1, vertIndexOffset2_+numRows-1, -1),
                 uVec, uv0, uv1
             )
     
-    def createFace(self, building, smooth, indices, uVec, uv0, uv1):
+    def createFace(self, building, roofItem, smooth, indices, uVec, uv0, uv1):
         face = self.r.createFace(building, indices)
         if smooth:
             face.smooth = smooth
@@ -213,10 +213,13 @@ class RoofGeneratrix(ItemRenderer):
         vec2 = verts[indices[2]]-verts[indices[0]]
         vec2u = vec2.dot(uVec)
         uv2 = (vec2u+uv0[0], (vec2 - vec2u*uVec).length+uv0[1])
-        self.r.setUvs(
+        
+        self.renderCladding(
+            building,
+            roofItem,
             face,
-            (uv0, uv1, uv2, uv3) if len(indices)==4 else (uv0, uv1, uv2),
-            self.r.layer.uvLayerNameCladding
+            (uv0, uv1, uv2, uv3) if len(indices)==4 else (uv0, uv1, uv2)
         )
+        
         if isQuad:
             return uv3, uv2

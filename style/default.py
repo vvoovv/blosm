@@ -174,8 +174,8 @@ styles = {
         ]
     ),
     Roof(
-        claddingMaterial = "concrete",
-        claddingColor = "lightgray",
+        claddingMaterial = "brick",
+        claddingColor = "salmon",
         faces = smoothness.Smooth,
         sharpEdges = smoothness.Side
     ),
