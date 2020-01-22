@@ -1,5 +1,6 @@
 import math
 from .. import ItemRenderer
+from ..util import initUvAlongPolygonEdge
 from grammar import smoothness
 
 from util import zAxis
@@ -139,14 +140,16 @@ class RoofGeneratrix(ItemRenderer):
             numRows -= 1
         
         vertIndexOffset = len(verts)
+        vertIndexOffset2 = vertIndexOffset2_ = vertIndexOffset + numRows*n
         
         # Create two copies of each vertex.
         # Note that in contrast to <self.renderIgnoreEdges(..)> we also create the copies
         # of the vertices that define the top part of facades
         verts.extend(
-            center + gen[gi][0]*(verts[firstVertIndex+vi]-center) + gen[gi][1]*roofHeight*zAxis\
-            for vi in range(n) for gi in range(numRows) for _ in range(2)
+            center + gen[vi][0]*(verts[firstVertIndex+pi]-center) + gen[vi][1]*roofHeight*zAxis\
+            for pi in range(n) for vi in range(numRows)
         )
+        verts.extend(verts[vi] for vi in range(vertIndexOffset, vertIndexOffset2))
         if self.hasCenter:
             # Also create vertices at the center if the last point of the generatrix is located at zero,
             # i.e. in the center of the underlying polygon. We create <n> copies of the vertex.
@@ -155,37 +158,65 @@ class RoofGeneratrix(ItemRenderer):
             verts.extend(center for _ in range(n))
         
         # In contrast to <self.renderIgnoreEdges(..)> we do not treat the very first row separately
-        _vertIndexOffset = vertIndexOffset
+        vertIndexOffset2 = vertIndexOffset2+numRows
         for pi in range(n-1):
-            for vi in range(vertIndexOffset+1, vertIndexOffset+2*numRows-1, 2):
-                self.createFace(
+            # <uVec> is a unit vector along the base edge
+            uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, pi, pi+1)
+            for vi, vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2, vertIndexOffset2+numRows-1)):
+                uv0, uv1 = self.createFace(
                     building,
                     True,
-                    (vi, vi+2*numRows-1, vi+2*numRows+1, vi+2)
+                    (vi, vi2, vi2+1, vi+1),
+                    uVec, uv0, uv1
                 )
             if self.hasCenter:
                 self.createFace(
                     building,
                     True,
-                    (vi+2, vi+2*numRows+1, centerIndexOffset+pi)
+                    (vi+1, vi2+1, centerIndexOffset+pi),
+                    uVec, uv0, uv1
                 )
-            vertIndexOffset += 2*numRows
+            vertIndexOffset += numRows
+            vertIndexOffset2 += numRows
         
-        # and the closing quad for the all rings
-        for vi in range(numRows-1):
-            self.createFace(
+        # And the closing quad for the all rings
+        
+        # <uVec> is a unit vector along the base edge
+        uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
+        for vi,vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2_, vertIndexOffset2_+numRows-1)):
+            uv0, uv1 = self.createFace(
                 building,
                 True,
-                (vertIndexOffset+2*vi+1, _vertIndexOffset+2*vi, _vertIndexOffset+2*vi+2, vertIndexOffset+2*vi+3)
+                (vi, vi2, vi2+1, vi+1),
+                uVec, uv0, uv1
             )
         if self.hasCenter:
             self.createFace(
                 building,
                 True,
-                (vertIndexOffset+2*numRows-1, _vertIndexOffset+2*numRows-2, -1)
+                (vertIndexOffset+numRows-1, vertIndexOffset2_+numRows-1, -1),
+                uVec, uv0, uv1
             )
     
-    def createFace(self, building, smooth, indices):
+    def createFace(self, building, smooth, indices, uVec, uv0, uv1):
         face = self.r.createFace(building, indices)
         if smooth:
             face.smooth = smooth
+        
+        # assign UV-coordinates
+        isQuad = len(indices)==4
+        verts = building.verts
+        if isQuad:
+            vec3 = verts[indices[3]]-verts[indices[0]]
+            vec3u = vec3.dot(uVec)
+            uv3 = (vec3u+uv0[0], (vec3 - vec3u*uVec).length+uv0[1])
+        vec2 = verts[indices[2]]-verts[indices[0]]
+        vec2u = vec2.dot(uVec)
+        uv2 = (vec2u+uv0[0], (vec2 - vec2u*uVec).length+uv0[1])
+        self.r.setUvs(
+            face,
+            (uv0, uv1, uv2, uv3) if len(indices)==4 else (uv0, uv1, uv2),
+            self.r.layer.uvLayerNameCladding
+        )
+        if isQuad:
+            return uv3, uv2
