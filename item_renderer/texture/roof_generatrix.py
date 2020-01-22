@@ -71,51 +71,81 @@ class RoofGeneratrix(ItemRenderer):
         
         n = polygon.n
         numRows = len(self.generatrix)
+        if self.hasCenter:
+            numRows -= 1
         
-        vertIndexOffset = len(verts)
+        vertIndex = vertIndex0 = len(verts)
         
         verts.extend(
-            center + gen[gi][0]*(verts[firstVertIndex+vi]-center) + gen[gi][1]*roofHeight*zAxis\
-            for gi in range(1, numRows-1 if self.hasCenter else numRows) for vi in range(n)
+            center + gen[vi][0]*(verts[firstVertIndex+pi]-center) + gen[vi][1]*roofHeight*zAxis\
+            for pi in range(n) for vi in range(1, numRows)
         )
-                
-        # the first row
-        for vi in range(n-1):
-            self.createFace(
-                building,
-                smoothFaces,
-                (firstVertIndex+vi, firstVertIndex+vi+1, vertIndexOffset+vi+1, vertIndexOffset+vi)
-            )
-        # and the closing quad for the ring of the first row
-        self.createFace(
-            building,
-            smoothFaces,
-            (firstVertIndex+n-1, firstVertIndex, vertIndexOffset, vertIndexOffset+n-1)
-        )
-        
-        # The rest of rows except the last row made of triangles ending at the center of
-        # the underlying polygon
-        for gi in range(1, numRows-2 if self.hasCenter else numRows-1):
-            for vi in range(vertIndexOffset, vertIndexOffset+n-1):
-                self.createFace(building, smoothFaces, (vi, vi+1, vi+n+1, vi+n))
-            # and the closing quad for the ring
-            self.createFace(
-                building,
-                smoothFaces,
-                (vertIndexOffset+n-1, vertIndexOffset, vertIndexOffset+n, vertIndexOffset+2*n-1)
-            )
-            vertIndexOffset += n
-        
-        # Treat the case if the last point of the generatrix is located at zero,
-        # i.e. in the center of the underlying polygon
         if self.hasCenter:
             # create a vertex at the center
             verts.append(center + gen[-1][1]*roofHeight*zAxis)
-            # the last row made of triangles ending at the center of the underlying polygon
-            for vi in range(vertIndexOffset, vertIndexOffset+n-1):
-                self.createFace(building, smoothFaces, (vi, vi+1, -1))
-            # and the closing triangle for the ring
-            self.createFace(building, smoothFaces, (vertIndexOffset+n-1, vertIndexOffset, -1))
+        
+        for pi in range(n-1):
+            # <uVec> is a unit vector along the base edge
+            uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, pi, pi+1)
+            # the quad for first row
+            uv0, uv1 = self.createFace(
+                building, roofItem,
+                smoothFaces,
+                (firstVertIndex+pi, firstVertIndex+pi+1, vertIndex+numRows-1, vertIndex),
+                uVec, uv0, uv1
+            )
+            for vi,vi2 in zip(range(vertIndex, vertIndex+numRows-2), range(vertIndex+numRows-1, vertIndex+2*numRows-3)):
+                uv0, uv1 = self.createFace(
+                    building, roofItem,
+                    smoothFaces,
+                    (vi, vi2, vi2+1, vi+1),
+                    uVec, uv0, uv1
+                )
+            if self.hasCenter:
+                self.createFace(
+                    building, roofItem,
+                    smoothFaces,
+                    (vi+1, vi2+1, -1),
+                    uVec, uv0, uv1
+                )
+            vertIndex += numRows-1
+        
+        # <uVec> is a unit vector along the base edge
+        uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
+        # the quad for first row
+        uv0, uv1 = self.createFace(
+            building, roofItem,
+            smoothFaces,
+            (firstVertIndex+n-1, firstVertIndex, vertIndex0, vertIndex),
+            uVec, uv0, uv1
+        )
+        for vi,vi2 in zip(range(vertIndex, vertIndex+numRows-2), range(vertIndex0, vertIndex0+numRows-2)):
+            uv0, uv1 = self.createFace(
+                building, roofItem,
+                smoothFaces,
+                (vi, vi2, vi2+1, vi+1),
+                uVec, uv0, uv1
+            )
+        if self.hasCenter:
+            self.createFace(
+                building, roofItem,
+                smoothFaces,
+                (vi+1, vi2+1, -1),
+                uVec, uv0, uv1
+            )
+        
+        # and the closing quad for the ring of the first row
+        #self.createFace(
+        #    building,
+        #    smoothFaces,
+        #    (firstVertIndex+n-1, firstVertIndex, vertIndexOffset, vertIndexOffset+n-1)
+        #)
+        
+        # The rest of rows except the last row made of triangles ending at the center of
+        # the underlying polygon
+        
+        # Treat the case if the last point of the generatrix is located at zero,
+        # i.e. in the center of the underlying polygon
     
     def renderSharpSideEdges(self, roofItem):
         """
