@@ -207,6 +207,7 @@ class OperatorImportData(bpy.types.Operator):
             a.setProjection(scene["lat"], scene["lon"])
         elif a.osmSource == "server":
             a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
+            setLatLon = True
         else:
             setLatLon = True
         
