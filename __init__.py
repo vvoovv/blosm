@@ -20,9 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "Import OpenStreetMap (.osm) (Premium)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (1, 0, 22),
+    "version": (1, 0, 24),
     "blender": (2, 80, 0),
-    "location": "Right side panel > \"osm\" tab",
+    "location": "Right side panel for Blender 2.8x (left side panel for Blender 2.79))> \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
     "warning": "",
     "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
@@ -204,9 +204,10 @@ class OperatorImportData(bpy.types.Operator):
         
         setLatLon = False
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
-            a.setProjection(scene["lat"], scene["lon"])
+            osm.setProjection(scene["lat"], scene["lon"])
         elif a.osmSource == "server":
-            a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
+            osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
+            setLatLon = True
         else:
             setLatLon = True
         
