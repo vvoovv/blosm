@@ -85,15 +85,19 @@ class RoofGeneratrix(ItemRenderer):
             verts.append(center + gen[-1][1]*roofHeight*zAxis)
         
         for pi in range(n-1):
+            # Create a petal of quads, i.e. the quads are created along the generatrix
+            
             # <uVec> is a unit vector along the base edge
             uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, pi, pi+1)
-            # the quad for first row
+            
+            # The quad for the first row
             uv0, uv1 = self.createFace(
                 building, roofItem,
                 smoothFaces,
                 (firstVertIndex+pi, firstVertIndex+pi+1, vertIndex+numRows-1, vertIndex),
                 uVec, uv0, uv1
             )
+            # The rest of the quads for the petal
             for vi,vi2 in zip(range(vertIndex, vertIndex+numRows-2), range(vertIndex+numRows-1, vertIndex+2*numRows-3)):
                 uv0, uv1 = self.createFace(
                     building, roofItem,
@@ -102,6 +106,9 @@ class RoofGeneratrix(ItemRenderer):
                     uVec, uv0, uv1
                 )
             if self.hasCenter:
+                # Treat the case if the last point of the generatrix is located at zero,
+                # i.e. in the center of the underlying polygon.
+                # We create here a triangle instead of a quad
                 self.createFace(
                     building, roofItem,
                     smoothFaces,
@@ -110,15 +117,18 @@ class RoofGeneratrix(ItemRenderer):
                 )
             vertIndex += numRows-1
         
+        # Create the closing petal of quads
+        
         # <uVec> is a unit vector along the base edge
         uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
-        # the quad for first row
+        # The quad for first row
         uv0, uv1 = self.createFace(
             building, roofItem,
             smoothFaces,
             (firstVertIndex+n-1, firstVertIndex, vertIndex0, vertIndex),
             uVec, uv0, uv1
         )
+        # The rest of the quads for the petal
         for vi,vi2 in zip(range(vertIndex, vertIndex+numRows-2), range(vertIndex0, vertIndex0+numRows-2)):
             uv0, uv1 = self.createFace(
                 building, roofItem,
@@ -127,25 +137,15 @@ class RoofGeneratrix(ItemRenderer):
                 uVec, uv0, uv1
             )
         if self.hasCenter:
+            # Treat the case if the last point of the generatrix is located at zero,
+            # i.e. in the center of the underlying polygon.
+            # We create here a triangle instead of a quad.
             self.createFace(
                 building, roofItem,
                 smoothFaces,
                 (vi+1, vi2+1, -1),
                 uVec, uv0, uv1
             )
-        
-        # and the closing quad for the ring of the first row
-        #self.createFace(
-        #    building,
-        #    smoothFaces,
-        #    (firstVertIndex+n-1, firstVertIndex, vertIndexOffset, vertIndexOffset+n-1)
-        #)
-        
-        # The rest of rows except the last row made of triangles ending at the center of
-        # the underlying polygon
-        
-        # Treat the case if the last point of the generatrix is located at zero,
-        # i.e. in the center of the underlying polygon
     
     def renderSharpSideEdges(self, roofItem):
         """
@@ -172,24 +172,27 @@ class RoofGeneratrix(ItemRenderer):
         vertIndexOffset = len(verts)
         vertIndexOffset2 = vertIndexOffset2_ = vertIndexOffset + numRows*n
         
-        # Create two copies of each vertex.
         # Note that in contrast to <self.renderIgnoreEdges(..)> we also create the copies
         # of the vertices that define the top part of facades
         verts.extend(
             center + gen[vi][0]*(verts[firstVertIndex+pi]-center) + gen[vi][1]*roofHeight*zAxis\
             for pi in range(n) for vi in range(numRows)
         )
+        # Create a copy of each vertex created above
         verts.extend(verts[vi] for vi in range(vertIndexOffset, vertIndexOffset2))
         if self.hasCenter:
-            # Also create vertices at the center if the last point of the generatrix is located at zero,
-            # i.e. in the center of the underlying polygon. We create <n> copies of the vertex.
+            # Also create vertices at the center of the polygon if the last point of the generatrix
+            # is located at zero, i.e. in the center of the underlying polygon.
+            # We create <n> copies of the vertex.
             center = center + gen[-1][1]*roofHeight*zAxis
             centerIndexOffset = len(verts)
             verts.extend(center for _ in range(n))
         
-        # In contrast to <self.renderIgnoreEdges(..)> we do not treat the very first row separately
         vertIndexOffset2 = vertIndexOffset2+numRows
         for pi in range(n-1):
+            # Create a petal of quads, i.e. the quads are created along the generatrix.
+            # In contrast to <self.renderIgnoreEdges(..)> we do not treat the very first row separately.
+            
             # <uVec> is a unit vector along the base edge
             uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, pi, pi+1)
             for vi, vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2, vertIndexOffset2+numRows-1)):
@@ -200,6 +203,9 @@ class RoofGeneratrix(ItemRenderer):
                     uVec, uv0, uv1
                 )
             if self.hasCenter:
+                # Treat the case if the last point of the generatrix is located at zero,
+                # i.e. in the center of the underlying polygon.
+                # We create here a triangle instead of a quad
                 self.createFace(
                     building, roofItem,
                     True,
@@ -209,7 +215,7 @@ class RoofGeneratrix(ItemRenderer):
             vertIndexOffset += numRows
             vertIndexOffset2 += numRows
         
-        # And the closing quad for the all rings
+        # Create the closing petal of quads
         
         # <uVec> is a unit vector along the base edge
         uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
@@ -221,6 +227,9 @@ class RoofGeneratrix(ItemRenderer):
                 uVec, uv0, uv1
             )
         if self.hasCenter:
+            # Treat the case if the last point of the generatrix is located at zero,
+            # i.e. in the center of the underlying polygon.
+            # We create here a triangle instead of a quad.
             self.createFace(
                 building, roofItem,
                 True,
