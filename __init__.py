@@ -204,9 +204,9 @@ class OperatorImportData(bpy.types.Operator):
         
         setLatLon = False
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
-            a.setProjection(scene["lat"], scene["lon"])
+            osm.setProjection(scene["lat"], scene["lon"])
         elif a.osmSource == "server":
-            a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
+            osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
             setLatLon = True
         else:
             setLatLon = True
