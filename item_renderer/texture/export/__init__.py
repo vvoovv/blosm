@@ -46,11 +46,15 @@ class Basement(BasementBase, Container):
 
 
 class RoofFlat(RoofFlatBase, ItemRenderer):
-    pass
+    
+    def __init__(self):
+        super().__init__(exportMaterials=True)
 
 
 class RoofGeneratrix(RoofGeneratrixBase, ItemRenderer):
-    pass
+    
+    def __init__(self, generatrix):
+        super().__init__(generatrix, exportMaterials=True)
 
 
 class RoofPyramidal(RoofPyramidalBase):
