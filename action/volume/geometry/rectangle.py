@@ -40,6 +40,8 @@ class Rectangle:
             _item = item.markup[_i]
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
+            # Additional vertices can be created inside <itemRenderer.getItemRenderer(_item).render(..)>,
+            # that's why we use <len(building.verts)>
             indexRB = len(building.verts)
             indexRT = indexRB + 1
             incrementVector = _item.width * unitVector
