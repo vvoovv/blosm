@@ -9,7 +9,7 @@ from util import zero
 
 # Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
 # to generate values for a specific profile
-gabledRoof = (
+roofDataGabled = (
     (
         (0., 0.),
         (0.5, 1.),
@@ -21,7 +21,7 @@ gabledRoof = (
     }
 )
 
-roundRoof = (
+roofDataRound = (
     (
         (0., 0.),
         (0.01, 0.195),
@@ -47,7 +47,7 @@ roundRoof = (
     }
 )
 
-gambrelRoof = (
+roofDataGambrel = (
     (
         (0., 0.),
         (0.2, 0.6),
@@ -61,7 +61,7 @@ gambrelRoof = (
     }
 )
 
-saltboxRoof = (
+roofDataSaltbox = (
     (
         (0., 0.),
         (0.35, 1.),
@@ -478,7 +478,7 @@ class RoofProfile(Roof):
     # default roof height
     height = 1.
     
-    def __init__(self, data, profileData, itemStore, itemFactory, roofRenderer):        
+    def __init__(self, profileData, data, itemStore, itemFactory, roofRenderer):        
         """
         Args:
             profileData (tuple): profile values and some attributes to define a profiled roof,
@@ -505,8 +505,8 @@ class RoofProfile(Roof):
             slots[i].n = slots[i+1]
         self.slots = slots
         
-        for attr in data[1]:
-            setattr(self, attr, data[1][attr])
+        for attr in profileData[1]:
+            setattr(self, attr, profileData[1][attr])
         
         # is the y-coordinate at <x=0.0> (the left end of the profile) is equal to zero?
         self.lEndZero = not profile[0][1]
@@ -527,7 +527,7 @@ class RoofProfile(Roof):
         profileQ.append(index)
         self.profileQ = profileQ
         
-        self._initUv(self)
+        self._initUv()
     
     def _initUv(self):
         """
@@ -563,9 +563,9 @@ class RoofProfile(Roof):
         
         self.projections.clear()
         self.initProfile()
-        self.initUv()
+        self.initUv(footprint)
     
-    def initUv(self):
+    def initUv(self, footprint):
         """
         Initialize the stuff related to UV-mapping
         """
@@ -577,10 +577,10 @@ class RoofProfile(Roof):
         self.minY = math.inf
         self.maxY = -math.inf
         
-        self.polygonWidth_2 = self.polygonWidth * self.polygonWidth
-        self.roofHeight_2 = self.roofHeight * self.roofHeight
+        self.polygonWidth_2 = footprint.polygonWidth * footprint.polygonWidth
+        self.roofHeight_2 = footprint.roofHeight * footprint.roofHeight
         for i in range(self.lastProfileIndex):
-            self.partLength[i] = self.polygonWidth * (slots[i+1].x-slots[i].x)\
+            self.partLength[i] = footprint.polygonWidth * (slots[i+1].x-slots[i].x)\
                 if self.slopes[i] is None else\
                 math.sqrt(self.polygonWidth_2*self.dx_2[i] + self.roofHeight_2 * self.dy_2[i])
     
@@ -596,7 +596,7 @@ class RoofProfile(Roof):
         slots = self.slots
         
         if not self.projections:
-            self.processDirection()
+            self.processDirection(footprint)
         
         polygon = footprint.polygon
         noWalls = footprint.noWalls

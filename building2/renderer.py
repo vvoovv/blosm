@@ -18,6 +18,7 @@ from item.balcony import Balcony
 from item.chimney import Chimney
 
 from item.roof_flat import RoofFlat
+from item.roof_profile import RoofProfile
 from item.roof_generatrix import RoofGeneratrix
 from item.roof_pyramidal import RoofPyramidal
 from item.roof_side import RoofSide
@@ -36,6 +37,7 @@ def _createReferenceItems():
         Balcony(),
         Chimney(),
         RoofFlat(),
+        RoofProfile(),
         RoofGeneratrix(),
         RoofSide()
     )

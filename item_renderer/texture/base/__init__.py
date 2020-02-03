@@ -9,6 +9,7 @@ from .door import Door
 from ..roof_flat import RoofFlat as RoofFlatBase
 from ..roof_generatrix import RoofGeneratrix as RoofGeneratrixBase
 from ..roof_pyramidal import RoofPyramidal as RoofPyramidalBase
+from ..roof_profile import RoofProfile as RoofProfileBase
 
 
 class Facade(FacadeBase, Container):
@@ -54,4 +55,8 @@ class RoofGeneratrix(RoofGeneratrixBase, ItemRenderer):
 
 
 class RoofPyramidal(RoofPyramidalBase):
+    pass
+
+
+class RoofProfile(RoofProfileBase, ItemRenderer):
     pass

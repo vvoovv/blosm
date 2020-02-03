@@ -22,6 +22,7 @@ from item_renderer.texture.base import\
     Basement as BasementRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
+    RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
 
@@ -33,6 +34,7 @@ from item_renderer.texture.export import\
     Basement as BasementRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
+    RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
 """
@@ -87,6 +89,7 @@ def setup(app, data):
             Basement = BasementRenderer(),
             Door = DoorRenderer(),
             RoofFlat = RoofFlatRenderer(),
+            RoofProfile = RoofProfileRenderer(),
             RoofDome = RoofGeneratrixRenderer(generatrix_dome(7)),
             RoofOnion = RoofGeneratrixRenderer(generatrix_onion),
             RoofPyramidal = RoofPyramidalRenderer()

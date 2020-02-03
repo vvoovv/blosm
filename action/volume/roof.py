@@ -28,7 +28,7 @@ directions = {
 """
 
 
-def getDefaultDirection(self, polygon):
+def getDefaultDirection(polygon):
     # a perpendicular to the longest edge of the polygon
     return max(polygon.edges).cross(polygon.normal).normalized()
 
@@ -141,18 +141,18 @@ class Roof:
                 # i.e. the profile direction is along the longest side
                 d = max(polygon.edges).normalized()
             else:
-                d = getDefaultDirection()
+                d = getDefaultDirection(polygon)
         elif d in Roof.directions:
             d = Roof.directions[d]
         else:
             # trying to get a direction angle in degrees
             if d is None:
-                d = getDefaultDirection()
+                d = getDefaultDirection(polygon)
             else:
                 d = math.radians(d)
                 d = Vector((math.sin(d), math.cos(d), 0.))
-        # the direction vector is used by <profile.RoofProfile>
-        float.direction = d
+        # the direction vector is used by <action.volume.roof_profile.RoofProfile>
+        footprint.direction = d
         
         # For each vertex from <polygon.verts> calculate projection of the vertex
         # on the vector <d> that defines the roof direction
