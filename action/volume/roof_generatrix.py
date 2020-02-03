@@ -6,6 +6,7 @@ class RoofGeneratrix(RoofFlat):
     
     def __init__(self, data, itemStore, itemFactory, roofRenderer):
         super().__init__(data, itemStore, itemFactory, roofRenderer)
+        self.hasRoofLevels = False
         self.extrudeTillRoof = True
     
     def extrude(self, footprint):

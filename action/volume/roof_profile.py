@@ -1,30 +1,25 @@
-"""
-This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2018 Vladimir Elistratov
-prokitektura+support@gmail.com
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-
 import math
 from mathutils import Vector
 from .roof import Roof
+from item.facade import Facade
+from item.roof_profile import RoofProfile as ItemRoofProfile
+from .geometry.trapezoid import Trapezoid
 from util import zero
 
 
 # Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
 # to generate values for a specific profile
+gabledRoof = (
+    (
+        (0., 0.),
+        (0.5, 1.),
+        (1., 0.)
+    ),
+    {
+        "numSamples": 10,
+        "angleToHeight": 0.5
+    }
+)
 
 roundRoof = (
     (
@@ -264,18 +259,19 @@ class Slot:
             originSlot.endAtSelf.append(originSlot is self)
             self.index += 1
     
-    def trackDown(self, roofIndices, index=None, destVertIndex=None):
+    def trackDown(self, roofItem, slotIndex, index=None, destVertIndex=None):
         """
         Track the slot downwards to form roof faces.
         
         Args:
-            roofIndices (list): A Python list for all roof faces, so each entry of <roofIndices> is
-                a Python list of vertex indices defining a single roof face
+            roofItem (item.roof_profile.RoofProfile): A roof item.
+            slotIndex (int): An index of <self.slots> we are building the roof sides for.
+                No roof sides can be built for the very last slot.
             index (int or None): If <index> is not <None>, it indicates a part in <self.parts> where to begin,
-                otherwise start from the very top of the slot
+                otherwise start from the very top of the slot.
             destVertIndex (int or None): If <index> is not <None>, <destVertIndex> indicates where to stop.
                 There is no example on the image <Main>. However the idea is completely similar to
-                the related example in <self.trackUp(..)>
+                the related example in <self.trackUp(..)>.
         """
         parts = self.parts
         # Incomplete roof faces for that slot are stored in <self.n.partsR>.
@@ -312,7 +308,7 @@ class Slot:
                 # <part == [17, 13, 14, 18]>
                 # <vertIndex0 == 18>
                 # The roof face is completed
-                roofIndices.append(roofFace)
+                roofItem.addRoofSide(roofFace, slotIndex, self.itemFactory)
                 # Setting <vertIndex0> to <None> means that we start a new roof face in
                 # the next iteration of the <while> cycle
                 vertIndex0 = None
@@ -330,7 +326,7 @@ class Slot:
                 # in the next iterations of the <while> cycle
                 indexPartR -= 1
                 # The roof face is complete
-                roofIndices.append(roofFace)
+                roofItem.addRoofSide(roofFace, slotIndex, self.itemFactory)
                 # Setting <vertIndex0> to <None> means that we start a new roof face in
                 # the next iteration of the <while> cycle
                 vertIndex0 = None
@@ -341,10 +337,11 @@ class Slot:
                 # the vertices <part[0]> and <part[-1]>
                 # We need to process that island in line below
                 index = self.trackDown(
-                    roofIndices,
+                    roofItem,
+                    slotIndex,
                     # The edge case:
                     # if there is a reflection to the right (i.e. <reflection is True>),
-                    # correct the index given as the parameter to <self.trackDown>
+                    # correct the index given as the parameter to <self.trackDown(..)>
                     index+1 if reflection is True else index,
                     part[-1]
                 )
@@ -377,15 +374,16 @@ class Slot:
             # where there is no part for tracking it downwards.
             index -= 1 if reflection is True else 2
 
-    def trackUp(self, roofIndices, index=None, destVertIndex=None):
+    def trackUp(self, roofItem, slotIndex, index=None, destVertIndex=None):
         """
         Track the slot upwards to form roof faces.
         
         Args:
-            roofIndices (list): A Python list for all roof faces, so each entry of <roofIndices> is
-                a Python list of vertex indices defining a single roof face
+            roofItem (item.roof_profile.RoofProfile): A roof item.
+            slotIndex (int): An index of <self.slots> we are building the roof sides for.
+                No roof sides can be built for the very last slot.
             index (int or None): If <index> is not <None>, it indicates a part in <self.parts> where to begin,
-                otherwise start from the very bottom of the slot
+                otherwise start from the very bottom of the slot.
             destVertIndex (int or None): If <index> is not <None>, <destVertIndex> indicates where to stop.
                 See the example on the image <Main> for the slot <slots[2]>.
                 <self.trackUp(..)> is called with <index == 1>, <destVertIndex == 20>.
@@ -425,7 +423,7 @@ class Slot:
                 # <part == [28, 11, 12, 15]>
                 # <vertIndex0 == 15>
                 # The roof face is complete
-                roofIndices.append(roofFace)
+                roofItem.addRoofSide(roofFace, slotIndex, self.itemFactory)
                 # Setting <vertIndex0> to <None> means that we start a new roof face in
                 # the next iteration of the <while> cycle
                 vertIndex0 = None
@@ -450,7 +448,7 @@ class Slot:
                 # <parts[index+1][1][0] == 22>
                 # Basically, that case means that there is an island between the vertices <19> and <20>
                 # We need to process that island in line below
-                index = self.trackUp(roofIndices, index, part[-1])
+                index = self.trackUp(roofItem, slotIndex, index, part[-1])
             if not destVertIndex is None and parts[index+1][1][0] == destVertIndex:
                 # The example of that case on the image <Main> for <slots[2]>:
                 # <destVertIndex == 20>
@@ -476,27 +474,26 @@ class Slot:
 
 
 class RoofProfile(Roof):
-    """
-    The class deals with so called profiled roofs (i.e. roofs defined be a profile):
-    gabled, round, gambrel, saltbox
     
-    See https://github.com/vvoovv/blender-osm/wiki/Profiled-roofs for description and illustration
-    of concepts and algorithms used in the code. Specifically, the image <Main> from that webpage is
-    used a number of times to illustrate the code.
-    """
+    # default roof height
+    height = 1.
     
-    def __init__(self, roofData, data, itemStore, itemFactory):
+    def __init__(self, data, profileData, itemStore, itemFactory, roofRenderer):        
         """
         Args:
-            data (tuple): profile values and some attributes to define a profiled roof,
+            profileData (tuple): profile values and some attributes to define a profiled roof,
                 e.g. gabledRoof, roundRoof, gambrelRoof, saltboxRoof
         """
         super().__init__(data, itemStore, itemFactory)
-        self.hasRidge = True
         self.hasGable = True
+        self.roofRenderer = roofRenderer
+        self.trapezoidGeometry = Trapezoid()
+        
+        self.hasRidge = True
+        self.projections = []
         
         # actual profile values as a Python tuple of (x, y)
-        profile = roofData[0]
+        profile = profileData[0]
         self.profile = profile
         numProfilesPoints = len(profile)
         self.numSlots = numProfilesPoints
@@ -508,8 +505,8 @@ class RoofProfile(Roof):
             slots[i].n = slots[i+1]
         self.slots = slots
         
-        for attr in roofData[1]:
-            setattr(self, attr, roofData[1][attr])
+        for attr in data[1]:
+            setattr(self, attr, data[1][attr])
         
         # is the y-coordinate at <x=0.0> (the left end of the profile) is equal to zero?
         self.lEndZero = not profile[0][1]
@@ -529,11 +526,63 @@ class RoofProfile(Roof):
             profileQ.append(index)
         profileQ.append(index)
         self.profileQ = profileQ
+        
+        self._initUv(self)
     
-    def init(self, element, data, osm, app):
+    def _initUv(self):
+        """
+        Extra initialization code related to the stuff needed for UV-mapping
+        """
+        slots = self.slots
+        p = self.profile
+        
+        self.roofVertexData = {}
+        
+        self.dx_2 = tuple(
+            (slots[i+1].x-slots[i].x)*(slots[i+1].x-slots[i].x)
+            for i in range(self.lastProfileIndex)
+        )
+        self.dy_2 = tuple(
+            (p[i+1][1]-p[i][1])*(p[i+1][1]-p[i][1])
+            for i in range(self.lastProfileIndex)
+        )
+        # An element of <self.slopes> can take 3 possible value:
+        # True (positive slope of a profile part)
+        # False (negative slope of a profile part)
+        # None (flat profile part)
+        self.slopes = tuple(
+            True if p[i+1][1]>p[i][1] else
+            (False if p[i+1][1]<p[i][1] else None)
+            for i in range(self.lastProfileIndex)
+        )
+        # the lenths of profile parts
+        self.partLength = [0. for i in range(self.lastProfileIndex)]
+    
+    def init(self, footprint):
+        super().init(footprint)
+        
         self.projections.clear()
-        super().init(element, data, osm, app)
         self.initProfile()
+        self.initUv()
+    
+    def initUv(self):
+        """
+        Initialize the stuff related to UV-mapping
+        """
+        slots = self.slots
+        
+        self.roofVertexData.clear()
+        # minimum and maximum Y-coordinates in the profile coordinate system
+        # for the roof vertices
+        self.minY = math.inf
+        self.maxY = -math.inf
+        
+        self.polygonWidth_2 = self.polygonWidth * self.polygonWidth
+        self.roofHeight_2 = self.roofHeight * self.roofHeight
+        for i in range(self.lastProfileIndex):
+            self.partLength[i] = self.polygonWidth * (slots[i+1].x-slots[i].x)\
+                if self.slopes[i] is None else\
+                math.sqrt(self.polygonWidth_2*self.dx_2[i] + self.roofHeight_2 * self.dy_2[i])
     
     def initProfile(self):
         # The last slot with the index <self.lastProfileIndex> isn't touched,
@@ -541,17 +590,16 @@ class RoofProfile(Roof):
         for i in range(self.lastProfileIndex):
             self.slots[i].reset()
     
-    def make(self, osm):
+    def render(self, footprint, facadeRenderer):
+        roofItem = ItemRoofProfile.getItem(self.itemFactory, footprint, self)
+        
         slots = self.slots
         
         if not self.projections:
             self.processDirection()
         
-        self._make()
-        
-        polygon = self.polygon
-        roofIndices = self.roofIndices
-        noWalls = self.noWalls
+        polygon = footprint.polygon
+        noWalls = footprint.noWalls
         # the current slot: start from the leftmost slot
         self.slot = slots[0]
         # the slot from which the last part in <slot.parts> originates
@@ -559,10 +607,10 @@ class RoofProfile(Roof):
         
         # Start with the vertex from <polygon> with <x=0.> in the profile coordinate system;
         # the variable <i0> is needed to break the cycle below
-        i = i0 = self.minProjIndex
+        i = i0 = footprint.minProjIndex
         # Create a profiled vertex out of <self.verts[polygon.indices[i]]>;
         # <pv> stands for profiled vertex
-        pv1 = pv0 = self.getProfiledVert(i, self.roofVerticalPosition, noWalls)
+        pv1 = pv0 = self.getProfiledVert(i, footprint.roofVerticalPosition, noWalls)
         _pv = None
         while True:
             i = polygon.next(i)
@@ -570,16 +618,16 @@ class RoofProfile(Roof):
                 # came to the starting vertex, so break the cycle
                 break
             # create a profiled vertex out of <self.verts[polygon.indices[i]]>
-            pv2 = self.getProfiledVert(i, self.roofVerticalPosition, noWalls)
+            pv2 = self.getProfiledVert(i, footprint.roofVerticalPosition, noWalls)
             # The order of profiled vertices is <_pv>, <pv1>, <pv2>
             # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>),
             # also form a wall face under the segment between <pv1> and <pv2>
-            self.createProfileVertices(pv1, pv2, _pv)
+            self.createProfileVertices(pv1, pv2, _pv, footprint)
             _pv = pv1     
             pv1 = pv2
         # Create in-between vertices located on the slots for the closing segment between <pv1> and <pv0>,
         # also form a wall face under the segment between <pv1> and <pv0>
-        self.createProfileVertices(pv1, pv0, _pv)
+        self.createProfileVertices(pv1, pv0, _pv, footprint)
         
         # Append the vertices from the first part of the <slot[0]> (i.e. slots[0].parts[0])
         # to the last part of <slots[1]> (i.e. slots[1].parts[-1])
@@ -600,25 +648,20 @@ class RoofProfile(Roof):
         # Below is the cycle to form roof faces
         # Each time a band between the neighboring slots
         # <slotL> (a slot from the left) and <slotR> (a slot from the right) is considered.
-        # We track <slotR> upwards by executing <slotR.trackUp(roofIndices)>,
-        # then we track <slotL> downwards by executing slotL.trackDown(roofIndices)
+        # We track <slotR> upwards by executing <slotR.trackUp(..)>,
+        # then we track <slotL> downwards by executing slotL.trackDown(..)
         slotR = slots[1]
-        slotR.trackUp(roofIndices)
+        slotR.trackUp(roofItem, 0)
         self.onRoofForSlotCompleted(0)
-        for i in range(1, self.lastProfileIndex):
+        for slotIndex in range(1, self.lastProfileIndex):
             slotL = slotR
-            slotR = slots[i+1]
-            slotR.trackUp(roofIndices)
-            slotL.trackDown(roofIndices)
-            self.onRoofForSlotCompleted(i)
-        return True
-    
-    def _make(self):
-        """
-        The method is called from <self.make(..)>. Some extra stuff can be done here.
-        
-        The method can overridden by a child class.
-        """
+            slotR = slots[slotIndex+1]
+            slotR.trackUp(roofItem, slotIndex)
+            slotL.trackDown(roofItem, slotIndex)
+            self.onRoofForSlotCompleted(slotIndex)
+        #return True
+        facadeRenderer.render(footprint)
+        self.roofRenderer.render(roofItem)
     
     def getProfiledVert(self, i, roofVerticalPosition, noWalls):
         """
@@ -626,11 +669,40 @@ class RoofProfile(Roof):
         
         The arguments of the method are the same as for the constructor
         of the <ProfiledVert> class.
-        The method can overridden by a child class.
         """
-        return ProfiledVert(self, i, roofVerticalPosition, noWalls)
+        pv = ProfiledVert(self, i, roofVerticalPosition, noWalls)
+        
+        # the code below is needed for UV-mapping
+        y = pv.y
+        self.roofVertexData[pv.vertIndex] = (
+            pv.onSlot,
+            pv.index if pv.onSlot else self.getTexCoordAlongProfile(pv),
+            y
+        )
+        # update <self.minY> and <self.maxY> if necessary
+        if y < self.minY:
+            self.minY = y
+        elif y > self.maxY:
+            self.maxY = y
+        return pv
+
+    def getTexCoordAlongProfile(self, pv):
+        slots = self.slots
+        p = self.profile
+        slope = self.slopes[pv.index]
+        if slope:
+            dx = pv.x - slots[pv.index].x
+            dh = pv.h - p[pv.index][1]
+            texCoord = math.sqrt(self.polygonWidth_2*dx*dx + self.roofHeight_2*dh*dh)
+        elif slope is False:
+            dx = slots[pv.index+1].x - pv.x
+            dh = pv.h - p[pv.index+1][1]
+            texCoord = math.sqrt(self.polygonWidth_2*dx*dx + self.roofHeight_2*dh*dh)
+        else: # slope is None
+            texCoord = self.polygonWidth * (pv.x - slots[pv.index].x)
+        return texCoord
     
-    def createProfileVertices(self, pv1, pv2, _pv):
+    def createProfileVertices(self, pv1, pv2, _pv, footprint):
         """
         Create in-between vertices located on the slots for the segment between <pv1> and <pv2>,
         also form a wall face under the segment between <pv1> and <pv2>.
@@ -645,10 +717,9 @@ class RoofProfile(Roof):
             pv2 (ProfiledVert): Defines the second vertex of the segment of <self.polygon> projected on the profile
             _pv (ProfiledVert): Precedes <pv1>
         """
-        verts = self.verts
-        indices = self.polygon.indices
+        verts = footprint.building.verts
+        indices = footprint.polygon.indices
         p = self.profile
-        wallIndices = self.wallIndices
         slots = self.slots
         # the current slot
         slot = self.slot
@@ -808,7 +879,7 @@ class RoofProfile(Roof):
                 verts.append(Vector((
                     v1.x + factor * factorX,
                     v1.y + factor * factorY,
-                    self.roofVerticalPosition + self.roofHeight * p[slotIndexVerts][1]
+                    footprint.roofVerticalPosition + footprint.roofHeight * p[slotIndexVerts][1]
                 )))
                 _wallIndices.append(vertIndex)
                 #
@@ -854,35 +925,43 @@ class RoofProfile(Roof):
         # append <_wallIndices> to <wallIndices>
         if appendPv1:
             _wallIndices.append(pv1.vertIndex)
-        wallIndices.append(_wallIndices)
+
+        footprint.facades.append(Facade.getItem(
+            self.itemFactory,
+            footprint,
+            self.rectangleGeometry,
+            _wallIndices,
+            self.trapezoidGeometry.getUvs(
+                (verts[_wallIndices[1]] - verts[_wallIndices[0]]).length,
+                footprint.wallHeight
+            )
+        ))
+        
+        
+        
         # append <pv2.vertIndex> to the last part of the current slot (i.e. to <slot.parts[-1]>)
         slot.append(pv2.vertIndex)
         # remember the current slot
         self.slot = slot
     
-    def calculateRoofHeight(self, footprint, style):
-        h = style.get("roofHeight")
-        if h is None:
-            if not self.angleToHeight is None and "roofAngle" in style:
-                angle = style["roofAngle"]
-                if not angle is None:
-                    self.processDirection()
-                    h = self.angleToHeight * footprint.polygonWidth * math.tan(math.radians(angle))
-            if h is None:
-                # get the number of levels
-                h = style.get("roofLevels")
-                h = self.height if h is None else h * self.levelHeight
-        footprint.roofHeight = h
-    
-    def onNewSlotVertex(self, slotIndex, vertIndex, y):
+    def onNewSlotVertex(self, slotIndex, vertexIndex, y):
         """
-        The method is called for every newly created in-between vertex <self.verts[vertIndex]>
+        The method is called for every newly created in-between vertex <self.verts[vertexIndex]>
         located on the slot <self.slots[slotIndex]> between the neighbor profiled vertices.
         The vertex has Y-coordinate <y> in the profile coordinate system.
         
         The method can be overriden by a child class.
         """
-        pass
+        self.roofVertexData[vertexIndex] = (
+            True,
+            slotIndex,
+            y
+        )
+        # update <self.minY> and <self.maxY> if necessary
+        if y < self.minY:
+            self.minY = y
+        elif y > self.maxY:
+            self.maxY = y
     
     def onRoofForSlotCompleted(self, slotIndex):
         """
@@ -891,3 +970,4 @@ class RoofProfile(Roof):
         
         The method can be overriden by a child class.
         """
+        

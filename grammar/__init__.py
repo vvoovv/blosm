@@ -176,8 +176,38 @@ class Roof(Item):
     
     gabled = "gabled"
     
+    # special markup items to taken out of <self.markup> into <self.styleBlocks>
+    specialMarkup = {
+        "RoofSide": 1,
+        "Ridge": 1
+    }
+    
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
+        # <self.markup> can contain both normal markup items (e.g. air vents for the flat roof) and
+        # special markup items (<RoofSide>, <Ridge>).
+        # The normal markup items are preserved in <self.markup>.
+        # Those special markup items are placed to the following Python dictionary.
+        self.styleBlocks = {}
+    
+    def buildMarkup(self, styleId):
+        styleBlocks = self.styleBlocks
+        markup = []
+        for styleBlock in self.markup:
+            className = styleBlock.__class__.__name__
+            if className in Roof.specialMarkup:
+                if not className in styleBlocks:
+                    styleBlocks[className] = []
+                styleBlocks[className].append(styleBlock)
+            else:
+                markup.append(styleBlocks)
+            styleBlock.build(styleId)
+        if markup:
+            self.markup = markup
+        else:
+            # all items from <self.markup> were placed into <self.styleBlocks>,
+            # so <self.markup> isn't needed anymore
+            self.markup = None
 
 
 class Div(Item):
