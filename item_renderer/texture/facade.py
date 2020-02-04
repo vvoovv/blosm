@@ -22,6 +22,8 @@ class Facade:
                         minWidth = facade.getStyleBlockAttr("minWidth")
                         if (minWidth and facade.width > minWidth) or not minWidth:
                             if styleBlock.markup:
+                                r.createFace(building, facade.indices)
+                                break
                                 self.renderMarkup(facade)
                                 if facade.valid:
                                     break

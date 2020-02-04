@@ -14,7 +14,9 @@ class RoofProfile(RoofItem):
         self.roofSides.clear()
     
     def addRoofSide(self, roofSideIndices, slotIndex, itemFactory):
-        roofSide = RoofSide.getItem(itemFactory, self, roofSideIndices, slotIndex)
+        self.roofSides.append(
+            RoofSide.getItem(itemFactory, self, roofSideIndices, slotIndex)
+        )
     
     @classmethod
     def getItem(cls, itemFactory, parent, roofVertexData):

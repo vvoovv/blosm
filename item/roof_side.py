@@ -54,3 +54,11 @@ class RoofSide(Item):
             for styleBlock in styleBlocks:
                 if self.evaluateCondition(styleBlock):
                     self.styleBlock = styleBlock
+    
+    @property
+    def front(self):
+        return True
+    
+    @property
+    def back(self):
+        return True
