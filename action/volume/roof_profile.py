@@ -492,7 +492,6 @@ class RoofProfile(Roof):
         self.trapezoidGeometry = Trapezoid()
         
         self.hasRidge = True
-        self.projections = []
         
         # actual profile values as a Python tuple of (x, y)
         profile = profileData[0]
@@ -541,6 +540,9 @@ class RoofProfile(Roof):
         slots = self.slots
         p = self.profile
         
+        # The key in the following Python dictionary is an vertex index in <building.footprint>;
+        # the value is a Python tuple with the elements described in code of the method
+        # item_renderer/texture/roof_profile/RoofProfile/getUvs(..)
         self.roofVertexData = {}
         
         self.dx_2 = tuple(
@@ -566,8 +568,11 @@ class RoofProfile(Roof):
     def init(self, footprint):
         super().init(footprint)
         
-        self.projections.clear()
         self.initProfile()
+        
+        if not footprint.projections:
+            self.processDirection(footprint)
+        
         self.initUv(footprint)
     
     def initUv(self, footprint):
@@ -605,9 +610,6 @@ class RoofProfile(Roof):
         roofItem = ItemRoofProfile.getItem(self.itemFactory, footprint, self)
         
         slots = self.slots
-        
-        if not self.projections:
-            self.processDirection(footprint)
         
         # the current slot: start from the leftmost slot
         self.slot = slots[0]
@@ -670,7 +672,7 @@ class RoofProfile(Roof):
             self.onRoofForSlotCompleted(slotIndex)
         
         facadeRenderer.render(footprint)
-        self.roofRenderer.render(roofItem)
+        self.roofRenderer.render(roofItem, self)
     
     def getProfiledVert(self, footprint, i):
         """
@@ -683,9 +685,11 @@ class RoofProfile(Roof):
         
         # the code below is needed for UV-mapping
         y = pv.y
+        # The elements of the Python tuple below are described in code of the method
+        # item_renderer/texture/roof_profile/RoofProfile/getUvs(..)
         self.roofVertexData[pv.vertIndex] = (
             pv.onSlot,
-            pv.index if pv.onSlot else self.getTexCoordAlongProfile(pv),
+            pv.index if pv.onSlot else self.getTexCoordAlongProfile(pv, footprint),
             y
         )
         # update <self.minY> and <self.maxY> if necessary
@@ -695,7 +699,7 @@ class RoofProfile(Roof):
             self.maxY = y
         return pv
 
-    def getTexCoordAlongProfile(self, pv):
+    def getTexCoordAlongProfile(self, pv, footprint):
         slots = self.slots
         p = self.profile
         slope = self.slopes[pv.index]
@@ -708,7 +712,7 @@ class RoofProfile(Roof):
             dh = pv.h - p[pv.index+1][1]
             texCoord = math.sqrt(self.polygonWidth_2*dx*dx + self.roofHeight_2*dh*dh)
         else: # slope is None
-            texCoord = self.polygonWidth * (pv.x - slots[pv.index].x)
+            texCoord = footprint.polygonWidth * (pv.x - slots[pv.index].x)
         return texCoord
     
     def createProfileVertices(self, pv1, pv2, _pv, footprint):
@@ -901,7 +905,7 @@ class RoofProfile(Roof):
                 # Create a new part for the new slot
                 # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
-                y = pv1.y + factorSlots * (p[slotIndex][0] - pv1.x)
+                y = pv1.y + factorSlots * (p[slotIndexVerts][0] - pv1.x)
                 slot.append(vertIndexForSlots, y, self.originSlot)
                 self.onNewSlotVertex(slotIndexVerts, vertIndex, y)
                 # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
@@ -959,6 +963,8 @@ class RoofProfile(Roof):
         
         The method can be overriden by a child class.
         """
+        # The elements of the Python tuple below are described in code of the method
+        # item_renderer/texture/roof_profile/RoofProfile/getUvs(..)
         self.roofVertexData[vertexIndex] = (
             True,
             slotIndex,

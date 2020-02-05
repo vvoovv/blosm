@@ -33,7 +33,7 @@ styles = {
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
             #Constant("dome"),
             #Constant("flat"),
-            Constant("gabled")
+            Constant("saltbox")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
         roofHeight = Value(Alternatives(
@@ -176,7 +176,7 @@ styles = {
     Roof(
         claddingMaterial = "brick",
         claddingColor = "salmon",
-        faces = smoothness.Smooth,
+        #faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side
     ),
     RoofSide(

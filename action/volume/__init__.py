@@ -65,9 +65,9 @@ class Volume(Action):
             #'hipped': RoofHipped(),
             'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofDome"]),
             'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofOnion"]),
-            #'round': RoofProfile(roundRoof),
+            'round': RoofProfile(roofDataRound, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"]),
             #'half-hipped': RoofHalfHipped(),
-            #'gambrel': RoofProfile(gambrelRoof),
-            #'saltbox': RoofProfile(saltboxRoof),
+            'gambrel': RoofProfile(roofDataGambrel, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"]),
+            'saltbox': RoofProfile(roofDataSaltbox, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"])
             #'mansard': RoofMansard()
         }
