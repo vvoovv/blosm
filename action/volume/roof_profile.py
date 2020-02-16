@@ -3,7 +3,8 @@ from mathutils import Vector
 from .roof import Roof
 from item.facade import Facade
 from item.roof_profile import RoofProfile as ItemRoofProfile
-from .geometry.trapezoid import Trapezoid
+from .geometry.trapezoid import TrapezoidRV, TrapezoidChainedRV
+from .geometry.rectangle import Rectangle
 from util import zero
 
 
@@ -489,7 +490,10 @@ class RoofProfile(Roof):
         super().__init__(data, itemStore, itemFactory)
         self.hasGable = True
         self.roofRenderer = roofRenderer
-        self.trapezoidGeometry = Trapezoid()
+        # geometries for wall faces
+        self.geometryRectangle = Rectangle()
+        self.geometryTrapezoid = TrapezoidRV()
+        self.geometryTrapezoidChained = TrapezoidChainedRV()
         
         self.hasRidge = True
         
@@ -937,17 +941,11 @@ class RoofProfile(Roof):
         # append <_wallIndices> to <wallIndices>
         if appendPv1:
             _wallIndices.append(pv1.vertIndex)
-
+        
         footprint.facades.append(Facade.getItem(
-            self.itemFactory,
+            self,
             footprint,
-            self.trapezoidGeometry,
-            _wallIndices,
-            self.trapezoidGeometry.getUvs(
-                (verts[_wallIndices[1]] - verts[_wallIndices[0]]).length,
-                verts[_wallIndices[-1]][2] - verts[_wallIndices[0]][2],
-                verts[_wallIndices[2]][2] - verts[_wallIndices[1]][2]
-            )
+            _wallIndices
         ))
         
         # append <pv2.vertIndex> to the last part of the current slot (i.e. to <slot.parts[-1]>)
@@ -983,4 +981,42 @@ class RoofProfile(Roof):
         
         The method can be overriden by a child class.
         """
+    
+    def initFacadeItem(self, item):
+        verts = item.building.verts
+        indices = item.indices
+        numVerts = len(indices)
+        firstVert = verts[indices[0]]
+        # a vector along the bottom side of the trapezoid
+        bottomVec = verts[indices[1]] - firstVert
+        heightLeft = verts[indices[-1]][2] - firstVert[2]
+        heightRight = verts[indices[2]][2] - verts[indices[1]][2]
+        # facade item width
+        width = bottomVec.length
+        if numVerts == 4:
+            if heightLeft == heightRight:
+                geometry = self.geometryRectangle
+                # flat vertices coordinates on the facade surface (i.e. on the rectangle)
+                uvs = geometry.getUvs(width, heightLeft)
+            else:
+                geometry = self.geometryTrapezoid
+                # flat vertices coordinates on the facade surface (i.e. on the trapezoid)
+                uvs = ( (0., 0.), (width, 0.), (width, heightRight), (0., heightLeft) )
+        else:
+            geometry = self.geometryTrapezoidChained
+            # flat vertices coordinates on the facade surface (i.e. on the chained trapezoid)
+            unitBottomVec = bottomVec/width
+            # Now flat vertices coordinates on the facade surface:
+            # first the vertices at the bottom and the next vertex,
+            # then the rest of the vertices but the last one,
+            # and finally the last vertex adjoining the left vertex at the bottom
+            # A sum of several Python tuples gives a single Python tuple
+            uvs =\
+                ((0., 0.), (width, 0.), (width, heightRight)) +\
+                tuple( ((verts[indices[i]]-firstVert).dot(unitBottomVec), verts[indices[i]][2]-firstVert[2]) for i in range(3,numVerts-1) ) +\
+                ( (0., heightLeft), )
         
+        item.width = width
+        item.geometry = geometry
+        # assign uv-coordinates (i.e. surface coordinates on the facade plane)
+        item.uvs = uvs

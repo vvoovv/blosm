@@ -33,7 +33,7 @@ styles = {
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
             #Constant("dome"),
             #Constant("flat"),
-            Constant("gabled")
+            Constant("saltbox")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
         roofHeight = Value(Alternatives(
@@ -47,7 +47,7 @@ styles = {
             FromAttr("roof:slope:direction", FromAttr.String, RoofDefs.directions),
             FromAttr("roof:slope:direction", FromAttr.Float)
         )),
-        roofOrientation = Value( FromAttr("roof:orientation", FromAttr.String) ),
+        roofOrientation = "across",#Value( FromAttr("roof:orientation", FromAttr.String) ),
         lastLevelOffsetFactor = Value(RandomWeighted((
             (0., 50), (0.05, 3), (0.1, 5), (0.15, 5), (0.2, 5), (0.25, 5), (0.3, 5),
             (0.35, 5), (0.4, 5), (0.45, 5), (0.5, 3), (0.55, 2), (0.6, 2)

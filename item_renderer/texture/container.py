@@ -15,6 +15,9 @@ class Container(ItemRenderer):
         item.prepareMarkupItems()
         
         if item.styleBlock.markup[0].isLevel:
+            face = self.r.createFace(item.building, item.indices)
+            self.renderCladding(item.building, item, face, item.uvs)
+            return
             self.renderLevels(item)
         else:
             self.renderDivs(item)
@@ -103,7 +106,7 @@ class Container(ItemRenderer):
                 _item = item.markup[0]
                 _item.indices = parentIndices
                 _item.uvs = item.uvs
-                r.createFace(building, _item.indices, _item.uvs)
+                r.createFace(building, _item.indices)
             else:
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
@@ -112,49 +115,59 @@ class Container(ItemRenderer):
                 # The prefix <LB> means "left bottom"
                 indexLB = parentIndices[0]
                 # The prefix <LT> means "left top"
-                indexLT = parentIndices[3]
+                indexLT = parentIndices[-1]
                 # a unit vector along U-axis (the horizontal axis)
                 unitVector = (verts[parentIndices[1]] - verts[indexLB]) / item.width
                 # <texUl> is the current U-coordinate for texturing the leftmost vertices of
                 # items to be created out of <item>
                 texUl = item.uvs[0][0]
+                # <texVlt> is the current V-coordinate for texturing the top leftmost vertex of
+                # items to be created out of <item>
+                texVlt = item.uvs[-1][1]
+                # <startIndex> is only used by geometry <TrapezoidChainedRv>
+                startIndex = len(parentIndices) - 1
                 
                 # Generate Div items but the last one;
                 # the special case is when a symmetry is available
                 if numRepeats>1:
                     for _ in range(numRepeats-1):
-                        indexLB, indexLT, texUl = geometry.generateDivs(
+                        indexLB, indexLT, texUl, texVlt, startIndex = geometry.generateDivs(
                             self, building, item, unitVector,
                             0, numItems, 1,
                             indexLB, indexLT,
-                            texUl
+                            texUl, texVlt,
+                            startIndex
                         )
                         if symmetry:
-                            indexLB, indexLT, texUl = geometry.generateDivs(
+                            indexLB, indexLT, texUl, texVlt, startIndex = geometry.generateDivs(
                                 self, building, item, unitVector,
                                 numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1,
                                 indexLB, indexLT,
-                                texUl
+                                texUl, texVlt,
+                                startIndex
                             )
-                indexLB, indexLT, texUl = geometry.generateDivs(
+                indexLB, indexLT, texUl, texVlt, startIndex = geometry.generateDivs(
                     self, building, item, unitVector,
                     0, numItems if symmetry else numItems-1, 1,
                     indexLB, indexLT,
-                    texUl
+                    texUl, texVlt,
+                    startIndex
                 )
                 if symmetry:
-                    indexLB, indexLT, texUl = geometry.generateDivs(
+                    indexLB, indexLT, texUl, texVlt, startIndex = geometry.generateDivs(
                         self, building, item, unitVector,
                         numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1,
                         indexLB, indexLT,
-                        texUl
+                        texUl, texVlt,
+                        startIndex
                     )
                 # process the last item
                 lastItem = item.markup[0] if symmetry else item.markup[-1]
                 geometry.generateLastDiv(
                     self, item, lastItem,
                     indexLB, indexLT,
-                    texUl
+                    texUl, texVlt,
+                    startIndex
                 )
         else:
             pass

@@ -16,4 +16,4 @@ class Div:
             item.uvs = uvs
             self.renderMarkup(item)
         else:
-            self.r.createFace(item.building, indices, uvs)
+            self.r.createFace(item.building, indices)

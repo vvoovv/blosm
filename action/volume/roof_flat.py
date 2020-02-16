@@ -57,25 +57,27 @@ class RoofFlat(Roof):
         # the starting side
         _in = indexOffset+numVerts
         facades.append(Facade.getItem(
-            self.itemFactory,
+            self,
             footprint,
-            self.rectangleGeometry,
-            (_in-1, indexOffset, _in, _in+numVerts-1),
-            self.rectangleGeometry.getUvs(
-                (verts[indexOffset] - verts[_in-1]).length,
-                footprint.wallHeight
-            )
+            (_in-1, indexOffset, _in, _in+numVerts-1)
         ))
         # the rest of the sides
         facades.extend(
             Facade.getItem(
-                self.itemFactory,
+                self,
                 footprint,
-                self.rectangleGeometry,
-                (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
-                self.rectangleGeometry.getUvs(
-                    (verts[indexOffset+i] - verts[indexOffset+i-1]).length,
-                    footprint.wallHeight
-                )
+                (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1)
             ) for i in range(1, numVerts)
         )
+    
+    def initFacadeItem(self, item):
+        verts = item.building.verts
+        indices = item.indices
+        geometry = self.rectangleGeometry
+        width = (verts[indices[1]] - verts[indices[0]]).length
+        height = item.footprint.wallHeight
+        
+        item.width = width
+        item.geometry = geometry
+        # assign uv-coordinates (i.e. surface coordinates on the facade plane)
+        item.uvs = geometry.getUvs(width, height)
