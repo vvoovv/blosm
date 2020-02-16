@@ -23,7 +23,7 @@ class Facade(Container):
         item.footprint = parent
         item.building = parent.building
         item.indices = indices
-        # <volumeGenerator> knows which geometry the facade items= has and how to map UV-coordinates
+        # <volumeGenerator> knows which geometry the facade items have and how to map UV-coordinates
         volumeGenerator.initFacadeItem(item)
         return item
     
