@@ -105,10 +105,9 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
             layout.prop(self, "assetsDir")
         
         layout.separator()
-        if app.app.has(Keys.mode3dRealistic):
-            split = layout.split(factor=0.9) if _isBlender280 else layout.split(percentage=0.9)
-            split.prop(self, "mapboxAccessToken")
-            split.operator("blosm.get_mapbox_token", text="Get it!")
+        split = layout.split(factor=0.9) if _isBlender280 else layout.split(percentage=0.9)
+        split.prop(self, "mapboxAccessToken")
+        split.operator("blosm.get_mapbox_token", text="Get it!")
         
         layout.separator()
         layout.box().label(text="Advanced settings:")
