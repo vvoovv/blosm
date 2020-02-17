@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 3, 20),
+    "version": (2, 3, 21),
     "blender": (2, 80, 0),
     "location": "Right side panel for Blender 2.80 (left side panel for Blender 2.79)> \"osm\" tab",
     "description": "One click download and import of OpenStreetMap and terrain",
