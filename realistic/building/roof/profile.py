@@ -192,7 +192,7 @@ class RoofProfileRealistic(RoofRealistic, RoofProfile):
             dh = pv.h - p[pv.index+1][1]
             texCoord = math.sqrt(self.polygonWidth_2*dx*dx + self.roofHeight_2*dh*dh)
         else: # slope is None
-            texCoord = self.polygonWidth * (pv.x - slots[pv.index].x)
+            texCoord = self.polygonWidth * (slots[pv.index+1].x - pv.x)
         return texCoord
     
     def onNewSlotVertex(self, slotIndex, vertIndex, y):
