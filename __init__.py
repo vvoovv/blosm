@@ -18,14 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 bl_info = {
-    "name": "Import OpenStreetMap (.osm) (Premium)",
+    "name": "Import OpenStreetMap (.osm)",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (1, 0, 24),
+    "version": (2, 3, 21),
     "blender": (2, 80, 0),
-    "location": "Right side panel for Blender 2.8x (left side panel for Blender 2.79))> \"osm\" tab",
-    "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
+    "location": "Right side panel for Blender 2.80 (left side panel for Blender 2.79)> \"osm\" tab",
+    "description": "One click download and import of OpenStreetMap and terrain",
     "warning": "",
-    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
+    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Documentation",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export"
@@ -87,9 +87,8 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     osmServer = bpy.props.EnumProperty(
         name = "OSM data server",
         items = (
-            ("overpass-api.de", "overpass-api.de: 8 cores, 96 GB RAM", "overpass-api.de: 8 cores, 96 GB RAM"),
-            #("openstreetmap.ru", "openstreetmap.ru: 8 cores, 64 GB RAM", "openstreetmap.ru: 8 cores, 64 GB RAM"),
-            #("openstreetmap.fr", "openstreetmap.fr: 8 cores, 16 GB RAM", "openstreetmap.fr: 8 cores, 16 GB RAM"),
+            ("overpass-api.de", "overpass-api.de: 8 cores, 128 GB RAM", "overpass-api.de: 8 cores, 96 GB RAM"),
+            ("openstreetmap.fr", "openstreetmap.fr: 8 cores, 16 GB RAM", "openstreetmap.fr: 8 cores, 16 GB RAM"),
             ("kumi.systems", "kumi.systems: 20 cores, 256GB RAM", "kumi.systems: 20 cores, 256GB RAM")
         ),
         description = "OSM data server if the default one is inaccessible",
@@ -106,10 +105,9 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
             layout.prop(self, "assetsDir")
         
         layout.separator()
-        if app.app.has(Keys.mode3dRealistic):
-            split = layout.split(factor=0.9) if _isBlender280 else layout.split(percentage=0.9)
-            split.prop(self, "mapboxAccessToken")
-            split.operator("blosm.get_mapbox_token", text="Get it!")
+        split = layout.split(factor=0.9) if _isBlender280 else layout.split(percentage=0.9)
+        split.prop(self, "mapboxAccessToken")
+        split.operator("blosm.get_mapbox_token", text="Get it!")
         
         layout.separator()
         layout.box().label(text="Advanced settings:")
