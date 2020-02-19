@@ -1,7 +1,7 @@
 # blender-osm: OpenStreetMap and terrain for Blender
 **blender-osm** provides one click download and import of OpenStreetMap and real world terrain data for Blender with global coverage. Two versions of the addon are available:
 * [blender-osm (premium)](https://gumroad.com/l/blosm)
-* [blender-osm](https://gumroad.com/l/blender-osm) (the base version)
+* [blender-osm](https://gumroad.com/l/blender-osm) (the base version, available for free)
 
 They are briefly described below.
 
