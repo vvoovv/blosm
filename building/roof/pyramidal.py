@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -28,26 +28,27 @@ class RoofPyramidal(Roof):
     
     defaultHeight = 3.
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         polygon = self.polygon
         verts = self.verts
         roofIndices = self.roofIndices
         indices = polygon.indices
+        noWalls = self.noWalls
         
-        if not bldgMinHeight is None:
+        if not noWalls:
             indexOffset = len(verts)
-            # Create sides for the prism with the height <roofMinHeight - bldgMinHeight>,
-            # that is based on the <polygon>
-            polygon.sidesPrism(roofMinHeight, self.wallIndices)
+            # Extrude <polygon> in the direction of <z> axis to bring
+            # the extruded part to the height <roofVerticalPosition>
+            polygon.extrude(self.roofVerticalPosition, self.wallIndices)
         
         # index for the top vertex
         topIndex = len(verts)
         verts.append(
-            polygon.center + (bldgMaxHeight - (roofMinHeight if bldgMinHeight is None else bldgMinHeight)) * zAxis
+            polygon.center + (self.z2 - (self.roofVerticalPosition if noWalls else self.z1)) * zAxis
         )
         
         # indices for triangles that form the pyramidal roof
-        if bldgMinHeight is None:
+        if noWalls:
             roofIndices.extend(
                 (indices[i-1], indices[i], topIndex) for i in range(polygon.n)
             )

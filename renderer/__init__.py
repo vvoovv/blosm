@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -17,86 +17,87 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os, math, bpy, bmesh
+import os, bpy, bmesh
 from util import zeroVector
-from util.blender import createEmptyObject, createDiffuseMaterial, pointNormalUpward,\
+from util.blender import createCollection, createEmptyObject, createDiffuseMaterial, pointNormalUpward,\
     getBmesh, setBmesh
 from util.osm import assignTags
+
+_isBlender280 = bpy.app.version[1] >= 80
+
+
+_values = (
+    (1,), (1,), (1,), (1,)
+)
 
 
 class Renderer:
     
     # types of data
-    linestring = (1,)
-    multilinestring = (1,)
-    polygon = (1,)
-    multipolygon = (1,)
+    linestring = _values[0]
+    multilinestring = _values[1]
+    polygon = _values[2]
+    multipolygon = _values[3]
     
+    # _isBlender280 delete below
     parent = None
+    collection = None
     name = None
     
-    def __init__(self, app):
+    def __init__(self, app, **kwargs):
         self.app = app
+        app.addRenderer(self)
         # offset for a Blender object created if <layer.singleObject is False>
         self.offset = None
         # offset if a terrain is set (used instead of <self.offset>)
         self.offsetZ = None
+        self.applyMaterial = True
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
+    
+    def prepare(self):
+        pass
     
     @classmethod
     def begin(self, app):
         self.name = os.path.basename(app.osmFilepath)
         
-        if app.layered or not app.singleObject:
+        if _isBlender280:
+            self.collection = createCollection(self.name)
+        else:
             self.parent = createEmptyObject(
                 self.name,
                 zeroVector(),
                 empty_draw_size=0.01
             )
-        if app.singleObject and not app.layered:
-            self.bm = bmesh.new()
-            self.obj = self.createBlenderObject(self.name, None, None)
-            # cache material indices in <self.materialIndices>
-            self.materialIndices = {}
-
+        
         # store here Blender object that are to be joined
         self.toJoin = {}
     
-    def preRender(self, element, layer=None):
-        app = self.app
-        layer = element.l if layer is None else layer
-        self.layer = layer
+    def preRender(self, element):
+        layer = element.l
+        self.layer = element.l
         
         if layer.singleObject:
-            if layer.layered:
-                bm = layer.bm
-                obj = layer.obj
-                materialIndices = layer.materialIndices
-                if not bm:
-                    bm = bmesh.new()
-                    layer.bm = bm
-                    obj = self.createBlenderObject(
-                        layer.name,
-                        layer.location,
-                        self.parent
-                    )
-                    layer.obj = obj
-                    materialIndices = {}
-                    layer.materialIndices = materialIndices
-                self.bm = bm
-                self.obj = obj
-                self.materialIndices = materialIndices
-            else:
-                self.bm = Renderer.bm
-                self.obj = Renderer.obj
-                self.materialIndices = Renderer.materialIndices
+            if not layer.bm:
+                layer.obj = self.createBlenderObject(
+                    layer.name,
+                    layer.location,
+                    collection = self.collection,
+                    parent = None if _isBlender280 else self.parent
+                )
+                layer.prepare(layer)
+            self.bm = layer.bm
+            self.obj = layer.obj
+            self.materialIndices = layer.materialIndices
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
-                layer.getParent() if app.layered else Renderer.parent
+                collection = layer.getCollection(self.collection) if _isBlender280 else None,
+                parent = layer.getParent(layer.getCollection(self.collection) if _isBlender280 else None)
             )
-            self.bm = bmesh.new()
-            self.materialIndices = {}
+            layer.prepare(self)
     
     def renderLineString(self, element, data):
         pass
@@ -108,56 +109,61 @@ class Renderer:
         pass
     
     def postRender(self, element):
-        if not self.layer.singleObject:
+        layer = self.layer
+        if not layer.singleObject:
+            obj = self.obj
             # finalize BMesh
-            self.bm.to_mesh(self.obj.data)
+            setBmesh(obj, self.bm)
             # assign OSM tags to the blender object
-            assignTags(self.obj, element.tags)
+            assignTags(obj, element.tags)
+            layer.finalizeBlenderObject(obj)
     
     @classmethod
     def end(self, app):
-        terrain = app.terrain
         for layer in app.layers:
-            if layer.obj:
+            if layer.bm:
                 setBmesh(layer.obj, layer.bm)
-        if app.singleObject and not app.layered:
-            # finalize BMesh
-            setBmesh(self.obj, self.bm)
         
-        bpy.context.scene.update()
+        #bpy.context.scene.update()
         # Go through <app.layers> once again after <bpy.context.scene.update()>
         # to get correct results for <layer.obj.bound_box>
-        for layer in app.layers:
-            if layer.obj:
-                if terrain and layer.sliceMesh:
-                    self.slice(layer.obj, terrain, app)
-                if layer.swModifier:
-                    if not terrain.envelope:
-                        terrain.createEnvelope()
-                    self.addBoolenModifier(layer.obj, terrain.envelope)
-                    self.addShrinkwrapModifier(layer.obj, terrain.terrain, layer.swOffset)
+        if not app.mode is app.realistic and app.singleObject:
+            for layer in app.layers:
+                if layer.obj:
+                    layer.finalizeBlenderObject(layer.obj)
         
-        bpy.ops.object.select_all(action="DESELECT")
         self.join()
-        
-        if terrain:
+    
+    def cleanup(self):
+        terrain = self.app.terrain
+        if terrain and terrain.terrain:
             terrain.cleanup()
     
     @classmethod
     def join(self):
         """
-        Join Blender object collect during rendering
+        Join Blender objects collected during rendering
         """
         join = self.toJoin
         if join:
             for target in join:
                 for o in join[target]:
-                    o.select = True
+                    if _isBlender280:
+                        o.select_set(True)
+                    else:
+                        o.select = True
                 target = bpy.data.objects[target]
-                target.select = True
-                bpy.context.scene.objects.active = target
+                if _isBlender280:
+                    target.select_set(True)
+                    bpy.context.view_layer.objects.active = target
+                else:
+                    target.select = True
+                    bpy.context.scene.objects.active = target
                 bpy.ops.object.join()
-                target.select = False
+                if _isBlender280:
+                    target.select_set(False)
+                else:
+                    target.select = False
         join.clear()
     
     @classmethod
@@ -172,12 +178,18 @@ class Renderer:
         join[target.name].append(o)
     
     @classmethod
-    def createBlenderObject(self, name, location, parent):
+    def createBlenderObject(self, name, location, collection=None, parent=None):
         mesh = bpy.data.meshes.new(name)
         obj = bpy.data.objects.new(name, mesh)
         if location:
             obj.location = location
-        bpy.context.scene.objects.link(obj)
+        if _isBlender280:
+            if not collection:
+                collection = bpy.context.scene.collection
+            # adding to the collection
+            collection.objects.link(obj)
+        else:
+            bpy.context.scene.objects.link(obj)
         if parent:
             # perform parenting
             obj.parent = parent
@@ -185,7 +197,7 @@ class Renderer:
     
     def getName(self, element):
         tags = element.tags
-        return tags["name"] if "name" in tags else "element"
+        return tags["name"] if tags.get("name") else "element"
     
     def getMaterial(self, element):
         # the material name is simply <id> of the layer
@@ -203,7 +215,9 @@ class Renderer:
         materialIndex = self.getMaterialIndexByName(name)
         if materialIndex is None:
             # create Blender material
-            materialIndex = self.getMaterialIndex( createDiffuseMaterial(name, self.app.colors[name]) )
+            materialIndex = self.getMaterialIndex(
+                createDiffuseMaterial(name, self.app.colors.get(name, self.app.defaultColor))
+            )
         return materialIndex
     
     def getMaterialIndex(self, material):
@@ -223,91 +237,19 @@ class Renderer:
         else:
             materialIndex = None
         return materialIndex
-    
-    @staticmethod
-    def addShrinkwrapModifier(obj, target, offset):
-        m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
-        m.wrap_method = "PROJECT"
-        m.use_positive_direction = False
-        m.use_negative_direction = True
-        m.use_project_z = True
-        m.target = target
-        m.offset = offset
-    
-    @staticmethod
-    def addBoolenModifier(obj, operand):
-        m = obj.modifiers.new(name="Boolean", type='BOOLEAN')
-        m.object = operand
-    
-    @staticmethod
-    def slice(obj, terrain, app):
-        sliceSize = app.sliceSize
-        bm = getBmesh(obj)
-        
-        def _slice(index, plane_no, terrainMin, terrainMax):
-            # min and max value along the axis defined by <index>
-            # 1) terrain
-            # a simple conversion from the world coordinate system to the local one
-            terrainMin = terrainMin - obj.location[index]
-            terrainMax = terrainMax - obj.location[index]
-            # 2) <bm>, i.e. Blender mesh
-            minValue = min(obj.bound_box, key = lambda v: v[index])[index]
-            maxValue = max(obj.bound_box, key = lambda v: v[index])[index]
-            
-            # cut everything off outside the terrain bounding box
-            if minValue < terrainMin:
-                minValue = terrainMin
-                bmesh.ops.bisect_plane(
-                    bm,
-                    geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
-                    plane_co=(0., minValue, 0.) if index else (minValue, 0., 0.),
-                    plane_no=plane_no,
-                    clear_inner=True
-                )
-            
-            if maxValue > terrainMax:
-                maxValue = terrainMax
-                bmesh.ops.bisect_plane(
-                    bm,
-                    geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
-                    plane_co=(0., maxValue, 0.) if index else (maxValue, 0., 0.),
-                    plane_no=plane_no,
-                    clear_outer=True
-                )
-            
-            # now cut the slices
-            width = maxValue - minValue
-            if width > sliceSize:
-                numSlices = math.ceil(width/sliceSize)
-                _sliceSize = width/numSlices
-                coord = minValue
-                sliceIndex = 1
-                while sliceIndex < numSlices:
-                    coord += _sliceSize
-                    bmesh.ops.bisect_plane(
-                        bm,
-                        geom=bm.verts[:]+bm.edges[:]+bm.faces[:],
-                        plane_co=(0., coord, 0.) if index else (coord, 0., 0.),
-                        plane_no=plane_no
-                    )
-                    sliceIndex += 1
-        
-        _slice(0, (1., 0., 0.), terrain.minX, terrain.maxX)
-        _slice(1, (0., 1., 0.), terrain.minY, terrain.maxY)
-        setBmesh(obj, bm)
-        
-        #x = terrain.minX
-        #while x < terrain.maxX:
-        #    bmesh.ops.bisect_plane(bm, geom=bm.verts[:]+bm.edges[:]+bm.faces[:], plane_co=(x,0.,0.), plane_no=plane_no)
-        #    x += step
 
 
 class Renderer2d(Renderer):
     
-    def __init__(self, op):
-        super().__init__(op)
+    def __init__(self, app, **kwargs):
+        super().__init__(app, **kwargs)
         # vertical position for polygons and multipolygons
         self.z = 0.
+    
+    def prepare(self):
+        terrain = self.app.terrain
+        if terrain and not terrain.envelope:
+                terrain.createEnvelope()
     
     def renderLineString(self, element, data):
         self._renderLineString(element, element.getData(data), element.isClosed())
@@ -340,12 +282,13 @@ class Renderer2d(Renderer):
         )
         f.normal_update()
         pointNormalUpward(f)
-        # assign material to BMFace <f>
-        materialIndex = self.getElementMaterialIndex(element)
-        f.material_index = materialIndex
-        # Store <materialIndex> since it's returned
-        # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
-        self.materialIndex = materialIndex
+        if self.applyMaterial:
+            # assign material to BMFace <f>
+            materialIndex = self.getElementMaterialIndex(element)
+            f.material_index = materialIndex
+            # Store <materialIndex> since it's returned
+            # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
+            self.materialIndex = materialIndex
         return f.edges
     
     def renderMultiPolygon(self, element, data):
@@ -372,15 +315,21 @@ class Renderer2d(Renderer):
                 
         # finally a magic function that does everything
         geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
-        # check the normal direction of the created faces and assign material to all BMFace
-        materialIndex = self.getElementMaterialIndex(element)
-        for f in geom["geom"]:
-            if isinstance(f, bmesh.types.BMFace):
-                pointNormalUpward(f)
-                f.material_index = materialIndex
-        # Store <materialIndex> since it's returned
-        # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
-        self.materialIndex = materialIndex
+        if self.applyMaterial:
+            # check the normal direction of the created faces and assign material to all BMFace
+            materialIndex = self.getElementMaterialIndex(element)
+            for f in geom["geom"]:
+                if isinstance(f, bmesh.types.BMFace):
+                    pointNormalUpward(f)
+                    f.material_index = materialIndex
+            # Store <materialIndex> since it's returned
+            # by the default implementation of <Renderer3d.getSideMaterialIndex(..)>
+            self.materialIndex = materialIndex
+        else:
+            # check the normal direction of the created faces
+            for f in geom["geom"]:
+                if isinstance(f, bmesh.types.BMFace):
+                    pointNormalUpward(f)
         return edges
 
 
@@ -389,7 +338,8 @@ class Renderer3d(Renderer2d):
     def renderPolygon(self, element, data):
         bm = self.bm
         edges = super().renderPolygon(element, data)
-        materialIndex = self.getSideMaterialIndex(element)
+        if self.applyMaterial:
+            materialIndex = self.getSideMaterialIndex(element)
         
         # extrude the edges
         # each edge has exactly one BMLoop
@@ -402,12 +352,14 @@ class Renderer3d(Renderer2d):
             vt = edges[i].link_loops[0].link_loop_next.vert
             vb = bm.verts.new(vt.co - self.h)
             f = bm.faces.new((vt, _vt, _vb, vb))
-            f.material_index = materialIndex
+            if self.applyMaterial:
+                f.material_index = materialIndex
             _vt = vt
             _vb = vb
         # the closing face
         f = bm.faces.new((ut, vt, vb, ub))
-        f.material_index = materialIndex
+        if self.applyMaterial:
+            f.material_index = materialIndex
         
     def renderMultiPolygon(self, element, data):
         bm = self.bm
@@ -415,7 +367,8 @@ class Renderer3d(Renderer2d):
         # get both outer and inner polygons
         polygons = element.getDataMulti(data)
         edges = self.createMultiPolygon(element, polygons)
-        materialIndex = self.getSideMaterialIndex(element)
+        if self.applyMaterial:
+            materialIndex = self.getSideMaterialIndex(element)
         
         # index of the first edge of the related closed linestring in the list <edges>
         index = 0
@@ -442,7 +395,8 @@ class Renderer3d(Renderer2d):
                 if vt == ut:
                     # reached the initial vertex, creating the closing face
                     f = bm.faces.new((ut, _vt, _vb, ub))
-                    f.material_index = materialIndex
+                    if self.applyMaterial:
+                        f.material_index = materialIndex
                     break
                 else:
                     if len(l.edge.link_loops) == 2:
@@ -450,7 +404,8 @@ class Renderer3d(Renderer2d):
                         l = vt.link_loops[1] if vt.link_loops[0]==l else vt.link_loops[0]
                     vb = bm.verts.new(vt.co - self.h)
                     f = bm.faces.new((vt, _vt, _vb, vb))
-                    f.material_index = materialIndex
+                    if self.applyMaterial:
+                        f.material_index = materialIndex
                     _vt = vt
                     _vb = vb
             # update <index> to switch to the next closed linestring

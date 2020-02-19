@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -27,8 +27,9 @@ from .roof.mesh import RoofMesh
 from .roof.profile import *
 from .roof.hipped import RoofHipped
 from .roof.half_hipped import RoofHalfHipped
+from .roof.mansard import RoofMansard
 from util.blender import createDiffuseMaterial
-from util import zeroVector
+from util.random import RandomNormal, RandomWeighted
 
 # Python tuples to store some defaults to render walls and roofs of OSM 3D buildings
 # Indices to access defaults from Python tuple below
@@ -41,42 +42,23 @@ defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 class BuildingRenderer(Renderer3d):
     
-    def __init__(self, app, layerId):
+    # default number of levels for a single family house and its relative weight between 1 and 100
+    defaultLevelsHouse = (
+        (1, 15),
+        (2, 15),
+        (3, 1)
+    )
+    
+    # an upper limit for the area of one family house
+    houseArea = 200.
+    
+    # an upper limit for the area of a small one level building (e.g. a kiosk)
+    oneLevelBuildingArea = 20.
+    
+    def __init__(self, app):
         super().__init__(app)
-        layer = app.getLayer(layerId)
-        self.layer = layer
-        # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
-        layer.location = None
-        layer.meshZ = 0.
-        if layer.parentLocation:
-            layer.parentLocation[2] = 0.
-        else:
-            layer.parentLocation = zeroVector()
         
-        if app.terrain:
-            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-            layer.singleObject = app.singleObject
-            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-            layer.layered = app.layered
-            # no need to add a SHRINKWRAP modifier for buildings
-            layer.swModifier = False
-            # no need to slice Blender mesh
-            layer.sliceMesh = False
-        # create instances of classes that deal with specific roof shapes
-        self.flatRoofMulti = RoofFlatMulti()
-        self.roofs = {
-            'flat': RoofFlat(),
-            'gabled': RoofProfile(gabledRoof),
-            'pyramidal': RoofPyramidal(),
-            'skillion': RoofSkillion(),
-            'hipped': RoofHipped(gabledRoof),
-            'dome': RoofMesh("roof_dome"),
-            'onion': RoofMesh("roof_onion"),
-            'round': RoofProfile(roundRoof),
-            'half-hipped': RoofHalfHipped(),
-            'gambrel': RoofProfile(gambrelRoof),
-            'saltbox': RoofProfile(saltboxRoof)
-        }
+        self.initRoofs()
         self.defaultRoof = self.roofs[app.defaultRoofShape]
         
         # set renderer for each roof
@@ -88,6 +70,36 @@ class BuildingRenderer(Renderer3d):
         # References to Blender materials used by roof Blender meshes
         # loaded from a .blend library file
         self.defaultMaterials = [None, None]
+        
+        self.randomLevelHeight = RandomNormal(app.levelHeight)
+        
+        # initializing the stuff dealing with the default number of levels
+        defaultLevels = bpy.context.scene.blender_osm.defaultLevels
+        if not defaultLevels:
+            from gui import addDefaultLevels
+            addDefaultLevels()
+        self.randomLevels = RandomWeighted(tuple((e.levels, e.weight) for e in defaultLevels))
+        self.randomLevelsHouse = RandomWeighted(self.defaultLevelsHouse)
+    
+    def initRoofs(self):
+        """
+        Create instances of classes that deal with specific roof shapes
+        """
+        self.flatRoofMulti = RoofFlatMulti()
+        self.roofs = {
+            'flat': RoofFlat(),
+            'gabled': RoofProfile(gabledRoof),
+            'pyramidal': RoofPyramidal(),
+            'skillion': RoofSkillion(),
+            'hipped': RoofHipped(),
+            'dome': RoofMesh("roof_dome"),
+            'onion': RoofMesh("roof_onion"),
+            'round': RoofProfile(roundRoof),
+            'half-hipped': RoofHalfHipped(),
+            'gambrel': RoofProfile(gambrelRoof),
+            'saltbox': RoofProfile(saltboxRoof),
+            'mansard': RoofMansard()
+        }
     
     def render(self, building, osm):
         parts = building.parts
@@ -101,21 +113,23 @@ class BuildingRenderer(Renderer3d):
         elif app.terrain:
             self.projectOnTerrain(outline, osm)
         
-        if app.terrain and not self.offsetZ:
+        if app.terrain and self.offsetZ is None:
             # The building is located outside the terrain.
             # Perform cleanup and exit
             if not app.singleObject:
                 self.offset = None
             return
         
-        self.preRender(outline, self.layer)
+        self.preRender(outline)
         
         if parts:
             # reset material indices and Blender materials derived from <outline>
             for i in range(2):
                 self.defaultMaterialIndices[i] = None
                 self.defaultMaterials[i] = None
-        if not parts or outline.tags.get("building:part") == "yes":
+        
+        partTag = outline.tags.get("building:part")
+        if not parts or (partTag and partTag != "no"):
             # render building outline
             self.renderElement(outline, building, osm)
         if parts:
@@ -152,30 +166,12 @@ class BuildingRenderer(Renderer3d):
         """
         Do actual stuff for <self.renderElement(..) here>
         """
-        app = self.app
-        z1 = building.getMinHeight(element, app)
-        roof.init(element, data, z1, osm)
+        roof.init(element, data, osm, self.app)
         if not roof.valid:
             return
         
-        roofHeight = roof.getHeight(app)
-        z2 = building.getHeight(element)
-        if z2 is None:
-            # no tag <height> or invalid value
-            roofMinHeight = building.getRoofMinHeight(element, app)
-            z2 = roofMinHeight + roofHeight
-        else:
-            roofMinHeight = z2 - roofHeight
-        wallHeight = roofMinHeight - z1
-        # validity check
-        if wallHeight < 0.:
-            return
-        elif wallHeight < zero:
-            # no building walls, just a roof
-            wallHeight = None
-        
         #print(element.tags["id"]) #DEBUG OSM id
-        if roof.make(z2, z1 if wallHeight is None else roofMinHeight, None if wallHeight is None else z1, osm):
+        if roof.make(osm):
             roof.render()
 
     def getRoofMaterialIndex(self, element):
@@ -341,3 +337,26 @@ class BuildingRenderer(Renderer3d):
         elif not self.offsetZ is None:
             vert[2] += self.offsetZ
         return vert
+    
+    def getLevelHeight(self, element):
+        return self.randomLevelHeight.value
+    
+    def getDefaultLevels(self, element, polygon):
+        b = element.tags.get("building") or element.tags.get("building:part")
+        if b in ("house", "detached", "semidetached_house"):
+            levels = self.randomLevelsHouse.value
+        elif b in ("static_caravan", "bungalow"):
+            levels = 1
+        elif not polygon:
+            # <polygon==None> means that we have a multipolygon and its area is
+            # large enough not be a one family house
+            levels = self.randomLevels.value
+        else:
+            area = polygon.area
+            if area > self.houseArea:
+                levels = self.randomLevels.value
+            elif area > self.oneLevelBuildingArea:
+                levels = self.randomLevelsHouse.value
+            else:
+                levels = 1
+        return levels

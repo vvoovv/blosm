@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -19,21 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class Keys:
     mode3d = "mode3d"
-
-
-class Bundles:
-    pass
-
-
-price = 2.85
-class App:
-    file = "4fea502"
-    price = price
-    url = "https://gumroad.com/l/blender-osm"
-    description = "Buy OSM importer without this popup for just {}$".format(price)
-    popupStrings = (
-        "Support OSM importer!",
-        "The free version is 2D only!",
-        "Buy paid version with 3D support",
-        "for just {}$".format(price)
-    )
+    mode3dRealistic = "mode3dRealistic"
+    overlay = "overlay"
+    geojson = "geojson"

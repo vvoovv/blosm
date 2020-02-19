@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from parse import Osm
+from parse.osm import Osm
 from . import Relation
 from renderer import Renderer
 
@@ -230,6 +230,8 @@ class Multipolygon(Relation):
                         hasMissing = True
             if hasMissing:
                 return False
+        # do we have a relation member with the role=outer?
+        hasOuter = False
         # store <tags>
         self.tags = tags
         # For each linestring under processing we store in <linestrings> two entries:
@@ -243,6 +245,8 @@ class Multipolygon(Relation):
             way = osm.ways[mId]
             if not way.valid:
                 continue
+            if not hasOuter and mRole is Osm.outer:
+                hasOuter = True
             if way.closed:
                 # no special processing is need, just take the way as is
                 polygons.append(Linestring(mRole, mId))
@@ -287,6 +291,10 @@ class Multipolygon(Relation):
                     # create entries in <linestrings> for the new linestring
                     linestrings[start] = l
                     linestrings[end] = l
+        
+        if not hasOuter:
+            self.valid = False
+            return True
         
         acceptBroken = self.m and self.m.acceptBroken
             

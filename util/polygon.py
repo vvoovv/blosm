@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from mathutils import Vector
-from util import zAxis, zeroVector
+from util import zero, zAxis, zeroVector
 
 
 class Polygon:
@@ -109,17 +109,29 @@ class Polygon:
         """
         return sum(tuple(self.verts), zeroVector())/self.n
     
-    def sidesPrism(self, z, indices):
+    @property
+    def area(self):
+        verts = self.allVerts
+        indices = self.indices
+        vertFirst = verts[indices[0]]
+        vertLast = verts[indices[-1]]
+        # the shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
+        return 0.5 * abs(
+            sum( (v0[0]*v1[1] - v1[0]*v0[1]) for (v0, v1) in\
+                ( (verts[indices[i]],verts[indices[i+1]]) for i in range(self.n-1))
+            ) + vertLast[0]*vertFirst[1] - vertFirst[0]*vertLast[1]
+        )
+    
+    def extrude(self, z, indices):
         """
-        Create sides for the prism with the height <z - <polygon height>>,
-        that is based on the polygon.
+        Extrude the polygon along <z>-axis to the target height <z>
         
-        Vertices for the top part of the prism are appended to <self.allVerts>.
-        Vertex indices for the prism sides are appended to <indices>
+        Extruded vertices are appended to <self.allVerts>.
+        Vertex indices for the extruded sides are appended to <indices>
         
         Args:
-            z (float): Vertical location of top part of the prism
-            indices (list): A python list to append vertex indices for the prism sides
+            z (float): The target height of the extruded part
+            indices (list): A python list to append vertex indices for the exruded sides
         """
         verts = self.allVerts
         _indices = self.indices
@@ -184,3 +196,99 @@ class Polygon:
             self.indices = newIndices
             # calculate the new number of vertices in the polygon
             self.n = len(newIndices)
+
+    def inset(self, distances, indices, height=None, negate=False):
+        """
+        Args:
+            distances (float | list | tuple): inset values
+            indices (list): A python list to append vertex indices for the inset faces
+        """
+        verts = self.allVerts
+        _indices = self.indices
+        indexOffset = _indexOffset = len(verts)
+        
+        translate = height*self.normal if not height is None else None
+        
+        #distancePerEdge = False if len(distances)==1 else True
+        distancePerEdge = False
+        
+        if distancePerEdge:
+            distance1 = distances[-1]
+            distance2 = distances[0]
+        else:
+            #distance1 = distances[0]
+            #distance2 = distance1
+            distance1 = distances
+            distance2 = distances
+        _d = distance1
+        prevVert = verts[_indices[0]]
+        edge1 = _edge1 = Edge(verts[_indices[0]] - verts[_indices[-1]], self.normal)
+        prevIndex1 = _indices[-1]
+        prevIndex2 = indexOffset + self.n - 1
+        
+        for i in range(self.n-1):
+            index1 = _indices[i]
+            vert = verts[_indices[i+1]]
+            # vector along the edge
+            edge2 = Edge(vert - prevVert, self.normal)
+            if distancePerEdge:
+                distance1 = distance2
+                distance2 = distances[i]
+            self.insetVert(i, edge1, edge2, distance1, distance2, translate, negate)
+            index2 = indexOffset
+            indexOffset += 1
+            if distance1:
+                indices.append((prevIndex1, index1, index2, prevIndex2))
+            prevVert = vert
+            edge1 = edge2
+            prevIndex1 = index1
+            prevIndex2 = index2
+            i += 1
+        if not distancePerEdge or _d:
+            edge2 = _edge1
+            distance2 = _d
+            self.insetVert(-1, edge1, edge2, distance1, distance2, translate, negate)
+            indices.append((prevIndex1, _indices[-1], indexOffset, prevIndex2))
+        # new values for the polygon indices
+        #self.indices = tuple(_indexOffset + i for i in range(self.n))
+    
+    def insetVert(self, index, edge1, edge2, d1, d2, translate=None, negate=False):
+        vert = self.allVerts[self.indices[index]]
+        
+        if not d1 and not d2 and translate:
+            vert = vert + translate
+        else:
+            if negate:
+                d1 = -d1
+                d2 = -d2
+            
+            # cross product between edge1 and edge1
+            cross = edge1.vec.cross(edge2.vec)
+            # To check if have a concave (>180) or convex angle (<180) between edge1 and edge2
+            # we calculate dot product between cross and axis
+            # If the dot product is positive, we have a convex angle (<180), otherwise concave (>180)
+            dot = cross.dot(self.normal)
+            convex = True if dot>0 else False
+            # sine of the angle between <-edge1.vec> and <edge2.vec>
+            sin = cross.length
+            isLine = True if sin<zero and convex else False
+            if not isLine:
+                sin = sin if convex else -sin
+                # cosine of the angle between <-edge1.vec> and <edge2.vec>
+                cos = -(edge1.vec.dot(edge2.vec))
+            
+            # extruded counterpart of <vert>
+            vert = vert - d1*edge1.normal - (d2+d1*cos)/sin*edge1.vec
+            if translate:
+                vert = vert + translate
+            self.allVerts.append(vert)
+
+
+class Edge:
+    
+    def __init__(self, vec, polygonNormal):
+        vec.normalize()
+        self.vec = vec
+        normal = vec.cross(polygonNormal)
+        normal.normalize()
+        self.normal = normal

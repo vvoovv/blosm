@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -24,6 +24,8 @@ from . import Roof
 from renderer import Renderer
 from util.blender import loadMeshFromFile
 
+_isBlender280 = bpy.app.version[1] >= 80
+
 
 class RoofMesh(Roof):
     """
@@ -41,17 +43,17 @@ class RoofMesh(Roof):
         super().__init__()
         self.mesh = mesh
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         polygon = self.polygon
         
-        if not bldgMinHeight is None:
-            # Create sides for the prism with the height <roofMinHeight - bldgMinHeight>,
-            # that is based on the <polygon>
-            polygon.sidesPrism(roofMinHeight, self.wallIndices)
+        if not self.noWalls:
+            # Extrude <polygon> in the direction of <z> axis to bring
+            # the extruded part to the height <roofVerticalPosition>
+            polygon.extrude(self.roofVerticalPosition, self.wallIndices)
         
         c = polygon.center
         # location of the Blender mesh for the roof
-        self.location = Vector((c[0], c[1], roofMinHeight))
+        self.location = Vector((c[0], c[1], self.roofVerticalPosition))
         
         return True
     
@@ -63,7 +65,7 @@ class RoofMesh(Roof):
         scale = (
             ( max(v.x for v in polygon.verts) - min(v.x for v in polygon.verts) )/2.,
             ( max(v.y for v in polygon.verts) - min(v.y for v in polygon.verts) )/2.,
-            self.h
+            self.roofHeight
         )
         
         # create building walls
@@ -80,15 +82,21 @@ class RoofMesh(Roof):
             # create an empty slot for a Blender material
             mesh.materials.append(None)
         # create a Blender object to host <mesh>
-        o = bpy.data.objects.new(self.mesh, mesh)
+        o = bpy.data.objects.new(self.mesh, mesh.copy())
         o.location = r.getVert(self.location)
         o.scale = scale
-        bpy.context.scene.objects.link(o)
+        if _isBlender280:
+            bpy.context.scene.collection.objects.link(o)
+        else:
+            bpy.context.scene.objects.link(o)
         # perform Blender parenting
         o.parent = r.obj
         # link Blender material to the Blender object <o> instead of <o.data>
         slot = o.material_slots[0]
         slot.link = 'OBJECT'
-        slot.material = r.getRoofMaterial(self.element)
+        self.setMaterial(o, slot)
         # add Blender object <o> for joining with Blender object <r.obj>
         Renderer.addForJoin(o, r.obj)
+    
+    def setMaterial(self, obj, slot):
+        slot.material = self.r.getRoofMaterial(self.element)

@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -18,6 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from renderer import Renderer
+from renderer.layer import MeshLayer
+from renderer.node_layer import NodeLayer
+from renderer.curve_layer import CurveLayer
 from material import colors
 
 
@@ -26,20 +29,36 @@ class Manager:
     # <hexdigits> are used to check validity of colors in the hex form
     hexdigits = set("0123456789abcdef")
     
-    def __init__(self, osm):
-        self.osm = osm
+    def __init__(self, data):
+        self.data = data
+        self.osm = data
         # don't accept broken multipolygons
         self.acceptBroken = False
     
     def setRenderer(self, renderer):
         self.renderer = renderer
+    
+    def setNodeRenderer(self, nodeRenderer):
+        self.nodeRenderer = nodeRenderer
         
     def process(self):
+        pass
+    
+    def renderExtra(self):
+        """
+        Do additional rendering after <Renderer.end(..)> in <App.render(..)>
+        """
         pass
 
     def parseRelation(self, element, elementId):
         # render <element> in <BaseManager.render(..)>
         element.r = True
+        
+    def createLayer(self, layerId, app, **kwargs):
+        return app.createLayer(layerId, MeshLayer, **kwargs)
+
+    def createNodeLayer(self, layerId, app, **kwargs):
+        return app.createLayer(layerId, NodeLayer, **kwargs)
     
     @staticmethod
     def getColor(color):
@@ -97,6 +116,55 @@ class Linestring(Manager):
             element.r = True
 
 
+class WayManager(Manager):
+    
+    def __init__(self, data, renderer):
+        super().__init__(data)
+        # the special renderer
+        self.renderer = renderer
+
+    def parseWay(self, element, elementId):
+        if element.tags.get("area")=="yes":
+            if element.closed:
+                element.t = Renderer.polygon
+                # render it in <BaseManager.render(..)>
+                element.r = True
+                # <element> should go to a polygon layer
+                element.l = self.getPolygonLayer(element)
+            else:
+                element.valid = False
+        else:
+            element.t = Renderer.linestring
+            # set the special renderer
+            element.rr = self.renderer
+            # render it in <BaseManager.render(..)>
+            element.r = True
+    
+    def parseRelation(self, element, elementId):
+        if element.t in (Renderer.polygon, Renderer.multipolygon):
+            # render <element> in <BaseManager.render(..)>
+            element.r = True
+            # <element> should go to a polygon layer
+            element.l = self.getPolygonLayer(element)
+        else:
+            element.valid = False
+
+    def createLayer(self, layerId, app, **kwargs):
+        return app.createLayer(layerId, CurveLayer, **kwargs)
+    
+    def getPolygonLayer(self, element):
+        layerId = element.l.id
+        # the index of the underscore character in <layerId>
+        _index = layerId.rfind('_')
+        # If the underscore character isn't present in <layerId>,
+        # i.e. <_index == -1>, then <_index+1 == 0>,
+        # that means take the whole string for <layerId>
+        # Set the new <layerId>
+        layerId = "areas_%s" % layerId[_index+1:]
+        app = self.renderer.app
+        return app.getLayer(layerId) if layerId in app.layerIndices else app.createLayer(layerId, MeshLayer)
+
+
 class Polygon(Manager):
     
     def parseWay(self, element, elementId):
@@ -121,8 +189,8 @@ class PolygonAcceptBroken(Polygon):
 
 class BaseManager(Manager):
     
-    def __init__(self, osm):
-        super().__init__(osm)
+    def __init__(self, data):
+        super().__init__(data)
     
     def render(self):
         osm = self.osm
@@ -130,7 +198,7 @@ class BaseManager(Manager):
         for rel in osm.relations:
             rel = osm.relations[rel]
             if rel.valid and rel.r:
-                renderer = rel.rr if rel.rr else self.renderer
+                renderer = rel.rr or self.renderer
                 renderer.preRender(rel)
                 if rel.t is Renderer.polygon:
                     renderer.renderPolygon(rel, osm)
@@ -145,7 +213,7 @@ class BaseManager(Manager):
         for way in osm.ways:
             way = osm.ways[way]
             if way.valid and way.r:
-                renderer = way.rr if way.rr else self.renderer
+                renderer = way.rr or self.renderer
                 renderer.preRender(way)
                 if way.t is Renderer.polygon:
                     renderer.renderPolygon(way, osm)
@@ -154,8 +222,7 @@ class BaseManager(Manager):
                 renderer.postRender(way)
         
         for node in osm.rNodes:
-            if node.valid and node.rr:
-                renderer = node.rr
-                renderer.preRender(node)
-                renderer.renderNode(node, osm)
-                renderer.postRender(node)
+            renderer = node.rr or self.nodeRenderer
+            #renderer.preRender(node)
+            renderer.renderNode(node, osm)
+            #renderer.postRender(node)

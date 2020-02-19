@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
 from mathutils import Vector
+from util import zero
 from util.osm import parseNumber
 from util.polygon import Polygon
 from renderer import Renderer
@@ -52,6 +53,8 @@ class Roof:
     
     assetPath = "roofs.blend"
     
+    groundLevelFactor = 1.5
+    
     directions = {
         'N': Vector((0., 1., 0.)),
         'NNE': Vector((0.38268, 0.92388, 0.)),
@@ -77,32 +80,122 @@ class Roof:
         self.roofIndices = []
         self.wallIndices = []
     
-    def init(self, element, data, minHeight, osm):
+    def init(self, element, data, osm, app):
         self.verts.clear()
         self.roofIndices.clear()
         self.wallIndices.clear()
         
+        self._levelHeight = None
+        self._levels = None
+        
+        self.valid = True
+        
         self.element = element
         
+        # minimum height
+        z1 = self.getMinHeight()
+        
         verts = self.verts
-        self.verts.extend( Vector((coord[0], coord[1], minHeight)) for coord in data )
+        self.verts.extend( Vector((coord[0], coord[1], z1)) for coord in data )
         # create a polygon located at <minHeight>
         self.polygon = Polygon(verts)
-        self.valid = self.polygon.n > 2
-        if self.valid:
-            # check the direction of vertices, it must be counterclockwise
-            self.polygon.checkDirection()
+        if self.polygon.n < 3:
+            self.valid = False
+            return
+        # check the direction of vertices, it must be counterclockwise
+        self.polygon.checkDirection()
+        
+        # calculate numerical dimensions for the building or building part
+        self.calculateDimensions(z1)
     
-    def getHeight(self, app):
+    def calculateDimensions(self, z1):
+        """
+        Calculate numerical dimensions for the building or building part
+        """        
+        roofHeight = self.getRoofHeight()
+        z2 = self.getHeight()
+        if z2 is None:
+            # no tag <height> or invalid value
+            roofVerticalPosition = self.levelHeight * (self.getLevels()-1+Roof.groundLevelFactor)
+            z2 = roofVerticalPosition + roofHeight
+        elif not z2:
+            # the tag <height> is equal to zero 
+            self.valid = False
+            return
+        else:
+            roofVerticalPosition = z2 - roofHeight
+        wallHeight = roofVerticalPosition - z1
+        # validity check
+        if wallHeight < 0.:
+            self.valid = False
+            return
+        elif wallHeight < zero:
+            # no building walls, just a roof
+            self.noWalls = True
+        else:
+            self.noWalls = False
+            self.wallHeight = wallHeight
+        
+        self.z1 = z1
+        self.z2 = z2
+        self.roofVerticalPosition = z1 if self.noWalls else roofVerticalPosition
+        self.roofHeight = roofHeight
+    
+    def getRoofHeight(self):
         tags = self.element.tags
         h = parseNumber(tags["roof:height"]) if "roof:height" in tags else None
         if h is None:
             # get the number of levels
             if "roof:levels" in tags:
                 h = parseNumber(tags["roof:levels"])
-            h = self.defaultHeight if h is None else h * app.levelHeight
-        self.h = h
+            h = h * self.levelHeight if h else self.defaultHeight
         return h
+
+    def getHeight(self):
+        element = self.element
+        return parseNumber(element.tags["height"]) if "height" in element.tags else None
+    
+    def getLevels(self, getDefault=True):
+        """
+        Returns the number of levels from the ground as defined by the OSM tag <building:levels>
+        """
+        if self._levels is None:
+            n = self.element.tags.get("building:levels")
+            if not n is None:
+                n = parseNumber(n)
+                if not n is None:
+                    n = math.ceil(n)
+                    if n < 1.:
+                        n = None
+            if n is None and getDefault:
+                n = self.r.getDefaultLevels(self.element, self.polygon)
+            self._levels = n
+        return self._levels
+    
+    def getMinLevel(self):
+        n = self.element.tags.get("building:min_level")
+        if not n is None:
+            n = parseNumber(n)
+            if not n is None:
+                n = math.ceil(n)
+                if n < 1.:
+                    n = None
+        return n
+    
+    def getMinHeight(self):
+        tags = self.element.tags
+        if "min_height" in tags:
+            z0 = parseNumber(tags["min_height"], 0.)
+        else:
+            numLevels = self.getMinLevel()
+            z0 = 0. if numLevels is None else self.levelHeight * (numLevels-1+Roof.groundLevelFactor)
+        return z0
+    
+    @property
+    def levelHeight(self):
+        if self._levelHeight is None:
+            self._levelHeight = self.r.getLevelHeight(self.element)
+        return self._levelHeight
     
     def render(self):
         r = self.r
@@ -124,16 +217,28 @@ class Roof:
             verts[i] = bm.verts.new(r.getVert(verts[i]))
         
         if wallIndices:
-            materialIndex = r.getWallMaterialIndex(self.element)
-            # create BMesh faces for the building walls
-            for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
-                f.material_index = materialIndex
+            self.renderWalls()
         
         if roofIndices:
-            materialIndex = r.getRoofMaterialIndex(self.element)
-            # create BMesh faces for the building roof
-            for f in (bm.faces.new(verts[i] for i in indices) for indices in roofIndices):
-                f.material_index = materialIndex
+            self.renderRoof()
+    
+    def renderWalls(self):
+        r = self.r
+        bm = r.bm
+        verts = self.verts
+        materialIndex = r.getWallMaterialIndex(self.element)
+        # create BMesh faces for the building walls
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.wallIndices):
+            f.material_index = materialIndex
+    
+    def renderRoof(self):
+        r = self.r
+        bm = r.bm
+        verts = self.verts
+        materialIndex = r.getRoofMaterialIndex(self.element)
+        # create BMesh faces for the building roof
+        for f in (bm.faces.new(verts[i] for i in indices) for indices in self.roofIndices):
+            f.material_index = materialIndex
     
     def processDirection(self):
         polygon = self.polygon

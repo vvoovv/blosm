@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -22,13 +22,17 @@ class Node:
     A class to represent an OSM node
     
     Some attributes:
+        l (app.Layer): layer used to place the related geometry to a specific Blender object
         tags (dict): OSM tags
+        m: A manager used during the rendering; if None, <manager.BaseManager> applies defaults
+            during the rendering
+        rr: A special renderer for the OSM node
         b (set): Here we store building indices (i.e. the indices of instances of
             the wrapper class <building.manager.Building> in Python list <buildings> of an instance
             of <building.manager.BuildingManager>)
         rr: A renderer for the OSM node
     """
-    __slots__ = ("tags", "lat", "lon", "coords", "b", "rr", "valid")
+    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "m", "rr", "valid")
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
@@ -36,6 +40,7 @@ class Node:
         self.lon = lon
         # projected coordinates
         self.coords = None
+        self.rr = None
         self.valid = True
     
     def getData(self, osm):

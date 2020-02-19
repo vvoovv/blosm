@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -17,30 +17,66 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
-import os, json, webbrowser, base64, math, gzip, struct
+import os, json, webbrowser, math, gzip, struct
 from urllib import request
+import bpy
+from mathutils import Vector
 
 import defs
-from .layer import Layer
+from renderer.layer import Layer
+from renderer.node_layer import NodeLayer
 from renderer import Renderer
 from terrain import Terrain
+from util.blender import makeActive
 from util.polygon import Polygon
+
+_isBlender280 = bpy.app.version[1] >= 80
+
+
+_values = (
+    (1,),
+    (1,),
+    (1,)
+)
 
 
 class App:
     
-    layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
+    #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
     
-    osmUrl = "http://overpass-api.de/api/map?bbox=%s,%s,%s,%s"
+    layerIds = [
+        "building", "highway", "railway",
+        "water", "forest",
+        "grass", "meadow", "grassland", "farmland"
+        "scrub", "heath",
+        "marsh", "reedbed", "bog", "swamp",
+        "glacier",
+        "bare_rock",
+        "scree", "shingle",
+        "sand",
+        "beach" # sand, gravel, pebbles
+    ]
     
-    osmUrl2 = "http://overpass-api.de/api/interpreter"
+    osmServers = {
+        "overpass-api.de": "http://overpass-api.de",
+        "openstreetmap.ru": "http://overpass.openstreetmap.ru",
+        "openstreetmap.fr": "http://overpass.openstreetmap.fr",
+        "kumi.systems": "http://overpass.kumi.systems"
+    }
     
-    terrainUrl = "https://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
+    devOsmServer = "kumi.systems" #"overpass-api.de"
+    
+    osmUrlPath = "/api/map?bbox=%s,%s,%s,%s"
+    
+    osmUrlPath2 = "/api/interpreter"
+    
+    terrainUrl = "http://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
     
     osmDir = "osm"
     
     terrainSubDir = "terrain"
+    
+    overlaySubDir = "overlay"
     
     osmFileName = "map%s.osm"
     
@@ -49,37 +85,116 @@ class App:
     # request to the Overpass server to get both ways and their nodes for the given way ids
     overpassWays = "((way(%s););node(w););out;"
     
+    bldgMaterialsFileName = "building_materials.blend"
+    
+    vegetationFileName = "vegetation.blend"
+    
+    # app mode
+    twoD = _values[0]
+    simple = _values[1]
+    realistic = _values[2]
+    
     layerOffsets = {
         "buildings": 0.2,
         "water": 0.2,
-        "forests": 0.1,
-        "vegetation": 0.,
-        "highways": 0.2,
-        "railways": 0.2
+        "forest": 0.1,
+        "vegetation": 0.
     }
+    
+    # default color (asphalt)
+    defaultColor = (0.0865, 0.090842, 0.088656)
     
     # diffuse colors for some layers
     colors = {
         "buildings": (0.309, 0.013, 0.012),
         "water": (0.009, 0.002, 0.8),
-        "forests": (0.02, 0.208, 0.007),
+        "forest": (0.02, 0.208, 0.007),
         "vegetation": (0.007, 0.558, 0.005),
-        "highways": (0.1, 0.1, 0.1),
+        
+        "roads_track": (0.564712, 0.332452, 0.066626),
+        
         "railways": (0.2, 0.2, 0.2)
     }
     
-    # Default value for <offset> parameter for the SHRINKWRAP modifier;
+    # Default value for <offset> parameter of the SHRINKWRAP modifier;
     # it's used to project flat meshes onto a terrain
     swOffset = 0.05
+    
+    # default z-coordinate of Blender objects (curves) representing OSM ways
+    wayZ = 0.3
+    
+    # Default value for <offset> parameter of the SHRINKWRAP modifier;
+    # it's used to project OSM ways represented as Blender curves onto a terrain
+    swWayOffset = 0.3
+    
+    # Value for <offset> parameter of the SHRINKWRAP modifier in the realistic mode
+    # to ensure correct results for dynamic paint. <dp> stands for dynamic paint.
+    swOffsetDp = 50.
     
     voidValue = -32768
     voidSubstitution = 0
     
     def __init__(self):
+        # path to the top directiy of the addon
+        self.basePath = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            os.pardir
+        )
+        # a cache for the license keys
+        self._keys = {}
+        # fill in the cache <self._keys> for the license keys
+        for licenseKey in (getattr(defs.Keys, attr) for attr in dir(defs.Keys) if not attr.startswith("__")):
+            self.has(licenseKey)
+        
         self.version = None
-        self.load()
+        self.isPremium = False
+        self.layerIndices = {}
+        self.layers = []
     
-    def initOsm(self, op, context, basePath, addonName):
+    def initOsm(self, op, context, addonName):
+        addon = context.scene.blender_osm
+        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+        
+        if app.has(defs.Keys.mode3d) and self.mode != "2D":
+            self.mode = App.realistic\
+                if app.has(defs.Keys.mode3dRealistic) and self.mode == "3Drealistic"\
+                else App.simple
+        else:
+            self.mode = App.twoD
+            
+        if self.mode is App.realistic:
+            _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
+            # first try the <assetsDir> from the addon GUI
+            assetsDir = self.assetsDir
+            if not assetsDir:
+                # second try the <assetsDir> from the addon preferences
+                assetsDir = prefs[addonName].preferences.assetsDir if addonName in prefs else None
+            if assetsDir:
+                assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
+                if not os.path.isdir(assetsDir):
+                    raise Exception(
+                        "The directory with assets %s doesn't exist. " % assetsDir +
+                        _setAssetsDirStr
+                    )
+                bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
+                if not os.path.isfile(bldgMaterialsFilepath):
+                    raise Exception(
+                        "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
+                        _setAssetsDirStr
+                    )
+                self.bldgMaterialsFilepath = bldgMaterialsFilepath
+                if self.forests:
+                    vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
+                    if not os.path.isfile(vegetationFilepath):
+                        raise Exception(
+                            "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
+                            _setAssetsDirStr
+                        )
+                    self.vegetationFilepath = vegetationFilepath
+            else:
+                raise Exception(_setAssetsDirStr)
+        
+        basePath = self.basePath
         self.op = op
         self.assetPath = os.path.join(basePath, "assets")
         self.setDataDir(context, basePath, addonName)
@@ -93,8 +208,13 @@ class App:
         # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
         self.meshes = {}
         
-        self.setAttributes(context)
-        addon = context.scene.blender_osm
+        self.layerIndices = {}
+        self.layers = []
+        
+        self.osmServer = self.osmServers[
+            prefs[addonName].preferences.osmServer if addonName in prefs else self.devOsmServer
+        ]
+        
         if addon.osmSource == "server":
             # find a file name for the OSM file
             osmFileName = self.osmFileName % ""
@@ -108,7 +228,7 @@ class App:
                     break
             self.osmFilepath = osmFilepath
             self.download(
-                self.osmUrl % (app.minLon, app.minLat, app.maxLon, app.maxLat),
+                self.osmServer + self.osmUrlPath % (app.minLon, app.minLat, app.maxLon, app.maxLat),
                 osmFilepath
             )
         else:
@@ -118,35 +238,44 @@ class App:
             self.incompleteRelations = []
             self.missingWays = set()
         
-        if not app.has(defs.Keys.mode3d):
-            self.mode = '2D'
-        
-        # check if have a terrain Blender object set
-        terrain = Terrain(context)
-        self.terrain = terrain if terrain.terrain else None
-        if self.terrain:
-            terrain.init()
-        
-        # manager (derived from manager.Manager) performing some processing
+        # managers (derived from manager.Manager) performing some processing
         self.managers = []
         
-        self.prepareLayers()
-        if self.terrain and self.singleObject and not self.layered:
-            print("Imported OpenStreetMap objects will be arranged into layers")
-            self.layered = True
+        # renderers (derived from renderer.Renderer) actually making 3D objects
+        self.renderers = []
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
     
-    def initTerrain(self, op, context, basePath, addonName):
-        self.setDataDir(context, basePath, addonName)
+    def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
+        addon = context.scene.blender_osm
+        
+        terrainObjectName =\
+            addon.terrainObject\
+            if context.scene.objects.get(addon.terrainObject.strip()) else\
+            (
+                Terrain.createFlatTerrain(
+                    self.minLon, self.minLat, self.maxLon, self.maxLat,
+                    self.projection,
+                    context
+                )
+                if createFlatTerrain else None
+            )
+        
+        # check if have a terrain Blender object set
+        terrain = Terrain(terrainObjectName, context)
+        self.terrain = terrain if terrain.terrain else None
+        if self.terrain:
+            terrain.init(createBvhTree)
+    
+    def initTerrain(self, context, addonName):
+        self.setDataDir(context, self.basePath, addonName)
         # create a sub-directory under <self.dataDir> for OSM files
         terrainDir = os.path.join(self.dataDir, self.terrainSubDir)
         self.terrainDir = terrainDir
         if not os.path.exists(terrainDir):
             os.makedirs(terrainDir)
         
-        self.setAttributes(context)
         self.terrainSize = 3600//int(self.terrainResolution)
         
         # we are going from top to down, that's why we call reversed()
@@ -162,20 +291,111 @@ class App:
                 missingPath
             )
     
+    def initOverlay(self, context, addonName):
+        from overlay import Overlay, overlayTypeData
+        addon = context.scene.blender_osm
+        data = overlayTypeData[addon.overlayType]
+        
+        # <addonName> can be used by some classes derived from <Overlay>
+        # to access addon settings
+        overlay = data[0](
+            addon.overlayUrl if addon.overlayType == "custom" else data[1],
+            data[2],
+            addonName
+        )
+        self.overlay = overlay
+        
+        self.setDataDir(context, self.basePath, addonName)
+        # create a sub-directory under <self.dataDir> for overlay tiles
+        j = os.path.join
+        overlayDir = j( j(self.dataDir, self.overlaySubDir), overlay.getOverlaySubDir() )
+        if not os.path.exists(overlayDir):
+            os.makedirs(overlayDir)
+        overlay.overlayDir = overlayDir
+        
+        self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
+
+    def initGeoJson(self, op, context, addonName):
+        addon = context.scene.blender_osm
+        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+        
+        if app.has(defs.Keys.mode3d) and self.mode != "2D":
+            self.mode = App.realistic\
+                if app.has(defs.Keys.mode3dRealistic) and self.mode == "3Drealistic"\
+                else App.simple
+        else:
+            self.mode = App.twoD
+            
+        if self.mode is App.realistic:
+            _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
+            # first try the <assetsDir> from the addon GUI
+            assetsDir = self.assetsDir
+            if not assetsDir:
+                # second try the <assetsDir> from the addon preferences
+                assetsDir = prefs[addonName].preferences.assetsDir if addonName in prefs else None
+            if assetsDir:
+                assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
+                if not os.path.isdir(assetsDir):
+                    raise Exception(
+                        "The directory with assets %s doesn't exist. " % assetsDir +
+                        _setAssetsDirStr
+                    )
+                bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
+                if not os.path.isfile(bldgMaterialsFilepath):
+                    raise Exception(
+                        "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
+                        _setAssetsDirStr
+                    )
+                self.bldgMaterialsFilepath = bldgMaterialsFilepath
+                if self.forests:
+                    vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
+                    if not os.path.isfile(vegetationFilepath):
+                        raise Exception(
+                            "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
+                            _setAssetsDirStr
+                        )
+                    self.vegetationFilepath = vegetationFilepath
+            else:
+                raise Exception(_setAssetsDirStr)
+        
+        basePath = self.basePath
+        self.op = op
+        self.assetPath = os.path.join(basePath, "assets")
+        
+        # <self.logger> may be set in <setup(..)>
+        self.logger = None
+        # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
+        self.meshes = {}
+        
+        self.layerIndices = {}
+        self.layers = []
+        
+        self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
+        
+        # managers (derived from manager.Manager) performing some processing
+        self.managers = []
+        
+        # renderers (derived from renderer.Renderer) actually making 3D objects
+        self.renderers = []
+        
+        # tangent to check if an angle of the polygon is straight
+        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
+    
     def setAttributes(self, context):
         """
         Copies properties from <context.scene.blender_osm>
         """
         addon = context.scene.blender_osm
         for p in dir(addon):
-            if not (p.startswith("__") or p in ("bl_rna", "rna_type")):
+            # don't know why <int> started to appear in <dir(addon)>
+            if not (p.startswith("__") or p in ("bl_rna", "rna_type", "int", "string")):
                 setattr(self, p, getattr(addon, p))
     
     def setDataDir(self, context, basePath, addonName):
         """
         Sets <self.dataDir>, i.e. path to data
         """
-        prefs = context.user_preferences.addons
+        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         j = os.path.join
         if addonName in prefs:
             dataDir = prefs[addonName].preferences.dataDir
@@ -189,17 +409,64 @@ class App:
             # set <self.dataDir> to basePath/../../../data (development version)
             self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
     
-    def prepareLayers(self):
-        layerIndices = {}
-        layers = []
-        i = 0
-        for layerId in self.layerIds:
-            if getattr(self, layerId):
-                layerIndices[layerId] = i
-                layers.append(Layer(layerId, self))
-                i += 1
-        self.layerIndices = layerIndices
-        self.layers = layers
+    def createLayers(self, osm):
+        layerIndices = self.layerIndices
+        kwargs = dict(swOffset=self.swOffsetDp) if self.mode is App.realistic else {}
+        
+        if osm.conditions:
+            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+            for c in osm.conditions:
+                manager = c[1]
+                layerId = c[3]
+                if layerId and not layerId in layerIndices:
+                    if manager:
+                        manager.createLayer(
+                            layerId,
+                            self,
+                            **kwargs
+                        )
+                    else:  
+                        self.createLayer(
+                            layerId,
+                            Layer,
+                            **kwargs
+                        )
+            # Replace <osm.conditions> with new entries
+            # where <layerId> is replaced by the related instance of <Layer>
+            osm.conditions = tuple(
+                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+                for c in osm.conditions
+            )
+        
+        # the same for <osm.nodeConditions> 
+        if osm.nodeConditions:
+            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+            for c in osm.nodeConditions:
+                manager = c[1]
+                layerId = c[3]
+                if layerId and not layerId in layerIndices:
+                    if manager:
+                        manager.createNodeLayer(
+                            layerId,
+                            self,
+                            **kwargs
+                        )
+                    else:  
+                        self.createLayer(
+                            layerId,
+                            NodeLayer,
+                            **kwargs
+                        )
+            # Replace <osm.nodeConditions> with new entries
+            # where <layerId> is replaced by the related instance of <Layer>
+            osm.nodeConditions = tuple(
+                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+                for c in osm.nodeConditions
+            )
+    
+    def initLayers(self):
+        for layer in self.layers:
+            layer.init()
     
     def process(self):
         logger = self.logger
@@ -214,38 +481,44 @@ class App:
         logger = self.logger
         if logger: logger.renderStart()
         
+        for r in self.renderers:
+            r.prepare()
+        
         Renderer.begin(self)
         for m in self.managers:
             m.render()
         Renderer.end(self)
         
+        for m in self.managers:
+            m.renderExtra()
+        
+        for r in self.renderers:
+            r.cleanup()
+        
         if logger: logger.renderEnd()
+    
+    def addRenderer(self, renderer):
+        self.renderers.append(renderer)
     
     def clean(self):
         self.meshes = None
         self.managers = None
+        self.renderers = None
     
     def has(self, key):
-        return self.license and (self.all or key in self.keys)
-    
-    def load(self):
-        # this directory
-        directory = os.path.dirname(os.path.realpath(__file__))
-        # app/..
-        directory = os.path.realpath( os.path.join(directory, os.pardir) )
-        path = os.path.join(directory, defs.App.file)
-        self.license = os.path.isfile(path)
-        if not self.license:
-            return
-        
-        with open(path, "r", encoding="ascii") as data:
-            data = json.loads( base64.b64decode( bytes.fromhex(data.read()) ).decode('ascii') )
-        
-        self.all = data.get("all", False)
-        self.keys = set(data.get("keys", ()))
-    
-    def show(self):
-        bpy.ops.prk.check_version_osm('INVOKE_DEFAULT')
+        has = self._keys.get(key)
+        if has is None:
+            if key == "mode3d":
+                has = True
+            elif key == "mode3dRealistic":
+                has = os.path.isdir(os.path.join(self.basePath, "realistic"))
+            elif key == "overlay":
+                has = os.path.isdir(os.path.join(self.basePath, "overlay"))
+            elif key == "geojson":
+                has = os.path.isdir(os.path.join(self.basePath, "geojson"))
+            self._keys[key] = has
+            
+        return has
     
     def download(self, url, filepath, data=None):
         print("Downloading the file from %s..." % url)
@@ -256,7 +529,7 @@ class App:
     
     def downloadOsmWays(self, ways, filepath):
         self.download(
-            self.osmUrl2,
+            self.osmServer + self.osmUrlPath2,
             filepath,
             self.overpassWays % ");way(".join(ways)
         )
@@ -275,11 +548,11 @@ class App:
         Download missing OSM ways with ids stored in <self.missingWays>,
         add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
         """
-        for relation, _id, members, tags, ci in self.incompleteRelations:
+        for relation, _id, members, tags, condition in self.incompleteRelations:
             # below there is the same code for a relation as in osm.parse(..)
             relation.process(members, tags, osm)
             if relation.valid:
-                skip = osm.processCondition(ci, relation, _id, osm.parseRelation)
+                skip = osm.processCondition(condition, relation, _id, osm.parseRelation)
                 if not _id in osm.relations and not skip:
                     osm.relations[_id] = relation
         # cleanup
@@ -287,7 +560,16 @@ class App:
         self.missingWays = None
     
     def getLayer(self, layerId):
-        return self.layers[ self.layerIndices.get(layerId) ]
+        layerIndex = self.layerIndices.get(layerId)
+        return None if layerIndex is None else self.layers[layerIndex] 
+    
+    def createLayer(self, layerId, layerConstructor, **kwargs):
+        layer = layerConstructor(layerId, self)
+        for k in kwargs:
+            setattr(layer, k, kwargs[k])
+        self.layerIndices[layerId] = len(self.layers)
+        self.layers.append(layer)
+        return layer
 
     def getMissingHgtFiles(self):
         """
@@ -329,11 +611,13 @@ class App:
         mesh.update()
         obj = bpy.data.objects.new("Terrain", mesh)
         obj["height_offset"] = minHeight
-        context.scene.objects.link(obj)
+        if _isBlender280:
+            context.scene.collection.objects.link(obj)
+        else:
+            context.scene.objects.link(obj)
         context.scene.blender_osm.terrainObject = obj.name
         # force smooth shading
-        obj.select = True
-        context.scene.objects.active = obj
+        makeActive(obj, context)
         bpy.ops.object.shade_smooth()
 
     def buildTerrain(self, verts, indices, heightOffset):
@@ -449,51 +733,58 @@ class App:
             prevYsize = y2-y
         
         return minHeight if heightOffset is None else heightOffset
-
-
-class OperatorPopup(bpy.types.Operator):
-    bl_idname = "prk.check_version_osm"
-    bl_label = ""
-    bl_description = defs.App.description
-    bl_options = {'INTERNAL'}
     
-    def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+    def print(self, value):
+        self.stateMessage = value
+        if self.area:
+            self.area.tag_redraw()
     
-    def execute(self, context):
-        webbrowser.open_new_tab(defs.App.url)
-        return {'FINISHED'}
+    def getExtentFromObject(self, obj, context):
+        """
+        Returns a tuple minLon, minLat, maxLon, maxLat
+        """
+        # transform <obj.bound_box> to the world system of coordinates
+        bound_box = tuple(obj.matrix_world @ Vector(v) for v in obj.bound_box)\
+            if _isBlender280 else\
+            tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
+        bbox = []
+        for i in (0,1):
+            for f in (min, max):
+                bbox.append(
+                    f( bound_box, key=lambda v: v[i] )[i]
+                )
+        bbox = (
+            self.projection.toGeographic(bbox[0], bbox[2]),
+            self.projection.toGeographic(bbox[1], bbox[3])
+        )
+        # minLon, minLat, maxLon, maxLat
+        return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]
     
-    def cancel(self, context):
-        webbrowser.open_new_tab(defs.App.url)
+    def loadExtensions(self, context=bpy.context):
+        """
+        Currently not used. Might be revisited later when a true extension appears
+        """
+        numExtensions = 0
+        import sys
+        # check if <bpyproj> is activated and is available in sys.modules
+        self.bpyproj = "bpyproj" in (context.preferences.addons if _isBlender280 else context.user_preferences.addons) and sys.modules.get("bpyproj")
+        if self.bpyproj:
+            numExtensions += 1
+        return numExtensions
     
-    def draw(self, context):
-        layout = self.layout
+    def setProjection(self, lat, lon):
+        import sys
         
-        iconPlaced = False
-        for label in defs.App.popupStrings:
-            if iconPlaced:
-                self.label(label)
-            else:
-                self.label(label, icon='INFO')
-                iconPlaced = True
-        
-        layout.separator()
-        layout.separator()
-        
-        self.label("Click to buy")
-    
-    def label(self, text, **kwargs):
-        row = self.layout.row()
-        row.alignment = "CENTER"
-        row.label(text, **kwargs)
+        projection = None
+        # check if <bpyproj> is activated and is available in sys.modules
+        bpyproj = "bpyproj" in (bpy.context.preferences.addons if _isBlender280 else bpy.context.user_preferences.addons) and sys.modules.get("bpyproj")
+        if bpyproj:
+            projection = bpyproj.getProjection(lat, lon)
+        if not projection:
+            from util.transverse_mercator import TransverseMercator
+            # fall back to the Transverse Mercator
+            projection = TransverseMercator(lat=lat, lon=lon)
+        self.projection = projection
 
 
 app = App()
-
-
-def register():
-    bpy.utils.register_module(__name__)
-
-def unregister():
-    bpy.utils.unregister_module(__name__)

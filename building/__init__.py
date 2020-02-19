@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -39,27 +39,3 @@ class Building:
         """
         for nodeId in self.element.nodeIds(osm):
             osm.nodes[nodeId].b.add(buildingIndex)
-    
-    def getHeight(self, element):
-        return parseNumber(element.tags["height"]) if "height" in element.tags else None
-    
-    def getRoofMinHeight(self, element, app):
-        # getting the number of levels
-        h = element.tags.get("building:levels")
-        if not h is None:
-            h = parseNumber(h)
-        if h is None:
-            h = app.defaultNumLevels
-        h *= app.levelHeight
-        return h
-    
-    def getMinHeight(self, element, app):
-        tags = element.tags
-        if "min_height" in tags:
-            z0 = parseNumber(tags["min_height"], 0.)
-        elif "building:min_level" in tags:
-            numLevels = parseNumber(tags["building:min_level"])
-            z0 = 0. if numLevels is None else numLevels * app.levelHeight
-        else:
-            z0 = 0.
-        return z0

@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,7 @@ class Logger:
     
     def numBuildings(self):
         app = self.app
-        if not (app.mode == '3D' and app.buildings):
+        if app.mode is app.twoD or not app.buildings:
             return
         for m in app.managers:
             if isinstance(m, BuildingManager):

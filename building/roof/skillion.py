@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -40,16 +40,17 @@ class RoofSkillion(Roof):
         self.projections = []
         self.angleToHeight = 1.
     
-    def init(self, element, data, minHeight, osm):
-        super().init(element, data, minHeight, osm)
+    def init(self, element, data, osm, app):
+        super().init(element, data, osm, app)
         self.projections.clear()
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         verts = self.verts
         polygon = self.polygon
         indices = polygon.indices
         n = polygon.n
         wallIndices = self.wallIndices
+        roofVerticalPosition = self.roofVerticalPosition
         
         # simply take <polygon> indices for the roof
         self.roofIndices.append(indices)
@@ -60,26 +61,30 @@ class RoofSkillion(Roof):
         projections = self.projections
         minZindex = self.maxProjIndex
         maxProj = projections[minZindex]
-        tan = self.h/self.polygonWidth
+        tan = self.roofHeight/self.polygonWidth
         # update <polygon.verts> with vertices moved along z-axis
         for i in range(n):
-            verts[indices[i]].z = roofMinHeight + (maxProj - projections[i]) * tan
+            verts[indices[i]].z = roofVerticalPosition + (maxProj - projections[i]) * tan
         # <polygon.normal> won't be used, so it won't be updated
         
+        # Imprtant: ensure that the first two vertices of each wall face will be always
+        # the lowest vertices located on the same height;
+        # that's important for the correct uv-mapping
+        
         indexOffset = len(verts)
-        if bldgMinHeight is None:
-            # <roofMinHeight> is exactly equal to the height of the bottom part of the building
+        if self.noWalls:
+            # <roofVerticalPosition> is exactly equal to the height of the bottom part of the building
             # check height of the neighbors of the vertex with the index <minZindex>
             
             # index of the left neighbor
             leftIndex = polygon.prev(minZindex)
             # index of the right neighbor
             rightIndex = polygon.next(minZindex)
-            if verts[ indices[leftIndex] ].z - roofMinHeight < zero:
+            if verts[ indices[leftIndex] ].z - roofVerticalPosition < zero:
                 # Not only the vertex <minZindex> preserves its height,
                 # but also its left neighbor
                 rightIndex = minZindex
-            elif verts[ indices[rightIndex] ].z - roofMinHeight < zero:
+            elif verts[ indices[rightIndex] ].z - roofVerticalPosition < zero:
                 # Not only the vertex <minZindex> preserves its height,
                 # but also its right neighbor
                 leftIndex = minZindex
@@ -94,9 +99,9 @@ class RoofSkillion(Roof):
             verts.append(Vector((
                 verts[indices[index]].x,
                 verts[indices[index]].y,
-                roofMinHeight
+                roofVerticalPosition
             )))
-            # a triangle that start at the vertex <rightIndex>
+            # a triangle that starts at the vertex <rightIndex>
             wallIndices.append((indices[rightIndex], indexOffset, indices[index]))
             while True:
                 prevIndex = index
@@ -107,7 +112,7 @@ class RoofSkillion(Roof):
                 verts.append(Vector((
                     verts[indices[index]].x,
                     verts[indices[index]].y,
-                    roofMinHeight
+                    roofVerticalPosition
                 )))
                 wallIndices.append((indexOffset, indexOffset + 1, indices[index], indices[prevIndex]))
                 indexOffset += 1
@@ -115,14 +120,15 @@ class RoofSkillion(Roof):
             wallIndices.append((indexOffset, indices[index], indices[prevIndex]))
         else:
             # vertices for the bottom part
-            verts.extend(Vector((v.x, v.y, bldgMinHeight)) for v in polygon.verts)
-            # the starting wall face
+            verts.extend(Vector((v.x, v.y, self.z1)) for v in polygon.verts)
+            # the starting wall face:
             wallIndices.append((indexOffset + n - 1, indexOffset, indices[0], indices[-1]))
+            # the rest of wall faces:
             wallIndices.extend(
                 (indexOffset + i - 1, indexOffset + i, indices[i], indices[i-1]) for i in range(1, n)
             )
         
         return True
     
-    def getHeight(self, op):
-        return RoofProfile.getHeight(self, op)
+    def getRoofHeight(self):
+        return RoofProfile.getRoofHeight(self)

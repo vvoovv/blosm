@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@ class Way:
         l (app.Layer): layer used to place the related geometry to a specific Blender object
         t: type for rendering (Render.polygon, Render.linestring)
         tags (dict): OSM tags
-        m: A manager used during the rendering, if None <manager.BaseManager> applies defaults
+        m: A manager used during the rendering; if None, <manager.BaseManager> applies defaults
             during the rendering
         r (bool): Defines if we need to render (True) or not (False) the OSM way
             in the function <manager.BaseManager.render(..)>

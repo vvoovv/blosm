@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -32,14 +32,14 @@ class RoofFlat(Roof):
     
     defaultHeight = 0.
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
+    def make(self, osm):
         polygon = self.polygon
         n = len(self.verts)
         
-        # Create sides for the prism with the height <bldgMaxHeight - bldgMinHeight>,
-        # that is based on the <polygon>
-        polygon.sidesPrism(bldgMaxHeight, self.wallIndices)
-        # vertices of the top part of the prism serve for the flat roof
+        # Extrude <polygon> in the direction of <z> axis to bring
+        # the extruded part to the height <bldgMaxHeight>
+        polygon.extrude(self.z2, self.wallIndices)
+        # fill the extruded part
         self.roofIndices.append( tuple(range(n, n+polygon.n)) )
         return True
 
@@ -51,22 +51,30 @@ class RoofFlatMulti(RoofFlat):
     """
     
     def __init__(self):
-        self.valid = True
         self.verts = []
         self.wallIndices = []
         self.polygons = []
+        # The line below is needed for consistency;
+        # it can be interpreted as the attribute that a roof is defined be the multipolygon
+        # rather than a polygon
+        self.polygon = None
     
-    def init(self, element, data, minHeight, osm):
+    def init(self, element, data, osm, app):
         # <data> isn't used it this class
         self.verts.clear()
         self.wallIndices.clear()
         self.polygons.clear()
         
+        self._levelHeight = None
+        self._levels = None
+        
+        self.valid = True
+        
         self.element = element
+        
+        self.calculateDimensions(self.getMinHeight())
     
-    def make(self, bldgMaxHeight, roofMinHeight, bldgMinHeight, osm):
-        if bldgMinHeight is None:
-            bldgMinHeight = roofMinHeight
+    def make(self, osm):
         element = self.element
         
         # create vertices for all linestrings of the multipolygon
@@ -75,7 +83,7 @@ class RoofFlatMulti(RoofFlat):
         indexOffset = 0
         for _l in element.ls:
             verts.extend(
-                Vector((v[0], v[1], bldgMaxHeight)) for v in element.getLinestringData(_l, osm)
+                Vector((v[0], v[1], self.z2)) for v in element.getLinestringData(_l, osm)
             )
             n = len(verts)
             
@@ -89,12 +97,11 @@ class RoofFlatMulti(RoofFlat):
         if not polygons:
             return False
         # vertices for the bottom  
-        verts.extend(Vector((verts[i].x, verts[i].y, bldgMinHeight)) for p in polygons for i in p.indices)
+        verts.extend(Vector((verts[i].x, verts[i].y, self.z1)) for p in polygons for i in p.indices)
         return True
     
     def render(self):
         r = self.r
-        element = self.element
         verts = self.verts
         polygons = self.polygons
         bm = r.bm
@@ -117,13 +124,9 @@ class RoofFlatMulti(RoofFlat):
         )
         
         # a magic function that does everything
-        geom = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
-        materialIndex = r.getRoofMaterialIndex(element)
-        # check the normal direction of the created faces and assign material to all BMesh faces
-        for f in geom["geom"]:
-            if isinstance(f, bmesh.types.BMFace):
-                pointNormalUpward(f)
-                f.material_index = materialIndex
+        self.renderRoofTexturedMulti(
+            bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=True, edges=edges)
+        )
         
         # create BMesh faces for the walls of the building
         indexOffset1 = 0
@@ -147,17 +150,17 @@ class RoofFlatMulti(RoofFlat):
             
             wallIndices.extend(
                 (
-                    polygon.indices[i-1],
                     indexOffset2 - 1 + (i if i else n),
                     indexOffset2 + i,
-                    polygon.indices[i]
+                    polygon.indices[i],
+                    polygon.indices[i-1]
                 )\
                 if keepDirection else\
                 (
-                    polygon.indices[i-1],
-                    polygon.indices[i],
                     indexOffset2 + i,
-                    indexOffset2 - 1 + (i if i else n)
+                    indexOffset2 - 1 + (i if i else n),
+                    polygon.indices[i-1],
+                    polygon.indices[i]
                 )\
                 for i in range(n)
             )
@@ -165,7 +168,25 @@ class RoofFlatMulti(RoofFlat):
             indexOffset1 += n
             indexOffset2 += n
         
-        materialIndex = r.getWallMaterialIndex(element)
+        self.renderWalls()
+        
+    def renderWalls(self):
+        """
+        The method can be overriden by a child class
+        """
+        verts = self.verts
+        bm = self.r.bm
+        wallIndices = self.wallIndices
+        
+        materialIndex = self.r.getWallMaterialIndex(self.element)
         # actual code to create BMesh faces for the building walls out of <verts> and <wallIndices>
         for f in (bm.faces.new(verts[i] for i in indices) for indices in wallIndices):
             f.material_index = materialIndex
+    
+    def renderRoofTexturedMulti(self, geom):
+        materialIndex = self.r.getRoofMaterialIndex(self.element)
+        # check the normal direction of the created faces and assign material to all BMesh faces
+        for f in geom["geom"]:
+            if isinstance(f, bmesh.types.BMFace):
+                pointNormalUpward(f)
+                f.material_index = materialIndex

@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2017 Vladimir Elistratov
+Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from parse import Osm
+from parse.osm import Osm
 from . import Relation
 from .multipolygon import Multipolygon
 
@@ -28,7 +28,8 @@ class Building(Relation):
     __slots__ = ("outline",)
     
     def __init__(self, osm):
-        if osm.app.mode == "2D":
+        app = osm.app
+        if app.mode is app.twoD:
             # OSM relation of the type 'building' makes sense only in the 3D mode
             self.valid = False
             return
