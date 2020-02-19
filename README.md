@@ -27,7 +27,7 @@ The detailed documentation is available [here](https://github.com/vvoovv/blender
 * River, lakes, forests, vegetation are imported as polygons. If a terrain is provided, they are projected on the terrain.
 * Imported roads, paths and railways have width. They are represented by Blender curves with a profile object. If a terrain is provided, roads are projected on the terrain.
 
-Buy the addon at [gumroad.com](https://gumroad.com/l/blender-osm)! By [purchasing](https://gumroad.com/l/blender-osm) the addon you support the addon development. All customers will get the addon source code under GPL license!
+Get the addon at [gumroad.com](https://gumroad.com/l/blender-osm)! You might prefer to pay some price for the addon to support its development. However it is completely optional. The addon source code is available under GPL license!
 
 The detailed documentation is available [here](https://github.com/vvoovv/blender-osm/wiki/Documentation).
 
