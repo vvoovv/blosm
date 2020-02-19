@@ -39,7 +39,7 @@ class Roof:
     lastLevelHeight = 1.2*3.
     levelHeight = 3.
     groundLevelHeight = 1.4*3
-    basementHeight = 1.
+    bottomHeight = 1.
     
     lastRoofLevelHeight = 2.7
     roofLevelHeight = 2.7

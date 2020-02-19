@@ -16,7 +16,7 @@ class LevelHeights:
     
     The same applies for the roof levels.
     
-    The basement height is always stored in the variable <self.basementHeight>.
+    The bottom height is always stored in the variable <self.bottomHeight>.
     """
     
     def __init__(self, footprint):
@@ -27,7 +27,7 @@ class LevelHeights:
         self.lastLevelHeight = None
         self.levelHeight = None
         self.groundLevelHeight = None
-        self.basementHeight = None
+        self.bottomHeight = None
         self.levelHeights = None
         
         self.lastRoofLevelHeight = None
@@ -54,12 +54,12 @@ class LevelHeights:
         footprint.height = h
         return h
     
-    def calculateBasementHeight(self, settings):
+    def calculateBottomHeight(self, settings):
         levelHeights = self.levelHeights
-        h = self.footprint.getStyleBlockAttr("basementHeight")
+        h = self.footprint.getStyleBlockAttr("bottomHeight")
         if h is None:
-            h = levelHeights.getBasementHeight() if levelHeights else settings.basementHeight
-        self.basementHeight = h
+            h = levelHeights.getBottomHeight() if levelHeights else settings.bottomHeight
+        self.bottomHeight = h
         return h
     
     def calculateGroundLevelHeight(self, settings):
@@ -162,7 +162,7 @@ class LevelHeights:
         if not levels:
             return 0.
         
-        h = self.calculateBasementHeight(settings)
+        h = self.calculateBottomHeight(settings)
         groundLevelHeight = self.calculateGroundLevelHeight(settings)
         h += groundLevelHeight
         
@@ -192,9 +192,9 @@ class LevelHeights:
             levelHeight = self.levelHeight
             levelHeights = self.levelHeights
             # Calculate the height for <minLevel>
-            # The heights of the basement and the ground level have been already
+            # The heights of the bottom and the ground level have been already
             # calculated in <self.calculateHeight()>
-            h = self.basementHeight + (self.groundLevelHeight if levelHeight else levelHeights.getLevelHeight(0))
+            h = self.bottomHeight + (self.groundLevelHeight if levelHeight else levelHeights.getLevelHeight(0))
             
             if minLevel > 1.:
                 # the height of the middle levels

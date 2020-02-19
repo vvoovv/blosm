@@ -33,7 +33,7 @@ class ItemRenderer:
     
     def renderCladding(self, building, item, face, uvs):
         # <item> could be the current item or its parent item.
-        # The latter is the case if there is no style block for the basement
+        # The latter is the case if there is no style block for the bottom
         
         materialId = ''
         claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")

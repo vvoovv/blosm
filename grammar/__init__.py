@@ -4,7 +4,7 @@ from .scope import *
 
 from item.div import Div as ItemDiv
 from item.level import Level as ItemLevel
-from item.basement import Basement as ItemBasement
+from item.bottom import Bottom as ItemBottom
 from item.window import Window as ItemWindow
 from item.balcony import Balcony as ItemBalcony
 from item.door import Door as ItemDoor
@@ -15,7 +15,7 @@ _perBuildingByDefault = {
     "lastLevelHeight": 1,
     "levelHeight": 1,
     "groundLevelHeight": 1,
-    "basementHeight": 1,
+    "bottomHeight": 1,
     "levelHeights": 1,
     "lastRoofLevelHeight": 1,
     "levelHeight": 1,
@@ -225,7 +225,7 @@ class Level(Item):
         super().__init__(defName, use, markup, condition, attrs)
         self.indices = indices
         self.isLevel = True
-        self.isBasement = False
+        self.isBottom = False
 
     def getItem(self, itemFactory, parent):
         return ItemLevel.getItem(itemFactory, parent, self)
@@ -289,15 +289,15 @@ class Dormer(Item):
         super().__init__(defName, use, markup, condition, attrs) 
 
 
-class Basement(Item):
+class Bottom(Item):
 
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         self.isLevel = True
-        self.isBasement = True
+        self.isBottom = True
         
     def getItem(self, itemFactory, parent):
-        return ItemBasement.getItem(itemFactory, parent, self)
+        return ItemBottom.getItem(itemFactory, parent, self)
         
 
 def useFrom(itemId):

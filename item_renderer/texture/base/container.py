@@ -8,7 +8,7 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 class Container(ContainerBase, ItemRenderer):
     """
-    The base class for the item renderers Facade, Div, Layer, Basement
+    The base class for the item renderers Facade, Div, Layer, Bottom
     """
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):

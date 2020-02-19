@@ -8,7 +8,7 @@ class Div:
     def init(self, itemRenderers, globalRenderer):
         self.Container.init(self, itemRenderers, globalRenderer)
         self.levelRenderer = itemRenderers["Level"]
-        self.basementRenderer = itemRenderers["Basement"]
+        self.bottomRenderer = itemRenderers["Bottom"]
     
     def render(self, item, indices, uvs):
         if item.markup:

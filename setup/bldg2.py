@@ -19,7 +19,7 @@ from item_renderer.texture.base import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
     Level as LevelRenderer,\
-    Basement as BasementRenderer,\
+    Bottom as BottomRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
     RoofProfile as RoofProfileRenderer,\
@@ -31,7 +31,7 @@ from item_renderer.texture.export import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
     Level as LevelRenderer,\
-    Basement as BasementRenderer,\
+    Bottom as BottomRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
     RoofProfile as RoofProfileRenderer,\
@@ -86,7 +86,7 @@ def setup(app, data):
             Facade = FacadeRenderer(),
             Div = DivRenderer(),
             Level = LevelRenderer(),
-            Basement = BasementRenderer(),
+            Bottom = BottomRenderer(),
             Door = DoorRenderer(),
             RoofFlat = RoofFlatRenderer(),
             RoofProfile = RoofProfileRenderer(),

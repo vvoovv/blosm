@@ -6,7 +6,7 @@ from ..container import Container as ContainerBase
 
 class Container(ContainerBase, ItemRenderer):
     """
-    The base class for the item renderers Facade, Div, Layer, Basement
+    The base class for the item renderers Facade, Div, Layer, Bottom
     """
     
     def __init__(self, exportMaterials):

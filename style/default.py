@@ -28,7 +28,7 @@ styles = {
         lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
         levelHeight = Value( RandomNormal(3.) ),
         groundLevelHeight = Value( RandomNormal(1.4*3) ),
-        basementHeight = Value( RandomNormal(1.) ),
+        bottomHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
             #Constant("dome"),
@@ -96,7 +96,7 @@ styles = {
                     Balcony()
                 ]
             ),
-            Basement(
+            Bottom(
                 markup = [
                     Window(
                         width = 1.,
@@ -111,7 +111,7 @@ styles = {
     Div(
         defName = "staircase",
         label = "Staircase",
-        basementHeight = 0,
+        bottomHeight = 0,
         markup = [
             Level(
                 indices = (0, 0),

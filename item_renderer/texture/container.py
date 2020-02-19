@@ -5,7 +5,7 @@ from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
 class Container(ItemRenderer):
     """
-    The base class for the item renderers Facade, Div, Layer, Basement
+    The base class for the item renderers Facade, Div, Layer, Bottom
     """
         
     def getItemRenderer(self, item):
@@ -48,14 +48,14 @@ class Container(ItemRenderer):
         # level items to be created out of <item>
         texVb = item.uvs[0][1]
         
-        # treat the basement
+        # treat the bottom
         if not footprint.minHeight:
-            basementHeight = item.getStyleBlockAttr("basementHeight")
-            if basementHeight is None:
-                basementHeight = levelHeights.basementHeight
-            if basementHeight:
+            bottomHeight = item.getStyleBlockAttr("bottomHeight")
+            if bottomHeight is None:
+                bottomHeight = levelHeights.bottomHeight
+            if bottomHeight:
                 indexBL, indexBR, texVb = geometry.generateLevelDiv(
-                    building, levelGroups.basement, item, self.basementRenderer, basementHeight,
+                    building, levelGroups.bottom, item, self.bottomRenderer, bottomHeight,
                     indexBL, indexBR,
                     texVb
                 )

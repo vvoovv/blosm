@@ -1,11 +1,11 @@
 from .container import Container
 
 
-class Basement(Container):
+class Bottom(Container):
     
     def __init__(self):
         super().__init__()
-        self.buildingPart = "basement"
+        self.buildingPart = "bottom"
 
     @classmethod
     def getItem(cls, itemFactory, parent, styleBlock):
