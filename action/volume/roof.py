@@ -165,3 +165,22 @@ class Roof:
         footprint.maxProjIndex = maxProjIndex
         # <polygon> width along the vector <d>
         footprint.polygonWidth = projections[maxProjIndex] - projections[minProjIndex]
+    
+    def calculateRoofHeight(self, footprint):
+        h = footprint.getStyleBlockAttr("roofHeight")
+        if h is None:
+            if not self.angleToHeight is None and "roofAngle" in footprint.styleBlock:
+                angle = footprint.getStyleBlockAttr("roofAngle")
+                if not angle is None:
+                    self.processDirection()
+                    h = self.angleToHeight * footprint.polygonWidth * math.tan(math.radians(angle))
+            if h is None:
+                if self.hasRoofLevels and "roofLevels" in footprint.styleBlock:
+                    h = self.calculateRoofLevelsHeight(self)
+                    if footprint.lastLevelOffset:
+                        h += footprint.lastLevelOffset
+                else:
+                    # default height of the roof
+                    h = self.height
+        footprint.roofHeight = h
+        return h

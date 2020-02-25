@@ -13,7 +13,7 @@ class Door(DoorBase, Container):
         Container.__init__(self)
         DoorBase.__init__(self)
     
-    def render(self, building, levelGroup, parentItem, indices, uvs):
+    def renderLevelGroup(self, building, levelGroup, parentItem, indices, uvs):
         face = self.r.createFace(building, indices)
         item = levelGroup.item
         if item.materialId is None:

@@ -93,7 +93,7 @@ class Rectangle:
             if levelGroup:
                 # Set the geometry for the <levelGroup.item>; division of a rectangle can only generate rectangles
                 levelGroup.item.geometry = self
-            renderer.render(
+            renderer.renderLevelGroup(
                 building, levelGroup, parentItem,
                 (indexBL, indexBR, indexTR, indexTL),
                 ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
@@ -109,7 +109,7 @@ class Rectangle:
         texUr = parentItem.uvs[1][0]
         # Set the geometry for the <group.item>; division of a rectangle can only generate rectangles
         group.item.geometry = self
-        itemRenderer.levelRenderer.getRenderer(group).render(
+        itemRenderer.levelRenderer.getRenderer(group).renderLevelGroup(
             building, group, parentItem,
             (indexBL, indexBR, parentIndices[2], parentIndices[3]),
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )

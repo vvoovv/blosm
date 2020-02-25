@@ -15,9 +15,9 @@ class Container(ItemRenderer):
         item.prepareMarkupItems()
         
         if item.styleBlock.markup[0].isLevel:
-            face = self.r.createFace(item.building, item.indices)
-            self.renderCladding(item.building, item, face, item.uvs)
-            return
+            #face = self.r.createFace(item.building, item.indices)
+            #self.renderCladding(item.building, item, face, item.uvs)
+            #return
             self.renderLevels(item)
         else:
             self.renderDivs(item)
@@ -66,7 +66,7 @@ class Container(ItemRenderer):
         minLevel = footprint.minLevel
         groupFound = not minLevel
         if numGroups > 1:
-            for i in range(numGroups-1):
+            for i in reversed(range(1, numGroups)):
                 group = groups[i]
                 if not groupFound and group.index1 <= minLevel <= group.index2:
                     groupFound = True
@@ -82,7 +82,7 @@ class Container(ItemRenderer):
         
         # the last level group
         geometry.generateLastLevelDiv(
-            self, building, groups[numGroups-1], item,
+            self, building, groups[0], item,
             indexBL, indexBR,
             texVb
         )
@@ -210,7 +210,7 @@ class Container(ItemRenderer):
         else:
             item.materialId = ""
     
-    def render(self, building, levelGroup, parentItem, indices, uvs):        
+    def renderLevelGroup(self, building, levelGroup, parentItem, indices, uvs):        
         face = self.r.createFace(building, indices)
         if levelGroup:
             item = levelGroup.item

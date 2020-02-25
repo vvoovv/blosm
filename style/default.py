@@ -27,12 +27,12 @@ styles = {
         )),
         lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
         levelHeight = Value( RandomNormal(3.) ),
-        groundLevelHeight = Value( RandomNormal(1.4*3) ),
+        #groundLevelHeight = Value( RandomNormal(1.4*3) ),
         bottomHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
             #Constant("dome"),
-            #Constant("flat"),
+            Constant("flat"),
             Constant("saltbox")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
@@ -64,6 +64,18 @@ styles = {
         defName = "brown_brick"
     ),
     Level(
+        defName = "level_window_balcony",
+        markup = [
+            Window(
+                width = 1.8,
+                height = 2.1,
+                rows = 1,
+                panels = 2
+            ),
+            Balcony()
+        ]
+    ),
+    Level(
         defName = "staircase",
         offset = (0.5, units.Level)
     ),
@@ -85,16 +97,19 @@ styles = {
         label = "Window and Balcony",
         markup = [
             Level(
-                indices = (0, -1),
-                markup = [
-                    Window(
-                        width = 1.8,
-                        height = 2.1,
-                        rows = 1,
-                        panels = 2
-                    ),
-                    Balcony()
-                ]
+                use = ("level_window_balcony",),
+                indices = (4, -1),
+                claddingMaterial = "plaster",
+                claddingColor = "blue"
+            ),
+            Level(
+                use = ("level_window_balcony",),
+                indices = (3, 3),
+                claddingColor = "green"
+            ),
+            Level(
+                use = ("level_window_balcony",),
+                indices = (0, 2)
             ),
             Bottom(
                 markup = [
@@ -114,12 +129,6 @@ styles = {
         bottomHeight = 0,
         markup = [
             Level(
-                indices = (0, 0),
-                markup = [
-                    Door(label = "entrance door")
-                ]
-            ),
-            Level(
                 repeat = False,
                 indices = (1, -1),
                 markup = [
@@ -130,6 +139,12 @@ styles = {
                         panels = 1
                     )
                 ]
+            ),
+            Level(
+                indices = (0, 0),
+                markup = [
+                    Door(label = "entrance door")
+                ]
             )
         ]
     ),
@@ -139,7 +154,7 @@ styles = {
         symmetry = symmetry.RightmostOfLast
     ),
     Facade(
-        use = ["brown_brick"],
+        use = ("brown_brick",),
         label = "front facade",
         condition = lambda facade: facade.front,
         # None or symmetry.MiddleOfLast or symmetry.RightmostOfLast
@@ -148,18 +163,18 @@ styles = {
         symmetryFlip = True,
         markup = [
             Div(
-                use = ["window_and_balcony"],
+                use = ("window_and_balcony",),
                 id = "main_section",
                 label = "Window and Balcony"
             ),
             Div(
-                use = ["staircase"],
+                use = ("staircase",),
                 label = "Staircase"
             )
         ] 
     ),
     Facade(
-        use = ["brown_brick"],
+        use = ("brown_brick",),
         label = "back facade",
         condition = lambda facade: facade.back,
         markup = [
@@ -167,8 +182,8 @@ styles = {
                 indices = (0, -1),
                 markup = [
                     Balcony(),
-                    Window(use = "back_facade_window"),
-                    Window(use = "back_facade_window")
+                    Window(use = ("back_facade_window",)),
+                    Window(use = ("back_facade_window",))
                 ]
             )
         ]
@@ -183,11 +198,11 @@ styles = {
         condition = lambda side: side.front,
         markup = [
             Div(
-                use = ["roof_side"],
+                use = ("roof_side",),
                 markup = [
                     # openable skylight or roof window
-                    Window(use = "roof_window"),
-                    Window(use = "roof_window")
+                    Window(use = ("roof_window",)),
+                    Window(use = ("roof_window",))
                 ]
             )
         ]
@@ -196,7 +211,7 @@ styles = {
         condition = lambda side: side.back,
         markup = [
             Div(
-                use = ["roof_side"],
+                use = ("roof_side",),
                 markup = [
                     Dormer(), Dormer()
                 ]

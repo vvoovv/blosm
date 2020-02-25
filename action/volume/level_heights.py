@@ -35,7 +35,7 @@ class LevelHeights:
         self.roofLevelHeight0 = None
         self.roofLevelHeights = None
 
-    def calculateHeight(self, settings):
+    def calculateHeight(self, volumeGenerator):
         footprint = self.footprint
         
         self.levelHeight = footprint.getStyleBlockAttr("levelHeight")
@@ -44,30 +44,31 @@ class LevelHeights:
         
         h = footprint.getStyleBlockAttr("height")
         if h is None:
-            h = self.calculateLevelsHeight(settings)
-            h += self.calculateRoofHeight(settings)
+            h = self.calculateLevelsHeight(volumeGenerator)
+            h += volumeGenerator.calculateRoofHeight(footprint)
         else:
             # calculate roof height
             # calculate last level offset in the function below
-            self.calculateLevelsHeight(settings)
-            self.calculateRoofHeight(settings)
+            self.calculateLevelsHeight(volumeGenerator)
+            volumeGenerator.calculateRoofHeight(footprint)
         footprint.height = h
         return h
     
-    def calculateBottomHeight(self, settings):
+    def calculateBottomHeight(self, volumeGenerator):
         levelHeights = self.levelHeights
         h = self.footprint.getStyleBlockAttr("bottomHeight")
         if h is None:
-            h = levelHeights.getBottomHeight() if levelHeights else settings.bottomHeight
+            h = levelHeights.getBottomHeight() if levelHeights else volumeGenerator.bottomHeight
         self.bottomHeight = h
         return h
     
-    def calculateGroundLevelHeight(self, settings):
+    def calculateGroundLevelHeight(self, volumeGenerator):
         levelHeight = self.levelHeight
         levelHeights = self.levelHeights
         h = self.footprint.getStyleBlockAttr("groundLevelHeight")
         if h is None:
-            h = levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else settings.groundLevelHeight)
+            h = levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else volumeGenerator.groundLevelHeight)
+            self.groundLevelHeight = h
         else:
             if levelHeights:
                 # override or set the height of the ground level
@@ -76,12 +77,12 @@ class LevelHeights:
                 self.groundLevelHeight = h
         return h
     
-    def calculateLastLevelHeight(self, settings):
+    def calculateLastLevelHeight(self, volumeGenerator):
         levelHeight = self.levelHeight
         levelHeights = self.levelHeights
         h = self.footprint.getStyleBlockAttr("lastLevelHeight")
         if h is None:
-            h = levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else settings.lastLevelHeight)
+            h = levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else volumeGenerator.lastLevelHeight)
         else:
             if levelHeights:
                 # override or set the height of the last level
@@ -89,34 +90,14 @@ class LevelHeights:
             else:
                 self.lastLevelHeight = h
         return h
-    
-    def calculateRoofHeight(self, settings):
-        footprint = self.footprint
-        h = footprint.getStyleBlockAttr("roofHeight")
-        if h is None:
-            if not settings.angleToHeight is None and "roofAngle" in footprint.styleBlock:
-                angle = footprint.getStyleBlockAttr("roofAngle")
-                if not angle is None:
-                    settings.processDirection()
-                    h = settings.angleToHeight * footprint.polygonWidth * math.tan(math.radians(angle))
-            if h is None:
-                if settings.hasRoofLevels and "roofLevels" in footprint.styleBlock:
-                    h = self.calculateRoofLevelsHeight(settings)
-                    if footprint.lastLevelOffset:
-                        h += footprint.lastLevelOffset
-                else:
-                    # default height of the roof
-                    h = settings.height
-        footprint.roofHeight = h
-        return h
 
-    def calculateRoofLevelsHeight(self, settings):
+    def calculateRoofLevelsHeight(self, volumeGenerator):
         footprint = self.footprint
         levels = footprint.getStyleBlockAttr("roofLevels")
         footprint.roofLevels = levels
         if not levels:
             # the default roof height
-            return settings.height
+            return volumeGenerator.height
         
         levelHeight = footprint.getStyleBlockAttr("roofLevelHeight")
         self.roofLevelHeight = levelHeight
@@ -126,7 +107,7 @@ class LevelHeights:
         
         h = footprint.getStyleBlockAttr("roofLevelHeight0")
         if h is None:
-            h = levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else settings.roofLevelHeight0)
+            h = levelHeight if levelHeight else (levelHeights.getLevelHeight(0) if levelHeights else volumeGenerator.roofLevelHeight0)
         else:
             if levelHeights:
                 # override or set the height of the ground level
@@ -138,7 +119,7 @@ class LevelHeights:
             # the height of the last level
             lastLevelHeight = footprint.getStyleBlockAttr("lastRoofLevelHeight")
             if h is None:
-                lastLevelHeight = levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else settings.lastRoofLevelHeight)
+                lastLevelHeight = levelHeight if levelHeight else (levelHeights.getLevelHeight(-1) if levelHeights else volumeGenerator.lastRoofLevelHeight)
             else:
                 if levelHeights:
                     # override or set the height of the last level
@@ -155,15 +136,15 @@ class LevelHeights:
                     h += (levels-2.)*levelHeight
         return h
     
-    def calculateLevelsHeight(self, settings):
+    def calculateLevelsHeight(self, volumeGenerator):
         footprint = self.footprint
         levels = footprint.getStyleBlockAttr("levels")
         footprint.levels = levels
         if not levels:
             return 0.
         
-        h = self.calculateBottomHeight(settings)
-        groundLevelHeight = self.calculateGroundLevelHeight(settings)
+        h = self.calculateBottomHeight(volumeGenerator)
+        groundLevelHeight = self.calculateGroundLevelHeight(volumeGenerator)
         h += groundLevelHeight
         
         if levels == 1.:
@@ -171,7 +152,7 @@ class LevelHeights:
             lastLevelHeight = groundLevelHeight
         else:
             # the height of the last level
-            lastLevelHeight = self.calculateLastLevelHeight(settings)
+            lastLevelHeight = self.calculateLastLevelHeight(volumeGenerator)
             h += lastLevelHeight
             if levels > 2.:
                 # the height of the middle levels

@@ -8,7 +8,7 @@ from mathutils import Vector
 class RoofFlat(Roof):
     
     # default roof height
-    height = 1.
+    height = 1.5
     
     def __init__(self, data, itemStore, itemFactory, roofRenderer):
         super().__init__(data, itemStore, itemFactory)
@@ -81,3 +81,11 @@ class RoofFlat(Roof):
         item.geometry = geometry
         # assign uv-coordinates (i.e. surface coordinates on the facade plane)
         item.uvs = geometry.getUvs(width, height)
+    
+    def calculateRoofHeight(self, footprint):
+        h = footprint.getStyleBlockAttr("roofHeight")
+        if h is None:
+            # default height of the roof
+            h = self.height
+        footprint.roofHeight = h
+        return h
