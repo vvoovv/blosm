@@ -1,4 +1,4 @@
-from .item_renderer import ItemRenderer
+from .item_renderer import ItemRendererMixin
 from .container import Container
 from ..facade import Facade as FacadeBase
 from ..div import Div as DivBase
@@ -17,7 +17,7 @@ class Facade(FacadeBase, Container):
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
-        Container.__init__(self)
+        Container.__init__(self, exportMaterials=False)
 
 
 class Div(DivBase, Container):
@@ -25,7 +25,7 @@ class Div(DivBase, Container):
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
-        Container.__init__(self)
+        Container.__init__(self, exportMaterials=False)
 
 
 class Level(LevelBase, Container):
@@ -33,7 +33,7 @@ class Level(LevelBase, Container):
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
-        Container.__init__(self)
+        Container.__init__(self, exportMaterials=False)
         LevelBase.__init__(self)
 
 
@@ -42,15 +42,15 @@ class Bottom(BottomBase, Container):
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
-        Container.__init__(self)
+        Container.__init__(self, exportMaterials=False)
         BottomBase.__init__(self)
 
 
-class RoofFlat(RoofFlatBase, ItemRenderer):
+class RoofFlat(RoofFlatBase, ItemRendererMixin):
     pass
 
 
-class RoofGeneratrix(RoofGeneratrixBase, ItemRenderer):
+class RoofGeneratrix(RoofGeneratrixBase, ItemRendererMixin):
     pass
 
 
@@ -58,5 +58,5 @@ class RoofPyramidal(RoofPyramidalBase):
     pass
 
 
-class RoofProfile(RoofProfileBase, ItemRenderer):
+class RoofProfile(RoofProfileBase, ItemRendererMixin):
     pass

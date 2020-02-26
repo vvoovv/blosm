@@ -8,7 +8,7 @@ _claddingMaterialTemplateFilename = "building_material_templates.blend"
 _claddingMaterialTemplateName = "tiles_color_template"
 
 
-class ItemRenderer:
+class ItemRendererMixin:
     """
     A mixin class
     """

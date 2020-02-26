@@ -1,10 +1,10 @@
 import os
 import bpy
-from .item_renderer import ItemRenderer, _textureDir
+from .item_renderer import ItemRendererMixin, _textureDir
 from ..container import Container as ContainerBase
 
 
-class Container(ContainerBase, ItemRenderer):
+class Container(ContainerBase, ItemRendererMixin):
     """
     The base class for the item renderers Facade, Div, Layer, Bottom
     """

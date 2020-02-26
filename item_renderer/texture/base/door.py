@@ -10,7 +10,7 @@ class Door(DoorBase, Container):
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
-        Container.__init__(self)
+        Container.__init__(self, exportMaterials=False)
         DoorBase.__init__(self)
     
     def renderLevelGroup(self, building, levelGroup, parentItem, indices, uvs):

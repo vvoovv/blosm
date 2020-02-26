@@ -1,12 +1,12 @@
 import os
 import bpy
-from .item_renderer import ItemRenderer
+from .item_renderer import ItemRendererMixin
 from ..container import Container as ContainerBase
 
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
-class Container(ContainerBase, ItemRenderer):
+class Container(ContainerBase, ItemRendererMixin):
     """
     The base class for the item renderers Facade, Div, Layer, Bottom
     """

@@ -7,6 +7,9 @@ class Container(ItemRenderer):
     """
     The base class for the item renderers Facade, Div, Layer, Bottom
     """
+    
+    def __init__(self, exportMaterials):
+        super().__init__(exportMaterials)
         
     def getItemRenderer(self, item):
         return self.itemRenderers[item.__class__.__name__]

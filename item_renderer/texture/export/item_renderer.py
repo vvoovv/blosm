@@ -8,7 +8,7 @@ _materialTemplateFilename = "building_material_templates.blend"
 _materialTemplateName = "export_template"
 
 
-class ItemRenderer:
+class ItemRendererMixin:
     """
     A mixin class
     """

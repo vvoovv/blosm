@@ -1,4 +1,4 @@
-from .item_renderer import ItemRenderer
+from .item_renderer import ItemRendererMixin
 from .container import Container
 from ..facade import Facade as FacadeBase
 from ..div import Div as DivBase
@@ -46,13 +46,13 @@ class Bottom(BottomBase, Container):
         BottomBase.__init__(self)
 
 
-class RoofFlat(RoofFlatBase, ItemRenderer):
+class RoofFlat(RoofFlatBase, ItemRendererMixin):
     
     def __init__(self):
         super().__init__(exportMaterials=True)
 
 
-class RoofGeneratrix(RoofGeneratrixBase, ItemRenderer):
+class RoofGeneratrix(RoofGeneratrixBase, ItemRendererMixin):
     
     def __init__(self, generatrix):
         super().__init__(generatrix, exportMaterials=True)
@@ -62,7 +62,7 @@ class RoofPyramidal(RoofPyramidalBase):
     pass
 
 
-class RoofProfile(RoofProfileBase, ItemRenderer):
+class RoofProfile(RoofProfileBase, ItemRendererMixin):
     
-    def __init__(self, generatrix):
+    def __init__(self):
         super().__init__(exportMaterials=True)
