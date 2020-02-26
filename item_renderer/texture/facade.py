@@ -38,7 +38,9 @@ class Facade:
                         facade.styleBlock = None
                 else:
                     # no style block suits the <facade>
-                    r.createFace(building, facade.indices)
+                    face = r.createFace(building, facade.indices)
+                    # use style of <footprint> to render cladding for <facade>
+                    self.renderCladding(building, footprint, face, facade.uvs)
         else:
             # simply create BMFaces here
             for facade in footprint.facades:

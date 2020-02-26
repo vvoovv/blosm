@@ -3,6 +3,23 @@ from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
 
+class RenderState:
+    """
+    The class instance hold
+    """
+    
+    def __init__(self):
+        # <indexBL> and <indexBR> are indices of the bottom vertices of an level item to be created
+        # in <Container.renderLevels(..)> out of the parent item
+        # The prefix <BL> means "bottom left"
+        self.indexBL = 0
+        # The prefix <BR> means "bottom rights"
+        self.indexBR = 0
+        # <texVb> is the current V-coordinate for texturing the bottom vertices of
+        # level items to be created in <Container.renderLevels(..)> out of the parent item
+        self.texVb = 0
+        
+
 class Container(ItemRenderer):
     """
     The base class for the item renderers Facade, Div, Layer, Bottom
@@ -10,6 +27,7 @@ class Container(ItemRenderer):
     
     def __init__(self, exportMaterials):
         super().__init__(exportMaterials)
+        self.renderState = RenderState()
         
     def getItemRenderer(self, item):
         return self.itemRenderers[item.__class__.__name__]
@@ -42,14 +60,15 @@ class Container(ItemRenderer):
         building = item.building
         levelHeights = footprint.levelHeights
         
+        rs = self.renderState
         # <indexBL> and <indexBR> are indices of the bottom vertices of an level item to be created
         # The prefix <BL> means "bottom left"
-        indexBL = parentIndices[0]
+        rs.indexBL = parentIndices[0]
         # The prefix <BR> means "bottom rights"
-        indexBR = parentIndices[1]
+        rs.indexBR = parentIndices[1]
         # <texVb> is the current V-coordinate for texturing the bottom vertices of
         # level items to be created out of <item>
-        texVb = item.uvs[0][1]
+        rs.texVb = item.uvs[0][1]
         
         # treat the bottom
         if not footprint.minHeight:
@@ -57,10 +76,9 @@ class Container(ItemRenderer):
             if bottomHeight is None:
                 bottomHeight = levelHeights.bottomHeight
             if bottomHeight:
-                indexBL, indexBR, texVb = geometry.renderLevelGroup(
+                geometry.renderLevelGroup(
                     building, levelGroups.bottom, item, self.bottomRenderer, bottomHeight,
-                    indexBL, indexBR,
-                    texVb
+                    rs
                 )
         
         # treat the level groups
@@ -77,17 +95,15 @@ class Container(ItemRenderer):
                     height = levelHeights.getLevelHeight(group.index1)\
                         if group.singleLevel else\
                         levelHeights.getHeight(group.index1, group.index2)
-                    indexBL, indexBR, texVb = geometry.renderLevelGroup(
+                    geometry.renderLevelGroup(
                         building, group, item, self.levelRenderer.getRenderer(group), height,
-                        indexBL, indexBR,
-                        texVb
+                        rs
                     )
         
         # the last level group
         geometry.renderLastLevelGroup(
             self, building, groups[0], item,
-            indexBL, indexBR,
-            texVb
+            rs
         )
     
     def renderDivs(self, item):

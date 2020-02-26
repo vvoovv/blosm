@@ -76,7 +76,7 @@ class Rectangle:
     
     def renderLevelGroup(self,
             building, levelGroup, parentItem, renderer, height,
-            indexBL, indexBR, texVb
+            rs
         ):
             verts = building.verts
             # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
@@ -87,20 +87,22 @@ class Rectangle:
             # to be created out of <parentItem>
             texUl = parentItem.uvs[0][0]
             texUr = parentItem.uvs[1][0]
-            verts.append(verts[indexBL] + height*zAxis)
-            verts.append(verts[indexBR] + height*zAxis)
-            texVt = texVb + height
+            verts.append(verts[rs.indexBL] + height*zAxis)
+            verts.append(verts[rs.indexBR] + height*zAxis)
+            texVt = rs.texVb + height
             if levelGroup:
                 # Set the geometry for the <levelGroup.item>; division of a rectangle can only generate rectangles
                 levelGroup.item.geometry = self
             renderer.renderLevelGroup(
                 building, levelGroup, parentItem,
-                (indexBL, indexBR, indexTR, indexTL),
-                ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
+                (rs.indexBL, rs.indexBR, indexTR, indexTL),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
             )
-            return indexTL, indexTR, texVt
+            rs.indexBL = indexTL
+            rs.indexBR = indexTR
+            rs.texVb = texVt
     
-    def renderLastLevelGroup(self, itemRenderer, building, levelGroup, parentItem, indexBL, indexBR, texVb):
+    def renderLastLevelGroup(self, itemRenderer, building, levelGroup, parentItem, rs):
         parentIndices = parentItem.indices
         texVt = parentItem.uvs[2][1]
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
@@ -111,7 +113,7 @@ class Rectangle:
         levelGroup.item.geometry = self
         itemRenderer.levelRenderer.getRenderer(levelGroup).renderLevelGroup(
             building, levelGroup, parentItem,
-            (indexBL, indexBR, parentIndices[2], parentIndices[3]),
-            ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
+            (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
+            ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
         )
         
