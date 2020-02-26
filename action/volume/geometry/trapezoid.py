@@ -17,7 +17,7 @@ class TrapezoidRV:
             (0, v)
         )
     
-    def generateDivs(self,
+    def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
             indexLB, indexLT, texUl, texVlt,
             startIndex
@@ -58,20 +58,20 @@ class TrapezoidRV:
             texVlt = texVrt
         return indexLB, indexLT, texUl, texVlt, startIndex
 
-    def generateLastDiv(self, itemRenderer, item, lastItem, indexLB, indexLT, texUl, texVlt, startIndex):
+    def renderLastDiv(self, itemRenderer, parentItem, lastItem, indexLB, indexLT, texUl, texVlt, startIndex):
         # <startIndex> is not used by the <TrapezoidRV> geometry
-        parentIndices = item.indices
-        # <texUr> is the right U-coordinate for the rectangular item to be created out of <item>
-        texUr = item.uvs[1][0]
+        parentIndices = parentItem.indices
+        # <texUr> is the right U-coordinate for the rectangular item to be created out of <parentItem>
+        texUr = parentItem.uvs[1][0]
         # <texVb> is the V-coordinate for bottom vertices of the trapezoid item
-        # to be created out of <item>
-        texVb = item.uvs[0][1]
+        # to be created out of <parentItem>
+        texVb = parentItem.uvs[0][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
         itemRenderer.getItemRenderer(lastItem).render(
             lastItem,
             (indexLB, parentIndices[1], parentIndices[2], indexLT),
-            ( (texUl, texVb), (texUr, texVb), (texUr, item.uvs[2][1]), (texUl, texVlt) )
+            ( (texUl, texVb), (texUr, texVb), (texUr, parentItem.uvs[2][1]), (texUl, texVlt) )
         )
 
 
@@ -80,7 +80,7 @@ class TrapezoidChainedRV:
     A sequence of adjoining right-angled trapezoids with the right angles at the bottom side and
     parallel sides along the vertical (z) axis
     """
-    def generateDivs(self,
+    def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
             indexLB, indexLT, texUl, texVlt,
             startIndex
@@ -155,14 +155,14 @@ class TrapezoidChainedRV:
             startIndex = stopIndexPlus1
         return indexLB, indexLT, texUl, texVlt, startIndex
     
-    def generateLastDiv(self, itemRenderer, item, lastItem, indexLB, indexLT, texUl, texVlt, startIndex):
-        parentIndices = item.indices
-        uvs = item.uvs
-        # <texUr> is the right U-coordinate for the rectangular item to be created out of <item>
-        texUr = item.uvs[1][0]
+    def renderLastDiv(self, itemRenderer, parenItem, lastItem, indexLB, indexLT, texUl, texVlt, startIndex):
+        parentIndices = parenItem.indices
+        uvs = parenItem.uvs
+        # <texUr> is the right U-coordinate for the rectangular item to be created out of <parenItem>
+        texUr = parenItem.uvs[1][0]
         # <texVb> is the V-coordinate for bottom vertices of the trapezoid item
-        # to be created out of <item>
-        texVb = item.uvs[0][1]
+        # to be created out of <parenItem>
+        texVb = parenItem.uvs[0][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
         chainedTrapezoid = startIndex > 3
@@ -175,9 +175,9 @@ class TrapezoidChainedRV:
             if chainedTrapezoid else\
             (indexLB, parentIndices[1], parentIndices[2], indexLT),
             # UV-coordinates
-            ( (texUl, texVb), (texUr, texVb), (texUr, item.uvs[2][1]) ) +\
+            ( (texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]) ) +\
                 tuple( uvs[i] for i in range(3, startIndex) ) +\
                 ((texUl, texVlt),)
             if chainedTrapezoid else\
-            ( (texUl, texVb), (texUr, texVb), (texUr, item.uvs[2][1]), (texUl, texVlt) )
+            ( (texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]), (texUl, texVlt) )
         )

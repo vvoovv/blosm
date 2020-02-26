@@ -19,7 +19,7 @@ class Rectangle:
             (0, v)
         )
     
-    def generateDivs(self,
+    def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
             indexLB, indexLT, texUl, texVt,
             startIndex
@@ -57,15 +57,15 @@ class Rectangle:
             texUl = texUr
         return indexLB, indexLT, texUl, texVt, startIndex
     
-    def generateLastDiv(self, itemRenderer, item, lastItem, indexLB, indexLT, texUl, texVt, startIndex):
+    def renderLastDiv(self, itemRenderer, parentItem, lastItem, indexLB, indexLT, texUl, texVt, startIndex):
         # <texVt> and <startIndex> are not used by the <Rectangle> geometry
-        parentIndices = item.indices
-        # <texUr> is the right U-coordinate for the rectangular item to be created out of <item>
-        texUr = item.uvs[1][0]
+        parentIndices = parentItem.indices
+        # <texUr> is the right U-coordinate for the rectangular item to be created out of <parentItem>
+        texUr = parentItem.uvs[1][0]
         # <texVb> and <texVt> are the bottom (b) and top (t) V-coordinates for the rectangular item
-        # to be created out of <item>
-        texVb = item.uvs[0][1]
-        texVt = item.uvs[3][1]
+        # to be created out of <parentItem>
+        texVb = parentItem.uvs[0][1]
+        texVt = parentItem.uvs[3][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
         itemRenderer.getItemRenderer(lastItem).render(
@@ -74,7 +74,7 @@ class Rectangle:
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
         )
     
-    def generateLevelDiv(self,
+    def renderLevelGroup(self,
             building, levelGroup, parentItem, renderer, height,
             indexBL, indexBR, texVb
         ):
@@ -100,7 +100,7 @@ class Rectangle:
             )
             return indexTL, indexTR, texVt
     
-    def generateLastLevelDiv(self, itemRenderer, building, group, parentItem, indexBL, indexBR, texVb):
+    def renderLastLevelGroup(self, itemRenderer, building, levelGroup, parentItem, indexBL, indexBR, texVb):
         parentIndices = parentItem.indices
         texVt = parentItem.uvs[2][1]
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
@@ -108,9 +108,9 @@ class Rectangle:
         texUl = parentItem.uvs[0][0]
         texUr = parentItem.uvs[1][0]
         # Set the geometry for the <group.item>; division of a rectangle can only generate rectangles
-        group.item.geometry = self
-        itemRenderer.levelRenderer.getRenderer(group).renderLevelGroup(
-            building, group, parentItem,
+        levelGroup.item.geometry = self
+        itemRenderer.levelRenderer.getRenderer(levelGroup).renderLevelGroup(
+            building, levelGroup, parentItem,
             (indexBL, indexBR, parentIndices[2], parentIndices[3]),
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
         )

@@ -32,7 +32,7 @@ styles = {
         roofShape = Value(Alternatives(
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
             #Constant("dome"),
-            Constant("flat"),
+            #Constant("flat"),
             Constant("saltbox")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),
