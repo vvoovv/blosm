@@ -9,6 +9,9 @@ class RenderState:
     """
     
     def __init__(self):
+        #
+        # Variables for <Container.renderLevels(..)>
+        #
         # <indexBL> and <indexBR> are indices of the bottom vertices of an level item to be created
         # in <Container.renderLevels(..)> out of the parent item
         # The prefix <BL> means "bottom left"
@@ -18,6 +21,30 @@ class RenderState:
         # <texVb> is the current V-coordinate for texturing the bottom vertices of
         # level items to be created in <Container.renderLevels(..)> out of the parent item
         self.texVb = 0
+        
+        #
+        # Variables for <Container.renderDivs(..)>
+        #
+        # <indexLB> and <indexLT> are indices of the leftmost vertices of an item to be created
+        # The prefix <LB> means "left bottom"
+        self.indexLB = 0
+        # The prefix <LT> means "left top"
+        self.indexLT = 0
+        # <texUl> is the current U-coordinate for texturing the leftmost vertices of
+        # items to be created out of <item>
+        self.texUl = 0.
+        # <texVlt> is the current V-coordinate for texturing the top leftmost vertex of
+        # items to be created out of <item>
+        self.texVlt = 0.
+        # <startIndex> is only used by geometry <TrapezoidChainedRv>.
+        # It's auxiliary variable used for optimization purposes. The task is to find intersection of
+        # the uppper part of the chained trapezoid with the vertical line with the given X-coordinate.
+        # <startIndex> helps to limit the search.
+        # One starts with <startIndex> = <n> - 1, where <n> is the number of vertices in
+        # the chained trapezoid, i.e. it points to the top leftmost vertex of the chained trapezoid.
+        # Then <startIndex> is gradually decreased, i.e. <startIndex> points to a vertex to the left
+        # from the previous vertex.
+        self.startIndex = 0
         
 
 class Container(ItemRenderer):
@@ -130,63 +157,42 @@ class Container(ItemRenderer):
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
                 verts = building.verts
-                # <indexLB> and <indexLT> are indices of the leftmost vertices of an item to be created
-                # The prefix <LB> means "left bottom"
-                indexLB = parentIndices[0]
-                # The prefix <LT> means "left top"
-                indexLT = parentIndices[-1]
+                rs = self.renderState
+                geometry.initRenderStateForDivs(rs, item)
                 # a unit vector along U-axis (the horizontal axis)
-                unitVector = (verts[parentIndices[1]] - verts[indexLB]) / item.width
-                # <texUl> is the current U-coordinate for texturing the leftmost vertices of
-                # items to be created out of <item>
-                texUl = item.uvs[0][0]
-                # <texVlt> is the current V-coordinate for texturing the top leftmost vertex of
-                # items to be created out of <item>
-                texVlt = item.uvs[-1][1]
-                # <startIndex> is only used by geometry <TrapezoidChainedRv>
-                startIndex = len(parentIndices) - 1
+                unitVector = (verts[parentIndices[1]] - verts[rs.indexLB]) / item.width
                 
                 # Generate Div items but the last one;
                 # the special case is when a symmetry is available
                 if numRepeats>1:
                     for _ in range(numRepeats-1):
-                        indexLB, indexLT, texUl, texVlt, startIndex = geometry.renderDivs(
+                        geometry.renderDivs(
                             self, building, item, unitVector,
                             0, numItems, 1,
-                            indexLB, indexLT,
-                            texUl, texVlt,
-                            startIndex
+                            rs
                         )
                         if symmetry:
-                            indexLB, indexLT, texUl, texVlt, startIndex = geometry.renderDivs(
+                            geometry.renderDivs(
                                 self, building, item, unitVector,
                                 numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1,
-                                indexLB, indexLT,
-                                texUl, texVlt,
-                                startIndex
+                                rs
                             )
-                indexLB, indexLT, texUl, texVlt, startIndex = geometry.renderDivs(
+                geometry.renderDivs(
                     self, building, item, unitVector,
                     0, numItems if symmetry else numItems-1, 1,
-                    indexLB, indexLT,
-                    texUl, texVlt,
-                    startIndex
+                    rs
                 )
                 if symmetry:
-                    indexLB, indexLT, texUl, texVlt, startIndex = geometry.renderDivs(
+                    geometry.renderDivs(
                         self, building, item, unitVector,
                         numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1,
-                        indexLB, indexLT,
-                        texUl, texVlt,
-                        startIndex
+                        rs
                     )
                 # process the last item
                 lastItem = item.markup[0] if symmetry else item.markup[-1]
                 geometry.renderLastDiv(
                     self, item, lastItem,
-                    indexLB, indexLT,
-                    texUl, texVlt,
-                    startIndex
+                    rs
                 )
         else:
             pass

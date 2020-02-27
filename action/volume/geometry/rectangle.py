@@ -1,7 +1,9 @@
 from util import zAxis
 
+from . import Geometry
 
-class Rectangle:
+
+class Rectangle(Geometry):
         
     def getUvs(self, width, height):
         """
@@ -21,16 +23,21 @@ class Rectangle:
     
     def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
-            indexLB, indexLT, texUl, texVt,
-            startIndex
+            rs
         ):
         # <startIndex> is not used by the <Rectangle> geometry
         verts = building.verts
         # <texVb> is the V-coordinate for the bottom vertices of the rectangular items
         # to be created out of <item>
         texVb = item.uvs[0][1]
+        indexLB = rs.indexLB
         v1 = verts[indexLB]
+        indexLT = rs.indexLT
         v2 = verts[indexLT]
+        
+        texUl = rs.texUl
+        texVt = rs.texVlt
+        
         for _i in range(markupItemIndex1, markupItemIndex2, step):
             _item = item.markup[_i]
             # Set the geometry for the <_item>; division of a rectangle can only generate rectangles
@@ -55,11 +62,17 @@ class Rectangle:
             indexLB = indexRB
             indexLT = indexRT
             texUl = texUr
-        return indexLB, indexLT, texUl, texVt, startIndex
+        
+        rs.indexLB = indexLB
+        rs.indexLT = indexLT
+        rs.texUl = texUl
     
-    def renderLastDiv(self, itemRenderer, parentItem, lastItem, indexLB, indexLT, texUl, texVt, startIndex):
+    def renderLastDiv(self, itemRenderer, parentItem, lastItem, rs):
         # <texVt> and <startIndex> are not used by the <Rectangle> geometry
         parentIndices = parentItem.indices
+        indexLB = rs.indexLB
+        indexLT = rs.indexLT
+        texUl = rs.texUl
         # <texUr> is the right U-coordinate for the rectangular item to be created out of <parentItem>
         texUr = parentItem.uvs[1][0]
         # <texVb> and <texVt> are the bottom (b) and top (t) V-coordinates for the rectangular item

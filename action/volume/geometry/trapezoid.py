@@ -1,7 +1,9 @@
 from util import zero
 
+from . import Geometry
 
-class TrapezoidRV:
+
+class TrapezoidRV(Geometry):
     """
     A right-angled trapezoid with the right angles at the bottom side and
     parallel sides along the vertical (z) axis
@@ -19,11 +21,14 @@ class TrapezoidRV:
     
     def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
-            indexLB, indexLT, texUl, texVlt,
-            startIndex
+            rs
         ):
         # <startIndex> is not used by the <TrapezoidRV> geometry
         verts = building.verts
+        indexLB = rs.indexLB
+        indexLT = rs.indexLT
+        texUl = rs.texUl
+        texVlt = rs.texVlt
         # <texVb> is the V-coordinate for the bottom vertices of the trapezoid items
         # to be created out of <item>
         texVb = item.uvs[0][1]
@@ -56,9 +61,13 @@ class TrapezoidRV:
             indexLT = indexRT
             texUl = texUr
             texVlt = texVrt
-        return indexLB, indexLT, texUl, texVlt, startIndex
+        
+        rs.indexLB = indexLB
+        rs.indexLT = indexLT
+        rs.texUl = texUl
+        rs.texVlt = texVlt
 
-    def renderLastDiv(self, itemRenderer, parentItem, lastItem, indexLB, indexLT, texUl, texVlt, startIndex):
+    def renderLastDiv(self, itemRenderer, parentItem, lastItem, rs):
         # <startIndex> is not used by the <TrapezoidRV> geometry
         parentIndices = parentItem.indices
         # <texUr> is the right U-coordinate for the rectangular item to be created out of <parentItem>
@@ -70,25 +79,34 @@ class TrapezoidRV:
         lastItem.geometry = self
         itemRenderer.getItemRenderer(lastItem).render(
             lastItem,
-            (indexLB, parentIndices[1], parentIndices[2], indexLT),
-            ( (texUl, texVb), (texUr, texVb), (texUr, parentItem.uvs[2][1]), (texUl, texVlt) )
+            (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),
+            ( (rs.texUl, texVb), (texUr, texVb), (texUr, parentItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
         )
 
 
-class TrapezoidChainedRV:
+class TrapezoidChainedRV(Geometry):
     """
     A sequence of adjoining right-angled trapezoids with the right angles at the bottom side and
     parallel sides along the vertical (z) axis
     """
+    
+    def initRenderStateForDivs(self, rs, item):
+        super().initRenderStateForDivs(rs, item)
+        rs.startIndex = len(item.indices) - 1
+    
     def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
-            indexLB, indexLT, texUl, texVlt,
-            startIndex
+            rs
         ):
         # <startIndex> is used for optimization
         verts = building.verts
         indices = item.indices
         uvs = item.uvs
+        indexLB = rs.indexLB
+        indexLT = rs.indexLT
+        texUl = rs.texUl
+        texVlt = rs.texVlt
+        startIndex = rs.startIndex
         # <texVb> is the V-coordinate for the bottom vertices of the trapezoid items
         # to be created out of <item>
         texVb = item.uvs[0][1]
@@ -153,9 +171,14 @@ class TrapezoidChainedRV:
             texUl = texUr
             texVlt = texVrt
             startIndex = stopIndexPlus1
-        return indexLB, indexLT, texUl, texVlt, startIndex
+        
+        rs.indexLB = indexLB
+        rs.indexLT = indexLT
+        rs.texUl = texUl
+        rs.texVlt = texVlt
+        rs.startIndex = startIndex
     
-    def renderLastDiv(self, itemRenderer, parenItem, lastItem, indexLB, indexLT, texUl, texVlt, startIndex):
+    def renderLastDiv(self, itemRenderer, parenItem, lastItem, rs):
         parentIndices = parenItem.indices
         uvs = parenItem.uvs
         # <texUr> is the right U-coordinate for the rectangular item to be created out of <parenItem>
@@ -165,19 +188,19 @@ class TrapezoidChainedRV:
         texVb = parenItem.uvs[0][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
-        chainedTrapezoid = startIndex > 3
+        chainedTrapezoid = rs.startIndex > 3
         itemRenderer.getItemRenderer(lastItem).render(
             lastItem,
             # indices
-            (indexLB, parentIndices[1], parentIndices[2]) +\
-                tuple( parentIndices[i] for i in range(3, startIndex) ) +\
-                (indexLT,)\
+            (rs.indexLB, parentIndices[1], parentIndices[2]) +\
+                tuple( parentIndices[i] for i in range(3, rs.startIndex) ) +\
+                (rs.indexLT,)\
             if chainedTrapezoid else\
-            (indexLB, parentIndices[1], parentIndices[2], indexLT),
+            (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),
             # UV-coordinates
-            ( (texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]) ) +\
-                tuple( uvs[i] for i in range(3, startIndex) ) +\
-                ((texUl, texVlt),)
+            ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]) ) +\
+                tuple( uvs[i] for i in range(3, rs.startIndex) ) +\
+                ((rs.texUl, rs.texVlt),)
             if chainedTrapezoid else\
-            ( (texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]), (texUl, texVlt) )
+            ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
         )
