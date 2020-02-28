@@ -44,7 +44,7 @@ class Rectangle(Geometry):
             _item.geometry = self
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
-            # Additional vertices can be created inside <itemRenderer.getItemRenderer(_item).render(..)>,
+            # Additional vertices can be created inside <itemRenderer.getMarkupItemRenderer(_item).render(..)>,
             # that's why we use <len(building.verts)>
             indexRB = len(building.verts)
             indexRT = indexRB + 1
@@ -54,7 +54,7 @@ class Rectangle(Geometry):
             v2 = v2 + incrementVector
             verts.append(v2)
             texUr = texUl + _item.width
-            itemRenderer.getItemRenderer(_item).render(
+            itemRenderer.getMarkupItemRenderer(_item).render(
                 _item,
                 (indexLB, indexRB, indexRT, indexLT),
                 ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
@@ -81,14 +81,14 @@ class Rectangle(Geometry):
         texVt = parentItem.uvs[3][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
-        itemRenderer.getItemRenderer(lastItem).render(
+        itemRenderer.getMarkupItemRenderer(lastItem).render(
             lastItem,
             (indexLB, parentIndices[1], parentIndices[2], indexLT),
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
         )
     
     def renderLevelGroup(self,
-            building, levelGroup, parentItem, renderer, height,
+            building, levelGroup, parentItem, levelRenderer, height,
             rs
         ):
             verts = building.verts
@@ -106,7 +106,7 @@ class Rectangle(Geometry):
             if levelGroup:
                 # Set the geometry for the <levelGroup.item>; division of a rectangle can only generate rectangles
                 levelGroup.item.geometry = self
-            renderer.renderLevelGroup(
+            levelRenderer.renderLevelGroup(
                 building, levelGroup, parentItem,
                 (rs.indexBL, rs.indexBR, indexTR, indexTL),
                 ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
@@ -115,7 +115,7 @@ class Rectangle(Geometry):
             rs.indexBR = indexTR
             rs.texVb = texVt
     
-    def renderLastLevelGroup(self, itemRenderer, building, levelGroup, parentItem, rs):
+    def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
         parentIndices = parentItem.indices
         texVt = parentItem.uvs[2][1]
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
@@ -124,7 +124,7 @@ class Rectangle(Geometry):
         texUr = parentItem.uvs[1][0]
         # Set the geometry for the <group.item>; division of a rectangle can only generate rectangles
         levelGroup.item.geometry = self
-        itemRenderer.levelRenderer.getRenderer(levelGroup).renderLevelGroup(
+        levelRenderer.renderLevelGroup(
             building, levelGroup, parentItem,
             (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
             ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )

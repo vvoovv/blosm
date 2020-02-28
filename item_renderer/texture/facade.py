@@ -4,7 +4,6 @@ class Facade:
     
     def init(self, itemRenderers, globalRenderer):
         self.Container.init(self, itemRenderers, globalRenderer)
-        self.levelRenderer = itemRenderers["Level"]
         self.bottomRenderer = itemRenderers["Bottom"]
     
     def render(self, footprint):

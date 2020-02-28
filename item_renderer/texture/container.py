@@ -55,9 +55,23 @@ class Container(ItemRenderer):
     def __init__(self, exportMaterials):
         super().__init__(exportMaterials)
         self.renderState = RenderState()
-        
-    def getItemRenderer(self, item):
+
+    def getMarkupItemRenderer(self, item):
+        """
+        Get a renderer for the <item> contained in the markup.
+        """
         return self.itemRenderers[item.__class__.__name__]
+
+    def getLevelRenderer(self, levelGroup):
+        """
+        Get a renderer for the <levelGroup> representing <levelGroup.item>.
+        <levelGroup.item> is contained in the markup.
+        """
+        item = levelGroup.item
+        # here is the special case: the door which the only item in the markup
+        return self.itemRenderers["Door"]\
+            if len(item.markup) == 1 and item.markup[0].__class__.__name__ == "Door"\
+            else self.itemRenderers["Level"]
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -123,13 +137,14 @@ class Container(ItemRenderer):
                         if group.singleLevel else\
                         levelHeights.getHeight(group.index1, group.index2)
                     geometry.renderLevelGroup(
-                        building, group, item, self.levelRenderer.getRenderer(group), height,
+                        building, group, item, self.getLevelRenderer(group), height,
                         rs
                     )
         
         # the last level group
+        group = groups[0]
         geometry.renderLastLevelGroup(
-            self, building, groups[0], item,
+            building, group, item, self.getLevelRenderer(group),
             rs
         )
     
