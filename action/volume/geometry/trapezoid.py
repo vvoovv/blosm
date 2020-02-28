@@ -38,6 +38,8 @@ class TrapezoidRV(Geometry):
         factor = (item.uvs[2][1] - item.uvs[3][1])/item.width
         for _i in range(markupItemIndex1, markupItemIndex2, step):
             _item = item.markup[_i]
+            # Set the geometry for the <_item>; division of a trapezoid can only generate trapezoids
+            _item.geometry = self
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
             # Additional vertices can be created inside <itemRenderer.getItemRenderer(_item).render(..)>,
@@ -75,7 +77,7 @@ class TrapezoidRV(Geometry):
         # <texVb> is the V-coordinate for bottom vertices of the trapezoid item
         # to be created out of <parentItem>
         texVb = parentItem.uvs[0][1]
-        # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
+        # Set the geometry for the <lastItem>; division of a trapezoid can only generate trapezoids
         lastItem.geometry = self
         itemRenderer.getItemRenderer(lastItem).render(
             lastItem,
@@ -89,6 +91,9 @@ class TrapezoidChainedRV(Geometry):
     A sequence of adjoining right-angled trapezoids with the right angles at the bottom side and
     parallel sides along the vertical (z) axis
     """
+    
+    def __init__(self):
+        self.geometryTrapezoid = TrapezoidRV()
     
     def initRenderStateForDivs(self, rs, item):
         super().initRenderStateForDivs(rs, item)
@@ -157,15 +162,22 @@ class TrapezoidChainedRV(Geometry):
                     stopIndexPlus1 -= 1
                     if not chainedTrapezoid:
                         chainedTrapezoid = True
-            itemRenderer.getItemRenderer(_item).render(
-                _item,
-                _indices + tuple( indices[i] for i in range(stopIndexPlus1, startIndex) ) + (indexLT,)\
-                    if chainedTrapezoid else\
+            
+            if chainedTrapezoid:
+                item.geometry = self
+                itemRenderer.getItemRenderer(_item).render(
+                    _item,
+                    _indices + tuple( indices[i] for i in range(stopIndexPlus1, startIndex) ) + (indexLT,),
+                    _uvs + tuple( uvs[i] for i in range(stopIndexPlus1, startIndex) ) + ((texUl, texVlt),)
+                )
+            else:
+                _item.geometry = self.geometryTrapezoid
+                itemRenderer.getItemRenderer(_item).render(
+                    _item,
                     (indexLB, indexRB, indexRT, indexLT),
-                _uvs + tuple( uvs[i] for i in range(stopIndexPlus1, startIndex) ) + ((texUl, texVlt),)
-                    if chainedTrapezoid else\
                     ( (texUl, texVb), (texUr, texVb), (texUr, texVrt), (texUl,texVlt) )
-            )
+                )
+            
             indexLB = indexRB
             indexLT = indexRT
             texUl = texUr
@@ -186,7 +198,7 @@ class TrapezoidChainedRV(Geometry):
         # <texVb> is the V-coordinate for bottom vertices of the trapezoid item
         # to be created out of <parenItem>
         texVb = parenItem.uvs[0][1]
-        # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
+        # Set the geometry for the <lastItem>; division of a trapezoid can only generate trapezoids
         lastItem.geometry = self
         chainedTrapezoid = rs.startIndex > 3
         itemRenderer.getItemRenderer(lastItem).render(
