@@ -33,6 +33,8 @@ bl_info = {
 
 import os, sys, textwrap
 
+bl_info["name"] = "blender-osm (premium)"
+
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
         "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
