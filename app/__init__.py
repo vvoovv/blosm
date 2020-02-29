@@ -135,7 +135,7 @@ class App:
     voidSubstitution = 0
     
     def __init__(self):
-        # path to the top directiy of the addon
+        # path to the top directory of the addon
         self.basePath = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             os.pardir

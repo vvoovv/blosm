@@ -66,7 +66,7 @@ class Overlay:
     materialPath = "assets/base.blend"
     
     # name of the default material from <Overlay.materialPath>
-    defaultMaterial = "overlay"
+    defaultMaterial = "overlay.png"
     
     def __init__(self, url, maxZoom, addonName):
         self.maxZoom = maxZoom
