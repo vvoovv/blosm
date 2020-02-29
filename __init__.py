@@ -66,7 +66,7 @@ from defs import Keys
 
 # set addon version
 app.app.version = bl_info["version"]
-app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__), "realistic"))
+app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
 _isBlender280 = bpy.app.version[1] >= 80
 
 
