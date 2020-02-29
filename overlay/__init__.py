@@ -57,7 +57,7 @@ class Overlay:
     # default template
     tileCoordsTemplate = "{z}/{x}/{y}.png"
     
-    blenderImageName = "overlay"
+    blenderImageName = "overlay.png"
     
     # the name for the base UV map
     uvName = "UVMap"
@@ -66,7 +66,7 @@ class Overlay:
     materialPath = "assets/base.blend"
     
     # name of the default material from <Overlay.materialPath>
-    defaultMaterial = "overlay.png"
+    defaultMaterial = "overlay"
     
     def __init__(self, url, maxZoom, addonName):
         self.maxZoom = maxZoom
