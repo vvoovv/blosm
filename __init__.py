@@ -107,7 +107,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         
         if app.app.isPremium:
             box = layout.box()
-            box.label("Thank you for purchasing the premium version!")
+            box.label(text="Thank you for purchasing the premium version!")
         
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
