@@ -316,7 +316,6 @@ class App:
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
 
     def initGeoJson(self, op, context, addonName):
-        addon = context.scene.blender_osm
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":

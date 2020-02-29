@@ -33,8 +33,6 @@ bl_info = {
 
 import os, sys, textwrap
 
-bl_info["name"] = "blender-osm (premium)"
-
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
         "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
@@ -68,7 +66,7 @@ from defs import Keys
 
 # set addon version
 app.app.version = bl_info["version"]
-app.app.isPremium = "Premium" in bl_info["name"]
+app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__), "realistic"))
 _isBlender280 = bpy.app.version[1] >= 80
 
 
@@ -106,6 +104,11 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     
     def draw(self, context):
         layout = self.layout
+        
+        if app.app.isPremium:
+            box = layout.box()
+            box.label("Thank you for purchasing the premium version!")
+        
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
         
