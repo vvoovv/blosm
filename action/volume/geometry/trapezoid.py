@@ -1,4 +1,4 @@
-from util import zero
+from util import zero, zAxis
 
 from . import Geometry
 
@@ -84,6 +84,34 @@ class TrapezoidRV(Geometry):
             (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),
             ( (rs.texUl, texVb), (texUr, texVb), (texUr, parentItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
         )
+
+    def renderLevelGroup(self,
+            building, levelGroup, parentItem, levelRenderer, height,
+            rs
+        ):
+            verts = building.verts
+            # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+            # an item with rectangular geometry to be created
+            indexTL = len(building.verts)
+            indexTR = indexTL + 1
+            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
+            # to be created out of <parentItem>
+            texUl = parentItem.uvs[0][0]
+            texUr = parentItem.uvs[1][0]
+            verts.append(verts[rs.indexBL] + height*zAxis)
+            verts.append(verts[rs.indexBR] + height*zAxis)
+            texVt = rs.texVb + height
+            if levelGroup:
+                # Set the geometry for the <levelGroup.item>; division of a rectangle can only generate rectangles
+                levelGroup.item.geometry = self
+            levelRenderer.renderLevelGroup(
+                building, levelGroup, parentItem,
+                (rs.indexBL, rs.indexBR, indexTR, indexTL),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            )
+            rs.indexBL = indexTL
+            rs.indexBR = indexTR
+            rs.texVb = texVt
 
 
 class TrapezoidChainedRV(Geometry):
