@@ -11,11 +11,15 @@ class LevelGroups:
         self.bottom = None
         # a wrapper level group for the bottom
         self.bottomGroup = LevelGroup()
+        # setting <singleLevel> to <True> is needed for correct height calculation of the level group
+        self.bottomGroup.singleLevel = True
         self.bottom = None
         # a level group just above the bottom; it may not start from the ground level
         self.begin = None
         # a wrapper level group for the top
         self.topGroup = LevelGroup()
+        self.topGroup.singleLevel = True
+        # setting <singleLevel> to <True> is needed for correct height calculation of the level group
         self.top = None
         self.numUsedGroups = 0
     
@@ -106,6 +110,9 @@ class LevelGroups:
                         group.singleLevel = True
                         group.next = begin
                         begin.prev = group
+                        begin.index1 += 1
+                        if begin.index1 == begin.index2:
+                            begin.singleLevel = True
                         begin = group
                     group.levelHeight = lh.groundLevelHeight
                     group = group.next

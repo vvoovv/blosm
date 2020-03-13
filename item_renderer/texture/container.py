@@ -214,7 +214,8 @@ class Container(ItemRenderer):
                         building,
                         # getting building part
                         item.buildingPart if item.buildingPart else (
-                            "groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
+                            "level"
+                            #"groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
                         ),
                         uvs,
                         self

@@ -90,5 +90,6 @@ class RoofFlat(Roof):
                 # default height of the top
                 h = self.topHeight
         # we set <footprint.roofHeight> to avoid writing additional code
-        footprint.levelHeights.topHeight = footprint.roofHeight = h
+        footprint.levelHeights.topHeight = h
+        footprint.roofHeight = 0.
         return h
