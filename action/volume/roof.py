@@ -36,15 +36,9 @@ def getDefaultDirection(polygon):
 class Roof:
     
     # default values
-    lastLevelHeight = 1.2*3.
     levelHeight = 3.
-    groundLevelHeight = 1.4*3
-    bottomHeight = 1.
-    topHeight = 3.
     
-    lastRoofLevelHeight = 2.7
     roofLevelHeight = 2.7
-    roofLevelHeight0 = 2.7
     
     directions = {
         'N': Vector((0., 1., 0.)),
@@ -174,13 +168,79 @@ class Roof:
                 if not angle is None:
                     self.processDirection()
                     h = self.angleToHeight * footprint.polygonWidth * math.tan(math.radians(angle))
+                    if self.hasRoofLevels:
+                        # still calculate the number of roof levels and their height
+                        self.calculateRoofLevelsHeight(footprint)
             if h is None:
-                if self.hasRoofLevels and "roofLevels" in footprint.styleBlock:
+                if self.hasRoofLevels:
                     h = self.calculateRoofLevelsHeight(self)
-                    if footprint.lastLevelOffset:
-                        h += footprint.lastLevelOffset
+                    if h:
+                        if footprint.lastLevelOffset:
+                            h += footprint.lastLevelOffset
+                    else:
+                        # default height of the roof
+                        h = self.height
                 else:
                     # default height of the roof
                     h = self.height
+        else:
+            # still calculate the number of roof levels and their height
+            self.calculateRoofLevelsHeight(footprint)
         footprint.roofHeight = h
+        return h
+
+    def calculateRoofLevelsHeight(self, footprint):
+        numRooflevels = footprint.getStyleBlockAttr("numRoofLevels")
+        if not numRooflevels:
+            footprint.numRoofLevels = 0
+            return 0.
+        footprint.numRoofLevels = numRooflevels
+        
+        lh = footprint.levelHeights
+        levelHeights = lh.levelHeights
+        
+        if levelHeights:
+            h = levelHeights.getRoofHeight(0, numRooflevels-1)
+        else:
+            roofLevelHeight = footprint.getStyleBlockAttr("roofLevelHeight")
+            if roofLevelHeight:
+                lh.roofLevelHeight = roofLevelHeight
+                if not lh.multipleHeights:
+                    lh.multipleHeights = True
+                #
+                # the very first roof level
+                #
+                # <roofLevelHeight0> can't be defined without <roofLevelHeight>
+                h = footprint.getStyleBlockAttr("roofLevelHeight0")
+                if h:
+                    lh.roofLevelHeight0 = h
+                else:
+                    h = roofLevelHeight
+            else:
+                roofLevelHeight = lh.levelHeight
+                #
+                # the very first roof level
+                #
+                h = roofLevelHeight
+            #
+            # the roof levels above the very first roof level
+            #
+            if numRooflevels > 1:
+                #
+                # the last roof level
+                #
+                lastRoofLevelHeight = footprint.getStyleBlockAttr("lastRoofLevelHeight")
+                if lastRoofLevelHeight:
+                    lh.lastRoofLevelHeight = lastRoofLevelHeight
+                    if not lh.multipleHeights:
+                        lh.multipleHeights = True
+                else:
+                    lastRoofLevelHeight = roofLevelHeight
+                h += lastRoofLevelHeight
+                #
+                # the levels between the very first roof level and the last roof level
+                #
+                if numRooflevels > 2:
+                    h += (numRooflevels-2)*roofLevelHeight
+        
         return h

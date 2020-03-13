@@ -22,6 +22,8 @@ class Footprint(Item):
         self.lastLevelOffset = 0.
         # for example, church parts may not have levels
         self.hasLevels = True
+        self.numRoofLevels = 0
+        self.minLevel = 0
         # A pointer to the Python list that contains style blocks for the facades generated out of the footprint;
         # see the code in the method <self.calculateStyling(..)> for the details
         self.facadeStyle = None
@@ -32,6 +34,8 @@ class Footprint(Item):
         super().init()
         self.building = None
         self.buildingStyle = None
+        self.numRoofLevels = 0
+        self.minLevel = 0
         self.lastLevelOffset = 0.
         # reset <self.polygon>
         self.polygon.allVerts.clear()

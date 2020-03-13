@@ -221,11 +221,13 @@ class Div(Item):
 
 class Level(Item):
     
-    def __init__(self, defName=None, use=None, markup=None, condition=None, indices=None, **attrs):
+    def __init__(self, defName=None, use=None, markup=None, condition=None, indices=None, roof=False, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         self.indices = indices
+        self.roof = roof
         self.isLevel = True
         self.isBottom = False
+        self.isTop = False
 
     def getItem(self, itemFactory, parent):
         return ItemLevel.getItem(itemFactory, parent, self)
@@ -295,6 +297,7 @@ class Bottom(Item):
         super().__init__(defName, use, markup, condition, attrs)
         self.isLevel = True
         self.isBottom = True
+        self.isTop = False
         
     def getItem(self, itemFactory, parent):
         return ItemBottom.getItem(itemFactory, parent, self)

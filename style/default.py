@@ -16,23 +16,24 @@ styles = {
     Footprint(
         height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
         minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
-        levels = Value(Alternatives(
+        numLevels = Value(Alternatives(
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
         )),
-        roofLevels = 1,
+        #numRoofLevels = 1,
         minLevel = Value(Alternatives(
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
             Constant(0)
         )),
-        lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
+        topHeight = Value( RandomNormal(1.) ),
+        #lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
         levelHeight = Value( RandomNormal(3.) ),
-        #groundLevelHeight = Value( RandomNormal(1.4*3) ),
+        groundLevelHeight = Value( RandomNormal(1.4*3) ),
         bottomHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
             #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
             #Constant("dome"),
-            #Constant("flat"),
+            Constant("flat"),
             Constant("saltbox")
             #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
         )),

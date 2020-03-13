@@ -46,6 +46,8 @@ class RenderState:
         # from the previous vertex.
         self.startIndex = 0
         
+        self.tmpTriangle = True
+        
 
 class Container(ItemRenderer):
     """
@@ -77,9 +79,9 @@ class Container(ItemRenderer):
         item.prepareMarkupItems()
         
         if item.styleBlock.markup[0].isLevel:
-            face = self.r.createFace(item.building, item.indices)
-            self.renderCladding(item.building, item, face, item.uvs)
-            return
+            #face = self.r.createFace(item.building, item.indices)
+            #self.renderCladding(item.building, item, face, item.uvs)
+            #return
             self.renderLevels(item)
         else:
             self.renderDivs(item)
@@ -87,7 +89,6 @@ class Container(ItemRenderer):
             return
     
     def renderLevels(self, item):
-        parentIndices = item.indices
         geometry = item.geometry
         levelGroups = item.levelGroups
         levelGroups.init()
@@ -97,56 +98,7 @@ class Container(ItemRenderer):
             item.valid = False
             return
         
-        footprint = item.footprint
-        building = item.building
-        levelHeights = footprint.levelHeights
-        
-        rs = self.renderState
-        # <indexBL> and <indexBR> are indices of the bottom vertices of an level item to be created
-        # The prefix <BL> means "bottom left"
-        rs.indexBL = parentIndices[0]
-        # The prefix <BR> means "bottom rights"
-        rs.indexBR = parentIndices[1]
-        # <texVb> is the current V-coordinate for texturing the bottom vertices of
-        # level items to be created out of <item>
-        rs.texVb = item.uvs[0][1]
-        
-        # treat the bottom
-        if not footprint.minHeight:
-            bottomHeight = item.getStyleBlockAttr("bottomHeight")
-            if bottomHeight is None:
-                bottomHeight = levelHeights.bottomHeight
-            if bottomHeight:
-                geometry.renderLevelGroup(
-                    building, levelGroups.bottom, item, self.bottomRenderer, bottomHeight,
-                    rs
-                )
-        
-        # treat the level groups
-        groups = levelGroups.groups
-        numGroups = levelGroups.numActiveGroups
-        minLevel = footprint.minLevel
-        groupFound = not minLevel
-        if numGroups > 1:
-            for i in reversed(range(1, numGroups)):
-                group = groups[i]
-                if not groupFound and group.index1 <= minLevel <= group.index2:
-                    groupFound = True
-                if groupFound:
-                    height = levelHeights.getLevelHeight(group.index1)\
-                        if group.singleLevel else\
-                        levelHeights.getHeight(group.index1, group.index2)
-                    geometry.renderLevelGroup(
-                        building, group, item, self.getLevelRenderer(group), height,
-                        rs
-                    )
-        
-        # the last level group
-        group = groups[0]
-        geometry.renderLastLevelGroup(
-            building, group, item, self.getLevelRenderer(group),
-            rs
-        )
+        geometry.renderLevelGroups(item, self)
     
     def renderDivs(self, item):
         # <r> is the global building renderer
@@ -250,10 +202,11 @@ class Container(ItemRenderer):
         else:
             item.materialId = ""
     
-    def renderLevelGroup(self, building, levelGroup, parentItem, indices, uvs):        
+    def renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
+        building = parentItem.building      
         face = self.r.createFace(building, indices)
-        if levelGroup:
-            item = levelGroup.item
+        item = levelGroup.item
+        if item:
             if item.materialId is None:
                 if item.markup:
                     self.setMaterialId(

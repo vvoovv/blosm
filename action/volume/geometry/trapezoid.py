@@ -1,6 +1,7 @@
 from util import zero, zAxis
 
 from . import Geometry
+from .rectangle import RectangleFRA
 
 
 class TrapezoidRV(Geometry):
@@ -8,6 +9,9 @@ class TrapezoidRV(Geometry):
     A right-angled trapezoid with the right angles at the bottom side and
     parallel sides along the vertical (z) axis
     """
+
+    def __init__(self):
+        self.geometryRectangle = RectangleFRA()
     
     def getFinalUvs(self, item, numLevelsInFace, numTilesU, numTilesV):
         u = len(item.markup)/numTilesU
@@ -90,28 +94,66 @@ class TrapezoidRV(Geometry):
             rs
         ):
             verts = building.verts
-            # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
-            # an item with rectangular geometry to be created
-            indexTL = len(building.verts)
-            indexTR = indexTL + 1
+            parentIndices = parentItem.indices
+            
             # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
             # to be created out of <parentItem>
             texUl = parentItem.uvs[0][0]
             texUr = parentItem.uvs[1][0]
-            verts.append(verts[rs.indexBL] + height*zAxis)
-            verts.append(verts[rs.indexBR] + height*zAxis)
+            
             texVt = rs.texVb + height
-            if levelGroup:
-                # Set the geometry for the <levelGroup.item>; division of a rectangle can only generate rectangles
-                levelGroup.item.geometry = self
-            levelRenderer.renderLevelGroup(
-                building, levelGroup, parentItem,
-                (rs.indexBL, rs.indexBR, indexTR, indexTL),
-                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-            )
-            rs.indexBL = indexTL
-            rs.indexBR = indexTR
-            rs.texVb = texVt
+            
+            footprint = parentItem.footprint
+            numLevels = footprint.levels
+            numRoofLevels = footprint.numRoofLevels
+            
+            # the largest level index (i.e level number) plus one
+            upperIndexPlus1 = (levelGroup.index1 if levelGroup.singleLevel else levelGroup.index2) + 1
+            
+            if rs.tmpTriangle:
+                pass
+            elif upperIndexPlus1 < numLevels:
+                RectangleFRA.renderLevelGroup(self, building, levelGroup, parentItem, levelRenderer, height, rs)
+            elif upperIndexPlus1 == numLevels:
+                leftVertLower = parentItem.uvs[3][1] < parentItem.uvs[2][1]
+                minHeightVertIndex = 3 if leftVertLower else 2
+                texVtMin = parentItem.uvs[minHeightVertIndex][1]
+                # check if reached one of the upper vertices of the traprezoid
+                if texVt == texVtMin:
+                    if leftVertLower:
+                        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+                        # an item with rectangular geometry to be created
+                        indexTL = parentIndices[3]
+                        indexTR = len(building.verts)
+                        verts.append(verts[rs.indexBR] + height*zAxis)
+                    else:
+                        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+                        # an item with rectangular geometry to be created
+                        indexTL = len(building.verts)
+                        verts.append(verts[rs.indexBL] + height*zAxis)
+                        indexTR = parentIndices[2]
+                    if levelGroup:
+                        # we have a rectangle here
+                        levelGroup.item.geometry = self.geometryRectangle
+                    levelRenderer.renderLevelGroup(
+                        building, levelGroup, parentItem,
+                        (rs.indexBL, rs.indexBR, indexTR, indexTL),
+                        ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                    )
+                    rs.tmpTriangle = True
+                    
+                    rs.indexBL = indexTL
+                    rs.indexBR = indexTR
+                    rs.texVb = texVt
+                elif texVt < texVtMin:
+                    RectangleFRA.renderLevelGroup(self, building, levelGroup, parentItem, levelRenderer, height, rs)
+                else:
+                    rs.tmpTriangle = True
+            else:
+                return
+    
+    def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
+        return
 
 
 class TrapezoidChainedRV(Geometry):
@@ -192,7 +234,7 @@ class TrapezoidChainedRV(Geometry):
                         chainedTrapezoid = True
             
             if chainedTrapezoid:
-                item.geometry = self
+                _item.geometry = self
                 itemRenderer.getMarkupItemRenderer(_item).render(
                     _item,
                     _indices + tuple( indices[i] for i in range(stopIndexPlus1, startIndex) ) + (indexLT,),
@@ -226,21 +268,35 @@ class TrapezoidChainedRV(Geometry):
         # <texVb> is the V-coordinate for bottom vertices of the trapezoid item
         # to be created out of <parenItem>
         texVb = parenItem.uvs[0][1]
-        # Set the geometry for the <lastItem>; division of a trapezoid can only generate trapezoids
-        lastItem.geometry = self
         chainedTrapezoid = rs.startIndex > 3
-        itemRenderer.getMarkupItemRenderer(lastItem).render(
-            lastItem,
-            # indices
-            (rs.indexLB, parentIndices[1], parentIndices[2]) +\
-                tuple( parentIndices[i] for i in range(3, rs.startIndex) ) +\
-                (rs.indexLT,)\
-            if chainedTrapezoid else\
-            (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),
-            # UV-coordinates
-            ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]) ) +\
-                tuple( uvs[i] for i in range(3, rs.startIndex) ) +\
-                ((rs.texUl, rs.texVlt),)
-            if chainedTrapezoid else\
-            ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
-        )
+        if chainedTrapezoid:
+            lastItem.geometry = self
+            itemRenderer.getMarkupItemRenderer(lastItem).render(
+                lastItem,
+                # indices
+                (rs.indexLB, parentIndices[1], parentIndices[2]) +\
+                    tuple( parentIndices[i] for i in range(3, rs.startIndex) ) +\
+                    (rs.indexLT,),
+                # UV-coordinates
+                ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]) ) +\
+                    tuple( uvs[i] for i in range(3, rs.startIndex) ) +\
+                    ((rs.texUl, rs.texVlt),)
+            )
+        else:
+            lastItem.geometry = self.geometryTrapezoid
+            itemRenderer.getMarkupItemRenderer(lastItem).render(
+                lastItem,
+                # indices
+                (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),
+                # UV-coordinates
+                ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
+            )
+    
+    def renderLevelGroup(self,
+            building, levelGroup, parentItem, levelRenderer, height,
+            rs
+        ):
+        return
+    
+    def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
+        return

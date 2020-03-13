@@ -3,7 +3,10 @@ from util import zAxis
 from . import Geometry
 
 
-class Rectangle(Geometry):
+class RectangleFRA(Geometry):
+    """
+    Rectangle for Flat Roofs and Alike (Roofs based on a generatrix)
+    """
         
     def getUvs(self, width, height):
         """
@@ -87,11 +90,42 @@ class Rectangle(Geometry):
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
         )
     
-    def renderLevelGroup(self,
-            building, levelGroup, parentItem, levelRenderer, height,
+    def renderLevelGroups(self, parentItem, parentRenderer):
+        rs = parentRenderer.renderState
+        self.initRenderStateForLevels(rs, parentItem)
+        self.renderBottom(parentItem, parentRenderer, rs)
+        
+        levelGroups = parentItem.levelGroups
+        
+        if levelGroups.begin.next:
+            # There are at least 2 level groups or one level group and the top
+            # Detach the end level group. It can be either the top or the last level group
+            lastLevelGroup = levelGroups.end
+            lastLevelGroup.prev.next = None
+            
+            levelGroup = levelGroups.begin
+            while levelGroup:
+                self.renderLevelGroup(
+                    parentItem, 
+                    levelGroup,
+                    parentRenderer.getLevelRenderer(levelGroup),
+                    rs
+                )
+                levelGroup = levelGroup.next
+        else:
+            lastLevelGroup = levelGroups.begin
+        
+        self.renderLastLevelGroup(
+            parentItem, 
+            lastLevelGroup,
+            parentRenderer.getLevelRenderer(lastLevelGroup) if lastLevelGroup.item else parentRenderer,
             rs
-        ):
+        )
+    
+    def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+            building = parentItem.building
             verts = building.verts
+            height = levelGroup.levelHeight
             # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
             # an item with rectangular geometry to be created
             indexTL = len(building.verts)
@@ -103,11 +137,13 @@ class Rectangle(Geometry):
             verts.append(verts[rs.indexBL] + height*zAxis)
             verts.append(verts[rs.indexBR] + height*zAxis)
             texVt = rs.texVb + height
-            if levelGroup:
-                # Set the geometry for the <levelGroup.item>; division of a rectangle can only generate rectangles
+            if levelGroup.item:
+                # Set the geometry for the <levelGroup.item>;
+                # division of a rectangle can only generate rectangles
                 levelGroup.item.geometry = self
             levelRenderer.renderLevelGroup(
-                building, levelGroup, parentItem,
+                parentItem,
+                levelGroup,
                 (rs.indexBL, rs.indexBR, indexTR, indexTL),
                 ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
             )
@@ -115,17 +151,20 @@ class Rectangle(Geometry):
             rs.indexBR = indexTR
             rs.texVb = texVt
     
-    def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
+    def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         parentIndices = parentItem.indices
         texVt = parentItem.uvs[2][1]
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
         # to be created out of <parentItem>
         texUl = parentItem.uvs[0][0]
         texUr = parentItem.uvs[1][0]
-        # Set the geometry for the <group.item>; division of a rectangle can only generate rectangles
-        levelGroup.item.geometry = self
+        if levelGroup.item:
+            # Set the geometry for the <group.item>;
+            # division of a rectangle can only generate rectangles
+            levelGroup.item.geometry = self
         levelRenderer.renderLevelGroup(
-            building, levelGroup, parentItem,
+            parentItem,
+            levelGroup,
             (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
             ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
         )

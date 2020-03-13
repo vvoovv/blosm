@@ -4,7 +4,7 @@ from .roof import Roof
 from item.facade import Facade
 from item.roof_profile import RoofProfile as ItemRoofProfile
 from .geometry.trapezoid import TrapezoidRV, TrapezoidChainedRV
-from .geometry.rectangle import Rectangle
+from .geometry.rectangle import RectangleFRA
 from util import zero
 
 
@@ -491,7 +491,7 @@ class RoofProfile(Roof):
         self.hasGable = True
         self.roofRenderer = roofRenderer
         # geometries for wall faces
-        self.geometryRectangle = Rectangle()
+        self.geometryRectangle = RectangleFRA()
         self.geometryTrapezoid = TrapezoidRV()
         self.geometryTrapezoidChained = TrapezoidChainedRV()
         

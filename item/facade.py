@@ -1,19 +1,11 @@
-from .container import Container
-from .level_groups import LevelGroups
+from .div import Div
 
 
-class Facade(Container):
+class Facade(Div):
     """
     Represents a building facade.
     It's typically composed of one or more faces (in the most cases rectangular ones)
     """
-    
-    def __init__(self):
-        super().__init__()
-        self.levelGroups = LevelGroups(self)
-    
-    def init(self):
-        self.levelGroups.clear()
 
     @classmethod
     def getItem(cls, volumeGenerator, parent, indices):

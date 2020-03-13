@@ -1,19 +1,19 @@
 from .roof import Roof
 from item.facade import Facade
 from item.roof_flat import RoofFlat as ItemRoofFlat
-from .geometry.rectangle import Rectangle
+from .geometry.rectangle import RectangleFRA
 from mathutils import Vector
 
 
 class RoofFlat(Roof):
     
-    # default roof height
-    height = 1.5
+    # default height of the top
+    topHeight = 1.
     
     def __init__(self, data, itemStore, itemFactory, roofRenderer):
         super().__init__(data, itemStore, itemFactory)
         self.roofRenderer = roofRenderer
-        self.rectangleGeometry = Rectangle()
+        self.rectangleGeometry = RectangleFRA()
         self.hasRoofLevels = False
         self.extrudeTillRoof = False
     
@@ -83,9 +83,12 @@ class RoofFlat(Roof):
         item.uvs = geometry.getUvs(width, height)
     
     def calculateRoofHeight(self, footprint):
-        h = footprint.getStyleBlockAttr("roofHeight")
+        h = footprint.getStyleBlockAttr("topHeight")
         if h is None:
-            # default height of the roof
-            h = self.height
-        footprint.roofHeight = h
+            h = footprint.getStyleBlockAttr("roofHeight")
+            if h is None:
+                # default height of the top
+                h = self.topHeight
+        # we set <footprint.roofHeight> to avoid writing additional code
+        footprint.levelHeights.topHeight = footprint.roofHeight = h
         return h
