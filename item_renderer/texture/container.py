@@ -212,11 +212,7 @@ class Container(ItemRenderer):
                     self.setMaterialId(
                         item,
                         building,
-                        # getting building part
-                        item.buildingPart if item.buildingPart else (
-                            "level"
-                            #"groundlevel" if levelGroup.singleLevel and not levelGroup.index1 else "level"
-                        ),
+                        levelGroup.buildingPart,
                         uvs,
                         self
                     )

@@ -11,6 +11,7 @@ class LevelGroups:
         self.bottom = None
         # a wrapper level group for the bottom
         self.bottomGroup = LevelGroup()
+        self.bottomGroup.buildingPart = "bottom"
         # setting <singleLevel> to <True> is needed for correct height calculation of the level group
         self.bottomGroup.singleLevel = True
         self.bottom = None
@@ -18,6 +19,7 @@ class LevelGroups:
         self.begin = None
         # a wrapper level group for the top
         self.topGroup = LevelGroup()
+        self.topGroup.buildingPart = "top"
         self.topGroup.singleLevel = True
         # setting <singleLevel> to <True> is needed for correct height calculation of the level group
         self.top = None
@@ -38,13 +40,17 @@ class LevelGroups:
         groupCounter = 0
         
         # check if have the top
-        topHeight = item.getStyleBlockAttr("topHeight") or lh.topHeight
+        topHeight = item.getStyleBlockAttr("topHeight")
+        if topHeight is None:
+            topHeight = lh.topHeight
         if topHeight:
             top = self.topGroup
             top.levelHeight = topHeight
             self.top = top
         # check if have the bottom
-        bottomHeight = item.getStyleBlockAttr("bottomHeight") or lh.bottomHeight
+        bottomHeight = item.getStyleBlockAttr("bottomHeight")
+        if bottomHeight is None:
+            bottomHeight = lh.bottomHeight
         if bottomHeight:
             bottom = self.bottomGroup
             bottom.levelHeight = bottomHeight
@@ -100,6 +106,7 @@ class LevelGroups:
                 # <lh.levelHeight> and optionally <lh.groundLevelHeight>
                 if lh.groundLevelHeight:
                     if begin.singleLevel:
+                        begin.buildingPart = "groundlevel"
                         group = begin
                     else:
                         # split <begin>
@@ -146,7 +153,8 @@ class LevelGroups:
 class LevelGroup:
     
     def __init__(self):
-        # the relate Level item
+        self.buildingPart = "level"
+        # the related Level item
         self.item = None
         self.index1 = 0
         self.index2 = 0
@@ -164,3 +172,5 @@ class LevelGroup:
         self.next = None
         if self.singleLevel:
             self.singleLevel = False
+        if self.buildingPart != "level":
+            self.buildingPart = "level"
