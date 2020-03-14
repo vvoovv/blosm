@@ -89,7 +89,22 @@ class RoofFlat(Roof):
             if h is None:
                 # default height of the top
                 h = self.topHeight
-        # we set <footprint.roofHeight> to avoid writing additional code
         footprint.levelHeights.topHeight = h
         footprint.roofHeight = 0.
+        return h
+
+
+class RoofLeveled(RoofFlat):
+    """
+    The base class for volume generators that generate a roof with all it roof sides starting from
+    the same height.
+    It is the base class for <RoofGeneratrix> and <RoofHipped>.
+    """
+
+    def calculateRoofHeight(self, footprint):
+        h = footprint.getStyleBlockAttr("roofHeight")
+        if h is None:
+            # default height of the roof
+            h = self.height
+        footprint.roofHeight = h
         return h

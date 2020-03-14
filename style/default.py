@@ -192,7 +192,7 @@ styles = {
     Roof(
         claddingMaterial = "brick",
         claddingColor = "salmon",
-        #faces = smoothness.Smooth,
+        faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side
     ),
     RoofSide(

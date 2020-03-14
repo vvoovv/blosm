@@ -1,8 +1,8 @@
-from .roof_flat import RoofFlat
+from .roof_flat import RoofLeveled
 from item.roof_generatrix import RoofGeneratrix as ItemRoofGeneratrix
 
 
-class RoofGeneratrix(RoofFlat):
+class RoofGeneratrix(RoofLeveled):
     
     def __init__(self, data, itemStore, itemFactory, roofRenderer):
         super().__init__(data, itemStore, itemFactory, roofRenderer)
