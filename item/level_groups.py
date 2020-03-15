@@ -48,32 +48,35 @@ class LevelGroups:
             top.levelHeight = topHeight
             self.top = top
         # check if have the bottom
-        bottomHeight = item.getStyleBlockAttr("bottomHeight")
-        if bottomHeight is None:
-            bottomHeight = lh.bottomHeight
-        if bottomHeight:
-            bottom = self.bottomGroup
-            bottom.levelHeight = bottomHeight
-            self.bottom = bottom
+        if not minLevel:
+            bottomHeight = item.getStyleBlockAttr("bottomHeight")
+            if bottomHeight is None:
+                bottomHeight = lh.bottomHeight
+            if bottomHeight:
+                bottom = self.bottomGroup
+                bottom.levelHeight = bottomHeight
+                self.bottom = bottom
         
         for _item in reversed(item.markup):
             styleBlock = _item.styleBlock
-            if styleBlock.isBottom and bottom:
-                bottom.item = _item
-            elif styleBlock.isTop and top:
-                top.item = _item
+            if styleBlock.isBottom:
+                if bottom:
+                    bottom.item = _item
+            elif styleBlock.isTop:
+                if top:
+                    top.item = _item
             else:
                 group = self.groups[groupCounter]
                 group.item = _item
                 index1, index2 = styleBlock.indices
-                if index1 < minLevel:
-                    index1 = minLevel
                 
                 if index1 == index2:
                     if index1 < 0:
                         index1 += totalNumLevels
                     elif styleBlock.roof:
                         index1 += numLevels
+                    if index1 < minLevel:
+                        continue
                     group.index1 = index1
                     group.index2 = index1
                     group.singleLevel = True
@@ -86,6 +89,11 @@ class LevelGroups:
                         index2 += totalNumLevels
                     elif styleBlock.roof:
                         index2 += numLevels
+                    # sanity check
+                    if index2 < minLevel:
+                        continue
+                    elif index1 < minLevel:
+                        index1 = minLevel
                     group.index1 = index1
                     group.index2 = index2
                 groupCounter += 1
@@ -104,7 +112,7 @@ class LevelGroups:
             if not lh.multipleHeights:
                 # Treat the most common case when we have not more than two heights provided:
                 # <lh.levelHeight> and optionally <lh.groundLevelHeight>
-                if lh.groundLevelHeight:
+                if lh.groundLevelHeight and not minLevel:
                     if begin.singleLevel:
                         begin.buildingPart = "groundlevel"
                         group = begin
