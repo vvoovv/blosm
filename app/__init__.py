@@ -33,13 +33,6 @@ from util.polygon import Polygon
 _isBlender280 = bpy.app.version[1] >= 80
 
 
-_values = (
-    (1,),
-    (1,),
-    (1,)
-)
-
-
 class App:
     
     #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
@@ -90,9 +83,9 @@ class App:
     vegetationFileName = "vegetation.blend"
     
     # app mode
-    twoD = _values[0]
-    simple = _values[1]
-    realistic = _values[2]
+    twoD = 1
+    simple = 2
+    realistic = 3
     
     layerOffsets = {
         "buildings": 0.2,
@@ -135,7 +128,7 @@ class App:
     voidSubstitution = 0
     
     def __init__(self):
-        # path to the top directiy of the addon
+        # path to the top directory of the addon
         self.basePath = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             os.pardir
@@ -316,7 +309,6 @@ class App:
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
 
     def initGeoJson(self, op, context, addonName):
-        addon = context.scene.blender_osm
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":

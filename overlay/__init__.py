@@ -57,7 +57,7 @@ class Overlay:
     # default template
     tileCoordsTemplate = "{z}/{x}/{y}.png"
     
-    blenderImageName = "overlay"
+    blenderImageName = "overlay.png"
     
     # the name for the base UV map
     uvName = "UVMap"

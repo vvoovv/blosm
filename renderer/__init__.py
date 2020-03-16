@@ -26,18 +26,13 @@ from util.osm import assignTags
 _isBlender280 = bpy.app.version[1] >= 80
 
 
-_values = (
-    (1,), (1,), (1,), (1,)
-)
-
-
 class Renderer:
     
     # types of data
-    linestring = _values[0]
-    multilinestring = _values[1]
-    polygon = _values[2]
-    multipolygon = _values[3]
+    linestring = 1
+    multilinestring = 2
+    polygon = 3
+    multipolygon = 4
     
     # _isBlender280 delete below
     parent = None

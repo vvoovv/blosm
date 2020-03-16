@@ -18,14 +18,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 bl_info = {
-    "name": "Import OpenStreetMap (.osm)",
+    "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 3, 21),
+    "version": (2, 3, 23),
     "blender": (2, 80, 0),
-    "location": "Right side panel for Blender 2.80 (left side panel for Blender 2.79)> \"osm\" tab",
-    "description": "One click download and import of OpenStreetMap and terrain",
+    "location": "Right side panel for Blender 2.8x (left side panel for Blender 2.79))> \"osm\" tab",
+    "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
     "warning": "",
-    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Documentation",
+    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export"
@@ -36,6 +36,13 @@ import os, sys, textwrap
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
         "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
+        "renderer", "terrain", "util", "defs", "setup"
+    ]:
+    sys.modules.pop(m, 0)
+
+# force cleanup of sys.modules to avoid conflicts with the other addons for Blender
+for m in [
+        "app", "building", "gui", "manager", "material", "parse",
         "renderer", "terrain", "util", "defs", "setup"
     ]:
     sys.modules.pop(m, 0)
@@ -59,7 +66,7 @@ from defs import Keys
 
 # set addon version
 app.app.version = bl_info["version"]
-app.app.isPremium = "Premium" in bl_info["name"]
+app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
 _isBlender280 = bpy.app.version[1] >= 80
 
 
@@ -97,6 +104,11 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     
     def draw(self, context):
         layout = self.layout
+        
+        if app.app.isPremium:
+            box = layout.box()
+            box.label(text="Thank you for purchasing the premium version!")
+        
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
         

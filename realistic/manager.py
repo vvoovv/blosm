@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import bpy
 from manager import BaseManager
 from renderer import Renderer
-from .renderer import AreaRenderer, TerrainRenderer
+from .renderer import AreaRenderer#, TerrainRenderer
 
 _isBlender280 = bpy.app.version[1] >= 80
 
@@ -36,7 +36,7 @@ class AreaManager(BaseManager):
         self.app = app
         self.defaultRenderer = defaultRenderer
         self.renderers = renderers
-        self.terrainRenderer = TerrainRenderer()
+        #self.terrainRenderer = TerrainRenderer()
 
     def createLayer(self, layerId, app, **kwargs):
         if not app.singleObject:
@@ -95,7 +95,7 @@ class AreaManager(BaseManager):
                 layer.renderer.renderArea(layer, app)
         
         # set material for the terrain
-        self.terrainRenderer.render(app)
+        #self.terrainRenderer.render(app)
         
         if _isBlender280:
             terrain.select_set(False)
