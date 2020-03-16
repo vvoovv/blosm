@@ -1,13 +1,8 @@
 
-_values = (
-    (1,),
-    (1,),
-    (1,)
-)
 
 # Constants for the scope.
-perBuilding = _values[0]
-perFootprint = _values[1]
+perBuilding = 1
+perFootprint = 2
 
 
 class Scope:

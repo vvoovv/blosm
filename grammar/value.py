@@ -2,9 +2,6 @@ import math
 from util.osm import parseNumber
 
 
-_values = ( (1,), (1,), (1,) )
-
-
 class Value:
     
     def __init__(self, value):
@@ -48,12 +45,12 @@ class Constant:
 
 class FromAttr:
     
-    Integer = _values[0]
-    Float = _values[1]
-    String = _values[2]
+    Integer = 1
+    Float = 2
+    String = 3
     
-    Positive = _values[0]
-    NonNegative = _values[1]
+    Positive = 4
+    NonNegative = 5
     
     def __init__(self, attr, valueType, valueCondition=None):
         self.attr = attr
