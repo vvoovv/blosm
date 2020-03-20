@@ -19,3 +19,12 @@ class Level:
     
     def getNumLevelsInFace(self, levelGroup):
         return 1 if levelGroup.singleLevel else (levelGroup.index2-levelGroup.index1+1)
+
+
+class CurtainWall(Level):
+    
+    def __init__(self):
+        super().__init__()
+        self.facadePatternInfo = None
+        # do we need to initialize <self.facadePatternInfo>
+        self.initFacadePatternInfo = False

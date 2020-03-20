@@ -19,6 +19,7 @@ from item_renderer.texture.base import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
     Level as LevelRenderer,\
+    CurtainWall as CurtainWallRenderer,\
     Bottom as BottomRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
@@ -86,6 +87,7 @@ def setup(app, data):
             Facade = FacadeRenderer(),
             Div = DivRenderer(),
             Level = LevelRenderer(),
+            CurtainWall = CurtainWallRenderer(),
             Bottom = BottomRenderer(),
             Door = DoorRenderer(),
             RoofFlat = RoofFlatRenderer(),
@@ -111,4 +113,5 @@ def setup(app, data):
 
 
 def getStyle(building, app):
-    return "mid rise residential zaandam"
+    #return "mid rise residential zaandam"
+    return "high rise glassy"

@@ -2,7 +2,7 @@ from .item_renderer import ItemRendererMixin
 from .container import Container
 from ..facade import Facade as FacadeBase
 from ..div import Div as DivBase
-from ..level import Level as LevelBase
+from ..level import Level as LevelBase, CurtainWall as CurtainWallBase
 from ..bottom import Bottom as BottomBase
 from .door import Door
 
@@ -35,6 +35,15 @@ class Level(LevelBase, Container):
         self.Container = Container
         Container.__init__(self, exportMaterials=False)
         LevelBase.__init__(self)
+
+
+class CurtainWall(CurtainWallBase, Container):
+    
+    def __init__(self):
+        # a reference to the Container class used in the parent classes
+        self.Container = Container
+        Container.__init__(self, exportMaterials=False)
+        CurtainWallBase.__init__(self)
 
 
 class Bottom(BottomBase, Container):

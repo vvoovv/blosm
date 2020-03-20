@@ -81,7 +81,7 @@ class LevelHeights:
         if self.levelHeight:
             h = self.footprint.getStyleBlockAttr("bottomHeight")
             if h is None:
-                h = volumeGenerator.bottomHeight
+                h = 0.
         else:
             h = self.levelHeights.getBottomHeight()
         self.bottomHeight = h

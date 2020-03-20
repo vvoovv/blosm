@@ -113,8 +113,8 @@ class FacadeExporter(Exporter):
         # scale for the cladding texture
         scaleFactor = claddingTextureInfo["textureWidthM"]/\
             claddingTextureInfo["textureWidthPx"]*\
-            (facadeTextureInfo["windowRpx"]-facadeTextureInfo["windowLpx"])/\
-            facadeTextureInfo["windowWidthM"]
+            (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/\
+            facadeTextureInfo["featureWidthM"]
         self.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
         # render the resulting texture
         self.renderTexture(textureFilename, textureDir)

@@ -73,7 +73,7 @@ class Container(ItemRenderer):
         # here is the special case: the door which the only item in the markup
         return self.itemRenderers["Door"]\
             if len(item.markup) == 1 and item.markup[0].__class__.__name__ == "Door"\
-            else self.itemRenderers["Level"]
+            else self.itemRenderers[item.__class__.__name__]
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -190,7 +190,8 @@ class Container(ItemRenderer):
         )
         
         claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
-        claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
+        claddingTextureInfo = None if facadeTextureInfo.get("noCladdingTexture") else\
+            self.getCladdingTextureInfo(claddingMaterial, building)
         
         if facadeTextureInfo:
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
@@ -208,22 +209,20 @@ class Container(ItemRenderer):
         item = levelGroup.item
         if item:
             if item.materialId is None:
-                if item.markup:
-                    self.setMaterialId(
-                        item,
-                        building,
-                        levelGroup.buildingPart,
-                        uvs,
-                        self
-                    )
-                else:
-                    self.renderCladding(building, item, face, uvs)
+                self.setMaterialId(
+                    item,
+                    building,
+                    levelGroup.buildingPart,
+                    uvs,
+                    self
+                )
             if item.materialId:
                 facadeTextureInfo, claddingTextureInfo = item.materialData
                 self.r.setUvs(
                     face,
                     item.geometry.getFinalUvs(
-                        item,
+                        item.numRepeats*len(item.markup) if item.markup else\
+                            max( round(parentItem.width/facadeTextureInfo["featureWidthM"]), 1 ),
                         self.getNumLevelsInFace(levelGroup),
                         facadeTextureInfo["numTilesU"],
                         facadeTextureInfo["numTilesV"]
@@ -231,7 +230,7 @@ class Container(ItemRenderer):
                     self.r.layer.uvLayerNameFacade
                 )
                 # set UV-coordinates for the cladding texture
-                if not self.exportMaterials:
+                if claddingTextureInfo and not self.exportMaterials:
                     self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
                 self.setVertexColor(item, face)
             self.r.setMaterial(face, item.materialId)

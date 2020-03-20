@@ -14,8 +14,8 @@ class RectangleFRA(Geometry):
         """
         return ( (0., 0.), (width, 0.), (width, height), (0., height) )
     
-    def getFinalUvs(self, item, numLevelsInFace, numTilesU, numTilesV):
-        u = len(item.markup)/numTilesU
+    def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV):
+        u = numItemsInFace/numTilesU
         v = numLevelsInFace/numTilesV
         return (
             (0., 0.),

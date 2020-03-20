@@ -79,20 +79,21 @@ class Container(Item):
         if self.markup:
             return
         
-        self.markup.extend(
-            _styleBlock.getItem(self.itemFactory, self)\
-                for _styleBlock in self.styleBlock.markup if self.evaluateCondition(_styleBlock)
-        )
+        if self.styleBlock.markup:
+            self.markup.extend(
+                _styleBlock.getItem(self.itemFactory, self)\
+                    for _styleBlock in self.styleBlock.markup if self.evaluateCondition(_styleBlock)
+            )
         
-        # check if have levels in the markup
-        if self.styleBlock.markup[0].isLevel:
-            # the arrangement of the Level items is always vertical 
-            self.arrangement = Vertical
-        else:
-            # set the arrangement (horizontal or vertical) of the markup items
-            arrangement = self.getStyleBlockAttr("arrangement")
-            if arrangement:
-                self.arrangement = arrangement
+            # check if have levels in the markup
+            if self.styleBlock.markup[0].isLevel:
+                # the arrangement of the Level items is always vertical 
+                self.arrangement = Vertical
+            else:
+                # set the arrangement (horizontal or vertical) of the markup items
+                arrangement = self.getStyleBlockAttr("arrangement")
+                if arrangement:
+                    self.arrangement = arrangement
                 
         # check if have symmetry for the markup items
         symmetry = self.getStyleBlockAttr("symmetry")
