@@ -225,7 +225,7 @@ class Container(ItemRenderer):
                     face,
                     item.geometry.getFinalUvs(
                         item.numRepeats*len(item.markup) if item.markup else\
-                            max( round(parentItem.width/facadeTextureInfo["featureWidthM"]), 1 ),
+                            max( round(parentItem.width/facadeTextureInfo["tileWidthM"]), 1 ),
                         self.getNumLevelsInFace(levelGroup),
                         facadeTextureInfo["numTilesU"],
                         facadeTextureInfo["numTilesV"]

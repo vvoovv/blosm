@@ -232,11 +232,11 @@ styles = {
         ]    
     )
 ],
-"high rise glassy": [
+"high rise mirrored glass": [
     Meta(
         buildingUse = "office",
         buildingLaf = "curtain_wall",
-        height = "mid rise"
+        height = "high rise"
     ),
     Footprint(
         height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
@@ -245,7 +245,6 @@ styles = {
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
         )),
-        #numRoofLevels = 1,
         minLevel = Value(Alternatives(
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
             Constant(0)
@@ -254,14 +253,10 @@ styles = {
         topHeight = 0.,
         #lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
         levelHeight = Value( RandomNormal(3.) ),
-        groundLevelHeight = Value( RandomNormal(1.4*3) ),
+        #groundLevelHeight = Value( RandomNormal(1.4*3) ),
         #bottomHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
-            #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
-            #Constant("dome"),
-            Constant("flat"),
-            Constant("saltbox")
-            #RandomWeighted(( ("gabled", 10), ("flat", 40) ))
+            FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
         )),
         claddingColor = PerBuilding(Value(RandomWeighted((
             ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
@@ -271,13 +266,62 @@ styles = {
     Facade(
         markup = [
             CurtainWall(
-                indices = (0, -1),
-                width = 1.
+                indices = (0, -1)#,
+                #width = 1.
             )
         ]
     ),
     Roof(
-        claddingMaterial = "brick",
+        claddingMaterial = "concrete",
+        claddingColor = "salmon",
+        faces = smoothness.Smooth,
+        #sharpEdges = smoothness.Side
+    )
+],
+"high rise": [
+    Meta(
+        buildingUse = "office",
+        buildingLaf = "modern",
+        height = "high rise"
+    ),
+    Footprint(
+        height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
+        minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
+        numLevels = Value(Alternatives(
+            FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
+            RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
+        )),
+        minLevel = Value(Alternatives(
+            FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
+            Constant(0)
+        )),
+        #topHeight = Value( RandomNormal(1.) ),
+        topHeight = 0.,
+        #lastLevelHeight = PerBuilding( Value( RandomNormal(0.7*3.) ) ),
+        levelHeight = Value( RandomNormal(3.) ),
+        #groundLevelHeight = Value( RandomNormal(1.4*3) ),
+        #bottomHeight = Value( RandomNormal(1.) ),
+        roofShape = Value(Alternatives(
+            FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
+        )),
+        claddingMaterial = PerBuilding(Value(Alternatives(
+            FromAttr("building:material", FromAttr.String, RoofDefs.shapes),
+            Constant("brick")
+        ))),
+        claddingColor = PerBuilding(Value(RandomWeighted((
+            ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
+        ))))
+    ),
+    Facade(
+        markup = [
+            Level(
+                indices = (0, -1)#,
+                #width = 1.
+            )
+        ]
+    ),
+    Roof(
+        claddingMaterial = "concrete",
         claddingColor = "salmon",
         faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side

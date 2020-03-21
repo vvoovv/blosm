@@ -274,7 +274,7 @@ class Container(Item):
         The method is used for vertical arrangement to calculate the number of repeats for the child items
         """
         for item in self.markup:
-            if item.numRepeats == 1:
+            if item.width and item.numRepeats == 1:
                 item.numRepeats = max( round(self.width/item.width), 1)
                 
     

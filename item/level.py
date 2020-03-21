@@ -22,6 +22,7 @@ class CurtainWall(Level):
         width = self.getStyleBlockAttr("width")
         if width is None:
             width = CurtainWall.width
+        self.width = width
         return width
     
     @classmethod
