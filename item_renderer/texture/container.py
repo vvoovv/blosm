@@ -98,6 +98,9 @@ class Container(ItemRenderer):
             item.valid = False
             return
         
+        # calculate number of repeats in the method below
+        item.finalizeMarkupDivision()
+        
         geometry.renderLevelGroups(item, self)
     
     def renderDivs(self, item):

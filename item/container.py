@@ -115,6 +115,7 @@ class Container(Item):
         for item in markup:
             width = item.getStyleBlockAttr("width")
             if width:
+                width += item.getMargin()
                 item.width = width
                 totalFixedWidth += width
             else:
@@ -267,6 +268,15 @@ class Container(Item):
                 self.width = totalNonRelativeWidth
         # always return the total width of all markup elements
         return self.width
+    
+    def finalizeMarkupDivision(self):
+        """
+        The method is used for vertical arrangement to calculate the number of repeats for the child items
+        """
+        for item in self.markup:
+            if item.numRepeats == 1:
+                item.numRepeats = max( round(self.width/item.width), 1)
+                
     
     def getWidthForVerticalArrangement(self):
         return max(item.getWidth() for item in self.markup)

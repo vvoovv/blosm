@@ -21,3 +21,6 @@ class Window(Item):
     
     def getWidth(self):
         return Window.marginLeft + (self.getStyleBlockAttr("width") or Window.width) + Window.marginRight
+    
+    def getMargin(self):
+        return Window.marginLeft + Window.marginRight

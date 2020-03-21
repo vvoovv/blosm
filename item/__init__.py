@@ -101,3 +101,6 @@ class Item:
         # set item factory to be used inside <item.calculateMarkupDivision(..s)>
         item.itemFactory = self.itemFactory
         return item
+    
+    def getMargin(self):
+        return 0.
