@@ -3,6 +3,15 @@ from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
 
+def _getTileWidthM(facadeTextureInfo):
+    if not "tileWidthM" in facadeTextureInfo:
+        # cache <tileWidthM>
+        facadeTextureInfo["tileWidthM"] = facadeTextureInfo["textureWidthPx"]/\
+            (facadeTextureInfo["featureRpx"] - facadeTextureInfo["featureLpx"])*\
+            facadeTextureInfo["featureWidthM"] / facadeTextureInfo["numTilesU"]
+    return facadeTextureInfo["tileWidthM"]
+
+
 class RenderState:
     """
     The class instance hold
@@ -176,15 +185,19 @@ class Container(ItemRenderer):
     
     def setMaterialId(self, item, building, buildingPart, uvs, itemRenderer):
         facadePatternInfo = self.facadePatternInfo
-        if self.initFacadePatternInfo:
-            # reset <facadePatternInfo>
-            for key in facadePatternInfo:
-                facadePatternInfo[key] = 0
-            # initalize <facadePatternInfo>
-            for _item in item.markup:
-                className = _item.__class__.__name__
-                if className in facadePatternInfo:
-                    facadePatternInfo[className] += 1
+        if item.markup:
+            facadePatternInfo = self.facadePatternInfo
+            if self.initFacadePatternInfo:
+                # reset <facadePatternInfo>
+                for key in facadePatternInfo:
+                    facadePatternInfo[key] = 0
+                # initalize <facadePatternInfo>
+                for _item in item.markup:
+                    className = _item.__class__.__name__
+                    if className in facadePatternInfo:
+                        facadePatternInfo[className] += 1
+        else:
+            facadePatternInfo = None
         # get a texture that fits to the Level markup pattern
         facadeTextureInfo = self.r.facadeTextureStore.getTextureInfo(
             building,
@@ -225,7 +238,7 @@ class Container(ItemRenderer):
                     face,
                     item.geometry.getFinalUvs(
                         item.numRepeats*len(item.markup) if item.markup else\
-                            max( round(parentItem.width/facadeTextureInfo["tileWidthM"]), 1 ),
+                            max( round(parentItem.width/_getTileWidthM(facadeTextureInfo)), 1 ),
                         self.getNumLevelsInFace(levelGroup),
                         facadeTextureInfo["numTilesU"],
                         facadeTextureInfo["numTilesV"]

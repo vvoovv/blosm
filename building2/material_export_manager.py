@@ -68,13 +68,14 @@ class Exporter:
         fileOutputNode = nodes["File Output"]
         fileOutputNode.base_path = Exporter.tmpTextureDir
         fileOutputNode.file_slots[0].path = os.path.splitext(textureFilename)[0]
-        # cladding texture
-        setImage(
-            claddingTextureInfo["name"],
-            os.path.join(self.bldgMaterialsDirectory, claddingTextureInfo["path"]),
-            nodes,
-            "cladding_texture"
-        )
+        if claddingTextureInfo:
+            # cladding texture
+            setImage(
+                claddingTextureInfo["name"],
+                os.path.join(self.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                nodes,
+                "cladding_texture"
+            )
         # cladding color
         self.setColor(textColor, nodes, "cladding_color")
         return nodes
@@ -110,12 +111,13 @@ class FacadeExporter(Exporter):
             nodes,
             "facade_texture"
         )
-        # scale for the cladding texture
-        scaleFactor = claddingTextureInfo["textureWidthM"]/\
-            claddingTextureInfo["textureWidthPx"]*\
-            (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/\
-            facadeTextureInfo["featureWidthM"]
-        self.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
+        if claddingTextureInfo:
+            # scale for the cladding texture
+            scaleFactor = claddingTextureInfo["textureWidthM"]/\
+                claddingTextureInfo["textureWidthPx"]*\
+                (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/\
+                facadeTextureInfo["featureWidthM"]
+            self.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
         # render the resulting texture
         self.renderTexture(textureFilename, textureDir)
 

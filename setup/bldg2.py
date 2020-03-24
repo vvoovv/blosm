@@ -32,6 +32,7 @@ from item_renderer.texture.export import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
     Level as LevelRenderer,\
+    CurtainWall as CurtainWallRenderer,\
     Bottom as BottomRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
@@ -114,4 +115,5 @@ def setup(app, data):
 
 def getStyle(building, app):
     #return "mid rise residential zaandam"
-    return "high rise mirrored glass"
+    #return "high rise mirrored glass"
+    return "high rise"

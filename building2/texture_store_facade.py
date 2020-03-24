@@ -182,38 +182,38 @@ class FacadeTextureStore:
             for keyIndex, key in enumerate(_keyGenerators):
                 key = key(facadePatternInfo, _sorted)
                 if key in cache:
-                    textureInfo = cache[key]
+                    texture = cache[key]
                     # set the cache for more detailed keys
                     if keyIndex:
                         for _keyIndex in range(keyIndex):
-                            cache[_keys[_keyIndex]] = textureInfo
+                            cache[_keys[_keyIndex]] = texture
                     break
                 else:
                     textureBundle = buildingLaf.get(key)
                     if textureBundle:
-                        textureInfo = textureBundle.getTextureInfo()
-                        cache[key] = textureInfo
+                        texture = textureBundle.getTexture()
+                        cache[key] = texture
                         # set the cache for more detailed keys
                         if keyIndex:
                             for _keyIndex in range(keyIndex):
-                                cache[_keys[_keyIndex]] = textureInfo
+                                cache[_keys[_keyIndex]] = texture
                         # check if need to set the cache for less detailed keys
                         for _keyIndex in range(keyIndex+1, _numKeyGenerators):
                             key = _keyGenerators[_keyIndex](facadePatternInfo, _sorted)
                             if not key in cache:
-                                cache[key] = textureInfo
+                                cache[key] = texture
                         break
                     else:
                         _keys.append(key)
         else:
             key = ''
             if key in cache:
-                textureInfo = cache[key]
+                texture = cache[key]
             else:
                 # that key must be present in <buildingLaf>
-                textureInfo = buildingLaf.get(key).getTextureInfo()
-                cache[key] = textureInfo
-        return textureInfo
+                texture = buildingLaf.get(key).getTexture()
+                cache[key] = texture
+        return texture.getTextureInfo()
 
 
 class TextureBundle:
@@ -249,14 +249,14 @@ class TextureBundle:
             self.textures.append(TextureSingle(textureInfo, textureFamily))
             self.largestIndex += 1
     
-    def getTextureInfo(self):
+    def getTexture(self):
         index = self.index
         if self.largestIndex:
             if index == self.largestIndex:
                 self.index = 0
             else:
                 self.index += 1
-        return self.textures[index].getTextureInfo()
+        return self.textures[index]
 
 
 class TextureSingle:
