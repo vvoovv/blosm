@@ -29,9 +29,7 @@ class Door(DoorBase, Container):
                 parentItem.building,
                 # building part
                 "door",
-                uvs,
-                # item renderer
-                self
+                uvs
             )
         if item.materialId:
             self.r.setUvs(

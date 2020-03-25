@@ -66,23 +66,6 @@ class Container(ItemRenderer):
     def __init__(self, exportMaterials):
         super().__init__(exportMaterials)
         self.renderState = RenderState()
-
-    def getMarkupItemRenderer(self, item):
-        """
-        Get a renderer for the <item> contained in the markup.
-        """
-        return self.itemRenderers[item.__class__.__name__]
-
-    def getLevelRenderer(self, levelGroup):
-        """
-        Get a renderer for the <levelGroup> representing <levelGroup.item>.
-        <levelGroup.item> is contained in the markup.
-        """
-        item = levelGroup.item
-        # here is the special case: the door which the only item in the markup
-        return self.itemRenderers["Door"]\
-            if len(item.markup) == 1 and item.markup[0].__class__.__name__ == "Door"\
-            else self.itemRenderers[item.__class__.__name__]
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -183,7 +166,7 @@ class Container(ItemRenderer):
         for loop in face.loops:
             loop[uvLayer].uv = uv
     
-    def setMaterialId(self, item, building, buildingPart, uvs, itemRenderer):
+    def setMaterialId(self, item, building, buildingPart, uvs):
         facadePatternInfo = self.facadePatternInfo
         if item.markup:
             facadePatternInfo = self.facadePatternInfo
@@ -211,7 +194,7 @@ class Container(ItemRenderer):
         
         if facadeTextureInfo:
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
-            if itemRenderer.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo, uvs):
+            if self.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo, uvs):
                 item.materialId = materialId
                 item.materialData = facadeTextureInfo, claddingTextureInfo
             else:
@@ -229,8 +212,7 @@ class Container(ItemRenderer):
                     item,
                     building,
                     levelGroup.buildingPart,
-                    uvs,
-                    self
+                    uvs
                 )
             if item.materialId:
                 facadeTextureInfo, claddingTextureInfo = item.materialData

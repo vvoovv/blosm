@@ -76,6 +76,12 @@ class Item:
     def getStyleBlockCache(self, scope):
         return self._styleBlockCache
     
+    def getItemRenderer(self, itemRenderers):
+        """
+        Get a renderer for the item contained in the markup.
+        """
+        return itemRenderers[self.__class__.__name__]
+    
     def calculateStyling(self):
         """
         Lookups the style for the item at the very top of style definitions.

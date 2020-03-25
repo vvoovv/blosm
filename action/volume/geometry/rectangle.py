@@ -47,7 +47,7 @@ class RectangleFRA(Geometry):
             _item.geometry = self
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
-            # Additional vertices can be created inside <itemRenderer.getMarkupItemRenderer(_item).render(..)>,
+            # Additional vertices can be created inside <_item.getItemRenderer(item.itemRenderers).render(..)>,
             # that's why we use <len(building.verts)>
             indexRB = len(building.verts)
             indexRT = indexRB + 1
@@ -57,7 +57,7 @@ class RectangleFRA(Geometry):
             v2 = v2 + incrementVector
             verts.append(v2)
             texUr = texUl + _item.width
-            itemRenderer.getMarkupItemRenderer(_item).render(
+            _item.getItemRenderer(itemRenderer.itemRenderers).render(
                 _item,
                 (indexLB, indexRB, indexRT, indexLT),
                 ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
@@ -84,7 +84,7 @@ class RectangleFRA(Geometry):
         texVt = parentItem.uvs[3][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
-        itemRenderer.getMarkupItemRenderer(lastItem).render(
+        lastItem.getItemRenderer(itemRenderer.itemRenderers).render(
             lastItem,
             (indexLB, parentIndices[1], parentIndices[2], indexLT),
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
@@ -108,7 +108,7 @@ class RectangleFRA(Geometry):
                 self.renderLevelGroup(
                     parentItem, 
                     levelGroup,
-                    parentRenderer.getLevelRenderer(levelGroup),
+                    levelGroup.item.getLevelRenderer(levelGroup, parentRenderer.itemRenderers),
                     rs
                 )
                 levelGroup = levelGroup.next
@@ -118,7 +118,8 @@ class RectangleFRA(Geometry):
         self.renderLastLevelGroup(
             parentItem, 
             lastLevelGroup,
-            parentRenderer.getLevelRenderer(lastLevelGroup) if lastLevelGroup.item else parentRenderer,
+            lastLevelGroup.item.getLevelRenderer(lastLevelGroup, parentRenderer.itemRenderers)\
+                if lastLevelGroup.item else parentRenderer,
             rs
         )
     

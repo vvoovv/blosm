@@ -46,7 +46,7 @@ class TrapezoidRV(Geometry):
             _item.geometry = self
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
-            # Additional vertices can be created inside <itemRenderer.getMarkupItemRenderer(_item).render(..)>,
+            # Additional vertices can be created inside <_item.getItemRenderer(itemRenderer.itemRenderers).render(..)>,
             # that's why we use <len(building.verts)>
             indexRB = len(building.verts)
             indexRT = indexRB + 1
@@ -58,7 +58,7 @@ class TrapezoidRV(Geometry):
             verts.append(v2)
             texUr = texUl + _item.width
             texVrt = texVlt + _item.width * factor
-            itemRenderer.getMarkupItemRenderer(_item).render(
+            _item.getItemRenderer(itemRenderer.itemRenderers).render(
                 _item,
                 (indexLB, indexRB, indexRT, indexLT),
                 ( (texUl, texVb), (texUr, texVb), (texUr, texVrt), (texUl, texVlt) )
@@ -83,7 +83,7 @@ class TrapezoidRV(Geometry):
         texVb = parentItem.uvs[0][1]
         # Set the geometry for the <lastItem>; division of a trapezoid can only generate trapezoids
         lastItem.geometry = self
-        itemRenderer.getMarkupItemRenderer(lastItem).render(
+        lastItem.getItemRenderer(itemRenderer.itemRenderers).render(
             lastItem,
             (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),
             ( (rs.texUl, texVb), (texUr, texVb), (texUr, parentItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
@@ -194,7 +194,7 @@ class TrapezoidChainedRV(Geometry):
             _item = item.markup[_i]
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
-            # Additional vertices can be created inside <itemRenderer.getMarkupItemRenderer(_item).render(..)>,
+            # Additional vertices can be created inside <_item.getItemRenderer(itemRenderer.itemRenderers).render(..)>,
             # that's why we use <len(building.verts)>
             indexRB = len(building.verts)
             incrementVector = _item.width * unitVector
@@ -235,14 +235,14 @@ class TrapezoidChainedRV(Geometry):
             
             if chainedTrapezoid:
                 _item.geometry = self
-                itemRenderer.getMarkupItemRenderer(_item).render(
+                _item.getItemRenderer(itemRenderer.itemRenderers).render(
                     _item,
                     _indices + tuple( indices[i] for i in range(stopIndexPlus1, startIndex) ) + (indexLT,),
                     _uvs + tuple( uvs[i] for i in range(stopIndexPlus1, startIndex) ) + ((texUl, texVlt),)
                 )
             else:
                 _item.geometry = self.geometryTrapezoid
-                itemRenderer.getMarkupItemRenderer(_item).render(
+                _item.getItemRenderer(itemRenderer.itemRenderers).render(
                     _item,
                     (indexLB, indexRB, indexRT, indexLT),
                     ( (texUl, texVb), (texUr, texVb), (texUr, texVrt), (texUl,texVlt) )
@@ -271,7 +271,7 @@ class TrapezoidChainedRV(Geometry):
         chainedTrapezoid = rs.startIndex > 3
         if chainedTrapezoid:
             lastItem.geometry = self
-            itemRenderer.getMarkupItemRenderer(lastItem).render(
+            lastItem.getItemRenderer(itemRenderer.itemRenderers).render(
                 lastItem,
                 # indices
                 (rs.indexLB, parentIndices[1], parentIndices[2]) +\
@@ -284,7 +284,7 @@ class TrapezoidChainedRV(Geometry):
             )
         else:
             lastItem.geometry = self.geometryTrapezoid
-            itemRenderer.getMarkupItemRenderer(lastItem).render(
+            lastItem.getItemRenderer(itemRenderer.itemRenderers).render(
                 lastItem,
                 # indices
                 (rs.indexLB, parentIndices[1], parentIndices[2], rs.indexLT),

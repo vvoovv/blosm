@@ -115,5 +115,5 @@ def setup(app, data):
 
 def getStyle(building, app):
     #return "mid rise residential zaandam"
-    #return "high rise mirrored glass"
+    return "high rise mirrored glass"
     return "high rise"
