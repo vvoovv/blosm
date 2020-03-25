@@ -65,6 +65,7 @@ class Container(ItemRenderer):
     
     def __init__(self, exportMaterials):
         super().__init__(exportMaterials)
+        self.noCladdingTexture = False
         self.renderState = RenderState()
     
     def renderMarkup(self, item):
@@ -188,9 +189,9 @@ class Container(ItemRenderer):
             facadePatternInfo
         )
         
-        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
-        claddingTextureInfo = None if facadeTextureInfo.get("noCladdingTexture") else\
-            self.getCladdingTextureInfo(claddingMaterial, building)
+        claddingTextureInfo = None\
+            if self.noCladdingTexture or facadeTextureInfo.get("noCladdingTexture") else\
+            self.getCladdingTextureInfo(item, building)
         
         if facadeTextureInfo:
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
@@ -230,7 +231,8 @@ class Container(ItemRenderer):
                 # set UV-coordinates for the cladding texture
                 if claddingTextureInfo and not self.exportMaterials:
                     self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
-                self.setVertexColor(item, face)
+                if not facadeTextureInfo.get("noMixinColor"):
+                    self.setVertexColor(item, face)
             self.r.setMaterial(face, item.materialId)
         else:
             self.renderCladding(building, parentItem, face, uvs)

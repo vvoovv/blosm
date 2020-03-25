@@ -36,15 +36,12 @@ class ItemRenderer:
         # The latter is the case if there is no style block for the bottom
         
         materialId = ''
-        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
-        claddingTextureInfo = None
-        if claddingMaterial:
-            claddingTextureInfo = self.getCladdingTextureInfo(claddingMaterial, building)
-            if claddingTextureInfo:
-                self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
-                materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
-                self.createCladdingMaterial(materialId, claddingTextureInfo)
-                self.setVertexColor(item, face)
+        claddingTextureInfo = self.getCladdingTextureInfo(item, building)
+        if claddingTextureInfo:
+            self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
+            materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
+            self.createCladdingMaterial(materialId, claddingTextureInfo)
+            self.setVertexColor(item, face)
         self.r.setMaterial(face, materialId)
         # Return <claddingTextureInfo>, since it may be used by
         # the <renderCladding(..)> of a child class
@@ -60,7 +57,8 @@ class ItemRenderer:
             self.r.layer.uvLayerNameCladding
         )
     
-    def getCladdingTextureInfo(self, claddingMaterial, building):
+    def getCladdingTextureInfo(self, item, building):
+        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
         if claddingMaterial:
             if claddingMaterial in building._cache:
                 claddingTextureInfo = building._cache[claddingMaterial]
