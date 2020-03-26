@@ -4,15 +4,12 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
 _materialTemplateFilename = "building_material_templates.blend"
-_materialTemplateName = "facade_overlay_template"
-_curtainWallMaterialTemplateName = "facade_mirrored_glass_template"
 
 
 class Level:
     
     def __init__(self):
         self.facadeMaterialTemplateFilename = _materialTemplateFilename
-        self.facadeMaterialTemplateName = _materialTemplateName
         
         # do we need to initialize <self.facadePatternInfo>
         self.initFacadePatternInfo = True
@@ -34,16 +31,15 @@ class CurtainWall(Level):
         
         self.noCladdingTexture = True
         
-        self.facadeMaterialTemplateName = _curtainWallMaterialTemplateName
-        
         self.facadePatternInfo = None
         # do we need to initialize <self.facadePatternInfo>
         self.initFacadePatternInfo = False
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
-        materialTemplate = self.getMaterialTemplate(
-            self.facadeMaterialTemplateFilename,
-            self.facadeMaterialTemplateName
+        materialTemplate = self.getFacadeMaterialTemplate(
+            facadeTextureInfo,
+            None,
+            self.facadeMaterialTemplateFilename
         )
         if not materialName in bpy.data.materials:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
@@ -55,10 +51,26 @@ class CurtainWall(Level):
                 "Image Texture"
             )
             # specular map
-            setImage(
-                facadeTextureInfo["specularMapName"],
-                os.path.join(self.r.bldgMaterialsDirectory, facadeTextureInfo["path"]),
-                nodes,
-                "Specular Map"
-            )
+            if facadeTextureInfo.get("specularMapName"):
+                setImage(
+                    facadeTextureInfo["specularMapName"],
+                    os.path.join(self.r.bldgMaterialsDirectory, facadeTextureInfo["path"]),
+                    nodes,
+                    "Specular Map"
+                )
         return True
+    
+    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
+        useMixinColor = self.r.useMixinColor and not facadeTextureInfo["noMixinColor"]
+        useSpecularMap = facadeTextureInfo.get("specularMapName")
+        
+        if useSpecularMap and useMixinColor:
+            materialTemplateName = "facade_specular_color"
+        elif useSpecularMap:
+            materialTemplateName = "facade_specular"
+        elif useMixinColor:
+            materialTemplateName = "facade_color"
+        else:
+            materialTemplateName = "export"
+        
+        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)

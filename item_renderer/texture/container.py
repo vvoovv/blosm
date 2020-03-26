@@ -231,7 +231,7 @@ class Container(ItemRenderer):
                 # set UV-coordinates for the cladding texture
                 if claddingTextureInfo and not self.exportMaterials:
                     self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
-                if not facadeTextureInfo.get("noMixinColor"):
+                if self.r.useMixinColor and not facadeTextureInfo.get("noMixinColor"):
                     self.setVertexColor(item, face)
             self.r.setMaterial(face, item.materialId)
         else:

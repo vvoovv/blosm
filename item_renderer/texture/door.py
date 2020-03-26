@@ -1,7 +1,6 @@
 
 
 _materialTemplateFilename = "building_material_templates.blend"
-_materialTemplateName = "door_overlay_template"
 
 
 class Door:
@@ -14,7 +13,6 @@ class Door:
     
     def __init__(self):
         self.facadeMaterialTemplateFilename = _materialTemplateFilename
-        self.facadeMaterialTemplateName = _materialTemplateName
         # do we need to initialize <self.facadePatternInfo>
         self.initFacadePatternInfo = False
         self.facadePatternInfo = dict(Door=1)

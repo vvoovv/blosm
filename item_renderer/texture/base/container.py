@@ -12,9 +12,10 @@ class Container(ContainerBase, ItemRendererMixin):
     """
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
-        materialTemplate = self.getMaterialTemplate(
-            self.facadeMaterialTemplateFilename,
-            self.facadeMaterialTemplateName
+        materialTemplate = self.getFacadeMaterialTemplate(
+            facadeTextureInfo,
+            claddingTextureInfo,
+            self.facadeMaterialTemplateFilename
         )
         if not materialName in bpy.data.materials:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)

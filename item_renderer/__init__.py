@@ -31,6 +31,13 @@ class ItemRenderer:
             materialTemplate = loadMaterialsFromFile(os.path.join(self.r.bldgMaterialsDirectory, materialTemplateFilename), True, materialTemplateName)[0]
         return materialTemplate
     
+    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
+        if claddingTextureInfo:
+            materialTemplateName = "facade_cladding_color" if self.r.useMixinColor else "facade_cladding"
+        else:
+            materialTemplateName = "export"
+        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
+    
     def renderCladding(self, building, item, face, uvs):
         # <item> could be the current item or its parent item.
         # The latter is the case if there is no style block for the bottom

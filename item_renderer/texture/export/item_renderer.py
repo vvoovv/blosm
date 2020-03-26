@@ -5,7 +5,7 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 _textureDir = "texture"
 _materialTemplateFilename = "building_material_templates.blend"
-_materialTemplateName = "export_template"
+_materialTemplateName = "export"
 
 
 class ItemRendererMixin:

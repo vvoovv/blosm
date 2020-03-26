@@ -47,9 +47,10 @@ class Door(DoorBase, Container):
         self.r.setMaterial(face, item.materialId)
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
-        materialTemplate = self.getMaterialTemplate(
-            self.facadeMaterialTemplateFilename,
-            self.facadeMaterialTemplateName
+        materialTemplate = self.getFacadeMaterialTemplate(
+            facadeTextureInfo,
+            claddingTextureInfo,
+            self.facadeMaterialTemplateFilename
         )
         if not materialName in bpy.data.materials:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
@@ -70,3 +71,10 @@ class Door(DoorBase, Container):
                     "Wall Material"
                 )
         return True
+
+    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
+        if claddingTextureInfo:
+            materialTemplateName = "door_cladding_color" if self.r.useMixinColor else "door_cladding"
+        else:
+            materialTemplateName = "export"
+        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)

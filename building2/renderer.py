@@ -98,6 +98,9 @@ class BuildingRendererNew(Renderer):
         
         self.bldgMaterialsDirectory = os.path.dirname(app.bldgMaterialsFilepath)
         
+        # do wee need to apply a mixin color for facade textures?
+        self.useMixinColor = True
+        
         # do we need export materials?
         exportMaterials = False
         

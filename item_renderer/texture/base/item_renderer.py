@@ -5,7 +5,7 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
 _claddingMaterialTemplateFilename = "building_material_templates.blend"
-_claddingMaterialTemplateName = "tiles_color_template"
+_claddingMaterialTemplateName = "tiles_color"
 
 
 class ItemRendererMixin:

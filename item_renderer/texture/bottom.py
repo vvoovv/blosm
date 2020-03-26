@@ -1,12 +1,10 @@
 _materialTemplateFilename = "building_material_templates.blend"
-_materialTemplateName = "facade_overlay_template"
 
 
 class Bottom:
     
     def __init__(self):
         self.facadeMaterialTemplateFilename = _materialTemplateFilename
-        self.facadeMaterialTemplateName = _materialTemplateName
         
         # do we need to initialize <self.facadePatternInfo>
         self.initFacadePatternInfo = True
