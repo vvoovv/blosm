@@ -27,7 +27,7 @@ class Container(ContainerBase, ItemRendererMixin):
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         if not materialName in bpy.data.materials:
-            if facadeTextureInfo.get("noCladdingTexture") and facadeTextureInfo.get("noMixinColor"):
+            if facadeTextureInfo.get("noCladdingTexture") and (not self.r.useMixinColor or facadeTextureInfo.get("noMixinColor")):
                 # use the diffuse texture as is
                 textureFilepath = os.path.join(
                     self.r.bldgMaterialsDirectory,
