@@ -5,7 +5,7 @@ from .item_store import ItemStore
 from .item_factory import ItemFactory
 from .texture_store_facade import FacadeTextureStore
 from .texture_store_cladding import CladdingTextureStore
-from .material_export_manager import MaterialExportManager
+from .texture_exporter import TextureExporter
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -98,8 +98,8 @@ class BuildingRendererNew(Renderer):
         
         self.bldgMaterialsDirectory = os.path.dirname(app.bldgMaterialsFilepath)
         
-        # do wee need to apply a mixin color for facade textures?
-        self.useMixinColor = True
+        # do wee need to apply a cladding color for facade textures?
+        self.useCladdingColor = True
         
         # do we need export materials?
         exportMaterials = False
@@ -114,7 +114,7 @@ class BuildingRendererNew(Renderer):
         
         self.exportMaterials = exportMaterials
         if exportMaterials:
-            self.materialExportManager = MaterialExportManager(self.bldgMaterialsDirectory)
+            self.textureExporter = TextureExporter(self.bldgMaterialsDirectory)
         
         # initialize item renderers
         for item in itemRenderers:
@@ -134,7 +134,7 @@ class BuildingRendererNew(Renderer):
     
     def cleanup(self):
         if self.exportMaterials:
-            self.materialExportManager.cleanup()
+            self.textureExporter.cleanup()
     
     def render(self, buildingP, data):
         parts = buildingP.parts

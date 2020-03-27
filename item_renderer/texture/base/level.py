@@ -40,14 +40,14 @@ class CurtainWall(CurtainWallBase, Container):
         return True
     
     def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
-        useMixinColor = self.r.useMixinColor and not facadeTextureInfo["noMixinColor"]
+        useCladdingColor = self.r.useCladdingColor and not facadeTextureInfo["noCladdingColor"]
         useSpecularMap = facadeTextureInfo.get("specularMapName")
         
-        if useSpecularMap and useMixinColor:
+        if useSpecularMap and useCladdingColor:
             materialTemplateName = "facade_specular_color"
         elif useSpecularMap:
             materialTemplateName = "facade_specular"
-        elif useMixinColor:
+        elif useCladdingColor:
             materialTemplateName = "facade_color"
         else:
             materialTemplateName = "export"

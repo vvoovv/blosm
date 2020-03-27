@@ -1,7 +1,9 @@
 import os
 import bpy
 from manager import Manager
+from util.blender import loadSceneFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage
+
 
 _textureDir = "texture"
 _materialTemplateFilename = "building_material_templates.blend"
@@ -12,6 +14,16 @@ class ItemRendererMixin:
     """
     A mixin class
     """
+    
+    def getTemplateScene(self, sceneName):
+        scene = bpy.data.scenes.get(sceneName)
+        if scene:
+            # perform a quick sanity check here
+            if not scene.use_nodes:
+                scene = None
+        if not scene:
+            scene = loadSceneFromFile(self.r.textureExporter.exportTemplateFilename, sceneName)
+        return scene
     
     def getCladdingMaterialId(self, item, claddingTextureInfo):
         color = self.getCladdingColor(item)
@@ -24,21 +36,44 @@ class ItemRendererMixin:
             # check if have texture in the data directory
             textureFilepath = self.getTextureFilepath(materialName)
             if not os.path.isfile(textureFilepath):
-                self.r.materialExportManager.claddingExporter.makeTexture(
-                    materialName, # the file name of the texture
+                self.makeCladdingTexture(
+                    materialName,
                     os.path.join(self.r.app.dataDir, _textureDir),
-                    self.claddingColor,
                     claddingTextureInfo
                 )
             
             self.createMaterialFromTemplate(materialName, textureFilepath)
         return True
     
+    def makeCladdingTexture(self, textureFilename, textureDir, claddingTextureInfo):
+        textureExporter = self.r.textureExporter
+        scene = self.getTemplateScene("compositing_cladding_color")
+        nodes = textureExporter.makeCommonPreparations(
+            scene,
+            textureFilename,
+            textureDir
+        )
+        # cladding texture
+        setImage(
+            claddingTextureInfo["name"],
+            os.path.join(textureExporter.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+            nodes,
+            "cladding_texture"
+        )
+        # cladding color
+        self.setColor(self.claddingColor, nodes, "cladding_color")
+        # render the resulting texture
+        textureExporter.renderTexture(scene, textureFilename, textureDir)
+    
     def getCladdingColor(self, item):
         color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
         # remember the color for a future use in the next funtion call
         self.claddingColor = color
         return color
+    
+    def setColor(self, textColor, nodes, nodeName):
+        color = Manager.getColor(textColor)
+        nodes[nodeName].outputs[0].default_value = (color[0], color[1], color[2], 1.)
     
     def getTextureFilepath(self, materialName):
         return os.path.join(self.r.app.dataDir, _textureDir, materialName)
@@ -56,7 +91,3 @@ class ItemRendererMixin:
             nodes,
             "Image Texture"
         )
-    
-    def setVertexColor(self, parentItem, face):
-        # do nothing here
-        pass

@@ -74,7 +74,7 @@ class Door(DoorBase, Container):
 
     def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
         if claddingTextureInfo:
-            materialTemplateName = "door_cladding_color" if self.r.useMixinColor else "door_cladding"
+            materialTemplateName = "door_cladding_color" if self.r.useCladdingColor else "door_cladding"
         else:
             materialTemplateName = "export"
         return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)

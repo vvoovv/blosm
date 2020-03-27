@@ -11,6 +11,13 @@ class Container(ContainerBase, ItemRendererMixin):
     The base class for the item renderers Facade, Div, Layer, Bottom
     """
     
+    def renderLevelGroupExtra(self, item, face, facadeTextureInfo, claddingTextureInfo, uvs):
+        # set UV-coordinates for the cladding texture
+        if claddingTextureInfo:
+            self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
+        if self.r.useCladdingColor and not facadeTextureInfo.get("noCladdingColor"):
+            self.setVertexColor(item, face)
+    
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         materialTemplate = self.getFacadeMaterialTemplate(
             facadeTextureInfo,

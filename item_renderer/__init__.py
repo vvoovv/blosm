@@ -33,7 +33,7 @@ class ItemRenderer:
     
     def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
         if claddingTextureInfo:
-            materialTemplateName = "facade_cladding_color" if self.r.useMixinColor else "facade_cladding"
+            materialTemplateName = "facade_cladding_color" if self.r.useCladdingColor else "facade_cladding"
         else:
             materialTemplateName = "export"
         return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
@@ -48,7 +48,8 @@ class ItemRenderer:
             self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
             materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
             self.createCladdingMaterial(materialId, claddingTextureInfo)
-            self.setVertexColor(item, face)
+            if not self.exportMaterials:
+                self.setVertexColor(item, face)
         self.r.setMaterial(face, materialId)
         # Return <claddingTextureInfo>, since it may be used by
         # the <renderCladding(..)> of a child class
