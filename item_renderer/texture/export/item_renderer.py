@@ -1,7 +1,6 @@
 import os
 import bpy
 from manager import Manager
-from util.blender import loadSceneFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
@@ -14,16 +13,6 @@ class ItemRendererMixin:
     """
     A mixin class
     """
-    
-    def getTemplateScene(self, sceneName):
-        scene = bpy.data.scenes.get(sceneName)
-        if scene:
-            # perform a quick sanity check here
-            if not scene.use_nodes:
-                scene = None
-        if not scene:
-            scene = loadSceneFromFile(self.r.textureExporter.exportTemplateFilename, sceneName)
-        return scene
     
     def getCladdingMaterialId(self, item, claddingTextureInfo):
         color = self.getCladdingColor(item)
@@ -47,7 +36,7 @@ class ItemRendererMixin:
     
     def makeCladdingTexture(self, textureFilename, textureDir, claddingTextureInfo):
         textureExporter = self.r.textureExporter
-        scene = self.getTemplateScene("compositing_cladding_color")
+        scene = textureExporter.getTemplateScene("compositing_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
             scene,
             textureFilename,

@@ -50,7 +50,7 @@ class Container(ContainerBase, ItemRendererMixin):
     
     def makeTexture(self, textureFilename, textureDir, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
-        scene = self.getTemplateScene("compositing_facade_cladding_color")
+        scene = textureExporter.getTemplateScene("compositing_facade_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
             scene,
             textureFilename,
