@@ -2,8 +2,6 @@ import os
 import bpy
 from .item_renderer import ItemRendererMixin, _textureDir
 from ..container import Container as ContainerBase
-from manager import Manager
-from util.blender_extra.material import setImage
 
 
 class Container(ContainerBase, ItemRendererMixin):
@@ -34,11 +32,12 @@ class Container(ContainerBase, ItemRendererMixin):
                 )
             else:
                 # check if have texture in the data directory
-                textureFilepath = self.getTextureFilepath(materialName)
+                textureFilename, textureDir, textureFilepath = self.getTextureFilepath(materialName)
                 if not os.path.isfile(textureFilepath):
                     self.makeTexture(
-                        materialName, # the file name of the texture
-                        os.path.join(self.r.app.dataDir, _textureDir),
+                        textureFilename,
+                        textureDir,
+                        textureFilepath,
                         self.claddingColor,
                         facadeTextureInfo,
                         claddingTextureInfo,
@@ -48,7 +47,7 @@ class Container(ContainerBase, ItemRendererMixin):
             self.createMaterialFromTemplate(materialName, textureFilepath)
         return True
     
-    def makeTexture(self, textureFilename, textureDir, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
+    def makeTexture(self, textureFilename, textureDir, textureFilepath, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
         scene = textureExporter.getTemplateScene("compositing_facade_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
@@ -57,17 +56,17 @@ class Container(ContainerBase, ItemRendererMixin):
             textureDir
         )
         # facade texture
-        setImage(
+        textureExporter.setImage(
             facadeTextureInfo["name"],
-            os.path.join(textureExporter.bldgMaterialsDirectory, facadeTextureInfo["path"]),
+            facadeTextureInfo["path"],
             nodes,
             "facade_texture"
         )
         if claddingTextureInfo:
             # cladding texture
-            setImage(
+            textureExporter.setImage(
                 claddingTextureInfo["name"],
-                os.path.join(textureExporter.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                claddingTextureInfo["path"],
                 nodes,
                 "cladding_texture"
             )
@@ -76,21 +75,11 @@ class Container(ContainerBase, ItemRendererMixin):
                 claddingTextureInfo["textureWidthPx"]*\
                 (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/\
                 facadeTextureInfo["featureWidthM"]
-            self.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
+            textureExporter.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
         # cladding color
-        self.setColor(textColor, nodes, "cladding_color")
+        textureExporter.setColor(textColor, nodes, "cladding_color")
         # render the resulting texture
-        textureExporter.renderTexture(scene, textureFilename, textureDir)
-    
-    def setScaleNode(self, nodes, nodeName, scaleX, scaleY):
-        scaleInputs = nodes[nodeName].inputs
-        scaleInputs[1].default_value = scaleX
-        scaleInputs[2].default_value = scaleY
-    
-    def setTranslateNode(self, nodes, nodeName, translateX, translateY):
-        translateInputs = nodes[nodeName].inputs
-        translateInputs[1].default_value = translateX
-        translateInputs[2].default_value = translateY
+        textureExporter.renderTexture(scene, textureFilepath)
     
     def renderLevelGroupExtra(self, item, face, facadeTextureInfo, claddingTextureInfo, uvs):
         # do nothing here

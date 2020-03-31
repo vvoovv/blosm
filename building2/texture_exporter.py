@@ -1,7 +1,9 @@
 import os
 from time import time
 import bpy
+from manager import Manager
 from util.blender import loadSceneFromFile
+from util.blender_extra.material import setImage
 
 
 _exportTemplateFilename = "building_material_templates.blend"
@@ -51,13 +53,13 @@ class TextureExporter:
         fileOutputNode.file_slots[0].path = os.path.splitext(textureFilename)[0]
         return nodes
     
-    def renderTexture(self, scene, textureFilename, textureDir):
+    def renderTexture(self, scene, textureFilepath):
         tmpTextureDir = self.tmpTextureDir
         bpy.ops.render.render(scene=scene.name)
         os.replace(
             # the texture file is the only file in <tmpTextureDir>
             os.path.join(tmpTextureDir, os.listdir(tmpTextureDir)[0]),
-            os.path.join(textureDir, textureFilename)
+            textureFilepath
         )
     
     def getTemplateScene(self, sceneName):
@@ -70,3 +72,25 @@ class TextureExporter:
             scene = loadSceneFromFile(self.exportTemplateFilename, sceneName)
             self.linkedScenes.append(scene.name)
         return scene
+    
+    def setScaleNode(self, nodes, nodeName, scaleX, scaleY):
+        scaleInputs = nodes[nodeName].inputs
+        scaleInputs[1].default_value = scaleX
+        scaleInputs[2].default_value = scaleY
+    
+    def setTranslateNode(self, nodes, nodeName, translateX, translateY):
+        translateInputs = nodes[nodeName].inputs
+        translateInputs[1].default_value = translateX
+        translateInputs[2].default_value = translateY
+    
+    def setImage(self, fileName, relativePath, nodes, nodeName):
+        setImage(
+            fileName,
+            os.path.join(self.bldgMaterialsDirectory, relativePath),
+            nodes,
+            nodeName
+        )
+    
+    def setColor(self, textColor, nodes, nodeName):
+        color = Manager.getColor(textColor)
+        nodes[nodeName].outputs[0].default_value = (color[0], color[1], color[2], 1.)

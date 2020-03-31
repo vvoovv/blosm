@@ -13,3 +13,31 @@ class CurtainWall(CurtainWallBase, Container):
         self.Container = Container
         Container.__init__(self, exportMaterials=True)
         CurtainWallBase.__init__(self)
+    
+    def makeTexture(self, textureFilename, textureDir, textureFilepath, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
+        textureExporter = self.r.textureExporter
+        scene = textureExporter.getTemplateScene("compositing_facade_specular_color")
+        nodes = textureExporter.makeCommonPreparations(
+            scene,
+            textureFilename,
+            textureDir
+        )
+        # facade texture
+        textureExporter.setImage(
+            facadeTextureInfo["name"],
+            facadeTextureInfo["path"],
+            nodes,
+            "facade_texture"
+        )
+        specularMapName = facadeTextureInfo.get("specularMapName")
+        if specularMapName:
+            textureExporter.setImage(
+                    specularMapName,
+                    facadeTextureInfo["path"],
+                    nodes,
+                    "specular_map"
+                )
+        # cladding color
+        textureExporter.setColor(textColor, nodes, "cladding_color")
+        # render the resulting texture
+        textureExporter.renderTexture(scene, textureFilepath)

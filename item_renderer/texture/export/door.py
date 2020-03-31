@@ -43,7 +43,7 @@ class Door(DoorBase, Container):
             )
         self.r.setMaterial(face, item.materialId)
     
-    def makeTexture(self, textureFilename, textureDir, textColor, doorTextureInfo, claddingTextureInfo, uvs):
+    def makeTexture(self, textureFilename, textureDir, textureFilepath, textColor, doorTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
         scene = textureExporter.getTemplateScene("compositing_door_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
@@ -60,44 +60,44 @@ class Door(DoorBase, Container):
         image.generated_width = faceWidthPx
         image.generated_height = faceHeightPx
         # door texture
-        setImage(
+        textureExporter.setImage(
             doorTextureInfo["name"],
-            os.path.join(textureExporter.bldgMaterialsDirectory, doorTextureInfo["path"]),
+            doorTextureInfo["path"],
             nodes,
             "door_texture"
         )
         # scale for the door texture
         scaleY = doorTextureInfo["textureHeightM"]/doorTextureInfo["textureHeightPx"]*faceHeightPx/faceHeightM
-        self.setScaleNode(
+        textureExporter.setScaleNode(
             nodes,
             "door_scale",
             doorTextureInfo["textureWidthM"]/doorTextureInfo["textureWidthPx"]*faceWidthPx/faceWidthM,
             scaleY
         )
         # translate for the door texture
-        self.setTranslateNode(
+        textureExporter.setTranslateNode(
             nodes,
             "door_translate",
             0,
             (scaleY*doorTextureInfo["textureHeightPx"] - faceHeightPx)/2
         )
         # cladding texture
-        setImage(
+        textureExporter.setImage(
             claddingTextureInfo["name"],
-            os.path.join(textureExporter.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+            claddingTextureInfo["path"],
             nodes,
             "cladding_texture"
         )
         # scale for the cladding texture
         scaleFactor = claddingTextureInfo["textureWidthM"]/claddingTextureInfo["textureWidthPx"]*\
             faceWidthPx/faceWidthM
-        self.setScaleNode(
+        textureExporter.setScaleNode(
             nodes,
             "cladding_scale",
             scaleFactor,
             scaleFactor
         )
         # cladding color
-        self.setColor(textColor, nodes, "cladding_color")
+        textureExporter.setColor(textColor, nodes, "cladding_color")
         # render the resulting texture
-        textureExporter.renderTexture(scene, textureFilename, textureDir)
+        textureExporter.renderTexture(scene, textureFilepath)

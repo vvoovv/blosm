@@ -23,18 +23,19 @@ class ItemRendererMixin:
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
         if not materialName in bpy.data.materials:
             # check if have texture in the data directory
-            textureFilepath = self.getTextureFilepath(materialName)
+            textureFileName, textureDir, textureFilepath = self.getTextureFilepath(materialName)
             if not os.path.isfile(textureFilepath):
                 self.makeCladdingTexture(
-                    materialName,
-                    os.path.join(self.r.app.dataDir, _textureDir),
+                    textureFileName,
+                    textureDir,
+                    textureFilepath,
                     claddingTextureInfo
                 )
             
             self.createMaterialFromTemplate(materialName, textureFilepath)
         return True
     
-    def makeCladdingTexture(self, textureFilename, textureDir, claddingTextureInfo):
+    def makeCladdingTexture(self, textureFilename, textureDir, textureFilepath, claddingTextureInfo):
         textureExporter = self.r.textureExporter
         scene = textureExporter.getTemplateScene("compositing_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
@@ -43,16 +44,16 @@ class ItemRendererMixin:
             textureDir
         )
         # cladding texture
-        setImage(
+        textureExporter.setImage(
             claddingTextureInfo["name"],
-            os.path.join(textureExporter.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+            claddingTextureInfo["path"],
             nodes,
             "cladding_texture"
         )
         # cladding color
-        self.setColor(self.claddingColor, nodes, "cladding_color")
+        textureExporter.setColor(self.claddingColor, nodes, "cladding_color")
         # render the resulting texture
-        textureExporter.renderTexture(scene, textureFilename, textureDir)
+        textureExporter.renderTexture(scene, textureFilepath)
     
     def getCladdingColor(self, item):
         color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
@@ -60,12 +61,10 @@ class ItemRendererMixin:
         self.claddingColor = color
         return color
     
-    def setColor(self, textColor, nodes, nodeName):
-        color = Manager.getColor(textColor)
-        nodes[nodeName].outputs[0].default_value = (color[0], color[1], color[2], 1.)
-    
     def getTextureFilepath(self, materialName):
-        return os.path.join(self.r.app.dataDir, _textureDir, materialName)
+        textureFilename = "baked_%s" % materialName
+        textureDir = os.path.join(self.r.app.dataDir, _textureDir)
+        return textureFilename, textureDir, os.path.join(textureDir, textureFilename)
     
     def createMaterialFromTemplate(self, materialName, textureFilepath):
         materialTemplate = self.getMaterialTemplate(
