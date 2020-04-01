@@ -1,9 +1,13 @@
+import math
 from grammar import *
 from grammar.scope import PerBuilding, PerFootprint
 from grammar import units, symmetry, smoothness
 from grammar.value import Value, FromAttr, Alternatives, Constant
 from util.random import RandomWeighted, RandomNormal
 from action.volume.roof import Roof as RoofDefs
+
+
+minHeightForLevels = 1.5
 
 
 styles = {
@@ -156,6 +160,10 @@ styles = {
         symmetry = symmetry.RightmostOfLast
     ),
     Facade(
+        label = "cladding only for too low structures",
+        condition = lambda facade: facade.footprint.height - facade.footprint.minHeight < minHeightForLevels
+    ),
+    Facade(
         use = ("brown_brick",),
         label = "front facade",
         condition = lambda facade: facade.front,
@@ -264,6 +272,10 @@ styles = {
         claddingMaterial = "glass"
     ),
     Facade(
+        label = "cladding only for too low structures",
+        condition = lambda facade: facade.footprint.height - facade.footprint.minHeight < minHeightForLevels
+    ),
+    Facade(
         markup = [
             CurtainWall(
                 indices = (0, -1)#,
@@ -311,6 +323,10 @@ styles = {
         claddingColor = PerBuilding(Value(RandomWeighted((
             ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
         ))))
+    ),
+    Facade(
+        label = "cladding only for too low structures",
+        condition = lambda facade: facade.footprint.height - facade.footprint.minHeight < minHeightForLevels
     ),
     Facade(
         markup = [

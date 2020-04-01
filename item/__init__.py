@@ -82,26 +82,6 @@ class Item:
         """
         return itemRenderers[self.__class__.__name__]
     
-    def calculateStyling(self):
-        """
-        Lookups the style for the item at the very top of style definitions.
-        It may perform other styling calculations
-        """
-        
-        className = self.__class__.__name__
-        buildingStyle = self.buildingStyle
-        # Some items (Footprint, Facade, Roofside, Ridge, Roof) can be defined right at the top
-        # of the style definition. We treat that case below in the code
-        if className in buildingStyle.styleBlocks:
-            for _styleBlock in buildingStyle.styleBlocks[className]:
-                if self.evaluateCondition(_styleBlock):
-                    self.styleBlock = _styleBlock
-                    # the rest of the style blocks is ignored, so break the "for" cycle
-                    break
-            else:
-                # no style block
-                return
-    
     def clone(self):
         item = self.__class__()
         # set item factory to be used inside <item.calculateMarkupDivision(..s)>

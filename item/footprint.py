@@ -69,9 +69,29 @@ class Footprint(Item):
 
     def calculateStyling(self):
         """
-        Calculates a specific style for the item out of the set of style definitions <styleDefs>
+        Calculates a specific style for the item out of the set of style definitions <self.buildingStyle>
+        Lookups the style for the item at the very top of style definitions.
+        It may perform other styling calculations
         """
-        super().calculateStyling()
+        
+        className = self.__class__.__name__
+        buildingStyle = self.buildingStyle
+        # Some items (Footprint, Facade, Roofside, Ridge, Roof) can be defined right at the top
+        # of the style definition. We treat that case below in the code
+        if className in buildingStyle.styleBlocks:
+            for _styleBlock in buildingStyle.styleBlocks[className]:
+                # Temporarily set <self.styleBlock> to <_styleBlock> to use attributes
+                # from <_styleBlock> in the condition evaluation
+                self.styleBlock = _styleBlock
+                if self.evaluateCondition(_styleBlock):
+                    # the rest of the style blocks is ignored, so break the "for" cycle
+                    break
+                else:
+                    # cleanup
+                    self.styleBlock = None
+            else:
+                # no style block
+                return
         
         # Find <Facade> style blocks in <markup> (actually in <self.styleBlock.styleBlocks>),
         # also try to find them at the very top of the style definitions

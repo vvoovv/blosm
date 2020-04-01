@@ -31,15 +31,26 @@ class Facade:
                                     facade.valid = True
                                     facade.markup.clear()
                             else:
-                                pass
+                                # No markup, so we render cladding only.
+                                self.renderCladding(
+                                    building,
+                                    facade,
+                                    r.createFace(building, facade.indices),
+                                    facade.uvs
+                                )
+                                break
                         # Clean up the styleBlock for the next attempt with
                         # the next style block from <facadeStyle>
                         facade.styleBlock = None
                 else:
-                    # no style block suits the <facade>
-                    face = r.createFace(building, facade.indices)
-                    # use style of <footprint> to render cladding for <facade>
-                    self.renderCladding(building, footprint, face, facade.uvs)
+                    # No style block suits the <facade>
+                    # Use style of <footprint> to render cladding for <facade>
+                    self.renderCladding(
+                        building,
+                        footprint,
+                        r.createFace(building, facade.indices),
+                        facade.uvs
+                    )
         else:
             # simply create BMFaces here
             for facade in footprint.facades:
