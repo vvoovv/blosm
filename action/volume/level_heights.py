@@ -57,23 +57,32 @@ class LevelHeights:
             if not levelHeights:
                 self.levelHeight = levelHeight = volumeGenerator.levelHeight
         
-        # get wall levels
-        numLevels = footprint.getStyleBlockAttr("numLevels")
-        footprint.numLevels = numLevels
-        
         h = footprint.getStyleBlockAttr("height")
-        if h is None:
+        if h:
+            self.calculateBottomHeight(volumeGenerator)
+            # calculate roof height
+            volumeGenerator.calculateRoofHeight(footprint)
+            # get the number of wall levels
+            if footprint.getStyleBlockAttr("hasNumLevelsAttr"):
+                footprint.numLevels = footprint.getStyleBlockAttr("numLevels")
+                # first we calculate levels height
+                levelsHeight = self.calculateLevelsHeight(volumeGenerator)
+                # then we adjust levels height based on <h> and <footprint.numLevels>
+                self.adjustLevelHeights(levelsHeight, h)
+            else:
+                # Assume that there are no levels in this case:
+                # the total height is given and no levels in the attribute
+                footprint.numLevels = 0
+                # adjust the number of levels based on <h> and the levels height
+                #self.adjustNumLevels(volumeGenerator)
+        else:
             h = self.calculateBottomHeight(volumeGenerator)
-            if footprint.numLevels:
+            # get the number of wall levels
+            numLevels = footprint.getStyleBlockAttr("numLevels")
+            footprint.numLevels = numLevels
+            if numLevels:
                 h += self.calculateLevelsHeight(volumeGenerator)
             h += volumeGenerator.calculateRoofHeight(footprint)
-        else:
-            self.calculateBottomHeight(volumeGenerator)
-            if footprint.numLevels:
-                self.calculateLevelsHeight(volumeGenerator)
-            # calculate roof height
-            # calculate last level offset in the function below
-            volumeGenerator.calculateRoofHeight(footprint)
         footprint.height = h
         return h
     
@@ -186,3 +195,31 @@ class LevelHeights:
             return h
         else:
             return self.levelHeights.getHeight(index1, index2)
+    
+    def adjustLevelHeights(self, levelsHeight, totalHeight):
+        """
+        Adjust the height of levels
+        """
+        footprint = self.footprint
+        totalHeight -= self.bottomHeight
+        # calculate adjustment <factor>
+        if footprint.roofHeight:
+            # <roofHeight> is given or we have no roof levels
+            factor = (totalHeight - footprint.roofHeight) /\
+                (levelsHeight - footprint.lastLevelOffset if footprint.lastLevelOffset else levelsHeight)
+        elif footprint.roofHeight is None:
+            # <roofHeight> is not given but is greater than zero
+            factor = (totalHeight - self.topHeight) / (levelsHeight + footprint.roofLevelsHeight)
+        else:
+            # the case of a flat roof: <footprint.roofHeight == 0>
+            factor = (totalHeight - self.topHeight) / levelsHeight
+        
+        # now adjust the heights of separate levels
+        if self.levelHeight:
+            self.levelHeight *= factor
+            if self.groundLevelHeight:
+                self.groundLevelHeight *= factor
+            if self.lastLevelHeight:
+                self.lastLevelHeight *= factor
+        else:
+            self.levelHeights.adjustLevelHeights(factor)

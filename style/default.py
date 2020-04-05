@@ -24,6 +24,7 @@ styles = {
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
         )),
+        hasNumLevelsAttr = Value(FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive)),
         #numRoofLevels = 1,
         minLevel = Value(Alternatives(
             FromAttr("building:min_level", FromAttr.Integer, FromAttr.NonNegative),
@@ -249,6 +250,7 @@ styles = {
     Footprint(
         height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
         minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
+        hasNumLevelsAttr = Value(FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive)),
         numLevels = Value(Alternatives(
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
@@ -276,6 +278,10 @@ styles = {
         condition = lambda facade: facade.footprint.height - facade.footprint.minHeight < minHeightForLevels
     ),
     Facade(
+        label = "cladding only for structures without levels",
+        condition = lambda facade: not facade.footprint.numLevels
+    ),
+    Facade(
         markup = [
             CurtainWall(
                 indices = (0, -1)#,
@@ -299,6 +305,7 @@ styles = {
     Footprint(
         height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
         minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
+        hasNumLevelsAttr = Value(FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive)),
         numLevels = Value(Alternatives(
             FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive),
             RandomWeighted(( (4, 10), (5, 40), (6, 10) ))
@@ -327,6 +334,10 @@ styles = {
     Facade(
         label = "cladding only for too low structures",
         condition = lambda facade: facade.footprint.height - facade.footprint.minHeight < minHeightForLevels
+    ),
+    Facade(
+        label = "cladding only for structures without levels",
+        condition = lambda facade: not facade.footprint.numLevels
     ),
     Facade(
         markup = [

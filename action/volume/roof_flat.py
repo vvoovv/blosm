@@ -91,7 +91,7 @@ class RoofFlat(Roof):
                 h = self.topHeight
         footprint.levelHeights.topHeight = h
         footprint.roofHeight = 0.
-        return h
+        return 0.
 
 
 class RoofLeveled(RoofFlat):

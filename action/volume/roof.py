@@ -100,7 +100,7 @@ class Roof:
         if self.hasGable:
             # temporarily keep <lastLevelOffsetFactor> int the attribute <footprint.lastLevelOffset>
             footprint.lastLevelOffset = footprint.getStyleBlockAttr("lastLevelOffsetFactor")
-            
+        
         levelHeights = footprint.levelHeights
         z2 = levelHeights.calculateHeight(self)
         z1 = levelHeights.calculateMinHeight()
@@ -175,8 +175,10 @@ class Roof:
                 if self.hasRoofLevels:
                     h = self.calculateRoofLevelsHeight(self)
                     if h:
-                        if footprint.lastLevelOffset:
-                            h += footprint.lastLevelOffset
+                        # The following line means that we need to calculate
+                        # the last level offset and the roof height later in the code
+                        footprint.roofHeight = None
+                        return h
                     else:
                         # default height of the roof
                         h = self.height
@@ -192,7 +194,6 @@ class Roof:
     def calculateRoofLevelsHeight(self, footprint):
         numRooflevels = footprint.getStyleBlockAttr("numRoofLevels")
         if not numRooflevels:
-            footprint.numRoofLevels = 0
             return 0.
         footprint.numRoofLevels = numRooflevels
         
@@ -242,5 +243,5 @@ class Roof:
                 #
                 if numRooflevels > 2:
                     h += (numRooflevels-2)*roofLevelHeight
-        
+        footprint.roofLevelsHeight = h
         return h
