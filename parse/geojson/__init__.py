@@ -56,7 +56,7 @@ class GeoJson:
     def parse(self, filepath, **kwargs):
         self.forceExtentCalculation = kwargs.get("forceExtentCalculation")
         
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)["features"]
         
         # <self.projection> could be set during a previous call of <self.parse(..)>
