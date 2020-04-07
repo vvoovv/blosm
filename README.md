@@ -36,7 +36,7 @@ The detailed documentation is available [here](https://github.com/vvoovv/blender
 * Purchase: [premium version](https://gumroad.com/l/blosm), [base version](https://gumroad.com/l/blender-osm)
 * Documentation: [premium version](https://github.com/vvoovv/blender-osm/wiki/Premium-Version), [base version](https://github.com/vvoovv/blender-osm/wiki/Documentation)
 * e-mail: [prokitektura+support@gmail.com](mailto:prokitektura+support@gmail.com)
-* facebook: [prochitecture](https://www.facebook.com/prochitecture)
+* facebook: [@prochitecture](https://www.facebook.com/prochitecture)
 * twitter: [@prochitecture](https://twitter.com/prochitecture)
 * blenderartists.org: [thread](https://blenderartists.org/forum/showthread.php?334508-Addon-blender-osm-OpenStreetMap-and-terrain-for-Blender)
 <br>post questions, nice renderings created with the addon and your experience with the addon
