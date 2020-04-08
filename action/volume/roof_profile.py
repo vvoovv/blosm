@@ -569,8 +569,8 @@ class RoofProfile(Roof):
         # the lenths of profile parts
         self.partLength = [0. for i in range(self.lastProfileIndex)]
     
-    def init(self, footprint):
-        super().init(footprint)
+    def init(self, footprint, coords):
+        super().init(footprint, coords)
         
         self.initProfile()
         

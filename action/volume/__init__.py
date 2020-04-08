@@ -1,6 +1,6 @@
 from .. import Action
 from item.footprint import Footprint
-
+from renderer import Renderer
 
 # import roof generators
 from .roof_flat import RoofFlat
@@ -28,32 +28,56 @@ class Volume(Action):
         """
         self.renderer = renderer
     
+    def getFootprint(self, building, itemClass, buildingStyle):
+        itemStore = self.itemStore
+        footprint = itemStore.getItem(itemClass)
+        footprint.buildingStyle = buildingStyle
+        
+        if footprint.styleBlock:
+            # the footprint has been generated
+            footprint.calculateFootprint()
+        else:
+            # the footprint is defined in the external data (e.g. OpenStreetMap)
+            footprint.calculateStyling()
+        # Check if have one or more footprints are defined in the markup definition,
+        # it actually means, that those footprints are to be generated
+        styleBlocks = footprint.styleBlock.styleBlocks.get("Footprint")
+        if styleBlocks:
+            for styleBlock in styleBlocks:
+                _footprint = Footprint.getItem(self.itemFactory, None, building, styleBlock)
+                _footprint.parent = footprint
+                _footprint.buildingStyle = buildingStyle
+                itemStore.add(_footprint)
+        return footprint
+    
     def do(self, building, itemClass, buildingStyle):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
-            footprint = itemStore.getItem(itemClass)
-            footprint.buildingStyle = buildingStyle
-            
-            if footprint.styleBlock:
-                # the footprint has been generated
-                footprint.calculateFootprint()
+            footprint = self.getFootprint(building, itemClass, buildingStyle)
+            element = footprint.element
+            if element.t is Renderer.multipolygon:
+                # check if the multipolygon has holes
+                if element.hasInner():
+                    pass
+                else:
+                    # That's a quite rare case
+                    # We treat each polygon of the multipolygon as a single polygon
+                    # <footprint> won't be used in this case, a new footprint will be create
+                    # for each polygon of the multipolygon
+                    for _l in element.ls:
+                        self.generateVolume(
+                            self.getFootprint(building, itemClass, buildingStyle),
+                            element.getLinestringData(_l, self.data)
+                        )
             else:
-                # the footprint is defined in the external data (e.g. OpenStreetMap)
-                footprint.calculateStyling()
-            # Check if have one or more footprints are defined in the markup definition,
-            # it actually means, that those footprints are to be generated
-            styleBlocks = footprint.styleBlock.styleBlocks.get("Footprint")
-            if styleBlocks:
-                for styleBlock in styleBlocks:
-                    _footprint = Footprint.getItem(self.itemFactory, None, building, styleBlock)
-                    _footprint.parent = footprint
-                    _footprint.buildingStyle = buildingStyle
-                    itemStore.add(_footprint)
-            volumeGenerator = self.volumeGenerators.get(
-                footprint.getStyleBlockAttr("roofShape"),
-                self.volumeGenerators[self.defaultRoofShape]
-            )
-            volumeGenerator.do(footprint, self.renderer)
+                self.generateVolume(footprint, element.getData(self.data))
+    
+    def generateVolume(self, footprint, coords):
+        volumeGenerator = self.volumeGenerators.get(
+            footprint.getStyleBlockAttr("roofShape"),
+            self.volumeGenerators[self.defaultRoofShape]
+        )
+        volumeGenerator.do(footprint, coords, self.renderer)
     
     def setVolumeGenerators(self, data, itemRenderers):
         #self.flatRoofMulti = RoofFlatMulti()
