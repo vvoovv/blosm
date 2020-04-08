@@ -104,7 +104,7 @@ class TrapezoidRV(Geometry):
             texVt = rs.texVb + height
             
             footprint = parentItem.footprint
-            numLevels = footprint.levels
+            numLevels = footprint.numLevels
             numRoofLevels = footprint.numRoofLevels
             
             # the largest level index (i.e level number) plus one

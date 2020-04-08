@@ -47,20 +47,18 @@ class LevelHeights:
     def calculateHeight(self, volumeGenerator):
         footprint = self.footprint
         
-        # either <levelHeight> or <levelHeights> is given
-        levelHeight = footprint.getStyleBlockAttr("levelHeight")
-        levelHeights = None
-        if levelHeight:
+        # either <levelHeights> of <levelHeight> is given
+        self.levelHeights = levelHeights = footprint.getStyleBlockAttr("levelHeights")
+        
+        if not levelHeights:
+            levelHeight = footprint.getStyleBlockAttr("levelHeight")
+            if not levelHeight:
+                levelHeight = volumeGenerator.levelHeight
             self.levelHeight = levelHeight
-        else:
-            self.levelHeights = levelHeights = footprint.getStyleBlockAttr("levelHeights")
-            if not levelHeights:
-                self.levelHeight = levelHeight = volumeGenerator.levelHeight
         
         h = footprint.getStyleBlockAttr("height")
         if h:
             self.calculateBottomHeight(volumeGenerator)
-            # calculate roof height
             volumeGenerator.calculateRoofHeight(footprint)
             # get the number of wall levels
             if footprint.getStyleBlockAttr("hasNumLevelsAttr"):
@@ -100,8 +98,11 @@ class LevelHeights:
         footprint = self.footprint
         numLevels = footprint.numLevels
         
-        levelHeight = self.levelHeight
-        if levelHeight:
+        if self.levelHeights:
+            h = self.levelHeights.getHeight(0, numLevels-1)
+            lastLevelHeight = self.levelHeights.getLevelHeight(numLevels-1)
+        else:
+            levelHeight = self.levelHeight
             #
             # ground level
             #
@@ -133,9 +134,6 @@ class LevelHeights:
                 if numLevels > 2:
                     # the height of the middle levels
                     h += (numLevels-2)*levelHeight
-        else:
-            h = self.levelHeights.getHeight(0, numLevels-1)
-            lastLevelHeight = self.levelHeights.getLevelHeight(numLevels-1)
         
         if footprint.lastLevelOffset:
             footprint.lastLevelOffset *= lastLevelHeight
@@ -144,11 +142,13 @@ class LevelHeights:
     
     def calculateMinHeight(self):
         footprint = self.footprint
-        minLevel = footprint.getStyleBlockAttr("minLevel")
+        minLevel = footprint.getStyleBlockAttr("minLevel") if footprint.numLevels else 0
         if minLevel:
             footprint.minLevel = minLevel
-            levelHeight = self.levelHeight
-            if levelHeight:
+            if self.levelHeights:
+                h = self.levelHeights.getHeight(0, minLevel-1)
+            else:
+                levelHeight = self.levelHeight
                 # Calculate the height for <minLevel>
                 # The heights of the bottom and the ground level have been already
                 # calculated in <self.calculateHeight()>
@@ -156,8 +156,6 @@ class LevelHeights:
                 if minLevel > 1:
                     # the height of the levels above the ground level
                     h += (minLevel-1)*levelHeight
-            else:
-                h = self.levelHeights.getHeight(0, minLevel-1)
         else:
             h = footprint.getStyleBlockAttr("minHeight")
             if h is None:
@@ -166,11 +164,10 @@ class LevelHeights:
         return h
     
     def getLevelHeight(self, index):
-        numLevels = self.footprint.levels
         if self.levelHeight:
             if not index:
                 return self.groundLevelHeight
-            elif index == numLevels-1:
+            elif index == self.footprint.numLevels-1:
                 return self.lastLevelHeight
             else:
                 return self.levelHeight
@@ -181,20 +178,19 @@ class LevelHeights:
         """
         Get the height of the building part starting from the level <index1> till the level <index2>
         """
-        numLevels = self.footprint.levels
-        if self.levelHeight:
+        if self.levelHeights:
+            return self.levelHeights.getHeight(index1, index2)
+        else:
             h = 0.
             if not index1:
                 h += self.groundLevelHeight
                 index1 += 1
-            if index2 == numLevels-1:
+            if index2 == self.footprint.numLevels-1:
                 h += self.lastLevelHeight
                 index2 -= 1
             if index2 >= index1:
                 h += (index2-index1+1)*self.levelHeight
             return h
-        else:
-            return self.levelHeights.getHeight(index1, index2)
     
     def adjustLevelHeights(self, levelsHeight, totalHeight):
         """
@@ -214,12 +210,37 @@ class LevelHeights:
             # the case of a flat roof: <footprint.roofHeight == 0>
             factor = (totalHeight - self.topHeight) / levelsHeight
         
+        if footprint.lastLevelOffset:
+            footprint.lastLevelOffset *= factor
+        
         # now adjust the heights of separate levels
-        if self.levelHeight:
+        if self.levelHeights:
+            self.levelHeights.adjustLevelHeights(factor)
+        else:
             self.levelHeight *= factor
             if self.groundLevelHeight:
                 self.groundLevelHeight *= factor
             if self.lastLevelHeight:
                 self.lastLevelHeight *= factor
-        else:
-            self.levelHeights.adjustLevelHeights(factor)
+            
+            # now deal with the roof
+            if footprint.roofHeight:
+                if footprint.roofLevelsHeight:
+                    self.adjustRoofLevelHeights( (totalHeight - factor*levelsHeight - footprint.topHeight)/footprint.roofLevelsHeight )
+            elif footprint.roofHeight is None:
+                # we are ready to calculate <footprint.roofHeight>
+                self.roofHeight = totalHeight - factor*levelsHeight + footprint.lastLevelOffset
+                if footprint.roofLevelsHeight:
+                    # adjust roof level height by <factor>
+                    self.adjustRoofLevelHeights(factor)
+
+    def adjustRoofLevelHeights(self, factor):
+        """
+        Adjust the height of roof levels by <factor>
+        """
+        if self.roofLevelHeight:
+            self.roofLevelHeight *= factor
+        if self.roofLevelHeight0:
+            self.roofLevelHeight0 *= factor
+        if self.lastRoofLevelHeight:
+            self.lastRoofLevelHeight *= factor

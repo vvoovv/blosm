@@ -40,6 +40,8 @@ class Roof:
     
     roofLevelHeight = 2.7
     
+    topHeight = 0.5
+    
     directions = {
         'N': Vector((0., 1., 0.)),
         'NNE': Vector((0.38268, 0.92388, 0.)),
@@ -161,6 +163,11 @@ class Roof:
         footprint.polygonWidth = projections[maxProjIndex] - projections[minProjIndex]
     
     def calculateRoofHeight(self, footprint):
+        h = footprint.getStyleBlockAttr("topHeight")
+        if h is None:
+            h = self.topHeight
+        footprint.levelHeights.topHeight = h
+        
         h = footprint.getStyleBlockAttr("roofHeight")
         if h is None:
             if not self.angleToHeight is None and "roofAngle" in footprint.styleBlock:
@@ -198,30 +205,27 @@ class Roof:
         footprint.numRoofLevels = numRooflevels
         
         lh = footprint.levelHeights
-        levelHeights = lh.levelHeights
         
-        if levelHeights:
-            h = levelHeights.getRoofHeight(0, numRooflevels-1)
+        if lh.levelHeights:
+            h = lh.levelHeights.getRoofHeight(0, numRooflevels-1)
         else:
             roofLevelHeight = footprint.getStyleBlockAttr("roofLevelHeight")
             if roofLevelHeight:
                 lh.roofLevelHeight = roofLevelHeight
                 if not lh.multipleHeights:
                     lh.multipleHeights = True
-                #
-                # the very first roof level
-                #
-                # <roofLevelHeight0> can't be defined without <roofLevelHeight>
-                h = footprint.getStyleBlockAttr("roofLevelHeight0")
-                if h:
-                    lh.roofLevelHeight0 = h
-                else:
-                    h = roofLevelHeight
             else:
                 roofLevelHeight = lh.levelHeight
-                #
-                # the very first roof level
-                #
+            #
+            # the very first roof level
+            #
+            # <roofLevelHeight0> can't be defined without <roofLevelHeight>
+            h = footprint.getStyleBlockAttr("roofLevelHeight0")
+            if h:
+                lh.roofLevelHeight0 = h
+                if not lh.multipleHeights:
+                    lh.multipleHeights = True
+            else:
                 h = roofLevelHeight
             #
             # the roof levels above the very first roof level
