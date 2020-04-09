@@ -481,7 +481,7 @@ class RoofProfile(Roof):
     # default roof height
     height = 1.
     
-    def __init__(self, profileData, data, itemStore, itemFactory, roofRenderer):        
+    def __init__(self, profileData, data, itemStore, itemFactory, facadeRenderer, roofRenderer):        
         """
         Args:
             profileData (tuple): profile values and some attributes to define a profiled roof,
@@ -489,6 +489,7 @@ class RoofProfile(Roof):
         """
         super().__init__(data, itemStore, itemFactory)
         self.hasGable = True
+        self.facadeRenderer = facadeRenderer
         self.roofRenderer = roofRenderer
         # geometries for wall faces
         self.geometryRectangle = RectangleFRA()
@@ -604,7 +605,7 @@ class RoofProfile(Roof):
         for i in range(self.lastProfileIndex):
             self.slots[i].reset()
     
-    def render(self, footprint, facadeRenderer):
+    def render(self, footprint):
         polygon = footprint.polygon
         verts = footprint.building.verts
         self.vertOffset = len(verts)
@@ -675,7 +676,7 @@ class RoofProfile(Roof):
             slotL.trackDown(roofItem, slotIndex)
             self.onRoofForSlotCompleted(slotIndex)
         
-        facadeRenderer.render(footprint)
+        self.facadeRenderer.render(footprint)
         self.roofRenderer.render(roofItem, self)
     
     def getProfiledVert(self, footprint, i):

@@ -105,7 +105,6 @@ def setup(app, data):
         Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
         
         volumeAction = Volume(app, data, br.itemStore, br.itemFactory, itemRenderers)
-        volumeAction.setRenderer(itemRenderers["Facade"])
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)

@@ -62,11 +62,13 @@ class LevelHeights:
             volumeGenerator.calculateRoofHeight(footprint)
             # get the number of wall levels
             if footprint.getStyleBlockAttr("hasNumLevelsAttr"):
-                footprint.numLevels = footprint.getStyleBlockAttr("numLevels")
-                # first we calculate levels height
-                levelsHeight = self.calculateLevelsHeight(volumeGenerator)
-                # then we adjust levels height based on <h> and <footprint.numLevels>
-                self.adjustLevelHeights(levelsHeight, h)
+                numLevels = footprint.getStyleBlockAttr("numLevels")
+                footprint.numLevels = numLevels
+                if numLevels:
+                    # first we calculate levels height
+                    levelsHeight = self.calculateLevelsHeight(volumeGenerator)
+                    # then we adjust levels height based on <h> and <footprint.numLevels>
+                    self.adjustLevelHeights(levelsHeight, h)
             else:
                 # Assume that there are no levels in this case:
                 # the total height is given and no levels in the attribute

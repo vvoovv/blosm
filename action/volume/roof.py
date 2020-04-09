@@ -71,10 +71,10 @@ class Roof:
         self.hasRoofLevels = True
         self.angleToHeight = None
     
-    def do(self, footprint, coords, renderer):
+    def do(self, footprint, coords):
         self.init(footprint, coords)
         if footprint.valid:
-            self.render(footprint, renderer)
+            self.render(footprint)
     
     def init(self, footprint, coords):
         # calculate numerical dimensions for the building or building part

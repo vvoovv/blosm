@@ -4,6 +4,7 @@ from renderer import Renderer
 
 # import roof generators
 from .roof_flat import RoofFlat
+from .roof_flat_multi import RoofFlatMulti
 from .roof_generatrix import RoofGeneratrix
 from .roof_profile import RoofProfile, roofDataGabled, roofDataRound, roofDataGambrel, roofDataSaltbox
 
@@ -28,9 +29,7 @@ class Volume(Action):
         """
         self.renderer = renderer
     
-    def getFootprint(self, building, itemClass, buildingStyle):
-        itemStore = self.itemStore
-        footprint = itemStore.getItem(itemClass)
+    def prepareFootprint(self, footprint, building, buildingStyle):
         footprint.buildingStyle = buildingStyle
         
         if footprint.styleBlock:
@@ -47,26 +46,30 @@ class Volume(Action):
                 _footprint = Footprint.getItem(self.itemFactory, None, building, styleBlock)
                 _footprint.parent = footprint
                 _footprint.buildingStyle = buildingStyle
-                itemStore.add(_footprint)
+                self.itemStore.add(_footprint)
         return footprint
     
     def do(self, building, itemClass, buildingStyle):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
-            footprint = self.getFootprint(building, itemClass, buildingStyle)
+            footprint = itemStore.getItem(itemClass)
+            self.prepareFootprint(footprint, building, buildingStyle)
+            
             element = footprint.element
             if element.t is Renderer.multipolygon:
                 # check if the multipolygon has holes
                 if element.hasInner():
-                    pass
+                    self.volumeGeneratorMultiFlat.do(footprint)
                 else:
                     # That's a quite rare case
                     # We treat each polygon of the multipolygon as a single polygon
                     # <footprint> won't be used in this case, a new footprint will be create
                     # for each polygon of the multipolygon
                     for _l in element.ls:
+                        footprint = Footprint.getItem(self.itemFactory, element, building)
+                        self.prepareFootprint(footprint, building, buildingStyle)
                         self.generateVolume(
-                            self.getFootprint(building, itemClass, buildingStyle),
+                            footprint,
                             element.getLinestringData(_l, self.data)
                         )
             else:
@@ -75,23 +78,24 @@ class Volume(Action):
     def generateVolume(self, footprint, coords):
         volumeGenerator = self.volumeGenerators.get(
             footprint.getStyleBlockAttr("roofShape"),
-            self.volumeGenerators[self.defaultRoofShape]
+            self.volumeGenerators[Volume.defaultRoofShape]
         )
-        volumeGenerator.do(footprint, coords, self.renderer)
+        volumeGenerator.do(footprint, coords)
     
     def setVolumeGenerators(self, data, itemRenderers):
-        #self.flatRoofMulti = RoofFlatMulti()
+        facadeRenderer = itemRenderers["Facade"]
         self.volumeGenerators = {
-            'flat': RoofFlat(data, self.itemStore, self.itemFactory, itemRenderers["RoofFlat"]),
+            'flat': RoofFlat(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlat"]),
             #'gabled': RoofProfile(roofDataGabled, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"]),
             #'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofPyramidal"]),
             #'skillion': RoofSkillion(),
             #'hipped': RoofHipped(),
-            'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofDome"]),
-            'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofOnion"]),
+            'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofDome"]),
+            'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofOnion"]),
             #'round': RoofProfile(roofDataRound, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"]),
             #'half-hipped': RoofHalfHipped(),
             #'gambrel': RoofProfile(roofDataGambrel, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"]),
             #'saltbox': RoofProfile(roofDataSaltbox, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"])
             #'mansard': RoofMansard()
         }
+        self.volumeGeneratorMultiFlat = RoofFlatMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlat"])
