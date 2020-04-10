@@ -84,9 +84,12 @@ class Polygon:
         # Check if the vector <v2> is to the left from the vector <v1>;
         # in that case the direction of vertices is counterclockwise,
         # it's clockwise in the opposite case.
-        if v1.x * v2.y - v1.y * v2.x < 0.:
+        if self.directionCondition(v1, v2):
             # clockwise direction, reverse <indices>
             self.indices = tuple(reversed(indices))
+    
+    def directionCondition(self, v1, v2):
+        return v1.x * v2.y - v1.y * v2.x < 0.
     
     @property
     def verts(self):
@@ -324,3 +327,11 @@ class Edge:
         normal = vec.cross(polygonNormal)
         normal.normalize()
         self.normal = normal
+
+
+class PolygonCW(Polygon):
+    """
+    A polygon with clockwise order of vertices used for the holes in a multipolygon
+    """
+    def directionCondition(self, v1, v2):
+        return v1.x * v2.y - v1.y * v2.x > 0.
