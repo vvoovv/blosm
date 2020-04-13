@@ -6,6 +6,15 @@ class Facade(Div):
     Represents a building facade.
     It's typically composed of one or more faces (in the most cases rectangular ones)
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.outer = True
+    
+    def init(self):
+        super().init()
+        if not self.outer:
+            self.outer = True
 
     @classmethod
     def getItem(cls, volumeGenerator, parent, indices):
