@@ -98,4 +98,4 @@ class Volume(Action):
             #'saltbox': RoofProfile(roofDataSaltbox, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"])
             #'mansard': RoofMansard()
         }
-        self.volumeGeneratorMultiFlat = RoofFlatMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlat"])
+        self.volumeGeneratorMultiFlat = RoofFlatMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlatMulti"])

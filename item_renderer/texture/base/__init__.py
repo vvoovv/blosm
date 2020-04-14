@@ -8,6 +8,7 @@ from .door import Door
 from .level import CurtainWall
 
 from ..roof_flat import RoofFlat as RoofFlatBase
+from .roof_flat_multi import RoofFlatMulti
 from ..roof_generatrix import RoofGeneratrix as RoofGeneratrixBase
 from ..roof_pyramidal import RoofPyramidal as RoofPyramidalBase
 from ..roof_profile import RoofProfile as RoofProfileBase

@@ -8,6 +8,7 @@ from .door import Door
 from .level import CurtainWall
 
 from ..roof_flat import RoofFlat as RoofFlatBase
+from ..roof_flat_multi import RoofFlatMulti as RoofFlatMultiBase
 from ..roof_generatrix import RoofGeneratrix as RoofGeneratrixBase
 from ..roof_pyramidal import RoofPyramidal as RoofPyramidalBase
 from ..roof_profile import RoofProfile as RoofProfileBase
@@ -48,6 +49,12 @@ class Bottom(BottomBase, Container):
 
 
 class RoofFlat(RoofFlatBase, ItemRendererMixin):
+    
+    def __init__(self):
+        super().__init__(exportMaterials=True)
+
+
+class RoofFlatMulti(RoofFlatMultiBase, ItemRendererMixin):
     
     def __init__(self):
         super().__init__(exportMaterials=True)

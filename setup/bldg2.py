@@ -15,7 +15,6 @@ from item.footprint import Footprint
 from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion
 
 # item renderers
-"""
 from item_renderer.texture.base import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
@@ -24,12 +23,13 @@ from item_renderer.texture.base import\
     Bottom as BottomRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
+    RoofFlatMulti as RoofFlatMultiRenderer,\
     RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
+
+
 """
-
-
 from item_renderer.texture.export import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
@@ -38,10 +38,11 @@ from item_renderer.texture.export import\
     Bottom as BottomRenderer,\
     Door as DoorRenderer,\
     RoofFlat as RoofFlatRenderer,\
+    RoofFlatMulti as RoofFlatMultiRenderer,\
     RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
-
+"""
 
 
 from action.terrain import Terrain
@@ -59,7 +60,7 @@ def setup(app, data):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManagerExport(data, buildingParts)
+        buildings = RealisticBuildingManager(data, buildingParts)
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
@@ -94,6 +95,7 @@ def setup(app, data):
             Bottom = BottomRenderer(),
             Door = DoorRenderer(),
             RoofFlat = RoofFlatRenderer(),
+            RoofFlatMulti = RoofFlatMultiRenderer(),
             RoofProfile = RoofProfileRenderer(),
             RoofDome = RoofGeneratrixRenderer(generatrix_dome(7)),
             RoofOnion = RoofGeneratrixRenderer(generatrix_onion),

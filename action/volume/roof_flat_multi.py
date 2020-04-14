@@ -1,6 +1,7 @@
 from mathutils import Vector
 from .roof_flat import RoofFlat
 from item.facade import Facade
+from item.roof_flat_multi import RoofFlatMulti as ItemRoofFlatMulti
 from util.polygon import PolygonCW
 
 
@@ -14,6 +15,15 @@ class RoofFlatMulti(RoofFlat):
         self.init(footprint)
         if footprint.valid:
             self.render(footprint)
+    
+    def getRoofItem(self, footprint, firstVertIndex):
+        item = ItemRoofFlatMulti.getItem(
+            self.itemFactory,
+            footprint,
+            firstVertIndex
+        )
+        item.innerPolygons = self.innerPolygons
+        return item
     
     def init(self, footprint):
         data = self.data

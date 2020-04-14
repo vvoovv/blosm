@@ -50,10 +50,13 @@ class ItemRenderer:
             self.createCladdingMaterial(materialId, claddingTextureInfo)
             if not self.exportMaterials:
                 self.setVertexColor(item, face)
-        self.r.setMaterial(face, materialId)
+        self.setMaterial(face, materialId)
         # Return <claddingTextureInfo>, since it may be used by
         # the <renderCladding(..)> of a child class
         return claddingTextureInfo
+    
+    def setMaterial(self, face, materialId):
+        self.r.setMaterial(face, materialId)
 
     def setCladdingUvs(self, item, face, claddingTextureInfo, uvs):
         textureWidthM = claddingTextureInfo["textureWidthM"]
