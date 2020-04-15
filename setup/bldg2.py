@@ -28,7 +28,6 @@ from item_renderer.texture.base import\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
 
-
 """
 from item_renderer.texture.export import\
     Facade as FacadeRenderer,\
@@ -43,7 +42,6 @@ from item_renderer.texture.export import\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
 """
-
 
 from action.terrain import Terrain
 from action.volume import Volume

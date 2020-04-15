@@ -38,7 +38,7 @@ class RoofFlatMulti(ItemRenderer):
             building,
             roofItem,
             tuple(
-                face for face in bmesh.ops.triangle_fill(self.r.bm, use_beauty=False, use_dissolve=True, edges=edges)\
+                face for face in bmesh.ops.triangle_fill(self.r.bm, use_beauty=False, use_dissolve=False, edges=edges)\
                 ["geom"] if isinstance(face, bmesh.types.BMFace)
             ),
             None
