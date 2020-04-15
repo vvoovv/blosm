@@ -66,8 +66,10 @@ class RoofGeneratrix(RoofGeneratrixBase, ItemRendererMixin):
         super().__init__(generatrix, exportMaterials=True)
 
 
-class RoofPyramidal(RoofPyramidalBase):
-    pass
+class RoofPyramidal(RoofPyramidalBase, ItemRendererMixin):
+    
+    def __init__(self):
+        super().__init__(exportMaterials=True)
 
 
 class RoofProfile(RoofProfileBase, ItemRendererMixin):

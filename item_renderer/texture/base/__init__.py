@@ -56,7 +56,7 @@ class RoofGeneratrix(RoofGeneratrixBase, ItemRendererMixin):
     pass
 
 
-class RoofPyramidal(RoofPyramidalBase):
+class RoofPyramidal(RoofPyramidalBase, ItemRendererMixin):
     pass
 
 

@@ -320,9 +320,8 @@ styles = {
         levelHeight = Value( RandomNormal(3.) ),
         #groundLevelHeight = Value( RandomNormal(1.4*3) ),
         #bottomHeight = Value( RandomNormal(1.) ),
-        roofShape = Value(Alternatives(
-            FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
-        )),
+        roofShape = Value(FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes)),
+        roofHeight = Value(FromAttr("roof:height", FromAttr.Float, FromAttr.NonNegative)),
         claddingMaterial = PerBuilding(Value(Alternatives(
             FromAttr("building:material", FromAttr.String, RoofDefs.shapes),
             Constant("brick")
@@ -349,8 +348,8 @@ styles = {
     ),
     Roof(
         claddingMaterial = "concrete",
-        claddingColor = "salmon",
-        faces = smoothness.Smooth,
+        claddingColor = "salmon"
+        #faces = smoothness.Smooth
         #sharpEdges = smoothness.Side
     )
 ]

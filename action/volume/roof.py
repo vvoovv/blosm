@@ -61,7 +61,15 @@ class Roof:
         'NNW': Vector((-0.38268, 0.92388, 0.))
     }
     
-    shapes = {"flat": 1, "gabled": 1}
+    shapes = {
+        "flat": 1,
+        "gabled": 1,
+        "hipped": 1,
+        "pyramidal": 1,
+        "skillion": 1,
+        "round": 1,
+        "onion": 1
+    }
     
     def __init__(self, data, itemStore, itemFactory):
         self.data = data

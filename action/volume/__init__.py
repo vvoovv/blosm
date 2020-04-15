@@ -87,7 +87,7 @@ class Volume(Action):
         self.volumeGenerators = {
             'flat': RoofFlat(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlat"]),
             #'gabled': RoofProfile(roofDataGabled, data, self.itemStore, self.itemFactory, itemRenderers["RoofProfile"]),
-            #'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, itemRenderers["RoofPyramidal"]),
+            'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofPyramidal"]),
             #'skillion': RoofSkillion(),
             #'hipped': RoofHipped(),
             'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofDome"]),
