@@ -22,7 +22,7 @@ class RoofFlat(Roof):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base;
         # since it depends on the total number of building vertices, we calculated it before any operation
         # that creates building geometry 
-        firstVertIndex = len(footprint.building.verts) + footprint.polygon.n
+        firstVertIndex = self.getRoofFirstVertIndex(footprint)
         
         self.extrude(footprint)
         self.facadeRenderer.render(footprint)
@@ -32,6 +32,9 @@ class RoofFlat(Roof):
                 firstVertIndex
             )
         )
+    
+    def getRoofFirstVertIndex(self, footprint):
+        return len(footprint.building.verts) + footprint.polygon.n
     
     def getRoofItem(self, footprint, firstVertIndex):
         return ItemRoofFlat.getItem(
@@ -108,4 +111,17 @@ class RoofLeveled(RoofFlat):
             # default height of the roof
             h = self.height
         footprint.roofHeight = h
+        # no roof levels for now, that will be changed later
+        footprint.roofLevelsHeight = 0.
         return h
+    
+    def getRoofFirstVertIndex(self, footprint):
+        return len(footprint.building.verts) if footprint.noWalls else super().getRoofFirstVertIndex(footprint)
+    
+    def extrude(self, footprint):
+        if footprint.noWalls:
+            z = footprint.roofVerticalPosition
+            # the basement of the roof
+            footprint.building.verts.extend(Vector((v.x, v.y, z)) for v in footprint.polygon.verts)
+            return
+        super().extrude(footprint)

@@ -18,9 +18,8 @@ _perBuildingByDefault = {
     "bottomHeight": 1,
     "levelHeights": 1,
     "lastRoofLevelHeight": 1,
-    "levelHeight": 1,
-    "roofLevelHeight0": 1,
-    "roofLevelHeights": 1
+    "roofLevelHeight": 1,
+    "roofLevelHeight0": 1
 }
 
 

@@ -228,7 +228,9 @@ class LevelHeights:
             # now deal with the roof
             if footprint.roofHeight:
                 if footprint.roofLevelsHeight:
-                    self.adjustRoofLevelHeights( (totalHeight - factor*levelsHeight - footprint.topHeight)/footprint.roofLevelsHeight )
+                    self.adjustRoofLevelHeights(
+                        (totalHeight - factor*levelsHeight - footprint.topHeight)/footprint.roofLevelsHeight
+                    )
             elif footprint.roofHeight is None:
                 # we are ready to calculate <footprint.roofHeight>
                 self.roofHeight = totalHeight - factor*levelsHeight + footprint.lastLevelOffset
