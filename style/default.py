@@ -3,7 +3,7 @@ from grammar import *
 from grammar.scope import PerBuilding, PerFootprint
 from grammar import units, symmetry, smoothness
 from grammar.value import Value, FromAttr, Alternatives, Conditional, FromStyleBlockAttr, Constant
-from util.random import RandomWeighted, RandomNormal
+from grammar.value import RandomWeighted, RandomNormal
 from action.volume.roof import Roof as RoofDefs
 from item.defs import RoofShapes, CladdingMaterials
 

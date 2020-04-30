@@ -37,10 +37,6 @@ class RandomNormal:
             self.index = 0
 
         return self.values[self.index]
-    
-    def setData(self, data):
-        # the method is needed for consistency with the code in grammar/value
-        return
 
 
 class RandomWeighted:
@@ -76,7 +72,3 @@ class RandomWeighted:
             return self.distrList[ self.indices[self.index] ]
         else:
             return self.singleValue
-    
-    def setData(self, data):
-        # the method is needed for consistency with the code in grammar/value
-        return

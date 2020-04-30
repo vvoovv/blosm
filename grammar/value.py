@@ -323,3 +323,27 @@ class FromStyleBlockAttr:
             item = item.parent
         
         return item.getStyleBlockAttr(self.attr)
+
+
+from util.random import RandomNormal as RandomNormalBase
+class RandomNormal:
+    """
+    A wrapper for <util.random.RandomNormal>
+    """
+    def __init__(self, mean):
+        self._value = RandomNormalBase(mean)
+    
+    def getValue(self, item, scope):
+        return self._value.value
+
+
+from util.random import RandomWeighted as RandomWeightedBase
+class RandomWeighted:
+    """
+    A wrapper for <util.random.RandomWeighted>
+    """
+    def __init__(self, distribution):
+        self._value = RandomWeightedBase(distribution)
+    
+    def getValue(self, item, scope):
+        return self._value.value

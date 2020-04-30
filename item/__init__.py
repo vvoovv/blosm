@@ -58,11 +58,9 @@ class Item:
         else:
             attrs = self.styleBlock.attrs
             if attr in attrs:
-                value, _, isComplexValue = attrs.get(attr)
+                value, scope, isComplexValue = attrs.get(attr)
                 if isComplexValue:
-                    value = value.value
-                    value.setData(self)
-                    value = value.value
+                    value = value.value.getValue(self, scope)
             else:
                 # try to get the attribute from <self.parent>
                 value = self.parent.getStyleBlockAttrDeep(attr) if self.parent else None
