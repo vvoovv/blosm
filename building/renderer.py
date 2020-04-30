@@ -103,7 +103,7 @@ class BuildingRenderer(Renderer3d):
     
     def render(self, building, osm):
         parts = building.parts
-        outline = building.element
+        outline = building.outline
         app = self.app
         self.parts = parts
         self.outline = outline

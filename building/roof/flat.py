@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bmesh
 from mathutils import Vector
-from util.polygon import Polygon
+from util.polygon import PolygonOLD
 from util.blender import pointNormalUpward
 from . import Roof
 
@@ -90,7 +90,7 @@ class RoofFlatMulti(RoofFlat):
             )
             n = len(verts)
             
-            polygon = Polygon(
+            polygon = PolygonOLD(
                 verts,
                 tuple(range(indexOffset, n))             
             )

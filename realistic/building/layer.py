@@ -24,23 +24,15 @@ _isBlender280 = bpy.app.version[1] >= 80
 
 
 class RealisticBuildingLayer(BuildingLayer):
-        
-    def __init__(self, layerId, app):
-        super().__init__(layerId, app)
-        
-        # the name for the base UV map used for facade textures
-        self.uvLayerNameFacade = "facade"
-        # the name for the auxiliary UV map used for claddding textures
-        self.uvLayerNameCladding = "cladding"
-        # the name for the vertex color layer
-        self.vertexColorLayerNameCladding = "cladding_color"
+    
+    # the name for the base UV map
+    uvName = "UVMap"
+    
+    # the name for the auxiliary UV map used to keep the size of a BMFace
+    uvNameSize = "size"
     
     def prepare(self, instance):
-        mesh = instance.obj.data
-        uv_layers = mesh.uv_layers if _isBlender280 else mesh.uv_textures
-        uv_layers.new(name=self.uvLayerNameFacade)
-        uv_layers.new(name=self.uvLayerNameCladding)
-        
-        mesh.vertex_colors.new(name=self.vertexColorLayerNameCladding)
-        
+        uv_layers = instance.obj.data.uv_layers if _isBlender280 else instance.obj.data.uv_textures
+        uv_layers.new(name=self.uvName)
+        uv_layers.new(name=self.uvNameSize)
         super().prepare(instance)

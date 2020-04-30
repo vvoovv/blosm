@@ -21,7 +21,7 @@ import math
 from mathutils import Vector
 from util import zero
 from util.osm import parseNumber
-from util.polygon import Polygon
+from util.polygon import PolygonOLD
 from renderer import Renderer
 
 """
@@ -98,7 +98,7 @@ class Roof:
         verts = self.verts
         self.verts.extend( Vector((coord[0], coord[1], z1)) for coord in data )
         # create a polygon located at <minHeight>
-        self.polygon = Polygon(verts)
+        self.polygon = PolygonOLD(verts)
         if self.polygon.n < 3:
             self.valid = False
             return
