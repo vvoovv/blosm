@@ -56,7 +56,7 @@ class GeoJson:
     def parse(self, filepath, **kwargs):
         self.forceExtentCalculation = kwargs.get("forceExtentCalculation")
         
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)["features"]
         
         # <self.projection> could be set during a previous call of <self.parse(..)>
@@ -70,6 +70,7 @@ class GeoJson:
         
         for f in data: # f stands for feature
             tags = f.get("properties")
+            self.processTags(tags)
             if not tags and self.skipNoProperties:
                 continue
             geometry = f.get("geometry")
@@ -103,6 +104,9 @@ class GeoJson:
             lat = (self.minLat + self.maxLat)/2.
             lon = (self.minLon + self.maxLon)/2.
             self.setProjection(lat, lon)
+    
+    def processTags(self, tags):
+        return
     
     def processPolygon(self, coords, tags):
         a = self.app
