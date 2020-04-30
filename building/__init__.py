@@ -40,3 +40,6 @@ class Building:
         """
         for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
+    
+    def __getitem__(self, attr):
+        return self.outline.tags.get(attr)

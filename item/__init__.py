@@ -43,9 +43,7 @@ class Item:
             if attr in styleBlockCache:
                 value = styleBlockCache[attr]
             else:
-                value = value.value
-                value.setData(self)
-                value = value.value
+                value = value.value.getValue(self, scope)
                 if value is None:
                     return
                 # keep the entry for <attr> in the cache

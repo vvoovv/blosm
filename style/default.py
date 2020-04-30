@@ -2,9 +2,10 @@ import math
 from grammar import *
 from grammar.scope import PerBuilding, PerFootprint
 from grammar import units, symmetry, smoothness
-from grammar.value import Value, FromAttr, Alternatives, Constant
+from grammar.value import Value, FromAttr, Alternatives, Conditional, FromStyleBlockAttr, Constant
 from util.random import RandomWeighted, RandomNormal
 from action.volume.roof import Roof as RoofDefs
+from item.defs import RoofShapes, CladdingMaterials
 
 
 minHeightForLevels = 1.5
@@ -37,7 +38,7 @@ styles = {
         groundLevelHeight = Value( RandomNormal(1.4*3) ),
         bottomHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
-            #FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
+            #FromAttr("roof:shape", FromAttr.String, RoofShapes),
             #Constant("dome"),
             Constant("flat"),
             Constant("saltbox")
@@ -60,7 +61,9 @@ styles = {
             (0.35, 5), (0.4, 5), (0.45, 5), (0.5, 3), (0.55, 2), (0.6, 2)
         ))),
         claddingColor = PerBuilding(Value(RandomWeighted((
-            ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
+            ((0.647, 0.165, 0.165, 1.), 1), # brown
+            ((0.565, 0.933, 0.565, 1.), 1), # lightgreen
+            ((1., 0.855, 0.725, 1.), 1) # peachpuff
         )))),
         claddingMaterial = "brick"
         #claddingMaterial = Value(RandomWeighted((
@@ -107,12 +110,12 @@ styles = {
                 use = ("level_window_balcony",),
                 indices = (4, -1),
                 claddingMaterial = "plaster",
-                claddingColor = "blue"
+                claddingColor = (0., 0., 1., 1.) # blue
             ),
             Level(
                 use = ("level_window_balcony",),
                 indices = (3, 3),
-                claddingColor = "green"
+                claddingColor = (0., 0.502, 0., 1.) # green
             ),
             Level(
                 use = ("level_window_balcony",),
@@ -201,7 +204,7 @@ styles = {
     ),
     Roof(
         claddingMaterial = "brick",
-        claddingColor = "salmon",
+        claddingColor = (0.98, 0.502, 0.447, 1.), # salmon
         faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side
     ),
@@ -266,10 +269,12 @@ styles = {
         #groundLevelHeight = Value( RandomNormal(1.4*3) ),
         #bottomHeight = Value( RandomNormal(1.) ),
         roofShape = Value(Alternatives(
-            FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes),
+            FromAttr("roof:shape", FromAttr.String, RoofShapes),
         )),
         claddingColor = PerBuilding(Value(RandomWeighted((
-            ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
+            ((0.647, 0.165, 0.165, 1.), 1), # brown
+            ((0.565, 0.933, 0.565, 1.), 1), # lightgreen
+            ((1., 0.855, 0.725, 1.), 1) # peachpuff
         )))),
         claddingMaterial = "glass"
     ),
@@ -291,7 +296,7 @@ styles = {
     ),
     Roof(
         claddingMaterial = "concrete",
-        claddingColor = "salmon",
+        claddingColor = (0.98, 0.502, 0.447, 1.), # salmon
         faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side
     )
@@ -320,15 +325,34 @@ styles = {
         levelHeight = Value( RandomNormal(3.) ),
         #groundLevelHeight = Value( RandomNormal(1.4*3) ),
         #bottomHeight = Value( RandomNormal(1.) ),
-        roofShape = Value(FromAttr("roof:shape", FromAttr.String, RoofDefs.shapes)),
+        roofShape = Value(Alternatives(
+            FromAttr("roof:shape", FromAttr.String, RoofShapes),
+            Constant("flat")
+        )),
         roofHeight = Value(FromAttr("roof:height", FromAttr.Float, FromAttr.NonNegative)),
         claddingMaterial = PerBuilding(Value(Alternatives(
-            FromAttr("building:material", FromAttr.String, RoofDefs.shapes),
-            Constant("brick")
+            FromAttr("building:material", FromAttr.String, CladdingMaterials),
+            RandomWeighted(( ("brick", 1), ("plaster", 1) ))
         ))),
-        claddingColor = PerBuilding(Value(RandomWeighted((
-            ("brown", 1), ("lightgreen", 1), ("lightyellow", 1)
-        ))))
+        claddingColor = PerBuilding(Value(Alternatives(
+            FromAttr("building:colour", FromAttr.Color),
+            Conditional(
+                lambda footprint: footprint.getStyleBlockAttr("claddingMaterial") == "brick",
+                RandomWeighted((
+                    ((0.647, 0.165, 0.165, 1.), 1), # brown
+                    ((0.98, 0.502, 0.447, 1.), 1), # salmon
+                    ((0.502, 0., 0., 1.), 1) # maroon
+                ))
+            ),
+            Conditional(
+                lambda footprint: footprint.getStyleBlockAttr("claddingMaterial") == "plaster",
+                RandomWeighted((
+                    ((1., 0.627, 0.478, 1.), 1), # lightsalmon
+                    ((0.565, 0.933, 0.565, 1.), 1), # lightgreen
+                    ((1., 0.855, 0.725, 1.), 1) # peachpuff
+                ))
+            )
+        )))
     ),
     Facade(
         label = "cladding only for too low structures",
@@ -347,8 +371,32 @@ styles = {
         ]
     ),
     Roof(
-        claddingMaterial = "concrete",
-        claddingColor = "salmon"
+        claddingMaterial = PerBuilding(Value(Alternatives(
+            FromAttr("roof:material", FromAttr.String, CladdingMaterials),
+            Conditional(
+                lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "flat",
+                RandomWeighted(( ("concrete", 1), ("gravel", 1) ))
+            ),
+            #Conditional(
+            #    lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "dome",
+            #    Constant("glass")
+            #)
+            FromStyleBlockAttr("claddingMaterial", FromStyleBlockAttr.Footprint)
+        ))),
+        claddingColor = PerBuilding(Value(Alternatives(
+            FromAttr("roof:colour", FromAttr.Color),
+            Conditional(
+                lambda roof: roof.getStyleBlockAttr("claddingMaterial") == "concrete",
+                RandomWeighted((
+                    ((0.686, 0.686, 0.686, 1.), 1),
+                    ((0.698, 0.698, 0.651, 1.), 1),
+                    ((0.784, 0.761, 0.714, 1.), 1),
+                    ((0.545, 0.545, 0.553, 1.), 1),
+                    ((0.655, 0.651, 0.631, 1.), 1)
+                ))
+            ),
+            FromStyleBlockAttr("claddingColour", FromStyleBlockAttr.Footprint)
+        )))
         #faces = smoothness.Smooth
         #sharpEdges = smoothness.Side
     )

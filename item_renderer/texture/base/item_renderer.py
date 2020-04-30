@@ -1,6 +1,5 @@
 import os
 import bpy
-from manager import Manager
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
@@ -35,7 +34,6 @@ class ItemRendererMixin:
         return True
     
     def setVertexColor(self, item, face):
-        color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
+        color = item.getStyleBlockAttrDeep("claddingColor")
         if color:
-            color = Manager.getColor(color)
             self.r.setVertexColor(face, color, self.r.layer.vertexColorLayerNameCladding)

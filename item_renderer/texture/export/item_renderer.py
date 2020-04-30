@@ -15,7 +15,7 @@ class ItemRendererMixin:
     """
     
     def getCladdingMaterialId(self, item, claddingTextureInfo):
-        color = self.getCladdingColor(item)
+        color = self.getCladdingColorHex(item)
         return "%s_%s%s" % (color, claddingTextureInfo["material"], os.path.splitext(claddingTextureInfo["name"])[1])\
             if claddingTextureInfo and color\
             else claddingTextureInfo["name"]
@@ -55,11 +55,12 @@ class ItemRendererMixin:
         # render the resulting texture
         textureExporter.renderTexture(scene, textureFilepath)
     
-    def getCladdingColor(self, item):
-        color = Manager.normalizeColor(item.getStyleBlockAttrDeep("claddingColor"))
+    def getCladdingColorHex(self, item):
+        color = item.getStyleBlockAttrDeep("claddingColor")
         # remember the color for a future use in the next funtion call
         self.claddingColor = color
-        return color
+        # return a hex string
+        return "{:02x}{:02x}{:02x}".format(round(255*color[0]), round(255*color[1]), round(255*color[2]))
     
     def getTextureFilepath(self, materialName):
         textureFilename = "baked_%s" % materialName

@@ -70,11 +70,7 @@ class LevelHeights:
                     # then we adjust levels height based on <h> and <footprint.numLevels>
                     self.adjustLevelHeights(levelsHeight, h)
             else:
-                # Assume that there are no levels in this case:
-                # the total height is given and no levels in the attribute
-                footprint.numLevels = 0
-                # adjust the number of levels based on <h> and the levels height
-                #self.adjustNumLevels(volumeGenerator)
+                self.calculateNumLevelsFromHeight(h)
         else:
             h = self.calculateBottomHeight(volumeGenerator)
             # get the number of wall levels
@@ -206,7 +202,8 @@ class LevelHeights:
             factor = (totalHeight - footprint.roofHeight) /\
                 (levelsHeight - footprint.lastLevelOffset if footprint.lastLevelOffset else levelsHeight)
         elif footprint.roofHeight is None:
-            # <roofHeight> is not given but is greater than zero
+            # <roofHeight> is not given but is greater than zero and
+            # we must have <footprint.roofLevelsHeight> for that case
             factor = (totalHeight - self.topHeight) / (levelsHeight + footprint.roofLevelsHeight)
         else:
             # the case of a flat roof: <footprint.roofHeight == 0>
@@ -229,7 +226,7 @@ class LevelHeights:
             if footprint.roofHeight:
                 if footprint.roofLevelsHeight:
                     self.adjustRoofLevelHeights(
-                        (totalHeight - factor*levelsHeight - footprint.topHeight)/footprint.roofLevelsHeight
+                        (totalHeight - factor*levelsHeight - self.topHeight)/footprint.roofLevelsHeight
                     )
             elif footprint.roofHeight is None:
                 # we are ready to calculate <footprint.roofHeight>
@@ -248,3 +245,37 @@ class LevelHeights:
             self.roofLevelHeight0 *= factor
         if self.lastRoofLevelHeight:
             self.lastRoofLevelHeight *= factor
+    
+    def calculateNumLevelsFromHeight(self, totalHeight):
+        if self.levelHeights:
+            numLevels, levelsHeight = self.levelHeights.calculateNumLevelsFromHeight(totalHeight)
+        else:
+            footprint = self.footprint
+            # calculate the height of wall levels
+            levelsHeight = totalHeight - self.bottomHeight
+            if footprint.roofHeight:
+                levelsHeight -= footprint.roofHeight
+                if footprint.lastLevelOffset:
+                    levelsHeight += footprint.lastLevelOffset
+            elif footprint.roofHeight is None:
+                # <roofHeight> is not given but is greater than zero and
+                # we must have <footprint.roofLevelsHeight> for that case
+                levelsHeight -= footprint.roofLevelsHeight + self.topHeight
+            else:
+                # the case of a flat roof: <footprint.roofHeight == 0>
+                levelsHeight -= self.topHeight
+            
+            levelHeight = self.levelHeight
+            groundLevelHeight = self.groundLevelHeight or levelHeight
+            if levelsHeight > groundLevelHeight:
+                lastLevelHeight = self.lastLevelHeight or levelHeight
+                groundAndLastLevelHeight = groundLevelHeight + lastLevelHeight
+                if levelsHeight > groundAndLastLevelHeight:
+                    numLevels = round( (levelsHeight-groundAndLastLevelHeight)/levelHeight ) + 2
+                else:
+                    numLevels = round( (levelsHeight-groundLevelHeight)/lastLevelHeight ) + 1
+            else:
+                numLevels = 1
+        
+        footprint.numLevels = numLevels
+        self.adjustLevelHeights(levelsHeight, totalHeight)

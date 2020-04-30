@@ -200,7 +200,7 @@ class BuildingRendererNew(Renderer):
     def setVertexColor(self, face, color, layerName):
         vertexColorLayer = self.bm.loops.layers.color[layerName]
         for loop in face.loops:
-            loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
+            loop[vertexColorLayer] = color
 
     def setMaterial(self, face, materialName):
         """
