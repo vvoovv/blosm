@@ -17,7 +17,7 @@ class Container(ContainerBase, ItemRendererMixin):
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
-        return "%s_%s_%s" % (claddingTextureInfo["material"], color, facadeTextureInfo["name"])\
+        return "%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
             if claddingTextureInfo and color\
             else facadeTextureInfo["name"]
     

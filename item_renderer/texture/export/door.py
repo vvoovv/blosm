@@ -17,7 +17,7 @@ class Door(DoorBase, Container):
     
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
-        return "door_%s_%s_%s" % (claddingTextureInfo["material"], color, facadeTextureInfo["name"])\
+        return "door_%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
             if claddingTextureInfo and color\
             else facadeTextureInfo["name"]
 
