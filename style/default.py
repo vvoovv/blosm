@@ -203,8 +203,8 @@ styles = {
         ]
     ),
     Roof(
-        claddingMaterial = "brick",
-        claddingColor = (0.98, 0.502, 0.447, 1.), # salmon
+        roofCladdingMaterial = "brick",
+        roofCladdingColor = (0.98, 0.502, 0.447, 1.), # salmon
         faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side
     ),
@@ -295,8 +295,8 @@ styles = {
         ]
     ),
     Roof(
-        claddingMaterial = "concrete",
-        claddingColor = (0.98, 0.502, 0.447, 1.), # salmon
+        roofCladdingMaterial = "concrete",
+        roofCladdingColor = (0.98, 0.502, 0.447, 1.), # salmon
         faces = smoothness.Smooth,
         #sharpEdges = smoothness.Side
     )
@@ -363,6 +363,14 @@ styles = {
         condition = lambda facade: not facade.footprint.numLevels
     ),
     Facade(
+        condition = lambda item: item.footprint.getStyleBlockAttr("claddingMaterial") == "glass",
+        markup = [
+            CurtainWall(
+                indices = (0, -1)
+            )
+        ]
+    ),
+    Facade(
         markup = [
             Level(
                 indices = (0, -1)#,
@@ -371,7 +379,7 @@ styles = {
         ]
     ),
     Roof(
-        claddingMaterial = PerBuilding(Value(Alternatives(
+        roofCladdingMaterial = PerBuilding(Value(Alternatives(
             FromAttr("roof:material", FromAttr.String, CladdingMaterials),
             Conditional(
                 lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "flat",
@@ -383,7 +391,7 @@ styles = {
             #)
             FromStyleBlockAttr("claddingMaterial", FromStyleBlockAttr.Footprint)
         ))),
-        claddingColor = PerBuilding(Value(Alternatives(
+        roofCladdingColor = PerBuilding(Value(Alternatives(
             FromAttr("roof:colour", FromAttr.Color),
             Conditional(
                 lambda roof: roof.getStyleBlockAttr("claddingMaterial") == "concrete",
@@ -395,7 +403,7 @@ styles = {
                     ((0.655, 0.651, 0.631, 1.), 1)
                 ))
             ),
-            FromStyleBlockAttr("claddingColour", FromStyleBlockAttr.Footprint)
+            FromStyleBlockAttr("claddingColor", FromStyleBlockAttr.Footprint)
         )))
         #faces = smoothness.Smooth
         #sharpEdges = smoothness.Side

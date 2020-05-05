@@ -91,6 +91,5 @@ class TextureExporter:
             nodeName
         )
     
-    def setColor(self, textColor, nodes, nodeName):
-        color = Manager.getColor(textColor)
-        nodes[nodeName].outputs[0].default_value = (color[0], color[1], color[2], 1.)
+    def setColor(self, color, nodes, nodeName):
+        nodes[nodeName].outputs[0].default_value = color

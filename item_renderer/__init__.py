@@ -68,8 +68,8 @@ class ItemRenderer:
             self.r.layer.uvLayerNameCladding
         )
     
-    def getCladdingTextureInfo(self, item, building):
-        claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
+    def _getCladdingTextureInfo(self, item, building):
+        claddingMaterial = item.getCladdingMaterial()
         if claddingMaterial:
             if claddingMaterial in building._cache:
                 claddingTextureInfo = building._cache[claddingMaterial]

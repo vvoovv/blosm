@@ -1,6 +1,5 @@
 from . import Item
 from util.polygon import Polygon
-from grammar import perBuilding
 from action.volume.level_heights import LevelHeights
 
 
@@ -99,6 +98,3 @@ class Footprint(Item):
             _facadeClassName,
             self.buildingStyle.styleBlocks.get(_facadeClassName)
         )
-    
-    def getStyleBlockCache(self, scope):
-        return self.building._cache if scope is perBuilding else self._styleBlockCache

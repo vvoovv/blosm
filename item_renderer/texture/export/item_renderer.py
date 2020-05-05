@@ -80,3 +80,13 @@ class ItemRendererMixin:
             nodes,
             "Image Texture"
         )
+    
+    def getCladdingTextureInfo(self, item, building):
+        if self.r.cacheCladdingTextureInfo:
+            _cache = self.r._cache
+            claddingMaterial = item.getStyleBlockAttrDeep("claddingMaterial")
+            if not claddingMaterial in _cache:
+                _cache[claddingMaterial] = self._getCladdingTextureInfo(item, building)
+            return _cache[claddingMaterial]
+        else:
+            return self._getCladdingTextureInfo(item, building)

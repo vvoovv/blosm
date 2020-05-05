@@ -1,3 +1,4 @@
+from grammar import perBuilding
 
 
 class Item:
@@ -70,7 +71,7 @@ class Item:
         return value
     
     def getStyleBlockCache(self, scope):
-        return self._styleBlockCache
+        return self.building._cache if scope is perBuilding else self._styleBlockCache
     
     def getItemRenderer(self, itemRenderers):
         """
@@ -86,3 +87,9 @@ class Item:
     
     def getMargin(self):
         return 0.
+
+    def getCladdingMaterial(self):
+        return self.getStyleBlockAttrDeep("claddingMaterial")
+    
+    def getCladdingColor(self):
+        return self.getStyleBlockAttrDeep("claddingColor")

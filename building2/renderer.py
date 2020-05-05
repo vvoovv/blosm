@@ -116,6 +116,8 @@ class BuildingRendererNew(Renderer):
         self.exportMaterials = exportMaterials
         if exportMaterials:
             self.textureExporter = TextureExporter(self.bldgMaterialsDirectory)
+            # Do we need to cache <claddingTextureInfo> for each cladding material?
+            self.cacheCladdingTextureInfo = True
         
         # initialize item renderers
         for item in itemRenderers:
@@ -128,6 +130,8 @@ class BuildingRendererNew(Renderer):
         
         self.facadeTextureStore = FacadeTextureStore()
         self.claddingTextureStore = CladdingTextureStore()
+        
+        self._cache = {}
     
     def prepare(self):
         # nothing to be done here for now
@@ -136,6 +140,8 @@ class BuildingRendererNew(Renderer):
     def cleanup(self):
         if self.exportMaterials:
             self.textureExporter.cleanup()
+        
+        self._cache.clear()
     
     def render(self, buildingP, data):
         parts = buildingP.parts

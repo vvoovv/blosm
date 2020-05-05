@@ -16,5 +16,5 @@ CladdingMaterials = {
     "glass": 1,
     "concrete": 1,
     "gravel": 1,
-    "roof_tiles": 1
+    #"roof_tiles": 1
 }

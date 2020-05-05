@@ -29,3 +29,9 @@ class RoofItem(Item):
             _styleBlock.getItem(self.itemFactory, self)\
                 for _styleBlock in self.styleBlock.markup if self.evaluateCondition(_styleBlock)
         )
+
+    def getCladdingMaterial(self):
+        return self.getStyleBlockAttr("roofCladdingMaterial")
+    
+    def getCladdingColor(self):
+        return self.getStyleBlockAttr("roofCladdingColor")
