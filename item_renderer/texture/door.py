@@ -13,6 +13,4 @@ class Door:
     
     def __init__(self):
         self.facadeMaterialTemplateFilename = _materialTemplateFilename
-        # do we need to initialize <self.facadePatternInfo>
-        self.initFacadePatternInfo = False
         self.facadePatternInfo = dict(Door=1)

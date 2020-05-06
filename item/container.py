@@ -19,6 +19,12 @@ class Container(Item):
     
     def __init__(self):
         super().__init__()
+        # Look and Feel of the item
+        # It may override the one defined for the whole building in the <Meta>
+        self.laf = None
+        # Typically <facadePatternInfo> can be calculated for all container items.
+        # But Curtain Wall doesn't need the <facadePatternInfo>
+        self.hasFacadePatternInfo = True
         # a Python list to store markup items
         self.markup = []
         # The meaning of <self.width> and <self.height> for the items derived from <Container>

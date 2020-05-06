@@ -1,6 +1,5 @@
 import os, json
 from app import app
-from util.blender import loadTextFromFile
 
 
 _parts = ("level", "groundlevel", "door")
@@ -36,9 +35,13 @@ _numKeyGenerators = len(_keyGenerators)
 
 class FacadeTextureStore:
     
-    textureInfoFilename = "texture_info.blend"
+    textureInfoFilename = "texture_info_facade.json"
     
     def __init__(self):
+        # The following Python dictionary is used to calculated the number of windows and balconies
+        # in the Level pattern
+        self.facadePatternInfo = dict(Window=0, Balcony=0, Door=0)
+        
         self.byPart = {}
         byTextureFamily = []
         self.byTextureFamily = byTextureFamily
@@ -46,15 +49,13 @@ class FacadeTextureStore:
         for _part in _parts:
             self.initPart(_part)
         
-        textures = json.loads(
-            loadTextFromFile(
-                os.path.join(
-                    os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
-                    self.textureInfoFilename
-                ),
-                "textures_facade"
-            ).as_string()
-        )["textures"]
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
+                self.textureInfoFilename
+            ),
+        'r') as jsonFile:
+            textures = json.load(jsonFile)["textures"]
         
         # To simplify the code start the count of <byTextureFamily> from
         # 1 instead 0, i.e. <if textureFamily> instead of <if not textureFamily is None>
@@ -161,7 +162,7 @@ class FacadeTextureStore:
     def initLaf(self, buildingLaf, use):
         use[buildingLaf] = {}
     
-    def getTextureInfo(self, building, buildingPart, facadePatternInfo):
+    def getTextureInfo(self, building, buildingPart, item, itemRenderer):
         buildingAttrs = building.metaStyleBlock.attrs
         buildingPart = self.byPart.get(buildingPart)
         if not buildingPart:
@@ -169,9 +170,11 @@ class FacadeTextureStore:
         buildingUse = buildingPart.get(buildingAttrs.get("buildingUse"))
         if not buildingUse:
             return None
-        buildingLaf = buildingUse.get(buildingAttrs.get("buildingLaf"))
+        buildingLaf = buildingUse.get(item.laf or buildingAttrs.get("buildingLaf"))
         if not buildingLaf:
             return None
+        
+        facadePatternInfo = self.getFacadePatternInfo(item, itemRenderer)
         
         cache = building._cache
         if facadePatternInfo:
@@ -214,6 +217,24 @@ class FacadeTextureStore:
                 texture = buildingLaf.get(key).getTexture()
                 cache[key] = texture
         return texture.getTextureInfo()
+    
+    def getFacadePatternInfo(self, item, itemRenderer):
+        if itemRenderer.facadePatternInfo:
+            # it's the special case for the door
+            return itemRenderer.facadePatternInfo
+        elif not item.markup or not item.hasFacadePatternInfo:
+            return None
+        
+        facadePatternInfo = self.facadePatternInfo
+        # reset <facadePatternInfo>
+        for key in facadePatternInfo:
+            facadePatternInfo[key] = 0
+        # initalize <facadePatternInfo>
+        for _item in item.markup:
+            className = _item.__class__.__name__
+            if className in facadePatternInfo:
+                facadePatternInfo[className] += 1
+        return facadePatternInfo
 
 
 class TextureBundle:

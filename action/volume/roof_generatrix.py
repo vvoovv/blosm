@@ -4,6 +4,8 @@ from item.roof_generatrix import RoofGeneratrix as ItemRoofGeneratrix
 
 class RoofGeneratrix(RoofLeveled):
     
+    height = 4.
+    
     def __init__(self, data, itemStore, itemFactory, facadeRenderer, roofRenderer):
         super().__init__(data, itemStore, itemFactory, facadeRenderer, roofRenderer)
         self.hasRoofLevels = False

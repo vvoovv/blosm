@@ -27,6 +27,12 @@ class CurtainWall(Level):
         
     width = 0.
     
+    def __init__(self):
+        super().__init__()
+        self.laf = "curtain_wall"
+        # It doesn't need the <facadePatternInfo>
+        self.hasFacadePatternInfo = False
+    
     def getLevelRenderer(self, levelGroup, itemRenderers):
         """
         Get a renderer for the <levelGroup> representing the item.

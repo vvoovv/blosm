@@ -67,6 +67,8 @@ class Container(ItemRenderer):
         super().__init__(exportMaterials)
         self.noCladdingTexture = False
         self.renderState = RenderState()
+        # no pre-set <facadePatternInfo>
+        self.facadePatternInfo = None
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -168,25 +170,12 @@ class Container(ItemRenderer):
             loop[uvLayer].uv = uv
     
     def setMaterialId(self, item, building, buildingPart, uvs):
-        facadePatternInfo = self.facadePatternInfo
-        if item.markup:
-            facadePatternInfo = self.facadePatternInfo
-            if self.initFacadePatternInfo:
-                # reset <facadePatternInfo>
-                for key in facadePatternInfo:
-                    facadePatternInfo[key] = 0
-                # initalize <facadePatternInfo>
-                for _item in item.markup:
-                    className = _item.__class__.__name__
-                    if className in facadePatternInfo:
-                        facadePatternInfo[className] += 1
-        else:
-            facadePatternInfo = None
         # get a texture that fits to the Level markup pattern
         facadeTextureInfo = self.r.facadeTextureStore.getTextureInfo(
             building,
             buildingPart,
-            facadePatternInfo
+            item,
+            self
         )
         
         claddingTextureInfo = None\

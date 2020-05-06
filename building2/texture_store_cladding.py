@@ -1,25 +1,22 @@
 import os, json
 from app import app
-from util.blender import loadTextFromFile
 
 
 class CladdingTextureStore:
     
-    textureInfoFilename = "texture_info.blend"
+    textureInfoFilename = "texture_info_cladding.json"
     
     def __init__(self):
         byMaterial = {}
         self.byMaterial = byMaterial
         
-        textures = json.loads(
-            loadTextFromFile(
-                os.path.join(
-                    os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
-                    self.textureInfoFilename
-                ),
-                "textures_cladding"
-            ).as_string()
-        )["textures"]
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
+                self.textureInfoFilename
+            ),
+        'r') as jsonFile:
+            textures = json.load(jsonFile)["textures"]
         
         for texture in textures:
             material = texture["material"]

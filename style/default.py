@@ -351,6 +351,14 @@ styles = {
                     ((0.565, 0.933, 0.565, 1.), 1), # lightgreen
                     ((1., 0.855, 0.725, 1.), 1) # peachpuff
                 ))
+            ),
+            Conditional(
+                lambda footprint: footprint.getStyleBlockAttr("claddingMaterial") == "glass",
+                RandomWeighted((
+                    ((0.306, 0.447, 0.573, 1.), 1),
+                    ((0.169, 0.318, 0.361, 1.), 1),
+                    ((0.094, 0.18, 0.271, 1.), 1)
+                ))
             )
         )))
     ),
@@ -379,22 +387,22 @@ styles = {
         ]
     ),
     Roof(
-        roofCladdingMaterial = PerBuilding(Value(Alternatives(
+        roofCladdingMaterial = Value(Alternatives(
             FromAttr("roof:material", FromAttr.String, CladdingMaterials),
             Conditional(
                 lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "flat",
                 RandomWeighted(( ("concrete", 1), ("gravel", 1) ))
             ),
-            #Conditional(
-            #    lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "dome",
-            #    Constant("glass")
-            #)
+            Conditional(
+                lambda roof: roof.footprint.getStyleBlockAttr("roofShape") in ("pyramidal", "dome", "onion"),
+                Constant("metal")
+            ),
             FromStyleBlockAttr("claddingMaterial", FromStyleBlockAttr.Footprint)
-        ))),
-        roofCladdingColor = PerBuilding(Value(Alternatives(
+        )),
+        roofCladdingColor = Value(Alternatives(
             FromAttr("roof:colour", FromAttr.Color),
             Conditional(
-                lambda roof: roof.getStyleBlockAttr("claddingMaterial") == "concrete",
+                lambda roof: roof.getStyleBlockAttr("roofCladdingMaterial") == "concrete",
                 RandomWeighted((
                     ((0.686, 0.686, 0.686, 1.), 1),
                     ((0.698, 0.698, 0.651, 1.), 1),
@@ -404,7 +412,7 @@ styles = {
                 ))
             ),
             FromStyleBlockAttr("claddingColor", FromStyleBlockAttr.Footprint)
-        )))
+        ))
         #faces = smoothness.Smooth
         #sharpEdges = smoothness.Side
     )
