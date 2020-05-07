@@ -144,7 +144,8 @@ class App:
         self.layerIndices = {}
         self.layers = []
     
-    def initOsm(self, op, context, addonName):
+    def initOsm(self, op, context):
+        addonName = self.addonName
         addon = context.scene.blender_osm
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
@@ -267,7 +268,8 @@ class App:
         if self.terrain:
             terrain.init(createBvhTree)
     
-    def initTerrain(self, context, addonName):
+    def initTerrain(self, context):
+        addonName = self.addonName
         self.setDataDir(context, self.basePath, addonName)
         # create a sub-directory under <self.dataDir> for OSM files
         terrainDir = os.path.join(self.dataDir, self.terrainSubDir)
@@ -290,7 +292,8 @@ class App:
                 missingPath
             )
     
-    def initOverlay(self, context, addonName):
+    def initOverlay(self, context):
+        addonName = self.addonName
         from overlay import Overlay, overlayTypeData
         addon = context.scene.blender_osm
         data = overlayTypeData[addon.overlayType]
@@ -314,7 +317,8 @@ class App:
         
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
 
-    def initGeoJson(self, op, context, addonName):
+    def initGeoJson(self, op, context):
+        addonName = self.addonName
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":

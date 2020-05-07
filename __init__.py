@@ -135,6 +135,8 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         #layout.operator("blosm.load_extensions", text="Load extensions")
         layout.prop(self, "osmServer")
 
+app.app.addonName = BlenderOsmPreferences.bl_idname
+
 
 class OperatorGetMapboxToken(bpy.types.Operator):
     bl_idname = "blosm.get_mapbox_token"
@@ -195,7 +197,7 @@ class OperatorImportData(bpy.types.Operator):
         addon = context.scene.blender_osm
         
         try:
-            a.initOsm(self, context, BlenderOsmPreferences.bl_idname)
+            a.initOsm(self, context)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
@@ -313,7 +315,7 @@ class OperatorImportData(bpy.types.Operator):
     def importTerrain(self, context):
         a = app.app
         try:
-            a.initTerrain(context, BlenderOsmPreferences.bl_idname)
+            a.initTerrain(context)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'FINISHED'}
@@ -343,7 +345,7 @@ class OperatorImportData(bpy.types.Operator):
         a.setProjection(lat, lon)
         
         try:
-            a.initOverlay(context, BlenderOsmPreferences.bl_idname)
+            a.initOverlay(context)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
@@ -371,7 +373,7 @@ class OperatorImportData(bpy.types.Operator):
         addon = context.scene.blender_osm
         
         try:
-            a.initGeoJson(self, context, BlenderOsmPreferences.bl_idname)
+            a.initGeoJson(self, context)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}

@@ -331,7 +331,8 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.prop(addon, "mode", expand=True)
 
         if mode3dRealistic:
-            if app.enableExport:
+            prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+            if (app.addonName in prefs and prefs[app.addonName].preferences.enableExport) or not app.addonName in prefs:
                 box = layout.box()
                 box.prop(addon, "importForExport")
             
