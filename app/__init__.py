@@ -243,9 +243,9 @@ class App:
 
         # dealing with export to the popular 3D formats
         if self.mode is App.realistic:
-            self.enableExport = prefs[addonName].preferences.enableExport if addonName in prefs else True
+            self.enableExperimentalFeatures = prefs[addonName].preferences.enableExperimentalFeatures if addonName in prefs else True
         else:
-            self.enableExport = False
+            self.enableExperimentalFeatures = False
     
     def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
         addon = context.scene.blender_osm

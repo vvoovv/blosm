@@ -102,7 +102,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         default = "overpass-api.de"
     )
     
-    enableExport = bpy.props.BoolProperty(
+    enableExperimentalFeatures = bpy.props.BoolProperty(
         name = "Enable export (experimental)",
         description = "Enable export to the popular 3D formats. Experimental feature! Use it with caution!",
         default = False
@@ -115,7 +115,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
             box = layout.box()
             box.label(text="Thank you for purchasing the premium version!")
             box = layout.box()
-            box.prop(self, "enableExport")
+            box.prop(self, "enableExperimentalFeatures")
         
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
@@ -209,7 +209,10 @@ class OperatorImportData(bpy.types.Operator):
                 return {'CANCELLED'}
         else:
             if a.mode is a.realistic:
-                from setup.premium_default import setup as setup_function
+                if a.enableExperimentalFeatures and addon.importForExport:
+                    pass
+                else:
+                    from setup.premium_default import setup as setup_function
             else:
                 from setup.base import setup as setup_function
         
