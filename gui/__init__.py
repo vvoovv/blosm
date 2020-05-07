@@ -329,16 +329,12 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
             
         layout.prop(addon, "mode", expand=True)
-        if not mode3dRealistic:
-            box = layout.box()
-            box.prop(addon, "buildings")
-            box.prop(addon, "water")
-            box.prop(addon, "forests")
-            box.prop(addon, "vegetation")
-            box.prop(addon, "highways")
-            box.prop(addon, "railways")
 
         if mode3dRealistic:
+            if app.enableExport:
+                box = layout.box()
+                box.prop(addon, "importForExport")
+            
             box = layout.box()
             box.prop(addon, "buildings")
             if addon.buildings:
@@ -351,6 +347,14 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "forests", text="Import forests and separate trees")
             if addon.forests:
                 box.prop(addon, "treeDensity") 
+        else:
+            box = layout.box()
+            box.prop(addon, "buildings")
+            box.prop(addon, "water")
+            box.prop(addon, "forests")
+            box.prop(addon, "vegetation")
+            box.prop(addon, "highways")
+            box.prop(addon, "railways")
         
         layout.box().prop(addon, "setupScript")
         
@@ -473,6 +477,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
             if _has3dRealistic else\
             "Import data in 3D or 2D mode",
         default = "3Drealistic" if _has3dRealistic else "3Dsimple"
+    )
+    
+    importForExport = bpy.props.BoolProperty(
+        name = "Import for export",
+        description = "Import OpenStreetMap buildings ready for export to the popular 3D formats",
+        default = False
     )
     
     # extent bounds: minLat, maxLat, minLon, maxLon

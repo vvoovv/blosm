@@ -57,7 +57,7 @@ class App:
         "kumi.systems": "http://overpass.kumi.systems"
     }
     
-    devOsmServer = "kumi.systems" #"overpass-api.de"
+    devOsmServer = "overpass-api.de"
     
     osmUrlPath = "/api/map?bbox=%s,%s,%s,%s"
     
@@ -239,6 +239,12 @@ class App:
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
+
+        # dealing with export to the popular 3D formats
+        if self.mode is App.realistic:
+            self.enableExport = prefs[addonName].preferences.enableExport if addonName in prefs else True
+        else:
+            self.enableExport = False
     
     def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
         addon = context.scene.blender_osm
