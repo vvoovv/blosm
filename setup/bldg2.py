@@ -15,6 +15,7 @@ from item.footprint import Footprint
 from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion
 
 # item renderers
+"""
 from item_renderer.texture.base import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
@@ -27,8 +28,8 @@ from item_renderer.texture.base import\
     RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
-
 """
+
 from item_renderer.texture.export import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
@@ -41,7 +42,6 @@ from item_renderer.texture.export import\
     RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
-"""
 
 from action.terrain import Terrain
 from action.volume import Volume
@@ -58,7 +58,7 @@ def setup(app, data):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManager(data, buildingParts)
+        buildings = RealisticBuildingManagerExport(data, buildingParts)
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'

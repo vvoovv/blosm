@@ -4,7 +4,7 @@ from app import app
 
 class CladdingTextureStore:
     
-    textureInfoFilename = "texture_info_cladding.json"
+    textureInfoFilename = "texture_info_cladding_256.json"
     
     def __init__(self):
         byMaterial = {}

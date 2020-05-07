@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 3, 24),
+    "version": (2, 4, 0),
     "blender": (2, 80, 0),
     "location": "Right side panel for Blender 2.8x (left side panel for Blender 2.79))> \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -102,12 +102,20 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         default = "overpass-api.de"
     )
     
+    enableExport = bpy.props.BoolProperty(
+        name = "Enable export (experimental)",
+        description = "Enable export to the popular 3D formats. Experimental feature! Use it with caution!",
+        default = False
+    )
+    
     def draw(self, context):
         layout = self.layout
         
         if app.app.isPremium:
             box = layout.box()
             box.label(text="Thank you for purchasing the premium version!")
+            box = layout.box()
+            box.prop(self, "enableExport")
         
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
