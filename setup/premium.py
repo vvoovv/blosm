@@ -24,8 +24,7 @@ from building.manager import BuildingParts, BuildingRelations
 from manager.logging import Logger
 
 from realistic.building.manager import RealisticBuildingManager
-#from realistic.building.renderer import RealisticBuildingRenderer as BuildingRenderer
-from building2.renderer import BuildingRendererNew as BuildingRenderer
+from realistic.building.renderer import RealisticBuildingRenderer
 
 
 def setup_base(app, osm, getMaterials, bldgPreRender):
@@ -55,7 +54,7 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
             buildingParts
         )
         # set building renderer
-        br = BuildingRenderer(
+        br = RealisticBuildingRenderer(
             app,
             bldgPreRender = bldgPreRender,
             materials = getMaterials()
