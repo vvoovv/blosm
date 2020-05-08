@@ -55,12 +55,11 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
             buildingParts
         )
         # set building renderer
-        #br = BuildingRenderer(
-        #    app,
-        #    bldgPreRender = bldgPreRender,
-        #    materials = getMaterials()
-        #)
-        br = BuildingRenderer(app)
+        br = BuildingRenderer(
+            app,
+            bldgPreRender = bldgPreRender,
+            materials = getMaterials()
+        )
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
         app.managers.append(buildings)

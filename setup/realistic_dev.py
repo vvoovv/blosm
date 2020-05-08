@@ -14,8 +14,9 @@ from item.footprint import Footprint
 
 from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion
 
+from setup.premium import setup_forests
+
 # item renderers
-"""
 from item_renderer.texture.base import\
     Facade as FacadeRenderer,\
     Div as DivRenderer,\
@@ -28,26 +29,27 @@ from item_renderer.texture.base import\
     RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
     RoofPyramidal as RoofPyramidalRenderer
-"""
 
 from item_renderer.texture.export import\
-    Facade as FacadeRenderer,\
-    Div as DivRenderer,\
-    Level as LevelRenderer,\
-    CurtainWall as CurtainWallRenderer,\
-    Bottom as BottomRenderer,\
-    Door as DoorRenderer,\
-    RoofFlat as RoofFlatRenderer,\
-    RoofFlatMulti as RoofFlatMultiRenderer,\
-    RoofProfile as RoofProfileRenderer,\
-    RoofGeneratrix as RoofGeneratrixRenderer,\
-    RoofPyramidal as RoofPyramidalRenderer
+    Facade as FacadeRendererExport,\
+    Div as DivRendererExport,\
+    Level as LevelRendererExport,\
+    CurtainWall as CurtainWallRendererExport,\
+    Bottom as BottomRendererExport,\
+    Door as DoorRendererExport,\
+    RoofFlat as RoofFlatRendererExport,\
+    RoofFlatMulti as RoofFlatMultiRendererExport,\
+    RoofProfile as RoofProfileRendererExport,\
+    RoofGeneratrix as RoofGeneratrixRendererExport,\
+    RoofPyramidal as RoofPyramidalRendererExport
 
 from action.terrain import Terrain
 from action.volume import Volume
 
 
 def setup(app, data):
+    doExport = app.enableExperimentalFeatures and app.importForExport
+    
     styleStore = StyleStore()
     for styleName in styles:
         styleStore.add(styleName, styles[styleName])
@@ -58,7 +60,9 @@ def setup(app, data):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManagerExport(data, buildingParts)
+        buildings = RealisticBuildingManagerExport(data, buildingParts)\
+            if doExport else\
+            RealisticBuildingManager(data, buildingParts)
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
@@ -77,27 +81,21 @@ def setup(app, data):
             None,
             buildingParts
         )
-        # set building renderer
-        #br = RealisticBuildingRenderer(
-        #    app,
-        #    bldgPreRender = bldgPreRender,
-        #    materials = getMaterials()
-        #)
         
         # deal with item renderers
         itemRenderers = dict(
-            Facade = FacadeRenderer(),
-            Div = DivRenderer(),
-            Level = LevelRenderer(),
-            CurtainWall = CurtainWallRenderer(),
-            Bottom = BottomRenderer(),
-            Door = DoorRenderer(),
-            RoofFlat = RoofFlatRenderer(),
-            RoofFlatMulti = RoofFlatMultiRenderer(),
-            RoofProfile = RoofProfileRenderer(),
-            RoofDome = RoofGeneratrixRenderer(generatrix_dome(7)),
-            RoofOnion = RoofGeneratrixRenderer(generatrix_onion),
-            RoofPyramidal = RoofPyramidalRenderer()
+            Facade = FacadeRendererExport() if doExport else FacadeRenderer(),
+            Div = DivRendererExport() if doExport else DivRenderer(),
+            Level = LevelRendererExport() if doExport else LevelRenderer(),
+            CurtainWall = CurtainWallRendererExport() if doExport else CurtainWallRenderer(),
+            Bottom = BottomRendererExport() if doExport else BottomRenderer(),
+            Door = DoorRendererExport() if doExport else DoorRenderer(),
+            RoofFlat = RoofFlatRendererExport() if doExport else RoofFlatRenderer(),
+            RoofFlatMulti = RoofFlatMultiRendererExport() if doExport else RoofFlatMultiRenderer(),
+            RoofProfile = RoofProfileRendererExport() if doExport else RoofProfileRenderer(),
+            RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7)),
+            RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion),
+            RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer()
         )
         
         br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
@@ -110,8 +108,8 @@ def setup(app, data):
         buildings.setRenderer(br)
         app.managers.append(buildings)
     
-    #if app.forests:
-    #    setup_forests(app, osm)
+    if app.forests:
+        setup_forests(app, data)
 
 
 def getStyle(building, app):
