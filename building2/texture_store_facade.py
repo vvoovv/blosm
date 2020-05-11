@@ -52,7 +52,7 @@ class FacadeTextureStore:
         with open(
             os.path.join(
                 os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
-                "%s_256.json" % self.textureInfoFilename[-5] if exportMaterials else self.textureInfoFilename
+                "%s_256.json" % self.textureInfoFilename[:-5] if exportMaterials else self.textureInfoFilename
             ),
         'r') as jsonFile:
             textures = json.load(jsonFile)["textures"]
