@@ -37,7 +37,7 @@ class FacadeTextureStore:
     
     textureInfoFilename = "texture_info_facade_256.json"
     
-    def __init__(self):
+    def __init__(self, exportMaterials):
         # The following Python dictionary is used to calculated the number of windows and balconies
         # in the Level pattern
         self.facadePatternInfo = dict(Window=0, Balcony=0, Door=0)
@@ -52,7 +52,7 @@ class FacadeTextureStore:
         with open(
             os.path.join(
                 os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
-                self.textureInfoFilename
+                "%s_256.json" % self.textureInfoFilename[-5] if exportMaterials else self.textureInfoFilename
             ),
         'r') as jsonFile:
             textures = json.load(jsonFile)["textures"]

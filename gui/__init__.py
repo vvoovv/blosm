@@ -685,7 +685,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         subtype = 'UNSIGNED',
         min = 128,
         default = 256,
-        description = "Maximum number of overlay tiles. Each tile has dimensions 256x246 pixels"
+        description = "Maximum number of overlay tiles. Each tile has dimensions 256x256 pixels"
     )
     
     ####################################

@@ -117,7 +117,7 @@ class BuildingRendererNew(Renderer):
         if exportMaterials:
             self.textureExporter = TextureExporter(self.bldgMaterialsDirectory)
             # Do we need to cache <claddingTextureInfo> for each cladding material?
-            self.cacheCladdingTextureInfo = True
+            self.cacheCladdingTextureInfo = False
         
         # initialize item renderers
         for item in itemRenderers:
@@ -128,8 +128,8 @@ class BuildingRendererNew(Renderer):
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
         
-        self.facadeTextureStore = FacadeTextureStore()
-        self.claddingTextureStore = CladdingTextureStore()
+        self.facadeTextureStore = FacadeTextureStore(exportMaterials)
+        self.claddingTextureStore = CladdingTextureStore(exportMaterials)
         
         self._cache = {}
     

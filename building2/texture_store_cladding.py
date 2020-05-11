@@ -4,16 +4,16 @@ from app import app
 
 class CladdingTextureStore:
     
-    textureInfoFilename = "texture_info_cladding_256.json"
+    textureInfoFilename = "texture_info_cladding.json"
     
-    def __init__(self):
+    def __init__(self, exportMaterials):
         byMaterial = {}
         self.byMaterial = byMaterial
         
         with open(
             os.path.join(
                 os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
-                self.textureInfoFilename
+                "%s_256.json" % self.textureInfoFilename[-5] if exportMaterials else self.textureInfoFilename
             ),
         'r') as jsonFile:
             textures = json.load(jsonFile)["textures"]
