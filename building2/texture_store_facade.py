@@ -35,7 +35,7 @@ _numKeyGenerators = len(_keyGenerators)
 
 class FacadeTextureStore:
     
-    textureInfoFilename = "texture_info_facade_256.json"
+    textureInfoFilename = "texture_info_facade.json"
     
     def __init__(self, exportMaterials):
         # The following Python dictionary is used to calculated the number of windows and balconies
