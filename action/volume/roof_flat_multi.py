@@ -85,4 +85,4 @@ class RoofFlatMulti(RoofFlat):
             for i in range(-numVerts, 0):
                 facades[i].outer = False
             
-            indexOffset += numVerts
+            indexOffset += 2*numVerts

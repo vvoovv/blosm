@@ -255,8 +255,12 @@ class LevelHeights:
             levelsHeight = totalHeight - self.bottomHeight
             if footprint.roofHeight:
                 levelsHeight -= footprint.roofHeight
-                if footprint.lastLevelOffset:
-                    levelsHeight += footprint.lastLevelOffset
+                if levelsHeight:
+                    if footprint.lastLevelOffset:
+                        levelsHeight += footprint.lastLevelOffset
+                else:
+                    footprint.numLevels = 0
+                    return
             elif footprint.roofHeight is None:
                 # <roofHeight> is not given but is greater than zero and
                 # we must have <footprint.roofLevelsHeight> for that case

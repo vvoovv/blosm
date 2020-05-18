@@ -155,8 +155,8 @@ class BuildingRendererNew(Renderer):
         outline = buildingP.outline
         
         self.preRender(outline)
-        #for itemRenderer in self.itemRenderers:
-        #    self.itemRenderers[itemRenderer].preRender()
+        
+        #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
         building = Building.getItem(itemFactory, outline, buildingStyle)
         partTag = outline.tags.get("building:part")
