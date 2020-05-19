@@ -332,15 +332,17 @@ class PanelBlosmSettings(bpy.types.Panel):
 
         if mode3dRealistic:
             prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
-            if (app.addonName in prefs and prefs[app.addonName].preferences.enableExperimentalFeatures) or not app.addonName in prefs:
+            enableExperimentalFeatures = (app.addonName in prefs and prefs[app.addonName].preferences.enableExperimentalFeatures) or not app.addonName in prefs
+            if enableExperimentalFeatures:
                 box = layout.box()
                 box.prop(addon, "importForExport")
             
             box = layout.box()
             box.prop(addon, "buildings")
             if addon.buildings:
-                box.prop(addon, "litWindows")
-                box.separator()
+                if not enableExperimentalFeatures:
+                    box.prop(addon, "litWindows")
+                    box.separator()
                 self._drawBuildingSettings(box, addon)
             
             # forests and trees
