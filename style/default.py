@@ -12,9 +12,9 @@ minHeightForLevels = 1.5
 
 
 styles = {
-"mid rise residential zaandam": [
+"mid rise appartments zaandam": [
     Meta(
-        buildingUse = "residential",
+        buildingUse = "appartments",
         buildingLaf = "modern",
         height = "mid rise"
     ),
@@ -391,13 +391,10 @@ styles = {
             FromAttr("roof:material", FromAttr.String, CladdingMaterials),
             Conditional(
                 lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "flat",
-                RandomWeighted(( ("concrete", 1), ("gravel", 1) ))
+                Constant("concrete")
             ),
-            Conditional(
-                lambda roof: roof.footprint.getStyleBlockAttr("roofShape") in ("pyramidal", "dome", "onion"),
-                Constant("metal")
-            ),
-            FromStyleBlockAttr("claddingMaterial", FromStyleBlockAttr.Footprint)
+            # roofShape in ("pyramidal", "dome", "onion")
+            Constant("metal")
         )),
         roofCladdingColor = Value(Alternatives(
             FromAttr("roof:colour", FromAttr.Color),
@@ -406,15 +403,58 @@ styles = {
                 RandomWeighted((
                     ((0.686, 0.686, 0.686, 1.), 1),
                     ((0.698, 0.698, 0.651, 1.), 1),
-                    ((0.784, 0.761, 0.714, 1.), 1),
-                    ((0.545, 0.545, 0.553, 1.), 1),
-                    ((0.655, 0.651, 0.631, 1.), 1)
+                    ((0.784, 0.761, 0.714, 1.), 1)
                 ))
             ),
-            FromStyleBlockAttr("claddingColor", FromStyleBlockAttr.Footprint)
+            # roofCladdingMaterial == "metal"
+            RandomWeighted((
+                ((0.686, 0.686, 0.686, 1.), 1),
+                ((0.698, 0.698, 0.651, 1.), 1),
+                ((0.784, 0.761, 0.714, 1.), 1)
+            ))
         ))
         #faces = smoothness.Smooth
         #sharpEdges = smoothness.Side
+    )
+],
+"place of worship": [
+    Footprint(
+        height = Value(FromAttr("height", FromAttr.Float, FromAttr.Positive)),
+        minHeight = Value(FromAttr("min_height", FromAttr.Float, FromAttr.Positive)),
+        numLevels = 0,
+        roofShape = Value(Alternatives(
+            FromAttr("roof:shape", FromAttr.String, RoofShapes),
+            Constant("flat")
+        )),
+        roofHeight = Value(FromAttr("roof:height", FromAttr.Float, FromAttr.NonNegative)),
+        claddingMaterial = PerBuilding(Value(Alternatives(
+            FromAttr("building:material", FromAttr.String, CladdingMaterials),
+            Constant("plaster")
+        ))),
+        claddingColor = PerBuilding(Value(Alternatives(
+            FromAttr("building:colour", FromAttr.Color),
+            RandomWeighted((
+                ((1., 0.627, 0.478, 1.), 1), # lightsalmon
+                ((0.565, 0.933, 0.565, 1.), 1), # lightgreen
+                ((1., 0.855, 0.725, 1.), 1) # peachpuff
+            ))
+        )))
+    ),
+    Facade(),
+    Roof(
+        roofCladdingMaterial = Value(Alternatives(
+            FromAttr("roof:material", FromAttr.String, CladdingMaterials),
+            Constant("metal")
+        )),
+        roofCladdingColor = Value(Alternatives(
+            FromAttr("roof:colour", FromAttr.Color),
+            RandomWeighted((
+                ((0.686, 0.686, 0.686, 1.), 1),
+                ((0.698, 0.698, 0.651, 1.), 1),
+                ((0.784, 0.761, 0.714, 1.), 1)
+            ))
+        )),
+        faces = smoothness.Smooth
     )
 ]
 }

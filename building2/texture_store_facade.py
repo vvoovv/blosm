@@ -5,7 +5,7 @@ from app import app
 _parts = ("level", "groundlevel", "door")
 
 _uses = (
-    "residential", "single_family", "office", "mall", "retail", "hotel", "school", "university"
+    "appartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
 )
 
 # laf stands for "look and feel"

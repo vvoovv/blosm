@@ -34,8 +34,8 @@ def getMaterials():
     return dict(
         #neoclassical = (FacadeWithOverlay, "plaster", plasterColors),
         glass = (FacadeSeamlessTexture, glassColors),
-        commercial = FacadeSeamlessTexture,
-        residential = FacadeSeamlessTexture,
+        office = FacadeSeamlessTexture,
+        appartments = FacadeSeamlessTexture,
         #brick = SeamlessTexture,
         brick_color = (SeamlessTextureWithColor, brickColors),
         #concrete = SeamlessTexture,
@@ -74,9 +74,9 @@ def bldgPreRender(building, app):
         if material == "glass" or material == "mirror":
             building.setMaterialWalls("glass")
         elif tb in ("residential", "apartments", "house", "detached"):
-            building.setMaterialWalls("residential")
+            building.setMaterialWalls("appartments")
         else:
-            building.setMaterialWalls("commercial")
+            building.setMaterialWalls("office")
     
     # material for roof
     material = building.roofMaterial  

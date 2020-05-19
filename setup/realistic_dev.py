@@ -113,9 +113,9 @@ def setup(app, data):
 
 
 def getStyle(building, app):
-    #return "mid rise residential zaandam"
+    #return "mid rise appartments zaandam"
     #return "high rise mirrored glass"
     buildingTag = building["building"]
-    if building["building:material"] in ("glass", "mirror"):
-        return "high rise mirrored glass"
+    if building["amenity"] == "place_of_worship":
+        return "place of worship"
     return "high rise"

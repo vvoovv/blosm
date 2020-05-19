@@ -44,10 +44,10 @@ def getDataTypes():
 
 
 _blenderMaterials = (
-    ("residential", "fo"),
-    ("residential", "fs"),
-    ("commercial", "fo"),
-    ("commercial", "fs"),
+    ("appartments", "fo"),
+    ("appartments", "fs"),
+    ("office", "fo"),
+    ("office", "fs"),
     ("glass", "fs"),
     ("neoclassical", "fo"),
     ("neoclassical", "fs"),
