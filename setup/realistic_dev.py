@@ -116,6 +116,17 @@ def getStyle(building, app):
     #return "mid rise appartments zaandam"
     #return "high rise mirrored glass"
     buildingTag = building["building"]
+    
+    if buildingTag in ("commercial", "office"):
+        return "high rise"
+    
+    if buildingTag in ("residential", "apartments", "house", "detached"):
+        return "residential"
+    
     if building["amenity"] == "place_of_worship":
         return "place of worship"
+    
+    if building["man_made"] or building["barrier"] or buildingTag=="wall":
+        return "man made"
+    
     return "high rise"
