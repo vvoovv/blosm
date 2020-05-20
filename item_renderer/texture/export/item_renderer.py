@@ -56,7 +56,7 @@ class ItemRendererMixin:
         textureExporter.renderTexture(scene, textureFilepath)
     
     def getCladdingColorHex(self, item):
-        color = item.getStyleBlockAttrDeep("claddingColor")
+        color = item.getCladdingColor()
         # remember the color for a future use in the next funtion call
         self.claddingColor = color
         # return a hex string
