@@ -9,6 +9,7 @@ from item.defs import RoofShapes, CladdingMaterials
 
 
 minHeightForLevels = 1.5
+minWidthForOpenings = 1.
 
 
 styles = {
@@ -363,12 +364,10 @@ styles = {
         )))
     ),
     Facade(
-        label = "cladding only for too low structures",
-        condition = lambda facade: facade.footprint.height - facade.footprint.minHeight < minHeightForLevels
-    ),
-    Facade(
-        label = "cladding only for structures without levels",
-        condition = lambda facade: not facade.footprint.numLevels
+        label = "cladding only for structures without levels or too low structures or too narrow facades",
+        condition = lambda facade: not facade.footprint.numLevels or\
+            facade.footprint.height - facade.footprint.minHeight < minHeightForLevels or\
+            facade.width < minWidthForOpenings
     ),
     Facade(
         condition = lambda item: item.footprint.getStyleBlockAttr("claddingMaterial") == "glass",
