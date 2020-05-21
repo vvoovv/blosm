@@ -53,6 +53,8 @@ class RoofFlat(Roof):
         
         # create vertices
         z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
+        if building.offsetZ:
+            z += building.offsetZ
         # verts for the lower cap
         verts.extend(v for v in polygon.verts)
         # verts for the upper cap
@@ -120,7 +122,7 @@ class RoofLeveled(RoofFlat):
     
     def extrude(self, footprint):
         if footprint.noWalls:
-            z = footprint.roofVerticalPosition
+            z = footprint.roofVerticalPosition + footprint.building.offsetZ if footprint.building.offsetZ else footprint.roofVerticalPosition
             # the basement of the roof
             footprint.building.verts.extend(Vector((v.x, v.y, z)) for v in footprint.polygon.verts)
             return

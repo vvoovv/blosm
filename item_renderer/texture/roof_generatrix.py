@@ -65,7 +65,7 @@ class RoofGeneratrix(ItemRenderer):
         firstVertIndex = roofItem.firstVertIndex
         
         roofHeight = footprint.roofHeight
-        center = polygon.centerBB(footprint.roofVerticalPosition)
+        center = polygon.centerBB(footprint.roofVerticalPosition + building.offsetZ if building.offsetZ else footprint.roofVerticalPosition)
         
         n = polygon.n
         numRows = len(self.generatrix)

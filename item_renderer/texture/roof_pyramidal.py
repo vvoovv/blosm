@@ -21,7 +21,7 @@ class RoofPyramidal(ItemRenderer):
         lastVertIndex = firstVertIndex+n-1
         
         roofHeight = footprint.roofHeight
-        center = polygon.centerBB(footprint.roofVerticalPosition)
+        center = polygon.centerBB(footprint.roofVerticalPosition + building.offsetZ if building.offsetZ else footprint.roofVerticalPosition)
         
         # create a vertex at the center
         verts.append(center + roofHeight*zAxis)

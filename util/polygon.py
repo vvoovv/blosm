@@ -386,7 +386,7 @@ class Polygon:
     
     def centerBB(self, z=0.):
         """
-        Return the center of the poygon bounding box alligned along the global X and Y axes
+        Return the center of the polygon bounding box alligned along the global X and Y axes
         """
         return Vector((
             ( min(self.verts, key=lambda v: v[0])[0] + max(self.verts, key=lambda v: v[0])[0] )/2.,

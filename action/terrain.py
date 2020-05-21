@@ -7,8 +7,8 @@ class Terrain(Action):
 
     def do(self, building, itemClass, style):
         if self.app.terrain:
-            #self.projectSingleVertex(building)
-            self.projectAllVertices(building)
+            self.projectSingleVertex(building)
+            #self.projectAllVertices(building)
     
     def projectSingleVertex(self, building):
         outline = building.outline
@@ -17,7 +17,7 @@ class Terrain(Action):
             next( outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data) )
         )
         if offset:
-            building.offsetZ = offset
+            building.offsetZ = offset[2]
         else:
             # the building is outside the terrain so skip the whole building
             self.itemStore.skip = True

@@ -29,6 +29,8 @@ class RoofFlatMulti(RoofFlat):
         data = self.data
         super().init(footprint, footprint.element.getOuterData(data))
         z1 = footprint.minHeight
+        if footprint.building.offsetZ:
+            z1 += footprint.building.offsetZ
         element = footprint.element
         innerPolygons = self.innerPolygons
         innerPolygons.clear()
