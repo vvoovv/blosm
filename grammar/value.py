@@ -259,6 +259,8 @@ class FromAttr:
     
     def getValue(self, item, scope):
         value = (item.footprint if item.footprint else item).attr(self.attr)
+        if value is None:
+            return None
         valueCondition = self.valueCondition
         if self.valueType is FromAttr.Integer:
             if not value is None:

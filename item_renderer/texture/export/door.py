@@ -18,8 +18,8 @@ class Door(DoorBase, Container):
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
         return "door_%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
-            if claddingTextureInfo and color\
-            else facadeTextureInfo["name"]
+            if claddingTextureInfo and color else\
+            ("%s_%s" % (color, facadeTextureInfo["name"]) if color else facadeTextureInfo["name"])
 
     def renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
         face = self.r.createFace(parentItem.building, indices)

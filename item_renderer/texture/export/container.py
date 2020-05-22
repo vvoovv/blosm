@@ -18,8 +18,8 @@ class Container(ContainerBase, ItemRendererMixin):
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
         return "%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
-            if claddingTextureInfo and color\
-            else facadeTextureInfo["name"]
+            if claddingTextureInfo and color else\
+            ("%s_%s" % (color, facadeTextureInfo["name"]) if color else facadeTextureInfo["name"])
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         if not materialName in bpy.data.materials:
