@@ -79,8 +79,8 @@ class Roof:
         self.calculateDimensions(footprint)
         if not footprint.valid:
             return
-        z1 = (footprint.minHeight + footprint.building.offsetZ) if footprint.building.offsetZ else footprint.minHeigh
-             
+        z1 = (footprint.minHeight + footprint.building.offsetZ) if footprint.building.offsetZ else footprint.minHeight
+        
         # create a polygon located at <z1>
         
         # check if a polygon has been already set (e.g. when placing the building on a terrain)
