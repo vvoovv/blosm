@@ -659,9 +659,9 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     terrainReductionRatio = bpy.props.EnumProperty(
         name="Ratio",
         items=(("1","100%","No reduction"), ("2","25%","Divide par 4"), ("5","4%","Divide by 25"),
-               ("10","1%","Divide by 100"), ("20","0.25%","Divide by 400"), ("50","4%%","Divide by 2500"),
-               ("100","1%%","Divide by 10,000"), ("200","0.25%%","Divide by 40,000"), ("400","0.06%%","Divide by 160,000"),
-               ("600","0.03%%","Divide by 360,000"),("1200","0.01%%","Divide by 1,440,000")),
+               ("10","1%","Divide by 100"), ("20","0.25%","Divide by 400"), ("50","0.04%","Divide by 2500"),
+               ("100","0.01%","Divide by 10,000"), ("200","0.0025%","Divide by 40,000"), ("400","0.0006%","Divide by 160,000"),
+               ("600","0.0003%","Divide by 360,000"),("1200","0.0001%","Divide by 1,440,000")),
         description="Reduction ratio for the number of vertices",
         default="1"
     )
