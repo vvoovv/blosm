@@ -53,6 +53,7 @@ def _checkPath():
         sys.path.remove(path)
     # make <path> the first one to search for a module
     sys.path.insert(0, path)
+    sys.path.insert(1, os.path.join(path, "pml"))
 _checkPath()
 
 

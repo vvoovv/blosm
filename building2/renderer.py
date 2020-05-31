@@ -97,7 +97,7 @@ class BuildingRendererNew(Renderer):
         
         self.styleStore = styleStore
         
-        self.bldgMaterialsDirectory = os.path.dirname(app.bldgMaterialsFilepath)
+        self.assetsDir = app.assetsDir
         
         # do wee need to apply a cladding color for facade textures?
         self.useCladdingColor = True
@@ -115,7 +115,7 @@ class BuildingRendererNew(Renderer):
         
         self.exportMaterials = exportMaterials
         if exportMaterials:
-            self.textureExporter = TextureExporter(self.bldgMaterialsDirectory)
+            self.textureExporter = TextureExporter(self.assetsDir)
             # Do we need to cache <claddingTextureInfo> for each cladding material?
             self.cacheCladdingTextureInfo = False
         

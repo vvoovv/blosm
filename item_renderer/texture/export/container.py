@@ -26,7 +26,7 @@ class Container(ContainerBase, ItemRendererMixin):
             if facadeTextureInfo.get("noCladdingTexture") and (not self.r.useCladdingColor or facadeTextureInfo.get("noCladdingColor")):
                 # use the diffuse texture as is
                 textureFilepath = os.path.join(
-                    self.r.bldgMaterialsDirectory,
+                    self.r.assetsDir,
                     facadeTextureInfo["path"],
                     facadeTextureInfo["name"]
                 )

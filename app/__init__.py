@@ -170,6 +170,7 @@ class App:
                         "The directory with assets %s doesn't exist. " % assetsDir +
                         _setAssetsDirStr
                     )
+                self.assetsDir = assetsDir
                 bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
                 if not os.path.isfile(bldgMaterialsFilepath):
                     raise Exception(
@@ -342,6 +343,7 @@ class App:
                         "The directory with assets %s doesn't exist. " % assetsDir +
                         _setAssetsDirStr
                     )
+                self.assetsDir = assetsDir
                 bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
                 if not os.path.isfile(bldgMaterialsFilepath):
                     raise Exception(

@@ -50,7 +50,7 @@ from action.volume import Volume
 def setup(app, data):
     doExport = app.enableExperimentalFeatures and app.importForExport
     
-    styleStore = StyleStore(styles)
+    styleStore = StyleStore(app.assetsDir, styles=None)
 
     # comment the next line if logging isn't needed
     Logger(app, data)
@@ -111,6 +111,7 @@ def setup(app, data):
 
 
 def getStyle(building, app):
+    return "high rise"
     #return "mid rise appartments zaandam"
     #return "high rise mirrored glass"
     buildingTag = building["building"]

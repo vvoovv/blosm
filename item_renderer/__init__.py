@@ -28,7 +28,7 @@ class ItemRenderer:
     def getMaterialTemplate(self, materialTemplateFilename, materialTemplateName):
         materialTemplate = bpy.data.materials.get(materialTemplateName)
         if not materialTemplate:
-            materialTemplate = loadMaterialsFromFile(os.path.join(self.r.bldgMaterialsDirectory, materialTemplateFilename), True, materialTemplateName)[0]
+            materialTemplate = loadMaterialsFromFile(os.path.join(self.r.assetsDir, materialTemplateFilename), True, materialTemplateName)[0]
         return materialTemplate
     
     def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):

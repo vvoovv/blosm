@@ -26,7 +26,7 @@ class ItemRendererMixin:
             # set it just in case
             setImage(
                 claddingTextureInfo["name"],
-                os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
                 nodes,
                 "Cladding Texture"
             )

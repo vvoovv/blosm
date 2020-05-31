@@ -57,7 +57,7 @@ class Door(DoorBase, Container):
             # the overlay texture
             setImage(
                 facadeTextureInfo["name"],
-                os.path.join(self.r.bldgMaterialsDirectory, facadeTextureInfo["path"]),
+                os.path.join(self.r.assetsDir, facadeTextureInfo["path"]),
                 nodes,
                 "Overlay"
             )
@@ -66,7 +66,7 @@ class Door(DoorBase, Container):
                 # set it just in case
                 setImage(
                     claddingTextureInfo["name"],
-                    os.path.join(self.r.bldgMaterialsDirectory, claddingTextureInfo["path"]),
+                    os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
                     nodes,
                     "Wall Material"
                 )

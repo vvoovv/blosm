@@ -8,6 +8,8 @@ from grammar.value import RandomWeighted, RandomNormal
 from action.volume.roof import Roof as RoofDefs
 from item.defs import RoofShapes, CladdingMaterials
 
+from pml import PML
+
 
 minHeightForLevels = 1.5
 minWidthForOpenings = 1.
@@ -15,16 +17,21 @@ minWidthForOpenings = 1.
 
 class StyleStore:
     
-    def __init__(self, styles):
+    def __init__(self, assetsDir, styles=None):
         self.styles = {}
         # overwrite an entry with the given key in <self.styles> if the key already exists in <self.styles>
         self.overwrite = True
         
         if styles:
-            for styleName in styles:
-                self.add(styleName, styles[styleName])
+            self.addStyles(styles)
         else:
-            pass
+            self.loadFromDirectory(
+                os.path.join(assetsDir, "style", "building")
+            )
+    
+    def addStyles(self, styles):
+        for styleName in styles:
+            self.add(styleName, styles[styleName]) 
     
     def add(self, styleName, style):
         style = Grammar(style)
@@ -39,6 +46,7 @@ class StyleStore:
                 "The directory with PML files %s doesn't exist. " % directory
             )
         for file in os.listdir(directory):
+            file = os.path.join(directory, file)
             if os.path.isfile(file) and file.lower().endswith(".pml"):
                 self.loadFromFile(file)
     
@@ -48,4 +56,8 @@ class StyleStore:
                 self.loadFromFile(file)
     
     def loadFromFile(self, file):
-        pass
+        styles = PML(file).getPythonCode()
+        if isinstance(styles, dict):
+            self.addStyles(styles)
+        else: # a Python list
+            pass
