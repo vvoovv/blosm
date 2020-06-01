@@ -222,7 +222,7 @@ class Level(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, indices=None, roof=False, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
-        self.indices = indices
+        self.indices = indices or (0, -1)
         self.roof = roof
         self.isLevel = True
         self.isBottom = False

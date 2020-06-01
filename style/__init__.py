@@ -56,8 +56,12 @@ class StyleStore:
                 self.loadFromFile(file)
     
     def loadFromFile(self, file):
-        styles = PML(file).getPythonCode()
+        _locals = {}
+        exec(PML(file).getPythonCode(), None, _locals)
+        styles = _locals["styles"]
         if isinstance(styles, dict):
             self.addStyles(styles)
         else: # a Python list
-            pass
+            # use the file name without the extension as the style name
+            styleName = os.path.splitext(os.path.basename(file))[0]
+            self.add(styleName, styles)
