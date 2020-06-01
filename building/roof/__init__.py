@@ -153,7 +153,8 @@ class Roof:
 
     def getHeight(self):
         element = self.element
-        return parseNumber(element.tags["height"]) if "height" in element.tags else None
+        return parseNumber(element.tags["height"]) if "height" in element.tags else\
+            ( parseNumber(element.tags["building:height"]) if "building:height" in element.tags else None )
     
     def getLevels(self, getDefault=True):
         """
