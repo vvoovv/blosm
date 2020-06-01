@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2018 Vladimir Elistratov
+Copyright (C) 2014-2020 Vladimir Elistratov, Alain (al1brn)
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -625,6 +625,12 @@ class App:
         size = self.terrainSize
         makeQuads = (self.terrainPrimitiveType == "quad")
         
+        # Number of vertex reduction
+        # The reduction algorithm uses a reduction ratio which is a divider of terrainSize ie of 1200 and 3600
+        decimate  = int(self.terrainReductionRatio)
+        hard_size = size   # size of the file records
+        size //= decimate  # size used in the loop computations
+        
         minHeight = 32767
         
         vertsCounter = 0
@@ -660,13 +666,19 @@ class App:
                 with gzip.open(filepath, "rb") as f:
                     for y in range(y2, y1-1, -1):
                         # set the file object position at y, x1
-                        f.seek( 2*((size-y)*(size+1) + x1) )
+                        # f.seek( 2*((size-y)*(size+1) + x1) )
+                        # Vertex reduction: use hard_size and decimate divider
+                        f.seek( 2*((hard_size-y*decimate)*(hard_size+1) + x1*decimate) )
+                        
                         for x in range(x1, x2+1):
                             lat = _lat + y/size
                             lon = _lon + x/size
                             xy = self.projection.fromGeographic(lat, lon)
                             # read two bytes and convert them
                             buf = f.read(2)
+                            # Vertex reduction : read more bytes for next loop
+                            if decimate > 1:
+                                _nothing = f.read(2*decimate-2)
                             # ">h" is a signed two byte integer
                             z = struct.unpack('>h', buf)[0]
                             if z==self.voidValue:

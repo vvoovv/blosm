@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2018 Vladimir Elistratov
+Copyright (C) 2014-2020 Vladimir Elistratov, Alain (al1brn)
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -392,7 +392,20 @@ class PanelBlosmSettings(bpy.types.Panel):
         )
     
     def drawTerrain(self, context):
-        self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")
+        self.layout.box().prop(context.scene.blender_osm, "ignoreGeoreferencing")
+        
+        # Vertex reduction: reduction ratio selection + total vertex computation
+        osm = context.scene.blender_osm
+        count = 3600 // int(osm.terrainResolution)
+        lat = int((osm.maxLat - osm.minLat) * count)
+        lon = int((osm.maxLon - osm.minLon) * count)
+        ratio = int(osm.terrainReductionRatio)
+        verts = (lat//ratio+1)*(lon//ratio+1)
+        
+        box = self.layout.box()
+        box.label(text="[Advanced] Vertex reduction")
+        box.prop(osm, "terrainReductionRatio")
+        box.label(text="Vertex count: {:,d}".format(verts))
     
     def drawOverlay(self, context):
         layout = self.layout
@@ -637,6 +650,27 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         items=(("quad","quad","quad"),("triangle","triangle","triangle")),
         description="Primitive type used for the terrain mesh: quad or triangle",
         default="quad"
+    )
+
+    # Number of vertex reduction
+    # The Reduction Ratio is a divider of 1200
+    terrainReductionRatio = bpy.props.EnumProperty(
+        name="Ratio",
+        items=(
+            ("1","100%","No reduction"),
+            ("2","25%","Divide par 4"),
+            ("5","4%","Divide by 25"),
+            ("10","1%","Divide by 100"),
+            ("20","0.25%","Divide by 400"),
+            ("50","0.04%","Divide by 2500"),
+            ("100","0.01%","Divide by 10,000"),
+            ("200","0.0025%","Divide by 40,000"),
+            ("400","0.0006%","Divide by 160,000"),
+            ("600","0.0003%","Divide by 360,000"),
+            ("1200","0.0001%","Divide by 1,440,000")
+        ),
+        description="Reduction ratio for the number of vertices",
+        default="1"
     )
     
     #
