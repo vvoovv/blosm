@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-import webbrowser
+import math, webbrowser
 from bpy.app.handlers import persistent
 from app import app
 from defs import Keys
@@ -424,6 +424,14 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "overlayUrl")
         
         layout.box().prop(addon, "setOverlayMaterial")
+        
+        box = self.layout.box()
+        box.label(text="[Advanced]")
+        split = box.split(factor=0.7)
+        split.label(text="Max number of tiles:")
+        split.prop(addon, "maxNumTiles", text="")
+        _squreTextureSize = 256 * round( math.sqrt(addon.maxNumTiles) )
+        box.label(text="Like a square texture {:,d}x{:,d} px".format(_squreTextureSize, _squreTextureSize))
     
     def drawGpx(self, context):
         layout = self.layout
@@ -722,7 +730,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         subtype = 'UNSIGNED',
         min = 128,
         default = 256,
-        description = "Maximum number of overlay tiles. Each tile has dimensions 256x246 pixels"
+        description = "Maximum number of overlay tiles. Each tile has dimensions 256x256 pixels"
     )
     
     ####################################
