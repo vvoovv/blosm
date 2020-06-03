@@ -56,10 +56,10 @@ class GpxRenderer:
         app = self.app
         terrain = app.terrain
         projection = app.projection
-        useGpxElevation = app.useGpxElevation
-        if not useGpxElevation and not terrain:
-            useGpxElevation = True
-        terrainOffset = terrain.terrain.get("terrain_offset") if terrain and useGpxElevation else None
+        gpxProjectOnTerrain = app.gpxProjectOnTerrain
+        if gpxProjectOnTerrain and not terrain:
+            gpxProjectOnTerrain = False
+        terrainOffset = terrain.terrain.get("terrain_offset") if terrain and not gpxProjectOnTerrain else None
         
         bm = bmesh.new()
         
@@ -72,7 +72,7 @@ class GpxRenderer:
                     v[0],
                     v[1],
                     point[2]-terrainOffset if terrainOffset else\
-                    ( point[2] if useGpxElevation else (terrain.maxZ + terrain.layerOffset) )
+                    ( (terrain.maxZ + terrain.layerOffset) if gpxProjectOnTerrain else point[2] )
                 ))
                 if prevVertex:
                     bm.edges.new([prevVertex, v])
@@ -90,10 +90,10 @@ class GpxRenderer:
         app = self.app
         terrain = app.terrain
         projection = app.projection
-        useGpxElevation = app.useGpxElevation
-        if not useGpxElevation and not terrain:
-            useGpxElevation = True
-        terrainOffset = terrain.terrain.get("height_offset") if terrain and useGpxElevation else None
+        gpxProjectOnTerrain = app.gpxProjectOnTerrain
+        if gpxProjectOnTerrain and not terrain:
+            gpxProjectOnTerrain = False
+        terrainOffset = terrain.terrain.get("height_offset") if terrain and not gpxProjectOnTerrain else None
         
         curve = bpy.data.curves.new(name, 'CURVE')
         curve.dimensions = '3D'
@@ -110,7 +110,7 @@ class GpxRenderer:
                     v[0],
                     v[1],
                     point[2]-terrainOffset if terrainOffset else\
-                    ( point[2] if useGpxElevation else (terrain.maxZ + terrain.layerOffset) )
+                    ( (terrain.maxZ + terrain.layerOffset) if gpxProjectOnTerrain else point[2] )
                 ))
         
         # set bevel object
@@ -120,7 +120,7 @@ class GpxRenderer:
         
         self.applyMaterial(obj)
         
-        if terrain and not useGpxElevation:
+        if terrain and gpxProjectOnTerrain:
             self.addShrinkwrapModifier(obj, terrain.terrain, GpxRenderer.swOffset)
         
         # cleanup

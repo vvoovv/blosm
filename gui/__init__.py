@@ -441,7 +441,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
         
-        layout.box().prop(addon, "useGpxElevation")
+        layout.box().prop(addon, "gpxProjectOnTerrain")
         
         layout.box().prop(addon, "ignoreGeoreferencing")
 
@@ -743,10 +743,10 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         description = "Path to a GPX file for import"
     )
     
-    useGpxElevation = bpy.props.BoolProperty(
-        name="Use elevation for z-coordinate",
-        description="Use elevations from the GPX-file for z-coordinate if checked or project the track on the terrain otherwise",
-        default=False
+    gpxProjectOnTerrain = bpy.props.BoolProperty(
+        name="Project GPX-track on terrain",
+        description="Project GPX-track on the terrain if checked or use elevations from GPX-track for z-coordinate otherwise",
+        default=True
     )
     
     gpxImportType = bpy.props.EnumProperty(
