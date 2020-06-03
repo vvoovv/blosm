@@ -1,6 +1,6 @@
 import os, sys
 import bpy, bmesh
-
+from util.blender import loadMaterialsFromFile
 
 _isBlender280 = bpy.app.version[1] >= 80
 _curveBevelObjectName = "gpx_bevel"
@@ -18,6 +18,12 @@ class GpxRenderer:
     
     # Default value for <offset> parameter of the SHRINKWRAP modifier;
     swOffset = 0.5
+    
+    # relative path to default materials
+    materialPath = "assets/base.blend"
+    
+    # name of the default material from <Overlay.materialPath>
+    defaultMaterial = "gpx"
             
     def __init__(self, app):
         self.app = app
@@ -112,6 +118,8 @@ class GpxRenderer:
         
         obj = bpy.data.objects.new(name, curve)
         
+        self.applyMaterial(obj)
+        
         if terrain and not useGpxElevation:
             self.addShrinkwrapModifier(obj, terrain.terrain, GpxRenderer.swOffset)
         
@@ -170,3 +178,17 @@ class GpxRenderer:
         m.use_project_z = True
         m.target = target
         m.offset = offset
+    
+    def applyMaterial(self, obj):
+        material = bpy.data.materials.get(GpxRenderer.defaultMaterial)
+        if not material:
+            material = loadMaterialsFromFile(
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    os.pardir,
+                    GpxRenderer.materialPath
+                ),
+                False, # i.e. append rather than link
+                GpxRenderer.defaultMaterial
+            )[0]
+        obj.data.materials.append(material)
