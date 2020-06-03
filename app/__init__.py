@@ -307,7 +307,13 @@ class App:
         overlay.overlayDir = overlayDir
         
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
-
+    
+    def initGpx(self, context, addonName):
+        gpxFilepath = os.path.realpath(bpy.path.abspath(self.gpxFilepath))
+        if not os.path.isfile(gpxFilepath):
+            raise Exception("A valid GPX file isn't set")
+        self.gpxFilepath = gpxFilepath
+    
     def initGeoJson(self, op, context, addonName):
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         

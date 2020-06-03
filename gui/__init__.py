@@ -34,10 +34,10 @@ if _has3dRealistic:
 def getDataTypes():
         items = [
             ("osm", "OpenStreetMap", "OpenStreetMap"),
-            ("terrain", "terrain", "Terrain")
+            ("terrain", "terrain", "Terrain"),
+            ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"),
+            ("gpx", "gpx", "GPX tracks")
         ]
-        if app.has(Keys.overlay):
-            items.append(("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"))
         if app.has(Keys.geojson):
             items.append(("geojson", "GeoJson", "GeoJson"))
         return items
@@ -308,6 +308,8 @@ class PanelBlosmSettings(bpy.types.Panel):
             self.drawTerrain(context)
         elif dataType == "overlay":
             self.drawOverlay(context)
+        elif dataType == "gpx":
+            self.drawGpx(context)
         elif dataType == "geojson":
             self.drawOsm(context)
     
@@ -392,19 +394,20 @@ class PanelBlosmSettings(bpy.types.Panel):
         )
     
     def drawTerrain(self, context):
-        self.layout.box().prop(context.scene.blender_osm, "ignoreGeoreferencing")
+        addon = context.scene.blender_osm
+        
+        self.layout.box().prop(addon, "ignoreGeoreferencing")
         
         # Vertex reduction: reduction ratio selection + total vertex computation
-        osm = context.scene.blender_osm
-        count = 3600 // int(osm.terrainResolution)
-        lat = int((osm.maxLat - osm.minLat) * count)
-        lon = int((osm.maxLon - osm.minLon) * count)
-        ratio = int(osm.terrainReductionRatio)
+        count = 3600 // int(addon.terrainResolution)
+        lat = int((addon.maxLat - addon.minLat) * count)
+        lon = int((addon.maxLon - addon.minLon) * count)
+        ratio = int(addon.terrainReductionRatio)
         verts = (lat//ratio+1)*(lon//ratio+1)
         
         box = self.layout.box()
         box.label(text="[Advanced] Vertex reduction")
-        box.prop(osm, "terrainReductionRatio")
+        box.prop(addon, "terrainReductionRatio")
         box.label(text="Vertex count: {:,d}".format(verts))
     
     def drawOverlay(self, context):
@@ -412,7 +415,6 @@ class PanelBlosmSettings(bpy.types.Panel):
         addon = context.scene.blender_osm
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
-        
         
         box = layout.box()
         box.prop(addon, "overlayType")
@@ -422,6 +424,18 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "overlayUrl")
         
         layout.box().prop(addon, "setOverlayMaterial")
+    
+    def drawGpx(self, context):
+        layout = self.layout
+        addon = context.scene.blender_osm
+        
+        layout.box().prop(addon, "gpxFilepath", text="File")
+        
+        layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
+        
+        layout.box().prop(addon, "useGpxElevation")
+        
+        layout.box().prop(addon, "ignoreGeoreferencing")
 
 
 class PanelBlosmBpyProj(bpy.types.Panel):
@@ -709,6 +723,32 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         min = 128,
         default = 256,
         description = "Maximum number of overlay tiles. Each tile has dimensions 256x246 pixels"
+    )
+    
+    ####################################
+    # Settings for the GPX track import
+    ####################################
+    
+    gpxFilepath = bpy.props.StringProperty(
+        name = "GPX file",
+        subtype = 'FILE_PATH',
+        description = "Path to a GPX file for import"
+    )
+    
+    useGpxElevation = bpy.props.BoolProperty(
+        name="Use elevation for z-coordinate",
+        description="Use elevations from the GPX-file for z-coordinate if checked or project the track on the terrain otherwise",
+        default=False
+    )
+    
+    gpxImportType = bpy.props.EnumProperty(
+        name = "Import as curve or mesh",
+        items = (
+            ("curve", "curve", "Blender curve"),
+            ("mesh", "mesh", "Blender mesh")
+        ),
+        description = "Import as Blender curve or mesh",
+        default = "curve"
     )
     
     ####################################

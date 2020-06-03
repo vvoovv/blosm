@@ -200,7 +200,6 @@ class Osm:
             lat = (self.minLat + self.maxLat)/2.
             lon = (self.minLon + self.maxLon)/2.
             self.setProjection(lat, lon)
-        
     
     def checkConditions(self, tags, element):
         for c in self.conditions:
