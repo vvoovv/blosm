@@ -1,6 +1,6 @@
 """
 This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2018 Vladimir Elistratov
+Copyright (C) 2014-2020 Vladimir Elistratov, Alain (al1brn)
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-import webbrowser
+import math, webbrowser
 from bpy.app.handlers import persistent
 from app import app
 from defs import Keys
@@ -34,10 +34,10 @@ if _has3dRealistic:
 def getDataTypes():
         items = [
             ("osm", "OpenStreetMap", "OpenStreetMap"),
-            ("terrain", "terrain", "Terrain")
+            ("terrain", "terrain", "Terrain"),
+            ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"),
+            ("gpx", "gpx", "GPX tracks")
         ]
-        if app.has(Keys.overlay):
-            items.append(("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"))
         if app.has(Keys.geojson):
             items.append(("geojson", "GeoJson", "GeoJson"))
         return items
@@ -308,6 +308,8 @@ class PanelBlosmSettings(bpy.types.Panel):
             self.drawTerrain(context)
         elif dataType == "overlay":
             self.drawOverlay(context)
+        elif dataType == "gpx":
+            self.drawGpx(context)
         elif dataType == "geojson":
             self.drawOsm(context)
     
@@ -399,14 +401,27 @@ class PanelBlosmSettings(bpy.types.Panel):
         )
     
     def drawTerrain(self, context):
-        self.layout.prop(context.scene.blender_osm, "ignoreGeoreferencing")
+        addon = context.scene.blender_osm
+        
+        self.layout.box().prop(addon, "ignoreGeoreferencing")
+        
+        # Vertex reduction: reduction ratio selection + total vertex computation
+        count = 3600 // int(addon.terrainResolution)
+        lat = int((addon.maxLat - addon.minLat) * count)
+        lon = int((addon.maxLon - addon.minLon) * count)
+        ratio = int(addon.terrainReductionRatio)
+        verts = (lat//ratio+1)*(lon//ratio+1)
+        
+        box = self.layout.box()
+        box.label(text="[Advanced] Vertex reduction")
+        box.prop(addon, "terrainReductionRatio")
+        box.label(text="Vertex count: {:,d}".format(verts))
     
     def drawOverlay(self, context):
         layout = self.layout
         addon = context.scene.blender_osm
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
-        
         
         box = layout.box()
         box.prop(addon, "overlayType")
@@ -416,6 +431,26 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.prop(addon, "overlayUrl")
         
         layout.box().prop(addon, "setOverlayMaterial")
+        
+        box = self.layout.box()
+        box.label(text="[Advanced]")
+        split = box.split(factor=0.7)
+        split.label(text="Max number of tiles:")
+        split.prop(addon, "maxNumTiles", text="")
+        _squreTextureSize = 256 * round( math.sqrt(addon.maxNumTiles) )
+        box.label(text="Like a square texture {:,d}x{:,d} px".format(_squreTextureSize, _squreTextureSize))
+    
+    def drawGpx(self, context):
+        layout = self.layout
+        addon = context.scene.blender_osm
+        
+        layout.box().prop(addon, "gpxFilepath", text="File")
+        
+        layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
+        
+        layout.box().prop(addon, "gpxProjectOnTerrain")
+        
+        layout.box().prop(addon, "ignoreGeoreferencing")
 
 
 class PanelBlosmBpyProj(bpy.types.Panel):
@@ -651,6 +686,27 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         description="Primitive type used for the terrain mesh: quad or triangle",
         default="quad"
     )
+
+    # Number of vertex reduction
+    # The Reduction Ratio is a divider of 1200
+    terrainReductionRatio = bpy.props.EnumProperty(
+        name="Ratio",
+        items=(
+            ("1","100%","No reduction"),
+            ("2","25%","Divide par 4"),
+            ("5","4%","Divide by 25"),
+            ("10","1%","Divide by 100"),
+            ("20","0.25%","Divide by 400"),
+            ("50","0.04%","Divide by 2500"),
+            ("100","0.01%","Divide by 10,000"),
+            ("200","0.0025%","Divide by 40,000"),
+            ("400","0.0006%","Divide by 160,000"),
+            ("600","0.0003%","Divide by 360,000"),
+            ("1200","0.0001%","Divide by 1,440,000")
+        ),
+        description="Reduction ratio for the number of vertices",
+        default="1"
+    )
     
     #
     # Overlay settings
@@ -688,6 +744,35 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         min = 128,
         default = 256,
         description = "Maximum number of overlay tiles. Each tile has dimensions 256x256 pixels"
+<<<<<<< HEAD
+=======
+    )
+    
+    ####################################
+    # Settings for the GPX track import
+    ####################################
+    
+    gpxFilepath = bpy.props.StringProperty(
+        name = "GPX file",
+        subtype = 'FILE_PATH',
+        description = "Path to a GPX file for import"
+    )
+    
+    gpxProjectOnTerrain = bpy.props.BoolProperty(
+        name="Project GPX-track on terrain",
+        description="Project GPX-track on the terrain if checked or use elevations from GPX-track for z-coordinate otherwise",
+        default=True
+    )
+    
+    gpxImportType = bpy.props.EnumProperty(
+        name = "Import as curve or mesh",
+        items = (
+            ("curve", "curve", "Blender curve"),
+            ("mesh", "mesh", "Blender mesh")
+        ),
+        description = "Import as Blender curve or mesh",
+        default = "curve"
+>>>>>>> refs/heads/release
     )
     
     ####################################

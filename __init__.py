@@ -20,7 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
+<<<<<<< HEAD
     "version": (2, 4, 6),
+=======
+    "version": (2, 3, 27),
+>>>>>>> refs/heads/release
     "blender": (2, 80, 0),
     "location": "Right side panel for Blender 2.8x (left side panel for Blender 2.79))> \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -188,6 +192,8 @@ class OperatorImportData(bpy.types.Operator):
             return self.importTerrain(context)
         elif dataType == "overlay":
             return self.importOverlay(context)
+        elif dataType == "gpx":
+            return self.importGpx(context)
         elif dataType == "geojson":
             return self.importGeoJson(context)
         
@@ -368,6 +374,47 @@ class OperatorImportData(bpy.types.Operator):
         if setLatLon:
             self.setCenterLatLon(context, lat, lon)
         
+        return {'FINISHED'}
+    
+    def importGpx(self, context):
+        from parse.gpx import Gpx
+        from gpx import GpxRenderer
+        
+        a = app.app
+        try:
+            a.initGpx(context, BlenderOsmPreferences.bl_idname)
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+        
+        scene = context.scene
+        
+        self.setObjectMode(context)
+        bpy.ops.object.select_all(action='DESELECT')
+        
+        gpx = Gpx(a)
+        
+        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+            a.setProjection(scene["lat"], scene["lon"])
+            setLatLon = False
+        else:
+            setLatLon = True
+        
+        gpx.parse(a.gpxFilepath)
+        
+        # check if have a terrain Blender object set
+        a.setTerrain(
+            context,
+            createFlatTerrain = False,
+            createBvhTree = False
+        )
+        
+        GpxRenderer(a).render(gpx)
+        
+        # setting <lon> and <lat> attributes for <scene> if necessary
+        if setLatLon:
+            # <gpx.lat> and <gpx.lon> have been set in gpx.parse(..)
+            self.setCenterLatLon(context, gpx.lat, gpx.lon)
         return {'FINISHED'}
 
     def importGeoJson(self, context):
