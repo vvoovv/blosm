@@ -744,8 +744,6 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         min = 128,
         default = 256,
         description = "Maximum number of overlay tiles. Each tile has dimensions 256x256 pixels"
-<<<<<<< HEAD
-=======
     )
     
     ####################################
@@ -772,7 +770,6 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         ),
         description = "Import as Blender curve or mesh",
         default = "curve"
->>>>>>> refs/heads/release
     )
     
     ####################################

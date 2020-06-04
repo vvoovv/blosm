@@ -317,11 +317,6 @@ class App:
         overlay.overlayDir = overlayDir
         
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
-<<<<<<< HEAD
-
-    def initGeoJson(self, op, context):
-        addonName = self.addonName
-=======
     
     def initGpx(self, context, addonName):
         gpxFilepath = os.path.realpath(bpy.path.abspath(self.gpxFilepath))
@@ -330,7 +325,6 @@ class App:
         self.gpxFilepath = gpxFilepath
     
     def initGeoJson(self, op, context, addonName):
->>>>>>> refs/heads/release
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
