@@ -58,6 +58,8 @@ class RoofFlatMulti(RoofFlat):
         verts = building.verts
         indexOffset = len(verts)
         z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
+        if building.offsetZ:
+            z += building.offsetZ
         
         for polygon in self.innerPolygons:
             numVerts = polygon.n
