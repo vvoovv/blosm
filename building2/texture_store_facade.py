@@ -14,14 +14,14 @@ _lafs = (
 )
 
 
-def _getContentKeyWithNumbers(content, sortedContentKeys):
-    return ''.join(key[0]+str(content[key]) for key in sortedContentKeys)
+def _getContentKeyWithNumbers(content, buildingPart, sortedContentKeys):
+    return "%s_%s" % ( buildingPart, ''.join(key[0]+str(content[key]) for key in sortedContentKeys) )
 
-def _getContentKeyWithoutNumbers(content, sortedContentKeys):
-    return ''.join(key[0] for key in sortedContentKeys if content[key])
+def _getContentKeyWithoutNumbers(content, buildingPart, sortedContentKeys):
+    return "%s_%s" % ( buildingPart, ''.join(key[0] for key in sortedContentKeys if content[key]) )
 
-def _any(content, sortedContentKeys):
-    return ''
+def _any(content, buildingPart, sortedContentKeys):
+    return buildingPart
 
 # generators of keys from the most detailed one to the least detailed one
 _keyGenerators = (
@@ -110,8 +110,8 @@ class FacadeTextureStore:
         #
         
         # the key of all available textures
-        key = ''
-        if key not in laf:
+        key = buildingPart
+        if not key in laf:
             laf[key] = TextureBundle()
         laf[key].addTextureInfo(
             textureInfo,
@@ -125,7 +125,7 @@ class FacadeTextureStore:
             sortedContentKeys = sorted(content)
             
             # content with numbers
-            key = _getContentKeyWithNumbers(content, sortedContentKeys)
+            key = _getContentKeyWithNumbers(content, buildingPart, sortedContentKeys)
             if key not in laf:
                 laf[key] = TextureBundle()
             laf[key].addTextureInfo(
@@ -136,7 +136,7 @@ class FacadeTextureStore:
             )
             
             # content without numbers
-            key = _getContentKeyWithoutNumbers(content, sortedContentKeys)
+            key = _getContentKeyWithoutNumbers(content, buildingPart, sortedContentKeys)
             if key not in laf:
                 laf[key] = TextureBundle()
             laf[key].addTextureInfo(
@@ -164,10 +164,10 @@ class FacadeTextureStore:
     
     def getTextureInfo(self, building, buildingPart, item, itemRenderer):
         buildingAttrs = building.metaStyleBlock.attrs
-        buildingPart = self.byPart.get(buildingPart)
-        if not buildingPart:
+        _buildingPart = self.byPart.get(buildingPart)
+        if not _buildingPart:
             return None
-        buildingUse = buildingPart.get(buildingAttrs.get("buildingUse"))
+        buildingUse = _buildingPart.get(buildingAttrs.get("buildingUse"))
         if not buildingUse:
             return None
         buildingLaf = buildingUse.get(item.laf or buildingAttrs.get("buildingLaf"))
@@ -183,7 +183,7 @@ class FacadeTextureStore:
             _sorted = sorted(facadePatternInfo)
             # try the keys from the most detailed one to the least detailed one
             for keyIndex, key in enumerate(_keyGenerators):
-                key = key(facadePatternInfo, _sorted)
+                key = key(facadePatternInfo, buildingPart, _sorted)
                 if key in cache:
                     texture = cache[key]
                     # set the cache for more detailed keys
@@ -209,7 +209,7 @@ class FacadeTextureStore:
                     else:
                         _keys.append(key)
         else:
-            key = ''
+            key = buildingPart
             if key in cache:
                 texture = cache[key]
             else:
