@@ -57,8 +57,8 @@ class Item:
         if attr in styleBlockCache:
             value = styleBlockCache[attr]
         else:
-            attrs = self.styleBlock.attrs
-            if attr in attrs:
+            attrs = self.styleBlock.attrs if self.styleBlock else None
+            if attrs and attr in attrs:
                 value, scope, isComplexValue = attrs.get(attr)
                 if isComplexValue:
                     value = value.value.getValue(self, scope)

@@ -79,7 +79,7 @@ class Roof:
         self.calculateDimensions(footprint)
         if not footprint.valid:
             return
-        z1 = (footprint.minHeight + footprint.building.offsetZ) if footprint.building.offsetZ else footprint.minHeight
+        z1 = footprint.minHeight
         
         # create a polygon located at <z1>
         
@@ -113,12 +113,13 @@ class Roof:
             roofVerticalPosition = z2 - footprint.roofHeight
         wallHeight = roofVerticalPosition - z1
         # validity check
-        if wallHeight < 0.:
+        if wallHeight < -zero:
             footprint.valid = False
             return
         elif wallHeight < zero:
             # no building walls, just a roof
             footprint.noWalls = True
+            footprint.numLevels = 0
         else:
             footprint.noWalls = False
             footprint.wallHeight = wallHeight
@@ -178,7 +179,7 @@ class Roof:
                         self.calculateRoofLevelsHeight(footprint)
             if h is None:
                 if self.hasRoofLevels:
-                    h = self.calculateRoofLevelsHeight(self)
+                    h = self.calculateRoofLevelsHeight(footprint)
                     if h:
                         # The following line means that we need to calculate
                         # the last level offset and the roof height later in the code
@@ -199,6 +200,7 @@ class Roof:
     def calculateRoofLevelsHeight(self, footprint):
         numRooflevels = footprint.getStyleBlockAttr("numRoofLevels")
         if not numRooflevels:
+            footprint.roofLevelsHeight = 0.
             return 0.
         footprint.numRoofLevels = numRooflevels
         

@@ -30,7 +30,7 @@ class RoofSide(Item):
         # (1) If <roofItem> has a markup (actually <styleBlocks>), then search the markup of
         #     the related style block for <RoofSide> style block.
         #     If the <RoofSide> style block wasn't found, then stop there and
-        #     it means that there is now <RoofSide> style block.
+        #     it means that there is no <RoofSide> style block.
         # (2) If <roofItem> does not have a markup (actually <styleBlocks>),
         #     then search for <RoofSide> style blocks in the markup
         #     (actually in <footprint.styleBlock.styleBlocks>) of the related footprint,

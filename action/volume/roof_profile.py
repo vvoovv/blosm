@@ -573,6 +573,9 @@ class RoofProfile(Roof):
     def init(self, footprint, coords):
         super().init(footprint, coords)
         
+        if not footprint.valid:
+            return
+        
         self.initProfile()
         
         if not footprint.projections:

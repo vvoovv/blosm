@@ -192,7 +192,9 @@ class BuildingRendererNew(Renderer):
         # check if we have BMVerts for for all <indices>
         for index in indices:
             if not bmVerts[index]:
-                bmVerts[index] = bm.verts.new( verts[index] )
+                bmVerts[index] = bm.verts.new(
+                    (verts[index] + building.offsetZ) if building.offsetZ else verts[index]
+                )
         
         return bm.faces.new(bmVerts[index] for index in indices)
     

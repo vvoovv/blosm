@@ -29,8 +29,6 @@ class RoofFlatMulti(RoofFlat):
         data = self.data
         super().init(footprint, footprint.element.getOuterData(data))
         z1 = footprint.minHeight
-        if footprint.building.offsetZ:
-            z1 += footprint.building.offsetZ
         element = footprint.element
         innerPolygons = self.innerPolygons
         innerPolygons.clear()
@@ -58,8 +56,6 @@ class RoofFlatMulti(RoofFlat):
         verts = building.verts
         indexOffset = len(verts)
         z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
-        if building.offsetZ:
-            z += building.offsetZ
         
         for polygon in self.innerPolygons:
             numVerts = polygon.n
