@@ -62,3 +62,17 @@ class RoofSide(Item):
     @property
     def back(self):
         return True
+    
+    def getCladdingMaterial(self):
+        # If <self.styleBlock> isn't available, try to get the attribute
+        # from the parent element (i.e. roof item)
+        return self.getStyleBlockAttr("roofCladdingMaterial")\
+            if self.styleBlock else\
+            self.parent.getStyleBlockAttr("roofCladdingMaterial")
+    
+    def getCladdingColor(self):
+        # If <self.styleBlock> isn't available, try to get the attribute
+        # from the parent element (i.e. roof item)
+        return self.getStyleBlockAttr("roofCladdingColor")\
+            if self.styleBlock else\
+            self.parent.getStyleBlockAttr("roofCladdingColor")
