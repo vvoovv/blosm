@@ -22,3 +22,9 @@ CladdingMaterials = {
     "metal": 1
     #"roof_tiles": 1
 }
+
+
+RoofOrientation = {
+    "along",
+    "across"
+}
