@@ -178,11 +178,11 @@ class Container(ItemRenderer):
             self
         )
         
-        claddingTextureInfo = None\
-            if self.noCladdingTexture or facadeTextureInfo.get("noCladdingTexture") else\
-            self.getCladdingTextureInfo(item, building)
-        
         if facadeTextureInfo:
+            claddingTextureInfo = None\
+                if self.noCladdingTexture or facadeTextureInfo.get("noCladdingTexture") else\
+                self.getCladdingTextureInfo(item, building)
+            
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
             if self.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo, uvs):
                 item.materialId = materialId

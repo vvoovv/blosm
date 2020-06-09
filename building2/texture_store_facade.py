@@ -163,6 +163,8 @@ class FacadeTextureStore:
         use[buildingLaf] = {}
     
     def getTextureInfo(self, building, buildingPart, item, itemRenderer):
+        if not building.metaStyleBlock:
+            return None
         buildingAttrs = building.metaStyleBlock.attrs
         _buildingPart = self.byPart.get(buildingPart)
         if not _buildingPart:
