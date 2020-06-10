@@ -73,6 +73,10 @@ class RoofFlatMulti(RoofFlat):
         self.element = element
         
         self.calculateDimensions(self.getMinHeight())
+        if self.noWalls:
+            # a workaround for non-flat roofs with holes
+            self.noWalls = False
+            self.wallHeight = self.z2 - self.z1
     
     def make(self, osm):
         element = self.element
