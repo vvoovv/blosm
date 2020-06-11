@@ -331,56 +331,75 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
             
         layout.prop(addon, "mode", expand=True)
-
-        if mode3dRealistic:
-            prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
-            enableExperimentalFeatures = (app.addonName in prefs and prefs[app.addonName].preferences.enableExperimentalFeatures) or not app.addonName in prefs
-            if enableExperimentalFeatures:
-                box = layout.box()
-                box.prop(addon, "importForExport")
+        
+        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+        enableExperimentalFeatures = (app.addonName in prefs and prefs[app.addonName].preferences.enableExperimentalFeatures) or not app.addonName in prefs
+        
+        if enableExperimentalFeatures and mode3dRealistic:
+            box = layout.box()
+            box.prop(addon, "importForExport")
+            
+            layout.box().prop(addon, "singleObject")
+            
+            layout.box().prop(addon, "ignoreGeoreferencing")
             
             box = layout.box()
-            box.prop(addon, "buildings")
-            if addon.buildings:
-                if not enableExperimentalFeatures:
+            box.label(text = "[Advanced]:")
+            
+            split = box.split(factor=0.5)
+            split.label(text="PML style:")
+            split.prop(addon, "pmlFilepath", text="")
+            
+            split = box.split(factor=0.5)
+            split.label(text="Asset info:")
+            split.prop(addon, "assetInfoFilepath", text="")
+            
+            split = box.split(factor=0.5)
+            split.label(text="Asset folder:")
+            split.prop(addon, "assetsDir", text="")
+        else:
+            if mode3dRealistic:
+                box = layout.box()
+                box.prop(addon, "buildings")
+                if addon.buildings:
                     box.prop(addon, "litWindows")
                     box.separator()
-                self._drawBuildingSettings(box, addon)
+                    self._drawBuildingSettings(box, addon)
+                
+                # forests and trees
+                box = layout.box()
+                box.prop(addon, "forests", text="Import forests and separate trees")
+                if addon.forests:
+                    box.prop(addon, "treeDensity")
+            else:
+                box = layout.box()
+                box.prop(addon, "buildings")
+                box.prop(addon, "water")
+                box.prop(addon, "forests")
+                box.prop(addon, "vegetation")
+                box.prop(addon, "highways")
+                box.prop(addon, "railways")
+
+            layout.box().prop(addon, "setupScript")
             
-            # forests and trees
+            if mode3dRealistic:
+                layout.box().prop(addon, "assetsDir")
+            
+            if not mode3dRealistic:
+                self._drawBuildingSettings(layout.box(), addon)
+            
+            #box.prop(addon, "straightAngleThreshold")
+            
             box = layout.box()
-            box.prop(addon, "forests", text="Import forests and separate trees")
-            if addon.forests:
-                box.prop(addon, "treeDensity") 
-        else:
-            box = layout.box()
-            box.prop(addon, "buildings")
-            box.prop(addon, "water")
-            box.prop(addon, "forests")
-            box.prop(addon, "vegetation")
-            box.prop(addon, "highways")
-            box.prop(addon, "railways")
-        
-        layout.box().prop(addon, "setupScript")
-        
-        if mode3dRealistic:
-            layout.box().prop(addon, "assetsDir")
-        
-        if not mode3dRealistic:
-            self._drawBuildingSettings(layout.box(), addon)
-        
-        #box.prop(addon, "straightAngleThreshold")
-        
-        box = layout.box()
-        box.prop(addon, "singleObject")
-        
-        layout.box().prop(addon, "ignoreGeoreferencing")
-        
-        if not mode3dRealistic and addon.terrainObject in context.scene.objects:
-            box = layout.box()
-            box.prop(addon, "subdivide")
-            if addon.subdivide:
-                box.prop(addon, "subdivisionSize")
+            box.prop(addon, "singleObject")
+            
+            layout.box().prop(addon, "ignoreGeoreferencing")
+            
+            if not mode3dRealistic and addon.terrainObject in context.scene.objects:
+                box = layout.box()
+                box.prop(addon, "subdivide")
+                if addon.subdivide:
+                    box.prop(addon, "subdivisionSize")
     
     def _drawBuildingSettings(self, box, addon):
         split = box.split(factor=0.67) if _isBlender280 else box.split(percentage=0.67)
@@ -816,6 +835,18 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         subtype = 'UNSIGNED',
         default = 0,
         update = FacadeWithColor.updateLitWindows if _has3dRealistic else None
+    )
+    
+    pmlFilepath = bpy.props.StringProperty(
+        name = "PML style",
+        subtype = 'FILE_PATH',
+        description = "Path to a PML style file"
+    )
+    
+    assetInfoFilepath = bpy.props.StringProperty(
+        name = "Asset info",
+        subtype = 'FILE_PATH',
+        description = "Path to a file with asset information"
     )
     
     #    
