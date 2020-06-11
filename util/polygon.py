@@ -298,6 +298,8 @@ class Polygon:
         Args:
             allVerts (generator): Polygon vertices
         """
+        self._maxEdgeIndex = None
+        self.allVerts.clear()
         self.allVerts.extend(allVerts)
         # Not all vertices from <allVerts> will be used to create BMesh vertices,
         # since they may have a straight angle.

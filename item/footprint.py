@@ -36,8 +36,6 @@ class Footprint(Item):
         self.numRoofLevels = 0
         self.minLevel = 0
         self.lastLevelOffset = 0.
-        # reset <self.polygon>
-        self.polygon.allVerts.clear()
         self.projections.clear()
         self.facadeStyle = None
         self.facades.clear()
