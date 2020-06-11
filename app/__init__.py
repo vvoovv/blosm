@@ -247,6 +247,21 @@ class App:
             self.enableExperimentalFeatures = prefs[addonName].preferences.enableExperimentalFeatures if addonName in prefs else True
         else:
             self.enableExperimentalFeatures = False
+        
+        if self.enableExperimentalFeatures:
+            pmlFilepath = self.pmlFilepath
+            if pmlFilepath:
+                pmlFilepath = os.path.realpath(bpy.path.abspath(pmlFilepath))
+                if not os.path.isfile(pmlFilepath):
+                    raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
+                self.pmlFilepath = pmlFilepath
+            
+            assetInfoFilepath = self.assetInfoFilepath
+            if assetInfoFilepath:
+                assetInfoFilepath = os.path.realpath(bpy.path.abspath(assetInfoFilepath))
+                if not os.path.isfile(assetInfoFilepath):
+                    raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
+                self.assetInfoFilepath = assetInfoFilepath
     
     def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
         addon = context.scene.blender_osm

@@ -171,7 +171,7 @@ class Container(ItemRenderer):
     
     def setMaterialId(self, item, building, buildingPart, uvs):
         # get a texture that fits to the Level markup pattern
-        facadeTextureInfo = self.r.facadeTextureStore.getTextureInfo(
+        facadeTextureInfo = self.r.assetStore.getTextureInfo(
             building,
             buildingPart,
             item,

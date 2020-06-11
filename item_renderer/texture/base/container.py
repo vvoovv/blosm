@@ -29,7 +29,7 @@ class Container(ContainerBase, ItemRendererMixin):
             # the overlay texture
             setImage(
                 facadeTextureInfo["name"],
-                os.path.join(self.r.assetsDir, facadeTextureInfo["path"]),
+                os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
                 nodes,
                 "Overlay"
             )

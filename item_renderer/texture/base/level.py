@@ -25,7 +25,7 @@ class CurtainWall(CurtainWallBase, Container):
             # the overlay texture
             setImage(
                 facadeTextureInfo["name"],
-                os.path.join(self.r.assetsDir, facadeTextureInfo["path"]),
+                os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
                 nodes,
                 "Image Texture"
             )
@@ -33,7 +33,7 @@ class CurtainWall(CurtainWallBase, Container):
             if facadeTextureInfo.get("specularMapName"):
                 setImage(
                     facadeTextureInfo["specularMapName"],
-                    os.path.join(self.r.assetsDir, facadeTextureInfo["path"]),
+                    os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
                     nodes,
                     "Specular Map"
                 )
