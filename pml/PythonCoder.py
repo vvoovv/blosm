@@ -26,10 +26,12 @@ class PythonCoder():
         self.code += text
 
     def literalize(self,text, useUnderscore):
+        if text[0] == '"':
+            return text
         if useUnderscore:
             literalized = re.sub('("[ _]+")', ' ', re.sub('("")', '"', re.sub('([a-zA-Z]+)', '"\\1"', text) ) )
         else:
-            literalized = re.sub('([a-zA-Z_]+)', '"\\1"', text) 
+            literalized = re.sub('([a-zA-Z_]+[a-zA-Z0-9_]*)', '"\\1"', text) 
         return literalized
 
     def toCamelCase(self,text):
@@ -480,7 +482,7 @@ class PythonCoder():
         else:
 #            self.write(self.alterCommaStack[-1])
             identifier = ident.capitalize()
-            self.write(self.indent()+"FromStyleBlockAttr("+literal+",FromStyleBlockAttr."+identifier+")")
+            self.write("FromStyleBlockAttr("+literal+",FromStyleBlockAttr."+identifier+")")
  #           self.alterCommaStack[-1] = ",\n"
 
     def enterATOM_FROMATTR_SHORT(self,literal):
@@ -516,7 +518,7 @@ class PythonCoder():
             expr = text.capitalize()
         else:
             expr = self.replaceColorsInText(text)
-            expr = self.literalize(expr,True)
+            expr = self.literalize(expr,False)
         if self.alternativesContext or self.conditionalContext: # ???or self.context  in ( "conditional" ):
             # self.write(self.alterCommaStack[-1])
             self.write( self.indent()+"Constant(" + expr + ')' )
