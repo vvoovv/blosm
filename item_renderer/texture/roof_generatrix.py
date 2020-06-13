@@ -36,12 +36,13 @@ generatrix_onion =(
 
 class RoofGeneratrix(ItemRenderer):
     
-    def __init__(self, generatrix, exportMaterials=False):
+    def __init__(self, generatrix, exportMaterials=False, halfDome=False):
         super().__init__(exportMaterials)
         self.generatrix = generatrix
         # The variable below indicates if the last point of the generatrix is located at zero,
         # i.e. in the center of the underlying polygon
         self.hasCenter = not self.generatrix[-1][0]
+        self.halfDome=halfDome
     
     def render(self, roofItem):
         smoothFaces = roofItem.getStyleBlockAttr("faces") is smoothness.Smooth
@@ -65,7 +66,11 @@ class RoofGeneratrix(ItemRenderer):
         firstVertIndex = roofItem.firstVertIndex
         
         roofHeight = footprint.roofHeight
-        center = polygon.centerBB(footprint.roofVerticalPosition)
+       
+        if self.halfDome:
+            center = polygon.MidleOfLongestSide(footprint.roofVerticalPosition)
+        else:
+            center = polygon.centerBB(footprint.roofVerticalPosition)
         
         n = polygon.n
         numRows = len(self.generatrix)
@@ -159,8 +164,10 @@ class RoofGeneratrix(ItemRenderer):
         
         roofHeight = footprint.roofHeight
         roofVerticalPosition = footprint.roofVerticalPosition
-        
-        center = polygon.centerBB(roofVerticalPosition)
+        if self.halfDome:
+            center = polygon.MidleOfLongestSide(footprint.roofVerticalPosition)
+        else:
+            center = polygon.centerBB(footprint.roofVerticalPosition)
         
         n = polygon.n
         numRows = len(self.generatrix)

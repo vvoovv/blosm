@@ -99,5 +99,10 @@ def bldgPreRender(building, app):
                 building.setMaterialRoof("metal_color")
             else:
                 building.setMaterialRoof("metal_scaled_color")
+        elif roofShape == "half-dome":
+            if element.t is Renderer.multipolygon:
+                building.setMaterialRoof("metal_color")
+            else:
+                building.setMaterialRoof("metal_scaled_color")
         else:
             building.setMaterialRoof("metal_color")

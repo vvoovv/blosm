@@ -72,6 +72,7 @@ class RealisticBuildingRenderer(BuildingRenderer):
             'skillion': RoofSkillionRealistic(),
             'hipped': RoofHippedRealistic(),
             'dome': RoofMeshRealistic("roof_dome"),
+            'half-dome': RoofMeshRealistic("roof_dome"),
             'onion': RoofMeshRealistic("roof_onion"),
             'round': RoofProfileRealistic(roundRoof),
             'half-hipped': RoofHalfHippedRealistic(),

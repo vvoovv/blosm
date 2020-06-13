@@ -7,6 +7,7 @@ RoofShapes = {
     #"skillion": 1,
     "round": 1,
     "dome": 1,
+    "half-dome": 1,
     "onion": 1,
     "gambrel": 1,
     "saltbox": 1

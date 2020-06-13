@@ -92,6 +92,7 @@ def setup(app, data):
             RoofFlatMulti = RoofFlatMultiRendererExport() if doExport else RoofFlatMultiRenderer(),
             RoofProfile = RoofProfileRendererExport() if doExport else RoofProfileRenderer(),
             RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7)),
+            RoofHalfDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7),halfDome=True),
             RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion),
             RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer()
         )

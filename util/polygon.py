@@ -393,6 +393,29 @@ class Polygon:
             ( min(self.verts, key=lambda v: v[1])[1] + max(self.verts, key=lambda v: v[1])[1] )/2.,
             z
         ))
+
+    def MidleOfLongestSide(self, z=0.):
+        verts = self.allVerts
+        indices = self.indices
+        print(verts)      
+        print(indices)
+        
+        # let's try middle of the longest edge.
+        r_max = (verts[indices[-1]][0]-verts[indices[0]][0])**2+(verts[indices[-1]][1]-verts[indices[0]][1])**2
+        x = (verts[indices[-1]][0]+verts[indices[0]][0])/2
+        y = (verts[indices[-1]][1]+verts[indices[0]][1])/2
+        print (r_max,x,y)  
+
+        for i in range(self.n-1):
+            r=(verts[indices[i]][0]-verts[indices[i+1]][0])**2+(verts[indices[i]][1]-verts[indices[i+1]][1])**2
+            if r>r_max:
+                r_max = r
+                x = (verts[indices[i]][0]+verts[indices[i+1]][0])/2
+                y = (verts[indices[i]][1]+verts[indices[i+1]][1])/2
+                print (r_max,x,y)
+
+        return Vector((x,y,z))
+
     
     @property
     def area(self):

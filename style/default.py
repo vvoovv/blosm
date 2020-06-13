@@ -392,7 +392,7 @@ styles = {
                 lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "flat",
                 Constant("concrete")
             ),
-            # roofShape in ("pyramidal", "dome", "onion")
+            # roofShape in ("pyramidal", "dome", "half-dome", "onion")
             Constant("metal")
         )),
         roofCladdingColor = Value(Alternatives(
@@ -413,7 +413,7 @@ styles = {
             ))
         )),
         faces = Value(Conditional(
-            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "onion"),
+            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "half-dome", "onion"),
             Constant(smoothness.Smooth)
         ))
         #sharpEdges = smoothness.Side
@@ -457,7 +457,7 @@ styles = {
             ))
         )),
         faces = Value(Conditional(
-            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "onion"),
+            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome","half-dome", "onion"),
             Constant(smoothness.Smooth)
         ))
         #sharpEdges = smoothness.Side
@@ -501,7 +501,7 @@ styles = {
             ))
         )),
         faces = Value(Conditional(
-            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "onion"),
+            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "half-dome", "onion"),
             Constant(smoothness.Smooth)
         ))
         #sharpEdges = smoothness.Side
@@ -589,7 +589,7 @@ styles = {
                 lambda roof: roof.footprint.getStyleBlockAttr("roofShape") == "flat",
                 Constant("concrete")
             ),
-            # roofShape in ("pyramidal", "dome", "onion")
+            # roofShape in ("pyramidal", "dome", "half-dome", "onion")
             Constant("metal")
         )),
         roofCladdingColor = Value(Alternatives(
@@ -610,7 +610,7 @@ styles = {
             ))
         )),
         faces = Value(Conditional(
-            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "onion"),
+            lambda item: item.footprint.getStyleBlockAttr("roofShape") in ("dome", "half-dome", "onion"),
             Constant(smoothness.Smooth)
         ))
         #sharpEdges = smoothness.Side

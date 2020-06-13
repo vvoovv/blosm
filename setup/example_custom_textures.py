@@ -97,5 +97,7 @@ def bldgPreRender(building, app):
             building.setMaterialRoof("metal_without_uv")
         elif roofShape == "dome":
             building.setMaterialRoof("metal_scaled_color")
+        elif roofShape == "half-dome":
+            building.setMaterialRoof("metal_scaled_color")
         else:
             building.setMaterialRoof("metal_color")
