@@ -32,7 +32,7 @@ _keyGenerators = (
 _numKeyGenerators = len(_keyGenerators)
 
 
-class FacadeTextureStore:
+class AssetStore:
     
     def __init__(self, assetInfoFilepath):
         self.baseDir = os.path.dirname(assetInfoFilepath)

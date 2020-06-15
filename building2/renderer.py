@@ -3,7 +3,7 @@ import bpy
 from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
-from .texture_store_facade import FacadeTextureStore
+from .asset_store import AssetStore
 from .texture_store_cladding import CladdingTextureStore
 from .texture_exporter import TextureExporter
 
@@ -137,7 +137,7 @@ class BuildingRendererNew(Renderer):
                 os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
                 assetInfoFilepath
             )
-        self.assetStore = FacadeTextureStore(assetInfoFilepath)
+        self.assetStore = AssetStore(assetInfoFilepath)
         self.claddingTextureStore = CladdingTextureStore(exportMaterials)
         
         self._cache = {}
