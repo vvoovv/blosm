@@ -84,6 +84,14 @@ class Way:
         """
         return (osm.nodes[self.nodes[i]].getData(osm) for i in range(self.n))
     
+    def getNodes(self, osm):
+        """
+        Get nodes for the OSM way
+        
+        Returns a Python generator
+        """
+        return ( osm.nodes[self.nodes[i]] for i in range(self.n) )
+    
     def nodeIds(self, osm):
         """
         A generator to get id of OSM nodes of the way

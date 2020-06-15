@@ -4,6 +4,8 @@ from item.roof_flat import RoofFlat as ItemRoofFlat
 from .geometry.rectangle import RectangleFRA
 from mathutils import Vector
 
+from util import zAxis
+
 
 class RoofFlat(Roof):
     
@@ -25,7 +27,7 @@ class RoofFlat(Roof):
         firstVertIndex = self.getRoofFirstVertIndex(footprint)
         
         self.extrude(footprint)
-        self.facadeRenderer.render(footprint)
+        self.facadeRenderer.render(footprint, self.data)
         self.roofRenderer.render(
             self.getRoofItem(
                 footprint,
@@ -63,14 +65,16 @@ class RoofFlat(Roof):
         facades.append(Facade.getItem(
             self,
             footprint,
-            (_in-1, indexOffset, _in, _in+numVerts-1)
+            (_in-1, indexOffset, _in, _in+numVerts-1),
+            0 # edge index
         ))
         # the rest of the sides
         facades.extend(
             Facade.getItem(
                 self,
                 footprint,
-                (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1)
+                (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
+                i # edge index
             ) for i in range(1, numVerts)
         )
     
@@ -78,10 +82,12 @@ class RoofFlat(Roof):
         verts = item.building.verts
         indices = item.indices
         geometry = self.rectangleGeometry
-        width = (verts[indices[1]] - verts[indices[0]]).length
+        bottomVec = verts[indices[1]] - verts[indices[0]]
+        width = bottomVec.length
         height = item.footprint.wallHeight
         
         item.width = width
+        item.normal = bottomVec.cross(zAxis)/width
         item.geometry = geometry
         # assign uv-coordinates (i.e. surface coordinates on the facade plane)
         item.uvs = geometry.getUvs(width, height)

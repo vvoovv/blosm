@@ -50,7 +50,7 @@ from action.volume import Volume
 def setup(app, data):
     doExport = app.enableExperimentalFeatures and app.importForExport
     
-    styleStore = StyleStore(app.assetsDir, styles=None)
+    styleStore = StyleStore(app, styles=None)
 
     # comment the next line if logging isn't needed
     Logger(app, data)

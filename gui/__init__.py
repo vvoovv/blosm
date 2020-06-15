@@ -355,6 +355,10 @@ class PanelBlosmSettings(bpy.types.Panel):
             split.prop(addon, "assetInfoFilepath", text="")
             
             split = box.split(factor=0.5)
+            split.label(text="Setup script:")
+            split.prop(addon, "setupScript", text="")
+            
+            split = box.split(factor=0.5)
             split.label(text="Asset folder:")
             split.prop(addon, "assetsDir", text="")
         else:

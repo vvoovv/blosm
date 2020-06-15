@@ -248,13 +248,18 @@ class App:
         else:
             self.enableExperimentalFeatures = False
         
-        if self.enableExperimentalFeatures:
+        # we ignore building entrances if a file path to the PML style file isn't given
+        self.buildingEntranceAttr = None
+        if self.enableExperimentalFeatures and self.mode is App.realistic:
             pmlFilepath = self.pmlFilepath
             if pmlFilepath:
                 pmlFilepath = os.path.realpath(bpy.path.abspath(pmlFilepath))
                 if not os.path.isfile(pmlFilepath):
                     raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
                 self.pmlFilepath = pmlFilepath
+                # We set <self.buildingEntranceAttr> only if a custom PML file is given. That
+                # must be changed later.
+                self.buildingEntranceAttr = "entrance"
             
             assetInfoFilepath = self.assetInfoFilepath
             if assetInfoFilepath:

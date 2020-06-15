@@ -17,16 +17,18 @@ minWidthForOpenings = 1.
 
 class StyleStore:
     
-    def __init__(self, assetsDir, styles=None):
+    def __init__(self, app, styles=None):
         self.styles = {}
         # overwrite an entry with the given key in <self.styles> if the key already exists in <self.styles>
         self.overwrite = True
         
         if styles:
             self.addStyles(styles)
+        elif app.pmlFilepath:
+            self.loadFromFile(app.pmlFilepath)
         else:
             self.loadFromDirectory(
-                os.path.join(assetsDir, "style", "building")
+                os.path.join(app.assetsDir, "style", "building")
             )
     
     def addStyles(self, styles):

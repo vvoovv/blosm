@@ -292,6 +292,7 @@ class Polygon:
         # normal to the polygon
         self.normal = zAxis
         self._maxEdgeIndex = None
+        self.reversed = False
     
     def init(self, allVerts):
         """
@@ -299,6 +300,8 @@ class Polygon:
             allVerts (generator): Polygon vertices
         """
         self._maxEdgeIndex = None
+        if self.reversed:
+            self.reversed = False
         self.allVerts.clear()
         self.allVerts.extend(allVerts)
         # Not all vertices from <allVerts> will be used to create BMesh vertices,
@@ -352,6 +355,7 @@ class Polygon:
         if self.directionCondition(v1, v2):
             # clockwise direction, reverse <indices>
             self.indices = tuple(reversed(indices))
+            self.reversed = True
     
     def directionCondition(self, v1, v2):
         return v1.x * v2.y - v1.y * v2.x < 0.
@@ -472,7 +476,7 @@ class Polygon:
                     newIndices = [indices[_i] for _i in range(i)] if indices else [_i for _i in range(i)]
             elif not newIndices is None:
                 # We encountered a straight angle before,
-                # therefore we and the current vertex index to <newIndices>
+                # therefore we add the current vertex index to <newIndices>
                 newIndices.append(indices[i] if indices else i)
         if newIndices is None:
             # no straight angles found

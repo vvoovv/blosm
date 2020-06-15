@@ -24,10 +24,10 @@ from item.roof_generatrix import RoofGeneratrix
 from item.roof_side import RoofSide
 
 
-def _createReferenceItems():
+def _createReferenceItems(app):
     return (
         (Building(), 5),
-        Footprint(),
+        Footprint(app.buildingEntranceAttr),
         Facade(),
         Level(),
         CurtainWall(),
@@ -126,7 +126,7 @@ class BuildingRendererNew(Renderer):
             itemRenderers[item].init(itemRenderers, self)
         
         self.getStyle = getStyle
-        referenceItems = _createReferenceItems()
+        referenceItems = _createReferenceItems(app)
         self.itemStore = ItemStore(referenceItems)
         self.itemFactory = ItemFactory(referenceItems)
         

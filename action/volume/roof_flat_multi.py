@@ -71,18 +71,21 @@ class RoofFlatMulti(RoofFlat):
             facades.append(Facade.getItem(
                 self,
                 footprint,
-                (_in-1, indexOffset, _in, _in+numVerts-1)
+                (_in-1, indexOffset, _in, _in+numVerts-1),
+                0 # edge index
             ))
             # the rest of the sides
             facades.extend(
                 Facade.getItem(
                     self,
                     footprint,
-                    (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1)
+                    (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
+                    i # edge index
                 ) for i in range(1, numVerts)
             )
             # mark the created facades as inner
             for i in range(-numVerts, 0):
                 facades[i].outer = False
+                facades[i].normal.negate()
             
             indexOffset += 2*numVerts
