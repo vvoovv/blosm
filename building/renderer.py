@@ -93,7 +93,6 @@ class BuildingRenderer(Renderer3d):
             'skillion': RoofSkillion(),
             'hipped': RoofHipped(),
             'dome': RoofMesh("roof_dome"),
-            'half-dome': RoofMesh("roof_dome"),
             'onion': RoofMesh("roof_onion"),
             'round': RoofProfile(roundRoof),
             'half-hipped': RoofHalfHipped(),

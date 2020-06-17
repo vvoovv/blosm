@@ -394,7 +394,7 @@ class Polygon:
             z
         ))
 
-    def MidleOfLongestSide(self, z=0.):
+    def middleOfTheLongestSide(self, z=0.):
         verts = self.allVerts
         indices = self.indices
         print(verts)      

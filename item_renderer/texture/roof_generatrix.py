@@ -2,8 +2,10 @@ import math
 from .. import ItemRenderer
 from ..util import initUvAlongPolygonEdge
 from grammar import smoothness
-
 from util import zAxis
+
+Center = 1
+MiddleOfTheLongesSide = 2
 
 
 # Generatrix for a dome roof.
@@ -36,13 +38,13 @@ generatrix_onion =(
 
 class RoofGeneratrix(ItemRenderer):
     
-    def __init__(self, generatrix, exportMaterials=False, halfDome=False):
+    def __init__(self, generatrix, basePointPosition=Center, exportMaterials=False):
         super().__init__(exportMaterials)
         self.generatrix = generatrix
         # The variable below indicates if the last point of the generatrix is located at zero,
         # i.e. in the center of the underlying polygon
         self.hasCenter = not self.generatrix[-1][0]
-        self.halfDome=halfDome
+        self.basePointPosition=basePointPosition
     
     def render(self, roofItem):
         smoothFaces = roofItem.getStyleBlockAttr("faces") is smoothness.Smooth
@@ -67,8 +69,8 @@ class RoofGeneratrix(ItemRenderer):
         
         roofHeight = footprint.roofHeight
        
-        if self.halfDome:
-            center = polygon.MidleOfLongestSide(footprint.roofVerticalPosition)
+        if self.basePointPosition == MiddleOfTheLongesSide:
+            center = polygon.middleOfTheLongestSide(footprint.roofVerticalPosition)
         else:
             center = polygon.centerBB(footprint.roofVerticalPosition)
         
@@ -164,8 +166,9 @@ class RoofGeneratrix(ItemRenderer):
         
         roofHeight = footprint.roofHeight
         roofVerticalPosition = footprint.roofVerticalPosition
-        if self.halfDome:
-            center = polygon.MidleOfLongestSide(footprint.roofVerticalPosition)
+
+        if self.basePointPosition == MiddleOfTheLongesSide:
+            center = polygon.middleOfTheLongestSide(footprint.roofVerticalPosition)
         else:
             center = polygon.centerBB(footprint.roofVerticalPosition)
         
