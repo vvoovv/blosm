@@ -7,11 +7,11 @@ from .ExceptionManagement import ParserExceptionListener
 
 class PML:
     
-    def __init__(self, pmlFilepath):
-        self.pmlFilepath = pmlFilepath
+    def __init__(self, pmlFilePath):
+        self.pmlFilePath = pmlFilePath
     
     def getPythonCode(self):
-        inputStream = FileStream(self.pmlFilepath)
+        inputStream = FileStream(self.pmlFilePath)
         lexer = pmlLexer(inputStream)
         stream = CommonTokenStream(lexer)
         parser = pmlParser(stream)

@@ -224,6 +224,8 @@ class PythonCoder():
         self.write(self.indent()+']')
 
     def enterAttr_name(self,name):
+        if name == 'class':     # avoid conflict with Python keyword
+            name = 'cl'
         self.write(self.attribCommaStack[-1])
         self.write(self.indent()+name+' = ')
         self.attribCommaStack[-1] = ",\n"
