@@ -12,7 +12,7 @@ from building2.renderer import BuildingRendererNew, Building
 
 from item.footprint import Footprint
 
-from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion
+from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion, Center, MiddleOfTheLongesSide
 
 from setup.premium import setup_forests
 
@@ -91,7 +91,8 @@ def setup(app, data):
             RoofFlat = RoofFlatRendererExport() if doExport else RoofFlatRenderer(),
             RoofFlatMulti = RoofFlatMultiRendererExport() if doExport else RoofFlatMultiRenderer(),
             RoofProfile = RoofProfileRendererExport() if doExport else RoofProfileRenderer(),
-            RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7)),
+            RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = Center),
+            RoofHalfDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = MiddleOfTheLongesSide),
             RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion),
             RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer()
         )

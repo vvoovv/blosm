@@ -399,6 +399,18 @@ class Polygon:
             ( min(self.verts, key=lambda v: v[1])[1] + max(self.verts, key=lambda v: v[1])[1] )/2.,
             z
         ))
+
+    def middleOfTheLongestSide(self, z=0.):
+        """
+        Return the middle of the polygon's longest side 
+        it can be used as a base point for generatrix for half-dome (common russian element) 
+        and half-pyramid (common gothic element)   
+        """
+        verts = self.allVerts
+        indices = self.indices
+        maxEdgeIndex = self.maxEdgeIndex
+        middle = ( verts[indices[maxEdgeIndex+1]] + verts[indices[maxEdgeIndex]] )/2.
+        return Vector((middle[0],middle[1],z))
     
     @property
     def area(self):
