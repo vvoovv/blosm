@@ -22,6 +22,16 @@ class TrapezoidRV(Geometry):
             (u, v),
             (0, v)
         )
+
+    def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
+        # Is the V-coordiante of uvs[2] is larger than the one of uvs[2]
+        isV2LargerV3 = uvs[2][1] > uvs[3][1]
+        return (
+            (texUl, texVb),
+            (texUr, texVb),
+            (texUr, texVt if isV2LargerV3 else texVb + (texVt-texVb)*(uvs[2][1] - uvs[1][1])/(uvs[3][1] - uvs[0][1])),
+            (texUl, texVb + (texVt-texVb)*(uvs[3][1] - uvs[0][1])/(uvs[2][1] - uvs[1][1]) if isV2LargerV3 else texVt)
+        )
     
     def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
@@ -300,3 +310,16 @@ class TrapezoidChainedRV(Geometry):
     
     def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
         return
+    
+    def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
+        numVerts = len(uvs)
+        deltaTexU = texUr - texUl
+        deltaTexV = texVt - texVb
+        deltaV = max( uvs[i][1] for i in range(2, numVerts) ) - uvs[0][1]
+        deltaU = uvs[1][0] - uvs[0][0]
+        return ( (texUl, texVb), (texUr, texVb) ) + tuple(
+                (
+                    texUl + deltaTexU * (uvs[i][0] - uvs[0][0]) / deltaU,
+                    texVb + deltaTexV * (uvs[i][1] - uvs[0][1]) / deltaV
+                ) for i in range(2, numVerts)
+            )

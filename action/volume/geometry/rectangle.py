@@ -24,6 +24,14 @@ class RectangleFRA(Geometry):
             (0, v)
         )
     
+    def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
+        return (
+            (texUl, texVb),
+            (texUr, texVb),
+            (texUr, texVt),
+            (texUl, texVt)
+        )
+    
     def renderDivs(self,
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
             rs

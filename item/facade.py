@@ -10,6 +10,8 @@ class Facade(Div):
     def __init__(self):
         super().__init__()
         
+        self.buildingPart = "facade"
+        
         self.outer = True
         
         self.front = False

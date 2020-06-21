@@ -1,12 +1,9 @@
 
 
-_materialTemplateFilename = "building_material_templates.blend"
-
-
 class Level:
     
     def __init__(self):
-        self.facadeMaterialTemplateFilename = _materialTemplateFilename
+        pass
     
     def init(self, itemRenderers, globalRenderer):
         self.Container.init(self, itemRenderers, globalRenderer)

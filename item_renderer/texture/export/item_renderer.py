@@ -5,7 +5,6 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 
 _textureDir = "texture"
-_materialTemplateFilename = "building_material_templates.blend"
 _materialTemplateName = "export"
 
 
@@ -69,7 +68,7 @@ class ItemRendererMixin:
     
     def createMaterialFromTemplate(self, materialName, textureFilepath):
         materialTemplate = self.getMaterialTemplate(
-            _materialTemplateFilename,
+            self.materialTemplateFilename,
             _materialTemplateName
         )
         nodes = createMaterialFromTemplate(materialTemplate, materialName)

@@ -50,7 +50,7 @@ class Door(DoorBase, Container):
         materialTemplate = self.getFacadeMaterialTemplate(
             facadeTextureInfo,
             claddingTextureInfo,
-            self.facadeMaterialTemplateFilename
+            self.materialTemplateFilename
         )
         if not materialName in bpy.data.materials:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)

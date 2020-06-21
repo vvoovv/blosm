@@ -1,8 +1,5 @@
 
 
-_materialTemplateFilename = "building_material_templates.blend"
-
-
 class Door:
     """
     The Door renderer is the special case of the <item_renderer.level.Level> when
@@ -12,5 +9,4 @@ class Door:
     """
     
     def __init__(self):
-        self.facadeMaterialTemplateFilename = _materialTemplateFilename
         self.facadePatternInfo = dict(Door=1)

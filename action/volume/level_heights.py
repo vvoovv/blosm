@@ -80,7 +80,12 @@ class LevelHeights:
             footprint.numLevels = numLevels
             if numLevels:
                 h += self.calculateLevelsHeight(volumeGenerator)
-            h += volumeGenerator.calculateRoofHeight(footprint)
+            roofHeight = volumeGenerator.calculateRoofHeight(footprint)
+            h += roofHeight
+            if footprint.roofHeight is None:
+                footprint.roofHeight = roofHeight + footprint.lastLevelOffset\
+                    if footprint.lastLevelOffset\
+                    else roofHeight
         footprint.height = h
         return h
     

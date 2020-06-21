@@ -70,6 +70,7 @@ class Building:
         self.footprint = None
         self._cache.clear()
         self.metaStyleBlock = None
+        self.assetInfoBldgIndex = None
     
     def clone(self):
         building = Building()
@@ -81,6 +82,7 @@ class Building:
         item.init(outline)
         if style.meta:
             item.metaStyleBlock = style.meta
+        item.use = style.meta.attrs.get("buildingUse") if style.meta else None
         return item
 
 

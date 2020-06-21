@@ -265,6 +265,9 @@ def setImage(fileName, directory, nodes, nodeName, imageSuffix=None):
             except Exception:
                 print("Unable to load the image %s" % imagePath)
         node.image = image
+    else:
+        image = None
+    return image
 
 
 def setCustomNodeValue(node, inputName, value):

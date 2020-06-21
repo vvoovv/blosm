@@ -2,12 +2,17 @@ import os
 import bpy
 
 from util.blender import loadMaterialsFromFile
+from util.blender_extra.material import createMaterialFromTemplate, setImage
+
+
+_materialTemplateFilename = "building_material_templates.blend"
 
 
 class ItemRenderer:
     
     def __init__(self, exportMaterials=False):
         self.exportMaterials = exportMaterials
+        self.materialTemplateFilename = _materialTemplateFilename
     
     def init(self, itemRenderers, globalRenderer):
         self.itemRenderers = itemRenderers
@@ -79,3 +84,87 @@ class ItemRenderer:
         else:
             claddingTextureInfo = None
         return claddingTextureInfo
+    
+    def renderClass(self, item, itemClass, face):
+        building = item.building
+        if building.assetInfoBldgIndex is None or building.assetInfoBldgIndex == -1:
+            assetInfo = self.r.assetStore.getAssetInfoByClass(
+                item.building, item.buildingPart, "texture", None, itemClass
+            )
+            if assetInfo and building.assetInfoBldgIndex is None:
+                building.assetInfoBldgIndex = assetInfo["_bldgIndex"]
+        else:
+            assetInfo = self.r.assetStore.getAssetInfoByBldgIndexAndClass(
+                building.assetInfoBldgIndex, item.buildingPart, "texture", itemClass
+            )
+            if not assetInfo:
+                # never try to use <building.assetInfoBldgIndex> again
+                building.assetInfoBldgIndex = -1
+                # try to get <assetInfo> without <building.assetInfoBldgIndex>
+                assetInfo = self.r.assetStore.getAssetInfoByClass(
+                    item.building, item.buildingPart, "texture", None, itemClass
+                )
+        if assetInfo:
+            if item.materialId is None:
+                self.setClassMaterialId(item, assetInfo)
+            if item.materialId:
+                # Сonvert image coordinates in pixels to UV-coordinates between 0. and 1.
+                
+                # width and height of the whole image:
+                imageWidth, imageHeight = bpy.data.materials[item.materialId].node_tree.nodes.get("Image Texture").image.size
+                if "offsetXPx" in assetInfo:
+                    texUl = assetInfo["offsetXPx"]/imageWidth
+                    texUr = texUl + assetInfo["textureWidthPx"]/imageWidth
+                else:
+                    texUl, texUr = 0., 1.
+                if "offsetYPx" in assetInfo:
+                    texVt = 1. - assetInfo["offsetYPx"]/imageHeight
+                    texVb = texVt - assetInfo["textureHeightPx"]/imageHeight
+                else:
+                    texVb, texVt = 0., 1.
+                self.r.setUvs(
+                    face,
+                    item.geometry.getClassUvs(texUl, texVb, texUr, texVt, item.uvs),
+                    self.r.layer.uvLayerNameFacade
+                )
+            self.r.setMaterial(face, item.materialId)
+        else:
+            # no <assetInfo>, so we try to render cladding only
+            self.renderCladding(
+                building,
+                item,
+                face,
+                item.uvs
+            )
+    
+    def setClassMaterialId(self, item, assetInfo):        
+        materialId = self.getClassMaterialId(item, assetInfo)
+        if self.createClassMaterial(materialId, assetInfo):
+            item.materialId = materialId
+        else:
+            item.materialId = ""
+    
+    def getClassMaterialId(self, item, assetInfo):
+        return assetInfo["name"]
+    
+    def createClassMaterial(self, materialName, assetInfo):
+        materialTemplate = self.getClassMaterialTemplate(
+            assetInfo,
+            self.materialTemplateFilename
+        )
+        if not materialName in bpy.data.materials:
+            nodes = createMaterialFromTemplate(materialTemplate, materialName)
+            # the overlay texture
+            image = setImage(
+                assetInfo["name"],
+                os.path.join(self.r.assetStore.baseDir, assetInfo["path"]),
+                nodes,
+                "Image Texture"
+            )
+            if not image:
+                return False
+        return True
+
+    def getClassMaterialTemplate(self, assetInfo, materialTemplateFilename):
+        materialTemplateName = "class"
+        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)

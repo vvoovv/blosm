@@ -1,235 +1,157 @@
 import os, json
 
 
-_parts = ("level", "groundlevel", "door")
+_parts = ("facade", "level", "groundlevel", "door")
 
 _uses = (
     "appartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
 )
 
-# laf stands for "look and feel"
-_lafs = (
-    "modern", "neoclassical", "curtain_wall"
+_assetTypes = (
+    "texture", "mesh"
 )
-
-
-def _getContentKeyWithNumbers(content, buildingPart, sortedContentKeys):
-    return "%s_%s" % ( buildingPart, ''.join(key[0]+str(content[key]) for key in sortedContentKeys) )
-
-def _getContentKeyWithoutNumbers(content, buildingPart, sortedContentKeys):
-    return "%s_%s" % ( buildingPart, ''.join(key[0] for key in sortedContentKeys if content[key]) )
-
-def _any(content, buildingPart, sortedContentKeys):
-    return buildingPart
-
-# generators of keys from the most detailed one to the least detailed one
-_keyGenerators = (
-    _getContentKeyWithNumbers,
-    _getContentKeyWithoutNumbers,
-    _any
-)
-
-_numKeyGenerators = len(_keyGenerators)
 
 
 class AssetStore:
     
     def __init__(self, assetInfoFilepath):
         self.baseDir = os.path.dirname(assetInfoFilepath)
-        # The following Python dictionary is used to calculated the number of windows and balconies
-        # in the Level pattern
-        self.facadePatternInfo = dict(Window=0, Balcony=0, Door=0)
         
-        self.byPart = {}
-        byTextureFamily = []
-        self.byTextureFamily = byTextureFamily
+        self.byUse = {}
+        for _use in _uses:
+            self.initUse(_use)
         
-        for _part in _parts:
-            self.initPart(_part)
+        self.byBuilding = []
         
         with open(assetInfoFilepath, 'r') as jsonFile:
-            textures = json.load(jsonFile)["textures"]
+            # getting asset entries for buildings
+            buildings = json.load(jsonFile)["buildings"]
         
-        # To simplify the code start the count of <byTextureFamily> from
-        # 1 instead 0, i.e. <if textureFamily> instead of <if not textureFamily is None>
-        byTextureFamily.append(None)
-        textureFamily = 1
-        
-        for texture in textures:
-            if isinstance(texture, dict):
-                self.initTextureInfo(texture, None)
-            else: # Python list
-                # we have a texture family
-                textureFamilyData = {}
-                byTextureFamily.append(textureFamilyData)
-                for textureInfo in texture:
-                    
-                    buildingPart = textureInfo["part"]
-                    if not buildingPart in textureFamilyData:
-                        textureFamilyData[buildingPart] = {}
-                    part = textureFamilyData[buildingPart]
-                    
-                    buildingLaf = textureInfo["laf"]
-                    if not buildingLaf in part:
-                        part[buildingLaf] = {}
-                    
-                    self.initTextureInfo(textureInfo, textureFamily)
-                textureFamily += 1
-        # an auxiliary Python list to store keys in the method <self.getTextureInfo(..)>
-        self._keys = []
+        for bldgIndex,building in enumerate(buildings):
+            buildingInfo = {}
+            self.byBuilding.append(buildingInfo)
+            
+            _use = building.get("use")
+            if not _use in self.byUse:
+                self.initUse(_use)
+            
+            byBldgClass = self.byUse[_use]["byBldgClass"]
+            byPart = self.byUse[_use]["byPart"]
+            
+            _bldgClass = building.get("class")
+            if _bldgClass:
+                if not _bldgClass in byBldgClass:
+                    byBldgClass[_bldgClass] = EntryList()
+                byBldgClass[_bldgClass].addEntry(building)
+            
+            for partInfo in building.get("parts"):
+                # inject <bldgIndex> into partInfo
+                partInfo["_bldgIndex"] = bldgIndex
+                _part = partInfo.get("part")
+                if not _part in byPart:
+                    self.initPart(_part, byPart)
+                byType = byPart[_part]
+                if not _part in buildingInfo:
+                    self.initPart(_part, buildingInfo)
+                
+                _assetType = partInfo.get("type")
+                if not _assetType in byType:
+                    self.initAssetType(_assetType, byType)
+                if not _assetType in buildingInfo[_part]:
+                    self.initAssetType(_assetType, buildingInfo[_part])
+                
+                byClass = byType[_assetType]["byClass"]
+                
+                _class = partInfo.get("class")
+                if _class:
+                    if not _class in byClass:
+                        byClass[_class] = EntryList()
+                    byClass[_class].addEntry(partInfo)
+                    if not _class in buildingInfo[_part][_assetType]["byClass"]:
+                        buildingInfo[_part][_assetType]["byClass"][_class] = EntryList()
+                    buildingInfo[_part][_assetType]["byClass"][_class].addEntry(partInfo)
+                else:
+                    byType[_assetType]["other"].addEntry(partInfo)
+                    buildingInfo[_part][_assetType]["other"].addEntry(partInfo)
     
-    def initTextureInfo(self, textureInfo, textureFamily):
-        byPart = self.byPart
-        byTextureFamily = self.byTextureFamily
-        
-        buildingPart = textureInfo["part"]
-        if not buildingPart in byPart:
-            byPart[buildingPart] = {}
-        part = byPart[buildingPart]
-        
-        buildingUse = textureInfo["use"]
-        if not buildingUse in part:
-            part[buildingUse] = {}
-        use = part[buildingUse]
-        
-        # laf stands for "look and feel"
-        buildingLaf = textureInfo["laf"]
-        if not buildingLaf in use:
-            use[buildingLaf] = {}
-        laf = use[buildingLaf]
-        
-        #
-        # create keys
-        #
-        
-        # the key of all available textures
-        key = buildingPart
-        if not key in laf:
-            laf[key] = TextureBundle()
-        laf[key].addTextureInfo(
-            textureInfo,
-            textureFamily,
-            key,
-            byTextureFamily[textureFamily][buildingPart][buildingLaf] if textureFamily else None
+    def initUse(self, buildingUse):
+        byPart = {}
+        self.byUse[buildingUse] = dict(
+            byBldgClass = {},
+            byPart = byPart
         )
-        
-        content = textureInfo.get("content")
-        if content:
-            sortedContentKeys = sorted(content)
-            
-            # content with numbers
-            key = _getContentKeyWithNumbers(content, buildingPart, sortedContentKeys)
-            if key not in laf:
-                laf[key] = TextureBundle()
-            laf[key].addTextureInfo(
-                textureInfo,
-                textureFamily,
-                key,
-                byTextureFamily[textureFamily][buildingPart][buildingLaf] if textureFamily else None
-            )
-            
-            # content without numbers
-            key = _getContentKeyWithoutNumbers(content, buildingPart, sortedContentKeys)
-            if key not in laf:
-                laf[key] = TextureBundle()
-            laf[key].addTextureInfo(
-                textureInfo,
-                textureFamily,
-                key,
-                byTextureFamily[textureFamily][buildingPart][buildingLaf] if textureFamily else None
-            )
-            
+        for _part in _parts:
+            self.initPart(_part, byPart)
     
-    def initPart(self, buildingPart):
-        part = {}
-        self.byPart[buildingPart] = part
-        for _use in _uses:
-            self.initUse(_use, part)
+    def initPart(self, buildingPart, byPart):
+        byType = {}
+        byPart[buildingPart] = byType
+        for _assetType in _assetTypes:
+            self.initAssetType(_assetType, byType)
     
-    def initUse(self, buildingUse, part):
-        use = {}
-        part[buildingUse] = use
-        for _laf in _lafs:
-            self.initLaf(_laf, use)
+    def initAssetType(self, assetType, byType):
+        byType[assetType] = dict(
+            byClass={},
+            other=EntryList()
+        )
     
-    def initLaf(self, buildingLaf, use):
-        use[buildingLaf] = {}
-    
-    def getTextureInfo(self, building, buildingPart, item, itemRenderer):
+    def getAssetInfoByClass(self, building, buildingPart, assetType, bldgClass, itemClass):
         if not building.metaStyleBlock:
             return None
-        buildingAttrs = building.metaStyleBlock.attrs
-        _buildingPart = self.byPart.get(buildingPart)
-        if not _buildingPart:
-            return None
-        buildingUse = _buildingPart.get(buildingAttrs.get("buildingUse"))
-        if not buildingUse:
-            return None
-        buildingLaf = buildingUse.get(item.laf or buildingAttrs.get("buildingLaf"))
-        if not buildingLaf:
+        
+        _use = building.use
+        if not _use:
             return None
         
-        facadePatternInfo = self.getFacadePatternInfo(item, itemRenderer)
+        use = self.byUse.get(_use)
+        if not use:
+            return None
         
-        cache = building._cache
-        if facadePatternInfo:
-            _keys = self._keys
-            _keys.clear()
-            _sorted = sorted(facadePatternInfo)
-            # try the keys from the most detailed one to the least detailed one
-            for keyIndex, key in enumerate(_keyGenerators):
-                key = key(facadePatternInfo, buildingPart, _sorted)
-                if key in cache:
-                    texture = cache[key]
-                    # set the cache for more detailed keys
-                    if keyIndex:
-                        for _keyIndex in range(keyIndex):
-                            cache[_keys[_keyIndex]] = texture
-                    break
-                else:
-                    textureBundle = buildingLaf.get(key)
-                    if textureBundle:
-                        texture = textureBundle.getTexture()
-                        cache[key] = texture
-                        # set the cache for more detailed keys
-                        if keyIndex:
-                            for _keyIndex in range(keyIndex):
-                                cache[_keys[_keyIndex]] = texture
-                        # check if need to set the cache for less detailed keys
-                        for _keyIndex in range(keyIndex+1, _numKeyGenerators):
-                            key = _keyGenerators[_keyIndex](facadePatternInfo, _sorted)
-                            if not key in cache:
-                                cache[key] = texture
-                        break
-                    else:
-                        _keys.append(key)
+        if bldgClass:
+            pass
         else:
-            key = buildingPart
-            if key in cache:
-                texture = cache[key]
-            else:
-                # that key must be present in <buildingLaf>
-                texture = buildingLaf.get(key).getTexture()
-                cache[key] = texture
-        return texture.getTextureInfo()
+            # <itemClass> is given
+            byPart = use["byPart"]
+            byType = byPart.get(buildingPart)
+            if not byType:
+                return None
+            if not assetType in byType:
+                return None
+            byClass = byType[assetType]["byClass"]
+            assetInfo = byClass[itemClass].getEntry() if itemClass in byClass else byType[assetType]["other"].getEntry()
+        return assetInfo
     
-    def getFacadePatternInfo(self, item, itemRenderer):
-        if itemRenderer.facadePatternInfo:
-            # it's the special case for the door
-            return itemRenderer.facadePatternInfo
-        elif not item.markup or not item.hasFacadePatternInfo:
+    def getAssetInfoByBldgIndexAndClass(self, bldgIndex, buildingPart, assetType, itemClass):
+        byPart = self.byBuilding[bldgIndex]
+        byType = byPart.get(buildingPart)
+        if not byType:
             return None
-        
-        facadePatternInfo = self.facadePatternInfo
-        # reset <facadePatternInfo>
-        for key in facadePatternInfo:
-            facadePatternInfo[key] = 0
-        # initalize <facadePatternInfo>
-        for _item in item.markup:
-            className = _item.__class__.__name__
-            if className in facadePatternInfo:
-                facadePatternInfo[className] += 1
-        return facadePatternInfo
+        if not assetType in byType:
+            return None
+        byClass = byType[assetType]["byClass"]
+        return byClass[itemClass].getEntry() if itemClass in byClass else byType[assetType]["other"].getEntry()
+
+
+class EntryList:
+    
+    def __init__(self):
+        self.index = -1
+        # the largest index in <self.buildings>
+        self.largestIndex = -1
+        self.entries = []
+    
+    def addEntry(self, entry):
+        self.entries.append(entry)
+        self.largestIndex += 1
+    
+    def getEntry(self):
+        index = self.index
+        if self.largestIndex:
+            if index == self.largestIndex:
+                self.index = 0
+            else:
+                self.index += 1
+        return self.entries[index]
 
 
 class TextureBundle:

@@ -18,7 +18,7 @@ class CurtainWall(CurtainWallBase, Container):
         materialTemplate = self.getFacadeMaterialTemplate(
             facadeTextureInfo,
             None,
-            self.facadeMaterialTemplateFilename
+            self.materialTemplateFilename
         )
         if not materialName in bpy.data.materials:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
