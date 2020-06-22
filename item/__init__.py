@@ -17,6 +17,8 @@ class Item:
         self.width = None
         self.relativeWidth = None
         self.hasFlexWidth = False
+        # the following variable is used to cache a material id (e.g a string name) 
+        self.materialId = None
         # Python dictionary to cache attributes from <self.styleBlock> that are derived
         # from <grammar.value.Value>
         self._styleBlockCache = {}
@@ -29,6 +31,7 @@ class Item:
         self.width = None
         self.relativeWidth = None
         self.hasFlexWidth = False
+        self.materialId = None
         self._styleBlockCache.clear()
     
     def evaluateCondition(self, styleBlock):

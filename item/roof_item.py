@@ -5,6 +5,10 @@ _className = "Roof"
 
 class RoofItem(Item):
     
+    def __init__(self):
+        super().__init__()
+        self.buildingPart = "roof"
+    
     def setStyleBlock(self):
         footprint = self.footprint
         # Find <Roof> style blocks in <markup> (actually in <self.styleBlock.styleBlocks>),

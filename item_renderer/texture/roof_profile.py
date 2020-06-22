@@ -15,7 +15,11 @@ class RoofProfile(ItemRenderer):
             )
             if smoothFaces:
                 face.smooth = True
-            self.renderCladding(building, roofSide, face, self.getUvs(roofSide, roofGenerator))
+            cl = roofSide.getStyleBlockAttr("cl")
+            if cl:
+                self.renderClass(roofSide, cl, face, self.getUvs(roofSide, roofGenerator))
+            else:
+                self.renderCladding(building, roofSide, face, self.getUvs(roofSide, roofGenerator))
     
     def getUvs(self, roofSide, roofGenerator):
         roofVertexData = roofGenerator.roofVertexData
@@ -51,3 +55,7 @@ class RoofProfile(ItemRenderer):
             )
             for index in roofSide.indices
         )
+        
+    def setClassUvs(self, item, face, uvs, texUl, texVb, texUr, texVt):
+        # convert generator to Python tuple: <tuple(uvs)>
+        self._setRoofClassUvs(face, tuple(uvs), texUl, texVb, texUr, texVt)

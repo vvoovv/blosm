@@ -8,6 +8,7 @@ class RoofSide(Item):
     
     def __init__(self):
         super().__init__()
+        self.buildingPart = "roof_side"
         # slot index for the profile roofs
         self.slotIndex = 0
         # indices of <building.verts> that form the roof side
@@ -63,16 +64,12 @@ class RoofSide(Item):
     def back(self):
         return True
     
+    def getStyleBlockAttr(self, attr):
+        value = super().getStyleBlockAttr(attr) if self.styleBlock else None
+        return value or self.parent.getStyleBlockAttr(attr)
+    
     def getCladdingMaterial(self):
-        # If <self.styleBlock> isn't available, try to get the attribute
-        # from the parent element (i.e. roof item)
-        return self.getStyleBlockAttr("roofCladdingMaterial")\
-            if self.styleBlock else\
-            self.parent.getStyleBlockAttr("roofCladdingMaterial")
+        return self.getStyleBlockAttr("roofCladdingMaterial")
     
     def getCladdingColor(self):
-        # If <self.styleBlock> isn't available, try to get the attribute
-        # from the parent element (i.e. roof item)
-        return self.getStyleBlockAttr("roofCladdingColor")\
-            if self.styleBlock else\
-            self.parent.getStyleBlockAttr("roofCladdingColor")
+        return self.getStyleBlockAttr("roofCladdingColor")

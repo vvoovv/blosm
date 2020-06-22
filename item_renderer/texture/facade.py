@@ -28,7 +28,8 @@ class Facade:
                                 self.renderClass(
                                     facade,
                                     facadeClass,
-                                    r.createFace(building, facade.indices)
+                                    r.createFace(building, facade.indices),
+                                    None
                                 )
                                 break
                             elif styleBlock.markup:

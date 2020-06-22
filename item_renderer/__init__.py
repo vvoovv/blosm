@@ -85,7 +85,7 @@ class ItemRenderer:
             claddingTextureInfo = None
         return claddingTextureInfo
     
-    def renderClass(self, item, itemClass, face):
+    def renderClass(self, item, itemClass, face, uvs):
         building = item.building
         if building.assetInfoBldgIndex is None or building.assetInfoBldgIndex == -1:
             assetInfo = self.r.assetStore.getAssetInfoByClass(
@@ -122,11 +122,7 @@ class ItemRenderer:
                     texVb = texVt - assetInfo["textureHeightPx"]/imageHeight
                 else:
                     texVb, texVt = 0., 1.
-                self.r.setUvs(
-                    face,
-                    item.geometry.getClassUvs(texUl, texVb, texUr, texVt, item.uvs),
-                    self.r.layer.uvLayerNameFacade
-                )
+                self.setClassUvs(item, face, uvs, texUl, texVb, texUr, texVt)
             self.r.setMaterial(face, item.materialId)
         else:
             # no <assetInfo>, so we try to render cladding only
@@ -168,3 +164,21 @@ class ItemRenderer:
     def getClassMaterialTemplate(self, assetInfo, materialTemplateFilename):
         materialTemplateName = "class"
         return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
+    
+    def setClassUvs(self, item, face, uvs, texUl, texVb, texUr, texVt):
+        self.r.setUvs(
+            face,
+            item.geometry.getClassUvs(texUl, texVb, texUr, texVt, item.uvs),
+            self.r.layer.uvLayerNameFacade
+        )
+    
+    def _setRoofClassUvs(self, face, uvs, texUl, texVb, texUr, texVt):
+        minU = min(uv[0] for uv in uvs)
+        deltaU = ( max(uv[0] for uv in uvs) - minU ) / (texUr-texUl)
+        minV = min(uv[1] for uv in uvs)
+        deltaV = ( max(uv[1] for uv in uvs) - minV ) / (texVt-texVb)
+        self.r.setUvs(
+            face,
+            ( ( texUl + (uv[0]-minU)/deltaU, texVb + (uv[1]-minV)/deltaV ) for uv in uvs ),
+            self.r.layer.uvLayerNameFacade
+        )
