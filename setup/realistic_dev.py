@@ -44,6 +44,7 @@ from item_renderer.texture.export import\
     RoofPyramidal as RoofPyramidalRendererExport
 
 from action.terrain import Terrain
+from action.offset import Offset
 from action.volume import Volume
 
 
@@ -99,7 +100,9 @@ def setup(app, data):
         
         br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
         
-        Building.actions = (Terrain(app, data, br.itemStore, br.itemFactory),)
+        Building.actions = [ Terrain(app, data, br.itemStore, br.itemFactory) ]
+        if not app.singleObject:
+            Building.actions.append( Offset(app, data, br.itemStore, br.itemFactory) )
         
         volumeAction = Volume(app, data, br.itemStore, br.itemFactory, itemRenderers)
         Footprint.actions = (volumeAction,)

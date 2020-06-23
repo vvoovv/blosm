@@ -49,7 +49,7 @@ class Volume(Action):
                 self.itemStore.add(_footprint)
         return footprint
     
-    def do(self, building, itemClass, buildingStyle):
+    def do(self, building, itemClass, buildingStyle, globalRenderer):
         itemStore = self.itemStore
         while itemStore.hasItems(itemClass):
             footprint = itemStore.getItem(itemClass)

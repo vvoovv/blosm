@@ -63,7 +63,7 @@ class Building:
         self.bmVerts.clear()
         # <outline> is an instance of the class as defined by the data model (e.g. parse.osm.way.Way) 
         self.outline = outline
-        self.offsetZ = None
+        self.offset = None
         # Instance of item.footprint.Footprint, it's only used if the building definition
         # in the data model doesn't contain building parts, i.e. the building is defined completely
         # by its outline
@@ -96,8 +96,6 @@ class BuildingRendererNew(Renderer):
         
         # offset for a Blender object created if <layer.singleObject is False>
         self.offset = None
-        # offset if a terrain is set (used instead of <self.offset>)
-        self.offsetZ = None
         
         self.styleStore = styleStore
         
@@ -147,6 +145,24 @@ class BuildingRendererNew(Renderer):
     def prepare(self):
         # nothing to be done here for now
         pass
+
+    def preRender(self, building):
+        element = building.outline
+        layer = element.l
+        self.layer = element.l
+        
+        if layer.singleObject:
+            if not layer.bm:
+                layer.obj = self.createBlenderObject(
+                    layer.name,
+                    layer.location,
+                    collection = self.collection,
+                    parent = None
+                )
+                layer.prepare(layer)
+            self.bm = layer.bm
+            self.obj = layer.obj
+            self.materialIndices = layer.materialIndices
     
     def cleanup(self):
         if self.exportMaterials:
@@ -165,11 +181,12 @@ class BuildingRendererNew(Renderer):
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
         
-        self.preRender(outline)
-        
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
         building = Building.getItem(itemFactory, outline, buildingStyle)
+        
+        self.preRender(building)
+        
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
@@ -182,7 +199,7 @@ class BuildingRendererNew(Renderer):
         
         for itemClass in (Building, Footprint):
             for action in itemClass.actions:
-                action.do(building, itemClass, buildingStyle)
+                action.do(building, itemClass, buildingStyle, self)
                 if itemStore.skip:
                     break
             if itemStore.skip:
@@ -204,7 +221,7 @@ class BuildingRendererNew(Renderer):
         for index in indices:
             if not bmVerts[index]:
                 bmVerts[index] = bm.verts.new(
-                    (verts[index] + building.offsetZ) if building.offsetZ else verts[index]
+                    (verts[index] + building.offset) if building.offset else verts[index]
                 )
         
         return bm.faces.new(bmVerts[index] for index in indices)

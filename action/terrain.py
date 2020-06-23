@@ -7,7 +7,7 @@ from util import zAxis
 
 class Terrain(Action):
 
-    def do(self, building, itemClass, style):
+    def do(self, building, itemClass, style, globalRenderer):
         if self.app.terrain:
             self.projectSingleVertex(building)
             #self.projectAllVertices(building)
@@ -19,7 +19,7 @@ class Terrain(Action):
             next( outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data) )
         )
         if offsetZ:
-            building.offsetZ = offsetZ[2] * zAxis
+            building.offset = offsetZ[2] * zAxis
         else:
             # the building is outside the terrain so skip the whole building
             self.itemStore.skip = True
