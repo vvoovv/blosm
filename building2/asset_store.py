@@ -15,7 +15,7 @@ _assetTypes = (
 class AssetStore:
     
     def __init__(self, assetInfoFilepath):
-        self.baseDir = os.path.dirname(assetInfoFilepath)
+        self.baseDir = os.path.join(os.path.dirname(assetInfoFilepath), os.pardir)
         
         self.byUse = {}
         for _use in _uses:
