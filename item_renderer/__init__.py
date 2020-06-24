@@ -87,23 +87,23 @@ class ItemRenderer:
     
     def renderClass(self, item, itemClass, face, uvs):
         building = item.building
-        if building.assetInfoBldgIndex is None or building.assetInfoBldgIndex == -1:
+        if building.assetInfoBldgIndex is None:
             assetInfo = self.r.assetStore.getAssetInfoByClass(
                 item.building, item.buildingPart, "texture", None, itemClass
             )
-            if assetInfo and building.assetInfoBldgIndex is None:
+            if assetInfo:
                 building.assetInfoBldgIndex = assetInfo["_bldgIndex"]
         else:
             assetInfo = self.r.assetStore.getAssetInfoByBldgIndexAndClass(
                 building.assetInfoBldgIndex, item.buildingPart, "texture", itemClass
             )
             if not assetInfo:
-                # never try to use <building.assetInfoBldgIndex> again
-                building.assetInfoBldgIndex = -1
                 # try to get <assetInfo> without <building.assetInfoBldgIndex>
                 assetInfo = self.r.assetStore.getAssetInfoByClass(
                     item.building, item.buildingPart, "texture", None, itemClass
                 )
+                # set <_bldgIndex> of the last successful <assetInfo>
+                building.assetInfoBldgIndex = assetInfo["_bldgIndex"] if assetInfo else None
         if assetInfo:
             if item.materialId is None:
                 self.setClassMaterialId(item, assetInfo)
