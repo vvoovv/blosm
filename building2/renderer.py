@@ -203,11 +203,13 @@ class BuildingRendererNew(Renderer):
                 if itemStore.skip:
                     break
             if itemStore.skip:
-                itemStore.skip = False
                 break
         itemStore.clear()
         
-        self.postRender(outline)
+        if itemStore.skip:
+            itemStore.skip = False
+        else:
+            self.postRender(outline)
     
     def createFace(self, building, indices):
         bm = self.bm
