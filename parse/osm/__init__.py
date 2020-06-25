@@ -130,7 +130,7 @@ class Osm:
                     # do we need to skip the OSM <way> from storing in <self.ways>
                     skip = False
                     if tags:
-                        #tags["id"] = _id #DEBUG OSM id
+                        tags["id"] = _id
                         condition = self.checkConditions(tags, way)
                         if condition:
                             skip = self.processCondition(condition, way, _id, self.parseWay)
@@ -161,7 +161,7 @@ class Osm:
                             relation = Osm.relationTypes.get(v)
                 # skip the relation without tags
                 if relation and tags:
-                    #tags["id"] = _id #DEBUG OSM id
+                    tags["id"] = _id
                     createdBefore = _id in relations
                     if createdBefore:
                         # The empty OSM relation was created before,
