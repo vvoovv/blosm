@@ -76,6 +76,8 @@ class RoofFlatMulti(RoofFlat):
         self.element = element
         
         self.calculateDimensions(self.getMinHeight())
+        if not self.valid:
+            return
         if self.noWalls:
             # a workaround for non-flat roofs with holes
             self.noWalls = False
