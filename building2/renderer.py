@@ -88,7 +88,7 @@ class Building:
 
 class BuildingRendererNew(Renderer):
     
-    textureInfoFilename = "texture_info_facade.json"
+    assetInfoFilename = "default.json"
     
     def __init__(self, app, styleStore, itemRenderers, getStyle=None):
         self.app = app
@@ -132,13 +132,13 @@ class BuildingRendererNew(Renderer):
         
         assetInfoFilepath = app.assetInfoFilepath
         if not assetInfoFilepath:
-            assetInfoFilepath = "%s_256.json" % self.textureInfoFilename[:-5] if exportMaterials else self.textureInfoFilename
+            assetInfoFilepath = "%s_256.json" % self.assetInfoFilename[:-5] if exportMaterials else self.assetInfoFilename
             assetInfoFilepath = os.path.join(
                 os.path.dirname(os.path.abspath(app.bldgMaterialsFilepath)),
+                "asset_info",
                 assetInfoFilepath
             )
         self.assetStore = AssetStore(assetInfoFilepath)
-        self.claddingTextureStore = CladdingTextureStore(exportMaterials)
         
         self._cache = {}
     

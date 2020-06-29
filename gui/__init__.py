@@ -336,8 +336,15 @@ class PanelBlosmSettings(bpy.types.Panel):
         enableExperimentalFeatures = (app.addonName in prefs and prefs[app.addonName].preferences.enableExperimentalFeatures) or not app.addonName in prefs
         
         if enableExperimentalFeatures and mode3dRealistic:
+            layout.box().prop(addon, "importForExport")
+            
             box = layout.box()
-            box.prop(addon, "importForExport")
+            box.box().prop(addon, "buildings")
+            
+            box = box.box()
+            box.prop(addon, "forests", text="Import forests and separate trees")
+            if addon.forests:
+                box.prop(addon, "treeDensity")
             
             layout.box().prop(addon, "singleObject")
             
