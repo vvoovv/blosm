@@ -2,7 +2,11 @@ from .container import Container
 
 
 class Level(Container):
-
+    
+    def __init__(self):
+        super().__init__()
+        self.buildingPart = "level"
+    
     def getLevelRenderer(self, levelGroup, itemRenderers):
         """
         Get a renderer for the <levelGroup> representing the item.
@@ -29,7 +33,7 @@ class CurtainWall(Level):
     
     def __init__(self):
         super().__init__()
-        self.laf = "curtain_wall"
+        self.buildingPart = "curtain_wall"
         # It doesn't need the <facadePatternInfo>
         self.hasFacadePatternInfo = False
     

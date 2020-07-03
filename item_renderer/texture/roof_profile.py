@@ -19,7 +19,7 @@ class RoofProfile(ItemRenderer):
             if cl:
                 self.renderClass(roofSide, cl, face, self.getUvs(roofSide, roofGenerator))
             else:
-                self.renderCladding(building, roofSide, face, self.getUvs(roofSide, roofGenerator))
+                self.renderCladding(roofSide, face, self.getUvs(roofSide, roofGenerator))
     
     def getUvs(self, roofSide, roofGenerator):
         roofVertexData = roofGenerator.roofVertexData

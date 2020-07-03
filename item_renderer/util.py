@@ -1,3 +1,4 @@
+import bpy
 
 
 def initUvAlongPolygonEdge(polygon, index0, index1):
@@ -13,3 +14,11 @@ def initUvAlongPolygonEdge(polygon, index0, index1):
     uv1 = (uVec.length, 0.)
     uVec /= uv1[0]
     return uVec, uv0, uv1
+
+
+def setTextureSize(assetInfo, image):
+    assetInfo["textureSize"] = tuple(image.size)
+
+def setTextureSize2(assetInfo, materialName, imageName):
+    if not "textureSize" in assetInfo:
+        assetInfo["textureSize"] = bpy.data.materials[materialName].node_tree.nodes.get(imageName).image.size

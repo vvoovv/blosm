@@ -4,6 +4,7 @@ from .item_renderer import ItemRendererMixin
 from ..container import Container as ContainerBase
 
 from util.blender_extra.material import createMaterialFromTemplate, setImage
+from ...util import setTextureSize, setTextureSize2
 
 
 class Container(ContainerBase, ItemRendererMixin):
@@ -19,29 +20,32 @@ class Container(ContainerBase, ItemRendererMixin):
             self.setVertexColor(item, face)
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
-        materialTemplate = self.getFacadeMaterialTemplate(
-            facadeTextureInfo,
-            claddingTextureInfo,
-            self.materialTemplateFilename
-        )
         if not materialName in bpy.data.materials:
+            materialTemplate = self.getFacadeMaterialTemplate(
+                facadeTextureInfo,
+                claddingTextureInfo,
+                self.materialTemplateFilename
+            )
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
-            setImage(
+            image = setImage(
                 facadeTextureInfo["name"],
                 os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
                 nodes,
                 "Overlay"
             )
+            setTextureSize(facadeTextureInfo, image)
+            
             if claddingTextureInfo:
                 # The wall material (i.e. background) texture,
                 # set it just in case
-                setImage(
+                image = setImage(
                     claddingTextureInfo["name"],
                     os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
                     nodes,
                     "Wall Material"
                 )
+                setTextureSize(claddingTextureInfo, image)
         return True
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):

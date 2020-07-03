@@ -12,6 +12,30 @@ _assetTypes = (
 )
 
 
+def _getCladTexInfoByClass(obj, claddingMaterial, assetType, claddingClass):
+    cladding = obj["byCladding"].get(claddingMaterial)
+    if not cladding:
+        return None
+    
+    if not assetType in cladding:
+        return None
+    
+    return cladding[assetType]["byClass"][claddingClass].getEntry()\
+        if claddingClass in cladding[assetType]["byClass"] else\
+        cladding[assetType]["other"].getEntry()
+
+
+def _getCladTexInfo(obj, claddingMaterial, assetType):
+    cladding = obj["byCladding"].get(claddingMaterial)
+    if not cladding:
+        return None
+    
+    if not assetType in cladding:
+        return None
+    
+    return cladding[assetType]["other"].getEntry()
+
+
 class AssetStore:
     
     def __init__(self, assetInfoFilepath):
@@ -169,10 +193,7 @@ class AssetStore:
             other=EntryList()
         )
     
-    def getAssetInfoByClass(self, building, buildingPart, assetType, bldgClass, itemClass):
-        if not building.metaStyleBlock:
-            return None
-        
+    def getAssetInfoByClass(self, building, buildingPart, assetType, bldgClass, itemClass):        
         _use = building.use
         if not _use:
             return None
@@ -204,6 +225,51 @@ class AssetStore:
             return None
         byClass = byType[assetType]["byClass"]
         return byClass[itemClass].getEntry() if itemClass in byClass else byType[assetType]["other"].getEntry()
+    
+    def getAssetInfo(self, building, buildingPart, assetType):
+        _use = building.use
+        if not _use:
+            return None
+        
+        use = self.byUse.get(_use)
+        if not use:
+            return None
+        
+        byPart = use["byPart"]
+        byType = byPart.get(buildingPart)
+        if not byType:
+            return None
+        
+        if not assetType in byType:
+            return None
+        
+        return byType[assetType]["other"].getEntry()
+
+    def getAssetInfoByBldgIndex(self, bldgIndex, buildingPart, assetType):
+        byPart = self.byBuilding[bldgIndex]["byPart"]
+        byType = byPart.get(buildingPart)
+        if not byType:
+            return None
+        if not assetType in byType:
+            return None
+        return byType[assetType]["other"].getEntry()
+    
+    def getCladTexInfoByClass(self, building, claddingMaterial, assetType, claddingClass):        
+        return _getCladTexInfoByClass(self.byUse[building.use], claddingMaterial, assetType, claddingClass)\
+            or (
+                _getCladTexInfoByClass(self.byUse[None], claddingMaterial, assetType, claddingClass)
+                if building.use else None
+            )
+    
+    def getCladTexInfoByBldgIndexAndClass(self, bldgIndex, claddingMaterial, assetType, claddingClass):
+        return _getCladTexInfoByClass(self.byBuilding[bldgIndex], claddingMaterial, assetType, claddingClass)
+    
+    def getCladTexInfo(self, building, claddingMaterial, assetType):
+        return _getCladTexInfo(self.byUse[building.use], claddingMaterial, assetType)\
+            or (_getCladTexInfo(self.byUse[None], claddingMaterial, assetType) if building.use else None)
+    
+    def getCladTexInfoByBldgIndex(self, bldgIndex, claddingMaterial, assetType):
+        return _getCladTexInfo(self.byBuilding[bldgIndex], claddingMaterial, assetType)
 
 
 class EntryList:
@@ -226,83 +292,3 @@ class EntryList:
             else:
                 self.index += 1
         return self.entries[index]
-
-
-class TextureBundle:
-    """
-    A structure to store textures for buildings that are similar in look and feel
-    """
-    
-    def __init__(self):
-        self.index = 0
-        # the largest index in <self.textures>
-        self.largestIndex = -1
-        self.textures = []
-    
-    def addTextureInfo(self, textureInfo, textureFamily, key, textureFamilyData):
-        if textureFamily:
-            lastTexture = self.textures[self.largestIndex] if self.textures else None
-            if lastTexture and lastTexture.textureFamily == textureFamily:
-                # we have a similar texture from the same texture family
-                if isinstance(lastTexture, TextureSingle):
-                    # replace it with an instance of TextureFamily
-                    self.textures[self.largestIndex] = TextureFamily(lastTexture.textureInfo, textureInfo, textureFamily)
-                    textureFamilyData[key] = self.textures[self.largestIndex]
-                else:
-                    lastTexture.addTextureInfo(textureInfo)
-            else:
-                # A new texture family is arrived
-                # We don't know yet if there will be another similar texture
-                # from the same texture family; so we use the <TextureSingle> wrapper for now
-                self.textures.append(TextureSingle(textureInfo, textureFamily))
-                self.largestIndex += 1
-                textureFamilyData[key] = self.textures[self.largestIndex]
-        else:
-            self.textures.append(TextureSingle(textureInfo, textureFamily))
-            self.largestIndex += 1
-    
-    def getTexture(self):
-        index = self.index
-        if self.largestIndex:
-            if index == self.largestIndex:
-                self.index = 0
-            else:
-                self.index += 1
-        return self.textures[index]
-
-
-class TextureSingle:
-    """
-    A wrapper for a single texture to store it in the texture bundle
-    """
-    def __init__(self, textureInfo, textureFamily):
-        self.textureInfo = textureInfo
-        self.textureFamily = textureFamily
-    
-    def getTextureInfo(self):
-        return self.textureInfo
-
-
-class TextureFamily:
-    """
-    A wrapper for a family of textures to store them in the texture bundle
-    """
-    def __init__(self, textureInfo1, textureInfo2, textureFamily):
-        self.index = 0
-        self.textures = [textureInfo1, textureInfo2]
-        # the largest index in <self.textures>
-        self.largestIndex = 1
-        self.textureFamily = textureFamily
-
-    def addTextureInfo(self, textureInfo):
-        self.textures.append(textureInfo)
-        self.largestIndex += 1
-
-    def getTextureInfo(self):
-        index = self.index
-        if self.largestIndex:
-            if index == self.largestIndex:
-                self.index = 0
-            else:
-                self.index += 1
-        return self.textures[index]

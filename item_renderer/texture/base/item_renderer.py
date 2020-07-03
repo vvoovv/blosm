@@ -37,5 +37,5 @@ class ItemRendererMixin:
         if color:
             self.r.setVertexColor(face, color, self.r.layer.vertexColorLayerNameCladding)
     
-    def getCladdingTextureInfo(self, item, building):
-        return self._getCladdingTextureInfo(item, building)
+    def getCladdingTextureInfo(self, item):
+        return self._getCladdingTextureInfo(item)

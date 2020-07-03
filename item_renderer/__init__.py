@@ -3,10 +3,21 @@ import bpy
 
 from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage
-
+from .util import setTextureSize, setTextureSize2
 
 _materialTemplateFilename = "building_material_templates.blend"
 
+
+def _setAssetInfoCache(building, assetInfo, key):
+    if assetInfo:
+        building.assetInfoBldgIndex = assetInfo["_bldgIndex"]
+        # Save building index from <assetInfo>, so later we can get
+        # the buildings index for the given building part and class
+        # and get an asset info for sure. We don't save <assetInfo> itself
+        # in the cache since there may be several asset infos for the given building and
+        # building part and class.
+        building._cache[key] = building.assetInfoBldgIndex
+    
 
 class ItemRenderer:
     
@@ -43,12 +54,12 @@ class ItemRenderer:
             materialTemplateName = "export"
         return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
     
-    def renderCladding(self, building, item, face, uvs):
+    def renderCladding(self, item, face, uvs):
         # <item> could be the current item or its parent item.
         # The latter is the case if there is no style block for the bottom
         
         materialId = ''
-        claddingTextureInfo = self.getCladdingTextureInfo(item, building)
+        claddingTextureInfo = self.getCladdingTextureInfo(item)
         if claddingTextureInfo:
             self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
             materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
@@ -73,16 +84,68 @@ class ItemRenderer:
             self.r.layer.uvLayerNameCladding
         )
     
-    def _getCladdingTextureInfo(self, item, building):
+    def _getCladdingTextureInfo(self, item):
+        building = item.building
         claddingMaterial = item.getCladdingMaterial()
-        if claddingMaterial:
-            if claddingMaterial in building._cache:
-                claddingTextureInfo = building._cache[claddingMaterial]
+        if not claddingMaterial:
+            return None
+        
+        # maybe it should be changed to <self.getStyleBlockAttrDeep("claddingClass")>
+        claddingClass = item.getStyleBlockAttr("claddingClass")
+        
+        if building.assetInfoBldgIndex is None:
+            if claddingClass:
+                claddingTextureInfo = self.r.assetStore.getCladTexInfoByClass(
+                    building, claddingMaterial, "texture", claddingClass
+                )
+                _setAssetInfoCache(
+                    building,
+                    claddingTextureInfo,
+                    # here the first <c> is for cladding, the second <c> is for class
+                    "cc%s" % claddingMaterial
+                )
             else:
-                claddingTextureInfo = self.r.claddingTextureStore.getTextureInfo(claddingMaterial)
-                building._cache[claddingMaterial] = claddingTextureInfo
+                claddingTextureInfo = self.r.assetStore.getCladTexInfo(
+                    building, claddingMaterial, "texture"
+                )
+                _setAssetInfoCache(
+                    building,
+                    claddingTextureInfo,
+                    # here <c> is for cladding
+                    "c%s" % claddingMaterial
+                )
         else:
-            claddingTextureInfo = None
+            if claddingClass:
+                key = "cc%s" % claddingMaterial
+                # If <key> is available in <building._cache>, that means we'll get <claddingTextureInfo> for sure
+                claddingTextureInfo = self.r.assetStore.getCladTexInfoByBldgIndexAndClass(
+                    building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                    claddingMaterial,
+                    "texture",
+                    claddingClass
+                )
+                if not claddingTextureInfo:
+                    # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
+                    # in the call above. No we try to get <claddingTextureInfo> without <building.assetInfoBldgIndex>
+                    claddingTextureInfo = self.r.assetStore.getCladTexInfoByClass(
+                        building, claddingMaterial, "texture", claddingClass
+                    )
+                    _setAssetInfoCache(building, claddingTextureInfo, key)
+            else:
+                key = "c%s" % claddingMaterial
+                # If <key> is available in <building._cache>, that means we'll get <claddingTextureInfo> for sure
+                claddingTextureInfo = self.r.assetStore.getCladTexInfoByBldgIndex(
+                    building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                    claddingMaterial,
+                    "texture"
+                )
+                if not claddingTextureInfo:
+                    # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
+                    # in the call above. No we try to get <claddingTextureInfo> without <building.assetInfoBldgIndex>
+                    claddingTextureInfo = self.r.assetStore.getCladTexInfo(
+                        building, claddingMaterial, "texture"
+                    )
+                    _setAssetInfoCache(building, claddingTextureInfo, key)
         return claddingTextureInfo
     
     def renderClass(self, item, itemClass, face, uvs):
@@ -91,19 +154,28 @@ class ItemRenderer:
             assetInfo = self.r.assetStore.getAssetInfoByClass(
                 item.building, item.buildingPart, "texture", None, itemClass
             )
-            if assetInfo:
-                building.assetInfoBldgIndex = assetInfo["_bldgIndex"]
+            _setAssetInfoCache(
+                building,
+                assetInfo,
+                # here <p> is for part, <c> is for class
+                "pc%s%s" % (item.buildingPart, itemClass)
+            )
         else:
+            key = "pc%s%s" % (item.buildingPart, itemClass)
+            # If <key> is available in <building._cache>, that means we'll get <assetInfo> for sure
             assetInfo = self.r.assetStore.getAssetInfoByBldgIndexAndClass(
-                building.assetInfoBldgIndex, item.buildingPart, "texture", itemClass
+                building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                item.buildingPart,
+                "texture",
+                itemClass
             )
             if not assetInfo:
-                # try to get <assetInfo> without <building.assetInfoBldgIndex>
+                # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
+                # in the call above. No we try to get <assetInfo> without <building.assetInfoBldgIndex>
                 assetInfo = self.r.assetStore.getAssetInfoByClass(
                     item.building, item.buildingPart, "texture", None, itemClass
                 )
-                # set <_bldgIndex> of the last successful <assetInfo>
-                building.assetInfoBldgIndex = assetInfo["_bldgIndex"] if assetInfo else None
+                _setAssetInfoCache(building, assetInfo, key)
         if assetInfo:
             if item.materialId is None:
                 self.setClassMaterialId(item, assetInfo)
@@ -111,7 +183,7 @@ class ItemRenderer:
                 # Сonvert image coordinates in pixels to UV-coordinates between 0. and 1.
                 
                 # width and height of the whole image:
-                imageWidth, imageHeight = bpy.data.materials[item.materialId].node_tree.nodes.get("Image Texture").image.size
+                imageWidth, imageHeight = assetInfo["textureSize"]
                 if "offsetXPx" in assetInfo:
                     texUl = assetInfo["offsetXPx"]/imageWidth
                     texUr = texUl + assetInfo["textureWidthPx"]/imageWidth
@@ -127,7 +199,6 @@ class ItemRenderer:
         else:
             # no <assetInfo>, so we try to render cladding only
             self.renderCladding(
-                building,
                 item,
                 face,
                 item.uvs
@@ -159,6 +230,10 @@ class ItemRenderer:
             )
             if not image:
                 return False
+            setTextureSize(assetInfo, image)
+        
+        setTextureSize2(assetInfo, materialName, "Image Texture")
+        
         return True
 
     def getClassMaterialTemplate(self, assetInfo, materialTemplateFilename):

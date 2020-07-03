@@ -35,7 +35,6 @@ class RoofFlatMulti(ItemRenderer):
         
         # <bmesh.ops.triangle_fill(..)> a magic function that does everything
         self.renderCladding(
-            building,
             roofItem,
             tuple(
                 face for face in bmesh.ops.triangle_fill(self.r.bm, use_beauty=False, use_dissolve=False, edges=edges)\

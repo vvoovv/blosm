@@ -34,7 +34,7 @@ class RoofPyramidal(ItemRenderer):
             
             # create a triangle
             self.createFace(
-                building, roofItem,
+                roofItem,
                 smoothFaces,
                 (vi, vi+1, -1),
                 uVec, uv0, uv1
@@ -44,24 +44,23 @@ class RoofPyramidal(ItemRenderer):
         # <uVec> is a unit vector along the base edge
         uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
         self.createFace(
-            building, roofItem,
+            roofItem,
             smoothFaces,
             (lastVertIndex, firstVertIndex, -1),
             uVec, uv0, uv1
         )
     
-    def createFace(self, building, roofItem, smooth, indices, uVec, uv0, uv1):
-        face = self.r.createFace(building, indices)
+    def createFace(self, roofItem, smooth, indices, uVec, uv0, uv1):
+        face = self.r.createFace(roofItem.building, indices)
         if smooth:
             face.smooth = smooth
         
         # assign UV-coordinates
-        verts = building.verts
+        verts = roofItem.building.verts
         vec2 = verts[indices[2]]-verts[indices[0]]
         vec2u = vec2.dot(uVec)
         
         self.renderCladding(
-            building,
             roofItem,
             face,
             (uv0, uv1, (vec2u+uv0[0], (vec2 - vec2u*uVec).length+uv0[1]))

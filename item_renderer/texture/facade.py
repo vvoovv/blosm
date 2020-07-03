@@ -45,7 +45,6 @@ class Facade:
                             else:
                                 # No markup, so we render cladding only.
                                 self.renderCladding(
-                                    building,
                                     facade,
                                     r.createFace(building, facade.indices),
                                     facade.uvs
@@ -58,7 +57,6 @@ class Facade:
                     # No style block suits the <facade>
                     # Use style of <footprint> to render cladding for <facade>
                     self.renderCladding(
-                        building,
                         footprint,
                         r.createFace(building, facade.indices),
                         facade.uvs

@@ -47,12 +47,12 @@ class Door(DoorBase, Container):
         self.r.setMaterial(face, item.materialId)
     
     def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
-        materialTemplate = self.getFacadeMaterialTemplate(
-            facadeTextureInfo,
-            claddingTextureInfo,
-            self.materialTemplateFilename
-        )
         if not materialName in bpy.data.materials:
+            materialTemplate = self.getFacadeMaterialTemplate(
+                facadeTextureInfo,
+                claddingTextureInfo,
+                self.materialTemplateFilename
+            )
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
             setImage(

@@ -1,4 +1,4 @@
-from .. import ItemRenderer
+from .. import ItemRenderer, _setAssetInfoCache
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
@@ -6,7 +6,7 @@ from grammar.symmetry import MiddleOfLast, RightmostOfLast
 def _getTileWidthM(facadeTextureInfo):
     if not "tileWidthM" in facadeTextureInfo:
         # cache <tileWidthM>
-        facadeTextureInfo["tileWidthM"] = facadeTextureInfo["textureWidthPx"]/\
+        facadeTextureInfo["tileWidthM"] = facadeTextureInfo["textureSize"][0]/\
             (facadeTextureInfo["featureRpx"] - facadeTextureInfo["featureLpx"])*\
             facadeTextureInfo["featureWidthM"] / facadeTextureInfo["numTilesU"]
     return facadeTextureInfo["tileWidthM"]
@@ -75,7 +75,7 @@ class Container(ItemRenderer):
         
         if item.styleBlock.markup[0].isLevel:
             #face = self.r.createFace(item.building, item.indices)
-            #self.renderCladding(item.building, item, face, item.uvs)
+            #self.renderCladding(item, face, item.uvs)
             #return
             self.renderLevels(item)
         else:
@@ -169,19 +169,35 @@ class Container(ItemRenderer):
         for loop in face.loops:
             loop[uvLayer].uv = uv
     
-    def setMaterialId(self, item, building, buildingPart, uvs):
+    def setMaterialId(self, item, buildingPart, uvs):
+        building = item.building
         # get a texture that fits to the Level markup pattern
-        facadeTextureInfo = self.r.assetStore.getTextureInfo(
-            building,
-            buildingPart,
-            item,
-            self
-        )
+        if building.assetInfoBldgIndex is None:
+            facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
+            _setAssetInfoCache(
+                building,
+                facadeTextureInfo,
+                # here <p> is for part
+                "p%s" % buildingPart
+            )
+        else:
+            key = "p%s" % buildingPart
+            # If <key> is available in <building._cache>, that means we'll get <assetInfo> for sure
+            facadeTextureInfo = self.r.assetStore.getAssetInfoByBldgIndex(
+                building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                buildingPart,
+                "texture"
+            )
+            if not facadeTextureInfo:
+                # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
+                # in the call above. No we try to get <facadeTextureInfo> without <building.assetInfoBldgIndex>
+                facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
+                _setAssetInfoCache(building, facadeTextureInfo, key)
         
         if facadeTextureInfo:
-            claddingTextureInfo = None\
-                if self.noCladdingTexture or facadeTextureInfo.get("noCladdingTexture") else\
-                self.getCladdingTextureInfo(item, building)
+            claddingTextureInfo = self.getCladdingTextureInfo(item)\
+                if facadeTextureInfo.get("cladding") and not self.noCladdingTexture else\
+                None
             
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
             if self.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo, uvs):
@@ -200,8 +216,7 @@ class Container(ItemRenderer):
             if item.materialId is None:
                 self.setMaterialId(
                     item,
-                    building,
-                    levelGroup.buildingPart,
+                    levelGroup.buildingPart or item.buildingPart,
                     uvs
                 )
             if item.materialId:
@@ -220,4 +235,4 @@ class Container(ItemRenderer):
                 self.renderLevelGroupExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
             self.r.setMaterial(face, item.materialId)
         else:
-            self.renderCladding(building, parentItem, face, uvs)
+            self.renderCladding(parentItem, face, uvs)

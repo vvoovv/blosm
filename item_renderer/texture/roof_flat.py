@@ -15,7 +15,7 @@ class RoofFlat(ItemRenderer):
         if cl:
             self.renderClass(roofItem, cl, face, None)
         else:
-            self.renderCladding(building, roofItem, face, None)
+            self.renderCladding(roofItem, face, None)
     
     def setCladdingUvs(self, roofItem, face, claddingTextureInfo, uvs):
         textureWidthM = claddingTextureInfo["textureWidthM"]

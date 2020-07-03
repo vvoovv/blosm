@@ -97,7 +97,7 @@ class RoofGeneratrix(ItemRenderer):
             
             # The quad for the first row
             uv0, uv1 = self.createFace(
-                building, roofItem,
+                roofItem,
                 smoothFaces,
                 (firstVertIndex+pi, firstVertIndex+pi+1, vertIndex+numRows-1, vertIndex),
                 uVec, uv0, uv1
@@ -105,7 +105,7 @@ class RoofGeneratrix(ItemRenderer):
             # The rest of the quads for the petal
             for vi,vi2 in zip(range(vertIndex, vertIndex+numRows-2), range(vertIndex+numRows-1, vertIndex+2*numRows-3)):
                 uv0, uv1 = self.createFace(
-                    building, roofItem,
+                    roofItem,
                     smoothFaces,
                     (vi, vi2, vi2+1, vi+1),
                     uVec, uv0, uv1
@@ -115,7 +115,7 @@ class RoofGeneratrix(ItemRenderer):
                 # i.e. in the center of the underlying polygon.
                 # We create here a triangle instead of a quad
                 self.createFace(
-                    building, roofItem,
+                    roofItem,
                     smoothFaces,
                     (vi+1, vi2+1, -1),
                     uVec, uv0, uv1
@@ -128,7 +128,7 @@ class RoofGeneratrix(ItemRenderer):
         uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
         # The quad for first row
         uv0, uv1 = self.createFace(
-            building, roofItem,
+            roofItem,
             smoothFaces,
             (firstVertIndex+n-1, firstVertIndex, vertIndex0, vertIndex),
             uVec, uv0, uv1
@@ -136,7 +136,7 @@ class RoofGeneratrix(ItemRenderer):
         # The rest of the quads for the petal
         for vi,vi2 in zip(range(vertIndex, vertIndex+numRows-2), range(vertIndex0, vertIndex0+numRows-2)):
             uv0, uv1 = self.createFace(
-                building, roofItem,
+                roofItem,
                 smoothFaces,
                 (vi, vi2, vi2+1, vi+1),
                 uVec, uv0, uv1
@@ -146,7 +146,7 @@ class RoofGeneratrix(ItemRenderer):
             # i.e. in the center of the underlying polygon.
             # We create here a triangle instead of a quad.
             self.createFace(
-                building, roofItem,
+                roofItem,
                 smoothFaces,
                 (vi+1, vi2+1, -1),
                 uVec, uv0, uv1
@@ -205,7 +205,7 @@ class RoofGeneratrix(ItemRenderer):
             uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, pi, pi+1)
             for vi, vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2, vertIndexOffset2+numRows-1)):
                 uv0, uv1 = self.createFace(
-                    building, roofItem,
+                    roofItem,
                     True,
                     (vi, vi2, vi2+1, vi+1),
                     uVec, uv0, uv1
@@ -215,7 +215,7 @@ class RoofGeneratrix(ItemRenderer):
                 # i.e. in the center of the underlying polygon.
                 # We create here a triangle instead of a quad
                 self.createFace(
-                    building, roofItem,
+                    roofItem,
                     True,
                     (vi+1, vi2+1, centerIndexOffset+pi),
                     uVec, uv0, uv1
@@ -229,7 +229,7 @@ class RoofGeneratrix(ItemRenderer):
         uVec, uv0, uv1 = initUvAlongPolygonEdge(polygon, -1, 0)
         for vi,vi2 in zip(range(vertIndexOffset, vertIndexOffset+numRows-1), range(vertIndexOffset2_, vertIndexOffset2_+numRows-1)):
             uv0, uv1 = self.createFace(
-                building, roofItem,
+                roofItem,
                 True,
                 (vi, vi2, vi2+1, vi+1),
                 uVec, uv0, uv1
@@ -239,20 +239,20 @@ class RoofGeneratrix(ItemRenderer):
             # i.e. in the center of the underlying polygon.
             # We create here a triangle instead of a quad.
             self.createFace(
-                building, roofItem,
+                roofItem,
                 True,
                 (vertIndexOffset+numRows-1, vertIndexOffset2_+numRows-1, -1),
                 uVec, uv0, uv1
             )
     
-    def createFace(self, building, roofItem, smooth, indices, uVec, uv0, uv1):
-        face = self.r.createFace(building, indices)
+    def createFace(self, roofItem, smooth, indices, uVec, uv0, uv1):
+        face = self.r.createFace(roofItem.building, indices)
         if smooth:
             face.smooth = smooth
         
         # assign UV-coordinates
         isQuad = len(indices)==4
-        verts = building.verts
+        verts = roofItem.building.verts
         if isQuad:
             vec3 = verts[indices[3]]-verts[indices[0]]
             vec3u = vec3.dot(uVec)
@@ -262,7 +262,6 @@ class RoofGeneratrix(ItemRenderer):
         uv2 = (vec2u+uv0[0], (vec2 - vec2u*uVec).length+uv0[1])
         
         self.renderCladding(
-            building,
             roofItem,
             face,
             (uv0, uv1, uv2, uv3) if isQuad else (uv0, uv1, uv2)

@@ -11,7 +11,6 @@ class LevelGroups:
         self.bottom = None
         # a wrapper level group for the bottom
         self.bottomGroup = LevelGroup()
-        self.bottomGroup.buildingPart = "bottom"
         # setting <singleLevel> to <True> is needed for correct height calculation of the level group
         self.bottomGroup.singleLevel = True
         self.bottom = None
@@ -19,7 +18,6 @@ class LevelGroups:
         self.begin = None
         # a wrapper level group for the top
         self.topGroup = LevelGroup()
-        self.topGroup.buildingPart = "top"
         self.topGroup.singleLevel = True
         # setting <singleLevel> to <True> is needed for correct height calculation of the level group
         self.top = None
@@ -114,6 +112,7 @@ class LevelGroups:
                 # <lh.levelHeight> and optionally <lh.groundLevelHeight>
                 if lh.groundLevelHeight and not minLevel:
                     if begin.singleLevel:
+                        # override <buildingPart> for an item
                         begin.buildingPart = "groundlevel"
                         group = begin
                     else:
@@ -161,7 +160,7 @@ class LevelGroups:
 class LevelGroup:
     
     def __init__(self):
-        self.buildingPart = "level"
+        self.buildingPart = None
         # the related Level item
         self.item = None
         self.index1 = 0
@@ -180,5 +179,5 @@ class LevelGroup:
         self.next = None
         if self.singleLevel:
             self.singleLevel = False
-        if self.buildingPart != "level":
-            self.buildingPart = "level"
+        if self.buildingPart:
+            self.buildingPart = None
