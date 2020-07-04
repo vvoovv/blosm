@@ -2,6 +2,7 @@ import os
 import bpy
 from .item_renderer import ItemRendererMixin, _textureDir
 from ..container import Container as ContainerBase
+from ...util import setTextureSize
 
 
 class Container(ContainerBase, ItemRendererMixin):
@@ -44,7 +45,9 @@ class Container(ContainerBase, ItemRendererMixin):
                         uvs
                     )
             
-            self.createMaterialFromTemplate(materialName, textureFilepath)
+            image = self.createMaterialFromTemplate(materialName, textureFilepath)
+            if not "textureSize" in facadeTextureInfo:
+                setTextureSize(facadeTextureInfo, image)
         return True
     
     def makeTexture(self, textureFilename, textureDir, textureFilepath, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
@@ -56,23 +59,26 @@ class Container(ContainerBase, ItemRendererMixin):
             textureDir
         )
         # facade texture
-        textureExporter.setImage(
+        image = textureExporter.setImage(
             facadeTextureInfo["name"],
             facadeTextureInfo["path"],
             nodes,
             "facade_texture"
         )
+        setTextureSize(facadeTextureInfo, image)
+        
         if claddingTextureInfo:
             # cladding texture
-            textureExporter.setImage(
+            image = textureExporter.setImage(
                 claddingTextureInfo["name"],
                 claddingTextureInfo["path"],
                 nodes,
                 "cladding_texture"
             )
+            setTextureSize(claddingTextureInfo, image)
             # scale for the cladding texture
             scaleFactor = claddingTextureInfo["textureWidthM"]/\
-                claddingTextureInfo["textureWidthPx"]*\
+                claddingTextureInfo["textureSize"][0]*\
                 (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/\
                 facadeTextureInfo["featureWidthM"]
             textureExporter.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)

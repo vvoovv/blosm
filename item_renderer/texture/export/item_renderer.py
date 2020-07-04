@@ -1,7 +1,7 @@
 import os
 import bpy
-from manager import Manager
 from util.blender_extra.material import createMaterialFromTemplate, setImage
+from ...util import setTextureSize
 
 
 _textureDir = "texture"
@@ -43,12 +43,13 @@ class ItemRendererMixin:
             textureDir
         )
         # cladding texture
-        textureExporter.setImage(
+        image = textureExporter.setImage(
             claddingTextureInfo["name"],
             claddingTextureInfo["path"],
             nodes,
             "cladding_texture"
         )
+        setTextureSize(claddingTextureInfo, image)
         # cladding color
         textureExporter.setColor(self.claddingColor, nodes, "cladding_color")
         # render the resulting texture
@@ -72,13 +73,14 @@ class ItemRendererMixin:
             _materialTemplateName
         )
         nodes = createMaterialFromTemplate(materialTemplate, materialName)
-        # the overlay texture
-        setImage(
+        # the texture
+        image = setImage(
             textureFilepath,
             None,
             nodes,
             "Image Texture"
         )
+        return image
     
     def getCladdingTextureInfo(self, item):
         if self.r.cacheCladdingTextureInfo:

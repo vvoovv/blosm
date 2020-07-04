@@ -94,7 +94,7 @@ def setup(app, data):
             RoofProfile = RoofProfileRendererExport() if doExport else RoofProfileRenderer(),
             RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = Center),
             RoofHalfDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = MiddleOfTheLongesSide),
-            RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion),
+            RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion, basePointPosition = Center),
             RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer()
         )
         

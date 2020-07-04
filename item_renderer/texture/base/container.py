@@ -46,6 +46,9 @@ class Container(ContainerBase, ItemRendererMixin):
                     "Wall Material"
                 )
                 setTextureSize(claddingTextureInfo, image)
+        
+        setTextureSize2(facadeTextureInfo, materialName, "Overlay")
+        setTextureSize2(claddingTextureInfo, materialName, "Wall Material")
         return True
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):

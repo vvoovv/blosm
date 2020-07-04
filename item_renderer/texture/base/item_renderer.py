@@ -1,6 +1,7 @@
 import os
 import bpy
 from util.blender_extra.material import createMaterialFromTemplate, setImage
+from ...util import setTextureSize, setTextureSize2
 
 
 _claddingMaterialTemplateName = "tiles_color"
@@ -23,12 +24,15 @@ class ItemRendererMixin:
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # The wall material (i.e. background) texture,
             # set it just in case
-            setImage(
+            image = setImage(
                 claddingTextureInfo["name"],
                 os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
                 nodes,
                 "Cladding Texture"
             )
+            setTextureSize(claddingTextureInfo, image)
+        
+        setTextureSize2(claddingTextureInfo, materialName, "Cladding Texture")
         # return True for consistency with <self.getFacadeMaterialId(..)>
         return True
     

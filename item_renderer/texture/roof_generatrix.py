@@ -38,7 +38,7 @@ generatrix_onion =(
 
 class RoofGeneratrix(ItemRenderer):
     
-    def __init__(self, generatrix, basePointPosition=Center, exportMaterials=False):
+    def __init__(self, generatrix, basePointPosition, exportMaterials=False):
         super().__init__(exportMaterials)
         self.generatrix = generatrix
         # The variable below indicates if the last point of the generatrix is located at zero,

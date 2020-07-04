@@ -62,8 +62,8 @@ class RoofFlatMulti(RoofFlatMultiBase, ItemRendererMixin):
 
 class RoofGeneratrix(RoofGeneratrixBase, ItemRendererMixin):
     
-    def __init__(self, generatrix):
-        super().__init__(generatrix, exportMaterials=True)
+    def __init__(self, generatrix, basePointPosition):
+        super().__init__(generatrix, basePointPosition, exportMaterials=True)
 
 
 class RoofPyramidal(RoofPyramidalBase, ItemRendererMixin):
