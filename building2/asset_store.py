@@ -285,6 +285,8 @@ class EntryList:
         self.largestIndex += 1
     
     def getEntry(self):
+        if not self.entries:
+            return None
         index = self.index
         if self.largestIndex:
             if index == self.largestIndex:

@@ -21,4 +21,6 @@ def setTextureSize(assetInfo, image):
 
 def setTextureSize2(assetInfo, materialName, imageName):
     if not "textureSize" in assetInfo:
-        assetInfo["textureSize"] = bpy.data.materials[materialName].node_tree.nodes.get(imageName).image.size
+        assetInfo["textureSize"] = tuple(
+            bpy.data.materials[materialName].node_tree.nodes.get(imageName).image.size
+        )
