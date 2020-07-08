@@ -28,6 +28,8 @@ from .roof.profile import *
 from .roof.hipped import RoofHipped
 from .roof.half_hipped import RoofHalfHipped
 from .roof.mansard import RoofMansard
+from .roof.generatrix import RoofGeneratrix
+from .roof.zakomar import RoofZakomar
 from util.blender import createDiffuseMaterial
 from util.random import RandomNormal, RandomWeighted
 
@@ -92,8 +94,11 @@ class BuildingRenderer(Renderer3d):
             'pyramidal': RoofPyramidal(),
             'skillion': RoofSkillion(),
             'hipped': RoofHipped(),
-            'dome': RoofMesh("roof_dome"),
-            'onion': RoofMesh("roof_onion"),
+            'dome': RoofGeneratrix("dome"),
+            'half-dome': RoofGeneratrix("half-dome"),
+            'onion': RoofGeneratrix("onion"),
+            'zakomar': RoofZakomar("zakomar"),
+            'cross_gabled': RoofZakomar("cross_gabled"),
             'round': RoofProfile(roundRoof),
             'half-hipped': RoofHalfHipped(),
             'gambrel': RoofProfile(gambrelRoof),
