@@ -257,9 +257,8 @@ def setImage(fileName, directory, nodes, nodeName, imageSuffix=None):
             fileName = "%s_%s.png" % (fileName[:-4], imageSuffix)
         image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
         if not image:
-            imagePath = bpy.path.relpath(
-                os.path.join(directory, fileName) if directory else fileName
-            )
+            imagePath = os.path.join(directory, fileName) if directory else fileName
+            
             try:
                 image = bpy.data.images.load(imagePath)
             except Exception:
