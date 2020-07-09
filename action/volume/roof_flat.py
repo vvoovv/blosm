@@ -21,11 +21,6 @@ class RoofFlat(Roof):
         self.extrudeTillRoof = False
     
     def render(self, footprint):
-        if footprint.noWalls:
-            # additional validity check here
-            # that case can't happen for buildings with the flat roof
-            footprint.valid = False
-            return
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base;
         # since it depends on the total number of building vertices, we calculated it before any operation
         # that creates building geometry 
@@ -39,6 +34,14 @@ class RoofFlat(Roof):
                 firstVertIndex
             )
         )
+    
+    def validate(self, footprint):
+        """
+        Additional validation
+        """
+        if footprint.noWalls:
+            # that case can't happen for buildings with the flat roof
+            footprint.valid = False
     
     def getRoofFirstVertIndex(self, footprint):
         return len(footprint.building.verts) + footprint.polygon.n
@@ -115,6 +118,12 @@ class RoofLeveled(RoofFlat):
     the same height.
     It is the base class for <RoofGeneratrix> and <RoofHipped>.
     """
+    
+    def validate(self, footprint):
+        """
+        Additional validation
+        """
+        return
 
     def calculateRoofHeight(self, footprint):
         h = footprint.getStyleBlockAttr("roofHeight")

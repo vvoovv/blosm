@@ -582,6 +582,12 @@ class RoofProfile(Roof):
             self.processDirection(footprint)
         
         self.initUv(footprint)
+
+    def validate(self, footprint):
+        """
+        Additional validation
+        """
+        return
     
     def initUv(self, footprint):
         """

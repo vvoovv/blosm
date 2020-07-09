@@ -125,6 +125,8 @@ class Roof:
             footprint.wallHeight = wallHeight
         
         footprint.roofVerticalPosition = z1 if footprint.noWalls else roofVerticalPosition
+        
+        self.validate(footprint)
     
     def processDirection(self, footprint):
         polygon = footprint.polygon
