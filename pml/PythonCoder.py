@@ -256,6 +256,7 @@ class PythonCoder():
     # ------------------------------------------------------------
     # function
     #     : 'attr' LPAREN string_literal RPAREN           #ATTR
+    #     | 'buildingAttr' LPAREN string_literal RPAREN   #BUILDATTR
     #     | 'random_normal' LPAREN NUMBER RPAREN          #RANDN
     #     | 'random_weighted' nested_list                 #RANDW
     #     | 'if' LPAREN conditional RPAREN function       #COND
@@ -287,6 +288,27 @@ class PythonCoder():
                 self.indents += 1
                 self.write( self.indent()+"FromAttr(" + attribute + ", " + types[0] + '),\n' )
                 self.write( self.indent()+"FromAttr(" + attribute + ", " + types[1] + ')\n' )
+                self.indents -= 1
+                self.write(self.indent()+'))')
+
+    def enterBUILDATTR(self,attribute):
+        types = self.dictionary.getAttributeTypes(attribute)
+        if self.alternativesContext:
+            self.write(self.alterCommaStack[-1])
+            if len(types) == 1:
+                self.write( self.indent()+"FromBldgAttr(" + attribute + ", " + types[0] + ')' )
+            else:
+                self.write( self.indent()+"FromBldgAttr(" + attribute + ", " + types[0] + '),\n' )
+                self.write( self.indent()+"FromBldgAttr(" + attribute + ", " + types[1] + ')' )
+            self.alterCommaStack[-1] = ",\n"
+        else:
+            if len(types) == 1:
+                self.write( "Value(FromBldgAttr(" + attribute + ", " + types[0] + '))' )
+            else:
+                self.write('Value(Alternatives(\n')
+                self.indents += 1
+                self.write( self.indent()+"FromBldgAttr(" + attribute + ", " + types[0] + '),\n' )
+                self.write( self.indent()+"FromBldgAttr(" + attribute + ", " + types[1] + ')\n' )
                 self.indents -= 1
                 self.write(self.indent()+'))')
 

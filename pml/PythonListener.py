@@ -65,6 +65,10 @@ class PythonListener(pmlListener):
     def enterATTR(self, ctx:pmlParser.ATTRContext):
         self.coder.enterATTR(ctx.getChild(2).getText())
 
+    # Enter a parse tree produced by pmlParser#BUILDATTR.
+    def enterBUILDATTR(self, ctx:pmlParser.BUILDATTRContext):
+        self.coder.enterBUILDATTR(ctx.getChild(2).getText())
+
     # Enter a parse tree produced by pmlParser#sym_expression.
     def enterSym_expression(self, ctx:pmlParser.Sym_expressionContext):
         self.coder.enterSym_expression(ctx.getText())

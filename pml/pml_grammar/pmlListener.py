@@ -134,6 +134,15 @@ class pmlListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by pmlParser#BUILDATTR.
+    def enterBUILDATTR(self, ctx:pmlParser.BUILDATTRContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#BUILDATTR.
+    def exitBUILDATTR(self, ctx:pmlParser.BUILDATTRContext):
+        pass
+
+
     # Enter a parse tree produced by pmlParser#RANDN.
     def enterRANDN(self, ctx:pmlParser.RANDNContext):
         pass
