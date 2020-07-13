@@ -122,6 +122,9 @@ def getStyle(building, app):
     if buildingTag in ("commercial", "office"):
         return "high rise"
     
+    if buildingTag in ("house", "detached"):
+        return "single family house"
+    
     if buildingTag in ("residential", "apartments", "house", "detached"):
         return "residential"
     
