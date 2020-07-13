@@ -65,13 +65,19 @@ class Volume(Action):
                     # We treat each polygon of the multipolygon as a single polygon
                     # <footprint> won't be used in this case, a new footprint will be create
                     # for each polygon of the multipolygon
-                    for _l in element.ls:
+                    
+                    # overrides to pretend than <element> is a polygon
+                    element.t = Renderer.polygon
+                    ls = element.ls
+                    for _l in ls:
+                        element.ls = _l
                         footprint = Footprint.getItem(self.itemFactory, element, building)
                         self.prepareFootprint(footprint, building, buildingStyle)
                         self.generateVolume(
                             footprint,
                             element.getLinestringData(_l, self.data)
                         )
+                    element.ls = ls
             else:
                 self.generateVolume(footprint, element.getData(self.data))
     

@@ -384,6 +384,24 @@ class Multipolygon(Relation):
             return
         return self.getLinestringData(_l, osm)
     
+    def getNodes(self, osm):
+        """
+        Get nodes for the OSM outer polygon of the multipolygon
+        
+        Returns a Python generator
+        """
+        if self.t is Renderer.polygon:
+            _l = self.ls
+        else:
+            # iterate through the linestrings in the list <self.l>
+            for _l in self.ls:
+                if _l.role is Osm.outer:
+                    break
+            else:
+                return
+        
+        return (osm.nodes[nodeId] for nodeId in _l.nodeIds(osm))
+    
     def isClosed(self, linestringIndex=None):
         """
         Checks if the linestring <self.l[linestringIndex]> is closed

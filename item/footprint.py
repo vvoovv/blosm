@@ -135,6 +135,11 @@ class Footprint(Item):
         prevFacade = facades[-1]
         _vertIndex = indices[prevFacade.edgeIndex]
         for facade in facades:
+            if not facade.outer:
+                # The special case for the inner facades.
+                # For now we consider that they are side facades
+                facade.side = True
+                continue
             # vertex index in the original polygon
             vertIndex = indices[facade.edgeIndex]
             # If <_vertIndex> and <vertIndex> are adjacent in the original polygon,
@@ -195,7 +200,7 @@ class Footprint(Item):
         
         # Next, mark the remaining facades as back or side
         for facade in facades:
-            if not facade.front:
+            if facade.outer and not facade.front:
                 if facade.normal.dot(backNormal) > 0.98:
                     facade.back = True
                 else:
