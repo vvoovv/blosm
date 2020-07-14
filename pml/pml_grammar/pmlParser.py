@@ -204,7 +204,7 @@ class pmlParser ( Parser ):
     sharedContextCache = PredictionContextCache()
 
     literalNames = [ "<INVALID>", "'@name'", "'symmetry'", "'use'", "'faces'", 
-                     "'sharpEdges'", "'attr'", "'buildingAttr'", "'random_normal'", 
+                     "'sharpEdges'", "'attr'", "'bldgAttr'", "'random_normal'", 
                      "'random_weighted'", "'if'", "'use_from'", "'per_building'", 
                      "'rgb'", "'rgba'", "'item'", "'.'", "'or'", "'and'", 
                      "'not'", "'in'", "<INVALID>", "<INVALID>", "<INVALID>", 

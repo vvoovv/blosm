@@ -257,8 +257,11 @@ class FromAttr:
         self.valueType = valueType
         self.valueCondition = valueCondition
     
+    def _getValue(self, item):
+        return (item.footprint if item.footprint else item).attr(self.attr)
+    
     def getValue(self, item, scope):
-        value = (item.footprint if item.footprint else item).attr(self.attr)
+        value = self._getValue(item)
         if value is None:
             return None
         valueCondition = self.valueCondition
@@ -291,6 +294,12 @@ class FromAttr:
             if not value in valueCondition:
                 value = None
         return value
+
+
+class FromBldgAttr(FromAttr):
+    
+    def _getValue(self, item):
+        return item.building.attr(self.attr)
 
 
 class Conditional:

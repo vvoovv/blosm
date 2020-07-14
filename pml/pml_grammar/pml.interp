@@ -6,7 +6,7 @@ null
 'faces'
 'sharpEdges'
 'attr'
-'buildingAttr'
+'bldgAttr'
 'random_normal'
 'random_weighted'
 'if'

@@ -75,6 +75,9 @@ class Building:
     def clone(self):
         building = Building()
         return building
+
+    def attr(self, attr):
+        return self.outline.tags.get(attr)
     
     @classmethod
     def getItem(cls, itemFactory, outline, style):

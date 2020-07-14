@@ -58,7 +58,7 @@ alternatives
 
 function
     : 'attr' LPAREN string_literal RPAREN                       #ATTR
-    | 'buildingAttr' LPAREN string_literal RPAREN               #BUILDATTR
+    | 'bldgAttr' LPAREN string_literal RPAREN                   #BUILDATTR
     | 'random_normal' LPAREN NUMBER RPAREN                      #RANDN
     | 'random_weighted' nested_list                             #RANDW
     | 'if' LPAREN conditional RPAREN (function | alternatives)  #COND
