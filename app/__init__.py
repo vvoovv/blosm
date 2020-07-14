@@ -344,7 +344,7 @@ class App:
             raise Exception("A valid GPX file isn't set")
         self.gpxFilepath = gpxFilepath
     
-    def initGeoJson(self, op, context, addonName):
+    def initGeoJson(self, op, context):
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":

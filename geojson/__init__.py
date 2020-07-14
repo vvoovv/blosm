@@ -1,6 +1,5 @@
 from manager import Manager as _Manager
 from building.manager import BuildingManager as _BuildingManager
-from building import Building
 
 
 class Manager(_Manager):
@@ -35,6 +34,18 @@ class Manager(_Manager):
             #renderer.preRender(node)
             renderer.renderNode(node, data)
             #renderer.postRender(node)
+
+
+class Building:
+    """
+    A wrapper for a GeoJson building
+    """
+    def __init__(self, element):
+        self.outline = element
+        self.parts = []
+    
+    def addPart(self, part):
+        self.parts.append(part)
 
 
 class BuildingManager(_BuildingManager):

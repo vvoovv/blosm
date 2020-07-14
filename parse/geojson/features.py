@@ -72,9 +72,14 @@ class Multipolygon:
         # a multipolygon alsways has at least one inner part
         return True
     
-    def getOuterData(self, osm):
+    def getOuterData(self, geojson):
+        """
+        Get projected data for the coordinates of the multipolygon outer ring
+        
+        Returns a Python generator
+        """
         self._projectCoords()
-        return self._coords[0]
+        return (coord for coord in self._coords[0])
 
     def getLinestringData(self, linestring, geojson):
         """
