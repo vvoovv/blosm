@@ -4,7 +4,7 @@ import os, json
 _parts = ("facade", "level", "groundlevel", "door")
 
 _uses = (
-    "appartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
+    "apartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
 )
 
 _assetTypes = (
@@ -275,7 +275,7 @@ class AssetStore:
 class EntryList:
     
     def __init__(self):
-        self.index = -1
+        self.index = 0
         # the largest index in <self.buildings>
         self.largestIndex = -1
         self.entries = []

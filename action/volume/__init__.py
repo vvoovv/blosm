@@ -63,8 +63,14 @@ class Volume(Action):
                 else:
                     # That's a quite rare case
                     # We treat each polygon of the multipolygon as a single polygon
-                    # <footprint> won't be used in this case, a new footprint will be create
+                    # <footprint> won't be used in this case, a new footprint will be created
                     # for each polygon of the multipolygon
+                    
+                    # A note.
+                    # If <building.footprint> is set, for example, in a <building.area()> call,
+                    # we don't need to care about it in any way. Since <building.footprint>
+                    # won't be used. A new footprint will be created for each polygon of
+                    # the multipolygon.
                     
                     # overrides to pretend than <element> is a polygon
                     element.t = Renderer.polygon

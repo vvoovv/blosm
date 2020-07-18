@@ -13,9 +13,9 @@ minWidthForOpenings = 1.
 
 
 styles = {
-"mid rise appartments zaandam": [
+"mid rise apartments zaandam": [
     Meta(
-        buildingUse = "appartments",
+        buildingUse = "apartments",
         buildingLaf = "modern",
         height = "mid rise"
     ),
@@ -509,7 +509,7 @@ styles = {
 ],
 "residential": [
     Meta(
-        buildingUse = "appartments",
+        buildingUse = "apartments",
         buildingLaf = "modern",
         height = "high rise"
     ),

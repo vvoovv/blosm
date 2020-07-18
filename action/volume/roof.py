@@ -83,9 +83,12 @@ class Roof:
         
         # create a polygon located at <z1>
         
-        # check if a polygon has been already set (e.g. when placing the building on a terrain)
+        # Check if a polygon has been already set (e.g. when placing the building on a terrain or
+        # calculating the area of the whole building footprint)
         polygon = footprint.polygon
-        if not polygon.allVerts:
+        if polygon.allVerts:
+            polygon.setHeight(z1)
+        else:
             polygon.init( Vector((coord[0], coord[1], z1)) for coord in coords )
         if polygon.n < 3:
             footprint.valid = False

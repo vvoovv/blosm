@@ -1,11 +1,12 @@
 import os
 import bpy
+from mathutils import Vector
 from building.renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
 from .asset_store import AssetStore
-from .texture_store_cladding import CladdingTextureStore
 from .texture_exporter import TextureExporter
+from util.polygon import Polygon
 
 from item.footprint import Footprint
 from item.facade import Facade
@@ -57,12 +58,16 @@ class Building:
         # A cache to store different stuff:
         # attributes evaluated per building rather than per footprint, cladding texture info
         self._cache = {}
+        # <self.outlinePolygon> is used only in the case if the buildings has parts
+        self.outlinePolygon = Polygon()
     
     def init(self, outline):
         self.verts.clear()
         self.bmVerts.clear()
         # <outline> is an instance of the class as defined by the data model (e.g. parse.osm.way.Way) 
         self.outline = outline
+        if self.outlinePolygon.allVerts:
+            self.outlinePolygon.clear()
         self.offset = None
         # Instance of item.footprint.Footprint, it's only used if the building definition
         # in the data model doesn't contain building parts, i.e. the building is defined completely
@@ -71,6 +76,7 @@ class Building:
         self._cache.clear()
         self.metaStyleBlock = None
         self.assetInfoBldgIndex = None
+        self._area = 0.
     
     def clone(self):
         building = Building()
@@ -78,15 +84,43 @@ class Building:
 
     def attr(self, attr):
         return self.outline.tags.get(attr)
+
+    def __getitem__(self, attr):
+        """
+        That variant of <self.attr(..) is used in a setup script>
+        """
+        return self.outline.tags.get(attr)
     
     @classmethod
-    def getItem(cls, itemFactory, outline, style):
+    def getItem(cls, itemFactory, outline, data):
         item = itemFactory.getItem(cls)
         item.init(outline)
-        if style.meta:
-            item.metaStyleBlock = style.meta
-        item.use = style.meta.attrs.get("buildingUse") if style.meta else None
+        item.data = data
         return item
+    
+    def setStyleMeta(self, style):
+        if style.meta:
+            self.metaStyleBlock = style.meta
+        self.use = style.meta.attrs.get("buildingUse") if style.meta else None
+    
+    def area(self):
+        if not self._area:
+            # remember that <self.footprint> is defined if the building doesn't have parts
+            polygon = self.footprint.polygon if self.footprint else self.outlinePolygon
+            
+            if not polygon.allVerts:
+                outline = self.outline
+                if outline.t is Renderer.multipolygon:
+                    coords = outline.getOuterData(self.data)
+                else:
+                    coords = outline.getData(self.data)
+                polygon.init( Vector(coord) for coord in coords )
+            if polygon.n < 3:
+                # the building will be skipped later in method <calculated>
+                return 0.
+            
+            self._area = polygon.area()
+        return self._area
 
 
 class BuildingRendererNew(Renderer):
@@ -178,15 +212,12 @@ class BuildingRendererNew(Renderer):
         itemFactory = self.itemFactory
         itemStore = self.itemStore
         
-        # get the style of the building
-        buildingStyle = self.styleStore.get(self.getStyle(buildingP, self.app))
-        
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
         
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
-        building = Building.getItem(itemFactory, outline, buildingStyle)
+        building = Building.getItem(itemFactory, outline, data)
         
         self.preRender(building)
         
@@ -194,11 +225,16 @@ class BuildingRendererNew(Renderer):
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
             footprint = Footprint.getItem(itemFactory, outline, building)
-            # this attribute <footprint> below may be used in <action.terrain.Terrain>
+            # The attribute <footprint> below may be used in calculation of the area of
+            # the building footprint or in <action.terrain.Terrain>
             building.footprint = footprint
             itemStore.add(footprint)
         if parts:
             itemStore.add((Footprint.getItem(itemFactory, part, building) for part in parts), Footprint, len(parts))
+
+        # get the style of the building
+        buildingStyle = self.styleStore.get(self.getStyle(building, self.app))
+        building.setStyleMeta(buildingStyle)
         
         for itemClass in (Building, Footprint):
             for action in itemClass.actions:

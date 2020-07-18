@@ -412,7 +412,6 @@ class Polygon:
         middle = ( verts[indices[maxEdgeIndex+1]] + verts[indices[maxEdgeIndex]] )/2.
         return Vector((middle[0],middle[1],z))
     
-    @property
     def area(self):
         verts = self.allVerts
         indices = self.indices
@@ -461,8 +460,8 @@ class Polygon:
         # <v_> denotes the end of the vector along the polygon side
         v_ = verts[indices[0] if indices else 0]
         # x and y components of the vector <u> = <v_> - <v>
-        ux = v_.x - v.x
-        uy = v_.y - v.y
+        ux = v_[0] - v[0]
+        uy = v_[1] - v[1]
         # the last index
         i_ = self.n-1
         for i in range(self.n):
@@ -475,8 +474,8 @@ class Polygon:
                 if i == i_ else\
                 (indices[i+1] if indices else i+1)
             ]
-            ux = v_.x - v.x
-            uy = v_.y - v.y
+            ux = v_[0] - v[0]
+            uy = v_[1] - v[1]
             # dot product of the vectors <_u> and <u>
             dot = _ux*ux + _uy*uy
             # Check if tangent of angle between the vectors <_u> and <u> is nearly equal to zero;
@@ -598,6 +597,16 @@ class Polygon:
                 key = lambda i: (verts[indices[i+1]]-verts[indices[i]]).length_squared
             )
         return self._maxEdgeIndex
+    
+    def setHeight(self, height):
+        """
+        Set height for the polygon
+        """
+        # check if the polygon already has that <height>
+        if self.allVerts[self.indices[0]][2] == height:
+            return
+        for i in self.indices:
+            self.allVerts[i][2] = height
 
 
 class Edge:

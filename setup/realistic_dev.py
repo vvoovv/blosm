@@ -115,7 +115,7 @@ def setup(app, data):
 
 
 def getStyle(building, app):
-    #return "mid rise appartments zaandam"
+    #return "mid rise apartments zaandam"
     #return "high rise mirrored glass"
     buildingTag = building["building"]
     
@@ -133,5 +133,12 @@ def getStyle(building, app):
     
     if building["man_made"] or building["barrier"] or buildingTag=="wall":
         return "man made"
+    
+    buildingArea = building.area()
+    
+    if buildingArea < 20.:
+        return "small structure"
+    elif buildingArea < 200.:
+        return "single family house"
     
     return "high rise"

@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 18),
+    "version": (2, 4, 19),
     "blender": (2, 80, 0),
     "location": "Right side panel for Blender 2.8x (left side panel for Blender 2.79))> \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -115,8 +115,6 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         if app.app.isPremium:
             box = layout.box()
             box.label(text="Thank you for purchasing the premium version!")
-            box = layout.box()
-            box.prop(self, "enableExperimentalFeatures")
         
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
@@ -135,6 +133,8 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         # Extensions might come later
         #layout.operator("blosm.load_extensions", text="Load extensions")
         layout.prop(self, "osmServer")
+        
+        layout.box().prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
 app.app.addonName = BlenderOsmPreferences.bl_idname
 
