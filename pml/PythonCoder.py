@@ -425,36 +425,6 @@ class PythonCoder():
 
     def enterCONST(self,text):
         text = self.replaceColorsInText(text)
-        # # is text maybe a color word?
-        # color_word = self.dictionary.getColor(text)
-        # if color_word:
-        #     expr = str(color_word)
-        #     if self.alternativesContext or self.conditionalContext:
-        #         self.write(self.alterCommaStack[-1])
-        #         self.write( self.indent()+"Constant(" + expr + ')' )
-        #         self.alterCommaStack[-1] = ',\n'
-        #     else:
-        #         self.write('Value(Constant(' + expr + ')' )
-        #     return
-
-        # # or is it a hex color ?
-        # if text[0] == '#':
-        #     numCharacters = len(text)
-        #     if numCharacters == 7:
-        #         text = text[1:]
-        #     elif numCharacters in (3,4):
-        #         # <color> has the form like <fff> or <#fff>
-        #         text = "".join( 2*letter for letter in (text[-3:] if numCharacters==4 else text) )
-        #     elif numCharacters != 6:
-        #         raise Exception('Invalid hex number: #'+text)
-        #     expr = str( tuple( c/255. for c in bytes.fromhex("%sff" % text) ) )
-        #     if self.alternativesContext or self.conditionalContext:
-        #         self.write(self.alterCommaStack[-1])
-        #         self.write( self.indent()+"Constant(" + expr + ')' )
-        #         self.alterCommaStack[-1] = ',\n'
-        #     else:
-        #         self.write('Value(Constant(' + expr + ')' )
-        #     return
 
         if self.conditionalContext:
             self.write(',\n')
@@ -462,20 +432,20 @@ class PythonCoder():
                 expr = self.toCamelCase(text)
                 self.write( self.indent()+"Constant(smoothness." + expr + ')' )
             else:
-                expr = self.literalize(text,True)
+                expr = self.literalize(text,False)
                 self.write( self.indent()+"Constant(" + expr + ')' )
         elif self.alternativesContext: 
             self.write(self.alterCommaStack[-1])
-            expr = self.literalize(text,True)
+            expr = self.literalize(text,False)
             self.write( self.indent()+"Constant(" + expr + ')' )
             self.alterCommaStack[-1] = ',\n'
         else:
-            expr = self.literalize(text,True)
+            expr = self.literalize(text,False)
             self.write('Value(Constant(' + expr + ')' )
 
     def enterNESTED(self, li):
         li = self.replaceColorsInText(li)
-        list = self.literalize(li,True)
+        list = self.literalize(li,False)
         if self.alternativesContext:
             self.write(self.alterCommaStack[-1])
             self.write( self.indent()+list )
