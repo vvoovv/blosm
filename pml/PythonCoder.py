@@ -330,7 +330,7 @@ class PythonCoder():
 
     def enterRANDW(self,li):
         li = self.replaceColorsInText(li)
-        list = self.literalize(li,True)
+        list = self.literalize(li,False)
         if self.alternativesContext or self.conditionContext:
             self.write(self.alterCommaStack[-1])
             self.write(self.indent()+'RandomWeighted( ' + list + ' )')
