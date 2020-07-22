@@ -11,7 +11,7 @@ class Facade:
         r = self.r
         building = footprint.building
         
-        if footprint.entranceAttr:
+        if footprint.entranceAttr and not footprint.noWalls:
             footprint.processFacades(data)
         
         facadeStyle = footprint.facadeStyle
