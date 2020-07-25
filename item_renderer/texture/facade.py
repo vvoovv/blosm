@@ -29,7 +29,7 @@ class Facade:
                                     facade,
                                     facadeClass,
                                     r.createFace(building, facade.indices),
-                                    None
+                                    facade.uvs
                                 )
                                 break
                             elif styleBlock.markup:

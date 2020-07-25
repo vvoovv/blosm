@@ -43,7 +43,7 @@ class Door(DoorBase, Container):
             )
         self.r.setMaterial(face, item.materialId)
     
-    def makeTexture(self, textureFilename, textureDir, textureFilepath, textColor, doorTextureInfo, claddingTextureInfo, uvs):
+    def makeTexture(self, item, textureFilename, textureDir, textureFilepath, textColor, doorTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
         scene = textureExporter.getTemplateScene("compositing_door_cladding_color")
         nodes = textureExporter.makeCommonPreparations(

@@ -17,7 +17,6 @@ class ItemRendererMixin:
 
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
         materialTemplate = self.getMaterialTemplate(
-            self.materialTemplateFilename,
             _claddingMaterialTemplateName
         )
         if not materialName in bpy.data.materials:
@@ -28,11 +27,11 @@ class ItemRendererMixin:
                 claddingTextureInfo["name"],
                 os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
                 nodes,
-                "Cladding Texture"
+                "Cladding"
             )
             setTextureSize(claddingTextureInfo, image)
         
-        setTextureSize2(claddingTextureInfo, materialName, "Cladding Texture")
+        setTextureSize2(claddingTextureInfo, materialName, "Cladding")
         # return True for consistency with <self.getFacadeMaterialId(..)>
         return True
     
@@ -43,3 +42,43 @@ class ItemRendererMixin:
     
     def getCladdingTextureInfo(self, item):
         return self._getCladdingTextureInfo(item)
+    
+    def createFacadeMaterial(self, item, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
+        if not materialName in bpy.data.materials:
+            materialTemplate = self.getFacadeMaterialTemplate(
+                facadeTextureInfo,
+                claddingTextureInfo
+            )
+            nodes = createMaterialFromTemplate(materialTemplate, materialName)
+            # the overlay texture
+            image = setImage(
+                facadeTextureInfo["name"],
+                os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
+                nodes,
+                "Main"
+            )
+            setTextureSize(facadeTextureInfo, image)
+            
+            if claddingTextureInfo:
+                # The wall material (i.e. background) texture,
+                # set it just in case
+                image = setImage(
+                    claddingTextureInfo["name"],
+                    os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
+                    nodes,
+                    "Cladding"
+                )
+                setTextureSize(claddingTextureInfo, image)
+        
+        setTextureSize2(facadeTextureInfo, materialName, "Main")
+        if claddingTextureInfo:
+            setTextureSize2(claddingTextureInfo, materialName, "Cladding")
+        return True
+    
+    def renderExtra(self, item, face, facadeTextureInfo, claddingTextureInfo, uvs):
+        # set UV-coordinates for the cladding texture
+        if claddingTextureInfo:
+            self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
+            self.setVertexColor(item, face)
+        elif self.r.useCladdingColor and facadeTextureInfo.get("claddingColor"):
+            self.setVertexColor(item, face)

@@ -17,40 +17,17 @@ class Container(ContainerBase, ItemRendererMixin):
         self.claddingColor = None
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
-        color = self.getCladdingColorHex(item)
-        return "%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
-            if claddingTextureInfo and color else\
-            ("%s_%s" % (color, facadeTextureInfo["name"]) if color else facadeTextureInfo["name"])
+        # set UV-coordinates for the cladding texture
+        if claddingTextureInfo:
+            color = self.getCladdingColorHex(item)
+            return "%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])
+        elif self.r.useCladdingColor and facadeTextureInfo.get("claddingColor"):
+            color = self.getCladdingColorHex(item)
+            return "%s_%s" % (color, facadeTextureInfo["name"])
+        else:
+            return facadeTextureInfo["name"]
     
-    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
-        if not materialName in bpy.data.materials:
-            if facadeTextureInfo.get("noCladdingTexture") and (not self.r.useCladdingColor or facadeTextureInfo.get("noCladdingColor")):
-                # use the diffuse texture as is
-                textureFilepath = os.path.join(
-                    self.r.assetStore.baseDir,
-                    facadeTextureInfo["path"],
-                    facadeTextureInfo["name"]
-                )
-            else:
-                # check if have texture in the data directory
-                textureFilename, textureDir, textureFilepath = self.getTextureFilepath(materialName)
-                if not os.path.isfile(textureFilepath):
-                    self.makeTexture(
-                        textureFilename,
-                        textureDir,
-                        textureFilepath,
-                        self.claddingColor,
-                        facadeTextureInfo,
-                        claddingTextureInfo,
-                        uvs
-                    )
-            
-            image = self.createMaterialFromTemplate(materialName, textureFilepath)
-            if not "textureSize" in facadeTextureInfo:
-                setTextureSize(facadeTextureInfo, image)
-        return True
-    
-    def makeTexture(self, textureFilename, textureDir, textureFilepath, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
+    def makeTexture(self, item, textureFilename, textureDir, textureFilepath, textColor, facadeTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
         scene = textureExporter.getTemplateScene("compositing_facade_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
@@ -79,14 +56,13 @@ class Container(ContainerBase, ItemRendererMixin):
             # scale for the cladding texture
             scaleFactor = claddingTextureInfo["textureWidthM"]/\
                 claddingTextureInfo["textureSize"][0]*\
-                (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/\
-                facadeTextureInfo["featureWidthM"]
+                (
+                    facadeTextureInfo["textureSize"][0]/item.width
+                    if "class" in facadeTextureInfo else
+                    (facadeTextureInfo["featureRpx"]-facadeTextureInfo["featureLpx"])/facadeTextureInfo["featureWidthM"]
+                )
             textureExporter.setScaleNode(nodes, "Scale", scaleFactor, scaleFactor)
         # cladding color
         textureExporter.setColor(textColor, nodes, "cladding_color")
         # render the resulting texture
         textureExporter.renderTexture(scene, textureFilepath)
-    
-    def renderLevelGroupExtra(self, item, face, facadeTextureInfo, claddingTextureInfo, uvs):
-        # do nothing here
-        return

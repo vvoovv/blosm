@@ -46,12 +46,11 @@ class Door(DoorBase, Container):
             self.setVertexColor(item, face)
         self.r.setMaterial(face, item.materialId)
     
-    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
+    def createFacadeMaterial(self, item, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         if not materialName in bpy.data.materials:
             materialTemplate = self.getFacadeMaterialTemplate(
                 facadeTextureInfo,
-                claddingTextureInfo,
-                self.materialTemplateFilename
+                claddingTextureInfo
             )
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
@@ -59,7 +58,7 @@ class Door(DoorBase, Container):
                 facadeTextureInfo["name"],
                 os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
                 nodes,
-                "Overlay"
+                "Main"
             )
             if claddingTextureInfo:
                 # The wall material (i.e. background) texture,
@@ -68,13 +67,13 @@ class Door(DoorBase, Container):
                     claddingTextureInfo["name"],
                     os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
                     nodes,
-                    "Wall Material"
+                    "Cladding"
                 )
         return True
 
-    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
+    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo):
         if claddingTextureInfo:
             materialTemplateName = "door_cladding_color" if self.r.useCladdingColor else "door_cladding"
         else:
             materialTemplateName = "export"
-        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
+        return self.getMaterialTemplate(materialTemplateName)

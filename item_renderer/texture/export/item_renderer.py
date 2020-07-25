@@ -1,7 +1,7 @@
 import os
 import bpy
 from util.blender_extra.material import createMaterialFromTemplate, setImage
-from ...util import setTextureSize
+from ...util import setTextureSize, setTextureSize2
 
 
 _textureDir = "texture"
@@ -68,17 +68,15 @@ class ItemRendererMixin:
         return textureFilename, textureDir, os.path.join(textureDir, textureFilename)
     
     def createMaterialFromTemplate(self, materialName, textureFilepath):
-        materialTemplate = self.getMaterialTemplate(
-            self.materialTemplateFilename,
-            _materialTemplateName
-        )
+        materialTemplate = self.getMaterialTemplate(_materialTemplateName)
+        
         nodes = createMaterialFromTemplate(materialTemplate, materialName)
         # the texture
         image = setImage(
             textureFilepath,
             None,
             nodes,
-            "Image Texture"
+            "Main"
         )
         return image
     
@@ -91,3 +89,38 @@ class ItemRendererMixin:
             return _cache[claddingMaterial]
         else:
             return self._getCladdingTextureInfo(item)
+    
+    def createFacadeMaterial(self, item, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
+        if not materialName in bpy.data.materials:
+            if not facadeTextureInfo.get("cladding"):
+                # use the diffuse texture as is
+                textureFilepath = os.path.join(
+                    self.r.assetStore.baseDir,
+                    facadeTextureInfo["path"],
+                    facadeTextureInfo["name"]
+                )
+            else:
+                # check if have texture in the data directory
+                textureFilename, textureDir, textureFilepath = self.getTextureFilepath(materialName)
+                if not os.path.isfile(textureFilepath):
+                    self.makeTexture(
+                        item,
+                        textureFilename,
+                        textureDir,
+                        textureFilepath,
+                        self.claddingColor,
+                        facadeTextureInfo,
+                        claddingTextureInfo,
+                        uvs
+                    )
+            
+            image = self.createMaterialFromTemplate(materialName, textureFilepath)
+            if not "textureSize" in facadeTextureInfo:
+                setTextureSize(facadeTextureInfo, image)
+        
+        setTextureSize2(facadeTextureInfo, materialName, "Main")
+        return True
+    
+    def renderExtra(self, item, face, facadeTextureInfo, claddingTextureInfo, uvs):
+        # do nothing here
+        return

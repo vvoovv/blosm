@@ -41,18 +41,18 @@ class ItemRenderer:
         if not name in vertex_colors:
             vertex_colors.new(name)
     
-    def getMaterialTemplate(self, materialTemplateFilename, materialTemplateName):
+    def getMaterialTemplate(self, materialTemplateName):
         materialTemplate = bpy.data.materials.get(materialTemplateName)
         if not materialTemplate:
-            materialTemplate = loadMaterialsFromFile(os.path.join(self.r.assetsDir, materialTemplateFilename), True, materialTemplateName)[0]
+            materialTemplate = loadMaterialsFromFile(os.path.join(self.r.assetsDir, self.materialTemplateFilename), True, materialTemplateName)[0]
         return materialTemplate
     
-    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
+    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo):
         if claddingTextureInfo:
             materialTemplateName = "facade_cladding_color" if self.r.useCladdingColor else "facade_cladding"
         else:
             materialTemplateName = "export"
-        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
+        return self.getMaterialTemplate(materialTemplateName)
     
     def renderCladding(self, item, face, uvs):
         # <item> could be the current item or its parent item.
@@ -151,50 +151,56 @@ class ItemRenderer:
     def renderClass(self, item, itemClass, face, uvs):
         building = item.building
         if building.assetInfoBldgIndex is None:
-            assetInfo = self.r.assetStore.getAssetInfoByClass(
+            mainTextureInfo = self.r.assetStore.getAssetInfoByClass(
                 item.building, item.buildingPart, "texture", None, itemClass
             )
             _setAssetInfoCache(
                 building,
-                assetInfo,
+                mainTextureInfo,
                 # here <p> is for part, <c> is for class
                 "pc%s%s" % (item.buildingPart, itemClass)
             )
         else:
             key = "pc%s%s" % (item.buildingPart, itemClass)
             # If <key> is available in <building._cache>, that means we'll get <assetInfo> for sure
-            assetInfo = self.r.assetStore.getAssetInfoByBldgIndexAndClass(
+            mainTextureInfo = self.r.assetStore.getAssetInfoByBldgIndexAndClass(
                 building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
                 item.buildingPart,
                 "texture",
                 itemClass
             )
-            if not assetInfo:
+            if not mainTextureInfo:
                 # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
                 # in the call above. No we try to get <assetInfo> without <building.assetInfoBldgIndex>
-                assetInfo = self.r.assetStore.getAssetInfoByClass(
+                mainTextureInfo = self.r.assetStore.getAssetInfoByClass(
                     item.building, item.buildingPart, "texture", None, itemClass
                 )
-                _setAssetInfoCache(building, assetInfo, key)
-        if assetInfo:
+                _setAssetInfoCache(building, mainTextureInfo, key)
+        if mainTextureInfo:
             if item.materialId is None:
-                self.setClassMaterialId(item, assetInfo)
+                claddingTextureInfo = self.getCladdingTextureInfo(item)\
+                    if mainTextureInfo.get("cladding") and self.claddingTexture else\
+                    None
+                self.setClassMaterialId(item, mainTextureInfo, claddingTextureInfo)
             if item.materialId:
                 # Сonvert image coordinates in pixels to UV-coordinates between 0. and 1.
                 
                 # width and height of the whole image:
-                imageWidth, imageHeight = assetInfo["textureSize"]
-                if "offsetXPx" in assetInfo:
-                    texUl = assetInfo["offsetXPx"]/imageWidth
-                    texUr = texUl + assetInfo["textureWidthPx"]/imageWidth
+                imageWidth, imageHeight = mainTextureInfo["textureSize"]
+                if "offsetXPx" in mainTextureInfo:
+                    texUl = mainTextureInfo["offsetXPx"]/imageWidth
+                    texUr = texUl + mainTextureInfo["textureWidthPx"]/imageWidth
                 else:
                     texUl, texUr = 0., 1.
-                if "offsetYPx" in assetInfo:
-                    texVt = 1. - assetInfo["offsetYPx"]/imageHeight
-                    texVb = texVt - assetInfo["textureHeightPx"]/imageHeight
+                if "offsetYPx" in mainTextureInfo:
+                    texVt = 1. - mainTextureInfo["offsetYPx"]/imageHeight
+                    texVb = texVt - mainTextureInfo["textureHeightPx"]/imageHeight
                 else:
                     texVb, texVt = 0., 1.
+                
                 self.setClassUvs(item, face, uvs, texUl, texVb, texUr, texVt)
+                # uv for cladding and vertex color
+                self.renderExtra(item, face, mainTextureInfo, claddingTextureInfo, uvs)
             self.r.setMaterial(face, item.materialId)
         else:
             # no <assetInfo>, so we try to render cladding only
@@ -204,41 +210,18 @@ class ItemRenderer:
                 item.uvs
             )
     
-    def setClassMaterialId(self, item, assetInfo):        
-        materialId = self.getClassMaterialId(item, assetInfo)
-        if self.createClassMaterial(materialId, assetInfo):
+    def setClassMaterialId(self, item, mainTextureInfo, claddingTextureInfo):        
+        materialId = self.getFacadeMaterialId(item, mainTextureInfo, claddingTextureInfo)
+        
+        if self.createFacadeMaterial(item, materialId, mainTextureInfo, claddingTextureInfo, None):
             item.materialId = materialId
         else:
             item.materialId = ""
-    
-    def getClassMaterialId(self, item, assetInfo):
-        return assetInfo["name"]
-    
-    def createClassMaterial(self, materialName, assetInfo):
-        materialTemplate = self.getClassMaterialTemplate(
-            assetInfo,
-            self.materialTemplateFilename
-        )
-        if not materialName in bpy.data.materials:
-            nodes = createMaterialFromTemplate(materialTemplate, materialName)
-            # the overlay texture
-            image = setImage(
-                assetInfo["name"],
-                os.path.join(self.r.assetStore.baseDir, assetInfo["path"]),
-                nodes,
-                "Image Texture"
-            )
-            if not image:
-                return False
-            setTextureSize(assetInfo, image)
-        
-        setTextureSize2(assetInfo, materialName, "Image Texture")
-        
-        return True
 
-    def getClassMaterialTemplate(self, assetInfo, materialTemplateFilename):
-        materialTemplateName = "class"
-        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
+    def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
+        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["name"])\
+            if claddingTextureInfo\
+            else facadeTextureInfo["name"]
     
     def setClassUvs(self, item, face, uvs, texUl, texVb, texUr, texVt):
         self.r.setUvs(

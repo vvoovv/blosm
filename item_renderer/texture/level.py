@@ -17,4 +17,4 @@ class CurtainWall(Level):
     def __init__(self):
         super().__init__()
         
-        self.noCladdingTexture = True
+        self.claddingTexture = False

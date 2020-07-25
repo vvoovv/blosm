@@ -10,7 +10,7 @@ class CurtainWall(CurtainWallBase, Container):
         Container.__init__(self, exportMaterials=True)
         CurtainWallBase.__init__(self)
     
-    def makeTexture(self, textureFilename, textureDir, textureFilepath, color, facadeTextureInfo, claddingTextureInfo, uvs):
+    def makeTexture(self, item, textureFilename, textureDir, textureFilepath, color, facadeTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
         scene = textureExporter.getTemplateScene("compositing_facade_specular_color")
         nodes = textureExporter.makeCommonPreparations(

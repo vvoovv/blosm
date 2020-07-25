@@ -15,12 +15,11 @@ class CurtainWall(CurtainWallBase, Container):
         Container.__init__(self, exportMaterials=False)
         CurtainWallBase.__init__(self)
     
-    def createFacadeMaterial(self, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
+    def createFacadeMaterial(self, item, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         if not materialName in bpy.data.materials:
             materialTemplate = self.getFacadeMaterialTemplate(
                 facadeTextureInfo,
-                None,
-                self.materialTemplateFilename
+                None
             )
             nodes = createMaterialFromTemplate(materialTemplate, materialName)
             # the overlay texture
@@ -28,7 +27,7 @@ class CurtainWall(CurtainWallBase, Container):
                 facadeTextureInfo["name"],
                 os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
                 nodes,
-                "Image Texture"
+                "Main"
             )
             setTextureSize(facadeTextureInfo, image)
             # specular map
@@ -40,11 +39,11 @@ class CurtainWall(CurtainWallBase, Container):
                     "Specular Map"
                 )
         
-        setTextureSize2(facadeTextureInfo, materialName, "Image Texture")
+        setTextureSize2(facadeTextureInfo, materialName, "Main")
         return True
     
-    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo, materialTemplateFilename):
-        useCladdingColor = self.r.useCladdingColor and not facadeTextureInfo.get("noCladdingColor")
+    def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo):
+        useCladdingColor = self.r.useCladdingColor
         useSpecularMap = facadeTextureInfo.get("specularMapName")
         
         if useSpecularMap and useCladdingColor:
@@ -56,4 +55,4 @@ class CurtainWall(CurtainWallBase, Container):
         else:
             materialTemplateName = "export"
         
-        return self.getMaterialTemplate(materialTemplateFilename, materialTemplateName)
+        return self.getMaterialTemplate(materialTemplateName)

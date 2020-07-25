@@ -65,7 +65,7 @@ class Container(ItemRenderer):
     
     def __init__(self, exportMaterials):
         super().__init__(exportMaterials)
-        self.noCladdingTexture = False
+        self.claddingTexture = True
         self.renderState = RenderState()
         # no pre-set <facadePatternInfo>
         self.facadePatternInfo = None
@@ -196,11 +196,11 @@ class Container(ItemRenderer):
         
         if facadeTextureInfo:
             claddingTextureInfo = self.getCladdingTextureInfo(item)\
-                if facadeTextureInfo.get("cladding") and not self.noCladdingTexture else\
+                if facadeTextureInfo.get("cladding") and self.claddingTexture else\
                 None
             
             materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
-            if self.createFacadeMaterial(materialId, facadeTextureInfo, claddingTextureInfo, uvs):
+            if self.createFacadeMaterial(item, materialId, facadeTextureInfo, claddingTextureInfo, uvs):
                 item.materialId = materialId
                 item.materialData = facadeTextureInfo, claddingTextureInfo
             else:
@@ -232,7 +232,7 @@ class Container(ItemRenderer):
                     ),
                     self.r.layer.uvLayerNameFacade
                 )
-                self.renderLevelGroupExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
+                self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
             self.r.setMaterial(face, item.materialId)
         else:
             self.renderCladding(parentItem, face, uvs)
