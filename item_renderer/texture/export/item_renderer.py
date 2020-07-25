@@ -92,14 +92,7 @@ class ItemRendererMixin:
     
     def createFacadeMaterial(self, item, materialName, facadeTextureInfo, claddingTextureInfo, uvs):
         if not materialName in bpy.data.materials:
-            if not facadeTextureInfo.get("cladding"):
-                # use the diffuse texture as is
-                textureFilepath = os.path.join(
-                    self.r.assetStore.baseDir,
-                    facadeTextureInfo["path"],
-                    facadeTextureInfo["name"]
-                )
-            else:
+            if claddingTextureInfo or facadeTextureInfo.get("claddingColor"):
                 # check if have texture in the data directory
                 textureFilename, textureDir, textureFilepath = self.getTextureFilepath(materialName)
                 if not os.path.isfile(textureFilepath):
@@ -113,6 +106,13 @@ class ItemRendererMixin:
                         claddingTextureInfo,
                         uvs
                     )
+            else:
+                # use the diffuse texture as is
+                textureFilepath = os.path.join(
+                    self.r.assetStore.baseDir,
+                    facadeTextureInfo["path"],
+                    facadeTextureInfo["name"]
+                )
             
             image = self.createMaterialFromTemplate(materialName, textureFilepath)
             if not "textureSize" in facadeTextureInfo:
