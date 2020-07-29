@@ -179,8 +179,8 @@ def createMaterialsForFacadesOverlay(
                     # The wall material (i.e. background) texture,
                     # set it just in case
                     setImage(wallTexturePath, None, nodes, "Wall Material")
-                    nodes["Mapping"].scale[0] = 1./wallTextureWidthM
-                    nodes["Mapping"].scale[1] = 1./wallTextureHeightM
+                    nodes["Mapping"].inputs[3].default_value[0] = 1./wallTextureWidthM
+                    nodes["Mapping"].inputs[3].default_value[1] = 1./wallTextureHeightM
                     # the mask for the emission
                     setImage(fileName, directory, nodes, "Emission Mask", "emissive")
                     # setting nodes
@@ -202,8 +202,8 @@ def createMaterialsForFacadesOverlay(
             if not materialName in bpy.data.materials:
                 nodes = createMaterialFromTemplate(materialTemplate, materialName)
                 setImage(wallTexturePath, None, nodes, "Image Texture")
-                nodes["Mapping"].scale[0] = 1./wallTextureWidthM
-                nodes["Mapping"].scale[1] = 1./wallTextureHeightM
+                nodes["Mapping"].inputs[3].default_value[0] = 1./wallTextureWidthM
+                nodes["Mapping"].inputs[3].default_value[1] = 1./wallTextureHeightM
         else:
             print(
                 ("Information about the image texture \"%s\" isn't available " +
@@ -230,8 +230,8 @@ def createMaterialsForSeamlessTextures(files, directory, materialBaseName, listO
                     nodes = createMaterialFromTemplate(materialTemplate, materialName)
                     
                     setImage(fileName, directory, nodes, "Image Texture")
-                    nodes["Mapping"].scale[0] = 1./textureDataEntry[0]
-                    nodes["Mapping"].scale[1] = 1./textureDataEntry[1]
+                    nodes["Mapping"].inputs[3].default_value[0] = 1./textureDataEntry[0]
+                    nodes["Mapping"].inputs[3].default_value[1] = 1./textureDataEntry[1]
         else:
             print(
                 ("Information about the image texture \"%s\" isn't available " +
