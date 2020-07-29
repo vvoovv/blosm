@@ -382,13 +382,8 @@ class PanelBlosmSettings(bpy.types.Panel):
                 box.prop(addon, "vegetation")
                 box.prop(addon, "highways")
                 box.prop(addon, "railways")
-
-            layout.box().prop(addon, "setupScript")
             
-            if mode3dRealistic:
-                layout.box().prop(addon, "assetsDir")
-            
-            if not mode3dRealistic:
+            if not mode3dRealistic and addon.mode != "2D":
                 self._drawBuildingSettings(layout.box(), addon)
             
             #box.prop(addon, "straightAngleThreshold")
@@ -398,11 +393,11 @@ class PanelBlosmSettings(bpy.types.Panel):
             
             layout.box().prop(addon, "ignoreGeoreferencing")
             
-            if not mode3dRealistic and addon.terrainObject in context.scene.objects:
-                box = layout.box()
-                box.prop(addon, "subdivide")
-                if addon.subdivide:
-                    box.prop(addon, "subdivisionSize")
+            box = layout.box()
+            box.label(text = "[Advanced]:")
+            split = box.split(factor=0.5)
+            split.label(text="Setup script:")
+            split.prop(addon, "setupScript", text="")
     
     def _drawBuildingSettings(self, box, addon):
         split = box.split(factor=0.67) if _isBlender280 else box.split(percentage=0.67)
