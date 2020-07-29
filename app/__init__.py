@@ -146,7 +146,7 @@ class App:
     
     def initOsm(self, op, context):
         addonName = self.addonName
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
@@ -276,7 +276,7 @@ class App:
             self.assetInfoFilepath = assetInfoFilepath
     
     def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         terrainObjectName =\
             addon.terrainObject\
@@ -323,7 +323,7 @@ class App:
     def initOverlay(self, context):
         addonName = self.addonName
         from overlay import Overlay, overlayTypeData
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         data = overlayTypeData[addon.overlayType]
         
         # <addonName> can be used by some classes derived from <Overlay>
@@ -419,9 +419,9 @@ class App:
     
     def setAttributes(self, context):
         """
-        Copies properties from <context.scene.blender_osm>
+        Copies properties from <context.scene.blosm>
         """
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         for p in dir(addon):
             # don't know why <int> started to appear in <dir(addon)>
             if not (p.startswith("__") or p in ("bl_rna", "rna_type", "int", "string")):
@@ -651,7 +651,7 @@ class App:
             context.scene.collection.objects.link(obj)
         else:
             context.scene.objects.link(obj)
-        context.scene.blender_osm.terrainObject = obj.name
+        context.scene.blosm.terrainObject = obj.name
         # force smooth shading
         makeActive(obj, context)
         bpy.ops.object.shade_smooth()

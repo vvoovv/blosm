@@ -26,7 +26,7 @@ from .renderer import AreaRenderer, ForestRenderer, WaterRenderer
 import util.blender_extra.material
 
 
-class OperatorMakeRealistic(bpy.types.Operator):
+class BLOSM_OT_MakeRealistic(bpy.types.Operator):
     bl_idname = "blosm.make_realistic"
     bl_label = "Make realistic"
     bl_description = "Make realistic representation on the terrain for the active object with areas"
@@ -36,11 +36,11 @@ class OperatorMakeRealistic(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        return context.scene.objects.get( context.scene.blender_osm.terrainObject )
+        return context.scene.objects.get( context.scene.blosm.terrainObject )
     
     def invoke(self, context, event):
         obj = context.object
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         layerId = addon.makeRealisticLayer
         
         # remove all modifiers
@@ -77,7 +77,7 @@ class OperatorMakeRealistic(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OperatorMakePolygon(bpy.types.Operator):
+class BLOSM_OT_MakePolygon(bpy.types.Operator):
     bl_idname = "blosm.make_polygon"
     bl_label = "Make polygon"
     bl_description = "Make a polygon out of connected edges"
@@ -97,7 +97,7 @@ class OperatorMakePolygon(bpy.types.Operator):
         return {'FINISHED'}
     
 
-class OperatorFlattenSelected(bpy.types.Operator):
+class BLOSM_OT_FlattenSelected(bpy.types.Operator):
     bl_idname = "blosm.flatten_selected"
     bl_label = "Flatten selected"
     bl_description = "Flatten selected faces"

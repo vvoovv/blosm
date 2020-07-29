@@ -67,19 +67,19 @@ _defaultLevels = (
 )
 
 def getBlenderMaterials(self, context):
-    materialType = context.scene.blender_osm.materialType
+    materialType = context.scene.blosm.materialType
     return tuple((m[0], m[0], m[0]) for m in _blenderMaterials if m[1] == materialType)
 
 
 def addDefaultLevels():
-    defaultLevels = bpy.context.scene.blender_osm.defaultLevels
+    defaultLevels = bpy.context.scene.blosm.defaultLevels
     if not defaultLevels:
         for n, w in _defaultLevels:
             e = defaultLevels.add()
             e.levels = n
             e.weight = w
 
-# This handler is needed to set the defaults for <context.scene.blender_osm.defaultLevels>
+# This handler is needed to set the defaults for <context.scene.blosm.defaultLevels>
 # just after the addon registration
 def _onRegister(scene):
     addDefaultLevels()
@@ -88,7 +88,7 @@ def _onRegister(scene):
 def _onRegister280():
     addDefaultLevels()
     return
-# This handler is needed to set the defaults for <context.scene.blender_osm.defaultLevels>
+# This handler is needed to set the defaults for <context.scene.blosm.defaultLevels>
 # after each start of Blender or reloading the start-up file via Ctrl N or loading any Blender file.
 # That's why the persistent decorator is used
 @persistent
@@ -121,8 +121,8 @@ class BlosmDefaultLevelsEntry(bpy.types.PropertyGroup):
     )
 
 
-class OperatorBlosmSelectExtent(bpy.types.Operator):
-    bl_idname = "blender_osm.select_extent"
+class BLOSM_OT_SelectExtent(bpy.types.Operator):
+    bl_idname = "blosm.select_extent"
     bl_label = "select"
     bl_description = "Select extent for your area of interest on a geographical map"
     bl_options = {'INTERNAL'}
@@ -140,14 +140,14 @@ class OperatorBlosmSelectExtent(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OperatorBlosmPasteExtent(bpy.types.Operator):
-    bl_idname = "blender_osm.paste_extent"
+class BLOSM_OT_PasteExtent(bpy.types.Operator):
+    bl_idname = "blosm.paste_extent"
     bl_label = "paste"
     bl_description = "Paste extent (chosen on the geographical map) for your area of interest from the clipboard"
     bl_options = {'INTERNAL', 'UNDO'}
     
     def invoke(self, context, event):
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         coords = context.window_manager.clipboard
         
         if not coords:
@@ -169,8 +169,8 @@ class OperatorBlosmPasteExtent(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OperatorBlosmExtentFromActive(bpy.types.Operator):
-    bl_idname = "blender_osm.extent_from_active"
+class BLOSM_OT_ExtentFromActive(bpy.types.Operator):
+    bl_idname = "blosm.extent_from_active"
     bl_label = "from active"
     bl_description = "Use extent from the active Blender object"
     bl_options = {'INTERNAL', 'UNDO'}
@@ -182,7 +182,7 @@ class OperatorBlosmExtentFromActive(bpy.types.Operator):
     
     def invoke(self, context, event):
         scene = context.scene
-        addon = scene.blender_osm
+        addon = scene.blosm
         
         addon.minLon, addon.minLat, addon.maxLon, addon.maxLat = app.getExtentFromObject(
             context.object,
@@ -192,30 +192,30 @@ class OperatorBlosmExtentFromActive(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class OperatorBlosmLevelsAdd(bpy.types.Operator):
-    bl_idname = "blender_osm.default_levels_add"
+class BLOSM_OT_LevelsAdd(bpy.types.Operator):
+    bl_idname = "blosm.default_levels_add"
     bl_label = "+"
     bl_description = "Add an entry for the default number of levels. " +\
         "Enter both the number of levels and its relative weight between 1 and 100"
     bl_options = {'INTERNAL'}
     
     def invoke(self, context, event):
-        context.scene.blender_osm.defaultLevels.add()
+        context.scene.blosm.defaultLevels.add()
         return {'FINISHED'}
 
 
-class OperatorBlosmLevelsDelete(bpy.types.Operator):
-    bl_idname = "blender_osm.default_levels_delete"
+class BLOSM_OT_LevelsDelete(bpy.types.Operator):
+    bl_idname = "blosm.default_levels_delete"
     bl_label = "-"
     bl_description = "Delete the selected entry for the default number of levels"
     bl_options = {'INTERNAL'}
     
     @classmethod
     def poll(cls, context):
-        return len(context.scene.blender_osm.defaultLevels) > 1
+        return len(context.scene.blosm.defaultLevels) > 1
     
     def invoke(self, context, event):
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         defaultLevels = addon.defaultLevels
         defaultLevels.remove(addon.defaultLevelsIndex)
         if addon.defaultLevelsIndex >= len(defaultLevels):
@@ -223,7 +223,7 @@ class OperatorBlosmLevelsDelete(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class PanelBlosmExtent(bpy.types.Panel):
+class BLOSM_PT_Extent(bpy.types.Panel):
     bl_label = "blender-osm"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI" if _isBlender280 else "TOOLS"
@@ -232,7 +232,7 @@ class PanelBlosmExtent(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         if (addon.dataType == "osm" and addon.osmSource == "server") or\
             (addon.dataType == "overlay" and not bpy.data.objects.get(addon.terrainObject)) or\
@@ -243,9 +243,9 @@ class PanelBlosmExtent(bpy.types.Panel):
             row.alignment = "CENTER"
             row.label(text="Extent:")
             row = box.row(align=True)
-            row.operator("blender_osm.select_extent")
-            row.operator("blender_osm.paste_extent")
-            row.operator("blender_osm.extent_from_active")
+            row.operator("blosm.select_extent")
+            row.operator("blosm.paste_extent")
+            row.operator("blosm.extent_from_active")
             
             split = box.split(factor=0.25) if _isBlender280 else box.split(percentage=0.25)
             split.label(text="")
@@ -260,7 +260,7 @@ class PanelBlosmExtent(bpy.types.Panel):
         box = layout.box()
         row = box.row(align=True)
         row.prop(addon, "dataType", text="")
-        row.operator("blender_osm.import_data", text="import")
+        row.operator("blosm.import_data", text="import")
 
 
 class PanelRealisticTools():#(bpy.types.Panel):
@@ -272,13 +272,13 @@ class PanelRealisticTools():#(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         return _has3dRealistic and addon.dataType == "osm"\
             and addon.mode == "3Drealistic"
     
     def draw(self, context):
         layout = self.layout
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
 
         layout.prop(addon, "treeDensity")
         
@@ -291,7 +291,7 @@ class PanelRealisticTools():#(bpy.types.Panel):
         layout.operator("blosm.make_polygon")
 
 
-class PanelBlosmSettings(bpy.types.Panel):
+class BLOSM_PT_Settings(bpy.types.Panel):
     bl_label = "Settings"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI" if _isBlender280 else "TOOLS"
@@ -299,7 +299,7 @@ class PanelBlosmSettings(bpy.types.Panel):
     bl_category = "osm"
     
     def draw(self, context):
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         dataType = addon.dataType
         if dataType == "osm":
@@ -315,7 +315,7 @@ class PanelBlosmSettings(bpy.types.Panel):
     
     def drawOsm(self, context):
         layout = self.layout
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         mode3dRealistic = _has3dRealistic and addon.mode == "3Drealistic"
         isOsm = addon.dataType == "osm"
         isGeoJson = addon.dataType == "geojson"
@@ -408,8 +408,8 @@ class PanelBlosmSettings(bpy.types.Panel):
         column = box.column()
         split = column.split(factor=0.67, align=True) if _isBlender280 else column.split(percentage=0.67, align=True)
         split.label(text="Default number of levels:")
-        split.operator("blender_osm.default_levels_add")
-        split.operator("blender_osm.default_levels_delete")
+        split.operator("blosm.default_levels_add")
+        split.operator("blosm.default_levels_delete")
         
         column.template_list(
             "BLOSM_UL_DefaultLevels", "",
@@ -418,7 +418,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         )
     
     def drawTerrain(self, context):
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         self.layout.box().prop(addon, "ignoreGeoreferencing")
         
@@ -436,7 +436,7 @@ class PanelBlosmSettings(bpy.types.Panel):
     
     def drawOverlay(self, context):
         layout = self.layout
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         layout.box().prop_search(addon, "terrainObject", context.scene, "objects")
         
@@ -459,7 +459,7 @@ class PanelBlosmSettings(bpy.types.Panel):
     
     def drawGpx(self, context):
         layout = self.layout
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         layout.box().prop(addon, "gpxFilepath", text="File")
         
@@ -470,7 +470,7 @@ class PanelBlosmSettings(bpy.types.Panel):
         layout.box().prop(addon, "ignoreGeoreferencing")
 
 
-class PanelBlosmBpyProj(bpy.types.Panel):
+class BLOSM_PT_BpyProj(bpy.types.Panel):
     bl_label = "Projection"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI" if _isBlender280 else "TOOLS"
@@ -905,7 +905,7 @@ def register():
     for c in _classes:
         bpy.utils.register_class(c)
     # a group for all GUI attributes related to blender-osm
-    bpy.types.Scene.blender_osm = bpy.props.PointerProperty(type=BlenderOsmProperties)
+    bpy.types.Scene.blosm = bpy.props.PointerProperty(type=BlenderOsmProperties)
     if _isBlender280:
         bpy.app.timers.register(_onRegister280, first_interval=2)
     else:
@@ -917,5 +917,5 @@ def register():
 def unregister():
     for c in _classes:
         bpy.utils.unregister_class(c)
-    del bpy.types.Scene.blender_osm
+    del bpy.types.Scene.blosm
     bpy.app.handlers.load_post.remove(_onFileLoaded)

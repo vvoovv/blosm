@@ -139,7 +139,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
 app.app.addonName = BlenderOsmPreferences.bl_idname
 
 
-class OperatorGetMapboxToken(bpy.types.Operator):
+class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
     bl_idname = "blosm.get_mapbox_token"
     bl_label = ""
     bl_description = "Get Mapbox access token"
@@ -152,8 +152,8 @@ class OperatorGetMapboxToken(bpy.types.Operator):
         webbrowser.open_new_tab(self.url)
         return {'FINISHED'}
 
-
-class OperatorLoadExtensions(bpy.types.Operator):
+"""
+class BLOSM_OT_LoadExtensions(bpy.types.Operator):
     bl_idname = "blosm.load_extensions"
     bl_label = ""
     bl_description = "Scan Blender addons, find extensions for blender-osm and load them"
@@ -166,18 +166,19 @@ class OperatorLoadExtensions(bpy.types.Operator):
             ("Loaded 1 extension" if numExtensions==1 else "Loaded %s extensions" % numExtensions)
         )
         return {'FINISHED'}
+"""
 
 
-class OperatorImportData(bpy.types.Operator):
+class BLOSM_OT_ImportData(bpy.types.Operator):
     """Import data: OpenStreetMap or terrain"""
-    bl_idname = "blender_osm.import_data"  # important since its how bpy.ops.blender_osm.import_data is constructed
+    bl_idname = "blosm.import_data"  # important since its how bpy.ops.blosm.import_data is constructed
     bl_label = "blender-osm"
     bl_description = "Import data of the selected type (OpenStreetMap or terrain)"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         a = app.app
-        dataType = context.scene.blender_osm.dataType
+        dataType = context.scene.blosm.dataType
         
         a.projection = None
         a.setAttributes(context)
@@ -197,7 +198,7 @@ class OperatorImportData(bpy.types.Operator):
     
     def importOsm(self, context):
         a = app.app
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         try:
             a.initOsm(self, context)
@@ -356,7 +357,7 @@ class OperatorImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
-        terrainObject = context.scene.objects.get(context.scene.blender_osm.terrainObject)
+        terrainObject = context.scene.objects.get(context.scene.blosm.terrainObject)
         
         minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObject, context)\
             if terrainObject else\
@@ -364,7 +365,7 @@ class OperatorImportData(bpy.types.Operator):
         
         a.overlay.prepareImport(minLon, minLat, maxLon, maxLat)
         
-        bpy.ops.blender_osm.control_overlay()
+        bpy.ops.blosm.control_overlay()
         
         # set the custom parameters <lat> and <lon> to the active scene
         if setLatLon:
@@ -417,7 +418,7 @@ class OperatorImportData(bpy.types.Operator):
         from parse.geojson import GeoJson
         
         a = app.app
-        addon = context.scene.blender_osm
+        addon = context.scene.blosm
         
         try:
             a.initGeoJson(self, context)
@@ -508,8 +509,8 @@ class OperatorImportData(bpy.types.Operator):
                 scene.objects.active.select = False
 
 
-class OperatorControlOverlay(bpy.types.Operator):
-    bl_idname = "blender_osm.control_overlay"
+class BLOSM_OT_ControlOverlay(bpy.types.Operator):
+    bl_idname = "blosm.control_overlay"
     bl_label = ""
     bl_description = "Control overlay import and display progress in the 3D View"
     bl_options = {'INTERNAL'}

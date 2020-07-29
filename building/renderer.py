@@ -74,7 +74,7 @@ class BuildingRenderer(Renderer3d):
         self.randomLevelHeight = RandomNormal(app.levelHeight)
         
         # initializing the stuff dealing with the default number of levels
-        defaultLevels = bpy.context.scene.blender_osm.defaultLevels
+        defaultLevels = bpy.context.scene.blosm.defaultLevels
         if not defaultLevels:
             from gui import addDefaultLevels
             addDefaultLevels()
