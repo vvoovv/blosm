@@ -585,10 +585,10 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
 
 _classes = (
     BlenderOsmPreferences,
-    OperatorGetMapboxToken,
-    OperatorLoadExtensions,
-    OperatorImportData,
-    OperatorControlOverlay
+    BLOSM_OT_GetMapboxToken,
+    #BLOSM_OT_LoadExtensions,
+    BLOSM_OT_ImportData,
+    BLOSM_OT_ControlOverlay
 )
 
 def register():

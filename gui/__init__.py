@@ -890,14 +890,14 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
 _classes = (
     BLOSM_UL_DefaultLevels,
     BlosmDefaultLevelsEntry,
-    OperatorBlosmSelectExtent,
-    OperatorBlosmPasteExtent,
-    OperatorBlosmExtentFromActive,
-    OperatorBlosmLevelsAdd,
-    OperatorBlosmLevelsDelete,
-    PanelBlosmExtent,
-    PanelBlosmSettings,
-    PanelBlosmBpyProj,
+    BLOSM_OT_SelectExtent,
+    BLOSM_OT_PasteExtent,
+    BLOSM_OT_ExtentFromActive,
+    BLOSM_OT_LevelsAdd,
+    BLOSM_OT_LevelsDelete,
+    BLOSM_PT_Extent,
+    BLOSM_PT_Settings,
+    BLOSM_PT_BpyProj,
     BlenderOsmProperties
 )
 

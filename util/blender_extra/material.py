@@ -512,9 +512,9 @@ class BLOSM_PT_MaterialCreate(bpy.types.Panel):
         
 
 _classes = (
-    OperatorCreateMaterials,
-    OperatorDeleteMaterials,
-    PanelMaterialCreate
+    BLOSM_OT_CreateMaterials,
+    BLOSM_OT_DeleteMaterials,
+    BLOSM_PT_MaterialCreate
 )
 
 def register():
