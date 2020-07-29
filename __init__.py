@@ -74,25 +74,25 @@ _isBlender280 = bpy.app.version[1] >= 80
 class BlenderOsmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
-    dataDir = bpy.props.StringProperty(
+    dataDir: bpy.props.StringProperty(
         name = '',
         subtype = 'DIR_PATH',
         description = "Directory to store downloaded OpenStreetMap and terrain files"
     )
     
-    assetsDir = bpy.props.StringProperty(
+    assetsDir: bpy.props.StringProperty(
         name = '',
         subtype = 'DIR_PATH',
         description = "Directory with assets (building_materials.blend, vegetation.blend). "+
             "It can be also set in the addon GUI"
     )
     
-    mapboxAccessToken = bpy.props.StringProperty(
+    mapboxAccessToken: bpy.props.StringProperty(
         name = "Mapbox access token",
         description = "A string token to access overlays from Mapbox company"
     )
     
-    osmServer = bpy.props.EnumProperty(
+    osmServer: bpy.props.EnumProperty(
         name = "OSM data server",
         items = (
             ("overpass-api.de", "overpass-api.de: 8 cores, 128 GB RAM", "overpass-api.de: 8 cores, 96 GB RAM"),
@@ -103,7 +103,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         default = "overpass-api.de"
     )
     
-    enableExperimentalFeatures = bpy.props.BoolProperty(
+    enableExperimentalFeatures: bpy.props.BoolProperty(
         name = "Enable export (experimental)",
         description = "Enable export to the popular 3D formats. Experimental feature! Use it with caution!",
         default = False

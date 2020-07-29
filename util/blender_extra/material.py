@@ -331,9 +331,9 @@ class OperatorCreateMaterials(bpy.types.Operator):
     bl_description = "Create Blender materials for the chosen material type"
     bl_options = {"REGISTER", "UNDO"}
     
-    directory = bpy.props.StringProperty(subtype='DIR_PATH')
+    directory: bpy.props.StringProperty(subtype='DIR_PATH')
     
-    files = bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement)
     
     def invoke(self, context, event):
         if not bpy.data.is_saved:

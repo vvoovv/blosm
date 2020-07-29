@@ -105,14 +105,14 @@ class BLOSM_UL_DefaultLevels(bpy.types.UIList):
 
 
 class BlosmDefaultLevelsEntry(bpy.types.PropertyGroup):
-    levels = bpy.props.IntProperty(
+    levels: bpy.props.IntProperty(
         subtype='UNSIGNED',
         min = 1,
         max = 50,
         default = 5,
         description="Default number of levels"
     )
-    weight = bpy.props.IntProperty(
+    weight: bpy.props.IntProperty(
         subtype='UNSIGNED',
         min = 1,
         max = 100,
@@ -488,12 +488,12 @@ class PanelBlosmBpyProj(bpy.types.Panel):
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
     
-    terrainObject = bpy.props.StringProperty(
+    terrainObject: bpy.props.StringProperty(
         name = "Terrain",
         description = "Blender object for the terrain"
     )
     
-    osmSource = bpy.props.EnumProperty(
+    osmSource: bpy.props.EnumProperty(
         name = "Import OpenStreetMap from",
         items = (
             ("server", "server", "remote server"),
@@ -503,20 +503,20 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "server"
     )
     
-    osmFilepath = bpy.props.StringProperty(
+    osmFilepath: bpy.props.StringProperty(
         name = "OpenStreetMap file",
         subtype = 'FILE_PATH',
         description = "Path to an OpenStreetMap file for import"
     )
     
-    dataType = bpy.props.EnumProperty(
+    dataType: bpy.props.EnumProperty(
         name = "Data",
         items = getDataTypes(),
         description = "Data type for import",
         default = "osm"
     )
     
-    mode = bpy.props.EnumProperty(
+    mode: bpy.props.EnumProperty(
         name = "Mode: 3D realistic, 3D simple or 2D"\
             if _has3dRealistic else\
             "Mode: 3D or 2D",
@@ -534,7 +534,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "3Drealistic" if _has3dRealistic else "3Dsimple"
     )
     
-    importForExport = bpy.props.BoolProperty(
+    importForExport: bpy.props.BoolProperty(
         name = "Import for export",
         description = "Import OpenStreetMap buildings ready for export to the popular 3D formats",
         default = False
@@ -542,7 +542,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     
     # extent bounds: minLat, maxLat, minLon, maxLon
     
-    minLat = bpy.props.FloatProperty(
+    minLat: bpy.props.FloatProperty(
         name="min lat",
         description="Minimum latitude of the imported extent",
         precision = 4,
@@ -551,7 +551,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default=55.7457 if _has3dRealistic else 55.748
     )
 
-    maxLat = bpy.props.FloatProperty(
+    maxLat: bpy.props.FloatProperty(
         name="max lat",
         description="Maximum latitude of the imported extent",
         precision = 4,
@@ -560,7 +560,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default=55.7527 if _has3dRealistic else 55.756
     )
 
-    minLon = bpy.props.FloatProperty(
+    minLon: bpy.props.FloatProperty(
         name="min lon",
         description="Minimum longitude of the imported extent",
         precision = 4,
@@ -569,7 +569,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default= 37.5321 if _has3dRealistic else 37.6117
     )
 
-    maxLon = bpy.props.FloatProperty(
+    maxLon: bpy.props.FloatProperty(
         name="max lon",
         description="Maximum longitude of the imported extent",
         precision = 4,
@@ -578,81 +578,81 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default= 37.5447 if _has3dRealistic else 37.624
     )
     
-    coordinatesAsFilter = bpy.props.BoolProperty(
+    coordinatesAsFilter: bpy.props.BoolProperty(
         name = "Use coordinates as filter",
         description = "Use coordinates as a filter for the import from the file",
         default = False
     )
     
-    buildings = bpy.props.BoolProperty(
+    buildings: bpy.props.BoolProperty(
         name = "Import buildings",
         description = "Import building outlines",
         default = True
     )
     
-    water = bpy.props.BoolProperty(
+    water: bpy.props.BoolProperty(
         name = "Import water objects",
         description = "Import water objects (rivers and lakes)",
         default = True
     )
     
-    forests = bpy.props.BoolProperty(
+    forests: bpy.props.BoolProperty(
         name = "Import forests",
         description = "Import forests and woods",
         default = not _has3dRealistic
     )
     
-    vegetation = bpy.props.BoolProperty(
+    vegetation: bpy.props.BoolProperty(
         name = "Import other vegetation",
         description = "Import other vegetation (grass, meadow, scrub)",
         default = True
     )
     
-    highways = bpy.props.BoolProperty(
+    highways: bpy.props.BoolProperty(
         name = "Import roads and paths",
         description = "Import roads and paths",
         default = True
     )
     
-    railways = bpy.props.BoolProperty(
+    railways: bpy.props.BoolProperty(
         name = "Import railways",
         description = "Import railways",
         default = False
     )
     
-    defaultRoofShape = bpy.props.EnumProperty(
+    defaultRoofShape: bpy.props.EnumProperty(
         items = (("flat", "flat", "flat shape"), ("gabled", "gabled", "gabled shape")),
         description = "Roof shape for a building if the roof shape is not set in OpenStreetMap",
         default = "flat"
     )
     
-    singleObject = bpy.props.BoolProperty(
+    singleObject: bpy.props.BoolProperty(
         name = "Import as a single object",
         description = "Import OSM objects as a single Blender mesh objects instead of separate ones",
         default = True
     )
 
-    ignoreGeoreferencing = bpy.props.BoolProperty(
+    ignoreGeoreferencing: bpy.props.BoolProperty(
         name = "Ignore existing georeferencing",
         description = "Ignore existing georeferencing and make a new one",
         default = False
     )
     
-    levelHeight = bpy.props.FloatProperty(
+    levelHeight: bpy.props.FloatProperty(
         name = "Level height",
         description = "Average height of a level in meters to use for OSM tags building:levels and building:min_level",
         default = 3.
     )
     
-    defaultLevels = bpy.props.CollectionProperty(type = BlosmDefaultLevelsEntry)
+    defaultLevels: bpy.props.CollectionProperty(type = BlosmDefaultLevelsEntry)
     
-    defaultLevelsIndex = bpy.props.IntProperty(
+    defaultLevelsIndex: bpy.props.IntProperty(
         subtype='UNSIGNED',
         default = 0,
         description = "Index of the active entry for the default number of levels"
     )
     
-    straightAngleThreshold = bpy.props.FloatProperty(
+    straightAngleThreshold: bpy.props.FloatProperty(
         name = "Straight angle threshold",
         description = "Threshold for an angle of the building outline: when consider it as straight one. "+
             "It may be important for calculation of the longest side of the building outline for a gabled roof.",
@@ -662,7 +662,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         step = 10 # i.e. step/100 == 0.1
     )
     
-    loadMissingMembers = bpy.props.BoolProperty(
+    loadMissingMembers: bpy.props.BoolProperty(
         name = "Load missing members of relations",
         description = "Relation members aren't contained in the OSM file " +
             "if they are located outside of the OSM file extent. " +
@@ -671,7 +671,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = True
     )
     
-    subdivide = bpy.props.BoolProperty(
+    subdivide: bpy.props.BoolProperty(
         name = "Subdivide curves, flat layers",
         description = "Subdivide Blender curves representing roads and paths and " +
         "polygons representing flat layers (water, forest, vegetation) " +
@@ -679,7 +679,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = True
     )
     
-    subdivisionSize = bpy.props.FloatProperty(
+    subdivisionSize: bpy.props.FloatProperty(
         name = "Subdivision size",
         description = "Subdivision size in meters",
         default = 10.,
@@ -690,14 +690,14 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     # Terrain settings
     # SRTM3 data are sampled at either 3 arc-second and contain 1201 lines and 1201 samples
     # or 1 arc-second and contain 3601 lines and 3601 samples
-    terrainResolution = bpy.props.EnumProperty(
+    terrainResolution: bpy.props.EnumProperty(
         name="Resolution",
         items=(("1", "1 arc-second", "1 arc-second"), ("3", "3 arc-second", "3 arc-second")),
         description="Spation resolution",
         default="1"
     )
     
-    terrainPrimitiveType = bpy.props.EnumProperty(
+    terrainPrimitiveType: bpy.props.EnumProperty(
         name="Mesh primitive type: quad or triangle",
         items=(("quad","quad","quad"),("triangle","triangle","triangle")),
         description="Primitive type used for the terrain mesh: quad or triangle",
@@ -706,7 +706,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
 
     # Number of vertex reduction
     # The Reduction Ratio is a divider of 1200
-    terrainReductionRatio = bpy.props.EnumProperty(
+    terrainReductionRatio: bpy.props.EnumProperty(
         name="Ratio",
         items=(
             ("1","100%","No reduction"),
@@ -728,7 +728,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     #
     # Overlay settings
     #
-    overlayType = bpy.props.EnumProperty(
+    overlayType: bpy.props.EnumProperty(
         name = "Overlay",
         items = (
             #("bing-aerial", "Bing Aerial", "Bing Aerial"),
@@ -741,21 +741,21 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "mapbox-satellite"
     )
     
-    overlayUrl = bpy.props.StringProperty(
+    overlayUrl: bpy.props.StringProperty(
         name = '',
         description = "URL for the custom image overlay. Use {z}/{x}/{y} in the URL. "+
             "See http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for details about "+
             "the URL format."
     )
     
-    setOverlayMaterial = bpy.props.BoolProperty(
+    setOverlayMaterial: bpy.props.BoolProperty(
         name = "Set default material",
         description = "Set the default Cycles material and " +
             "use the image overlay in the \"Image Texture\" node",
         default = True
     )
     
-    maxNumTiles = bpy.props.IntProperty(
+    maxNumTiles: bpy.props.IntProperty(
         name = "Maximum number of overlay tiles",
         subtype = 'UNSIGNED',
         min = 128,
@@ -767,19 +767,19 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     # Settings for the GPX track import
     ####################################
     
-    gpxFilepath = bpy.props.StringProperty(
+    gpxFilepath: bpy.props.StringProperty(
         name = "GPX file",
         subtype = 'FILE_PATH',
         description = "Path to a GPX file for import"
     )
     
-    gpxProjectOnTerrain = bpy.props.BoolProperty(
+    gpxProjectOnTerrain: bpy.props.BoolProperty(
         name="Project GPX-track on terrain",
         description="Project GPX-track on the terrain if checked or use elevations from GPX-track for z-coordinate otherwise",
         default=True
     )
     
-    gpxImportType = bpy.props.EnumProperty(
+    gpxImportType: bpy.props.EnumProperty(
         name = "Import as curve or mesh",
         items = (
             ("curve", "curve", "Blender curve"),
@@ -792,20 +792,20 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     ####################################
     # Settings for the realistic 3D mode
     ####################################
-    setupScript = bpy.props.StringProperty(
+    setupScript: bpy.props.StringProperty(
         name = "Setup script",
         subtype = 'FILE_PATH',
         description = "Path to a setup script. Leave blank for default."
     )
     
-    assetsDir = bpy.props.StringProperty(
+    assetsDir: bpy.props.StringProperty(
         name = "Directory with assets",
         subtype = 'DIR_PATH',
         description = "Directory with assets (building_materials.blend, vegetation.blend). "+
             "Overrides the one from the addon settings"
     )
     
-    treeDensity = bpy.props.IntProperty(
+    treeDensity: bpy.props.IntProperty(
         name = "Trees per hectare",
         description = "Number of trees per hectare (10,000 square meters, " +
             "e.g. a plot 100m x 100m) for forests",
@@ -814,7 +814,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = 500
     )
     
-    makeRealisticLayer = bpy.props.EnumProperty(
+    makeRealisticLayer: bpy.props.EnumProperty(
         name = "\"Make realistic\" layer",
         items = (
             ("water", "water", "water"),
@@ -825,7 +825,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "water"
     )
     
-    litWindows = bpy.props.IntProperty(
+    litWindows: bpy.props.IntProperty(
         name = "Percentage of lit windows",
         description = "Percentage of lit windows for a building",
         min = 0,
@@ -835,7 +835,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         update = FacadeWithColor.updateLitWindows if _has3dRealistic else None
     )
     
-    assetPackageDir = bpy.props.StringProperty(
+    assetPackageDir: bpy.props.StringProperty(
         name = "Asset package folder",
         subtype = 'DIR_PATH',
         description = "A path to the asset package",
@@ -846,7 +846,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     # A group of properties for Blender material utilities
     #
     
-    materialType = bpy.props.EnumProperty(
+    materialType: bpy.props.EnumProperty(
         name = "Material type",
         items = (
             # <fo> stands for 'facade with overlays'
@@ -864,24 +864,24 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = "fo"
     )
     
-    blenderMaterials = bpy.props.EnumProperty(
+    blenderMaterials: bpy.props.EnumProperty(
         name = "Blender materials",
         items = getBlenderMaterials,
         description = "A group of Blender materials to create"
     )
     
-    wallTexture = bpy.props.StringProperty(
+    wallTexture: bpy.props.StringProperty(
         name = "Wall texture",
         subtype = 'FILE_PATH',
         description = "Path to a wall texture, that must be listed in the Blender text data-block \"wall_textures\""
     )
     
-    listOfTextures = bpy.props.StringProperty(
+    listOfTextures: bpy.props.StringProperty(
         name = "List of textures",
         description = "A list of textures to download from textures.com"
     )
     
-    materialScript = bpy.props.StringProperty(
+    materialScript: bpy.props.StringProperty(
         name = "Script",
         description = "A Python script to generate materials with selected textures"
     )
