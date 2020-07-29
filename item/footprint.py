@@ -120,7 +120,7 @@ class Footprint(Item):
             self.buildingStyle.styleBlocks.get(_facadeClassName)
         )
     
-    def processFacades(self, data):
+    def classifyFacades(self, data):
         # Definitions for the terms used below:
         # Original polygon: <self.polygon> before <self.removeStraightAngle(..)>
         

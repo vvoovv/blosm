@@ -248,8 +248,9 @@ class App:
         else:
             self.enableExperimentalFeatures = False
         
-        # we ignore building entrances if a file path to the PML style file isn't given
-        self.buildingEntranceAttr = None
+        # a data attribute to mark a building entrance
+        self.buildingEntranceAttr = "entrance"
+        
         if self.enableExperimentalFeatures and self.mode is App.realistic:
             assetPackageDir = self.assetPackageDir
             if assetPackageDir:

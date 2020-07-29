@@ -74,9 +74,12 @@ class Building:
         # by its outline
         self.footprint = None
         self._cache.clear()
-        self.metaStyleBlock = None
         self.assetInfoBldgIndex = None
         self._area = 0.
+        
+        # attributes from @meta of the style block
+        self.buildingUse = None
+        self.classifyFacades = 1
     
     def clone(self):
         building = Building()
@@ -100,8 +103,8 @@ class Building:
     
     def setStyleMeta(self, style):
         if style.meta:
-            self.metaStyleBlock = style.meta
-        self.use = style.meta.attrs.get("buildingUse") if style.meta else None
+            for attr in style.meta.attrs:
+                setattr(self, attr, style.meta.attrs[attr])
     
     def area(self):
         if not self._area:

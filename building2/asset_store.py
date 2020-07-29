@@ -194,7 +194,7 @@ class AssetStore:
         )
     
     def getAssetInfoByClass(self, building, buildingPart, assetType, bldgClass, itemClass):        
-        _use = building.use
+        _use = building.buildingUse
         if not _use:
             return None
         
@@ -227,7 +227,7 @@ class AssetStore:
         return byClass[itemClass].getEntry() if itemClass in byClass else byType[assetType]["other"].getEntry()
     
     def getAssetInfo(self, building, buildingPart, assetType):
-        _use = building.use
+        _use = building.buildingUse
         if not _use:
             return None
         
@@ -255,18 +255,18 @@ class AssetStore:
         return byType[assetType]["other"].getEntry()
     
     def getCladTexInfoByClass(self, building, claddingMaterial, assetType, claddingClass):        
-        return _getCladTexInfoByClass(self.byUse[building.use], claddingMaterial, assetType, claddingClass)\
+        return _getCladTexInfoByClass(self.byUse[building.buildingUse], claddingMaterial, assetType, claddingClass)\
             or (
                 _getCladTexInfoByClass(self.byUse[None], claddingMaterial, assetType, claddingClass)
-                if building.use else None
+                if building.buildingUse else None
             )
     
     def getCladTexInfoByBldgIndexAndClass(self, bldgIndex, claddingMaterial, assetType, claddingClass):
         return _getCladTexInfoByClass(self.byBuilding[bldgIndex], claddingMaterial, assetType, claddingClass)
     
     def getCladTexInfo(self, building, claddingMaterial, assetType):
-        return _getCladTexInfo(self.byUse[building.use], claddingMaterial, assetType)\
-            or (_getCladTexInfo(self.byUse[None], claddingMaterial, assetType) if building.use else None)
+        return _getCladTexInfo(self.byUse[building.buildingUse], claddingMaterial, assetType)\
+            or (_getCladTexInfo(self.byUse[None], claddingMaterial, assetType) if building.buildingUse else None)
     
     def getCladTexInfoByBldgIndex(self, bldgIndex, claddingMaterial, assetType):
         return _getCladTexInfo(self.byBuilding[bldgIndex], claddingMaterial, assetType)
