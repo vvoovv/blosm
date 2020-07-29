@@ -127,7 +127,7 @@ class OperatorBlosmSelectExtent(bpy.types.Operator):
     bl_description = "Select extent for your area of interest on a geographical map"
     bl_options = {'INTERNAL'}
     
-    url = "http://prokitektura.com/blender-osm/extent/"
+    url = "http://prochitecture.com/blender-osm/extent/"
     
     def invoke(self, context, event):
         bv = bpy.app.version

@@ -134,7 +134,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         #layout.operator("blosm.load_extensions", text="Load extensions")
         layout.prop(self, "osmServer")
         
-        layout.box().prop(self, "enableExperimentalFeatures", text="Enable experimental features")
+        layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
 app.app.addonName = BlenderOsmPreferences.bl_idname
 
