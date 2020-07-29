@@ -28,7 +28,7 @@ class StyleStore:
             self.loadFromFile(app.pmlFilepath)
         else:
             self.loadFromDirectory(
-                os.path.join(app.assetsDir, "style", "building")
+                os.path.join(app.assetsPackageDir, "style", "building")
             )
     
     def addStyles(self, styles):

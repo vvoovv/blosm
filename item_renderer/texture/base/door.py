@@ -65,7 +65,7 @@ class Door(DoorBase, Container):
                 # set it just in case
                 setImage(
                     claddingTextureInfo["name"],
-                    os.path.join(self.r.assetsDir, claddingTextureInfo["path"]),
+                    os.path.join(self.r.assetPackageDir, claddingTextureInfo["path"]),
                     nodes,
                     "Cladding"
                 )

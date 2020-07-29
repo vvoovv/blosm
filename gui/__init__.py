@@ -354,20 +354,12 @@ class PanelBlosmSettings(bpy.types.Panel):
             box.label(text = "[Advanced]:")
             
             split = box.split(factor=0.5)
-            split.label(text="PML style:")
-            split.prop(addon, "pmlFilepath", text="")
-            
-            split = box.split(factor=0.5)
-            split.label(text="Asset info:")
-            split.prop(addon, "assetInfoFilepath", text="")
+            split.label(text="Asset package:")
+            split.prop(addon, "assetPackageDir", text="")
             
             split = box.split(factor=0.5)
             split.label(text="Setup script:")
             split.prop(addon, "setupScript", text="")
-            
-            split = box.split(factor=0.5)
-            split.label(text="Asset folder:")
-            split.prop(addon, "assetsDir", text="")
         else:
             if mode3dRealistic:
                 box = layout.box()
@@ -848,16 +840,11 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         update = FacadeWithColor.updateLitWindows if _has3dRealistic else None
     )
     
-    pmlFilepath = bpy.props.StringProperty(
-        name = "PML style",
-        subtype = 'FILE_PATH',
-        description = "Path to a PML style file"
-    )
-    
-    assetInfoFilepath = bpy.props.StringProperty(
-        name = "Asset info",
-        subtype = 'FILE_PATH',
-        description = "Path to a file with asset information"
+    assetPackageDir = bpy.props.StringProperty(
+        name = "Asset package folder",
+        subtype = 'DIR_PATH',
+        description = "A path to the asset package",
+        default = ""
     )
     
     #    

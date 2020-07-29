@@ -251,22 +251,28 @@ class App:
         # we ignore building entrances if a file path to the PML style file isn't given
         self.buildingEntranceAttr = None
         if self.enableExperimentalFeatures and self.mode is App.realistic:
-            pmlFilepath = self.pmlFilepath
-            if pmlFilepath:
-                pmlFilepath = os.path.realpath(bpy.path.abspath(pmlFilepath))
-                if not os.path.isfile(pmlFilepath):
-                    raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
-                self.pmlFilepath = pmlFilepath
-                # We set <self.buildingEntranceAttr> only if a custom PML file is given. That
-                # must be changed later.
-                self.buildingEntranceAttr = "entrance"
+            assetPackageDir = self.assetPackageDir
+            if assetPackageDir:
+                assetPackageDir = os.path.realpath(bpy.path.abspath(assetPackageDir))
+            else:
+                assetPackageDir = os.path.join(self.assetsDir, "default")
+            if not os.path.isdir(assetPackageDir):
+                raise Exception("The directory for the asset package %s doesn't exist" % assetPackageDir)
+            self.assetPackageDir = assetPackageDir
             
-            assetInfoFilepath = self.assetInfoFilepath
-            if assetInfoFilepath:
-                assetInfoFilepath = os.path.realpath(bpy.path.abspath(assetInfoFilepath))
-                if not os.path.isfile(assetInfoFilepath):
-                    raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
-                self.assetInfoFilepath = assetInfoFilepath
+            pmlFilepath = os.path.join(assetPackageDir, "style/building/building.pml")
+            if not os.path.isfile(pmlFilepath):
+                raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
+            self.pmlFilepath = pmlFilepath
+            
+            assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/asset_info.json")
+            if self.enableExperimentalFeatures and self.importForExport:
+                _assetInfoFilepath = "%s_export.json" % assetInfoFilepath[:-5]
+                if os.path.isfile(_assetInfoFilepath):
+                    assetInfoFilepath = _assetInfoFilepath
+            if not os.path.isfile(assetInfoFilepath):
+                raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
+            self.assetInfoFilepath = assetInfoFilepath
     
     def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
         addon = context.scene.blender_osm

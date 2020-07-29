@@ -39,7 +39,7 @@ def _getCladTexInfo(obj, claddingMaterial, assetType):
 class AssetStore:
     
     def __init__(self, assetInfoFilepath):
-        self.baseDir = os.path.join(os.path.dirname(assetInfoFilepath), os.pardir)
+        self.baseDir = os.path.dirname(os.path.dirname(assetInfoFilepath))
         
         # For parts with class:
         #   * use -> part -> assetType -> byClass[class]
