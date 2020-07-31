@@ -51,7 +51,7 @@ _materialFamilyMS = (
 def createMaterialFromTemplate(materialTemplate, materialName):
     m = materialTemplate.copy()
     m.name = materialName
-    m.use_fake_user = True
+    #m.use_fake_user = True
     
     return m.node_tree.nodes
 
