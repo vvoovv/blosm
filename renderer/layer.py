@@ -21,7 +21,7 @@ import math
 import bpy, bmesh
 from mathutils import Vector
 from renderer import Renderer
-from util.blender import createCollection, createEmptyObject, getBmesh, setBmesh
+from util.blender import createCollection, createEmptyObject, getBmesh, setBmesh, addShrinkwrapModifier
 
 _isBlender280 = bpy.app.version[1] >= 80
 
@@ -139,16 +139,7 @@ class MeshLayer(Layer):
             self.slice(obj, terrain, app)
         if self.modifiers:
             self.addBoolenModifier(obj, terrain.envelope)
-            self.addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
-    
-    def addShrinkwrapModifier(self, obj, target, offset):
-        m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
-        m.wrap_method = "PROJECT"
-        m.use_positive_direction = False
-        m.use_negative_direction = True
-        m.use_project_z = True
-        m.target = target
-        m.offset = offset
+            addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
     
     def addBoolenModifier(self, obj, operand):
         m = obj.modifiers.new(name="Boolean", type='BOOLEAN')

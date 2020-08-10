@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import bpy
 from .layer import MeshLayer
-from util.blender import appendObjectsFromFile, createDiffuseMaterial, createCollection
+from util.blender import appendObjectsFromFile, createDiffuseMaterial, createCollection, addShrinkwrapModifier
 
 _isBlender280 = bpy.app.version[1] >= 80
 
@@ -85,4 +85,4 @@ class CurveLayer(MeshLayer):
         )
         
         if self.modifiers:
-            self.addShrinkwrapModifier(obj, self.app.terrain.terrain, self.swOffset)
+            addShrinkwrapModifier(obj, self.app.terrain.terrain, self.swOffset)

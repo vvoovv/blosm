@@ -100,7 +100,8 @@ def setup(app, data):
         
         br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
         
-        Building.actions = [ Terrain(app, data, br.itemStore, br.itemFactory) ]
+        if app.terrain:
+            Building.actions.append( Terrain(app, data, br.itemStore, br.itemFactory) )
         if not app.singleObject:
             Building.actions.append( Offset(app, data, br.itemStore, br.itemFactory) )
         

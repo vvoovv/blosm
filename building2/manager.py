@@ -1,5 +1,6 @@
 from building.manager import BuildingManager
 from building.layer import BuildingLayer
+from .renderer import Building
 
 
 class RealisticBuildingLayer(BuildingLayer):
@@ -49,7 +50,11 @@ class RealisticBuildingManager(BuildingManager):
     def __init__(self, osm, buildingParts, layerConstructor=None):
         super().__init__(osm, buildingParts)
         self.layerConstructor = layerConstructor if layerConstructor else RealisticBuildingLayer
-
+    
+    def process(self):
+        super().process()
+        for action in Building.actions:
+            action.preprocess(self.buildings)
 
 class RealisticBuildingManagerExport(RealisticBuildingManager):
 

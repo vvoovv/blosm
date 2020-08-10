@@ -6,11 +6,32 @@ from util import zAxis
 
 
 class Terrain(Action):
-
+    
+    def preprocess(self, buildingsP):
+        # <buildingsP> means "buildings from the parser"
+        self.app.terrain.initProjectionProxy(buildingsP, self.data)
+    
     def do(self, building, itemClass, style, globalRenderer):
-        if self.app.terrain:
-            self.projectSingleVertex(building)
-            #self.projectAllVertices(building)
+        #self.projectSingleVertex(building)
+        #self.projectAllVertices(building)
+        self.testProject(building)
+    
+    def testProject(self, building):
+        outline = building.outline
+        # take the first vertex of the outline as the offset
+        offsetZ = max(
+            (
+                self.app.terrain.project2(vert)\
+                for vert in\
+                (outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data))
+            ),
+            key = lambda vert: vert[2]
+        )
+        if offsetZ:
+            building.offset = offsetZ[2] * zAxis
+        else:
+            # the building is outside the terrain so skip the whole building
+            self.itemStore.skip = True
     
     def projectSingleVertex(self, building):
         outline = building.outline

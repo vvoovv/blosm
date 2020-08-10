@@ -267,3 +267,13 @@ def getModifier(obj, modifierType):
     else:
         m = None
     return m
+
+
+def addShrinkwrapModifier(obj, target, offset):
+    m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+    m.wrap_method = "PROJECT"
+    m.use_positive_direction = False
+    m.use_negative_direction = True
+    m.use_project_z = True
+    m.target = target
+    m.offset = offset

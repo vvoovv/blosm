@@ -206,6 +206,16 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
+        createFlatTerrain = a.mode is a.realistic and a.forests
+        forceExtentCalculation = createFlatTerrain and a.osmSource == "file"
+        
+        # check if have a terrain Blender object set
+        a.setTerrain(
+            context,
+            createFlatTerrain = createFlatTerrain,
+            createBvhTree = True
+        )
+        
         setupScript = addon.setupScript
         if setupScript:
             setup_function = self.loadSetupScript(setupScript)
@@ -238,9 +248,6 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         else:
             setLatLon = True
         
-        createFlatTerrain = a.mode is a.realistic and a.forests
-        forceExtentCalculation = createFlatTerrain and a.osmSource == "file"
-        
         osm.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)
         if a.loadMissingMembers and a.incompleteRelations:
             try:
@@ -255,13 +262,6 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             a.maxLat = osm.maxLat
             a.minLon = osm.minLon
             a.maxLon = osm.maxLon
-
-        # check if have a terrain Blender object set
-        a.setTerrain(
-            context,
-            createFlatTerrain = createFlatTerrain,
-            createBvhTree = True
-        )
         
         a.initLayers()
         
@@ -426,6 +426,16 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
+        createFlatTerrain = a.mode is a.realistic and a.forests
+        forceExtentCalculation = createFlatTerrain
+        
+        # check if have a terrain Blender object set
+        a.setTerrain(
+            context,
+            createFlatTerrain = createFlatTerrain,
+            createBvhTree = True
+        )
+        
         setupScript = addon.setupScript
         if setupScript:
             setup_function = self.loadSetupScript(setupScript)
@@ -454,9 +464,6 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         else:
             setLatLon = True
         
-        createFlatTerrain = a.mode is a.realistic and a.forests
-        forceExtentCalculation = createFlatTerrain
-        
         data.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)
         
         if forceExtentCalculation:
@@ -464,13 +471,6 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             a.maxLat = data.maxLat
             a.minLon = data.minLon
             a.maxLon = data.maxLon
-
-        # check if have a terrain Blender object set
-        a.setTerrain(
-            context,
-            createFlatTerrain = createFlatTerrain,
-            createBvhTree = True
-        )
         
         a.initLayers()
         

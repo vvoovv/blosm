@@ -22,7 +22,7 @@ import math
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from util import zAxis, zeroVector
-from util.blender import makeActive, createMeshObject, getBmesh, setBmesh, pointNormalUpward
+from util.blender import makeActive, createMeshObject, getBmesh, setBmesh, pointNormalUpward, addShrinkwrapModifier
 
 _isBlender280 = bpy.app.version[1] >= 80
 
@@ -103,6 +103,9 @@ class Terrain:
         # Cast a ray from the point with horizontal coords equal to <coords> and
         # z = <self.projectLocation> in the direction of <direction>
         return self.bvhTree.ray_cast((coords[0], coords[1], self.projectLocation), direction)[0]
+    
+    def project2(self, coords):
+        return self.projectionProxy.data.vertices[ self.projectedVertIndices[(coords[0], coords[1])] ].co
     
     def setOrigin(self, origin):
         terrain = self.terrain
@@ -196,6 +199,34 @@ class Terrain:
         else:
             envelope.select = False
             envelope.hide = True
+    
+    def initProjectionProxy(self, buildingsP, data):
+        # <buildingsP> means "buildings from the parser"
+        
+        from renderer import Renderer
+        
+        proxyObj = createMeshObject("_projection_proxy_")
+        proxyBm = getBmesh(proxyObj)
+        
+        self.projectedVertIndices = {}
+        
+        index = 0
+        for buildingP in buildingsP:
+            outline = buildingP.outline
+            for vert in (outline.getOuterData(data) if outline.t is Renderer.multipolygon else outline.getData(data)):
+                vert = (vert[0], vert[1])
+                if not vert in self.projectedVertIndices:
+                    self.projectedVertIndices[vert] = index
+                    index += 1
+                    proxyBm.verts.new( (vert[0], vert[1], self.projectLocation) )
+        
+        setBmesh(proxyObj, proxyBm)
+        addShrinkwrapModifier(proxyObj, self.terrain, 0.)
+        bpy.context.view_layer.objects.active = proxyObj
+        # apply the SHRINKWRAP modifier
+        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
+        
+        self.projectionProxy = proxyObj
     
     @staticmethod
     def createFlatTerrain(minLon, minLat, maxLon, maxLat, projection, context):

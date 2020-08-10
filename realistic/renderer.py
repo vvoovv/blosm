@@ -21,7 +21,8 @@ import os, math
 import bpy, bmesh
 from app import app
 from util.blender import makeActive, createMeshObject, getBmesh,\
-    loadParticlesFromFile, loadNodeGroupsFromFile, getMaterialIndexByName, getMaterialByName, getModifier
+    loadParticlesFromFile, loadNodeGroupsFromFile, getMaterialIndexByName, getMaterialByName, getModifier,\
+    addShrinkwrapModifier
 
 _isBlender280 = bpy.app.version[1] >= 80
   
@@ -168,7 +169,7 @@ class AreaRenderer:
             layer.surfaceArea = sum(face.calc_area() for face in bm.faces)
             bm.free()
         layer.slice(obj, terrain, app)
-        layer.addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
+        addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
         if _isBlender280:
             obj.select_set(False)
@@ -317,7 +318,7 @@ class VertexGroupBaker(AreaRenderer):
         objEnvelope.parent = obj.parent
         
         layer.slice(obj, terrain, app)
-        layer.addShrinkwrapModifier(obj, terrainObj, layer.swOffset)
+        addShrinkwrapModifier(obj, terrainObj, layer.swOffset)
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
         super().renderArea(layer, app)
         if _isBlender280:

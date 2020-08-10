@@ -51,6 +51,8 @@ class Building:
     A class representing the building for the renderer
     """
     
+    actions = []
+    
     def __init__(self):
         self.verts = []
         # counterparts for <self.verts> in the BMesh

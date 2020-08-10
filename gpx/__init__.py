@@ -1,6 +1,6 @@
 import os, sys
 import bpy, bmesh
-from util.blender import loadMaterialsFromFile
+from util.blender import loadMaterialsFromFile, addShrinkwrapModifier
 
 _isBlender280 = bpy.app.version[1] >= 80
 _curveBevelObjectName = "gpx_bevel"
@@ -121,7 +121,7 @@ class GpxRenderer:
         self.applyMaterial(obj)
         
         if terrain and gpxProjectOnTerrain:
-            self.addShrinkwrapModifier(obj, terrain.terrain, GpxRenderer.swOffset)
+            addShrinkwrapModifier(obj, terrain.terrain, GpxRenderer.swOffset)
         
         # cleanup
         self.curve = None
@@ -169,15 +169,6 @@ class GpxRenderer:
                 bpy.context.scene.objects.link(bevelObj)
         
         self.curve.bevel_object = bevelObj
-    
-    def addShrinkwrapModifier(self, obj, target, offset):
-        m = obj.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
-        m.wrap_method = "PROJECT"
-        m.use_positive_direction = False
-        m.use_negative_direction = True
-        m.use_project_z = True
-        m.target = target
-        m.offset = offset
     
     def applyMaterial(self, obj):
         material = bpy.data.materials.get(GpxRenderer.defaultMaterial)
