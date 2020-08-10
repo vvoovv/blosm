@@ -19,6 +19,9 @@ class ParserException(Exception):
         self.col = col
         self.msg = msg
 
+    def errParams(self):
+        return self.line, self.col, self.msg
+
     def __str__(self):
         return 'Error on line {line}, col {col}: {msg}'.format(
             line = self.line, col = self.col, msg = self.msg)

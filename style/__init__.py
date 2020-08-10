@@ -25,11 +25,7 @@ class StyleStore:
         if styles:
             self.addStyles(styles)
         elif app.pmlFilepath:
-            self.loadFromFile(app.pmlFilepath)
-        else:
-            self.loadFromDirectory(
-                os.path.join(app.assetsPackageDir, "style", "building")
-            )
+            self.loadFromFile(app.pmlFilepath, app.assetsDir)
     
     def addStyles(self, styles):
         for styleName in styles:
@@ -42,24 +38,14 @@ class StyleStore:
     def get(self, styleName):
         return self.styles[styleName]
     
-    def loadFromDirectory(self, directory):
-        if not os.path.isdir(directory):
-            raise Exception(
-                "The directory with PML files %s doesn't exist. " % directory
-            )
-        for file in os.listdir(directory):
-            file = os.path.join(directory, file)
-            if os.path.isfile(file) and file.lower().endswith(".pml"):
-                self.loadFromFile(file)
-    
     def loadFromFiles(self, files):
         for file in files:
             if os.path.isfile(file) and file.lower().endswith(".pml"):
                 self.loadFromFile(file)
     
-    def loadFromFile(self, file):
+    def loadFromFile(self, file, assetsDir):
         _locals = {}
-        exec(PML(file).getPythonCode(), None, _locals)
+        exec(PML(file, assetsDir).getPythonCode(), None, _locals)
         styles = _locals["styles"]
         if isinstance(styles, dict):
             self.addStyles(styles)

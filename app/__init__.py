@@ -261,7 +261,7 @@ class App:
                 raise Exception("The directory for the asset package %s doesn't exist" % assetPackageDir)
             self.assetPackageDir = assetPackageDir
             
-            pmlFilepath = os.path.join(assetPackageDir, "style/building/building.pml")
+            pmlFilepath = os.path.join(assetPackageDir, "style/building/main.pml")
             if not os.path.isfile(pmlFilepath):
                 raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
             self.pmlFilepath = pmlFilepath
