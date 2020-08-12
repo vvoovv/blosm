@@ -336,16 +336,15 @@ class FromBldgAttr(FromAttr):
         return item.building.attr(self.attr)
 
 
-class Conditional(_Value):
+class Conditional:
     """
     Return the supplied value if the condition is True or None
     """
     def __init__(self, condition, value):
-        super().__init__()
         self._value = value
         self.condition = condition
     
-    def _getValue(self, item):
+    def getValue(self, item):
         return self._value.getValue(item) if self.condition(item) else None
 
 
