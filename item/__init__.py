@@ -41,36 +41,20 @@ class Item:
         attrs = self.styleBlock.attrs
         if not attr in attrs:
             return
-        value, scope, isComplexValue = attrs.get(attr)
+        value, isComplexValue = attrs.get(attr)
         if isComplexValue:
-            styleBlockCache = self.getStyleBlockCache(scope)
-            if attr in styleBlockCache:
-                value = styleBlockCache[attr]
-            else:
-                value = value.value.getValue(self, scope)
-                if value is None:
-                    return
-                # keep the entry for <attr> in the cache
-                styleBlockCache[attr] = value
+            value = value.getValue(self)
         return value
 
     def getStyleBlockAttrDeep(self, attr):
-        # the values are seemingly cached per item rather than per building
-        styleBlockCache = self._styleBlockCache
-        if attr in styleBlockCache:
-            value = styleBlockCache[attr]
+        if self.styleBlock and attr in self.styleBlock.attrs:
+            value = self.getStyleBlockAttr(attr)
+        elif attr in self._styleBlockCache:
+            value = self._styleBlockCache[attr]
         else:
-            attrs = self.styleBlock.attrs if self.styleBlock else None
-            if attrs and attr in attrs:
-                value, scope, isComplexValue = attrs.get(attr)
-                if isComplexValue:
-                    value = value.value.getValue(self, scope)
-            else:
-                # try to get the attribute from <self.parent>
-                value = self.parent.getStyleBlockAttrDeep(attr) if self.parent else None
-            
-            # keep the entry for <attr> in the cache
-            styleBlockCache[attr] = value
+            # try to get the attribute from <self.parent>
+            value = self.parent.getStyleBlockAttrDeep(attr)
+            self._styleBlockCache[attr] = value
         return value
     
     def getStyleBlockCache(self, scope):

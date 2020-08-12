@@ -49,10 +49,11 @@ class Item:
             if isinstance(value, Scope):
                 scope = value.scope
                 value = value.value
-            else:
-                value, scope = value, perBuilding if attr in _perBuildingByDefault else perFootprint
+                value.scope = scope
             isComplexValue = isinstance(value, Value)
-            attrs[attr] = (value, scope, isComplexValue)
+            if isComplexValue and attr in _perBuildingByDefault:
+                value.scope = perBuilding
+            attrs[attr] = (value.value if isComplexValue else value, isComplexValue)
     
     def setParent(self, styleBlock):
         styleBlock.parent = self
