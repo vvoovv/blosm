@@ -214,18 +214,51 @@ class Value:
     
     def __init__(self, value):
         self.value = value
+        
+
+class _Value:
+    """
+    The base class for the classes below
+    """
+    
+    id = 0
+    
+    def __init__(self):
+        # <self.id> is used to store the value in a style block cache
+        self.id = _Value.getId()
+        # the scope is per item by default
+        self.scope = None
+    
+    @staticmethod
+    def getId():
+        _Value.id += 1
+        return _Value.id
+
+    def getValue(self, item):
+        if self.scope:
+            styleBlockCache = item.getStyleBlockCache(self.scope)
+            if self.id in styleBlockCache:
+                value = styleBlockCache[self.id]
+            else:
+                value = self._getValue(item)
+                # keep the value in the cache
+                styleBlockCache[self.id] = value
+        else:
+            value = self._getValue(item)
+        return value
 
 
-class Alternatives:
+class Alternatives(_Value):
     """
     A value out of two or more alternatives
     """
     def __init__(self, *values):
+        super().__init__()
         self.values = values
     
-    def getValue(self, item, scope):
+    def _getValue(self, item):
         for value in self.values:
-            value = value.getValue(item, scope)
+            value = value.getValue(item)
             if not value is None:
                 break
         return value
@@ -236,11 +269,11 @@ class Constant:
     def __init__(self, value):
         self._value = value
     
-    def getValue(self, item, scope):
+    def getValue(self, item):
         return self._value
 
 
-class FromAttr:
+class FromAttr(_Value):
     """
     Take the value from the footprint data attribute
     """
@@ -253,15 +286,16 @@ class FromAttr:
     NonNegative = 5
     
     def __init__(self, attr, valueType, valueCondition=None):
+        super().__init__()
         self.attr = attr
         self.valueType = valueType
         self.valueCondition = valueCondition
     
-    def _getValue(self, item):
+    def _getAttrValue(self, item):
         return (item.footprint if item.footprint else item).attr(self.attr)
     
-    def getValue(self, item, scope):
-        value = self._getValue(item)
+    def _getValue(self, item):
+        value = self._getAttrValue(item)
         if value is None:
             return None
         valueCondition = self.valueCondition
@@ -298,20 +332,21 @@ class FromAttr:
 
 class FromBldgAttr(FromAttr):
     
-    def _getValue(self, item):
+    def _getAttrValue(self, item):
         return item.building.attr(self.attr)
 
 
-class Conditional:
+class Conditional(_Value):
     """
     Return the supplied value if the condition is True or None
     """
     def __init__(self, condition, value):
+        super().__init__()
         self._value = value
         self.condition = condition
     
-    def getValue(self, item, scope):
-        return self._value.getValue(item, scope) if self.condition(item) else None
+    def _getValue(self, item):
+        return self._value.getValue(item) if self.condition(item) else None
 
 
 class FromStyleBlockAttr:
@@ -325,7 +360,7 @@ class FromStyleBlockAttr:
         self.attr = attr
         self.itemType = itemType
     
-    def getValue(self, item, scope):
+    def getValue(self, item):
         itemType = self.itemType
         
         if itemType is FromStyleBlockAttr.Footprint:
@@ -337,24 +372,28 @@ class FromStyleBlockAttr:
 
 
 from util.random import RandomNormal as RandomNormalBase
-class RandomNormal:
+class RandomNormal(_Value):
     """
     A wrapper for <util.random.RandomNormal>
     """
     def __init__(self, mean):
+        super().__init__()
+        self.scope = 1 # perBuilding
         self._value = RandomNormalBase(mean)
     
-    def getValue(self, item, scope):
+    def _getValue(self, item):
         return self._value.value
 
 
 from util.random import RandomWeighted as RandomWeightedBase
-class RandomWeighted:
+class RandomWeighted(_Value):
     """
     A wrapper for <util.random.RandomWeighted>
     """
     def __init__(self, distribution):
+        super().__init__()
+        self.scope = 1 # perBuilding
         self._value = RandomWeightedBase(distribution)
     
-    def getValue(self, item, scope):
+    def _getValue(self, item):
         return self._value.value
