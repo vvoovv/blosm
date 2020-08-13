@@ -34,7 +34,7 @@ class CurtainWall(CurtainWallBase, Container):
             if facadeTextureInfo.get("specularMapName"):
                 setImage(
                     facadeTextureInfo["specularMapName"],
-                    os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
+                    getPath(self.r, facadeTextureInfo["path"]),
                     nodes,
                     "Specular Map"
                 )
