@@ -2,7 +2,7 @@ import os
 import bpy
 from .item_renderer import ItemRendererMixin, _textureDir
 from ..container import Container as ContainerBase
-from ...util import setTextureSize
+from ...util import setTextureSize, getPath
 
 
 class Container(ContainerBase, ItemRendererMixin):
@@ -38,7 +38,7 @@ class Container(ContainerBase, ItemRendererMixin):
         # facade texture
         image = textureExporter.setImage(
             facadeTextureInfo["name"],
-            facadeTextureInfo["path"],
+            getPath(self.r, facadeTextureInfo["path"]),
             nodes,
             "facade_texture"
         )
@@ -48,7 +48,7 @@ class Container(ContainerBase, ItemRendererMixin):
             # cladding texture
             image = textureExporter.setImage(
                 claddingTextureInfo["name"],
-                claddingTextureInfo["path"],
+                getPath(self.r, claddingTextureInfo["path"]),
                 nodes,
                 "cladding_texture"
             )

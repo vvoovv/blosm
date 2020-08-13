@@ -1,5 +1,6 @@
 from .container import Container
 from ..level import CurtainWall as CurtainWallBase
+from ...util import getPath
 
 
 class CurtainWall(CurtainWallBase, Container):
@@ -21,7 +22,7 @@ class CurtainWall(CurtainWallBase, Container):
         # facade texture
         textureExporter.setImage(
             facadeTextureInfo["name"],
-            facadeTextureInfo["path"],
+            getPath(self.r, facadeTextureInfo["path"]),
             nodes,
             "facade_texture"
         )
@@ -29,7 +30,7 @@ class CurtainWall(CurtainWallBase, Container):
         if specularMapName:
             textureExporter.setImage(
                     specularMapName,
-                    facadeTextureInfo["path"],
+                    getPath(self.r, facadeTextureInfo["path"]),
                     nodes,
                     "specular_map"
                 )

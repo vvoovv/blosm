@@ -4,7 +4,7 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 from .container import Container
 from ..level import CurtainWall as CurtainWallBase
-from ...util import setTextureSize, setTextureSize2
+from ...util import setTextureSize, setTextureSize2, getPath
 
 
 class CurtainWall(CurtainWallBase, Container):
@@ -25,7 +25,7 @@ class CurtainWall(CurtainWallBase, Container):
             # the overlay texture
             image = setImage(
                 facadeTextureInfo["name"],
-                os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
+                getPath(self.r, facadeTextureInfo["path"]),
                 nodes,
                 "Main"
             )
@@ -34,7 +34,7 @@ class CurtainWall(CurtainWallBase, Container):
             if facadeTextureInfo.get("specularMapName"):
                 setImage(
                     facadeTextureInfo["specularMapName"],
-                    os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
+                    getPath(self.r, facadeTextureInfo["path"]),
                     nodes,
                     "Specular Map"
                 )
