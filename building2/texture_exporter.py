@@ -83,10 +83,10 @@ class TextureExporter:
         translateInputs[1].default_value = translateX
         translateInputs[2].default_value = translateY
     
-    def setImage(self, fileName, relativePath, nodes, nodeName):
+    def setImage(self, fileName, path, nodes, nodeName):
         return setImage(
             fileName,
-            os.path.join(self.assetPackageDir, relativePath),
+            path,
             nodes,
             nodeName
         )

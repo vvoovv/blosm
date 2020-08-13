@@ -2,6 +2,7 @@ import os
 from util.blender_extra.material import setImage
 from .container import Container
 from ..door import Door as DoorBase
+from ...util import getPath
 
 
 _doorFaceWidthPx = 1028
@@ -62,7 +63,7 @@ class Door(DoorBase, Container):
         # door texture
         textureExporter.setImage(
             doorTextureInfo["name"],
-            doorTextureInfo["path"],
+            getPath(self.r, doorTextureInfo["path"]),
             nodes,
             "door_texture"
         )
@@ -84,7 +85,7 @@ class Door(DoorBase, Container):
         # cladding texture
         textureExporter.setImage(
             claddingTextureInfo["name"],
-            claddingTextureInfo["path"],
+            getPath(self.r, claddingTextureInfo["path"]),
             nodes,
             "cladding_texture"
         )

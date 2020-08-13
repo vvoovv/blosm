@@ -1,8 +1,8 @@
-import os
 import bpy
 from .container import Container
 from ..door import Door as DoorBase
 from util.blender_extra.material import createMaterialFromTemplate, setImage
+from ...util import getPath
 
 
 class Door(DoorBase, Container):
@@ -56,7 +56,7 @@ class Door(DoorBase, Container):
             # the overlay texture
             setImage(
                 facadeTextureInfo["name"],
-                os.path.join(self.r.assetStore.baseDir, facadeTextureInfo["path"]),
+                getPath(self.r, facadeTextureInfo["path"]),
                 nodes,
                 "Main"
             )
@@ -65,7 +65,7 @@ class Door(DoorBase, Container):
                 # set it just in case
                 setImage(
                     claddingTextureInfo["name"],
-                    os.path.join(self.r.assetPackageDir, claddingTextureInfo["path"]),
+                    getPath(self.r, claddingTextureInfo["path"]),
                     nodes,
                     "Cladding"
                 )

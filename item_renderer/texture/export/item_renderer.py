@@ -1,7 +1,7 @@
 import os
 import bpy
 from util.blender_extra.material import createMaterialFromTemplate, setImage
-from ...util import setTextureSize, setTextureSize2
+from ...util import setTextureSize, setTextureSize2, getPath
 
 
 _textureDir = "texture"
@@ -45,7 +45,7 @@ class ItemRendererMixin:
         # cladding texture
         image = textureExporter.setImage(
             claddingTextureInfo["name"],
-            claddingTextureInfo["path"],
+            getPath(self.r, claddingTextureInfo["path"]),
             nodes,
             "cladding_texture"
         )
@@ -109,8 +109,7 @@ class ItemRendererMixin:
             else:
                 # use the diffuse texture as is
                 textureFilepath = os.path.join(
-                    self.r.assetStore.baseDir,
-                    facadeTextureInfo["path"],
+                    getPath(self.r, facadeTextureInfo["path"]),
                     facadeTextureInfo["name"]
                 )
             
