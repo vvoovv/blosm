@@ -21,7 +21,7 @@ class Item:
         self.materialId = None
         # Python dictionary to cache attributes from <self.styleBlock> that are derived
         # from <grammar.value.Value>
-        self._styleBlockCache = {}
+        self._cache = {}
     
     def init(self):
         self.valid = True
@@ -32,7 +32,7 @@ class Item:
         self.relativeWidth = None
         self.hasFlexWidth = False
         self.materialId = None
-        self._styleBlockCache.clear()
+        self._cache.clear()
     
     def evaluateCondition(self, styleBlock):
         return not styleBlock.condition or styleBlock.condition(self)
@@ -43,18 +43,27 @@ class Item:
             return
         value, isComplexValue = attrs.get(attr)
         if isComplexValue:
+            if attr in self._cache:
+                return self._cache[attr]
             value = value.getValue(self)
+            # There is no need to perform a possibly complex calculations of the complex value once again,
+            # so we simply store the resulting value in the cache
+            self._cache[attr] = value
         return value
 
     def getStyleBlockAttrDeep(self, attr):
         if self.styleBlock and attr in self.styleBlock.attrs:
             return self.getStyleBlockAttr(attr)
+        elif attr in self._cache:
+            return self._cache[attr]
         else:
             # try to get the attribute from <self.parent>
-            return self.parent.getStyleBlockAttrDeep(attr)
+            value = self.parent.getStyleBlockAttrDeep(attr)
+            self._cache[attr] = value
+            return value
     
-    def getStyleBlockCache(self, scope):
-        return self.building._cache if scope is perBuilding else self._styleBlockCache
+    def getCache(self, scope):
+        return self.building._cache if scope is perBuilding else self._cache
     
     def getItemRenderer(self, itemRenderers):
         """

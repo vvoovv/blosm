@@ -237,13 +237,13 @@ class _Value:
 
     def getValue(self, item):
         if self.scope:
-            styleBlockCache = item.getStyleBlockCache(self.scope)
-            if self.id in styleBlockCache:
-                value = styleBlockCache[self.id]
+            cache = item.getCache(self.scope)
+            if self.id in cache:
+                value = cache[self.id]
             else:
                 value = self._getValue(item)
                 # keep the value in the cache
-                styleBlockCache[self.id] = value
+                cache[self.id] = value
         else:
             value = self._getValue(item)
         return value
