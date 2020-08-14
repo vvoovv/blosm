@@ -377,7 +377,6 @@ class RandomNormal(_Value):
     """
     def __init__(self, mean):
         super().__init__()
-        self.scope = 1 # perBuilding
         self._value = RandomNormalBase(mean)
     
     def _getValue(self, item):
@@ -391,7 +390,6 @@ class RandomWeighted(_Value):
     """
     def __init__(self, distribution):
         super().__init__()
-        self.scope = 1 # perBuilding
         self._value = RandomWeightedBase(distribution)
     
     def _getValue(self, item):
