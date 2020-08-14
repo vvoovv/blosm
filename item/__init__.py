@@ -48,14 +48,10 @@ class Item:
 
     def getStyleBlockAttrDeep(self, attr):
         if self.styleBlock and attr in self.styleBlock.attrs:
-            value = self.getStyleBlockAttr(attr)
-        elif attr in self._styleBlockCache:
-            value = self._styleBlockCache[attr]
+            return self.getStyleBlockAttr(attr)
         else:
             # try to get the attribute from <self.parent>
-            value = self.parent.getStyleBlockAttrDeep(attr)
-            self._styleBlockCache[attr] = value
-        return value
+            return self.parent.getStyleBlockAttrDeep(attr)
     
     def getStyleBlockCache(self, scope):
         return self.building._cache if scope is perBuilding else self._styleBlockCache

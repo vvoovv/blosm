@@ -1,5 +1,6 @@
 import math
 from util.osm import parseNumber
+from .scope import *
 
 
 """
@@ -254,7 +255,10 @@ class Alternatives(_Value):
     """
     def __init__(self, *values):
         super().__init__()
-        self.values = values
+        for value in values:
+            if isinstance(value, Scope):
+                value.value.scope = value.scope
+        self.values = tuple(value.value if isinstance(value, Scope) else value for value in values)
     
     def _getValue(self, item):
         for value in self.values:
@@ -341,6 +345,9 @@ class Conditional:
     Return the supplied value if the condition is True or None
     """
     def __init__(self, condition, value):
+        if isinstance(value, Scope):
+            value.value.scope = value.scope
+            value = value.value
         self._value = value
         self.condition = condition
     

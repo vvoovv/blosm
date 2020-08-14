@@ -47,9 +47,8 @@ class Item:
             value = attrs[attr]
             # a Python tuple containg two elements
             if isinstance(value, Scope):
-                scope = value.scope
+                value.value.scope = value.scope
                 value = value.value
-                value.scope = scope
             isComplexValue = isinstance(value, Value)
             if isComplexValue and attr in _perBuildingByDefault:
                 value.scope = perBuilding
