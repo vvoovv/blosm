@@ -1,5 +1,6 @@
 import math
 from util.osm import parseNumber
+from .scope import *
 
 
 """
@@ -236,13 +237,13 @@ class _Value:
 
     def getValue(self, item):
         if self.scope:
-            styleBlockCache = item.getStyleBlockCache(self.scope)
-            if self.id in styleBlockCache:
-                value = styleBlockCache[self.id]
+            cache = item.getCache(self.scope)
+            if self.id in cache:
+                value = cache[self.id]
             else:
                 value = self._getValue(item)
                 # keep the value in the cache
-                styleBlockCache[self.id] = value
+                cache[self.id] = value
         else:
             value = self._getValue(item)
         return value
@@ -254,7 +255,10 @@ class Alternatives(_Value):
     """
     def __init__(self, *values):
         super().__init__()
-        self.values = values
+        for value in values:
+            if isinstance(value, Scope):
+                value.value.scope = value.scope
+        self.values = tuple(value.value if isinstance(value, Scope) else value for value in values)
     
     def _getValue(self, item):
         for value in self.values:
@@ -341,6 +345,9 @@ class Conditional:
     Return the supplied value if the condition is True or None
     """
     def __init__(self, condition, value):
+        if isinstance(value, Scope):
+            value.value.scope = value.scope
+            value = value.value
         self._value = value
         self.condition = condition
     
@@ -377,7 +384,6 @@ class RandomNormal(_Value):
     """
     def __init__(self, mean):
         super().__init__()
-        self.scope = 1 # perBuilding
         self._value = RandomNormalBase(mean)
     
     def _getValue(self, item):
@@ -391,7 +397,6 @@ class RandomWeighted(_Value):
     """
     def __init__(self, distribution):
         super().__init__()
-        self.scope = 1 # perBuilding
         self._value = RandomWeightedBase(distribution)
     
     def _getValue(self, item):

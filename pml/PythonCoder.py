@@ -384,10 +384,21 @@ class PythonCoder():
         self.write('useFrom("' + ident + '")')
 
     def enterPERBUILD(self):
-        self.write('PerBuilding(')
+        if self.alternativesContext:
+            self.write(self.alterCommaStack[-1])
+            self.alterCommaStack[-1] = ''
+            self.write(self.indent()+'PerBuilding(\n')
+            self.indents += 1
+        else:
+            self.write('PerBuilding(')
 
     def exitPERBUILD(self):
-        self.write(')')
+        if self.alternativesContext:
+            self.indents -= 1
+            self.alterCommaStack[-1] = ',\n'
+            self.write('\n'+self.indent()+')')
+        else:
+            self.write(')')
 
     # ------------------------------------------------------------
     # function
