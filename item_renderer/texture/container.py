@@ -212,7 +212,8 @@ class Container(ItemRenderer):
         building = parentItem.building      
         face = self.r.createFace(building, indices)
         item = levelGroup.item
-        if item:
+        # <item.styleBlock.markup is 0> is an optimization to prevent numerous calls to the asset store
+        if item and not item.styleBlock.markup is 0:
             if item.materialId is None:
                 self.setMaterialId(
                     item,
@@ -233,6 +234,8 @@ class Container(ItemRenderer):
                     self.r.layer.uvLayerNameFacade
                 )
                 self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
-            self.r.setMaterial(face, item.materialId)
+                self.r.setMaterial(face, item.materialId)
+            else:
+                self.renderCladding(item, face, uvs)
         else:
-            self.renderCladding(parentItem, face, uvs)
+            self.renderCladding(item or parentItem, face, uvs)

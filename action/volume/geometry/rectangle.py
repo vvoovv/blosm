@@ -105,6 +105,23 @@ class RectangleFRA(Geometry):
         
         levelGroups = parentItem.levelGroups
         
+        if not levelGroups.begin:
+            # the case when only bottom is available (no levels)
+            texVt = parentItem.uvs[2][1]
+            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
+            # to be created out of <parentItem>
+            texUl = parentItem.uvs[0][0]
+            texUr = parentItem.uvs[1][0]
+            parentRenderer.renderCladding(
+                parentItem,
+                parentRenderer.r.createFace(
+                    parentItem.building,
+                    (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
+                ),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            )
+            return
+        
         if levelGroups.begin.next:
             # There are at least 2 level groups or one level group and the top
             # Detach the end level group. It can be either the top or the last level group
@@ -132,35 +149,35 @@ class RectangleFRA(Geometry):
         )
     
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-            building = parentItem.building
-            verts = building.verts
-            height = levelGroup.levelHeight\
-                if levelGroup.singleLevel else\
-                levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
-            # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
-            # an item with rectangular geometry to be created
-            indexTL = len(building.verts)
-            indexTR = indexTL + 1
-            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
-            # to be created out of <parentItem>
-            texUl = parentItem.uvs[0][0]
-            texUr = parentItem.uvs[1][0]
-            verts.append(verts[rs.indexBL] + height*zAxis)
-            verts.append(verts[rs.indexBR] + height*zAxis)
-            texVt = rs.texVb + height
-            if levelGroup.item:
-                # Set the geometry for the <levelGroup.item>;
-                # division of a rectangle can only generate rectangles
-                levelGroup.item.geometry = self
-            levelRenderer.renderLevelGroup(
-                parentItem,
-                levelGroup,
-                (rs.indexBL, rs.indexBR, indexTR, indexTL),
-                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-            )
-            rs.indexBL = indexTL
-            rs.indexBR = indexTR
-            rs.texVb = texVt
+        building = parentItem.building
+        verts = building.verts
+        height = levelGroup.levelHeight\
+            if levelGroup.singleLevel else\
+            levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
+        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+        # an item with rectangular geometry to be created
+        indexTL = len(building.verts)
+        indexTR = indexTL + 1
+        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
+        # to be created out of <parentItem>
+        texUl = parentItem.uvs[0][0]
+        texUr = parentItem.uvs[1][0]
+        verts.append(verts[rs.indexBL] + height*zAxis)
+        verts.append(verts[rs.indexBR] + height*zAxis)
+        texVt = rs.texVb + height
+        if levelGroup.item:
+            # Set the geometry for the <levelGroup.item>;
+            # division of a rectangle can only generate rectangles
+            levelGroup.item.geometry = self
+        levelRenderer.renderLevelGroup(
+            parentItem,
+            levelGroup,
+            (rs.indexBL, rs.indexBR, indexTR, indexTL),
+            ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+        )
+        rs.indexBL = indexTL
+        rs.indexBR = indexTR
+        rs.texVb = texVt
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         parentIndices = parentItem.indices
