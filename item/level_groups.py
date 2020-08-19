@@ -53,6 +53,8 @@ class LevelGroups:
             if bottomHeight:
                 bottom = self.bottomGroup
                 bottom.levelHeight = bottomHeight
+                if item.building.altitudeDifference:
+                    bottom.levelHeight += item.building.altitudeDifference
                 self.bottom = bottom
         
         for _item in reversed(item.markup):

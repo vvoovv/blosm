@@ -8,6 +8,10 @@ class Offset(Action):
     Calculates offset for a building if the option "Import as a single object" is NOT activated.
     Also creates a Blender object for the building in question and positions it appropriately.
     """
+    
+    def preprocess(self, buildingsP):
+        # <buildingsP> means "buildings from the parser"
+        return
 
     def do(self, building, itemClass, style, globalRenderer):
         outline = building.outline

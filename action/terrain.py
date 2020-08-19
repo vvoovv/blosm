@@ -18,8 +18,8 @@ class Terrain(Action):
     
     def testProject(self, building):
         outline = building.outline
-        # take the first vertex of the outline as the offset
-        offsetZ = max(
+        # we use the lowest z-coordinate among the footprint vertices projected on the terrain as <offsetZ>
+        offsetZ = min(
             (
                 self.app.terrain.project2(vert)\
                 for vert in\
@@ -32,6 +32,15 @@ class Terrain(Action):
         else:
             # the building is outside the terrain so skip the whole building
             self.itemStore.skip = True
+        # we also need to store the altitude difference for the building footprint
+        building.altitudeDifference = max(
+            (
+                self.app.terrain.project2(vert)\
+                for vert in\
+                (outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data))
+            ),
+            key = lambda vert: vert[2]
+        )[2] - offsetZ[2]
     
     def projectSingleVertex(self, building):
         outline = building.outline

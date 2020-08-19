@@ -75,6 +75,8 @@ class LevelHeights:
                 footprint.numLevels = 0
         else:
             h = self.calculateBottomHeight(volumeGenerator)
+            if footprint.building.altitudeDifference:
+                h += footprint.building.altitudeDifference
             # get the number of wall levels
             numLevels = footprint.getStyleBlockAttr("numLevels")
             footprint.numLevels = numLevels
