@@ -46,7 +46,7 @@ class LevelGroups:
             top.levelHeight = topHeight
             self.top = top
         # check if have the bottom
-        if not minLevel:
+        if not footprint.minHeight:
             bottomHeight = item.getStyleBlockAttr("bottomHeight")
             if bottomHeight is None:
                 bottomHeight = lh.bottomHeight
@@ -55,7 +55,7 @@ class LevelGroups:
             if bottomHeight:
                 self.bottomGroup.levelHeight += bottomHeight
             if self.bottomGroup.levelHeight:
-                self.bottom = self.bottomGroup
+                self.bottom = bottom = self.bottomGroup
         
         for _item in reversed(item.markup):
             styleBlock = _item.styleBlock

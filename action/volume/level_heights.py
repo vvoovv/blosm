@@ -160,6 +160,8 @@ class LevelHeights:
                 # The heights of the bottom and the ground level have been already
                 # calculated in <self.calculateHeight()>
                 h = self.bottomHeight + self.groundLevelHeight if self.groundLevelHeight else levelHeight
+                if footprint.building.altitudeDifference:
+                    h += footprint.building.altitudeDifference
                 if minLevel > 1:
                     # the height of the levels above the ground level
                     h += (minLevel-1)*levelHeight
