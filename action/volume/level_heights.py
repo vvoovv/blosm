@@ -205,6 +205,8 @@ class LevelHeights:
         """
         footprint = self.footprint
         totalHeight -= self.bottomHeight
+        if footprint.building.altitudeDifference:
+            totalHeight -= footprint.building.altitudeDifference
         # calculate adjustment <factor>
         if footprint.roofHeight:
             # <roofHeight> is given or we have no roof levels
@@ -262,6 +264,8 @@ class LevelHeights:
             footprint = self.footprint
             # calculate the height of wall levels
             levelsHeight = totalHeight - self.bottomHeight
+            if footprint.building.altitudeDifference:
+                levelsHeight -= footprint.building.altitudeDifference
             if footprint.roofHeight:
                 levelsHeight -= footprint.roofHeight
                 if levelsHeight:

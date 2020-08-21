@@ -78,6 +78,8 @@ class Building:
         self._cache.clear()
         self.assetInfoBldgIndex = None
         self._area = 0.
+        # altitude difference for the building footprint projected on the terrain
+        self.altitudeDifference = 0.
         
         # attributes from @meta of the style block
         self.buildingUse = None
