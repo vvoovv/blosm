@@ -105,6 +105,9 @@ class Terrain:
         return self.bvhTree.ray_cast((coords[0], coords[1], self.projectLocation), direction)[0]
     
     def project2(self, coords):
+        """
+        Get a projection of <coords> on the terrain using <self.projectionProxy>
+        """
         return self.projectionProxy.data.vertices[ self.projectedVertIndices[(coords[0], coords[1])] ].co
     
     def setOrigin(self, origin):
@@ -227,6 +230,10 @@ class Terrain:
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
         
         self.projectionProxy = proxyObj
+    
+    def cleanupProjectionProxy(self):
+        bpy.data.objects.remove(self.projectionProxy, do_unlink=True)
+        self.projectionProxy = None
     
     @staticmethod
     def createFlatTerrain(minLon, minLat, maxLon, maxLat, projection, context):

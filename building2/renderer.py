@@ -192,6 +192,10 @@ class BuildingRendererNew(Renderer):
             self.materialIndices = layer.materialIndices
     
     def cleanup(self):
+        if Building.actions:
+            for action in Building.actions:
+                action.cleanup()
+        
         if self.exportMaterials:
             self.textureExporter.cleanup()
         

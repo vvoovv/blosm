@@ -8,5 +8,5 @@ class Action:
         self.itemStore = itemStore
         self.itemFactory = itemFactory
     
-    def do(self, building, itemClass, globalRenderer):
-        pass
+    def cleanup(self):
+        return

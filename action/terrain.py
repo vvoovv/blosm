@@ -13,11 +13,25 @@ class Terrain(Action):
     
     def do(self, building, itemClass, style, globalRenderer):
         #self.projectSingleVertex(building)
-        #self.projectAllVertices(building)
-        self.testProject(building)
+        self.projectAllVertices(building)
     
-    def testProject(self, building):
+    def projectAllVertices(self, building):
         outline = building.outline
+        
+        maxZ = max(
+            (
+                self.app.terrain.project2(vert)\
+                for vert in\
+                (outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data))
+            ),
+            key = lambda vert: vert[2]
+        )[2]
+        
+        if maxZ == self.app.terrain.projectLocation:
+            # the building is outside the terrain so skip the whole building
+            self.skipBuilding()
+            return
+        
         # we use the lowest z-coordinate among the footprint vertices projected on the terrain as <offsetZ>
         offsetZ = min(
             (
@@ -27,20 +41,9 @@ class Terrain(Action):
             ),
             key = lambda vert: vert[2]
         )
-        if offsetZ:
-            building.offset = offsetZ[2] * zAxis
-        else:
-            # the building is outside the terrain so skip the whole building
-            self.itemStore.skip = True
+        building.offset = offsetZ[2] * zAxis
         # we also need to store the altitude difference for the building footprint
-        building.altitudeDifference = max(
-            (
-                self.app.terrain.project2(vert)\
-                for vert in\
-                (outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data))
-            ),
-            key = lambda vert: vert[2]
-        )[2] - offsetZ[2]
+        building.altitudeDifference = maxZ - offsetZ[2]
     
     def projectSingleVertex(self, building):
         outline = building.outline
@@ -52,37 +55,10 @@ class Terrain(Action):
             building.offset = offsetZ[2] * zAxis
         else:
             # the building is outside the terrain so skip the whole building
-            self.itemStore.skip = True
+            self.skipBuilding()
     
-    def projectAllVertices(self, building):
-        outline = building.outline
-        if outline.t is Renderer.multipolygon:
-            coords = outline.getOuterData(self.data)
-        else:
-            coords = outline.getData(self.data)
-            if building.footprint:
-                # building definition has no building parts
-                polygon = building.footprint.polygon
-                polygon.init(coords)
-                coords = polygon.verts
-        basementMin = math.inf
-        basementMax = -math.inf
-        skip = True
-        for coord in coords:
-            coord = self.app.terrain.project(coord)
-            # If at least one point is on the terrain,
-            # keep the whole building for consideration
-            if coord:
-                if skip:
-                    skip = False
-                z = coord[2]
-                if z < basementMin:
-                    basementMin = z
-                if z > basementMax:
-                    basementMax = z
-        if skip:
-            # the building is outside the terrain so skip the whole building
-            self.itemStore.skip = True
-        else:
-            building.basementMin = basementMin
-            building.basementMax = basementMax
+    def skipBuilding(self):
+        self.itemStore.skip = True
+    
+    def cleanup(self):
+        self.app.terrain.cleanupProjectionProxy()
