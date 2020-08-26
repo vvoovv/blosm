@@ -452,7 +452,7 @@ class PythonCoder():
             self.alterCommaStack[-1] = ',\n'
         else:
             expr = self.literalize(text,False)
-            self.write('Value(Constant(' + expr + ')' )
+            self.write(expr)
 
     def enterNESTED(self, li):
         li = self.replaceColorsInText(li)

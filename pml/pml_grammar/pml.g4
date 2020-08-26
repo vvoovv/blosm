@@ -45,7 +45,7 @@ smooth_expression
     ;
 
 markup_block
-    : LBRACK elements RBRACK
+    : LBRACK elements? RBRACK
     ;
 
 expression
