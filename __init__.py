@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 24),
+    "version": (2, 4, 25),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -209,13 +209,6 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         createFlatTerrain = a.mode is a.realistic and a.forests
         forceExtentCalculation = createFlatTerrain and a.osmSource == "file"
         
-        # check if have a terrain Blender object set
-        a.setTerrain(
-            context,
-            createFlatTerrain = createFlatTerrain,
-            createBvhTree = True
-        )
-        
         setupScript = addon.setupScript
         if setupScript:
             setup_function = self.loadSetupScript(setupScript)
@@ -262,6 +255,14 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             a.maxLat = osm.maxLat
             a.minLon = osm.minLon
             a.maxLon = osm.maxLon
+        
+        # Check if have a terrain Blender object set
+        # At this point <a.projection> is set, so we can set the terrain
+        a.setTerrain(
+            context,
+            createFlatTerrain = createFlatTerrain,
+            createBvhTree = True
+        )
         
         a.initLayers()
         

@@ -101,7 +101,8 @@ def setup(app, data):
         br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
         
         Building.actions = []
-        if app.terrain:
+        # <app.terrain> isn't yet set at this pooint, so we use the string <app.terrainObject> instead
+        if app.terrainObject:
             Building.actions.append( Terrain(app, data, br.itemStore, br.itemFactory) )
         if not app.singleObject:
             Building.actions.append( Offset(app, data, br.itemStore, br.itemFactory) )
