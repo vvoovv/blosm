@@ -1,8 +1,4 @@
-import math
 from .. import ItemRenderer
-from ..util import initUvAlongPolygonEdge
-
-from util import zAxis
 
 
 class RoofHipped(ItemRenderer):

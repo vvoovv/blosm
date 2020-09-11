@@ -7,6 +7,7 @@ from .roof_flat import RoofFlat
 from .roof_flat_multi import RoofFlatMulti
 from .roof_generatrix import RoofGeneratrix
 from .roof_profile import RoofProfile, roofDataGabled, roofDataRound, roofDataGambrel, roofDataSaltbox
+from .roof_hipped import RoofHipped
 
 
 class Volume(Action):
@@ -101,7 +102,7 @@ class Volume(Action):
             'gabled': RoofProfile(roofDataGabled, data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
             'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofPyramidal"]),
             #'skillion': RoofSkillion(),
-            #'hipped': RoofHipped(),
+            'hipped': RoofHipped(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
             'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofDome"]),
             'half-dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHalfDome"]),
             'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofOnion"]),

@@ -28,7 +28,8 @@ from item_renderer.texture.base import\
     RoofFlatMulti as RoofFlatMultiRenderer,\
     RoofProfile as RoofProfileRenderer,\
     RoofGeneratrix as RoofGeneratrixRenderer,\
-    RoofPyramidal as RoofPyramidalRenderer
+    RoofPyramidal as RoofPyramidalRenderer#,
+    #RoofHipped as RoofHippedRenderer
 
 from item_renderer.texture.export import\
     Facade as FacadeRendererExport,\
@@ -41,7 +42,8 @@ from item_renderer.texture.export import\
     RoofFlatMulti as RoofFlatMultiRendererExport,\
     RoofProfile as RoofProfileRendererExport,\
     RoofGeneratrix as RoofGeneratrixRendererExport,\
-    RoofPyramidal as RoofPyramidalRendererExport
+    RoofPyramidal as RoofPyramidalRendererExport#,
+    #RoofHipped as RoofHippedRendererExport
 
 from action.terrain import Terrain
 from action.offset import Offset
@@ -95,7 +97,8 @@ def setup(app, data):
             RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = Center),
             RoofHalfDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = MiddleOfTheLongesSide),
             RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion, basePointPosition = Center),
-            RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer()
+            RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer()#,
+            #RoofHipped = RoofHippedRendererExport() if doExport else RoofHippedRenderer()
         )
         
         br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
