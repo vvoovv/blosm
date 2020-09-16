@@ -9,13 +9,17 @@ class RoofSide(Item):
     def __init__(self):
         super().__init__()
         self.buildingPart = "roof_side"
-        # slot index for the profile roofs
-        self.slotIndex = 0
+        # slot index for the profile roofs, edge index for hipped roofs
+        self.itemIndex = 0
         # indices of <building.verts> that form the roof side
         self.indices = None
     
     @classmethod
-    def getItem(cls, itemFactory, parent, indices, slotIndex):
+    def getItem(cls, itemFactory, parent, indices, uvs, itemIndex):
+        """
+        Args:
+            itemIndex (int): <slotIndex> for <RoofProfile>, <edgeIndex> for <RoofHipped>
+        """
         item = itemFactory.getItem(cls)
         item.init()
         item.parent = parent
@@ -23,7 +27,8 @@ class RoofSide(Item):
         item.setStyleBlock()
         item.building = parent.building
         item.indices = indices
-        item.slotIndex = slotIndex
+        item.uvs = uvs
+        item.itemIndex = itemIndex
         return item
     
     def setStyleBlock(self):

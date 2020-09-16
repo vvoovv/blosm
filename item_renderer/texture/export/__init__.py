@@ -12,6 +12,7 @@ from ..roof_flat_multi import RoofFlatMulti as RoofFlatMultiBase
 from ..roof_generatrix import RoofGeneratrix as RoofGeneratrixBase
 from ..roof_pyramidal import RoofPyramidal as RoofPyramidalBase
 from ..roof_profile import RoofProfile as RoofProfileBase
+from ..roof_hipped import RoofHipped as RoofHippedBase
 
 
 class Facade(FacadeBase, Container):
@@ -73,6 +74,12 @@ class RoofPyramidal(RoofPyramidalBase, ItemRendererMixin):
 
 
 class RoofProfile(RoofProfileBase, ItemRendererMixin):
+    
+    def __init__(self):
+        super().__init__(exportMaterials=True)
+
+
+class RoofHipped(RoofHippedBase, ItemRendererMixin):
     
     def __init__(self):
         super().__init__(exportMaterials=True)

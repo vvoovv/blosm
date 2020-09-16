@@ -23,7 +23,7 @@ class RoofProfile(ItemRenderer):
     
     def getUvs(self, roofSide, roofGenerator):
         roofVertexData = roofGenerator.roofVertexData
-        slotIndex = roofSide.slotIndex
+        slotIndex = roofSide.itemIndex
         slopes = roofGenerator.slopes
         #
         # Set texture coordinates <u> and <v>

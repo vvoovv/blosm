@@ -1,7 +1,7 @@
-from .roof_item import RoofItem
+from .roof_item import RoofWithSidesItem
 
 
-class RoofHipped(RoofItem):
+class RoofHipped(RoofWithSidesItem):
     
     @classmethod
     def getItem(cls, itemFactory, parent):

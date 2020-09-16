@@ -102,7 +102,7 @@ class Volume(Action):
             'gabled': RoofProfile(roofDataGabled, data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
             'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofPyramidal"]),
             #'skillion': RoofSkillion(),
-            'hipped': RoofHipped(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
+            'hipped': RoofHipped(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHipped"]),
             'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofDome"]),
             'half-dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHalfDome"]),
             'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofOnion"]),

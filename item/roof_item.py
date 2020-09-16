@@ -1,4 +1,5 @@
 from . import Item
+from .roof_side import RoofSide
 
 _className = "Roof"
 
@@ -39,3 +40,24 @@ class RoofItem(Item):
     
     def getCladdingColor(self):
         return self.getStyleBlockAttr("roofCladdingColor")
+
+
+class RoofWithSidesItem(RoofItem):
+    
+    def __init__(self):
+        super().__init__()
+        # a Python list of instances of item.roof_side.RoofSide
+        self.roofSides = []
+    
+    def init(self):
+        super().init()
+        self.roofSides.clear()
+    
+    def addRoofSide(self, roofSideIndices, uvs, itemIndex, itemFactory):
+        """
+        Args:
+            itemIndex (int): <slotIndex> for <RoofProfile>, <edgeIndex> for <RoofHipped>
+        """
+        self.roofSides.append(
+            RoofSide.getItem(itemFactory, self, roofSideIndices, uvs, itemIndex)
+        )
