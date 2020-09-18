@@ -68,6 +68,7 @@ class Roof:
         self.hasGable = False
         self.hasRoofLevels = True
         self.angleToHeight = None
+        self.setUvs = True
     
     def do(self, footprint, coords):
         self.init(footprint, coords)

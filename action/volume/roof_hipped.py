@@ -19,8 +19,6 @@ class RoofHipped(RoofLeveled):
     def __init__(self, data, itemStore, itemFactory, facadeRenderer, roofRenderer):
         super().__init__(data, itemStore, itemFactory, facadeRenderer, roofRenderer)
         
-        self.setUvs = True
-        
         self.extrudeTillRoof = True
         
         # vectors along the edges of the footprint polygon
@@ -123,17 +121,16 @@ class RoofHipped(RoofLeveled):
             
             # Triangle of the hipped roof originating from the polygon edge
             # with the index <minDistanceIndex1>
-            self.onFace(
-                roofItem,
+            roofItem.addRoofSide(
                 (firstVertIndex + minDistanceIndex1, firstVertIndex + minDistanceIndex1Next, vertIndex1),
                 ( (0., 0.), (length[minDistanceIndex1], 0.), (u1, v1) ) if self.setUvs else None,
-                minDistanceIndex1
+                minDistanceIndex1,
+                self.itemFactory
             )
             
             # Quadrangle of the hipped roof originating from the polygon edge
             # with the index <minDistanceIndex1Next>
-            self.onFace(
-                roofItem,
+            roofItem.addRoofSide(
                 (firstVertIndex + _nextIndices[minDistanceIndex1], firstVertIndex + minDistanceIndex2, vertIndex2, vertIndex1),
                 (
                     (0., 0.),
@@ -141,22 +138,22 @@ class RoofHipped(RoofLeveled):
                     (length[minDistanceIndex1Next] - u2, v2),
                     (length[minDistanceIndex1] - u1, v1)
                 ) if self.setUvs else None,
-                minDistanceIndex1Next
+                minDistanceIndex1Next,
+                self.itemFactory
             )
             
             # Triangle of the hipped roof originating from the polygon edge
             # with the index <minDistanceIndex2>
-            self.onFace(
-                roofItem,
+            roofItem.addRoofSide(
                 (firstVertIndex + minDistanceIndex2, firstVertIndex + minDistanceIndex2Next, vertIndex2),
                 ( (0., 0.), (length[minDistanceIndex2], 0.), (u2, v2) ) if self.setUvs else None,
-                minDistanceIndex2
+                minDistanceIndex2,
+                self.itemFactory
             )
             
             # Quadrangle of the hipped roof originating from the polygon edge
             # with the index <minDistanceIndex2Next>
-            self.onFace(
-                roofItem,
+            roofItem.addRoofSide(
                 (firstVertIndex + minDistanceIndex2Next, firstVertIndex + minDistanceIndex1, vertIndex1, vertIndex2),
                 (
                     (0., 0.),
@@ -164,11 +161,9 @@ class RoofHipped(RoofLeveled):
                     (length[minDistanceIndex2Next] - u1, v1),
                     (length[minDistanceIndex2] - u2, v2)
                 ) if self.setUvs else None,
-                minDistanceIndex2Next
+                minDistanceIndex2Next,
+                self.itemFactory
             )
-    
-    def onFace(self, roofItem, indices, uvs, edgeIndex):
-        roofItem.addRoofSide(indices, uvs, edgeIndex, self.itemFactory)
     
     def generateRoof(self, footprint, firstVertIndex):
         pass

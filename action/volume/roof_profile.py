@@ -180,15 +180,15 @@ class Slot:
     used a number of times to illustrate the code.
     """
     
-    def __init__(self, x, itemFactory):
+    def __init__(self, x, volumeGenerator):
         """
         Args:
             x (float): A location between 0. and 1. of the slot
                 in the profile coordinate system
-            itemFactory: Item Factory
+            volumeGenerator(RoofProfile): A volume generator
         """
         self.x = x
-        self.itemFactory = itemFactory
+        self.volumeGenerator = volumeGenerator
         # Each element of <self.parts> is a Python tuple:
         # (y, part, reflection, index in <self.parts>)
         # A part is sequence of vertices that start at a slot and ends at the same slot or at a neighboring one.
@@ -311,7 +311,7 @@ class Slot:
                 # <part == [17, 13, 14, 18]>
                 # <vertIndex0 == 18>
                 # The roof face is completed
-                roofItem.addRoofSide(roofFace, slotIndex, self.itemFactory)
+                self.volumeGenerator.addRoofSide(roofFace, roofItem, slotIndex)
                 # Setting <vertIndex0> to <None> means that we start a new roof face in
                 # the next iteration of the <while> cycle
                 vertIndex0 = None
@@ -329,7 +329,7 @@ class Slot:
                 # in the next iterations of the <while> cycle
                 indexPartR -= 1
                 # The roof face is complete
-                roofItem.addRoofSide(roofFace, slotIndex, self.itemFactory)
+                self.volumeGenerator.addRoofSide(roofFace, roofItem, slotIndex)
                 # Setting <vertIndex0> to <None> means that we start a new roof face in
                 # the next iteration of the <while> cycle
                 vertIndex0 = None
@@ -426,7 +426,7 @@ class Slot:
                 # <part == [28, 11, 12, 15]>
                 # <vertIndex0 == 15>
                 # The roof face is complete
-                roofItem.addRoofSide(roofFace, slotIndex, self.itemFactory)
+                self.volumeGenerator.addRoofSide(roofFace, roofItem, slotIndex)
                 # Setting <vertIndex0> to <None> means that we start a new roof face in
                 # the next iteration of the <while> cycle
                 vertIndex0 = None
@@ -505,7 +505,7 @@ class RoofProfile(Roof):
         self.numSlots = numProfilesPoints
         self.lastProfileIndex = numProfilesPoints - 1
         # create profile slots
-        slots = tuple(Slot(profile[i][0], itemFactory) for i in range(numProfilesPoints) )
+        slots = tuple(Slot(profile[i][0], self) for i in range(numProfilesPoints) )
         # set the next slot, it will be need in further calculations
         for i in range(self.lastProfileIndex):
             slots[i].n = slots[i+1]
@@ -621,7 +621,7 @@ class RoofProfile(Roof):
         # vertices for the basement of the volume
         verts.extend(v for v in polygon.verts)
         
-        roofItem = ItemRoofProfile.getItem(self.itemFactory, footprint, self)
+        roofItem = ItemRoofProfile.getItem(self.itemFactory, footprint)
         
         slots = self.slots
         
@@ -686,7 +686,7 @@ class RoofProfile(Roof):
             self.onRoofForSlotCompleted(slotIndex)
         
         self.facadeRenderer.render(footprint, self.data)
-        self.roofRenderer.render(roofItem, self)
+        self.roofRenderer.render(roofItem)
     
     def getProfiledVert(self, footprint, i):
         """
@@ -1032,3 +1032,45 @@ class RoofProfile(Roof):
         item.geometry = geometry
         # assign uv-coordinates (i.e. surface coordinates on the facade plane)
         item.uvs = uvs
+    
+    def addRoofSide(self, indices, roofItem, slotIndex):
+        roofItem.addRoofSide(
+            indices,
+            self.getUvs(indices, slotIndex) if self.setUvs else None,
+            slotIndex,
+            self.itemFactory
+        )
+    
+    def getUvs(self, indices, slotIndex):
+        roofVertexData = self.roofVertexData
+        slopes = self.slopes
+        #
+        # Set texture coordinates <u> and <v>
+        #
+        # <roofVertexData[index]> is a Python tuple of three elements:
+        # <roofVertexData[index][0]> indicates if the related roof vertex is located
+        #     on the slot;
+        # <roofVertexData[index][1]> is a slot index if <roofVertexData[index][0]> is equal to True;
+        # <roofVertexData[index][1]> is a coordinate along profile part
+        #     if <roofVertexData[index][0]> is equal to False;
+        # <roofVertexData[index][2]> is a coordinate along Y-axis of the profile
+        #     coordinate system
+        return (
+            (
+                # U-coordinate: set it depending on the value of <slopes[slotIndex]>
+                self.maxY - roofVertexData[index][2]\
+                if slopes[slotIndex] else\
+                roofVertexData[index][2] - self.minY,
+                # V-coordinate
+                (
+                    0.\
+                    if (slopes[slotIndex] and roofVertexData[index][1] == slotIndex) or\
+                    (not slopes[slotIndex] and roofVertexData[index][1] == slotIndex+1) else\
+                    self.partLength[slotIndex]
+                )
+                if roofVertexData[index][0] else\
+                # the related roof vertex isn't located on the slot
+                roofVertexData[index][1]
+            )
+            for index in indices
+        )
