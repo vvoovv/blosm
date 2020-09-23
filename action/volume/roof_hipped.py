@@ -2,7 +2,24 @@ import math
 from .roof_flat import RoofLeveled
 from item.roof_hipped import RoofHipped as ItemRoofHipped
 
+from lib.bpypolyskel.bpypolyskel import polygonize
+
 from util import zAxis
+
+
+def _dumpInput(verts, firstVertIndex, numPolygonVerts):
+    with open("D:/tmp/bpypolyskel.txt", 'w') as file:
+        file.write("def examplePoly():\n")
+        file.write("    verts = (\n    ")
+        firstVert = True
+        for vert in verts:
+            if firstVert:
+                firstVert = False
+            else:
+                file.write(",\n    ")
+            file.write("    mathutils.Vector((%s,%s,%s))" % (vert[0], vert[1], vert[2]))
+        file.write("\n    )\n")
+        file.write("    return verts, %s, %s, None" % (numPolygonVerts, firstVertIndex))
 
 
 # auxiliary indices to deal with quadrangles
@@ -20,6 +37,10 @@ class RoofHipped(RoofLeveled):
         super().__init__(data, itemStore, itemFactory, facadeRenderer, roofRenderer)
         
         self.extrudeTillRoof = True
+        
+        # unit vectors along the edges of footprint polygon
+        self.unitVector = []
+        self.roofSideIndices = []
         
         # vectors along the edges of the footprint polygon
         self.vector = []
@@ -165,8 +186,63 @@ class RoofHipped(RoofLeveled):
                 self.itemFactory
             )
     
-    def generateRoof(self, footprint, firstVertIndex):
-        pass
+    def generateRoof(self, footprint, roofItem, firstVertIndex):
+        verts = footprint.building.verts
+        numPolygonVerts = footprint.polygon.n
+        lastVertIndex = firstVertIndex + numPolygonVerts - 1
+        
+        length, unitVector, roofSideIndices = self.length, self.unitVector, self.roofSideIndices
+        # cleanup
+        length.clear()
+        unitVector.clear()
+        roofSideIndices.clear()
+        
+        unitVector.extend(
+            (verts[i+1]-verts[i]) for i in range(firstVertIndex, lastVertIndex)
+        )
+        unitVector.append( (verts[firstVertIndex]-verts[lastVertIndex]) )
+        
+        length.extend(
+            vec.length for vec in unitVector
+        )
+        
+        for edgeIndex, vec in enumerate(unitVector):
+            vec /= length[edgeIndex]
+        
+        #_dumpInput(verts, firstVertIndex, numPolygonVerts)
+        
+        # calculate polygons formed by the straight skeleton
+        polygonize(
+            verts,
+            firstVertIndex,
+            numPolygonVerts,
+            None,#unitVector,
+            None,
+            footprint.roofHeight,
+            0,
+            roofSideIndices
+        )
+        
+        roofVerticalPosition = verts[firstVertIndex][2]
+        
+        # calculate tangent of the roof pitch angle
+        tan = ( verts[ roofSideIndices[0][2] ][2] - roofVerticalPosition ) / \
+        (verts[ roofSideIndices[0][2] ] - verts[ roofSideIndices[0][1] ]).dot( zAxis.cross(unitVector[0]) )
+        factor = math.sqrt(1. + tan*tan)
+        
+        for edgeIndex, indices in enumerate(roofSideIndices):
+            roofItem.addRoofSide(
+                indices,
+                # UV-coordinates
+                ( (0., 0.), (length(edgeIndex), 0.) ) + tuple(
+                    (
+                        (verts[ indices[_index] ] - verts[ indices[0] ]).dot(unitVector[edgeIndex]),
+                        (verts[ indices[_index] ][2] - roofVerticalPosition) * factor
+                    ) for _index in range(2, len(indices))
+                ),
+                edgeIndex,
+                self.itemFactory
+            )
     
     def getRoofVert(self, vert, i, tan):
         """
