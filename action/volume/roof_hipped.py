@@ -234,7 +234,7 @@ class RoofHipped(RoofLeveled):
             roofItem.addRoofSide(
                 indices,
                 # UV-coordinates
-                ( (0., 0.), (length(edgeIndex), 0.) ) + tuple(
+                ( (0., 0.), (length[edgeIndex], 0.) ) + tuple(
                     (
                         (verts[ indices[_index] ] - verts[ indices[0] ]).dot(unitVector[edgeIndex]),
                         (verts[ indices[_index] ][2] - roofVerticalPosition) * factor
