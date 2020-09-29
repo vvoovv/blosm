@@ -227,7 +227,7 @@ class Terrain:
         addShrinkwrapModifier(proxyObj, self.terrain, 0.)
         bpy.context.view_layer.objects.active = proxyObj
         # apply the SHRINKWRAP modifier
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
+        bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
         
         self.projectionProxy = proxyObj
     
