@@ -8,18 +8,34 @@ from util import zAxis
 
 
 def _dumpInput(verts, firstVertIndex, numPolygonVerts):
-    with open("D:/tmp/bpypolyskel.txt", 'w') as file:
-        file.write("def examplePoly():\n")
-        file.write("    verts = (\n    ")
+    with open("D:/tmp/bpypolyskel_test.py", 'w') as file:
+        file.write("import mathutils\n")
+        file.write("import matplotlib.pyplot as plt\n")
+        file.write("import bpypolyskel\n")
+        file.write("\n")
+        
+        file.write("verts = [\n")
         firstVert = True
         for vert in verts:
             if firstVert:
                 firstVert = False
             else:
-                file.write(",\n    ")
+                file.write(",\n")
             file.write("    mathutils.Vector((%s,%s,%s))" % (vert[0], vert[1], vert[2]))
-        file.write("\n    )\n")
-        file.write("    return verts, %s, %s, None" % (numPolygonVerts, firstVertIndex))
+        file.write("\n]\n")
+        file.write("firstVertIndex = %s\n" % firstVertIndex)
+        file.write("numPolygonVerts = %s\n" % numPolygonVerts)
+        file.write("faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, None, 0.0, 0.5)")
+        file.write("\n")
+        
+        file.write("fig = plt.figure()\n")
+        file.write("ax = fig.gca(projection='3d')\n")
+        file.write("for face in faces:\n")
+        file.write("    for edge in zip(face, face[1:] + face[:1]):\n")
+        file.write("        p1 = verts[edge[0]]\n")
+        file.write("        p2 = verts[edge[1]]\n")
+        file.write("        ax.plot([p1.x,p2.x],[p1.y,p2.y],[p1.z,p2.z])\n")
+        file.write("plt.show()\n")
 
 
 # auxiliary indices to deal with quadrangles
@@ -216,11 +232,11 @@ class RoofHipped(RoofLeveled):
             verts,
             firstVertIndex,
             numPolygonVerts,
-            None,#unitVector,
             None,
             footprint.roofHeight,
             0,
-            roofSideIndices
+            roofSideIndices,
+            None#unitVector
         )
         
         roofVerticalPosition = verts[firstVertIndex][2]
@@ -230,7 +246,8 @@ class RoofHipped(RoofLeveled):
         (verts[ roofSideIndices[0][2] ] - verts[ roofSideIndices[0][1] ]).dot( zAxis.cross(unitVector[0]) )
         factor = math.sqrt(1. + tan*tan)
         
-        for edgeIndex, indices in enumerate(roofSideIndices):
+        for indices in roofSideIndices:
+            edgeIndex = indices[0] - firstVertIndex
             roofItem.addRoofSide(
                 indices,
                 # UV-coordinates
