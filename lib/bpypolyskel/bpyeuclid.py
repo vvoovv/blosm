@@ -25,20 +25,12 @@ class Edge2:
         else:
             self.norm = mathutils.Vector((_norm[0],_norm[1]))
 
-    def __repr__(self):
-        return 'Edge2(<%.2f, %.2f> to <%.2f, %.2f>)' % \
-            (self.p1.x, self.p1.y, self.p2.x, self.p2.y)
-
 class Ray2:
     def __init__(self, _p, _v):
         self.p = _p
         self.p1 = _p
         self.p2 = _p+_v
         self.v = _v
-
-    def __repr__(self):
-        return 'Ray2(<%.2f, %.2f> + u<%.2f, %.2f>)' % \
-            (self.p.x, self.p.y, self.v.x, self.v.y)
 
     def intsecttest(self,u):
         return u>=0.0
@@ -59,10 +51,6 @@ class Line2:
             self.v = p2.copy()
         self.p1 = self.p
         self.p2 = self.p+self.v
-
-    def __repr__(self):
-        return 'Line2(<%.2f, %.2f> + u<%.2f, %.2f>)' % \
-            (self.p.x, self.p.y, self.v.x, self.v.y)
 
     def intsecttest(self,u):
         return True

@@ -25,7 +25,6 @@ in order to be able to use it in Blender. The main changes are:
     For the definiton of the signature, see the description at the function definition.
 """
 
-import logging
 import heapq
 from collections import namedtuple
 from itertools import *
@@ -33,7 +32,6 @@ from itertools import *
 from .bpyeuclid import *
 from .poly2FacesGraph import poly2FacesGraph
 
-log = logging.getLogger("__name__")
 
 EPSILON = 0.00001
 
@@ -51,17 +49,11 @@ class _SplitEvent(namedtuple("_SplitEvent", "distance, intersection_point, verte
     def __lt__(self, other):
         return self.distance < other.distance
 
-    def __str__(self):
-        return "{} Split event @ {} from {} to {}".format(self.distance, self.intersection_point, self.vertex, self.opposite_edge)
-
 class _EdgeEvent(namedtuple("_EdgeEvent", "distance intersection_point vertex_a vertex_b")):
     __slots__ = ()
 
     def __lt__(self, other):
         return self.distance < other.distance
-
-    def __str__(self):
-        return "{} Edge event @ {} between {} and {}".format(self.distance, self.intersection_point, self.vertex_a, self.vertex_b)
 
 _OriginalEdge = namedtuple("_OriginalEdge", "edge bisector_prev, bisector_next")
 
@@ -91,7 +83,7 @@ class _LAVertex:
         self._is_reflex = dv0.cross(dv1) > 0
         op_add_result = creator_vectors[0] + creator_vectors[1]
         self._bisector = Ray2(self.point, op_add_result * (-1 if self._is_reflex else 1))
-        log.info("Created vertex %s", self.__repr__())
+        # Vertex created
 
     def invalidate(self):
         if self.lav is not None:
@@ -120,12 +112,9 @@ class _LAVertex:
         if self.is_reflex:
             # a reflex vertex may generate a split event
             # split events happen when a vertex hits an opposite edge, splitting the polygon in two.
-            log.debug("looking for split candidates for vertex %s", self)
             for edge in self.original_edges:
                 if edge.edge == self.edge_prev or edge.edge == self.edge_next:
                     continue
-
-                log.debug("\tconsidering EDGE %s", edge)
 
 				# a potential b is at the intersection of between our own bisector and the bisector of the
 				# angle between the tested edge and any one of our own edges.
@@ -133,7 +122,7 @@ class _LAVertex:
 				# we choose the "less parallel" edge (in order to exclude a potentially parallel edge)
                 prevdot = abs(self.edge_prev.norm.dot(edge.edge.norm))
                 nextdot = abs(self.edge_next.norm.dot(edge.edge.norm))
-                selfedge = self.edge_prev if prevdot > nextdot else self.edge_next # ???
+                selfedge = self.edge_prev if prevdot < nextdot else self.edge_next 
 
                 i = Line2(selfedge).intersect(Line2(edge.edge))
                 if i is not None and not _approximately_equals(i, self.point):
@@ -160,10 +149,10 @@ class _LAVertex:
                     xedge	= ( edge.edge.norm.cross( (b - edge.edge.p1).normalized() )) > EPSILON
 
                     if not (xprev and xnext and xedge):
-                        log.debug("\t\tDiscarded candidate %s (%s-%s-%s)", b, xprev, xnext, xedge)
+                        # Candidate discarded
                         continue
 
-                    log.debug("\t\tFound valid candidate %s", b)
+                    # Found valid candidate
                     events.append(_SplitEvent(Line2(edge.edge).distance(b), b, self, edge.edge))
 
         i_prev = self.bisector.intersect(self.prev.bisector)
@@ -179,18 +168,14 @@ class _LAVertex:
 
         ev = min(events, key=lambda event: (self.point-event.intersection_point).length)
 
-        log.info("Generated new event for %s: %s", self, ev)
+        # Generated new event
         return ev
-
-    def __str__(self):
-        return "Vertex ({:.2f};{:.2f})".format(self.point.x, self.point.y)
 
 class _LAV:
     def __init__(self, slav):
         self.head = None
         self._slav = slav
         self._len = 0
-        log.debug("Created LAV %s", self)
 
     @classmethod
     # edgeContour is a list of edges of class Edge2
@@ -224,7 +209,6 @@ class _LAV:
 
     def invalidate(self, vertex):
         assert vertex.lav is self, "Tried to invalidate a vertex that's not mine"
-        log.debug("Invalidating %s", vertex)
         vertex._valid = False
         if self.head == vertex:
             self.head = self.head.next
@@ -248,12 +232,6 @@ class _LAV:
 
         self._len -= 1
         return replacement
-
-    def __str__(self):
-        return "LAV {}".format(id(self))
-
-    def __repr__(self):
-        return "{} = {}".format(str(self), [vertex for vertex in self])
 
     def __len__(self):
         return self._len
@@ -289,15 +267,13 @@ class _SLAV:
 
         lav = event.vertex_a.lav
         if event.vertex_a.prev == event.vertex_b.next:
-            log.info("%.2f Peak event at intersection %s from <%s,%s,%s> in %s", event.distance,
-                    event.intersection_point, event.vertex_a, event.vertex_b, event.vertex_a.prev, lav)
+            # Peak event at intersection
             self._lavs.remove(lav)
             for vertex in list(lav):
                 sinks.append(vertex.point)
                 vertex.invalidate()
         else:
-            log.info("%.2f Edge event at intersection %s from <%s,%s> in %s", event.distance, event.intersection_point,
-                    event.vertex_a, event.vertex_b, lav)
+            # Edge event at intersection            
             new_vertex = lav.unify(event.vertex_a, event.vertex_b, event.intersection_point)
             if lav.head in (event.vertex_a, event.vertex_b):
                 lav.head = new_vertex
@@ -309,8 +285,6 @@ class _SLAV:
 
     def handle_split_event(self, event):
         lav = event.vertex.lav
-        log.info("%.2f Split event at intersection %s from vertex %s, for edge %s in %s", event.distance,
-                    event.intersection_point, event.vertex, event.opposite_edge, lav)
 
         sinks = [event.vertex.point]
         vertices = []
@@ -318,7 +292,6 @@ class _SLAV:
         y = None  # previous vertex
         norm = event.opposite_edge.norm
         for v in chain.from_iterable(self._lavs):
-            log.debug("%s in %s", v, v.lav)
             if norm == v.edge_prev.norm and event.opposite_edge.p1 == v.edge_prev.p1:
                 x = v
                 y = x.prev
@@ -329,7 +302,6 @@ class _SLAV:
             if x:
                 xprev	= (y.bisector.v.normalized()).cross((event.intersection_point - y.point).normalized()) <= -EPSILON
                 xnext	= (x.bisector.v.normalized()).cross((event.intersection_point - x.point).normalized()) >= EPSILON
-                log.debug("Vertex %s holds edge as %s edge (%s, %s)", v, ("prev" if x == v else "next"), xprev, xnext)
 
                 if xprev and xnext:
                     break
@@ -338,7 +310,7 @@ class _SLAV:
                     y = None
 
         if x is None:
-            log.info("Failed split event %s (equivalent edge event is expected to follow)", event)
+            # Split event failed (equivalent edge event is expected to follow)
             return (None, [])
 
         v1 = _LAVertex(event.intersection_point, event.vertex.edge_prev, event.opposite_edge)
@@ -368,7 +340,7 @@ class _SLAV:
                 self._lavs.append(l)
                 vertices.append(l.head)
             else:
-                log.info("LAV %s has collapsed into the line %s--%s", l, l.head.point, l.head.next.point)
+                # LAV has collapsed into the line
                 sinks.append(l.head.next.point)
                 for v in list(l):
                     v.invalidate()
@@ -452,21 +424,19 @@ def skeletonize(edgeContours):
     prioque = _EventQueue()
 
     for lav in slav:
-        print('new')
         for vertex in lav:
             prioque.put(vertex.next_event())
 
     while not (prioque.empty() or slav.empty()):
-        log.debug("SLAV is %s", [repr(lav) for lav in slav])
         i = prioque.get()
         if isinstance(i, _EdgeEvent):
             if not i.vertex_a.is_valid or not i.vertex_b.is_valid:
-                log.info("%.2f Discarded outdated edge event %s", i.distance, i)
+                # Discarded outdated edge event
                 continue
             (arc, events) = slav.handle_edge_event(i)
         elif isinstance(i, _SplitEvent):
             if not i.vertex.is_valid:
-                log.info("%.2f Discarded outdated split event %s", i.distance, i)
+                # Discarded outdated split event
                 continue
             (arc, events) = slav.handle_split_event(i)
         prioque.put_all(events)
@@ -557,20 +527,22 @@ def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., t
     if unitVectors is None:
         edges2D = [Edge2(p1,p2,(p2-p1).normalized()) for p1,p2 in zip(poly, poly[1:] + poly[:1])]
     else:
-        edges2D = [Edge2(p1,p2,norm) for p1,p2,norm in zip(poly, poly[1:] + poly[:1], unitVectors[vIndex:])]
+        edges2D = [Edge2(p1,p2,v) for p1,p2,v in zip(poly, poly[1:] + poly[:1], unitVectors)]
     edgeContours = [edges2D.copy()]
 
     vIndex += numVerts
+    uIndex = numVerts
     if numVertsHoles is not None:
         for numHole in numVertsHoles:
             hole = verts[vIndex:vIndex+numHole] # required to construct pairs of vertices
             if unitVectors is None:
                 holeEdges = [Edge2(p1,p2,(p2-p1).normalized()) for p1,p2 in zip(hole, hole[1:] + hole[:1])]
             else:
-                holeEdges = [Edge2(p1,p2,norm) for p1,p2,norm in zip(hole, hole[1:] + hole[:1], unitVectors[vIndex:])]
+                holeEdges = [Edge2(p1,p2,v) for p1,p2,v in zip(hole, hole[1:] + hole[:1], unitVectors[uIndex:])]
             edges2D.extend(holeEdges)
             edgeContours.extend([holeEdges.copy()])
             vIndex += numHole
+            uIndex += numHole
 
     nrOfEdges = len(edges2D)
 

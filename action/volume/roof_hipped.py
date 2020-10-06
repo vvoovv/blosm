@@ -7,7 +7,7 @@ from lib.bpypolyskel.bpypolyskel import polygonize
 from util import zAxis
 
 
-def _dumpInput(verts, firstVertIndex, numPolygonVerts):
+def _dumpInput(verts, firstVertIndex, numPolygonVerts, unitVectors):
     with open("D:/tmp/bpypolyskel_test.py", 'w') as file:
         file.write("import mathutils\n")
         file.write("import matplotlib.pyplot as plt\n")
@@ -23,9 +23,20 @@ def _dumpInput(verts, firstVertIndex, numPolygonVerts):
                 file.write(",\n")
             file.write("    mathutils.Vector((%s,%s,%s))" % (vert[0], vert[1], vert[2]))
         file.write("\n]\n")
+        
+        file.write("unitVectors = [\n")
+        firstVert = True
+        for unitVector in unitVectors:
+            if firstVert:
+                firstVert = False
+            else:
+                file.write(",\n")
+            file.write("    mathutils.Vector((%s,%s,%s))" % (unitVector[0], unitVector[1], unitVector[2]))
+        file.write("\n]\n")
+        
         file.write("firstVertIndex = %s\n" % firstVertIndex)
         file.write("numPolygonVerts = %s\n" % numPolygonVerts)
-        file.write("faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, None, 0.0, 0.5)")
+        file.write("faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, None, 0.0, 0.5, None, unitVectors)")
         file.write("\n")
         
         file.write("fig = plt.figure()\n")
@@ -225,7 +236,7 @@ class RoofHipped(RoofLeveled):
         for edgeIndex, vec in enumerate(unitVector):
             vec /= length[edgeIndex]
         
-        #_dumpInput(verts, firstVertIndex, numPolygonVerts)
+        #_dumpInput(verts, firstVertIndex, numPolygonVerts, unitVector)
         
         # calculate polygons formed by the straight skeleton
         polygonize(
@@ -236,7 +247,7 @@ class RoofHipped(RoofLeveled):
             footprint.roofHeight,
             0,
             roofSideIndices,
-            None#unitVector
+            unitVector
         )
         
         roofVerticalPosition = verts[firstVertIndex][2]

@@ -42,7 +42,7 @@ class poly2FacesGraph:
                     edges.append((vertex, neighbour))
         return edges
 
-    def circular_embedding(self, vList, direction = 'CW'):
+    def circular_embedding(self, vList, direction = 'CCW'):
         embedding = defaultdict(list)
 
         for vertex in self.g_dict:
