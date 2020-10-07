@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from parse.osm import Osm
+from ...osm import Osm
 from . import Relation
-from renderer import Renderer
+import parse
 
 
 class Linestring:
@@ -300,11 +300,11 @@ class Multipolygon(Relation):
             
         if polygons and not linestrings:
             if len(polygons) == 1:
-                self.t = Renderer.polygon
+                self.t = parse.polygon
                 # the only linestring is the valid polygon
                 self.ls = polygons[0]
             else:
-                self.t = Renderer.multipolygon
+                self.t = parse.multipolygon
                 # all linestrings are valid polygon
                 self.ls = polygons
             # update bounds of the OSM data with the valid elements of the relation
@@ -322,10 +322,10 @@ class Multipolygon(Relation):
             # The number of entries in <linestrings> is divisible by two,
             # so the condition <len(linestrings) == 2> actually means the only broken linestring
             if not polygons and len(linestrings) == 2:
-                self.t = Renderer.linestring
+                self.t = parse.linestring
                 self.ls = next( iter(linestrings.values()) )
             else:
-                self.t = Renderer.multilinestring
+                self.t = parse.multilinestring
                 l = polygons
                 # Each linestring is stored twice in <linestrings> for its start and end,
                 # so use Python set <nodeIds> to mark ids of OSM nodes that must be skipped
@@ -390,7 +390,7 @@ class Multipolygon(Relation):
         
         Returns a Python generator
         """
-        if self.t is Renderer.polygon:
+        if self.t is parse.polygon:
             _l = self.ls
         else:
             # iterate through the linestrings in the list <self.l>
@@ -417,7 +417,7 @@ class Multipolygon(Relation):
         """
         Check if the multipolygons has a hole (i.e has an inner polygon)
         
-        The method can be called only if <self.t> is <Renderer.multipolygon>
+        The method can be called only if <self.t> is <parse.multipolygon>
         """
         for _l in self.ls:
             if _l.role is Osm.inner:

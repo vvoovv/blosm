@@ -17,8 +17,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import parse
 from geojson import Manager, BuildingManager
-from renderer import Renderer2d, Renderer
+from renderer import Renderer2d
 from building.renderer import BuildingRenderer
 
 from manager.logging import Logger
@@ -61,7 +62,7 @@ class GeoJsonBuildingRenderer(BuildingRenderer):
     
     def render(self, building, data):
         outline = building.element
-        outlineData = tuple(outline.getData(data) if outline.t is Renderer.polygon else outline.getOuterData(data))
+        outlineData = tuple(outline.getData(data) if outline.t is parse.polygon else outline.getOuterData(data))
         
         # check if we have a triangle
         numPoints = len(outlineData)

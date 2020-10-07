@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy, bmesh
 import math
+import parse
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from util import zAxis, zeroVector
@@ -206,8 +207,6 @@ class Terrain:
     def initProjectionProxy(self, buildingsP, data):
         # <buildingsP> means "buildings from the parser"
         
-        from renderer import Renderer
-        
         proxyObj = createMeshObject("_projection_proxy_")
         proxyBm = getBmesh(proxyObj)
         
@@ -216,7 +215,7 @@ class Terrain:
         index = 0
         for buildingP in buildingsP:
             outline = buildingP.outline
-            for vert in (outline.getOuterData(data) if outline.t is Renderer.multipolygon else outline.getData(data)):
+            for vert in (outline.getOuterData(data) if outline.t is parse.multipolygon else outline.getData(data)):
                 vert = (vert[0], vert[1])
                 if not vert in self.projectedVertIndices:
                     self.projectedVertIndices[vert] = index
@@ -227,7 +226,7 @@ class Terrain:
         addShrinkwrapModifier(proxyObj, self.terrain, 0.)
         bpy.context.view_layer.objects.active = proxyObj
         # apply the SHRINKWRAP modifier
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
+        bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
         
         self.projectionProxy = proxyObj
     

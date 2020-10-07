@@ -1,6 +1,6 @@
 from mathutils import Vector
 from . import Action
-from renderer import Renderer
+import parse
 
 
 class Offset(Action):
@@ -17,7 +17,7 @@ class Offset(Action):
         outline = building.outline
         offset = Vector(
             next(
-                outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data)
+                outline.getOuterData(self.data) if outline.t is parse.multipolygon else outline.getData(self.data)
             )
         )
         

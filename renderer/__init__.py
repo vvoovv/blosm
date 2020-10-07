@@ -28,12 +28,6 @@ _isBlender280 = bpy.app.version[1] >= 80
 
 class Renderer:
     
-    # types of data
-    linestring = 1
-    multilinestring = 2
-    polygon = 3
-    multipolygon = 4
-    
     # _isBlender280 delete below
     parent = None
     collection = None

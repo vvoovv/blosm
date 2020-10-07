@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from renderer import Renderer
+import parse
 from renderer.layer import MeshLayer
 from renderer.node_layer import NodeLayer
 from renderer.curve_layer import CurveLayer
@@ -105,13 +105,13 @@ class Linestring(Manager):
     def parseWay(self, element, elementId):
         if element.tags.get("area")=="yes":
             if element.closed:
-                element.t = Renderer.polygon
+                element.t = parse.polygon
                 # render it in <BaseManager.render(..)>
                 element.r = True
             else:
                 element.valid = False
         else:
-            element.t = Renderer.linestring
+            element.t = parse.linestring
             # render it in <BaseManager.render(..)>
             element.r = True
 
@@ -126,7 +126,7 @@ class WayManager(Manager):
     def parseWay(self, element, elementId):
         if element.tags.get("area")=="yes":
             if element.closed:
-                element.t = Renderer.polygon
+                element.t = parse.polygon
                 # render it in <BaseManager.render(..)>
                 element.r = True
                 # <element> should go to a polygon layer
@@ -134,14 +134,14 @@ class WayManager(Manager):
             else:
                 element.valid = False
         else:
-            element.t = Renderer.linestring
+            element.t = parse.linestring
             # set the special renderer
             element.rr = self.renderer
             # render it in <BaseManager.render(..)>
             element.r = True
     
     def parseRelation(self, element, elementId):
-        if element.t in (Renderer.polygon, Renderer.multipolygon):
+        if element.t in (parse.polygon, parse.multipolygon):
             # render <element> in <BaseManager.render(..)>
             element.r = True
             # <element> should go to a polygon layer
@@ -169,7 +169,7 @@ class Polygon(Manager):
     
     def parseWay(self, element, elementId):
         if element.closed:
-            element.t = Renderer.polygon
+            element.t = parse.polygon
             # render it in <BaseManager.render(..)>
             element.r = True
         else:
@@ -200,11 +200,11 @@ class BaseManager(Manager):
             if rel.valid and rel.r:
                 renderer = rel.rr or self.renderer
                 renderer.preRender(rel)
-                if rel.t is Renderer.polygon:
+                if rel.t is parse.polygon:
                     renderer.renderPolygon(rel, osm)
-                elif rel.t is Renderer.multipolygon:
+                elif rel.t is parse.multipolygon:
                     renderer.renderMultiPolygon(rel, osm)
-                elif rel.t is Renderer.linestring:
+                elif rel.t is parse.linestring:
                     renderer.renderLineString(rel, osm)
                 else:
                     renderer.renderMultiLineString(rel, osm)
@@ -215,7 +215,7 @@ class BaseManager(Manager):
             if way.valid and way.r:
                 renderer = way.rr or self.renderer
                 renderer.preRender(way)
-                if way.t is Renderer.polygon:
+                if way.t is parse.polygon:
                     renderer.renderPolygon(way, osm)
                 else:
                     renderer.renderLineString(way, osm)

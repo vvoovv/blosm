@@ -22,7 +22,7 @@ from setup.premium import setup_base
 def setup(app, osm):
     setup_base(app, osm, getMaterials, bldgPreRender)
 
-from renderer import Renderer
+import parse
 
 from realistic.material.renderer import\
     SeamlessTexture, SeamlessTextureWithColor, MaterialWithColor,\
@@ -95,7 +95,7 @@ def bldgPreRender(building, app):
         if roofShape == "onion":
             building.setMaterialRoof("metal_without_uv")
         elif roofShape == "dome":
-            if element.t is Renderer.multipolygon:
+            if element.t is parse.multipolygon:
                 building.setMaterialRoof("metal_color")
             else:
                 building.setMaterialRoof("metal_scaled_color")

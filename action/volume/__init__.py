@@ -1,6 +1,6 @@
 from .. import Action
 from item.footprint import Footprint
-from renderer import Renderer
+import parse
 
 # import roof generators
 from .roof_flat import RoofFlat
@@ -57,7 +57,7 @@ class Volume(Action):
             self.prepareFootprint(footprint, building, buildingStyle)
             
             element = footprint.element
-            if element.t is Renderer.multipolygon:
+            if element.t is parse.multipolygon:
                 # check if the multipolygon has holes
                 if element.hasInner():
                     self.volumeGeneratorMultiFlat.do(footprint)
@@ -74,7 +74,7 @@ class Volume(Action):
                     # the multipolygon.
                     
                     # overrides to pretend than <element> is a polygon
-                    element.t = Renderer.polygon
+                    element.t = parse.polygon
                     ls = element.ls
                     for _l in ls:
                         element.ls = _l

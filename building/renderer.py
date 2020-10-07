@@ -18,7 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-from renderer import Renderer, Renderer3d
+import parse
+from renderer import Renderer3d
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
@@ -147,7 +148,7 @@ class BuildingRenderer(Renderer3d):
     def renderElement(self, element, building, osm):
         # get a class instance created in the constructor to deal with a specific roof shape
         roof = self.roofs.get(element.tags.get("roof:shape"), self.defaultRoof)
-        if element.t is Renderer.multipolygon:
+        if element.t is parse.multipolygon:
             # check if the multipolygon has holes
             if element.hasInner():
                 # flat roof is always for multipolygons with holes
@@ -318,7 +319,7 @@ class BuildingRenderer(Renderer3d):
     def calculateOffset(self, outline, osm):
         # take the first vertex of the outline as the offset
         self.offset = Vector(
-            next( outline.getOuterData(osm) if outline.t is Renderer.multipolygon else outline.getData(osm) )
+            next( outline.getOuterData(osm) if outline.t is parse.multipolygon else outline.getData(osm) )
         )
         if self.app.terrain:
             self.offsetZ = self.app.terrain.project(self.offset)
@@ -326,7 +327,7 @@ class BuildingRenderer(Renderer3d):
     def projectOnTerrain(self, outline, osm):
         # take the first vertex of the outline as the offset
         offset = self.app.terrain.project(
-            next( outline.getOuterData(osm) if outline.t is Renderer.multipolygon else outline.getData(osm) )
+            next( outline.getOuterData(osm) if outline.t is parse.multipolygon else outline.getData(osm) )
         )
         if offset:
             self.offsetZ = offset[2]

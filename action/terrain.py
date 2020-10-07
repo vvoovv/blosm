@@ -1,6 +1,6 @@
 import math
 from . import Action
-from renderer import Renderer
+import parse
 
 from util import zAxis
 
@@ -22,7 +22,7 @@ class Terrain(Action):
             (
                 self.app.terrain.project2(vert)\
                 for vert in\
-                (outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data))
+                (outline.getOuterData(self.data) if outline.t is parse.multipolygon else outline.getData(self.data))
             ),
             key = lambda vert: vert[2]
         )[2]
@@ -37,7 +37,7 @@ class Terrain(Action):
             (
                 self.app.terrain.project2(vert)\
                 for vert in\
-                (outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data))
+                (outline.getOuterData(self.data) if outline.t is parse.multipolygon else outline.getData(self.data))
             ),
             key = lambda vert: vert[2]
         )
@@ -49,7 +49,7 @@ class Terrain(Action):
         outline = building.outline
         # take the first vertex of the outline as the offset
         offsetZ = self.app.terrain.project(
-            next( outline.getOuterData(self.data) if outline.t is Renderer.multipolygon else outline.getData(self.data) )
+            next( outline.getOuterData(self.data) if outline.t is parse.multipolygon else outline.getData(self.data) )
         )
         if offsetZ:
             building.offset = offsetZ[2] * zAxis

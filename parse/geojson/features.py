@@ -1,4 +1,4 @@
-from renderer import Renderer
+import parse
 
 
 class Feature:
@@ -31,7 +31,7 @@ class Polygon:
         self.tags = tags
         self.r = False
         self.rr = None
-        self.t = Renderer.polygon
+        self.t = parse.polygon
 
     def updateBounds(self, bounds):
         Feature.updateBounds(bounds, self.coords)
@@ -62,7 +62,7 @@ class Multipolygon:
         self.tags = tags
         self.r = False
         self.rr = None
-        self.t = Renderer.multipolygon
+        self.t = parse.multipolygon
 
     def updateBounds(self, bounds):
         # only the outer ring matters, so we <self.coords[0]>

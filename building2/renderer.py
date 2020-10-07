@@ -1,7 +1,7 @@
-import os
 import bpy
 from mathutils import Vector
-from building.renderer import Renderer
+import parse
+from renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
 from .asset_store import AssetStore
@@ -119,7 +119,7 @@ class Building:
             
             if not polygon.allVerts:
                 outline = self.outline
-                if outline.t is Renderer.multipolygon:
+                if outline.t is parse.multipolygon:
                     coords = outline.getOuterData(self.data)
                 else:
                     coords = outline.getData(self.data)

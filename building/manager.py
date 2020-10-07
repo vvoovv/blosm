@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from manager import Manager
-from renderer import Renderer
+import parse
 from .layer import BuildingLayer
 from parse.osm import Osm
 from util import zAxis
@@ -47,7 +47,7 @@ class BuildingManager(Manager):
 
     def parseWay(self, element, elementId):
         if element.closed:
-            element.t = Renderer.polygon
+            element.t = parse.polygon
             self.createBuilding(element)
         else:
             element.valid = False
@@ -157,7 +157,7 @@ class BuildingManager(Manager):
             outline = building.outline
             # In the case of a multipolygon we consider the only outer linestring that defines the outline
             # of the polygon
-            polygon = outline.getData(osm) if outline.t is Renderer.polygon else outline.getOuterData(osm)
+            polygon = outline.getData(osm) if outline.t is parse.polygon else outline.getOuterData(osm)
             if not polygon:
                 # no outer linestring, so skip it
                 continue
@@ -177,7 +177,7 @@ class BuildingParts:
         
     def parseWay(self, element, elementId):
         if element.closed:
-            element.t = Renderer.polygon
+            element.t = parse.polygon
             # empty outline
             element.o = None
             self.parts.append(element)
