@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 25),
+    "version": (2, 4, 26),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
