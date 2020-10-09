@@ -18,9 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import parse
-from renderer.layer import MeshLayer
-from renderer.node_layer import NodeLayer
-from renderer.curve_layer import CurveLayer
 from material import colors
 
 
@@ -55,10 +52,10 @@ class Manager:
         element.r = True
         
     def createLayer(self, layerId, app, **kwargs):
-        return app.createLayer(layerId, MeshLayer, **kwargs)
+        return app.createLayer(layerId, app.polygonLayer, **kwargs)
 
     def createNodeLayer(self, layerId, app, **kwargs):
-        return app.createLayer(layerId, NodeLayer, **kwargs)
+        return app.createLayer(layerId, app.nodeLayer, **kwargs)
     
     @staticmethod
     def getColor(color):
@@ -150,7 +147,7 @@ class WayManager(Manager):
             element.valid = False
 
     def createLayer(self, layerId, app, **kwargs):
-        return app.createLayer(layerId, CurveLayer, **kwargs)
+        return app.createLayer(layerId, app.wayLayer, **kwargs)
     
     def getPolygonLayer(self, element):
         layerId = element.l.id
@@ -162,7 +159,7 @@ class WayManager(Manager):
         # Set the new <layerId>
         layerId = "areas_%s" % layerId[_index+1:]
         app = self.renderer.app
-        return app.getLayer(layerId) if layerId in app.layerIndices else app.createLayer(layerId, MeshLayer)
+        return app.getLayer(layerId) if layerId in app.layerIndices else app.createLayer(layerId, app.polygonLayer)
 
 
 class Polygon(Manager):

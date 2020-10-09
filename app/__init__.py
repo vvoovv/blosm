@@ -24,7 +24,9 @@ from mathutils import Vector
 
 import defs
 from renderer.layer import Layer
+from renderer.layer import MeshLayer
 from renderer.node_layer import NodeLayer
+from renderer.curve_layer import CurveLayer
 from renderer import Renderer
 from terrain import Terrain
 from util.blender import makeActive
@@ -143,6 +145,11 @@ class App:
         self.isPremium = False
         self.layerIndices = {}
         self.layers = []
+        
+        # the constructors for the layers
+        self.polygonLayer = MeshLayer
+        self.nodeLayer = NodeLayer
+        self.wayLayer = CurveLayer
     
     def initOsm(self, op, context):
         addonName = self.addonName
