@@ -29,8 +29,8 @@ import heapq
 from collections import namedtuple
 from itertools import *
 
-from bpyeuclid import *
-from poly2FacesGraph import poly2FacesGraph
+from .bpyeuclid import *
+from .poly2FacesGraph import poly2FacesGraph
 
 
 EPSILON = 0.00001
