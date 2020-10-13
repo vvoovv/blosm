@@ -236,7 +236,7 @@ class RoofHipped(RoofLeveled):
         for edgeIndex, vec in enumerate(unitVector):
             vec /= length[edgeIndex]
         
-        #_dumpInput(verts, firstVertIndex, numPolygonVerts, unitVector)
+        _dumpInput(verts, firstVertIndex, numPolygonVerts, unitVector)
         
         # calculate polygons formed by the straight skeleton
         polygonize(

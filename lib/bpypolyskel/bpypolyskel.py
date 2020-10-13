@@ -40,6 +40,12 @@ def _iterCircularPrevNext(lst):
     prevs = islice(cycle(prevs), len(lst) - 1, None)
     return zip(prevs,nexts)
 
+def _iterCircularPrevThisNext(lst):
+    prevs, this, nexts = tee(lst, 3)
+    prevs = islice(cycle(prevs), len(lst) - 1, None)
+    nexts = islice(cycle(nexts), 1, None)
+    return zip(prevs, this, nexts)
+    
 def _approximately_equals(a, b):
     return a == b or ( (a-b).magnitude <= max( a.magnitude, b.magnitude) * 0.001)
 
@@ -144,9 +150,9 @@ class _LAVertex:
 
 					# check eligibility of b
 					# a valid b should lie within the area limited by the edge and the bisectors of its two vertices:
-                    xprev	= ( (edge.bisector_prev.v.normalized()).cross( (b - edge.bisector_prev.p).normalized() )) < -EPSILON
-                    xnext	= ( (edge.bisector_next.v.normalized()).cross( (b - edge.bisector_next.p).normalized() )) > EPSILON
-                    xedge	= ( edge.edge.norm.cross( (b - edge.edge.p1).normalized() )) > EPSILON
+                    xprev	= ( (edge.bisector_prev.v.normalized()).cross( (b - edge.bisector_prev.p).normalized() )) < EPSILON
+                    xnext	= ( (edge.bisector_next.v.normalized()).cross( (b - edge.bisector_next.p).normalized() )) > -EPSILON
+                    xedge	= ( edge.edge.norm.cross( (b - edge.edge.p1).normalized() )) > -EPSILON
 
                     if not (xprev and xnext and xedge):
                         # Candidate discarded
@@ -300,8 +306,8 @@ class _SLAV:
                 x = y.next
 
             if x:
-                xprev	= (y.bisector.v.normalized()).cross((event.intersection_point - y.point).normalized()) <= -EPSILON
-                xnext	= (x.bisector.v.normalized()).cross((event.intersection_point - x.point).normalized()) >= EPSILON
+                xprev	= (y.bisector.v.normalized()).cross((event.intersection_point - y.point).normalized()) <= EPSILON
+                xnext	= (x.bisector.v.normalized()).cross((event.intersection_point - x.point).normalized()) >= -EPSILON
 
                 if xprev and xnext:
                     break
@@ -426,14 +432,6 @@ def clean_skeleton(skeleton):
                     arc.sinks.remove(pair[1])
                 else:
                     skeleton[nodeIndex].sinks.append(pair[0])
-                    arc.sinks.remove(pair[0])
-                    arc.sinks.remove(pair[1])
-            # check if this pair of edges is anti-parallel
-            elif abs(dotCosine + 1.0) < EPSILON:
-                # then both of them should point to a skeleton node
-                nodeIndices = [i for i, node in enumerate(skeleton) if node.source in pair]
-                if len(nodeIndices) == 2:   # Yes? -> fix them
-                    skeleton[nodeIndices[0]].sinks.append(pair[1])
                     arc.sinks.remove(pair[0])
                     arc.sinks.remove(pair[1])
 
@@ -608,13 +606,13 @@ def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., t
     # add polygon and hole indices to graph using indices in verts
     vIndex = firstVertIndex
     _L = list(range(vIndex,vIndex+numVerts))
-    for edge in zip(_L, _L[1:] + _L[:1]):
+    for edge in _iterCircularPrevNext(_L):
         graph.add_edge(edge)
     vIndex += numVerts
     if numVertsHoles is not None:
         for numHole in numVertsHoles:
             _L = list(range(vIndex,vIndex+numHole))
-            for edge in zip(_L, _L[1:] + _L[:1]):
+            for edge in _iterCircularPrevNext(_L):
                 graph.add_edge(edge)
             vIndex += numHole
 
@@ -635,10 +633,23 @@ def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., t
             graph.add_edge( (aIndex,sIndex) )
 
     # generate clockwise circular embedding
-    embedding = graph.circular_embedding(verts,'CW')
+    embedding = graph.circular_embedding(verts,'CCW')
 
     # compute list of faces, the vertex indices are still related to verts2D
     faces3D = graph.faces(embedding, nrOfEdges+firstVertIndex)
+
+    # fix adjacent parallel edges in faces
+    for face in faces3D:
+        if len(face) > 3:   # a triangle cant have parallel edges
+            verticesToRemove = []
+            for prev, this, next in _iterCircularPrevThisNext(face):
+                s0 = verts[this]-verts[prev]
+                s1 = verts[next]-verts[this]
+                dotCosine = s0.dot(s1) / (s0.magnitude*s1.magnitude)
+                if abs(dotCosine - 1.0) < EPSILON: # found adjacent parallel edges
+                    verticesToRemove.append(this)
+            for item in verticesToRemove:
+                face.remove(item) 
 
     if faces is None:
         return faces3D

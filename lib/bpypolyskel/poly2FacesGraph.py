@@ -1,6 +1,8 @@
 from collections import defaultdict
 from functools import cmp_to_key
 
+EPSILON = 0.00001
+
 # operator used to compute a counterclockwise or clockwise ordering of the neighbors of a given node.
 # v0,v1,v2 are expected to be of type mathutils.Vector with dimension 2
 # v0 is the center and v1,v2 are the neighbors.
@@ -9,8 +11,10 @@ def is_ccw(v1, v2, v0):
     d1 = v1.xy - v0.xy
     d2 = v2.xy - v0.xy
     c = d2.cross(d1)
-    sign = lambda x: (1, -1)[x < 0]     # Python is still missing a sign operator !!!
-    return sign(c)
+    if c > EPSILON:
+        return 1
+    else:
+        return -1
 
 class poly2FacesGraph:
     def __init__(self):
