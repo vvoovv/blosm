@@ -12,9 +12,9 @@ def is_ccw(v1, v2, v0):
     d2 = v2.xy - v0.xy
     c = d2.cross(d1)
     if c > EPSILON:
-        return 1
-    else:
         return -1
+    else:
+        return 1
 
 class poly2FacesGraph:
     def __init__(self):
