@@ -571,7 +571,7 @@ class RoofProfile(Roof):
         self.partLength = [0. for i in range(self.lastProfileIndex)]
     
     def init(self, footprint, coords):
-        super().init(footprint, coords)
+        roofItem = super().init(footprint, coords)
         
         if not footprint.valid:
             return
@@ -582,6 +582,8 @@ class RoofProfile(Roof):
             self.processDirection(footprint)
         
         self.initUv(footprint)
+        
+        return roofItem
 
     def validate(self, footprint):
         """
@@ -614,14 +616,15 @@ class RoofProfile(Roof):
         for i in range(self.lastProfileIndex):
             self.slots[i].reset()
     
-    def render(self, footprint):
+    def getRoofItem(self, footprint):
+        return ItemRoofProfile.getItem(self.itemFactory, footprint)
+    
+    def render(self, footprint, roofItem):
         polygon = footprint.polygon
         verts = footprint.building.verts
         self.vertOffset = len(verts)
         # vertices for the basement of the volume
         verts.extend(v for v in polygon.verts)
-        
-        roofItem = ItemRoofProfile.getItem(self.itemFactory, footprint)
         
         slots = self.slots
         

@@ -8,6 +8,7 @@ from .roof_flat_multi import RoofFlatMulti
 from .roof_generatrix import RoofGeneratrix
 from .roof_profile import RoofProfile, roofDataGabled, roofDataRound, roofDataGambrel, roofDataSaltbox
 from .roof_hipped import RoofHipped
+from .roof_hipped_multi import RoofHippedMulti
 
 
 class Volume(Action):
@@ -60,7 +61,10 @@ class Volume(Action):
             if element.t is parse.multipolygon:
                 # check if the multipolygon has holes
                 if element.hasInner():
-                    self.volumeGeneratorMultiFlat.do(footprint)
+                    if footprint.getStyleBlockAttr("roofShape") in ("hipped", "gabled"):
+                        self.volumeGeneratorMultiHipped.do(footprint)
+                    else:
+                        self.volumeGeneratorMultiFlat.do(footprint)
                 else:
                     # That's a quite rare case
                     # We treat each polygon of the multipolygon as a single polygon
@@ -113,3 +117,4 @@ class Volume(Action):
             #'mansard': RoofMansard()
         }
         self.volumeGeneratorMultiFlat = RoofFlatMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlatMulti"])
+        self.volumeGeneratorMultiHipped = RoofHippedMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHipped"])

@@ -71,9 +71,9 @@ class Roof:
         self.setUvs = True
     
     def do(self, footprint, coords):
-        self.init(footprint, coords)
+        roofItem = self.init(footprint, coords)
         if footprint.valid:
-            self.render(footprint)
+            self.render(footprint, roofItem)
     
     def init(self, footprint, coords):
         # calculate numerical dimensions for the building or building part
@@ -96,6 +96,8 @@ class Roof:
             return
         # check the direction of vertices, it must be counterclockwise
         polygon.checkDirection()
+        
+        return self.getRoofItem(footprint)
     
     def calculateDimensions(self, footprint):
         """

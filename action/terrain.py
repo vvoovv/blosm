@@ -1,4 +1,3 @@
-import math
 from . import Action
 import parse
 

@@ -6,12 +6,17 @@ from util.polygon import PolygonCW
 
 
 class RoofMulti:
-
-    def extrude(self, footprint):
-        super().extrude(footprint)
-        self.extrudeInnerPolygons(footprint)
     
-    def extrudeInnerPolygons(self, footprint):
+    def do(self, footprint):
+        roofItem = self.init(footprint)
+        if footprint.valid:
+            self.render(footprint, roofItem)
+    
+    def extrude(self, footprint, roofItem):
+        super().extrude(footprint, roofItem)
+        self.extrudeInnerPolygons(footprint, roofItem)
+    
+    def extrudeInnerPolygons(self, footprint, roofItem):
         #
         # deal with the inner polygons below
         #
@@ -21,7 +26,7 @@ class RoofMulti:
         indexOffset = len(verts)
         z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
         
-        for polygon in self.innerPolygons:
+        for polygon in roofItem.innerPolygons:
             numVerts = polygon.n
             
             # create vertices
@@ -53,35 +58,13 @@ class RoofMulti:
                 facades[i].normal.negate()
             
             indexOffset += 2*numVerts
-
-
-class RoofFlatMulti(RoofMulti, RoofFlat):
-    
-    def __init__(self, data, itemStore, itemFactory, facadeRender, roofRenderer):
-        super().__init__(data, itemStore, itemFactory, facadeRender, roofRenderer)
-        self.innerPolygons = []
-
-    def do(self, footprint):
-        self.init(footprint)
-        if footprint.valid:
-            self.render(footprint)
-    
-    def getRoofItem(self, footprint, firstVertIndex):
-        item = ItemRoofFlatMulti.getItem(
-            self.itemFactory,
-            footprint,
-            firstVertIndex
-        )
-        item.innerPolygons = self.innerPolygons
-        return item
     
     def init(self, footprint):
         data = self.data
-        super().init(footprint, footprint.element.getOuterData(data))
+        roofItem = super().init(footprint, footprint.element.getOuterData(data))
         z1 = footprint.minHeight
         element = footprint.element
-        innerPolygons = self.innerPolygons
-        innerPolygons.clear()
+        innerPolygons = roofItem.innerPolygons
         
         for _l in element.ls:
             if _l.role is data.outer:
@@ -94,3 +77,14 @@ class RoofFlatMulti(RoofMulti, RoofFlat):
             # check the direction of vertices, it must be clockwise (!)
             innerPolygon.checkDirection()
             innerPolygons.append(innerPolygon)
+        return roofItem
+
+
+class RoofFlatMulti(RoofMulti, RoofFlat):
+    
+    def getRoofItem(self, footprint):
+        return ItemRoofFlatMulti.getItem(
+            self.itemFactory,
+            footprint,
+            self.getRoofFirstVertIndex(footprint)
+        )

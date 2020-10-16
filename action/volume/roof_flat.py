@@ -20,20 +20,10 @@ class RoofFlat(Roof):
         self.hasRoofLevels = False
         self.extrudeTillRoof = False
     
-    def render(self, footprint):
-        # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base;
-        # since it depends on the total number of building vertices, we calculated it before any operation
-        # that creates building geometry 
-        firstVertIndex = self.getRoofFirstVertIndex(footprint)
-        
-        self.extrude(footprint)
+    def render(self, footprint, roofItem):
+        self.extrude(footprint, roofItem)
         self.facadeRenderer.render(footprint, self.data)
-        self.roofRenderer.render(
-            self.getRoofItem(
-                footprint,
-                firstVertIndex
-            )
-        )
+        self.roofRenderer.render(roofItem)
     
     def validate(self, footprint):
         """
@@ -46,14 +36,17 @@ class RoofFlat(Roof):
     def getRoofFirstVertIndex(self, footprint):
         return len(footprint.building.verts) + footprint.polygon.n
     
-    def getRoofItem(self, footprint, firstVertIndex):
+    def getRoofItem(self, footprint):
+        # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base;
+        # since it depends on the total number of building vertices, we calculated it before any operation
+        # that creates building geometry
         return ItemRoofFlat.getItem(
             self.itemFactory,
             footprint,
-            firstVertIndex
+            self.getRoofFirstVertIndex(footprint)
         )
     
-    def extrude(self, footprint):
+    def extrude(self, footprint, roofItem):
         building = footprint.building
         facades = footprint.facades
         verts = building.verts
@@ -138,10 +131,10 @@ class RoofLeveled(RoofFlat):
     def getRoofFirstVertIndex(self, footprint):
         return len(footprint.building.verts) if footprint.noWalls else super().getRoofFirstVertIndex(footprint)
     
-    def extrude(self, footprint):
+    def extrude(self, footprint, roofItem):
         if footprint.noWalls:
             z = footprint.roofVerticalPosition
             # the basement of the roof
             footprint.building.verts.extend(Vector((v.x, v.y, z)) for v in footprint.polygon.verts)
             return
-        super().extrude(footprint)
+        super().extrude(footprint, roofItem)

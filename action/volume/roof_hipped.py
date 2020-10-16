@@ -82,13 +82,14 @@ class RoofHipped(RoofLeveled):
         # from the edge vertices meet)
         self.distance = []
     
-    def render(self, footprint):
+    def getRoofItem(self, footprint):
+        return ItemRoofHipped.getItem(self.itemFactory, footprint)
+    
+    def render(self, footprint, roofItem):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base
         firstVertIndex = self.getRoofFirstVertIndex(footprint)
         
-        super().extrude(footprint)
-        
-        roofItem = ItemRoofHipped.getItem(self.itemFactory, footprint)
+        super().extrude(footprint, roofItem)
         
         # now generate the roof
         if footprint.polygon.n == 4:
