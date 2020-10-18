@@ -23,6 +23,7 @@ from item.roof_flat_multi import RoofFlatMulti
 from item.roof_profile import RoofProfile
 from item.roof_generatrix import RoofGeneratrix
 from item.roof_hipped import RoofHipped
+from item.roof_hipped_multi import RoofHippedMulti
 from item.roof_side import RoofSide
 
 
@@ -44,6 +45,7 @@ def _createReferenceItems(app):
         RoofProfile(),
         RoofGeneratrix(),
         RoofHipped(),
+        RoofHippedMulti(),
         RoofSide()
     )
 

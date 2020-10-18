@@ -7,7 +7,7 @@ from lib.bpypolyskel.bpypolyskel import polygonize
 from util import zAxis
 
 
-def _dumpInput(verts, firstVertIndex, numPolygonVerts, unitVectors):
+def _dumpInput(verts, firstVertIndex, numPolygonVerts, holesInfo, unitVectors):
     with open("D:/tmp/bpypolyskel_test.py", 'w') as file:
         file.write("import mathutils\n")
         file.write("import matplotlib.pyplot as plt\n")
@@ -24,19 +24,36 @@ def _dumpInput(verts, firstVertIndex, numPolygonVerts, unitVectors):
             file.write("    mathutils.Vector((%s,%s,%s))" % (vert[0], vert[1], vert[2]))
         file.write("\n]\n")
         
-        file.write("unitVectors = [\n")
-        firstVert = True
-        for unitVector in unitVectors:
-            if firstVert:
-                firstVert = False
-            else:
-                file.write(",\n")
-            file.write("    mathutils.Vector((%s,%s,%s))" % (unitVector[0], unitVector[1], unitVector[2]))
-        file.write("\n]\n")
+        if unitVectors:
+            file.write("unitVectors = [\n")
+            firstVert = True
+            for unitVector in unitVectors:
+                if firstVert:
+                    firstVert = False
+                else:
+                    file.write(",\n")
+                file.write("    mathutils.Vector((%s,%s,%s))" % (unitVector[0], unitVector[1], unitVector[2]))
+            file.write("\n]\n")
+        
+        if holesInfo:
+            file.write("holesInfo = [\n")
+            firstHole = True
+            for holeInfo in holesInfo:
+                if firstHole:
+                    firstHole = False
+                else:
+                    file.write(",\n")
+                file.write("    (%s,%s)" % (holeInfo[0], holeInfo[1]))
+            file.write("\n]\n")
+        else:
+            file.write("holesInfo = None\n")
         
         file.write("firstVertIndex = %s\n" % firstVertIndex)
         file.write("numPolygonVerts = %s\n" % numPolygonVerts)
-        file.write("faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, None, 0.0, 0.5, None, unitVectors)")
+        if unitVectors:
+            file.write("faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, holesInfo, 0.0, 0.5, None, unitVectors)")
+        else:
+            file.write("faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, holesInfo, 0.0, 0.5, None, None)")
         file.write("\n")
         
         file.write("fig = plt.figure()\n")
@@ -237,7 +254,7 @@ class RoofHipped(RoofLeveled):
         for edgeIndex, vec in enumerate(unitVector):
             vec /= length[edgeIndex]
         
-        _dumpInput(verts, firstVertIndex, numPolygonVerts, unitVector)
+        #_dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
         
         # calculate polygons formed by the straight skeleton
         polygonize(

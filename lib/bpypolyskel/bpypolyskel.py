@@ -485,7 +485,7 @@ def skeletonize(edgeContours):
     output = [arc for arc in output if len(arc.sinks) > 0]
     return output
 
-def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., tan=0., faces=None, unitVectors=None):
+def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None):
     """
     Compute the faces of a polygon, skeletonized by a straight skeleton.
 
@@ -560,27 +560,24 @@ def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., t
     zBase = verts[firstVertIndex].z
 
     # create 2D edges as list and as contours for skeletonization and graph construction
-    vIndex = firstVertIndex
-    poly = verts[vIndex:vIndex+numVerts] # required to construct pairs of vertices
+    poly = verts[firstVertIndex:firstVertIndex+numVerts] # required to construct pairs of vertices
     if unitVectors is None:
         edges2D = [Edge2(p1,p2,(p2-p1).normalized()) for p1,p2 in zip(poly, poly[1:] + poly[:1])]
     else:
         edges2D = [Edge2(p1,p2,v) for p1,p2,v in zip(poly, poly[1:] + poly[:1], unitVectors)]
     edgeContours = [edges2D.copy()]
-
-    vIndex += numVerts
+    
     uIndex = numVerts
-    if numVertsHoles is not None:
-        for numHole in numVertsHoles:
-            hole = verts[vIndex:vIndex+numHole] # required to construct pairs of vertices
+    if holesInfo:
+        for holeOffset,numVertsHole in holesInfo:
+            hole = verts[holeOffset:holeOffset+numVertsHole] # required to construct pairs of vertices
             if unitVectors is None:
                 holeEdges = [Edge2(p1,p2,(p2-p1).normalized()) for p1,p2 in zip(hole, hole[1:] + hole[:1])]
             else:
                 holeEdges = [Edge2(p1,p2,v) for p1,p2,v in zip(hole, hole[1:] + hole[:1], unitVectors[uIndex:])]
             edges2D.extend(holeEdges)
             edgeContours.extend([holeEdges.copy()])
-            vIndex += numHole
-            uIndex += numHole
+            uIndex += numVertsHole
 
     nrOfEdges = len(edges2D)
 
@@ -604,17 +601,15 @@ def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., t
     graph = poly2FacesGraph()
 
     # add polygon and hole indices to graph using indices in verts
-    vIndex = firstVertIndex
-    _L = list(range(vIndex,vIndex+numVerts))
+    _L = list(range(firstVertIndex, firstVertIndex+numVerts))
     for edge in _iterCircularPrevNext(_L):
         graph.add_edge(edge)
-    vIndex += numVerts
-    if numVertsHoles is not None:
-        for numHole in numVertsHoles:
-            _L = list(range(vIndex,vIndex+numHole))
+    
+    if holesInfo:
+        for holeOffset,numVertsHole in holesInfo:
+            _L = list(range(holeOffset,holeOffset+numVertsHole))
             for edge in _iterCircularPrevNext(_L):
                 graph.add_edge(edge)
-            vIndex += numHole
 
     # add skeleton edges to graph using indices in verts
     for index, arc in enumerate(skeleton):
@@ -642,9 +637,9 @@ def polygonize(verts, firstVertIndex, numVerts, numVertsHoles=None, height=0., t
     for face in faces3D:
         if len(face) > 3:   # a triangle cant have parallel edges
             verticesToRemove = []
-            for prev, this, next in _iterCircularPrevThisNext(face):
+            for prev, this, _next in _iterCircularPrevThisNext(face):
                 s0 = verts[this]-verts[prev]
-                s1 = verts[next]-verts[this]
+                s1 = verts[_next]-verts[this]
                 dotCosine = s0.dot(s1) / (s0.magnitude*s1.magnitude)
                 if abs(dotCosine - 1.0) < EPSILON: # found adjacent parallel edges
                     verticesToRemove.append(this)
