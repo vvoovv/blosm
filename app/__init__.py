@@ -16,26 +16,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import sys
+from .base import BaseApp
+if "bpy" in sys.modules:
+    import os, json, webbrowser, math, gzip, struct
+    import bpy
+    from mathutils import Vector
+    
+    import defs
+    from renderer.layer import Layer
+    from renderer.layer import MeshLayer
+    from renderer.node_layer import NodeLayer
+    from renderer.curve_layer import CurveLayer
+    from renderer import Renderer
+    from terrain import Terrain
+    from util.blender import makeActive
+    from util.polygon import Polygon
+    
+    _isBlender280 = bpy.app.version[1] >= 80
 
-import os, json, webbrowser, math, gzip, struct
-from urllib import request
-import bpy
-from mathutils import Vector
 
-import defs
-from renderer.layer import Layer
-from renderer.layer import MeshLayer
-from renderer.node_layer import NodeLayer
-from renderer.curve_layer import CurveLayer
-from renderer import Renderer
-from terrain import Terrain
-from util.blender import makeActive
-from util.polygon import Polygon
-
-_isBlender280 = bpy.app.version[1] >= 80
-
-
-class App:
+class App(BaseApp):
     
     #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
     
@@ -61,8 +62,6 @@ class App:
     
     devOsmServer = "overpass-api.de"
     
-    osmUrlPath = "/api/map?bbox=%s,%s,%s,%s"
-    
     osmUrlPath2 = "/api/interpreter"
     
     terrainUrl = "http://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
@@ -72,8 +71,6 @@ class App:
     terrainSubDir = "terrain"
     
     overlaySubDir = "overlay"
-    
-    osmFileName = "map%s.osm"
     
     osmFileExtraName = "%s_extra.osm"
     
@@ -218,21 +215,7 @@ class App:
         ]
         
         if addon.osmSource == "server":
-            # find a file name for the OSM file
-            osmFileName = self.osmFileName % ""
-            counter = 1
-            while True:
-                osmFilepath = os.path.realpath( os.path.join(osmDir, osmFileName) )
-                if os.path.isfile(osmFilepath):
-                    counter += 1
-                    osmFileName = self.osmFileName % "_%s" % counter
-                else:
-                    break
-            self.osmFilepath = osmFilepath
-            self.download(
-                self.osmServer + self.osmUrlPath % (app.minLon, app.minLat, app.maxLon, app.maxLat),
-                osmFilepath
-            )
+            self.downloadOsmFile(osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat)
         else:
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
         
@@ -563,13 +546,6 @@ class App:
             
         return has
     
-    def download(self, url, filepath, data=None):
-        print("Downloading the file from %s..." % url)
-        if data:
-            data = data.encode('ascii')
-        request.urlretrieve(url, filepath, None, data)
-        print("Saving the file to %s..." % filepath)
-    
     def downloadOsmWays(self, ways, filepath):
         self.download(
             self.osmServer + self.osmUrlPath2,
@@ -814,8 +790,8 @@ class App:
         )
         # minLon, minLat, maxLon, maxLat
         return bbox[0][1], bbox[0][0], bbox[1][1], bbox[1][0]
-    
-    def loadExtensions(self, context=bpy.context):
+
+    def loadExtensions(self, context):
         """
         Currently not used. Might be revisited later when a true extension appears
         """
@@ -842,4 +818,5 @@ class App:
         self.projection = projection
 
 
-app = App()
+if "bpy" in sys.modules:
+    app = App()
