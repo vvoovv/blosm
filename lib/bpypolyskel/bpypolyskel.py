@@ -122,10 +122,10 @@ class _LAVertex:
                 if edge.edge == self.edge_prev or edge.edge == self.edge_next:
                     continue
 
-				# a potential b is at the intersection of between our own bisector and the bisector of the
-				# angle between the tested edge and any one of our own edges.
+                # a potential b is at the intersection of between our own bisector and the bisector of the
+                # angle between the tested edge and any one of our own edges.
 
-				# we choose the "less parallel" edge (in order to exclude a potentially parallel edge)
+                # we choose the "less parallel" edge (in order to exclude a potentially parallel edge)
                 prevdot = abs(self.edge_prev.norm.dot(edge.edge.norm))
                 nextdot = abs(self.edge_next.norm.dot(edge.edge.norm))
                 selfedge = self.edge_prev if prevdot < nextdot else self.edge_next 

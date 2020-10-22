@@ -4,6 +4,7 @@ from operator import add
 from .roof_flat_multi import RoofMulti
 from .roof_hipped import RoofHipped
 from item.roof_hipped_multi import RoofHippedMulti as ItemRoofHippedMulti
+from mathutils import Vector
 
 from lib.bpypolyskel.bpypolyskel import polygonize
 
@@ -27,6 +28,16 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
     
     def getRoofItem(self, footprint):
         return ItemRoofHippedMulti.getItem(self.itemFactory, footprint)
+    
+    def extrudeInnerPolygons(self, footprint, roofItem):
+        if footprint.noWalls:
+            z = footprint.roofVerticalPosition
+            # the basement of the roof
+            footprint.building.verts.extend(
+                Vector((v.x, v.y, z)) for innerPolygon in roofItem.innerPolygons for v in innerPolygon.verts
+            )
+            return
+        super().extrudeInnerPolygons(footprint, roofItem)
     
     def render(self, footprint, roofItem):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base
@@ -62,13 +73,23 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
         )
         unitVector.append( (verts[firstVertIndex]-verts[lastVertIndex]) )
         
-        holesOffset = firstVertIndex+numPolygonVerts
-        holesInfo.append((holesOffset+innerPolygons[0].n, innerPolygons[0].n))
-        holesInfo.extend(
-            zip(
-                (holesOffset + v for v in accumulate( (2*innerPolygons[i].n + innerPolygons[i+1].n for i in range(numHoles-1)), add)), (innerPolygons[i].n for i in range(1, numHoles))
+        
+        if footprint.noWalls:
+            _offset = firstVertIndex + numPolygonVerts
+            holesInfo.append((_offset, innerPolygons[0].n))
+            holesInfo.extend(
+                zip(
+                    (_offset + v for v in accumulate( (innerPolygons[i].n for i in range(numHoles-1)), add)), (innerPolygons[i].n for i in range(1, numHoles))
+                )
             )
-        )
+        else:
+            _offset = firstVertIndex + numPolygonVerts + innerPolygons[0].n
+            holesInfo.append((_offset, innerPolygons[0].n))
+            holesInfo.extend(
+                zip(
+                    (_offset + v for v in accumulate( (innerPolygons[i].n + innerPolygons[i+1].n for i in range(numHoles-1)), add)), (innerPolygons[i].n for i in range(1, numHoles))
+                )
+            )
         
         # the holes
         for firstVertIndexHole,numVertsHole in holesInfo:
