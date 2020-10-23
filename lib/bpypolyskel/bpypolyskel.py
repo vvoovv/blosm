@@ -135,7 +135,7 @@ class _LAVertex:
                     # locate candidate b
                     linvec = (self.point - i).normalized()
                     edvec = edge.edge.norm
-                    if linvec.dot(edvec) < 0: 
+                    if self.bisector.v.cross(linvec) < 0:
                         edvec = -edvec
 
                     bisecvec = edvec + linvec
