@@ -49,6 +49,12 @@ def _iterCircularPrevThisNext(lst):
 def _approximately_equals(a, b):
     return a == b or ( (a-b).magnitude <= max( a.magnitude, b.magnitude) * 0.001)
 
+def robustFloatEqual(f1,f2):
+    if abs(f1-f2) <= EPSILON:
+        return True
+    else:
+        return abs(f1-f2) <= EPSILON * max(abs(f1),abs(f2))
+
 class _SplitEvent(namedtuple("_SplitEvent", "distance, intersection_point, vertex, opposite_edge")):
     __slots__ = ()
 
@@ -135,7 +141,7 @@ class _LAVertex:
                     # locate candidate b
                     linvec = (self.point - i).normalized()
                     edvec = edge.edge.norm
-                    if self.bisector.v.cross(linvec) < 0:
+                    if self.bisector.v.cross(linvec) < 0: 
                         edvec = -edvec
 
                     bisecvec = edvec + linvec
@@ -376,6 +382,21 @@ class _EventQueue:
     def get(self):
         return heapq.heappop(self.__data)
 
+    def getAllEqualDistance(self):
+        item = heapq.heappop(self.__data)
+        equalDistanceList = [item]
+        samePositionList = []
+        # from top of queue, get all events that have the same distance as the one on top
+        while len(self.__data) != 0 and robustFloatEqual( self.__data[0].distance, item.distance):
+            queueTop = heapq.heappop(self.__data)
+            # don't extract queueTop if identical position with item
+            if _approximately_equals(queueTop.intersection_point,item.intersection_point ):
+                samePositionList.append(queueTop)
+            else:
+                equalDistanceList.append(queueTop)
+        self.put_all(samePositionList)
+        return equalDistanceList
+
     def empty(self):
         return len(self.__data) == 0
 
@@ -462,21 +483,20 @@ def skeletonize(edgeContours):
             prioque.put(vertex.next_event())
 
     while not (prioque.empty() or slav.empty()):
-        i = prioque.get()
-        if isinstance(i, _EdgeEvent):
-            if not i.vertex_a.is_valid or not i.vertex_b.is_valid:
-                # Discarded outdated edge event
-                continue
-            (arc, events) = slav.handle_edge_event(i)
-        elif isinstance(i, _SplitEvent):
-            if not i.vertex.is_valid:
-                # Discarded outdated split event
-                continue
-            (arc, events) = slav.handle_split_event(i)
-        prioque.put_all(events)
+        topEventList = prioque.getAllEqualDistance()
+        for i in topEventList:
+            if isinstance(i, _EdgeEvent):
+                if not i.vertex_a.is_valid or not i.vertex_b.is_valid:
+                   continue
+                (arc, events) = slav.handle_edge_event(i)
+            elif isinstance(i, _SplitEvent):
+                if not i.vertex.is_valid:
+                    continue
+                (arc, events) = slav.handle_split_event(i)
+            prioque.put_all(events)
 
-        if arc is not None:
-            output.append(arc)
+            if arc is not None:
+                output.append(arc)
 
     _merge_sources(output)
     clean_skeleton(output)
