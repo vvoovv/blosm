@@ -502,7 +502,15 @@ def skeletonize(edgeContours):
     clean_skeleton(output)
 
     # should we have constructed singular nodes, remove them
+    singleNodes =  [arc.source for arc in output if len(arc.sinks) == 0]
+    # first remove eventual sinks to these nodes
+    for arc in output:
+        for sink in arc.sinks:
+            if sink in singleNodes:
+                arc.sinks.remove(sink)
+    # then remove these nodes
     output = [arc for arc in output if len(arc.sinks) > 0]
+
     return output
 
 def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None):

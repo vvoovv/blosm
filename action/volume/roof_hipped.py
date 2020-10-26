@@ -254,8 +254,8 @@ class RoofHipped(RoofLeveled):
         for edgeIndex, vec in enumerate(unitVector):
             vec /= length[edgeIndex]
         
-        if footprint.element.tags.get("dump") == "yes":
-            _dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
+        #if footprint.element.tags.get("dump") == "yes":
+        #    _dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
         
         # calculate polygons formed by the straight skeleton
         polygonize(
