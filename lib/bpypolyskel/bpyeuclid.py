@@ -17,7 +17,7 @@ def _intersect_line2_line2(A, B):
     return mathutils.Vector((A.p.x + ua * A.v.x, A.p.y + ua * A.v.y))
 
 class Edge2:
-    def __init__(self, p1, p2, norm=None, verts=None):  # evtl. conversion from 3D to 2D
+    def __init__(self, p1, p2, norm=None, verts=None, center=mathutils.Vector((0,0))):  # evtl. conversion from 3D to 2D
         """
         Args:
             p1 (mathutils.Vector | int): Index of the first edge vertex if <verts> is given or
@@ -30,8 +30,8 @@ class Edge2:
         if verts:
             self.i1 = p1
             self.i2 = p2
-            p1 = verts[p1]
-            p2 = verts[p2]
+            p1 = verts[p1]-center
+            p2 = verts[p2]-center
         self.p1 = mathutils.Vector((p1[0], p1[1]))
         self.p2 = mathutils.Vector((p2[0], p2[1]))
         if norm:
