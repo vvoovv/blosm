@@ -32,8 +32,9 @@ from itertools import *
 from .bpyeuclid import *
 from .poly2FacesGraph import poly2FacesGraph
 
-
 EPSILON = 0.00001
+PARALLEL = 0.01     # set this value to 1-cos(alpha), where alpha is the largest angle 
+                    # between lines to accept them as parallelaccepted as 'parallel'.
 
 def _iterCircularPrevNext(lst):
     prevs, nexts = tee(lst)
@@ -145,7 +146,7 @@ class _LAVertex:
                         edvec = -edvec
 
                     bisecvec = edvec + linvec
-                    if bisecvec.magnitude == 0:
+                    if not bisecvec.magnitude:
                         continue
                     bisector = Line2(i, bisecvec, 'pv')
 
@@ -271,7 +272,7 @@ class _SLAV:
             yield lav
 
     def empty(self):
-        return len(self._lavs) == 0
+        return not self._lavs
 
     def handle_edge_event(self, event):
         sinks = []
@@ -387,7 +388,7 @@ class _EventQueue:
         equalDistanceList = [item]
         samePositionList = []
         # from top of queue, get all events that have the same distance as the one on top
-        while len(self.__data) != 0 and robustFloatEqual( self.__data[0].distance, item.distance):
+        while self.__data and robustFloatEqual( self.__data[0].distance, item.distance):
             queueTop = heapq.heappop(self.__data)
             # don't extract queueTop if identical position with item
             if _approximately_equals(queueTop.intersection_point,item.intersection_point ):
@@ -398,7 +399,7 @@ class _EventQueue:
         return equalDistanceList
 
     def empty(self):
-        return len(self.__data) == 0
+        return not self.__data
 
     def peek(self):
             return self.__data[0]
@@ -407,11 +408,41 @@ class _EventQueue:
         for item in self.__data:
             print(item)
 
-def _merge_sources(skeleton):
-    """
-    In highly symmetrical shapes with reflex vertices multiple sources may share the same
-    location. This function merges those sources.
-    """
+def removeGhosts(skeleton):
+    # remove loops
+    for arc in skeleton:
+        if arc.source in arc.sinks:
+            arc.sinks.remove(arc.source)
+    # find and resolve parallel skeleton edges
+    for arc in skeleton:
+        # search for parallel skeleton edges in all egdes from this node
+        combs = combinations(arc.sinks,2)
+        s = arc.source
+        for pair in combs:
+            s0 = pair[0]-s
+            s1 = pair[1]-s
+            s0m = s0.magnitude
+            s1m = s1.magnitude
+            if s0m!=0.0 and s1m!=0.0:
+                dotCosine = s0.dot(s1) / (s0m*s1m)
+                # check if this pair of edges is parallel
+                if abs(dotCosine - 1.0) < EPSILON:
+                    # then one of them must point to a skeleton node, find its index
+                    nodeIndex = [i for i, node in enumerate(skeleton) if node.source in pair]
+                    if nodeIndex:
+                        nodeIndex = nodeIndex[0]
+                        # move sink to this node and remove it from actual node
+                        if pair[0] == skeleton[nodeIndex].source:
+                            skeleton[nodeIndex].sinks.append(pair[1])
+                        else:
+                            skeleton[nodeIndex].sinks.append(pair[0])
+                        if pair[0] in arc.sinks:
+                            arc.sinks.remove(pair[0])
+                        if pair[1] in arc.sinks:
+                            arc.sinks.remove(pair[1])
+
+def mergeNodeClusters(skeleton,mergeRange = 0.15):
+    # first merge all nodes that have exactly the same source
     sources = {}
     to_remove = []
     for i, p in enumerate(skeleton):
@@ -428,61 +459,33 @@ def _merge_sources(skeleton):
     for i in reversed(to_remove):
         skeleton.pop(i)
 
-def clean_skeleton(skeleton):
-    # remove loops
-    for arc in skeleton:
-        if arc.source in arc.sinks:
-            arc.sinks.remove(arc.source)
-    # find and resolve parallel or anti-parallel skeleton edges
-    for arc in skeleton:
-        # search for parallel skeleton edges in all egdes from this node
-        combs = combinations(arc.sinks,2)
-        s = arc.source
-        for pair in combs:
-            s0 = pair[0]-s
-            s1 = pair[1]-s
-            dotCosine = s0.dot(s1) / (s0.magnitude*s1.magnitude)
-            # check if this pair of edges is parallel
-            if abs(dotCosine - 1.0) < EPSILON:
-                # then one of them must point to a skeleton node, find its index
-                nodeIndex = [i for i, node in enumerate(skeleton) if node.source in pair][0]
-                # move sink to this node and remove it from actual node
-                if pair[0] == skeleton[nodeIndex].source:
-                    skeleton[nodeIndex].sinks.append(pair[1])
-                    arc.sinks.remove(pair[0])
-                    arc.sinks.remove(pair[1])
-                else:
-                    skeleton[nodeIndex].sinks.append(pair[0])
-                    arc.sinks.remove(pair[0])
-                    arc.sinks.remove(pair[1])
-
-def mergeNodeClusters(skeleton,mergeRange = 0.15):
-
     # sort arcs by x-position of nodes
     skeleton = sorted(skeleton, key=lambda arc: arc.source.x )
 
     # find pairs of nodes where the sources are in a square of size mergeRange.
     # the entry in 'candidates' is the index of the node in 'skeleton'
     candidates = []
-    for i,pair in enumerate(_iterCircularPrevNext(range(len(skeleton)))):
+    # for i,pair in enumerate(_iterCircularPrevNext(range(len(skeleton)))):
+    combs = combinations(range(len(skeleton)),2)
+    for pair in combs:
         distx = abs(skeleton[pair[1]].source.x - skeleton[pair[0]].source.x)
         disty = abs(skeleton[pair[1]].source.y - skeleton[pair[0]].source.y)
         if distx<mergeRange and disty<mergeRange:
             candidates.extend(pair)
 
+    # check if there are cluster candidates
+    if not candidates:
+        return skeleton
+
     # remove duplicates
     candidates = list(dict.fromkeys(candidates))
-
-    # check if there are cluster candidates
-    if len(candidates) == 0:
-        return skeleton
 
     # keep for later use
     nodesToMerge = candidates.copy()
 
     # define clusters
     clusters = []
-    while len(candidates)>0:
+    while candidates:
         # add the first node in candidates to the new cluster
         c0 = candidates[0]
         cluster = [c0]
@@ -512,7 +515,7 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
         new_source = mathutils.Vector((x/N,y/N))
         new_height = height/N
 
-        # collect all sinks of merged nodes that are not part of merged nodes
+        # collect all sinks of merged nodes that are not in set of merged nodes
         new_sinks = []
         for node in cluster:
             for sink in skeleton[node].sinks:
@@ -523,14 +526,22 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
         newnode = Subtree(new_source, new_height, new_sinks)
         newNodes.append(newnode)
 
-        # redirect all sinks that pointed to one of the clustered nodes to the new node
+       # redirect all sinks that pointed to one of the clustered nodes to the new node
         for arc in skeleton:
-            for i,sink in enumerate(arc.sinks):
-                if sink in mergedSources:
-                    arc.sinks[i] = new_source
+            if arc.source not in mergedSources:
+                for i,sink in enumerate(arc.sinks):
+                    if sink in mergedSources:
+                        arc.sinks[i] = new_source
+
+        # redirect eventual sinks of new nodes that point to one of the clustered nodes to the new node
+        for arc in newNodes:
+            if arc.source not in mergedSources: #???
+                for i,sink in enumerate(arc.sinks):
+                    if sink in mergedSources:
+                        arc.sinks[i] = new_source
 
     # remove clustered nodes from skeleton
-    # and add clusters
+    # and add new nodes
     for i in sorted(nodesToMerge, reverse = True):
         del skeleton[i]
     skeleton.extend(newNodes)
@@ -580,17 +591,17 @@ def skeletonize(edgeContours,mergeRange=0.15):
                 output.append(arc)
 
     output = mergeNodeClusters(output,mergeRange)
-    clean_skeleton(output)
+    removeGhosts(output)
 
     # should we have constructed singular nodes, remove them
-    singleNodes =  [arc.source for arc in output if len(arc.sinks) == 0]
+    singleNodes =  [arc.source for arc in output if not arc.sinks]
     # first remove eventual sinks to these nodes
     for arc in output:
         for sink in arc.sinks:
             if sink in singleNodes:
                 arc.sinks.remove(sink)
     # then remove these nodes
-    output = [arc for arc in output if len(arc.sinks) > 0]
+    output = [arc for arc in output if arc.sinks]
 
     return output
 
@@ -719,7 +730,8 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
 	# compute skeleton node heights and append nodes to original verts list,
 	# see also issue #4 at https://github.com/prochitecture/bpypolyskel
     if height:
-        tan_alpha = height/skeleton[-1].height  # the last skeleton node is highest
+        maxSkelHeight = max(arc.height for arc in skeleton)
+        tan_alpha = height/maxSkelHeight
     else:
         tan_alpha = tan
     skeleton_nodes3D = []
@@ -763,6 +775,81 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
     # compute list of faces, the vertex indices are still related to verts2D
     faces3D = graph.faces(embedding, firstSkelIndex)
 
+    # find and remove spikes in faces
+    hadSpikes = True
+    while hadSpikes:
+        hadSpikes = False
+        # find spike
+        for face in faces3D:
+            if len(face) <= 3:   # a triangle is not considered as spike
+                continue
+            for prev, this, _next in _iterCircularPrevThisNext(face):
+                s0 = verts[this]-verts[prev]  # verts are 3D vectors
+                s1 = verts[_next]-verts[this]
+                s0 = s0.xy  # need 2D-vectors
+                s1 = s1.xy 
+                s0m = s0.magnitude
+                s1m = s1.magnitude
+                if s0m and s1m:
+                    dotCosine = s0.dot(s1) / (s0m*s1m)
+                else:
+                    continue
+                if abs(dotCosine + 1.0) < PARALLEL: # no spike edge
+                    # the spike's peak is at 'this'
+                    hadSpikes = True
+                    break
+                else:
+                   continue
+
+            if not hadSpikes:
+                continue   # try next face
+
+            # find faces adjacent to spike,
+            # on right side it must have adjacent vertices in the order 'this' -> 'prev',
+            # on left side it must have adjacent vertices in the order '_next' -> 'this',
+            rightIndx, leftIndx = (None,None)
+            for i,f in enumerate(faces3D):
+                if [ p for p,n in _iterCircularPrevNext(f) if p == this and n== prev ]:
+                    rightIndx = i
+                if [ p for p,n in _iterCircularPrevNext(f) if p == _next and n== this ]:
+                    leftIndx = i
+
+            if rightIndx is None or leftIndx is None:   # should not happen, but who knows?
+                continue
+
+            if rightIndx == leftIndx:   # single line into a face, but not separating it
+                commonFace = faces3D[rightIndx]
+                # remove the spike vertice and one of its neighbors
+                commonFace.remove(this)
+                commonFace.remove(prev)
+                if this in face:
+                    face.remove(this)
+                break   # that's it for this face
+
+            # rotate right face so that 'prev' is in first place
+            rightFace = faces3D[rightIndx]
+            rotIndex = next(x[0] for x in enumerate(rightFace)  if x[1] == prev )
+            rightFace = rightFace[rotIndex:] + rightFace[:rotIndex]
+
+            # rotate left face so that 'this' is in first place
+            leftFace = faces3D[leftIndx]
+            rotIndex = next(x[0] for x in enumerate(leftFace)  if x[1] == this )
+            leftFace = leftFace[rotIndex:] + leftFace[:rotIndex]
+
+            mergedFace = rightFace + leftFace[1:]
+
+            # rotate edge list so that edge of original polygon is first edge
+            nextOrigIndex = next(x[0] for x in enumerate(mergedFace) if x[0]<firstSkelIndex and x[1]< firstSkelIndex)
+            mergedFace = mergedFace[nextOrigIndex:] + mergedFace[:nextOrigIndex]
+
+            face.remove(this) # remove the spike
+            for i in sorted([rightIndx,leftIndx], reverse = True):
+                del faces3D[i]
+            faces3D.append(mergedFace)
+
+            break   # break looping through faces and restart main while loop,
+                    # because it is possible that new spikes have been generated
+
     # fix adjacent parallel edges in faces
     for face in faces3D:
         if len(face) > 3:   # a triangle cant have parallel edges
@@ -770,9 +857,17 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
             for prev, this, _next in _iterCircularPrevThisNext(face):
                 s0 = verts[this]-verts[prev]
                 s1 = verts[_next]-verts[this]
-                dotCosine = s0.dot(s1) / (s0.magnitude*s1.magnitude)
-                if abs(dotCosine - 1.0) < EPSILON: # found adjacent parallel edges
-                    verticesToRemove.append(this)
+                s0 = mathutils.Vector((s0[0],s0[1]))    # need 2D-vector
+                s1 = mathutils.Vector((s1[0],s1[1]))
+                s0m = s0.magnitude
+                s1m = s1.magnitude
+                if s0m!=0.0 and s1m!=0.0:
+                    dotCosine = s0.dot(s1) / (s0m*s1m)
+                    if abs(dotCosine - 1.0) < PARALLEL: # found adjacent parallel edges
+                        verticesToRemove.append(this)
+                else:
+                    if this not in verticesToRemove:    # duplicate vertice, (happens always twice!)
+                        verticesToRemove.append(this)   
             for item in verticesToRemove:
                 face.remove(item) 
 
