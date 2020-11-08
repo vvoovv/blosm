@@ -17,10 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import bpy
-from . import Overlay
-
-_isBlender280 = bpy.app.version[1] >= 80
+from . import Overlay, getMapboxAccessToken
 
 
 class Mapbox(Overlay):
@@ -29,7 +26,7 @@ class Mapbox(Overlay):
     
     def __init__(self, mapId, maxZoom, addonName):
         super().__init__(
-            self.baseUrl % (mapId, Mapbox.getAccessToken(addonName)),
+            self.baseUrl % (mapId, getMapboxAccessToken(addonName)),
             maxZoom,
             addonName
         )
@@ -39,17 +36,3 @@ class Mapbox(Overlay):
     
     def getOverlaySubDir(self):
         return self.mapId
-    
-    @staticmethod
-    def getAccessToken(addonName):
-        prefs = bpy.context.preferences.addons if _isBlender280 else bpy.context.user_preferences.addons
-        if addonName in prefs:
-            accessToken = prefs[addonName].preferences.mapboxAccessToken
-            if not accessToken:
-                raise Exception("An access token for Mapbox overlays isn't set in the addon preferences")
-        else:
-            import os
-            j = os.path.join
-            with open(j( j(os.path.realpath(__file__), os.pardir), "access_token.txt"), 'r') as file:
-                accessToken = file.read()
-        return accessToken

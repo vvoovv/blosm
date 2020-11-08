@@ -88,7 +88,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
     )
     
     mapboxAccessToken: bpy.props.StringProperty(
-        name = "Mapbox access token",
+        name = "Mapbox access token (optional)",
         description = "A string token to access overlays from Mapbox company"
     )
     

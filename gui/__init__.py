@@ -732,6 +732,9 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         name = "Overlay",
         items = (
             #("bing-aerial", "Bing Aerial", "Bing Aerial"),
+            # From https://github.com//Esri/esri-leaflet/wiki/FAQ#which-services-require-authentication:
+            # Esri Basemaps are free to use and do not require authentication.
+            # You can learn more about limits in the Terms of Use FAQ.
             ("arcgis-satellite", "ArcGIS Satellite", "ArcGIS Satellite"),
             ("mapbox-satellite", "Mapbox Satellite", "Mapbox Satellite"),
             ("osm-mapnik", "OSM Mapnik", "OpenStreetMap Mapnik"),
@@ -745,7 +748,8 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
     
     overlayUrl: bpy.props.StringProperty(
         name = '',
-        description = "URL for the custom image overlay. Use {z}/{x}/{y} in the URL. "+
+        description = "URL for the custom image overlay. Use {z}/{x}/{y} in the URL or "+
+            "Mapbox style URL mapbox://styles/... "+
             "See http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames for details about "+
             "the URL format."
     )
