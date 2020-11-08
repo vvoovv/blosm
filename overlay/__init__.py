@@ -26,8 +26,6 @@ import bpy
 from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
 from app import app
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 earthRadius = 6378137.
 halfEquator = math.pi * earthRadius
@@ -45,6 +43,19 @@ prohibitedCharacters = {
     ord('>'):'!',
     ord('|'):'!'
 }
+
+
+def getMapboxAccessToken(addonName):
+    prefs = bpy.context.preferences.addons
+    if addonName in prefs:
+        accessToken = prefs[addonName].preferences.mapboxAccessToken
+        if not accessToken:
+            raise Exception("An access token for Mapbox overlays isn't set in the addon preferences")
+    else:
+        j = os.path.join
+        with open(j( j(os.path.realpath(__file__), os.pardir), "access_token.txt"), 'r') as file:
+            accessToken = file.read()
+    return accessToken
 
 
 class Overlay:
@@ -76,22 +87,29 @@ class Overlay:
         self.numTiles = 0
         self.imageExtension = "png"
         
-        # check we have subdomains
-        leftBracketPosition = url.find("[")
-        rightBracketPosition = url.find("]", leftBracketPosition+2)
-        if leftBracketPosition > -1 and rightBracketPosition > -1: 
-            subdomains = tuple(
-                s.strip() for s in url[leftBracketPosition+1:rightBracketPosition].split(',')
-            )
-            if subdomains:
-                self.subdomains = subdomains
-                self.numSubdomains = len(self.subdomains)
-                url = "%s{sub}%s" % (url[:leftBracketPosition], url[rightBracketPosition+1:])
-        # check if have {z} and {x} and {y} in <url> (i.e. tile coords)
-        if not ("{z}" in url and "{x}" in url and "{y}" in url):
-            if url[-1] != '/':
-                url = url + '/'
-            url = url + self.tileCoordsTemplate
+        url = url.strip()
+        
+        if url.startswith("mapbox://styles/"):
+            # the special case of a Mapbox style URL
+            url = "https://api.mapbox.com/styles/v1/%s/tiles/256/{z}/{x}/{y}?access_token=%s" %\
+                (url[16:], getMapboxAccessToken(addonName))
+        else:
+            # check we have subdomains
+            leftBracketPosition = url.find("[")
+            rightBracketPosition = url.find("]", leftBracketPosition+2)
+            if leftBracketPosition > -1 and rightBracketPosition > -1: 
+                subdomains = tuple(
+                    s.strip() for s in url[leftBracketPosition+1:rightBracketPosition].split(',')
+                )
+                if subdomains:
+                    self.subdomains = subdomains
+                    self.numSubdomains = len(self.subdomains)
+                    url = "%s{sub}%s" % (url[:leftBracketPosition], url[rightBracketPosition+1:])
+            # check if have {z} and {x} and {y} in <url> (i.e. tile coords)
+            if not ("{z}" in url and "{x}" in url and "{y}" in url):
+                if url[-1] != '/':
+                    url = url + '/'
+                url = url + self.tileCoordsTemplate
         self.url = url
     
     def prepareImport(self, left, bottom, right, top):
@@ -190,10 +208,7 @@ class Overlay:
         # cleanup
         self.imageData = None
         # pack the image into .blend file
-        if _isBlender280:
-            image.pack()
-        else:
-            image.pack(as_png=True)
+        image.pack()
         
         if app.terrain:
             self.setUvForTerrain(
@@ -316,7 +331,7 @@ class Overlay:
         projection = app.projection
         for vert in bm.verts:
             for loop in vert.link_loops:
-                x, y = (worldMatrix @ vert.co)[:2] if _isBlender280 else (worldMatrix * vert.co)[:2]
+                x, y = (worldMatrix @ vert.co)[:2]
                 lat, lon = projection.toGeographic(x, y)
                 lat, lon = Overlay.toSphericalMercator(lat, lon, False)
                 loop[uvLayer].uv = (lon - l)/width, (lat - b)/height
@@ -359,8 +374,10 @@ from .mapbox import Mapbox
 
 
 overlayTypeData = {
+    'arcgis-satellite': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", 19),
     'mapbox-satellite': (Mapbox, "mapbox.satellite", 19),
     'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
+    'arcgis-streets': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", 19),
     'mapbox-streets': (Mapbox, "mapbox.streets", 19),
     'custom': (Overlay, '', 19)
 }

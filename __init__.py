@@ -124,7 +124,8 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
             layout.prop(self, "assetsDir")
         
         layout.separator()
-        split = layout.split(factor=0.9) if _isBlender280 else layout.split(percentage=0.9)
+        layout.box().label(text="Optional:")
+        split = layout.split(factor=0.9)
         split.prop(self, "mapboxAccessToken")
         split.operator("blosm.get_mapbox_token", text="Get it!")
         
