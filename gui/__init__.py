@@ -732,13 +732,15 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         name = "Overlay",
         items = (
             #("bing-aerial", "Bing Aerial", "Bing Aerial"),
+            ("arcgis-satellite", "ArcGIS Satellite", "ArcGIS Satellite"),
             ("mapbox-satellite", "Mapbox Satellite", "Mapbox Satellite"),
             ("osm-mapnik", "OSM Mapnik", "OpenStreetMap Mapnik"),
+            ("arcgis-streets", "AcrGIS Street Map", "AcrGIS Street Map"),
             ("mapbox-streets", "Mapbox Streets", "Mapbox Streets"),
             ("custom", "Custom URL", "A URL template for the custom image overlay")
         ),
         description = "Image overlay type",
-        default = "mapbox-satellite"
+        default = "arcgis-satellite"
     )
     
     overlayUrl: bpy.props.StringProperty(

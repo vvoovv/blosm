@@ -359,8 +359,10 @@ from .mapbox import Mapbox
 
 
 overlayTypeData = {
+    'arcgis-satellite': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", 19),
     'mapbox-satellite': (Mapbox, "mapbox.satellite", 19),
     'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
+    'arcgis-streets': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", 19),
     'mapbox-streets': (Mapbox, "mapbox.streets", 19),
     'custom': (Overlay, '', 19)
 }
