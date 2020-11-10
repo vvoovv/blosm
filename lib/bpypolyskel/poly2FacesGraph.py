@@ -3,18 +3,24 @@ from functools import cmp_to_key
 
 EPSILON = 0.00001
 
-# operator used to compute a counterclockwise or clockwise ordering of the neighbors of a given node.
-# v0,v1,v2 are expected to be of type mathutils.Vector with dimension 2
-# v0 is the center and v1,v2 are the neighbors.
-# it is assumed that the edges v1 - v0 - v2 are not on one line (but this gets not tested!)
-def is_ccw(v1, v2, v0):
-    d1 = v1.xy - v0.xy
-    d2 = v2.xy - v0.xy
-    c = d2.cross(d1)
-    if c > EPSILON:
-        return -1
+# Adapted from https://stackoverflow.com/questions/16542042/fastest-way-to-sort-vectors-by-angle-without-actually-computing-that-angle
+# Input:  d: difference vector.
+# Output: a number from the range [0 .. 4] which is monotonic
+#         in the angle this vector makes against the x axis.
+def pseudoangle(d):
+    p = d[0]/(abs(d[0])+abs(d[1])) # -1 .. 1 increasing with x
+    if d[1] < 0: 
+        return 3 + p  #  2 .. 4 increasing with x
     else:
+        return 1 - p  #  0 .. 2 decreasing with x
+
+def compare_angles(vList,p1,p2,center):
+    a1 = pseudoangle(vList[p1] - vList[center])
+    a2 = pseudoangle(vList[p2] - vList[center])
+    if a1<a2:
         return 1
+    else:
+        return -1
 
 class poly2FacesGraph:
     def __init__(self):
@@ -51,7 +57,7 @@ class poly2FacesGraph:
 
         for vertex in self.g_dict:
             neighbors = (self.g_dict[vertex])
-            ordering = sorted(neighbors, key = cmp_to_key( lambda a,b:is_ccw(vList[a],vList[b],vList[vertex])) )
+            ordering = sorted(neighbors, key = cmp_to_key( lambda a,b: compare_angles(vList,a,b,vertex)) )
 		
             if direction == 'CCW':  # counter-clockwise
                 embedding[vertex] = ordering	
