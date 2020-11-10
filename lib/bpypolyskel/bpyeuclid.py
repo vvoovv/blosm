@@ -1,5 +1,15 @@
 import mathutils
 
+# -------------------------------------------------------------------------
+# from https://bryceboe.com/2006/10/23/line-segment-intersection-algorithm/,
+# works fine with mathutils.Vector
+def ccw(A,B,C):
+    return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x)
+# Return true if line segments AB and CD intersect
+def intersect(A,B,C,D):
+    return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+# -------------------------------------------------------------------------
+
 def _intersect_line2_line2(A, B):
     d = B.v.y * A.v.x - B.v.x * A.v.y
     if d == 0:

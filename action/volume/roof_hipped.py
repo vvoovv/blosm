@@ -256,7 +256,7 @@ class RoofHipped(RoofLeveled):
         
         #if footprint.element.tags.get("dump") == "yes":
         #    _dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
-        #_dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
+        _dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
         
         # calculate polygons formed by the straight skeleton
         polygonize(

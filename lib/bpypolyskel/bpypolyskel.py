@@ -413,33 +413,45 @@ def removeGhosts(skeleton):
     for arc in skeleton:
         if arc.source in arc.sinks:
             arc.sinks.remove(arc.source)
-    # find and resolve parallel skeleton edges
+    # find and resolve parallel or crossed skeleton edges
     for arc in skeleton:
-        # search for parallel skeleton edges in all egdes from this node
+        source = arc.source
+        # search for nearly parallel edges in all sinks from this node
         combs = combinations(arc.sinks,2)
-        s = arc.source
         for pair in combs:
-            s0 = pair[0]-s
-            s1 = pair[1]-s
+            s0 = pair[0]-source
+            s1 = pair[1]-source
             s0m = s0.magnitude
             s1m = s1.magnitude
             if s0m!=0.0 and s1m!=0.0:
-                dotCosine = s0.dot(s1) / (s0m*s1m)
                 # check if this pair of edges is parallel
-                if abs(dotCosine - 1.0) < EPSILON:
-                    # then one of them must point to a skeleton node, find its index
-                    nodeIndex = [i for i, node in enumerate(skeleton) if node.source in pair]
-                    if nodeIndex:
-                        nodeIndex = nodeIndex[0]
-                        # move sink to this node and remove it from actual node
-                        if pair[0] == skeleton[nodeIndex].source:
-                            skeleton[nodeIndex].sinks.append(pair[1])
-                        else:
-                            skeleton[nodeIndex].sinks.append(pair[0])
-                        if pair[0] in arc.sinks:
-                            arc.sinks.remove(pair[0])
-                        if pair[1] in arc.sinks:
-                            arc.sinks.remove(pair[1])
+                dotCosineAbs = abs(s0.dot(s1) / (s0m*s1m) - 1.0)
+                if dotCosineAbs < PARALLEL:
+                    if s0m < s1m:
+                        farSink = pair[1]
+                        nearSink = pair[0]
+                    else:
+                        farSink = pair[0]
+                        nearSink = pair[1]
+
+                    nodeIndexList = [i for i, node in enumerate(skeleton) if node.source == nearSink]
+                    if not nodeIndexList:   # both sinks point to polygon vertices (maybe small triangle)
+                        break
+
+                    nodeIndex = nodeIndexList[0]
+                    if dotCosineAbs < EPSILON:  # We have a ghost edge, sinks almost parallel
+                        skeleton[nodeIndex].sinks.append(farSink)
+                        arc.sinks.remove(farSink)
+                        arc.sinks.remove(nearSink)
+                    else:   # maybe we have a spike that crosses other skeleton edges
+                            # Spikes normally get removed with more success as face-spike in polygonize().
+                            # Remove it here only, if it produces any crossing. 
+                        for sink in skeleton[nodeIndex].sinks:
+                            if intersect(source, farSink, nearSink, sink):
+                                skeleton[nodeIndex].sinks.append(farSink)
+                                arc.sinks.remove(farSink)
+                                arc.sinks.remove(nearSink)
+                                break
 
 def mergeNodeClusters(skeleton,mergeRange = 0.15):
     # first merge all nodes that have exactly the same source
