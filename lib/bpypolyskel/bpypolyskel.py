@@ -28,6 +28,7 @@ in order to be able to use it in Blender. The main changes are:
 import heapq
 from collections import namedtuple
 from itertools import *
+from collections import Counter
 
 from .bpyeuclid import *
 from .poly2FacesGraph import poly2FacesGraph
@@ -863,23 +864,27 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
                     # because it is possible that new spikes have been generated
 
     # fix adjacent parallel edges in faces
+    counts = Counter(chain.from_iterable(faces3D))
     for face in faces3D:
         if len(face) > 3:   # a triangle cant have parallel edges
             verticesToRemove = []
             for prev, this, _next in _iterCircularPrevThisNext(face):
-                s0 = verts[this]-verts[prev]
-                s1 = verts[_next]-verts[this]
-                s0 = mathutils.Vector((s0[0],s0[1]))    # need 2D-vector
-                s1 = mathutils.Vector((s1[0],s1[1]))
-                s0m = s0.magnitude
-                s1m = s1.magnitude
-                if s0m!=0.0 and s1m!=0.0:
-                    dotCosine = s0.dot(s1) / (s0m*s1m)
-                    if abs(dotCosine - 1.0) < PARALLEL: # found adjacent parallel edges
-                        verticesToRemove.append(this)
-                else:
-                    if this not in verticesToRemove:    # duplicate vertice, (happens always twice!)
-                        verticesToRemove.append(this)   
+                # Can eventually remove vertice, if it appears only in 
+                # two adjacent faces, otherwise its a node.
+                if counts[this] < 3:
+                    s0 = verts[this]-verts[prev]
+                    s1 = verts[_next]-verts[this]
+                    s0 = mathutils.Vector((s0[0],s0[1]))    # need 2D-vector
+                    s1 = mathutils.Vector((s1[0],s1[1]))
+                    s0m = s0.magnitude
+                    s1m = s1.magnitude
+                    if s0m!=0.0 and s1m!=0.0:
+                        dotCosine = s0.dot(s1) / (s0m*s1m)
+                        if abs(dotCosine - 1.0) < PARALLEL: # found adjacent parallel edges
+                            verticesToRemove.append(this)
+                    else:
+                        if this not in verticesToRemove:    # duplicate vertice
+                            verticesToRemove.append(this)   
             for item in verticesToRemove:
                 face.remove(item) 
 

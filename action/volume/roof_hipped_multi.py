@@ -10,7 +10,7 @@ from lib.bpypolyskel.bpypolyskel import polygonize
 
 from util import zAxis
 
-#from .roof_hipped import _dumpInput
+from .roof_hipped import _dumpInput
 
 
 class RoofHippedMulti(RoofMulti, RoofHipped):
@@ -118,7 +118,7 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
             vec /= length[edgeIndex]
         
         
-        #_dumpInput(verts, firstVertIndex, numPolygonVerts, holesInfo, None)
+        #_dumpInput(verts, firstVertIndex, numPolygonVerts, holesInfo, unitVector)
         
         # calculate polygons formed by the straight skeleton
         polygonize(
