@@ -60,8 +60,8 @@ def setup(app, osm):
     # the second argument is the layer name
     # the third argument should not be changed
     osm.addCondition(
-        lambda tags, e: tags.get("boundary") == "administrative",
-        "admin boundaries",
+        lambda tags, e: "place" in tags or tags.get("boundary") == "administrative",
+        "boundaries",
         linestring
     )
     # custom setup ends
