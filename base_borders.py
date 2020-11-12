@@ -62,7 +62,7 @@ def setup(app, osm):
     osm.addCondition(
         lambda tags, e: "place" in tags or tags.get("boundary") == "administrative",
         "boundaries",
-        linestring
+        polygonAcceptBroken
     )
     # custom setup ends
     
