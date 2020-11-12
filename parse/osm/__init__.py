@@ -55,7 +55,7 @@ class Osm:
         if not Osm.types:
             # initialize dictionaries
             Osm.types = {'node':Osm.node, 'way':Osm.way, 'relation':Osm.relation}
-            Osm.relationTypes = {'multipolygon': Multipolygon, 'building': Building}
+            Osm.relationTypes = {'multipolygon': Multipolygon, 'building': Building, 'boundary': Multipolygon}
             Osm.roles = {'outer':Osm.outer, 'inner':Osm.inner, 'outline':Osm.outline, 'part':Osm.part}
         
         self.nodes = {}
