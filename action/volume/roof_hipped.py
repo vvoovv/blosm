@@ -11,7 +11,8 @@ def _dumpInput(verts, firstVertIndex, numPolygonVerts, holesInfo, unitVectors):
     with open("D:/tmp/bpypolyskel_test.py", 'w') as file:
         file.write("import mathutils\n")
         file.write("import matplotlib.pyplot as plt\n")
-        file.write("import bpypolyskel\n")
+        file.write("from bpypolyskel import bpypolyskel\n")
+        file.write("from collections import Counter\n")
         file.write("\n")
         
         file.write("verts = [\n")
