@@ -250,6 +250,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
                 self.report({'ERROR'}, str(e))
                 a.loadMissingMembers = False
             a.processIncompleteRelations(osm)
+            if not osm.projection:
+                osm.setProjection( (osm.minLat+osm.maxLat)/2., (osm.minLon+osm.maxLon)/2. )
         
         if forceExtentCalculation:
             a.minLat = osm.minLat

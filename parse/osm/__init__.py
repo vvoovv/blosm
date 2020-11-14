@@ -195,7 +195,7 @@ class Osm:
                     self.setProjection(lat, lon)
                     forceExtentCalculation = False
         
-        if not self.projection:
+        if not self.projection and not (self.minLat > self.maxLat and self.minLon > self.maxLon):
             # set projection using the calculated bounds (self.minLat, self.maxLat, self.minLon, self.maxLon)
             lat = (self.minLat + self.maxLat)/2.
             lon = (self.minLon + self.maxLon)/2.
