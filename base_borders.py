@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from parse.osm.relation.building import Building
+from parse.osm.relation import Relation
 
 from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken, WayManager
 from renderer import Renderer2d
@@ -60,7 +61,7 @@ def setup(app, osm):
     # the second argument is the layer name
     # the third argument should not be changed
     osm.addCondition(
-        lambda tags, e: "place" in tags or tags.get("boundary") == "administrative",
+        lambda tags, e: isinstance(e, Relation) and ("place" in tags or tags.get("boundary") == "administrative"),
         "boundaries",
         polygonAcceptBroken
     )
