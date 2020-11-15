@@ -195,6 +195,13 @@ class Osm:
                     self.setProjection(lat, lon)
                     forceExtentCalculation = False
         
+        # The condition (self.minLat > self.maxLat and self.minLon > self.maxLon) means,
+        # that <self.minLat==90.>, <self.maxLat==-90.>, <self.minLon==180.>, <self.maxLon==-180.>,
+        # i.e to their original values. It means the method <updateBounds(..)> was never called
+        # and there was no OSM way with tags that satisfy <self.conditions>. There were
+        # only incomplete relations available that satisfy <self.conditions>.
+        # So <self.projection> will be set in blender-osm/__init__.py after
+        # the call to <app.processIncompleteRelations(..)>
         if not self.projection and not (self.minLat > self.maxLat and self.minLon > self.maxLon):
             # set projection using the calculated bounds (self.minLat, self.maxLat, self.minLon, self.maxLon)
             lat = (self.minLat + self.maxLat)/2.

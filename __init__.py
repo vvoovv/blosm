@@ -251,6 +251,10 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
                 a.loadMissingMembers = False
             a.processIncompleteRelations(osm)
             if not osm.projection:
+                # <osm.projection> wasn't set so far if there were only incomplete relations that
+                # satisfy <osm.conditions>.
+                # See also the comments in <parse.osm.__init__.py>
+                # at the end of the method <osm.parse(..)>
                 osm.setProjection( (osm.minLat+osm.maxLat)/2., (osm.minLon+osm.maxLon)/2. )
         
         if forceExtentCalculation:
