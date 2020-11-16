@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 27),
+    "version": (2, 4, 28),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -250,6 +250,12 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
                 self.report({'ERROR'}, str(e))
                 a.loadMissingMembers = False
             a.processIncompleteRelations(osm)
+            if not osm.projection:
+                # <osm.projection> wasn't set so far if there were only incomplete relations that
+                # satisfy <osm.conditions>.
+                # See also the comments in <parse.osm.__init__.py>
+                # at the end of the method <osm.parse(..)>
+                osm.setProjection( (osm.minLat+osm.maxLat)/2., (osm.minLon+osm.maxLon)/2. )
         
         if forceExtentCalculation:
             a.minLat = osm.minLat
