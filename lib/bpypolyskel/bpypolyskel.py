@@ -797,7 +797,8 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
                     dotCosine = s0.dot(s1) / (s0m*s1m)
                 else:
                     continue
-                if abs(dotCosine + 1.0) < PARALLEL: # no spike edge
+                crossSine = s0.cross(s1)
+                if abs(dotCosine + 1.0) < PARALLEL and crossSine > -EPSILON: # spike edge to left
                     # the spike's peak is at 'this'
                     hadSpikes = True
                     break
