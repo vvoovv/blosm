@@ -162,7 +162,7 @@ class AreaRenderer:
             terrain.createEnvelope()
         layer.addBoolenModifier(obj, terrain.envelope)
         makeActive(obj)
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
+        bpy.ops.object.modifier_apply(modifier="Boolean")
         # calculate area after the BOOLEAN modifier has been applied
         if self.calculateArea:
             bm = getBmesh(obj)
@@ -170,7 +170,7 @@ class AreaRenderer:
             bm.free()
         layer.slice(obj, terrain, app)
         addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
+        bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
         if _isBlender280:
             obj.select_set(False)
         else:
@@ -305,7 +305,7 @@ class VertexGroupBaker(AreaRenderer):
             terrain.createEnvelope()
         layer.addBoolenModifier(obj, terrain.envelope)
         makeActive(obj)
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
+        bpy.ops.object.modifier_apply(modifier="Boolean")
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         # do mesh cleanup
@@ -319,7 +319,7 @@ class VertexGroupBaker(AreaRenderer):
         
         layer.slice(obj, terrain, app)
         addShrinkwrapModifier(obj, terrainObj, layer.swOffset)
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Shrinkwrap")
+        bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
         super().renderArea(layer, app)
         if _isBlender280:
             obj.select_set(False)
@@ -330,7 +330,7 @@ class VertexGroupBaker(AreaRenderer):
         super().renderTerrain(layer, terrainObj, vertexColors=False, use_antialiasing=False)
         # a reference to the Blender group created in <super().renderTerrain(..)>
         group = bpy.data.groups[-1]
-        bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Dynamic Paint")
+        bpy.ops.object.modifier_apply(modifier="Dynamic Paint")
         if _isBlender280:
             terrainObj.select_set(False)
         else:
