@@ -12,7 +12,8 @@ from building2.renderer import BuildingRendererNew, Building
 from item.footprint import Footprint
 
 # item renderers
-from item_renderer.test import GeometryRenderer, GeometryRendererRoofWithSides, GeometryRendererFacade
+from item_renderer.test import\
+    GeometryRenderer, GeometryRendererRoofWithSides, GeometryRendererFacade, GeometryRendererRoofFlat
 
 from action.terrain import Terrain
 from action.offset import Offset
@@ -60,6 +61,18 @@ def clean(self):
 App.clean = clean
 
 
+#
+# redefine Node.getData(..) (never cache the projected coordinates)
+#
+from parse.osm.node import Node
+
+def getData(self, osm):
+    """
+    Get projected coordinates
+    """
+    return osm.projection.fromGeographic(self.lat, self.lon)
+Node.getData = getData
+
 
 def setup(app, data):
     # prevent extent calculation
@@ -99,7 +112,7 @@ def setup(app, data):
             CurtainWall = GeometryRenderer(),
             Bottom = GeometryRenderer(),
             Door = GeometryRenderer(),
-            RoofFlat = GeometryRenderer(),
+            RoofFlat = GeometryRendererRoofFlat(),
             RoofFlatMulti = GeometryRenderer(),
             RoofProfile = GeometryRenderer(),
             RoofDome = GeometryRenderer(),

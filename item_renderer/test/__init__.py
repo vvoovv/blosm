@@ -5,6 +5,12 @@ class GeometryRenderer:
     def init(self, itemRenderers, globalRenderer):
         self.itemRenderers = itemRenderers
         self.r = globalRenderer
+        
+
+class GeometryRendererRoofFlat(GeometryRenderer):
+    
+    def render(self, roofItem):
+        return
 
 
 class GeometryRendererRoofWithSides(GeometryRenderer):
@@ -20,7 +26,7 @@ class GeometryRendererRoofWithSides(GeometryRenderer):
                 self.r.app.log.write("duplicated indices:%s\n" % roofItem.building.outline.tags["id"])
                 break
     
-    def renderReal(self, roofItem):        
+    def _render(self, roofItem):        
         for roofSide in roofItem.roofSides:
             self.r.createFace(
                 roofItem.building,

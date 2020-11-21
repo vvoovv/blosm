@@ -561,6 +561,23 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
 
     return skeleton
 
+def isEventInItsLAV(event):
+    point = event.intersection_point    # vertice of event
+    lav = event.vertex.lav              # LAV of event
+    pv = [v.point for v in lav]         # vertices in LAV
+    # signed area of a polygon. If > 0 -> polygon counterclockwise.
+    # See: https://mathworld.wolfram.com/PolygonArea.html 
+    signedArea = 0.0
+    # a ray from event along x-axis crosses odd edges, if inside polygon
+    isInLAV = False
+    for p,n  in _iterCircularPrevNext(pv):
+        signedArea += p.x*n.y - n.x*p.y
+        if intersect(p,n,point,point+mathutils.Vector((1.e9,0.0))):
+            isInLAV = not isInLAV
+    if signedArea < 0.0:
+        isInLAV = not isInLAV
+    return isInLAV
+
 def skeletonize(edgeContours,mergeRange=0.15):
     """
     Compute the straight skeleton of a polygon.
@@ -596,6 +613,8 @@ def skeletonize(edgeContours,mergeRange=0.15):
                 (arc, events) = slav.handle_edge_event(i)
             elif isinstance(i, _SplitEvent):
                 if not i.vertex.is_valid:
+                    continue
+                if not isEventInItsLAV(i):
                     continue
                 (arc, events) = slav.handle_split_event(i)
             prioque.put_all(events)
