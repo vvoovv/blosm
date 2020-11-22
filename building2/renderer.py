@@ -217,6 +217,13 @@ class BuildingRendererNew(Renderer):
         
         building = Building.getItem(itemFactory, outline, data)
         
+        # get the style of the building
+        buildingStyle = self.styleStore.get(self.getStyle(building, self.app))
+        if not buildingStyle:
+            # skip the building
+            return
+        building.setStyleMeta(buildingStyle)
+        
         self.preRender(building)
         
         partTag = outline.tags.get("building:part")
@@ -229,10 +236,6 @@ class BuildingRendererNew(Renderer):
             itemStore.add(footprint)
         if parts:
             itemStore.add((Footprint.getItem(itemFactory, part, building) for part in parts), Footprint, len(parts))
-
-        # get the style of the building
-        buildingStyle = self.styleStore.get(self.getStyle(building, self.app))
-        building.setStyleMeta(buildingStyle)
         
         for itemClass in (Building, Footprint):
             for action in itemClass.actions:
