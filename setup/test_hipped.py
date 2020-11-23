@@ -75,8 +75,9 @@ Node.getData = getData
 
 
 removeFromTest = {
-    "4804904": 1, # london_temperate_house.py | endless cycle
-    "27647287": 1 # berlin_ossietzkystrasse_24.py | endless cycle
+    "4804904":1, # london_temperate_house.py | endless cycle
+    "27647287":1, # berlin_ossietzkystrasse_24.py | endless cycle
+    "32060794":1, # prague_wenzigova_458.py | removeGhosts: removal from the Python list
 }
 
 
