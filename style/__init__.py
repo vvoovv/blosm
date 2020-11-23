@@ -18,7 +18,8 @@ minWidthForOpenings = 1.
 class StyleStore:
     
     def __init__(self, app, styles=None):
-        self.styles = {}
+        # None is returned by getStyle(..) in a setup script if the building is to be skipped for rendering
+        self.styles = {None: None}
         # overwrite an entry with the given key in <self.styles> if the key already exists in <self.styles>
         self.overwrite = True
         
