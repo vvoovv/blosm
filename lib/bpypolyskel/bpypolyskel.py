@@ -74,7 +74,7 @@ _OriginalEdge = namedtuple("_OriginalEdge", "edge bisector_prev, bisector_next")
 Subtree = namedtuple("Subtree", "source, height, sinks")
 
 class _LAVertex:
-    def __init__(self, point, edge_prev, edge_next, direction_vectors=None):
+    def __init__(self, point, edge_prev, edge_next, direction_vectors=None,forceConvex=False):
         # point is the vertex V(i)
         # edge_prev is the edge from vertex V(i-1) to V(i)
         # edge_next is the edge from vertex V(i) to V(i+1)
@@ -95,6 +95,8 @@ class _LAVertex:
         dv0 = direction_vectors[0]
         dv1 = direction_vectors[1]
         self._is_reflex = dv0.cross(dv1) > 0
+        if forceConvex:
+            self._is_reflex = False
         op_add_result = creator_vectors[0] + creator_vectors[1]
         self._bisector = Ray2(self.point, op_add_result * (-1 if self._is_reflex else 1))
         # Vertex created
@@ -327,8 +329,8 @@ class _SLAV:
             # Split event failed (equivalent edge event is expected to follow)
             return (None, [])
 
-        v1 = _LAVertex(event.intersection_point, event.vertex.edge_prev, event.opposite_edge)
-        v2 = _LAVertex(event.intersection_point, event.opposite_edge, event.vertex.edge_next)
+        v1 = _LAVertex(event.intersection_point, event.vertex.edge_prev, event.opposite_edge,None,True)
+        v2 = _LAVertex(event.intersection_point, event.opposite_edge, event.vertex.edge_next,None,True)
 
         v1.prev = event.vertex.prev
         v1.next = x
@@ -561,22 +563,22 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
 
     return skeleton
 
-def isEventInItsLAV(event):
-    point = event.intersection_point    # vertice of event
-    lav = event.vertex.lav              # LAV of event
-    pv = [v.point for v in lav]         # vertices in LAV
-    # signed area of a polygon. If > 0 -> polygon counterclockwise.
-    # See: https://mathworld.wolfram.com/PolygonArea.html 
-    signedArea = 0.0
-    # a ray from event along x-axis crosses odd edges, if inside polygon
-    isInLAV = False
-    for p,n  in _iterCircularPrevNext(pv):
-        signedArea += p.x*n.y - n.x*p.y
-        if intersect(p,n,point,point+mathutils.Vector((1.e9,0.0))):
-            isInLAV = not isInLAV
-    if signedArea < 0.0:
-        isInLAV = not isInLAV
-    return isInLAV
+# def isEventInItsLAV(event):
+#     point = event.intersection_point    # vertice of event
+#     lav = event.vertex.lav              # LAV of event
+#     pv = [v.point for v in lav]         # vertices in LAV
+#     # signed area of a polygon. If > 0 -> polygon counterclockwise.
+#     # See: https://mathworld.wolfram.com/PolygonArea.html 
+#     signedArea = 0.0
+#     # a ray from event along x-axis crosses odd edges, if inside polygon
+#     isInLAV = False
+#     for p,n  in _iterCircularPrevNext(pv):
+#         signedArea += p.x*n.y - n.x*p.y
+#         if intersect(p,n,point,point+mathutils.Vector((1.e9,0.0))):
+#             isInLAV = not isInLAV
+#     if signedArea < 0.0:
+#         isInLAV = not isInLAV
+#     return isInLAV
 
 def skeletonize(edgeContours,mergeRange=0.15):
     """
@@ -614,8 +616,8 @@ def skeletonize(edgeContours,mergeRange=0.15):
             elif isinstance(i, _SplitEvent):
                 if not i.vertex.is_valid:
                     continue
-                if not isEventInItsLAV(i):
-                    continue
+                # if not isEventInItsLAV(i):
+                #     continue
                 (arc, events) = slav.handle_split_event(i)
             prioque.put_all(events)
 

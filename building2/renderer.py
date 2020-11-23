@@ -213,7 +213,7 @@ class BuildingRendererNew(Renderer):
         # <buildingP> means "building from the parser"
         outline = buildingP.outline
         
-        #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
+        if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
         building = Building.getItem(itemFactory, outline, data)
         
