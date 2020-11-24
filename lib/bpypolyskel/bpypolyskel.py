@@ -420,41 +420,48 @@ def removeGhosts(skeleton):
     for arc in skeleton:
         source = arc.source
         # search for nearly parallel edges in all sinks from this node
-        combs = combinations(arc.sinks,2)
-        for pair in combs:
-            s0 = pair[0]-source
-            s1 = pair[1]-source
-            s0m = s0.magnitude
-            s1m = s1.magnitude
-            if s0m!=0.0 and s1m!=0.0:
-                # check if this pair of edges is parallel
-                dotCosineAbs = abs(s0.dot(s1) / (s0m*s1m) - 1.0)
-                if dotCosineAbs < PARALLEL:
-                    if s0m < s1m:
-                        farSink = pair[1]
-                        nearSink = pair[0]
-                    else:
-                        farSink = pair[0]
-                        nearSink = pair[1]
+        sinksAltered = True
+        while sinksAltered:
+            sinksAltered = False
+            combs = combinations(arc.sinks,2)
+            for pair in combs:
+                s0 = pair[0]-source
+                s1 = pair[1]-source
+                s0m = s0.magnitude
+                s1m = s1.magnitude
+                if s0m!=0.0 and s1m!=0.0:
+                    # check if this pair of edges is parallel
+                    dotCosineAbs = abs(s0.dot(s1) / (s0m*s1m) - 1.0)
+                    if dotCosineAbs < PARALLEL:
+                        if s0m < s1m:
+                            farSink = pair[1]
+                            nearSink = pair[0]
+                        else:
+                            farSink = pair[0]
+                            nearSink = pair[1]
 
-                    nodeIndexList = [i for i, node in enumerate(skeleton) if node.source == nearSink]
-                    if not nodeIndexList:   # both sinks point to polygon vertices (maybe small triangle)
-                        break
+                        nodeIndexList = [i for i, node in enumerate(skeleton) if node.source == nearSink]
+                        if not nodeIndexList:   # both sinks point to polygon vertices (maybe small triangle)
+                            break
 
-                    nodeIndex = nodeIndexList[0]
-                    if dotCosineAbs < EPSILON:  # We have a ghost edge, sinks almost parallel
-                        skeleton[nodeIndex].sinks.append(farSink)
-                        arc.sinks.remove(farSink)
-                        arc.sinks.remove(nearSink)
-                    else:   # maybe we have a spike that crosses other skeleton edges
-                            # Spikes normally get removed with more success as face-spike in polygonize().
-                            # Remove it here only, if it produces any crossing. 
-                        for sink in skeleton[nodeIndex].sinks:
-                            if intersect(source, farSink, nearSink, sink):
-                                skeleton[nodeIndex].sinks.append(farSink)
-                                arc.sinks.remove(farSink)
-                                arc.sinks.remove(nearSink)
-                                break
+                        nodeIndex = nodeIndexList[0]
+
+                        if dotCosineAbs < EPSILON:  # We have a ghost edge, sinks almost parallel
+                            skeleton[nodeIndex].sinks.append(farSink)
+                            arc.sinks.remove(farSink)
+                            arc.sinks.remove(nearSink)
+                            sinksAltered = True
+                            break
+                        else:   # maybe we have a spike that crosses other skeleton edges
+                                # Spikes normally get removed with more success as face-spike in polygonize().
+                                # Remove it here only, if it produces any crossing. 
+                            for sink in skeleton[nodeIndex].sinks:
+                                if intersect(source, farSink, nearSink, sink):
+                                    skeleton[nodeIndex].sinks.append(farSink)
+                                    arc.sinks.remove(farSink)
+                                    arc.sinks.remove(nearSink)
+                                    sinksAltered = True
+                                    break
 
 def mergeNodeClusters(skeleton,mergeRange = 0.15):
     # first merge all nodes that have exactly the same source
@@ -839,7 +846,9 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
                 if [ p for p,n in _iterCircularPrevNext(f) if p == _next and n== this ]:
                     leftIndx = i
 
-            if rightIndx is None or leftIndx is None:   # should not happen, but who knows?
+            # part of spike is original polygon and cant get removed.
+            if rightIndx is None or leftIndx is None:
+                hadSpikes = False
                 continue
 
             if rightIndx == leftIndx:   # single line into a face, but not separating it
@@ -867,6 +876,9 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
             nextOrigIndex = next(x[0] for x in enumerate(mergedFace) if x[0]<firstSkelIndex and x[1]< firstSkelIndex)
             mergedFace = mergedFace[nextOrigIndex:] + mergedFace[:nextOrigIndex]
 
+            if mergedFace == face:  # no change, will result in endless loop
+                raise Exception('Endless loop in spike removal') 
+
             face.remove(this) # remove the spike
             for i in sorted([rightIndx,leftIndx], reverse = True):
                 del faces3D[i]
@@ -883,7 +895,8 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
             for prev, this, _next in _iterCircularPrevThisNext(face):
                 # Can eventually remove vertice, if it appears only in 
                 # two adjacent faces, otherwise its a node.
-                if counts[this] < 3:
+                # But do not remove original polygon vertices.
+                if counts[this] < 3 and this >= firstSkelIndex:
                     s0 = verts[this]-verts[prev]
                     s1 = verts[_next]-verts[this]
                     s0 = mathutils.Vector((s0[0],s0[1]))    # need 2D-vector

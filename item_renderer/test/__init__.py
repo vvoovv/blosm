@@ -16,6 +16,9 @@ class GeometryRendererRoofFlat(GeometryRenderer):
 class GeometryRendererRoofWithSides(GeometryRenderer):
     
     def render(self, roofItem):
+        if roofItem.exception:
+            self.r.app.log.write("%s:%s\n" % (roofItem.exception, roofItem.building.outline.tags["id"]))
+            return
         # check for faces consisting of less than 3 vertices
         for roofSide in roofItem.roofSides:
             if len(roofSide.indices) < 3:

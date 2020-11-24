@@ -28,8 +28,8 @@ import bpy
 import math
 from parse.osm.way import Way
 
-_render = BuildingRendererNew.render
-def render(self, buildingP, data):
+_brRender = BuildingRendererNew.render
+def brRender(self, buildingP, data):
     projection = data.projection
     element = buildingP.outline
     if isinstance(element, Way):
@@ -43,9 +43,9 @@ def render(self, buildingP, data):
     projection.lat = node.lat
     projection.lon = node.lon
     projection.latInRadians = math.radians(projection.lat)
-    _render(self, buildingP, data)
+    _brRender(self, buildingP, data)
 
-BuildingRendererNew.render = render
+BuildingRendererNew.render = brRender
 
 
 #
@@ -72,6 +72,36 @@ def getData(self, osm):
     """
     return osm.projection.fromGeographic(self.lat, self.lon)
 Node.getData = getData
+
+
+#
+# redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
+#
+from action.volume.roof_hipped import RoofHipped
+
+_rhGenerateRoof = RoofHipped.generateRoof
+def rhGenerateRoof(self, footprint, roofItem, firstVertIndex):
+    roofItem.exception = None
+    try:
+        _rhGenerateRoof(self, footprint, roofItem, firstVertIndex)
+    except Exception as e:
+        roofItem.exception = "%s-%s" % (e.__class__.__name__, str(e))
+RoofHipped.generateRoof = rhGenerateRoof
+
+
+#
+# redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
+#
+from action.volume.roof_hipped_multi import RoofHippedMulti
+
+_rhmGenerateRoof = RoofHippedMulti.generateRoof
+def rhmGenerateRoof(self, footprint, roofItem, firstVertIndex):
+    roofItem.exception = None
+    try:
+        _rhmGenerateRoof(self, footprint, roofItem, firstVertIndex)
+    except Exception as e:
+        roofItem.exception = "%s-%s" % (e.__class__.__name__, str(e))
+RoofHippedMulti.generateRoof = rhmGenerateRoof
 
 
 removeFromTest = {
@@ -146,8 +176,8 @@ def setup(app, data):
 
 
 def getStyle(building, app):
-    if building["id"] in removeFromTest:
-        return
+    #if building["id"] in removeFromTest:
+    #    return
     #return "mid rise apartments zaandam"
     #return "high rise mirrored glass"
     buildingTag = building["building"]
