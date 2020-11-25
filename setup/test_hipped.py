@@ -90,6 +90,16 @@ RoofHipped.generateRoof = rhGenerateRoof
 
 
 #
+# redefine RoofHipped.generateRoofQuadrangle(..) to set <roofItem.exception>
+#
+_rhGenerateRoofQuadrangle = RoofHipped.generateRoofQuadrangle
+def rhGenerateRoofQuadrangle(self, footprint, roofItem, firstVertIndex):
+    roofItem.exception = None
+    _rhGenerateRoofQuadrangle(self, footprint, roofItem, firstVertIndex)
+RoofHipped.generateRoofQuadrangle = rhGenerateRoofQuadrangle
+
+
+#
 # redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
 #
 from action.volume.roof_hipped_multi import RoofHippedMulti
