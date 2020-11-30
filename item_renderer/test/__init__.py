@@ -5,12 +5,15 @@ class GeometryRenderer:
     def init(self, itemRenderers, globalRenderer):
         self.itemRenderers = itemRenderers
         self.r = globalRenderer
+    
+    def render(self, roofItem):
+        self.r.app.log.write("Not hipped roof:%s\n" % roofItem.building.outline.tags["id"])
         
 
 class GeometryRendererRoofFlat(GeometryRenderer):
     
     def render(self, roofItem):
-        return
+        self.r.app.log.write("Flat roof:%s\n" % roofItem.building.outline.tags["id"])
 
 
 class GeometryRendererRoofWithSides(GeometryRenderer):

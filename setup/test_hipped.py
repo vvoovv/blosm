@@ -22,6 +22,20 @@ from action.volume import Volume
 
 import bpy
 
+
+#
+# redefine BuildingManager.render(..) to render only a part of buildings
+#
+from building.manager import BuildingManager
+def bmRender(self):
+    numBuildings = len(self.buildings)
+    for i in range(30000, 50000):
+        building = self.buildings[i]
+        print("%s:%s" % (i, building.outline.tags["id"]))
+        self.renderer.render(self.buildings[i], self.osm)
+BuildingManager.render = bmRender
+
+
 #
 # augment BuildingRendererNew.render(..)
 #

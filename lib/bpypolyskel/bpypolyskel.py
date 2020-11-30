@@ -516,6 +516,12 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
         # to belong to the same cluster.
         cluster.extend([c1 for c1 in candidates[1:] if abs(skeleton[c0].source.x-skeleton[c1].source.x) + \
                                                     abs(skeleton[c0].source.y-skeleton[c1].source.y) < 5*mergeRange])
+
+        # in case of an apse, the cluster must be larger to get all nodes
+        if len(cluster)>3:
+            cluster = [c0]
+            cluster.extend([c1 for c1 in candidates[1:] if abs(skeleton[c0].source.x-skeleton[c1].source.x) + \
+                                                        abs(skeleton[c0].source.y-skeleton[c1].source.y) < 10*mergeRange])
         # remove cluster nodes from candidates
         for c in cluster:
             candidates.remove(c)
