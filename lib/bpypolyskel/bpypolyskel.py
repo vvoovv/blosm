@@ -463,7 +463,7 @@ def removeGhosts(skeleton):
                                     sinksAltered = True
                                     break
 
-def mergeNodeClusters(skeleton,mergeRange = 0.15):
+def mergeNodeClusters(skeleton,mergeRange = 0.1):
     # first merge all nodes that have exactly the same source
     sources = {}
     to_remove = []
@@ -502,30 +502,21 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
     # remove duplicates
     candidates = list(dict.fromkeys(candidates))
 
-    # keep for later use
-    nodesToMerge = candidates.copy()
+    # distances between canddates
+    dist = [(skeleton[p1].source-skeleton[p0].source).magnitude for p0,p1 in zip(candidates,candidates[1:]) ]
 
-    # define clusters
+    # classify them, 1: dist<5*mergeRange  2: dist>=5*mergeRange
+    classes = [ (i,1 if d<5*mergeRange else 2) for i,d in enumerate(dist)]
+
+    # clusters are groups of consecutive elements of class 1
     clusters = []
-    while candidates:
-        # add the first node in candidates to the new cluster
-        c0 = candidates[0]
-        cluster = [c0]
-        # compute the Manhattan distance to the other candidate nodes. If this distance is close 
-        # to the original limit 'squareSize' (using a multiple of this here?), the node is assumed
-        # to belong to the same cluster.
-        cluster.extend([c1 for c1 in candidates[1:] if abs(skeleton[c0].source.x-skeleton[c1].source.x) + \
-                                                    abs(skeleton[c0].source.y-skeleton[c1].source.y) < 5*mergeRange])
-
-        # in case of an apse, the cluster must be larger to get all nodes
-        if len(cluster)>3:
-            cluster = [c0]
-            cluster.extend([c1 for c1 in candidates[1:] if abs(skeleton[c0].source.x-skeleton[c1].source.x) + \
-                                                        abs(skeleton[c0].source.y-skeleton[c1].source.y) < 10*mergeRange])
-        # remove cluster nodes from candidates
-        for c in cluster:
-            candidates.remove(c)
-        clusters.append(cluster)
+    nodesToMerge = []
+    for key, group in groupby(classes, lambda x: x[1]):
+        if key==1:
+            indx = [tup[0] for tup in list(group)]
+            cluster = candidates[ indx[0]:(indx[-1]+2) ]
+            clusters.append(cluster)
+            nodesToMerge.extend(cluster)
 
     # find new centers of merged clusters as center of gravity.
     # in the same time, collect all sinks of the merged nodes
@@ -593,7 +584,7 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
 #         isInLAV = not isInLAV
 #     return isInLAV
 
-def skeletonize(edgeContours,mergeRange=0.15):
+def skeletonize(edgeContours,mergeRange=0.1):
     """
     Compute the straight skeleton of a polygon.
 
@@ -642,7 +633,7 @@ def skeletonize(edgeContours,mergeRange=0.15):
 
     return output
 
-def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None,mergeRange=0.15):
+def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None,mergeRange=0.1):
     """
     Compute the faces of a polygon, skeletonized by a straight skeleton.
 
