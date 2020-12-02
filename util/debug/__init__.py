@@ -31,6 +31,10 @@ class TemplateBpypolyskel(Template):
 
 
 def dumpInputHippedRoof(verts, firstVertIndex, numPolygonVerts, holesInfo, unitVectors):
+    """
+    Creates a Python script with the automated tests out of the template <test_bpypolyskel.py.template>.
+    The resulting file is saved to <bpypolyskel/debug> directory
+    """
     with open(
         os.path.join(
             getDebugHippedRoofPath(),
