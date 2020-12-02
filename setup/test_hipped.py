@@ -30,7 +30,7 @@ from building.manager import BuildingManager
 def bmRender(self):
     numBuildings = len(self.buildings)
     #for i in range(numBuildings):
-    for i in range(80000, 100000):
+    for i in range(80000, 150000):
         building = self.buildings[i]
         print("%s:%s" % (i, building.outline.tags["id"]))
         self.renderer.render(self.buildings[i], self.osm)

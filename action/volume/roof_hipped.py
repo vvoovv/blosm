@@ -6,7 +6,7 @@ from lib.bpypolyskel.bpypolyskel import polygonize
 
 from util import zAxis
 
-from util.debug import dumpInput
+#from util.debug import dumpInputHippedRoof
 
 # auxiliary indices to deal with quadrangles
 _prevIndices = (3, 0, 1, 2)
@@ -196,7 +196,8 @@ class RoofHipped(RoofLeveled):
         for edgeIndex, vec in enumerate(unitVector):
             vec /= length[edgeIndex]
         
-        dumpInput(verts, firstVertIndex, numPolygonVerts, None, unitVector)
+        #dumpInputHippedRoof(verts, firstVertIndex, numPolygonVerts, None, unitVector)
+        #return
         
         # calculate polygons formed by the straight skeleton
         polygonize(
