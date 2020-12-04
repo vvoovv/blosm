@@ -1,19 +1,18 @@
 import os
 from string import Template
+import bpy
 
 from app import app
 
 
-def getTemplate(fileName):
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), fileName), 'r') as file:
+def getTemplate():
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), bpy.context.scene["outputTemplate"]), 'r') as file:
         template = file.read()
     return template
 
 
 def getDebugHippedRoofPath():
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "debug_hipped_roof_path.txt"), 'r') as file:
-        path = file.read()
-    return path
+    return bpy.context.scene["outputDir"]
 
 
 class TemplateBpypolyskel(Template):
@@ -38,11 +37,14 @@ def dumpInputHippedRoof(verts, firstVertIndex, numPolygonVerts, holesInfo, unitV
     with open(
         os.path.join(
             getDebugHippedRoofPath(),
-            "test_%s.py" % os.path.splitext(os.path.basename(app.osmFilepath))[0]
+            "%s%s.py" % (
+                bpy.context.scene["outputFileNamePrefix"],
+                os.path.splitext(os.path.basename(app.osmFilepath))[0]
+            )
         ),
     'w') as file:
         file.write(
-            TemplateBpypolyskel( getTemplate("test_bpypolyskel.py.template") ).substitute(
+            TemplateBpypolyskel( getTemplate() ).substitute(
                 verts = verts,
                 unitVectors = unitVectors,
                 numPolygonVerts = numPolygonVerts,

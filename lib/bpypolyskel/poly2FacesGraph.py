@@ -99,6 +99,8 @@ class poly2FacesGraph:
                     edgeset -= set([edge])
                     break  # (Only one iteration)
             else:
+                if tup in path:
+                    raise Exception('Endless loop catched in poly2FacesGraph faces()') 
                 path.append(tup)
                 edgeset -= set([tup])
         if (len(path) != 0):

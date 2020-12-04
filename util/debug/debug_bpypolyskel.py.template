@@ -1,0 +1,21 @@
+import pytest
+from mathutils import Vector
+from bpypolyskel import bpypolyskel
+
+
+verts = ${verts}
+unitVectors = ${unitVectors}
+holesInfo = ${holesInfo}
+firstVertIndex = ${firstVertIndex}
+numPolygonVerts = ${numPolygonVerts}
+
+
+faces = bpypolyskel.polygonize(verts, firstVertIndex, numPolygonVerts, holesInfo, 0.0, 0.5, None, unitVectors)
+
+
+for face in faces:
+    assert len(face) >= 3
+
+
+for face in faces:
+    assert len(face) == len(set(face))

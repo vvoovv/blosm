@@ -463,7 +463,26 @@ def removeGhosts(skeleton):
                                     sinksAltered = True
                                     break
 
-def mergeNodeClusters(skeleton,mergeRange = 0.1):
+def findClusters(skeleton,candidates,thresh):
+    clusters = []
+    while candidates:
+        c0 = candidates[0]
+        cluster = [c0]
+        ref = skeleton[c0]
+        for c in candidates[1:]:
+            arc = skeleton[c]
+            # some kind of 3D manhattan distance
+            if abs(ref.source.x-arc.source.x) + abs(ref.source.y-arc.source.y) + abs(ref.height-arc.height) < thresh:
+                cluster.append(c)
+        for c in cluster:
+            if c in candidates:
+                candidates.remove(c)
+        if len(cluster)>1:
+            clusters.append(cluster)
+    return clusters
+
+def mergeNodeClusters(skeleton,mergeRange = 0.15):
+
     # first merge all nodes that have exactly the same source
     sources = {}
     to_remove = []
@@ -481,48 +500,26 @@ def mergeNodeClusters(skeleton,mergeRange = 0.1):
     for i in reversed(to_remove):
         skeleton.pop(i)
 
-    # sort arcs by x-position of nodes
-    skeleton = sorted(skeleton, key=lambda arc: arc.source.x )
+    hadCluster = True
+    while hadCluster:
+        hadCluster = False
 
-    # find pairs of nodes where the sources are in a square of size mergeRange.
-    # the entry in 'candidates' is the index of the node in 'skeleton'
-    candidates = []
-    # for i,pair in enumerate(_iterCircularPrevNext(range(len(skeleton)))):
-    combs = combinations(range(len(skeleton)),2)
-    for pair in combs:
-        distx = abs(skeleton[pair[1]].source.x - skeleton[pair[0]].source.x)
-        disty = abs(skeleton[pair[1]].source.y - skeleton[pair[0]].source.y)
-        if distx<mergeRange and disty<mergeRange:
-            candidates.extend(pair)
+        # find clusters within short range and short height difference
+        candidates = [c for c in range(len(skeleton))]
+        clusters = findClusters(skeleton,candidates,0.5)
+ 
+        # check if there are cluster candidates
+        if not clusters:
+            break
+        hadCluster = True
 
-    # check if there are cluster candidates
-    if not candidates:
-        return skeleton
+        # use largest cluster
+        cluster = max(clusters, key = lambda clstr: len(clstr))
 
-    # remove duplicates
-    candidates = list(dict.fromkeys(candidates))
+        nodesToMerge = cluster.copy()
 
-    # distances between canddates
-    dist = [(skeleton[p1].source-skeleton[p0].source).magnitude for p0,p1 in zip(candidates,candidates[1:]) ]
-
-    # classify them, 1: dist<5*mergeRange  2: dist>=5*mergeRange
-    classes = [ (i,1 if d<5*mergeRange else 2) for i,d in enumerate(dist)]
-
-    # clusters are groups of consecutive elements of class 1
-    clusters = []
-    nodesToMerge = []
-    for key, group in groupby(classes, lambda x: x[1]):
-        if key==1:
-            indx = [tup[0] for tup in list(group)]
-            cluster = candidates[ indx[0]:(indx[-1]+2) ]
-            clusters.append(cluster)
-            nodesToMerge.extend(cluster)
-
-    # find new centers of merged clusters as center of gravity.
-    # in the same time, collect all sinks of the merged nodes
-    newNodes = []
-    for cluster in clusters:
-        # compute center of gravity as source of merged node
+        # compute center of gravity as source of merged node.
+        # in the same time, collect all sinks of the merged nodes
         x,y,height = (0.0,0.0,0.0)
         mergedSources = []
         for node in cluster:
@@ -534,55 +531,143 @@ def mergeNodeClusters(skeleton,mergeRange = 0.1):
         new_source = mathutils.Vector((x/N,y/N))
         new_height = height/N
 
-        # collect all sinks of merged nodes that are not in set of merged nodes
+        # collect all sinks of merged nodes, that point outside the cluster
         new_sinks = []
         for node in cluster:
             for sink in skeleton[node].sinks:
                 if sink not in mergedSources and sink not in new_sinks:
                     new_sinks.append(sink)
 
-        # create the merged node and remember it for later use
+        # create the merged node
         newnode = Subtree(new_source, new_height, new_sinks)
-        newNodes.append(newnode)
 
-       # redirect all sinks that pointed to one of the clustered nodes to the new node
+       # redirect all sinks of nodes outside the cluster, that pointed to 
+       # one of the clustered nodes, to the new node
         for arc in skeleton:
             if arc.source not in mergedSources:
+                to_remove = []
                 for i,sink in enumerate(arc.sinks):
                     if sink in mergedSources:
-                        arc.sinks[i] = new_source
+                        if new_source in arc.sinks:
+                            to_remove.append(i)
+                        else: 
+                            arc.sinks[i] = new_source
+                for i in sorted(to_remove, reverse = True):
+                    del arc.sinks[i]
 
-        # redirect eventual sinks of new nodes that point to one of the clustered nodes to the new node
-        for arc in newNodes:
-            if arc.source not in mergedSources: #???
-                for i,sink in enumerate(arc.sinks):
-                    if sink in mergedSources:
-                        arc.sinks[i] = new_source
+        # remove clustered nodes from skeleton
+        # and add the new node
+        for i in sorted(nodesToMerge, reverse = True):
+            del skeleton[i]
+        skeleton.append(newnode)
 
-    # remove clustered nodes from skeleton
-    # and add new nodes
-    for i in sorted(nodesToMerge, reverse = True):
-        del skeleton[i]
-    skeleton.extend(newNodes)
+        # end of while loop
 
     return skeleton
 
-# def isEventInItsLAV(event):
-#     point = event.intersection_point    # vertice of event
-#     lav = event.vertex.lav              # LAV of event
-#     pv = [v.point for v in lav]         # vertices in LAV
-#     # signed area of a polygon. If > 0 -> polygon counterclockwise.
-#     # See: https://mathworld.wolfram.com/PolygonArea.html 
-#     signedArea = 0.0
-#     # a ray from event along x-axis crosses odd edges, if inside polygon
-#     isInLAV = False
-#     for p,n  in _iterCircularPrevNext(pv):
-#         signedArea += p.x*n.y - n.x*p.y
-#         if intersect(p,n,point,point+mathutils.Vector((1.e9,0.0))):
-#             isInLAV = not isInLAV
-#     if signedArea < 0.0:
-#         isInLAV = not isInLAV
-#     return isInLAV
+# def mergeNodeClusters(skeleton,mergeRange = 0.1):
+#     # first merge all nodes that have exactly the same source
+#     sources = {}
+#     to_remove = []
+#     for i, p in enumerate(skeleton):
+#         source = tuple(i for i in p.source)
+#         if source in sources:
+#             source_index = sources[source]
+#             # source exists, merge sinks
+#             for sink in p.sinks:
+#                 if sink not in skeleton[source_index].sinks:
+#                     skeleton[source_index].sinks.append(sink)
+#             to_remove.append(i)
+#         else:
+#             sources[source] = i
+#     for i in reversed(to_remove):
+#         skeleton.pop(i)
+
+#     # sort arcs by x-position of nodes
+#     skeleton = sorted(skeleton, key=lambda arc: arc.source.x )
+
+#     # find pairs of nodes where the sources are in a square of size mergeRange.
+#     # the entry in 'candidates' is the index of the node in 'skeleton'
+#     candidates = []
+#     # for i,pair in enumerate(_iterCircularPrevNext(range(len(skeleton)))):
+#     combs = combinations(range(len(skeleton)),2)
+#     for pair in combs:
+#         distx = abs(skeleton[pair[1]].source.x - skeleton[pair[0]].source.x)
+#         disty = abs(skeleton[pair[1]].source.y - skeleton[pair[0]].source.y)
+#         if distx<mergeRange and disty<mergeRange:
+#             candidates.extend(pair)
+
+#     # check if there are cluster candidates
+#     if not candidates:
+#         return skeleton
+
+#     # remove duplicates
+#     candidates = list(dict.fromkeys(candidates))
+
+#     # distances between canddates
+#     dist = [(skeleton[p1].source-skeleton[p0].source).magnitude for p0,p1 in zip(candidates,candidates[1:]) ]
+
+#     # classify them, 1: dist<5*mergeRange  2: dist>=5*mergeRange
+#     classes = [ (i,1 if d<5*mergeRange else 2) for i,d in enumerate(dist)]
+
+#     # clusters are groups of consecutive elements of class 1
+#     clusters = []
+#     nodesToMerge = []
+#     for key, group in groupby(classes, lambda x: x[1]):
+#         if key==1:
+#             indx = [tup[0] for tup in list(group)]
+#             cluster = candidates[ indx[0]:(indx[-1]+2) ]
+#             clusters.append(cluster)
+#             nodesToMerge.extend(cluster)
+
+#     # find new centers of merged clusters as center of gravity.
+#     # in the same time, collect all sinks of the merged nodes
+#     newNodes = []
+#     for cluster in clusters:
+#         # compute center of gravity as source of merged node
+#         x,y,height = (0.0,0.0,0.0)
+#         mergedSources = []
+#         for node in cluster:
+#             x += skeleton[node].source.x
+#             y += skeleton[node].source.y
+#             height += skeleton[node].height
+#             mergedSources.append(skeleton[node].source)
+#         N = len(cluster)
+#         new_source = mathutils.Vector((x/N,y/N))
+#         new_height = height/N
+
+#         # collect all sinks of merged nodes that are not in set of merged nodes
+#         new_sinks = []
+#         for node in cluster:
+#             for sink in skeleton[node].sinks:
+#                 if sink not in mergedSources and sink not in new_sinks:
+#                     new_sinks.append(sink)
+
+#         # create the merged node and remember it for later use
+#         newnode = Subtree(new_source, new_height, new_sinks)
+#         newNodes.append(newnode)
+
+#        # redirect all sinks that pointed to one of the clustered nodes to the new node
+#         for arc in skeleton:
+#             if arc.source not in mergedSources:
+#                 for i,sink in enumerate(arc.sinks):
+#                     if sink in mergedSources:
+#                         arc.sinks[i] = new_source
+
+#         # redirect eventual sinks of new nodes that point to one of the clustered nodes to the new node
+#         for arc in newNodes:
+#             if arc.source not in mergedSources: #???
+#                 for i,sink in enumerate(arc.sinks):
+#                     if sink in mergedSources:
+#                         arc.sinks[i] = new_source
+
+#     # remove clustered nodes from skeleton
+#     # and add new nodes
+#     for i in sorted(nodesToMerge, reverse = True):
+#         del skeleton[i]
+#     skeleton.extend(newNodes)
+
+#     return skeleton
 
 def skeletonize(edgeContours,mergeRange=0.1):
     """

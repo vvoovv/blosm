@@ -23,120 +23,118 @@ from action.volume import Volume
 import bpy
 
 
-#
-# redefine BuildingManager.render(..) to render only a part of buildings
-#
-from building.manager import BuildingManager
-def bmRender(self):
-    numBuildings = len(self.buildings)
-    #for i in range(numBuildings):
-    for i in range(80000, 150000):
-        building = self.buildings[i]
-        print("%s:%s" % (i, building.outline.tags["id"]))
-        self.renderer.render(self.buildings[i], self.osm)
-BuildingManager.render = bmRender
-
-
-#
-# augment BuildingRendererNew.render(..)
-#
-import math
-from parse.osm.way import Way
-
-_brRender = BuildingRendererNew.render
-def brRender(self, buildingP, data):
-    projection = data.projection
-    element = buildingP.outline
-    if isinstance(element, Way):
-        node = data.nodes[element.nodes[0]]
-    else:
-        # the case of OSM relation
-        node = data.nodes[
-            next( (element.ls[0] if isinstance(element.ls, list) else element.ls).nodeIds(data) )
-        ]
+def redefineMethods():
+    #
+    # redefine BuildingManager.render(..) to render only a part of buildings
+    #
+    from building.manager import BuildingManager
+    def bmRender(self):
+        numBuildings = len(self.buildings)
+        for i in range(numBuildings):
+        #for i in range(80000, 150000):
+            building = self.buildings[i]
+            print("%s:%s" % (i, building.outline.tags["id"]))
+            self.renderer.render(self.buildings[i], self.osm)
+    BuildingManager.render = bmRender
     
-    projection.lat = node.lat
-    projection.lon = node.lon
-    projection.latInRadians = math.radians(projection.lat)
-    _brRender(self, buildingP, data)
-
-BuildingRendererNew.render = brRender
-
-
-#
-# augment App.clean(..)
-#
-from app import App
-
-_clean = App.clean
-def clean(self):
-    self.log.close()
-    _clean(self)
-
-App.clean = clean
-
-
-#
-# redefine Node.getData(..) (never cache the projected coordinates)
-#
-from parse.osm.node import Node
-
-def getData(self, osm):
-    """
-    Get projected coordinates
-    """
-    return osm.projection.fromGeographic(self.lat, self.lon)
-Node.getData = getData
-
-
-#
-# redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
-#
-from action.volume.roof_hipped import RoofHipped
-
-_rhGenerateRoof = RoofHipped.generateRoof
-def rhGenerateRoof(self, footprint, roofItem, firstVertIndex):
-    roofItem.exception = None
-    try:
-        _rhGenerateRoof(self, footprint, roofItem, firstVertIndex)
-    except Exception as e:
-        roofItem.exception = "%s-%s" % (e.__class__.__name__, str(e))
-RoofHipped.generateRoof = rhGenerateRoof
-
-
-#
-# redefine RoofHipped.generateRoofQuadrangle(..) to set <roofItem.exception>
-#
-_rhGenerateRoofQuadrangle = RoofHipped.generateRoofQuadrangle
-def rhGenerateRoofQuadrangle(self, footprint, roofItem, firstVertIndex):
-    roofItem.exception = None
-    _rhGenerateRoofQuadrangle(self, footprint, roofItem, firstVertIndex)
-RoofHipped.generateRoofQuadrangle = rhGenerateRoofQuadrangle
-
-
-#
-# redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
-#
-from action.volume.roof_hipped_multi import RoofHippedMulti
-
-_rhmGenerateRoof = RoofHippedMulti.generateRoof
-def rhmGenerateRoof(self, footprint, roofItem, firstVertIndex):
-    roofItem.exception = None
-    try:
-        _rhmGenerateRoof(self, footprint, roofItem, firstVertIndex)
-    except Exception as e:
-        roofItem.exception = "%s-%s" % (e.__class__.__name__, str(e))
-RoofHippedMulti.generateRoof = rhmGenerateRoof
-
-
-removeFromTest = {
-    "4804904":1, # london_temperate_house.py | endless cycle
-    "27647287":1, # berlin_ossietzkystrasse_24.py | endless cycle
-    "32060794":1, # prague_wenzigova_458.py | removeGhosts: removal from the Python list
-}
+    
+    #
+    # augment BuildingRendererNew.render(..)
+    #
+    import math
+    from parse.osm.way import Way
+    
+    _brRender = BuildingRendererNew.render
+    def brRender(self, buildingP, data):
+        projection = data.projection
+        element = buildingP.outline
+        if isinstance(element, Way):
+            node = data.nodes[element.nodes[0]]
+        else:
+            # the case of OSM relation
+            node = data.nodes[
+                next( (element.ls[0] if isinstance(element.ls, list) else element.ls).nodeIds(data) )
+            ]
+        
+        projection.lat = node.lat
+        projection.lon = node.lon
+        projection.latInRadians = math.radians(projection.lat)
+        _brRender(self, buildingP, data)
+    
+    BuildingRendererNew.render = brRender
+    
+    
+    #
+    # augment App.clean(..)
+    #
+    from app import App
+    
+    _clean = App.clean
+    def clean(self):
+        self.log.close()
+        _clean(self)
+    
+    App.clean = clean
+    
+    
+    #
+    # redefine Node.getData(..) (never cache the projected coordinates)
+    #
+    from parse.osm.node import Node
+    
+    def getData(self, osm):
+        """
+        Get projected coordinates
+        """
+        return osm.projection.fromGeographic(self.lat, self.lon)
+    Node.getData = getData
+    
+    
+    #
+    # redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
+    #
+    from action.volume.roof_hipped import RoofHipped
+    
+    _rhGenerateRoof = RoofHipped.generateRoof
+    def rhGenerateRoof(self, footprint, roofItem, firstVertIndex):
+        roofItem.exception = None
+        try:
+            _rhGenerateRoof(self, footprint, roofItem, firstVertIndex)
+        except Exception as e:
+            roofItem.exception = "%s-%s" % (e.__class__.__name__, str(e))
+    RoofHipped.generateRoof = rhGenerateRoof
+    
+    
+    #
+    # redefine RoofHipped.generateRoofQuadrangle(..) to set <roofItem.exception>
+    #
+    _rhGenerateRoofQuadrangle = RoofHipped.generateRoofQuadrangle
+    def rhGenerateRoofQuadrangle(self, footprint, roofItem, firstVertIndex):
+        roofItem.exception = None
+        _rhGenerateRoofQuadrangle(self, footprint, roofItem, firstVertIndex)
+    RoofHipped.generateRoofQuadrangle = rhGenerateRoofQuadrangle
+    
+    
+    #
+    # redefine RoofHipped.render(..) to catch exceptions inside lib.bpypolyskel.polygonize(..)
+    #
+    from action.volume.roof_hipped_multi import RoofHippedMulti
+    
+    _rhmGenerateRoof = RoofHippedMulti.generateRoof
+    def rhmGenerateRoof(self, footprint, roofItem, firstVertIndex):
+        roofItem.exception = None
+        try:
+            _rhmGenerateRoof(self, footprint, roofItem, firstVertIndex)
+        except Exception as e:
+            roofItem.exception = "%s-%s" % (e.__class__.__name__, str(e))
+    RoofHippedMulti.generateRoof = rhmGenerateRoof
 
 
 def setup(app, data):
+    if not hasattr(app, "methodsRedefined"):
+        redefineMethods()
+        app.methodsRedefined = True
+    
     # prevent extent calculation
     bpy.context.scene["lat"] = 0.
     bpy.context.scene["lon"] = 0.
