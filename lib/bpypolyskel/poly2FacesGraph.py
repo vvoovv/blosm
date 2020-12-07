@@ -111,8 +111,11 @@ class poly2FacesGraph:
         final_faces = []
         for face in faces:
             # rotate edge list so that edge of original polygon is first edge
-            nextOrigIndex = next(x[0] for x in enumerate(face) if x[1][0]<nrOfPolyVerts and x[1][1]< nrOfPolyVerts)
-            face = face[nextOrigIndex:] + face[:nextOrigIndex]
+            origEdges = [x[0] for x in enumerate(face) if x[1][0]<nrOfPolyVerts and x[1][1]< nrOfPolyVerts]
+            # if no result: face is floating without polygon contour edges
+            if origEdges:
+                nextOrigIndex = next(x[0] for x in enumerate(face) if x[1][0]<nrOfPolyVerts and x[1][1]< nrOfPolyVerts)
+                face = face[nextOrigIndex:] + face[:nextOrigIndex]
             # convert edge list in vertices list
             vert_list = [e[0] for e in face]
             if any(i >= nrOfPolyVerts for i in vert_list): # exclude polygon and holes

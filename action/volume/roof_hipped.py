@@ -220,18 +220,45 @@ class RoofHipped(RoofLeveled):
         
         for indices in roofSideIndices:
             edgeIndex = indices[0] - firstVertIndex
-            roofItem.addRoofSide(
-                indices,
-                # UV-coordinates
-                ( (0., 0.), (length[edgeIndex], 0.) ) + tuple(
-                    (
-                        (verts[ indices[_index] ] - verts[ indices[0] ]).dot(unitVector[edgeIndex]),
-                        (verts[ indices[_index] ][2] - roofVerticalPosition) * factor
-                    ) for _index in range(2, len(indices))
-                ),
-                edgeIndex,
-                self.itemFactory
-            )
+            if edgeIndex < numPolygonVerts:
+                # The normal case:
+                # all faces of the roof have a common edge with the original footprint
+                roofItem.addRoofSide(
+                    indices,
+                    # UV-coordinates
+                    ( (0., 0.), (length[edgeIndex], 0.) ) + tuple(
+                        (
+                            (verts[ indices[_index] ] - verts[ indices[0] ]).dot(unitVector[edgeIndex]),
+                            (verts[ indices[_index] ][2] - roofVerticalPosition) * factor
+                        ) for _index in range(2, len(indices))
+                    ),
+                    edgeIndex,
+                    self.itemFactory
+                )
+            else:
+                # A special exotic case:
+                # the face of the roof doesn't have a common edge with the original footprint
+                origin = verts[indices[0]]
+                # 1) get a normal to the face
+                n = (verts[indices[1]] - origin).cross(verts[indices[2]]-verts[indices[1]])
+                n.normalize()
+                # 2) get the unit vector for the U-axis located in a horizontal plane
+                u = zAxis.cross(n)
+                u.normalize()
+                # 3) get the unit vector for the X-axis
+                v = n.cross(u)
+                roofItem.addRoofSide(
+                    indices,
+                    # UV-coordinates
+                    tuple(
+                        (
+                            (verts[indices[_index]] - origin).dot(u),
+                            (verts[indices[_index]] - origin).dot(v)
+                        ) for _index in range(len(indices))
+                    ),
+                    -1,
+                    self.itemFactory
+                )
     
     def getRoofVert(self, vert, i, tan):
         """
