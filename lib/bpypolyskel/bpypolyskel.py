@@ -145,6 +145,8 @@ class _LAVertex:
                     # locate candidate b
                     linvec = (self.point - i).normalized()
                     edvec = edge.edge.norm
+                    if abs(self.bisector.v.cross(linvec) - 1.0) < EPSILON:
+                        linvec = (self.point - i + edvec*0.01 ).normalized()
                     if self.bisector.v.cross(linvec) < 0: 
                         edvec = -edvec
 
