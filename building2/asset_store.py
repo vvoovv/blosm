@@ -84,13 +84,11 @@ class AssetStore:
             buildingInfo = dict(byPart={}, byCladding={})
             self.byBuilding.append(buildingInfo)
             
-            parts = building.get("parts") or tuple()
-            cladding = building.get("cladding") or tuple()
-            
             _use = building.get("use")
-            if parts and not _use:
-                continue
-            if not _use in self.byUse:
+            if _use == "any":
+                _use = None
+            elif not _use in self.byUse:
+                # the key <None> is already available in <byUse>, that's why <elif> clause
                 self.initUse(_use)
             
             byPart = self.byUse[_use]["byPart"]
@@ -102,74 +100,76 @@ class AssetStore:
                     byBldgClass[_bldgClass] = EntryList()
                 byBldgClass[_bldgClass].addEntry(building)
             
-            for partInfo in parts:
-                # inject <bldgIndex> into <partInfo>
-                partInfo["_bldgIndex"] = bldgIndex
-                _part = partInfo.get("part")
-                if not _part in byPart:
-                    self.initPart(_part, byPart)
-                byType = byPart[_part]
-                # the same for <buildingInfo>
-                if not _part in buildingInfo["byPart"]:
-                    self.initPart(_part, buildingInfo["byPart"])
+            for assetInfo in building.get("assets"):
+                # inject <bldgIndex> into <aInfo>
+                assetInfo["_bldgIndex"] = bldgIndex
                 
-                _assetType = partInfo.get("type")
-                if not _assetType in byType:
-                    self.initAssetType(_assetType, byType)
-                # the same for <buildingInfo>
-                if not _assetType in buildingInfo["byPart"][_part]:
-                    self.initAssetType(_assetType, buildingInfo["byPart"][_part])
+                category = assetInfo.get("category")
                 
-                byClass = byType[_assetType]["byClass"]
-                
-                _class = partInfo.get("class")
-                if _class:
-                    if not _class in byClass:
-                        byClass[_class] = EntryList()
-                    byClass[_class].addEntry(partInfo)
+                if category == "part":
+                    _part = assetInfo.get("part")
+                    if not _part in byPart:
+                        self.initPart(_part, byPart)
+                    byType = byPart[_part]
                     # the same for <buildingInfo>
-                    if not _class in buildingInfo["byPart"][_part][_assetType]["byClass"]:
-                        buildingInfo["byPart"][_part][_assetType]["byClass"][_class] = EntryList()
-                    buildingInfo["byPart"][_part][_assetType]["byClass"][_class].addEntry(partInfo)
-                else:
-                    byType[_assetType]["other"].addEntry(partInfo)
+                    if not _part in buildingInfo["byPart"]:
+                        self.initPart(_part, buildingInfo["byPart"])
+                    
+                    _assetType = assetInfo.get("type")
+                    if not _assetType in byType:
+                        self.initAssetType(_assetType, byType)
                     # the same for <buildingInfo>
-                    buildingInfo["byPart"][_part][_assetType]["other"].addEntry(partInfo)
+                    if not _assetType in buildingInfo["byPart"][_part]:
+                        self.initAssetType(_assetType, buildingInfo["byPart"][_part])
+                    
+                    byClass = byType[_assetType]["byClass"]
+                    
+                    _class = assetInfo.get("class")
+                    if _class:
+                        if not _class in byClass:
+                            byClass[_class] = EntryList()
+                        byClass[_class].addEntry(assetInfo)
+                        # the same for <buildingInfo>
+                        if not _class in buildingInfo["byPart"][_part][_assetType]["byClass"]:
+                            buildingInfo["byPart"][_part][_assetType]["byClass"][_class] = EntryList()
+                        buildingInfo["byPart"][_part][_assetType]["byClass"][_class].addEntry(assetInfo)
+                    else:
+                        byType[_assetType]["other"].addEntry(assetInfo)
+                        # the same for <buildingInfo>
+                        buildingInfo["byPart"][_part][_assetType]["other"].addEntry(assetInfo)
             
-            for claddingInfo in cladding:
-                # inject <bldgIndex> into <claddingInfo>
-                claddingInfo["_bldgIndex"] = bldgIndex
-                _material = claddingInfo.get("material")
-                
-                # <_use> can be also equal to None, e.g. not present in <building>
-                if not _material in self.byUse[_use]["byCladding"]:
-                    byType = {}
-                    self.byUse[_use]["byCladding"][_material] = byType
-                    for _assetType in _assetTypes:
-                        self.initAssetType(_assetType, byType)
-                # the same for <buildingInfo>
-                if not _material in buildingInfo:
-                    byType = {}
-                    buildingInfo["byCladding"][_material] = byType
-                    for _assetType in _assetTypes:
-                        self.initAssetType(_assetType, byType)
-                
-                _assetType = claddingInfo.get("type")
-                _class = claddingInfo.get("class")
-                if _class:
-                    byClass = self.byUse[_use]["byCladding"][_material][_assetType]["byClass"]
-                    if not _class in byClass:
-                        byClass[_class] = EntryList()
-                    byClass[_class].addEntry(claddingInfo)
+                if category == "cladding":
+                    _material = assetInfo.get("material")
+                    
+                    # <_use> can be also equal to None, e.g. not present in <building>
+                    if not _material in self.byUse[_use]["byCladding"]:
+                        byType = {}
+                        self.byUse[_use]["byCladding"][_material] = byType
+                        for _assetType in _assetTypes:
+                            self.initAssetType(_assetType, byType)
                     # the same for <buildingInfo>
-                    byClass = buildingInfo["byCladding"][_material][_assetType]["byClass"]
-                    if not _class in byClass:
-                        byClass[_class] = EntryList()
-                    byClass[_class].addEntry(claddingInfo)
-                else:
-                    self.byUse[_use]["byCladding"][_material][_assetType]["other"].addEntry(claddingInfo)
-                    # the same for <buildingInfo>
-                    buildingInfo["byCladding"][_material][_assetType]["other"].addEntry(claddingInfo)
+                    if not _material in buildingInfo:
+                        byType = {}
+                        buildingInfo["byCladding"][_material] = byType
+                        for _assetType in _assetTypes:
+                            self.initAssetType(_assetType, byType)
+                    
+                    _assetType = assetInfo.get("type")
+                    _class = assetInfo.get("class")
+                    if _class:
+                        byClass = self.byUse[_use]["byCladding"][_material][_assetType]["byClass"]
+                        if not _class in byClass:
+                            byClass[_class] = EntryList()
+                        byClass[_class].addEntry(assetInfo)
+                        # the same for <buildingInfo>
+                        byClass = buildingInfo["byCladding"][_material][_assetType]["byClass"]
+                        if not _class in byClass:
+                            byClass[_class] = EntryList()
+                        byClass[_class].addEntry(assetInfo)
+                    else:
+                        self.byUse[_use]["byCladding"][_material][_assetType]["other"].addEntry(assetInfo)
+                        # the same for <buildingInfo>
+                        buildingInfo["byCladding"][_material][_assetType]["other"].addEntry(assetInfo)
     
     def initUse(self, buildingUse):
         byPart = {}
