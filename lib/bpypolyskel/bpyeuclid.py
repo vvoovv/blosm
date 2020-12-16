@@ -1,4 +1,7 @@
 import mathutils
+import numpy as np
+from numpy.linalg import inv
+import cmath
 
 # -------------------------------------------------------------------------
 # from https://bryceboe.com/2006/10/23/line-segment-intersection-algorithm/,
@@ -89,4 +92,18 @@ class Line2:
         nearest = mathutils.geometry.intersect_point_line(other, self.p, self.p+self.v)[0]
         dist = (other-nearest).length
         return dist
- 
+
+def fitCircle3Points(points):
+    N = len(points)
+    # circle through three points usingg complex math, see answer in 
+    # https://stackoverflow.com/questions/28910718/give-3-points-and-a-plot-circle
+    x = complex(points[0].x, points[0].y)
+    y = complex(points[N//2].x, points[N//2].y)
+    z = complex(points[-1].x, points[-1].y)
+    w = z-x
+    w /= y-x
+    c = (x-y)*(w-abs(w)**2)/2j/w.imag-x
+    x0 = -c.real
+    y0 = -c.imag
+    R = abs(c+x)
+    return mathutils.Vector((x0,y0)), R

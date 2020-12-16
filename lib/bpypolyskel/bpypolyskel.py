@@ -29,6 +29,7 @@ import heapq
 from collections import namedtuple
 from itertools import *
 from collections import Counter
+from operator import itemgetter
 
 from .bpyeuclid import *
 from .poly2FacesGraph import poly2FacesGraph
@@ -279,6 +280,48 @@ class _SLAV:
     def empty(self):
         return not self._lavs
 
+    def handleApseEvent(self, apseVertices, center, R):
+        # find all vertexes of the apseVertices
+        lav = self._lavs[0]
+        apseVertexes = []
+        for v in chain.from_iterable(self._lavs):
+            if v.point in apseVertices:
+                apseVertexes.append(v)
+
+        # find vertexes before and after apse
+        vertex_a = apseVertexes[0]
+        vertex_b = apseVertexes[-1]
+
+        # extended unify
+        replacement = _LAVertex(center, vertex_a.edge_prev, vertex_b.edge_next,
+                                (vertex_b.bisector.v.normalized(), vertex_a.bisector.v.normalized()))
+        replacement.lav = lav
+
+        if lav.head in [vertex_a, vertex_b]:
+            lav.head = replacement
+
+        vertex_a.prev.next = replacement
+        vertex_b.next.prev = replacement
+        replacement.prev = vertex_a.prev
+        replacement.next = vertex_b.next
+
+        for v in apseVertexes:
+            v.invalidate()
+
+        lav._len -= len(apseVertexes)
+
+        if lav.head in (vertex_a, vertex_b):
+            lav.head = replacement
+
+        sinks = apseVertices
+
+        next_event = replacement.next_event()
+        events = []
+        if next_event is not None:
+            events.append(next_event)
+    
+        return (Subtree(center, R, sinks), events)
+
     def handle_edge_event(self, event):
         sinks = []
         events = []
@@ -465,7 +508,7 @@ def removeGhosts(skeleton):
                                     sinksAltered = True
                                     break
 
-def findClusters(skeleton,candidates,thresh):
+def findClusters(skeleton, candidates, contourVertices, thresh):
     clusters = []
     while candidates:
         c0 = candidates[0]
@@ -473,18 +516,85 @@ def findClusters(skeleton,candidates,thresh):
         ref = skeleton[c0]
         for c in candidates[1:]:
             arc = skeleton[c]
-            # some kind of 3D manhattan distance
-            if abs(ref.source.x-arc.source.x) + abs(ref.source.y-arc.source.y) + abs(ref.height-arc.height) < thresh:
+            # use Manhattan distance
+            if abs(ref.source.x-arc.source.x) + abs(ref.source.y-arc.source.y) < thresh:
                 cluster.append(c)
         for c in cluster:
             if c in candidates:
                 candidates.remove(c)
         if len(cluster)>1:
-            clusters.append(cluster)
+            # detect sinks in this cluster, that are contour vertices of the footprint
+            nrOfContourSinks = 0
+            contourSinks = []
+            for node in cluster:
+                sinks = skeleton[node].sinks
+                contourSinks.extend( [s for s in sinks if s in contourVertices] )
+                nrOfContourSinks += sum(el in sinks for el in contourVertices)
+
+            # less than 2, then we can merge the cluster
+            if nrOfContourSinks < 2:
+                clusters.append(cluster)
+                continue
+
+            # Two or more contour sinks, maybe its an architectural detail, that we shouldn't merge.
+            # There are only few sinks, so the minimal distance is computed by brute force
+            minDist = 3*thresh
+            combs = combinations(contourSinks,2)
+            for pair in combs:
+                minDist = min( (pair[0]-pair[1]).magnitude, minDist )
+ 
+            if minDist > 2*thresh:
+                clusters.append(cluster)    # contour sinks too far, so merge
+
     return clusters
 
-def mergeNodeClusters(skeleton,mergeRange = 0.15):
+def mergeCluster(skeleton, cluster):
+    nodesToMerge = cluster.copy()
 
+    # compute center of gravity as source of merged node.
+    # in the same time, collect all sinks of the merged nodes
+    x,y,height = (0.0,0.0,0.0)
+    mergedSources = []
+    for node in cluster:
+        x += skeleton[node].source.x
+        y += skeleton[node].source.y
+        height += skeleton[node].height
+        mergedSources.append(skeleton[node].source)
+    N = len(cluster)
+    new_source = mathutils.Vector((x/N,y/N))
+    new_height = height/N
+
+    # collect all sinks of merged nodes, that point outside the cluster
+    new_sinks = []
+    for node in cluster:
+        for sink in skeleton[node].sinks:
+            if sink not in mergedSources and sink not in new_sinks:
+                new_sinks.append(sink)
+
+    # create the merged node
+    newnode = Subtree(new_source, new_height, new_sinks)
+
+    # redirect all sinks of nodes outside the cluster, that pointed to 
+    # one of the clustered nodes, to the new node
+    for arc in skeleton:
+        if arc.source not in mergedSources:
+            to_remove = []
+            for i,sink in enumerate(arc.sinks):
+                if sink in mergedSources:
+                    if new_source in arc.sinks:
+                        to_remove.append(i)
+                    else: 
+                        arc.sinks[i] = new_source
+            for i in sorted(to_remove, reverse = True):
+                del arc.sinks[i]
+
+    # remove clustered nodes from skeleton
+    # and add the new node
+    for i in sorted(nodesToMerge, reverse = True):
+        del skeleton[i]
+    skeleton.append(newnode)
+
+def mergeNodeClusters(skeleton,edgeContours):
     # first merge all nodes that have exactly the same source
     sources = {}
     to_remove = []
@@ -502,73 +612,45 @@ def mergeNodeClusters(skeleton,mergeRange = 0.15):
     for i in reversed(to_remove):
         skeleton.pop(i)
 
+    contourVertices = [edge.p1 for contour in edgeContours for edge in contour]
+
+    # Merge all clusters that have small distances due to floating-point inaccuracies
+    smallThresh = 0.1
     hadCluster = True
     while hadCluster:
         hadCluster = False
-
         # find clusters within short range and short height difference
         candidates = [c for c in range(len(skeleton))]
-        clusters = findClusters(skeleton,candidates,0.5)
- 
+        clusters = findClusters(skeleton,candidates,contourVertices,smallThresh) 
         # check if there are cluster candidates
         if not clusters:
             break
         hadCluster = True
-
         # use largest cluster
         cluster = max(clusters, key = lambda clstr: len(clstr))
-
-        nodesToMerge = cluster.copy()
-
-        # compute center of gravity as source of merged node.
-        # in the same time, collect all sinks of the merged nodes
-        x,y,height = (0.0,0.0,0.0)
-        mergedSources = []
-        for node in cluster:
-            x += skeleton[node].source.x
-            y += skeleton[node].source.y
-            height += skeleton[node].height
-            mergedSources.append(skeleton[node].source)
-        N = len(cluster)
-        new_source = mathutils.Vector((x/N,y/N))
-        new_height = height/N
-
-        # collect all sinks of merged nodes, that point outside the cluster
-        new_sinks = []
-        for node in cluster:
-            for sink in skeleton[node].sinks:
-                if sink not in mergedSources and sink not in new_sinks:
-                    new_sinks.append(sink)
-
-        # create the merged node
-        newnode = Subtree(new_source, new_height, new_sinks)
-
-       # redirect all sinks of nodes outside the cluster, that pointed to 
-       # one of the clustered nodes, to the new node
-        for arc in skeleton:
-            if arc.source not in mergedSources:
-                to_remove = []
-                for i,sink in enumerate(arc.sinks):
-                    if sink in mergedSources:
-                        if new_source in arc.sinks:
-                            to_remove.append(i)
-                        else: 
-                            arc.sinks[i] = new_source
-                for i in sorted(to_remove, reverse = True):
-                    del arc.sinks[i]
-
-        # remove clustered nodes from skeleton
-        # and add the new node
-        for i in sorted(nodesToMerge, reverse = True):
-            del skeleton[i]
-        skeleton.append(newnode)
-
-        # end of while loop
+        mergeCluster(skeleton, cluster)
 
     return skeleton
 
+def detectApse(edgeContours):
+    # compute cross-product between consecutive edges of outer contour
+    # set True for angles a, where sin(a) < 0.5 -> 30°
+    outerContour = edgeContours[0]
+    sinAngles = [ abs(p.norm.cross(n.norm))<0.5 for p,n in _iterCircularPrevNext(outerContour) ]
 
-def skeletonize(edgeContours,mergeRange=0.1):
+    # find longest sequence with these low angles
+    apseCandidates = max( (list(y) for x,y in groupby((enumerate(sinAngles)),itemgetter(1)) if y), key=len)
+
+   # apses shall have a minimum length of 6 vertices
+    if len(apseCandidates) < 6 or not apseCandidates[0][1]:
+        return [], None, None
+
+    apseVertices = [outerContour[i[0]].p1 for i in apseCandidates]
+    center, R = fitCircle3Points(apseVertices)
+    return apseVertices, center, R
+
+
+def skeletonize(edgeContours):
     """
     Compute the straight skeleton of a polygon.
 
@@ -585,14 +667,23 @@ def skeletonize(edgeContours,mergeRange=0.1):
     Returns the straight skeleton as a list of "subtrees", which are in the form of (source, height, sinks),
     where source is the highest points, height is its height, and sinks are the points connected to the source.
     """
+    apseVertices, center, R = detectApse(edgeContours)
     slav = _SLAV(edgeContours)
 
     output = []
     prioque = _EventQueue()
 
+    # handle apseEvent, if any
+    if apseVertices:
+        (arc, events) = slav.handleApseEvent(apseVertices, center, R)
+        prioque.put_all(events)
+        if arc is not None:
+            output.append(arc)
+
     for lav in slav:
         for vertex in lav:
-            prioque.put(vertex.next_event())
+            if vertex.is_valid:
+                prioque.put(vertex.next_event())
 
     while not (prioque.empty() or slav.empty()):
         topEventList = prioque.getAllEqualDistance()
@@ -612,12 +703,12 @@ def skeletonize(edgeContours,mergeRange=0.1):
             if arc is not None:
                 output.append(arc)
 
-    output = mergeNodeClusters(output,mergeRange)
+    output = mergeNodeClusters(output,edgeContours)
     removeGhosts(output)
 
     return output
 
-def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None,mergeRange=0.1):
+def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None):
     """
     Compute the faces of a polygon, skeletonized by a straight skeleton.
 
@@ -737,7 +828,7 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
     nrOfEdges = len(edges2D)
 
 	# compute skeleton
-    skeleton = skeletonize(edgeContours,mergeRange)
+    skeleton = skeletonize(edgeContours)
 
 	# compute skeleton node heights and append nodes to original verts list,
 	# see also issue #4 at https://github.com/prochitecture/bpypolyskel
