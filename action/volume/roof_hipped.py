@@ -43,6 +43,13 @@ class RoofHipped(RoofLeveled):
     
     def getRoofItem(self, footprint):
         return ItemRoofHipped.getItem(self.itemFactory, footprint)
+
+    def validate(self, footprint):
+        """
+        Additional validation
+        """
+        if not footprint.roofHeight:
+            footprint.valid = False
     
     def render(self, footprint, roofItem):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base

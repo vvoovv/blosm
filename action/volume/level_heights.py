@@ -23,7 +23,7 @@ class LevelHeights:
         self.init()
     
     def init(self):
-        self.topHeight = None
+        self.topHeight = 0.
         self.lastLevelHeight = None
         self.levelHeight = None
         self.groundLevelHeight = None
