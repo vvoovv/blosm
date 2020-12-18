@@ -488,6 +488,12 @@ class BLOSM_PT_BpyProj(bpy.types.Panel):
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
     
+    commandLineMode: bpy.props.BoolProperty(
+        name = "Command line mode",
+        description = "The option specifies if the addon is used in the command line mode",
+        default = False
+    ) 
+    
     terrainObject: bpy.props.StringProperty(
         name = "Terrain",
         description = "Blender object for the terrain"
