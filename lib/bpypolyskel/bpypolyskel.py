@@ -9,20 +9,16 @@ Implementation of the straight skeleton algorithm as described by Felkel and Obd
 The code for skeletonize() has been ported from the implementation by Botffy at https://github.com/Botffy/polyskel,
 in order to be able to use it in Blender. The main changes are:
 
--   The order of the vertices of a polygon has been changed to a right-handed coordinate system (as used in Blender).
-    The positive x and y axes point right and up, and the z axis points into your face. Positive rotation is 
-    counterclockwise about the z-axis.
-
--   The vector objects used from the library euclid3 have been replaced by objects from the library 
-    mathutils, for the mathematical computations. These are defined in the new library bpyeuclid.
-
--   The class 'Debug' and all the calls to it have been removed, as an image can't be drwan in Blender
-
--   The signature of skeletonize() has been changed to lists of edges for the polygon and eventual hole. These are of
-    type Edge2, defined in bpyeuclid. 
-    
--   A new function polygonize() has been added. It creates a list of faces from the skeletonized polygon.
-    For the definiton of the signature, see the description at the function definition.
+- The order of the vertices of the polygon has been changed to a right-handed coordinate system
+  (as used in Blender). The positive x and y axes point right and up, and the z axis points into 
+  your face. Positive rotation is counterclockwise around the z-axis.
+- The geometry objects used from the library euclid3 in the implementation of Bottfy have been
+  replaced by objects based on mathutils.Vector. These objects are defined in the new library bpyeuclid.
+- The signature of skeletonize() has been changed to lists of edges for the polygon and eventual hole.
+  These are of type Edge2, defined in bpyeuclid.
+- Some parts of the skeleton computations have been changed to fix errors produced by the original implementation.
+- Algorithms to merge clusters of skeleton nodes and to filter ghost edges have been added.
+- A pattern matching algorithm to detect apses, that creates a multi-edge event to create a proper apse skeleton.
 """
 
 import heapq
@@ -30,6 +26,8 @@ from collections import namedtuple
 from itertools import *
 from collections import Counter
 from operator import itemgetter
+import re
+
 
 from .bpyeuclid import *
 from .poly2FacesGraph import poly2FacesGraph
@@ -632,58 +630,74 @@ def mergeNodeClusters(skeleton,edgeContours):
 
     return skeleton
 
-def detectApse(edgeContours):
-    # compute cross-product between consecutive edges of outer contour
-    # set True for angles a, where sin(a) < 0.5 -> 30°
-    outerContour = edgeContours[0]
-    sinAngles = [ abs(p.norm.cross(n.norm))<0.5 for p,n in _iterCircularPrevNext(outerContour) ]
+# def detectApse(edgeContours):
+#     # compute cross-product between consecutive edges of outer contour
+#     # set True for angles a, where sin(a) < 0.5 -> 30°
+#     outerContour = edgeContours[0]
+#     sequence = "".join([ 'L' if abs(p.norm.cross(n.norm))<0.5 else 'H' for p,n in _iterCircularPrevNext(outerContour) ])
+#     # match at least 6 low angles in sequence (assume that the first match is longest)
+#     pattern = re.compile(r"(L){6,}")
+#     # sequence may be circular, like 'LLHHHHHLLLLL'
+#     searchRes = pattern.search(sequence+sequence)
+#     if searchRes is None:
+#         return [], None, None
+    
+#     apseIndices = [ i%len(sequence) for i in range(*searchRes.span())]
+#     apseVertices = [outerContour[i].p1 for i in apseIndices]
 
-    # find longest sequence with these low angles
-    apseCandidates = max( (list(y) for x,y in groupby((enumerate(sinAngles)),itemgetter(1)) if y), key=len)
-
-   # apses shall have a minimum length of 6 vertices
-    if len(apseCandidates) < 6 or not apseCandidates[0][1]:
-        return [], None, None
-
-    apseVertices = [outerContour[i[0]].p1 for i in apseCandidates]
-    center, R = fitCircle3Points(apseVertices)
-    return apseVertices, center, R
+#     center, R = fitCircle3Points(apseVertices)
+#     return apseVertices, center, R
 
 
 def skeletonize(edgeContours):
     """
-    Compute the straight skeleton of a polygon.
+skeletonize() computes the straight skeleton of a polygon. It accepts a simple description of the
+contour of a footprint polygon, including those of evetual holes, and returns the nodes and edges 
+of its straight skeleton.
 
-    The polygon is expected as a list of vertices in counterclockwise order. In a right-handed coordinate system, 
-    seen from top, the polygon is on the left of its contour. Holes are expected as lists of vertices in clockwise order.
-    Seen from top, the polygon is on the right of the hole's contour.
+The polygon is expected as a list of contours, where every contour is a list of edges of type Edge2
+(imported from bpyeuclid). The outer contour of the polygon is the first list of in the list of
+contours and is expected in counterclockwise order. In the right-handed coordinate system, seen from
+top, the polygon is on the left of its contour.
 
-    The argument 'edgeContours' is expected to as:
-        edgeContours = [ polygon_edges, <hole1_edges>, <hole2_edges>, ...]
+If the footprint has holes, their contours are expected as lists of their edges, following the outer
+contour of the polygon. Their edges are in clockwise order, seen from top, the polygon is on the left
+of the hole's contour.
 
-    'polygon_egdes' is a list of the edges of the polygon in counterclockwise order: [ egde0, edge1, ...]
-    'hole_edges' is a list of the edges of a hole in clockwise order: [ egde0, edge1, ...]
+Arguments:
+---------
+edgeContours:   A list of contours of the polygon and eventually its holes, where every contour is a
+                list of edges of type `Edge2` (imported from `bpyeuclid`). It is expected to as:
 
-    Returns the straight skeleton as a list of "subtrees", which are in the form of (source, height, sinks),
-    where source is the highest points, height is its height, and sinks are the points connected to the source.
+                edgeContours = [ polygon_edge,<hole1_edges>, <hole2_edges>, ...]
+
+                polygon_egdes is a list of the edges of the outer polygon contour in counterclockwise
+                order. <hole_edges> is an optional list of the edges of a hole contour in clockwise order. 
+
+Output:
+------
+return:         A list of subtrees (of type Subtree) of the straight skeleton. A Subtree contains the
+                attributes (source, height, sinks), where source is the node vertex, height is its
+                distance to the nearest polygon edge, and sinks is a list of vertices connected to the
+                node. All vertices are of type mathutils.Vector with two dimension x and y. 
     """
-    apseVertices, center, R = detectApse(edgeContours)
+    # apseVertices, center, R = detectApse(edgeContours)
     slav = _SLAV(edgeContours)
 
     output = []
     prioque = _EventQueue()
 
-    # handle apseEvent, if any
-    if apseVertices:
-        (arc, events) = slav.handleApseEvent(apseVertices, center, R)
-        prioque.put_all(events)
-        if arc is not None:
-            output.append(arc)
+    # # handle apseEvent, if any
+    # if apseVertices:
+    #     (arc, events) = slav.handleApseEvent(apseVertices, center, R)
+    #     prioque.put_all(events)
+    #     if arc is not None:
+    #         output.append(arc)
 
     for lav in slav:
         for vertex in lav:
-            if vertex.is_valid:
-                prioque.put(vertex.next_event())
+            # if vertex.is_valid:
+            prioque.put(vertex.next_event())
 
     while not (prioque.empty() or slav.empty()):
         topEventList = prioque.getAllEqualDistance()
@@ -710,74 +724,78 @@ def skeletonize(edgeContours):
 
 def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0., faces=None, unitVectors=None):
     """
-    Compute the faces of a polygon, skeletonized by a straight skeleton.
+    polygonize() computes the faces of a hipped roof from a footprint polygon of a building, skeletonized
+    by a straight skeleton. It accepts a simple description of the vertices of the footprint polygon,
+    including those of evetual holes, and returns a list of polygon faces.
 
-    The polygon is expected as a list of vertices in counterclockwise order. In a right-handed coordinate system, 
-    seen from top, the polygon is on the left of its contour. Holes are expected as lists of vertices in clockwise order.
-    Seen from top, the polygon is on the right of the hole's contour.
+    The polygon is expected as a list of vertices in counterclockwise order. In a right-handed coordinate
+    system, seen from top, the polygon is on the left of its contour. Holes are expected as lists of vertices
+    in clockwise order. Seen from top, the polygon is on the left of the hole's contour.
 
     Arguments:
     ----------
-    verts:              A list of vertices. Vertices that define the polygon and possibly its holes are located at the end
-                        of the 'verts' list starting at the index 'firstVertIndex'. Each vertex is an instance of 
-                        mathutils.Vector with 3 coordinates. The z-coordinate is the same for all vertices of the polygon.
+    verts:              A list of vertices. Vertices that define the outer contour of the footprint polygon are
+                        located in a continuous block of the verts list, starting at the index firstVertIndex.
+                        Each vertex is an instance of mathutils.Vector with 3 coordinates x, y and z. The
+                        z-coordinate must be the same for all vertices of the polygon.
 
-                        For the polygon without holes, there are 'numVerts' vertices in the counterclockwise order.
+                        The outer contour of the footprint polygon contains numVerts vertices in counterclockwise
+                        order, in its block in verts.
 
-                        For the polygon with holes there are:
-                            - 'numVerts' vertices in counterclockwise order for the outer contour
-                            - 'numVertsHoles[0]' vertices in clockwise order for the first hole
-                            - 'numVertsHoles[1]' vertices in clockwise order for the second hole
-                            ...
-                            - 'numVertsHoles[-1]' vertices in clockwise order for the last hole
+                        Vertices that define eventual holes are also located in verts. Every hole takes its continuous
+                        block. The start index and the length of every hole block are described by the argument
+                        holesInfo. See there.
 
-                        'verts' gets extended by the vertices of the straight skeleton by 'polygonize()'.
-                    
-    firstVertIndex:     The first index of vertices in the verts list that define the polygon and possibly its holes.
+                        The list of vertices verts gets extended by polygonize(). The new nodes of the straight
+                        skeleton are appended at the end of the list.
 
-    numVerts:           The number of vertices in the polygon for the one without holes.
-                        The number of vertices in the outer contour of the polygon for the one with holes.
+    firstVertIndex: 	The first index of vertices of the polygon index in the verts list that defines the footprint polygon.
 
-    numVertsHoles:      A Python tuple or list. The elements define the number of the vertices in the related hole.
+    numVerts:           The first index of the vertices in the verts list of the polygon, that defines the outer
+                        contour of the footprint.
 
+    holesInfo:          If the footprint polygon contains holes, their position and length in the verts list are
+                        described by this argument. holesInfo is a list of tuples, one for every hole. The first
+                        element in every tuple is the start index of the hole's vertices in verts and the second
+                        element is the number of its vertices.
 
-    height:             The maximum height of the hipped roof to be generated. If both 'height' and 'tan' are equal to zero,
-                        flat faces are generated. 'height' takes precedence over 'tan' if both have a non-zero value.
+                        The default value of holesInfo is None, which means that there are no holes.
 
-    tan:                It's desirable in many case to deal with roof pitch angle instead of maximum roof height. The tangent
-                        of the roof pitch angle can be supplied for that case. If both 'height' and 'tan' are equal to zero, flat
-                        faces are generated. height takes precedence over tan if both have a non-zero value.
+    height: 	        The maximum height of the hipped roof to be generated. If both height and tan are equal
+                        to zero, flat faces are generated. height takes precedence over tan if both have a non-zero
+                        value. The default value of height is 0.0.
 
-    faces:              A Python list of the resulting faces formed by the straight skeleton. If it is given, the faces formed
-                        by the straight skeleton of the new polygon are appended to it and get returned by this function.
-                        Otherwise a new Python list of faces is created and returned by this function..
+    tan:                In many cases it's desirable to deal with the roof pitch angle instead of the maximum roof
+                        height. The tangent tan of the roof pitch angle can be supplied for that case. If both height
+                        and tan are equal to zero, flat faces are generated. height takes precedence over tan if
+                        both have a non-zero value. The default value of tan is 0.0.
 
-    unitVectors:        A Python list of unit vectors along the polygon edges (including holes if they are present). These vectors
-                        are of type mathutils.Vector with three dimensions. The direction of the vectors corresponds to order of
-                        the vertices in the polygon and its holes. The order of the unit vectors in the 'unitVectors' list corresponds
-                        to the order of vertices in the input Python list 'verts'. The Python list 'unitVectors' (if given) gets used
-                        inside the 'polygonize(..)' function instead of calculating it once more. If the list is not given, the unit
-                        vectors get calculated inside the 'polygonize(..)' function.
+    faces:              An already existing Python list of faces. Everey face in this list is itself a list of
+                        indices of the face-vertices in the verts list. If this argument is None (its default value),
+                        a new list with the new faces created by the straight skeleton is created and returned by
+                        polygonize(), else faces is extended by the new list.
 
-    Returned Value:
-    --------------
-                        A list of the faces with the indices of vertices in 'verts'. The faces are formed by the straight skeleton.
-                        The order of vertices of the faces is counterclockwise, as the order of vertices in the input Python list 'verts'.
-                        The first edge of a face is always an edge of the polygon or its holes.
+    unitVectors:        A Python list of unit vectors along the polygon edges (including holes if they are present).
+                        These vectors are of type mathutils.Vector with three dimensions. The direction of the vectors
+                        corresponds to order of the vertices in the polygon and its holes. The order of the unit
+                        vectors in the unitVectors list corresponds to the order of vertices in the input Python list
+                        verts.
 
-                        For example, suppose one has
+                        The list unitVectors (if given) gets used inside polygonize() function instead of calculating
+                        it once more. If this argument is None (its default value), the unit vectors get calculated
+                        inside polygonize().
 
-                            verts = [..., v1, v2, v3, ...]
+    Output:
+    ------
+    verts:              The list of the vertices verts gets extended at its end by the vertices of the straight skeleton.
 
-                        Then in the return list gets
+    return:             A list of the faces created by the straight skeleton. Everey face in this list is a list of
+                        indices of the face-vertices in the verts list. The order of vertices of the faces is
+                        counterclockwise, as the order of vertices in the input Python list verts. The first edge of
+                        a face is always an edge of the polygon or its holes.    
 
-                            faces = [
-                                ..,
-                                (index_of_v1, index_of_s2, ...),
-                                (index_of_v2, index_of_v3, ...),
-                                (index_of_v3, index_of_v4, ...),
-                                ...
-                            ]
+                        If a list of faces has been given in the argument faces, it gets extended at its end by the
+                        new list.              
     """
     # assume that all vertices of polygon and holes have the same z-value
     zBase = verts[firstVertIndex][2]
