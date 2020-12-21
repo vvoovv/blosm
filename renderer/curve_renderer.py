@@ -25,8 +25,6 @@ from . import Renderer
 from terrain import direction
 from util.osm import assignTags
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 class CurveRenderer(Renderer):
     
@@ -72,7 +70,7 @@ class CurveRenderer(Renderer):
                 use_relative_offset=False, use_edge_rail=False, use_outset=False,
                 thickness=self.insetValue, depth=0.
             )['faces']
-            bmesh.ops.delete(bm, geom=insetFaces, context='FACES' if _isBlender280 else 5)
+            bmesh.ops.delete(bm, geom=insetFaces, context='FACES')
             self.bvhTree = BVHTree.FromBMesh(bm)
             # <bm> isn't needed anymore
             bm.free()
@@ -87,15 +85,15 @@ class CurveRenderer(Renderer):
                     layer.name,
                     layer.location,
                     collection = self.collection,
-                    parent = None if _isBlender280 else self.parent
+                    parent = None
                 )
             self.obj = layer.obj
         else:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ or self.offset or layer.location,
-                collection = layer.getCollection(self.collection) if _isBlender280 else None,
-                parent = layer.getParent(layer.getCollection(self.collection) if _isBlender280 else None)
+                collection = layer.getCollection(self.collection),
+                parent = layer.getParent( layer.getCollection(self.collection) )
             )
 
     def renderLineString(self, element, data):
@@ -305,13 +303,10 @@ class CurveRenderer(Renderer):
         obj = bpy.data.objects.new(name, curve)
         if location:
             obj.location = location
-        if _isBlender280:
-            if not collection:
-                collection = bpy.context.scene.collection
-            # adding to the collection
-            collection.objects.link(obj)
-        else:
-            bpy.context.scene.objects.link(obj)
+        if not collection:
+            collection = bpy.context.scene.collection
+        # adding to the collection
+        collection.objects.link(obj)
         if parent:
             # perform parenting
             obj.parent = parent

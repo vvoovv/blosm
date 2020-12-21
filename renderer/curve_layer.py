@@ -22,7 +22,7 @@ import bpy
 from .layer import MeshLayer
 from util.blender import appendObjectsFromFile, createDiffuseMaterial, createCollection, addShrinkwrapModifier
 
-_isBlender280 = bpy.app.version[1] >= 80
+_isBlender291 = bpy.app.version[1] >= 91
 
 
 class CurveLayer(MeshLayer):
@@ -57,25 +57,22 @@ class CurveLayer(MeshLayer):
         if not (bevelObj and bevelObj.type == 'CURVE'):
             bevelObj = appendObjectsFromFile(self.assetPath, None, bevelName)[0]
             if bevelObj:
-                if _isBlender280:
-                    collection = bpy.data.collections.get(self.collectionName)
-                    if not collection:
-                        collection = createCollection(
-                            self.collectionName,
-                            hide_viewport=True,
-                            hide_select=True,
-                            hide_render=True
-                        )
-                    collection.objects.link(bevelObj)
-                    bevelObj.hide_viewport = True
-                    bevelObj.hide_select = True
-                    bevelObj.hide_render = True
-                else:
-                    # move <obj> to the Blender layer with the index <self.profileLayerIndex>
-                    bevelObj.layers[self.profileLayerIndex] = True
-                    bevelObj.layers[0] = False
+                collection = bpy.data.collections.get(self.collectionName)
+                if not collection:
+                    collection = createCollection(
+                        self.collectionName,
+                        hide_viewport=True,
+                        hide_select=True,
+                        hide_render=True
+                    )
+                collection.objects.link(bevelObj)
+                bevelObj.hide_viewport = True
+                bevelObj.hide_select = True
+                bevelObj.hide_render = True
         if bevelObj and bevelObj.type == 'CURVE':
             curve.bevel_object = bevelObj
+            if _isBlender291:
+                curve.bevel_mode = 'OBJECT'
         # set a material
         # the material name is simply <id> of the layer
         name = self.id
