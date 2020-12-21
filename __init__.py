@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 29),
+    "version": (2, 4, 30),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -347,9 +347,10 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
     
     def importOverlay(self, context):
         a = app.app
+        blosm = context.scene.blosm
         
         # find the Blender area holding 3D View
-        for area in bpy.context.screen.areas:
+        for area in context.screen.areas:
             if area.type == "VIEW_3D":
                 a.area = area
                 break
@@ -365,7 +366,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
         
-        terrainObject = context.scene.objects.get(context.scene.blosm.terrainObject)
+        terrainObject = context.scene.objects.get(blosm.terrainObject)
         
         minLon, minLat, maxLon, maxLat = a.getExtentFromObject(terrainObject, context)\
             if terrainObject else\
@@ -373,7 +374,16 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         a.overlay.prepareImport(minLon, minLat, maxLon, maxLat)
         
-        bpy.ops.blosm.control_overlay()
+        if blosm.commandLineMode:
+            hasTiles = True
+            while hasTiles:
+                hasTiles = app.app.overlay.importNextTile()
+            if app.app.overlay.finalizeImport():
+                self.report({'INFO'}, "Overlay import is finished!")
+            else:
+                self.report({'ERROR'}, "Probably something is wrong with the tile server!")
+        else:
+            bpy.ops.blosm.control_overlay()
         
         # set the custom parameters <lat> and <lon> to the active scene
         if setLatLon:

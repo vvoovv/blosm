@@ -2,7 +2,7 @@ import os, sys
 import bpy, bmesh
 from util.blender import loadMaterialsFromFile, addShrinkwrapModifier
 
-_isBlender280 = bpy.app.version[1] >= 80
+_isBlender291 = bpy.app.version[1] >= 91
 _curveBevelObjectName = "gpx_bevel"
 
 _bevelCurves = {
@@ -42,15 +42,9 @@ class GpxRenderer:
             obj = self.makeMesh(gpx, name)
         
         context = bpy.context
-        if _isBlender280:
-            context.scene.collection.objects.link(obj)
-            context.view_layer.objects.active = obj
-            obj.select_set(True)
-        else:
-            context.scene.objects.link(obj)
-            context.scene.objects.active = obj
-            obj.select = True
-            context.scene.update()
+        context.scene.collection.objects.link(obj)
+        context.view_layer.objects.active = obj
+        obj.select_set(True)
     
     def makeMesh(self, gpx, name):
         app = self.app
@@ -156,19 +150,14 @@ class GpxRenderer:
                 self.spline.use_cyclic_u = True
             
             bevelObj = bpy.data.objects.new(_curveBevelObjectName, bevelCurve)
-            
-            if _isBlender280:
-                bevelObj.hide_viewport = True
-                bevelObj.hide_select = True
-                bevelObj.hide_render = True
-                bpy.context.scene.collection.objects.link(bevelObj)
-            else:
-                bevelObj.hide = True
-                bevelObj.hide_select = True
-                bevelObj.hide_render = True
-                bpy.context.scene.objects.link(bevelObj)
+            bevelObj.hide_viewport = True
+            bevelObj.hide_select = True
+            bevelObj.hide_render = True
+            bpy.context.scene.collection.objects.link(bevelObj)
         
         self.curve.bevel_object = bevelObj
+        if _isBlender291:
+            self.curve.bevel_mode = 'OBJECT'
     
     def applyMaterial(self, obj):
         material = bpy.data.materials.get(GpxRenderer.defaultMaterial)
