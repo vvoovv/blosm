@@ -36,6 +36,13 @@ EPSILON = 0.00001
 PARALLEL = 0.01     # set this value to 1-cos(alpha), where alpha is the largest angle 
                     # between lines to accept them as parallelaccepted as 'parallel'.
 
+# Add a key to enable debug output. For example:
+# debugOutputs["skeleton"] = 1
+# Then the Python list <skeleton> will be added to <debugOutputs> with the key <skeleton>
+# in the function skeletonize(..)
+debugOutputs = {}
+
+
 def _iterCircularPrevNext(lst):
     prevs, nexts = tee(lst)
     prevs = islice(cycle(prevs), len(lst) - 1, None)
@@ -454,6 +461,33 @@ class _EventQueue:
         for item in self.__data:
             print(item)
 
+
+def checkEdgeCrossing(skeleton):
+    # extract all edges
+    sk_edges = []
+    for arc in skeleton:
+        p1 = arc.source
+        for p2 in arc.sinks:
+            sk_edges.append( Edge2(p1,p2) )
+
+    combs = combinations(sk_edges,2)
+    nrOfIntsects = 0
+    for e in combs:
+        # check for intersection, exclude endpoints
+        denom = ((e[0].p2.x-e[0].p1.x)*(e[1].p2.y-e[1].p1.y))-((e[0].p2.y-e[0].p1.y)*(e[1].p2.x-e[1].p1.x))
+        if not denom:
+            continue
+        n1 = ((e[0].p1.y-e[1].p1.y)*(e[1].p2.x-e[1].p1.x))-((e[0].p1.x-e[1].p1.x)*(e[1].p2.y-e[1].p1.y))
+        r = n1 / denom
+        n2 = ((e[0].p1.y-e[1].p1.y)*(e[0].p2.x-e[0].p1.x))-((e[0].p1.x-e[1].p1.x)*(e[0].p2.y-e[0].p1.y))
+        s = n2 / denom
+        if ((r <= EPSILON or r >= 1.0-EPSILON) or (s <= EPSILON or s >= 1.0-EPSILON)):
+            continue    # no intersection
+        else:
+            nrOfIntsects += 1
+    return nrOfIntsects
+
+
 def removeGhosts(skeleton):
     # remove loops
     for arc in skeleton:
@@ -847,6 +881,10 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
 
 	# compute skeleton
     skeleton = skeletonize(edgeContours)
+
+    # evetual debug output of skeleton
+    if 'skeleton' in debugOutputs:
+        debugOutputs['skeleton'] = skeleton
 
 	# compute skeleton node heights and append nodes to original verts list,
 	# see also issue #4 at https://github.com/prochitecture/bpypolyskel
