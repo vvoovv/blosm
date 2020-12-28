@@ -62,6 +62,8 @@ class RoofMulti:
     def init(self, footprint):
         data = self.data
         roofItem = super().init(footprint, footprint.element.getOuterData(data))
+        if not footprint.valid:
+            return
         z1 = footprint.minHeight
         element = footprint.element
         innerPolygons = roofItem.innerPolygons
