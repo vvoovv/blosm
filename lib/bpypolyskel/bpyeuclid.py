@@ -54,6 +54,9 @@ class Edge2:
             norm.normalize()
             self.norm = norm
 
+    def length_squared(self):
+        return (self.p2-self.p1).length_squared
+
 class Ray2:
     def __init__(self, _p, _v):
         self.p = _p

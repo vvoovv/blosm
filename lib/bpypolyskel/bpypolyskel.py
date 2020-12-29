@@ -75,6 +75,19 @@ class _EdgeEvent(namedtuple("_EdgeEvent", "distance intersection_point vertex_a 
     def __lt__(self, other):
         return self.distance < other.distance
 
+class DormerEvent():
+    def __init__(self, distance, intersection_point, eventList):
+        self.distance = distance
+        self.intersection_point = intersection_point
+        self.eventList = eventList
+    def __lt__(self, other):
+        # print('difference S: ', self.distance - other.distance, self.distance < other.distance, (self.distance - other.distance)< -EPSILON)
+        return self.distance < other.distance
+    def __str__(self):
+        return "DormerEvent:%4d d=%4.2f, ip=%s"%(self.id,self.distance,self.intersection_point)
+    def __repr__(self):
+        return "DormerEvent:%4d d=%4.2f, ip=%s"%(self.id,self.distance,self.intersection_point)
+
 _OriginalEdge = namedtuple("_OriginalEdge", "edge bisector_prev, bisector_next")
 
 Subtree = namedtuple("Subtree", "source, height, sinks")
@@ -285,47 +298,40 @@ class _SLAV:
     def empty(self):
         return not self._lavs
 
-    def handleApseEvent(self, apseVertices, center, R):
-        # find all vertexes of the apseVertices
-        lav = self._lavs[0]
-        apseVertexes = []
-        for v in chain.from_iterable(self._lavs):
-            if v.point in apseVertices:
-                apseVertexes.append(v)
+    def handle_dormer_event(self, event):
+        # handle split events (indices 0 and 1)
+        ev_prev = event.eventList[0]
+        ev_next = event.eventList[1]
+        ev_edge = event.eventList[2]
+        v_prev = ev_prev.vertex
+        v_next = ev_next.vertex
 
-        # find vertexes before and after apse
-        vertex_a = apseVertexes[0]
-        vertex_b = apseVertexes[-1]
+        lav = ev_prev.vertex.lav
+        if lav is None:
+            return ([],[])
 
-        # extended unify
-        replacement = _LAVertex(center, vertex_a.edge_prev, vertex_b.edge_next,
-                                (vertex_b.bisector.v.normalized(), vertex_a.bisector.v.normalized()))
-        replacement.lav = lav
+        toRemove = [v_prev,v_prev.next,v_next,v_next.prev]
+        lav.head = v_prev.prev
 
-        if lav.head in [vertex_a, vertex_b]:
-            lav.head = replacement
+        v_prev.prev.next = v_next.next
+        v_next.next.prev = v_prev.prev
 
-        vertex_a.prev.next = replacement
-        vertex_b.next.prev = replacement
-        replacement.prev = vertex_a.prev
-        replacement.next = vertex_b.next
+        new_lav = [_LAV.from_chain(lav.head, self)]
+        self._lavs.remove(lav)
+        self._lavs.append(new_lav[0])
 
-        for v in apseVertexes:
+        p = v_prev.bisector.intersect(v_next.bisector)
+        arcs = []
+        # from edge event
+        arcs.append( Subtree(ev_edge.intersection_point, ev_edge.distance, [ev_edge.vertex_a.point,ev_edge.vertex_b.point,p] ) )
+
+        # from split events
+        arcs.append( Subtree(p, (ev_prev.distance+ev_next.distance)/2.0, [v_prev.point,v_next.point])   )
+    
+        for v in toRemove:
             v.invalidate()
 
-        lav._len -= len(apseVertexes)
-
-        if lav.head in (vertex_a, vertex_b):
-            lav.head = replacement
-
-        sinks = apseVertices
-
-        next_event = replacement.next_event()
-        events = []
-        if next_event is not None:
-            events.append(next_event)
-    
-        return (Subtree(center, R, sinks), events)
+        return (arcs, [])
 
     def handle_edge_event(self, event):
         sinks = []
@@ -441,14 +447,9 @@ class _EventQueue:
         equalDistanceList = [item]
         samePositionList = []
         # from top of queue, get all events that have the same distance as the one on top
-        while self.__data and robustFloatEqual( self.__data[0].distance, item.distance):
+        while self.__data and abs(self.__data[0].distance-item.distance) < 0.001:
             queueTop = heapq.heappop(self.__data)
-            # don't extract queueTop if identical position with item
-            if _approximately_equals(queueTop.intersection_point,item.intersection_point ):
-                samePositionList.append(queueTop)
-            else:
-                equalDistanceList.append(queueTop)
-        self.put_all(samePositionList)
+            equalDistanceList.append(queueTop)
         return equalDistanceList
 
     def empty(self):
@@ -664,23 +665,93 @@ def mergeNodeClusters(skeleton,edgeContours):
 
     return skeleton
 
-# def detectApse(edgeContours):
-#     # compute cross-product between consecutive edges of outer contour
-#     # set True for angles a, where sin(a) < 0.5 -> 30°
-#     outerContour = edgeContours[0]
-#     sequence = "".join([ 'L' if abs(p.norm.cross(n.norm))<0.5 else 'H' for p,n in _iterCircularPrevNext(outerContour) ])
-#     # match at least 6 low angles in sequence (assume that the first match is longest)
-#     pattern = re.compile(r"(L){6,}")
-#     # sequence may be circular, like 'LLHHHHHLLLLL'
-#     searchRes = pattern.search(sequence+sequence)
-#     if searchRes is None:
-#         return [], None, None
-    
-#     apseIndices = [ i%len(sequence) for i in range(*searchRes.span())]
-#     apseVertices = [outerContour[i].p1 for i in apseIndices]
+def detectDormers(slav, edgeContours):
+    import re
+    outerContour = edgeContours[0]
+    def coder(cp):
+        if cp > 0.99:
+            code = 'L'
+        elif cp < -0.99:
+            code = 'R'
+        else:
+            code = '0'
+        return code
 
-#     center, R = fitCircle3Points(apseVertices)
-#     return apseVertices, center, R
+    sequence = "".join([ coder(p.norm.cross(n.norm)) for p,n in _iterCircularPrevNext(outerContour) ])
+    N = len(sequence)
+   # match a pattern of almost rectangular turns to right, then to left, to left and again to right
+    # positive lookahead used to find overlapping patterns
+    pattern = re.compile(r"(?=(RLLR))")
+    # sequence may be circular, like 'LRLL000LL00RL', therefore concatenate two of them
+    matches = [r for r in pattern.finditer(sequence+sequence)]
+
+    dormerIndices = []
+    # circular overlapping pattern must start in first sequence
+    nextStart = 0
+    for dormer in matches:
+        s = dormer.span()[0]
+        if s < N and s >= nextStart:
+            oi = [ i%len(sequence) for i in range(*(s,s+4))]    # indices of candidate dormer
+            dormerIndices.append(oi)
+            nextStart = s+3
+
+    # filter overlapping dormers
+    toRemove = []
+    for oi1,oi2 in zip(dormerIndices, dormerIndices[1:] + dormerIndices[:1]):
+        if oi1[3] == oi2[0]:
+            toRemove.extend([oi1,oi2])
+    for sp in toRemove:
+        if sp in dormerIndices:
+            dormerIndices.remove(sp)
+
+    # check if contour consists only of dormers, if yes then skip, can't handle that
+    # (special case for test_51340792_yekaterinburg_mashinnaya_35a)
+    dormerVerts = set()
+    for oi in dormerIndices:
+        dormerVerts.update( oi )
+    if len(dormerVerts) == len(outerContour):
+        return []
+
+    dormers = []
+    for oi in dormerIndices:
+        w = outerContour[oi[1]].length_squared()    # length^2 of base edge
+        d1 = outerContour[oi[0]].length_squared()   # length^2 of side edge
+        d2 = outerContour[oi[2]].length_squared()   # length^2 of side edge
+        d = abs(d1-d2)/(d1+d2)  # "contrast" of side edges lengths^2
+        d3 = outerContour[(oi[0]+N-1)%N].length_squared()   # length^2 of previous edge
+        d4 = outerContour[oi[3]].length_squared()           # length^2 of next edge
+        facLeft = 0.125 if sequence[(s+N-1)%N] != 'L' else 1.5
+        facRight = 0.125 if sequence[(s+4)%N] != 'L' else 1.5
+        if w < 100 and d < 0.35 and d3 >= w*facLeft and d4 >= w*facRight:
+            dormers.append((oi,(outerContour[oi[1]].p1-outerContour[oi[1]].p2).magnitude))
+            
+    return dormers
+
+def processDormers(dormers,initialEvents):
+    dormerEvents = []
+    dormerEventIndices = []
+    for dormer in dormers:
+        dormerIndices = dormer[0]
+        d_events = [ev for i,ev in enumerate(initialEvents) if i in dormerIndices]
+        if all([(d is not None) for d in d_events]): # if all events are valid
+            if  not isinstance(d_events[0], _SplitEvent) or \
+                not isinstance(d_events[1], _EdgeEvent) or \
+                not isinstance(d_events[3], _SplitEvent):
+                continue
+            ev_prev = d_events[0]
+            ev_next = d_events[3]
+            v_prev = ev_prev.vertex
+            v_next = ev_next.vertex
+            p = v_prev.bisector.intersect(v_next.bisector)
+            d = dormer[1]/2.0
+            # process events:                         split1       split2       edge
+            dormerEvents.append( DormerEvent(d, p, [d_events[0], d_events[3] ,d_events[1]]) )
+            dormerEventIndices.extend(dormerIndices)
+
+    remainingEvents = [ev for i,ev in enumerate(initialEvents) if i not in dormerEventIndices]
+    del initialEvents[:]
+    initialEvents.extend(remainingEvents)
+    initialEvents.extend(dormerEvents)
 
 
 def skeletonize(edgeContours):
@@ -715,23 +786,23 @@ return:         A list of subtrees (of type Subtree) of the straight skeleton. A
                 distance to the nearest polygon edge, and sinks is a list of vertices connected to the
                 node. All vertices are of type mathutils.Vector with two dimension x and y. 
     """
-    # apseVertices, center, R = detectApse(edgeContours)
     slav = _SLAV(edgeContours)
+
+    dormers = detectDormers(slav, edgeContours)
+
+    initialEvents = []
+    for lav in slav:
+        for vertex in lav:
+            initialEvents.append(vertex.next_event())
+
+    if dormers:
+        processDormers(dormers,initialEvents)
 
     output = []
     prioque = _EventQueue()
-
-    # # handle apseEvent, if any
-    # if apseVertices:
-    #     (arc, events) = slav.handleApseEvent(apseVertices, center, R)
-    #     prioque.put_all(events)
-    #     if arc is not None:
-    #         output.append(arc)
-
-    for lav in slav:
-        for vertex in lav:
-            # if vertex.is_valid:
-            prioque.put(vertex.next_event())
+    for ev in initialEvents:
+        if ev:
+            prioque.put(ev)
 
     while not (prioque.empty() or slav.empty()):
         topEventList = prioque.getAllEqualDistance()
@@ -743,13 +814,18 @@ return:         A list of subtrees (of type Subtree) of the straight skeleton. A
             elif isinstance(i, _SplitEvent):
                 if not i.vertex.is_valid:
                     continue
-                # if not isEventInItsLAV(i):
-                #     continue
                 (arc, events) = slav.handle_split_event(i)
+            elif isinstance(i, DormerEvent):
+                if not i.eventList[0].vertex.is_valid or not i.eventList[1].vertex.is_valid:
+                    continue
+                (arc, events) = slav.handle_dormer_event(i)
             prioque.put_all(events)
 
             if arc is not None:
-                output.append(arc)
+                if isinstance(arc, list):
+                    output.extend(arc)
+                else:
+                    output.append(arc)
 
     output = mergeNodeClusters(output,edgeContours)
     removeGhosts(output)
