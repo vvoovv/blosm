@@ -10,7 +10,14 @@ class RoofMulti:
     def do(self, footprint):
         roofItem = self.init(footprint)
         if footprint.valid:
-            self.render(footprint, roofItem)
+            if roofItem.innerPolygons:
+                self.render(footprint, roofItem)
+            else:
+                footprint.element.makePolygon()
+                self.volumeAction.volumeGenerators[footprint.getStyleBlockAttr("roofShape")].do(
+                    footprint,
+                    footprint.element.getData(self.data)
+                )
     
     def extrude(self, footprint, roofItem):
         super().extrude(footprint, roofItem)
@@ -83,6 +90,9 @@ class RoofMulti:
 
 
 class RoofFlatMulti(RoofMulti, RoofFlat):
+    
+    def __init__(self, data, volumeAction, itemRenderers):
+        super().__init__("RoofFlatMulti", data, volumeAction, itemRenderers)
     
     def getRoofItem(self, footprint):
         return ItemRoofFlatMulti.getItem(

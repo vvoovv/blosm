@@ -15,8 +15,8 @@ from util import zAxis
 
 class RoofHippedMulti(RoofMulti, RoofHipped):
     
-    def __init__(self, data, itemStore, itemFactory, facadeRenderer, roofRenderer):
-        super().__init__(data, itemStore, itemFactory, facadeRenderer, roofRenderer)
+    def __init__(self, data, volumeAction, itemRenderers):
+        super().__init__(data, volumeAction, itemRenderers)
         
         self.holesInfo = []
         # Python dictionary used for mapping:

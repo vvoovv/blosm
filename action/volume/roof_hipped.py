@@ -19,8 +19,8 @@ class RoofHipped(RoofLeveled):
     
     height = 4.
     
-    def __init__(self, data, itemStore, itemFactory, facadeRenderer, roofRenderer):
-        super().__init__(data, itemStore, itemFactory, facadeRenderer, roofRenderer)
+    def __init__(self, data, volumeAction, itemRenderers):
+        super().__init__("RoofHipped", data, volumeAction, itemRenderers)
         
         self.extrudeTillRoof = True
         

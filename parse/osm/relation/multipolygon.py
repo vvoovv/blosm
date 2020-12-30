@@ -434,3 +434,13 @@ class Multipolygon(Relation):
         return (nodeId for _l in l for nodeId in _l.nodeIds(osm))\
             if isinstance(l, list) else\
             (nodeId for nodeId in l.nodeIds(osm))
+    
+    def makePolygon(self):
+        # get the outer linestring
+        for _l in self.ls:
+            if _l.role is Osm.outer:
+                break
+        else:
+            return
+        self.ls = _l
+        self.t = parse.polygon

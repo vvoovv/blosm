@@ -61,10 +61,17 @@ class Roof:
         'NNW': Vector((-0.38268, 0.92388, 0.))
     }
     
-    def __init__(self, data, itemStore, itemFactory):
+    def __init__(self, roofRendererId, data, volumeAction, itemRenderers):
         self.data = data
-        self.itemStore = itemStore
-        self.itemFactory = itemFactory
+        self.volumeAction = volumeAction
+        self.itemRenderers = itemRenderers
+        
+        self.facadeRenderer = itemRenderers["Facade"]
+        self.roofRenderer = itemRenderers[roofRendererId]
+        
+        self.itemStore = volumeAction.itemStore
+        self.itemFactory = volumeAction.itemFactory
+        
         self.hasGable = False
         self.hasRoofLevels = True
         self.angleToHeight = None

@@ -12,10 +12,8 @@ class RoofFlat(Roof):
     # default height of the top
     topHeight = 1.
     
-    def __init__(self, data, itemStore, itemFactory, facadeRender, roofRenderer):
-        super().__init__(data, itemStore, itemFactory)
-        self.facadeRenderer = facadeRender
-        self.roofRenderer = roofRenderer
+    def __init__(self, roofRendererId, data, volumeAction, itemRenderers):
+        super().__init__(roofRendererId, data, volumeAction, itemRenderers)
         self.rectangleGeometry = RectangleFRA()
         self.hasRoofLevels = False
         self.extrudeTillRoof = False

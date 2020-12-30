@@ -6,8 +6,8 @@ class RoofGeneratrix(RoofLeveled):
     
     height = 4.
     
-    def __init__(self, data, itemStore, itemFactory, facadeRenderer, roofRenderer):
-        super().__init__(data, itemStore, itemFactory, facadeRenderer, roofRenderer)
+    def __init__(self, roofRendererId, data, volumeAction, itemRenderers):
+        super().__init__(roofRendererId, data, volumeAction, itemRenderers)
         self.hasRoofLevels = False
         self.extrudeTillRoof = True
     

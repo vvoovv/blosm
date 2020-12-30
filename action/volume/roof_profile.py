@@ -481,16 +481,14 @@ class RoofProfile(Roof):
     # default roof height
     height = 1.
     
-    def __init__(self, profileData, data, itemStore, itemFactory, facadeRenderer, roofRenderer):        
+    def __init__(self, profileData, data, volumeAction, itemRenderers):        
         """
         Args:
             profileData (tuple): profile values and some attributes to define a profiled roof,
                 e.g. gabledRoof, roundRoof, gambrelRoof, saltboxRoof
         """
-        super().__init__(data, itemStore, itemFactory)
+        super().__init__("RoofProfile", data, volumeAction, itemRenderers)
         self.hasGable = True
-        self.facadeRenderer = facadeRenderer
-        self.roofRenderer = roofRenderer
         # geometries for wall faces
         self.geometryRectangle = RectangleFRA()
         self.geometryTrapezoid = TrapezoidRV()

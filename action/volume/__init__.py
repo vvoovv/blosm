@@ -100,21 +100,20 @@ class Volume(Action):
         volumeGenerator.do(footprint, coords)
     
     def setVolumeGenerators(self, data, itemRenderers):
-        facadeRenderer = itemRenderers["Facade"]
         self.volumeGenerators = {
-            'flat': RoofFlat(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlat"]),
-            'gabled': RoofProfile(roofDataGabled, data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
-            'pyramidal': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofPyramidal"]),
+            'flat': RoofFlat("RoofFlat", data, self, itemRenderers),
+            'gabled': RoofProfile(roofDataGabled, data, self, itemRenderers),
+            'pyramidal': RoofGeneratrix("RoofPyramidal", data, self, itemRenderers),
             #'skillion': RoofSkillion(),
-            'hipped': RoofHipped(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHipped"]),
-            'dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofDome"]),
-            'half-dome': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHalfDome"]),
-            'onion': RoofGeneratrix(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofOnion"]),
-            'round': RoofProfile(roofDataRound, data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
+            'hipped': RoofHipped(data, self, itemRenderers),
+            'dome': RoofGeneratrix("RoofDome", data, self, itemRenderers),
+            'half-dome': RoofGeneratrix("RoofHalfDome", data, self, itemRenderers),
+            'onion': RoofGeneratrix("RoofOnion", data, self, itemRenderers),
+            'round': RoofProfile(roofDataRound, data, self, itemRenderers),
             #'half-hipped': RoofHalfHipped(),
-            'gambrel': RoofProfile(roofDataGambrel, data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"]),
-            'saltbox': RoofProfile(roofDataSaltbox, data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofProfile"])
+            'gambrel': RoofProfile(roofDataGambrel, data, self, itemRenderers),
+            'saltbox': RoofProfile(roofDataSaltbox, data, self, itemRenderers)
             #'mansard': RoofMansard()
         }
-        self.volumeGeneratorMultiFlat = RoofFlatMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofFlatMulti"])
-        self.volumeGeneratorMultiHipped = RoofHippedMulti(data, self.itemStore, self.itemFactory, facadeRenderer, itemRenderers["RoofHipped"])
+        self.volumeGeneratorMultiFlat = RoofFlatMulti(data, self, itemRenderers)
+        self.volumeGeneratorMultiHipped = RoofHippedMulti(data, self, itemRenderers)
