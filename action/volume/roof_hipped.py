@@ -51,6 +51,12 @@ class RoofHipped(RoofLeveled):
         if not footprint.roofHeight:
             footprint.valid = False
     
+    def validatePolygonizeOutput(self, roofSideIndices):
+        for indices in roofSideIndices:
+            if not ( len(indices) >= 3 and len(indices) == len(set(indices)) ):
+                return False
+        return True
+    
     def render(self, footprint, roofItem):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base
         firstVertIndex = self.getRoofFirstVertIndex(footprint)
@@ -59,12 +65,20 @@ class RoofHipped(RoofLeveled):
         
         # now generate the roof
         if footprint.polygon.n == 4:
-            self.generateRoofQuadrangle(footprint, roofItem, firstVertIndex)
+            ok = self.generateRoofQuadrangle(footprint, roofItem, firstVertIndex)
         else:
-            self.generateRoof(footprint, roofItem, firstVertIndex)
-            
-        self.facadeRenderer.render(footprint, self.data)
-        self.roofRenderer.render(roofItem)
+            ok = self.generateRoof(footprint, roofItem, firstVertIndex)
+        
+        if ok:
+            self.facadeRenderer.render(footprint, self.data)
+            self.roofRenderer.render(roofItem)
+        else:
+            # Unable to generate the hipped roof.
+            # Generate a flat roof as a fallback solution
+            self.volumeAction.volumeGenerators["flat"].do(
+                footprint,
+                footprint.element.getData(self.data)
+            )
     
     def generateRoofQuadrangle(self, footprint, roofItem, firstVertIndex):
         verts = footprint.building.verts
@@ -179,6 +193,7 @@ class RoofHipped(RoofLeveled):
                 minDistanceIndex2Next,
                 self.itemFactory
             )
+        return True
     
     def generateRoof(self, footprint, roofItem, firstVertIndex):
         verts = footprint.building.verts
@@ -217,6 +232,9 @@ class RoofHipped(RoofLeveled):
             roofSideIndices,
             unitVector
         )
+        
+        if not self.validatePolygonizeOutput(roofSideIndices):
+            return False
         
         roofVerticalPosition = verts[firstVertIndex][2]
         
@@ -266,6 +284,7 @@ class RoofHipped(RoofLeveled):
                     -1,
                     self.itemFactory
                 )
+        return True
     
     def getRoofVert(self, vert, i, tan):
         """

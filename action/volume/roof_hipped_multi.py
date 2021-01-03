@@ -46,10 +46,15 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
         super().extrude(footprint, roofItem)
         
         # now generate the roof
-        self.generateRoof(footprint, roofItem, firstVertIndex)
-            
-        self.facadeRenderer.render(footprint, self.data)
-        self.roofRenderer.render(roofItem)
+        ok = self.generateRoof(footprint, roofItem, firstVertIndex)
+        
+        if ok: 
+            self.facadeRenderer.render(footprint, self.data)
+            self.roofRenderer.render(roofItem)
+        else:
+            # Unable to generate the hipped roof.
+            # Generate a flat roof as a fallback solution
+            self.volumeAction.volumeGeneratorMultiFlat.do(footprint)
     
     def generateRoof(self, footprint, roofItem, firstVertIndex):
         verts = footprint.building.verts
@@ -133,6 +138,9 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
             unitVector
         )
         
+        if not self.validatePolygonizeOutput(roofSideIndices):
+            return False
+        
         roofVerticalPosition = verts[firstVertIndex][2]
         
         # calculate tangent of the roof pitch angle
@@ -160,3 +168,4 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
                 self.itemFactory
             )
         
+        return True
