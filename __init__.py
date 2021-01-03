@@ -28,7 +28,8 @@ bl_info = {
     "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
-    "category": "Import-Export"
+    "category": "Import-Export",
+    "blosmAssets": "2021.01.04"
 }
 
 import os, sys, textwrap
@@ -65,6 +66,8 @@ from parse.osm import Osm
 import app, gui
 from defs import Keys
 
+# set the minimum version for BLOSM assets
+app.app.setMinAssetsVersion(bl_info["blosmAssets"])
 # set addon version
 app.app.version = bl_info["version"]
 app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))

@@ -242,6 +242,19 @@ class App(BaseApp):
         self.buildingEntranceAttr = "entrance"
         
         if self.enableExperimentalFeatures and self.mode is App.realistic:
+            # Check the version of the assets. It must be equal or greater than <self.minAssetsVersion>
+            try:
+                with open(os.path.join(assetsDir, "version.txt"), 'r') as _file:
+                    assetsVersion = App.getAssetsVersionFromString( _file.readline().strip() )
+                if assetsVersion < self.minAssetsVersion:
+                    raise Exception()
+            except Exception as _:
+                raise Exception(
+                    "Your version of assets is out of date. " +\
+                    "Please download the latest version of assets.zip " +\
+                    "using the download link in your purchase confirmation email."
+                )
+            
             assetPackageDir = self.assetPackageDir
             if assetPackageDir:
                 assetPackageDir = os.path.realpath(bpy.path.abspath(assetPackageDir))
@@ -816,6 +829,15 @@ class App(BaseApp):
             # fall back to the Transverse Mercator
             projection = TransverseMercator(lat=lat, lon=lon)
         self.projection = projection
+    
+    def setMinAssetsVersion(self, strVersion):
+        self.minAssetsVersion = App.getAssetsVersionFromString(strVersion)
+    
+    @staticmethod
+    def getAssetsVersionFromString(strVersion):
+        from datetime import date
+        version = strVersion.split('.')
+        return date( int(version[0]), int(version[1]), int(version[2]) )
 
 
 if "bpy" in sys.modules:
