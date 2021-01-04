@@ -445,7 +445,6 @@ class _EventQueue:
     def getAllEqualDistance(self):
         item = heapq.heappop(self.__data)
         equalDistanceList = [item]
-        samePositionList = []
         # from top of queue, get all events that have the same distance as the one on top
         while self.__data and abs(self.__data[0].distance-item.distance) < 0.001:
             queueTop = heapq.heappop(self.__data)
@@ -541,7 +540,37 @@ def removeGhosts(skeleton):
                                     sinksAltered = True
                                     break
 
-def findClusters(skeleton, candidates, contourVertices, thresh):
+def detectApses(outerContour):
+    import re
+    # compute cross-product between consecutive edges of outer contour
+    # set True for angles a, where sin(a) < 0.5 -> 30°
+    sequence = "".join([ 'L' if abs(p.norm.cross(n.norm))<0.5 else 'H' for p,n in _iterCircularPrevNext(outerContour) ])
+    # special case, see test_306011654_pescara_pattinodromo
+    if all([p=='L' for p in sequence]):
+        return None
+    N = len(sequence)
+    # match at least 6 low angles in sequence (assume that the first match is longest)
+    pattern = re.compile(r"(L){6,}")
+    # sequence may be circular, like 'LLHHHHHLLLLL'
+    matches = [r for r in pattern.finditer(sequence+sequence)]
+    if not matches:
+        return None
+
+    centers = []
+    # circular overlapping pattern must start in first sequence
+    nextStart = 0
+    for apse in matches:
+        s = apse.span()[0]
+        if s < N and s >= nextStart:
+            apseIndices = [ i%len(sequence) for i in range(*apse.span())]
+            apseVertices = [outerContour[i].p1 for i in apseIndices]
+            center, R = fitCircle3Points(apseVertices)
+            centers.append(center)
+    
+    return centers
+
+def findClusters(skeleton, candidates, contourVertices, edgeContours, thresh):
+    apseCenters = detectApses(edgeContours[0])
     clusters = []
     while candidates:
         c0 = candidates[0]
@@ -556,6 +585,19 @@ def findClusters(skeleton, candidates, contourVertices, thresh):
             if c in candidates:
                 candidates.remove(c)
         if len(cluster)>1:
+            # if cluster is near to an apse center, don't merge any nodes
+            if apseCenters:
+                isApseCluster = False
+                for apseCenter in apseCenters:
+                    for node in cluster:
+                        if abs(apseCenter.x-skeleton[node].source.x) + abs(apseCenter.y-skeleton[node].source.y) < 3.0:
+                            isApseCluster = True
+                            break
+                    if isApseCluster:
+                        break
+                if isApseCluster:
+                    continue
+
             # detect sinks in this cluster, that are contour vertices of the footprint
             nrOfContourSinks = 0
             contourSinks = []
@@ -654,7 +696,7 @@ def mergeNodeClusters(skeleton,edgeContours):
         hadCluster = False
         # find clusters within short range and short height difference
         candidates = [c for c in range(len(skeleton))]
-        clusters = findClusters(skeleton,candidates,contourVertices,smallThresh) 
+        clusters = findClusters(skeleton,candidates,contourVertices,edgeContours,smallThresh) 
         # check if there are cluster candidates
         if not clusters:
             break
@@ -952,8 +994,6 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
             edges2D.extend(holeEdges)
             edgeContours.append(holeEdges)
             uIndex += numVertsHole
-
-    nrOfEdges = len(edges2D)
 
 	# compute skeleton
     skeleton = skeletonize(edgeContours)
