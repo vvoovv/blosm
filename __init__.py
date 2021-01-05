@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 30),
+    "version": (2, 4, 31),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -29,7 +29,7 @@ bl_info = {
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
-    "blosmAssets": "2021.01.04"
+    "blosmAssets": "2021.01.05"
 }
 
 import os, sys, textwrap
