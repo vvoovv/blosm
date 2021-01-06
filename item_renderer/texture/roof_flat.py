@@ -19,7 +19,7 @@ class RoofFlat(ItemRenderer):
     
     def setCladdingUvs(self, roofItem, face, claddingTextureInfo, uvs):
         textureWidthM = claddingTextureInfo["textureWidthM"]
-        textureHeightM = claddingTextureInfo["textureHeightM"]
+        textureHeightM = textureWidthM * claddingTextureInfo["textureSize"][1] / claddingTextureInfo["textureSize"][0]
         
         polygon = roofItem.footprint.polygon
         verts = polygon.allVerts

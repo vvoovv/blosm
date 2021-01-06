@@ -61,9 +61,9 @@ class ItemRenderer:
         materialId = ''
         claddingTextureInfo = self.getCladdingTextureInfo(item)
         if claddingTextureInfo:
-            self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
             materialId = self.getCladdingMaterialId(item, claddingTextureInfo)
             self.createCladdingMaterial(materialId, claddingTextureInfo)
+            self.setCladdingUvs(item, face, claddingTextureInfo, uvs)
             if not self.exportMaterials:
                 self.setVertexColor(item, face)
         self.setMaterial(face, materialId)
@@ -76,7 +76,7 @@ class ItemRenderer:
 
     def setCladdingUvs(self, item, face, claddingTextureInfo, uvs):
         textureWidthM = claddingTextureInfo["textureWidthM"]
-        textureHeightM = claddingTextureInfo["textureHeightM"]
+        textureHeightM = textureWidthM * claddingTextureInfo["textureSize"][1] / claddingTextureInfo["textureSize"][0]
         self.r.setUvs(
             face,
             # a generator!
