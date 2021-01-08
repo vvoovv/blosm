@@ -32,6 +32,8 @@ class ItemRendererMixin:
                 )
             
             self.createMaterialFromTemplate(materialName, textureFilepath)
+        
+        setTextureSize2(claddingTextureInfo, materialName, "Main")
         return True
     
     def makeCladdingTexture(self, textureFilename, textureDir, textureFilepath, claddingTextureInfo):
