@@ -19,18 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy, bmesh
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 def makeActive(obj, context=None):
     if not context:
         context = bpy.context
-    if _isBlender280:
-        obj.select_set(True)
-        context.view_layer.objects.active = obj
-    else:
-        obj.select = True
-        context.scene.objects.active = obj
+    obj.select_set(True)
+    context.view_layer.objects.active = obj
 
 
 def createMeshObject(name, location=(0., 0., 0.), mesh=None, collection=None):
@@ -38,36 +32,24 @@ def createMeshObject(name, location=(0., 0., 0.), mesh=None, collection=None):
         mesh = bpy.data.meshes.new(name)
     obj = bpy.data.objects.new(name, mesh)
     obj.location = location
-    if _isBlender280:
-        if not collection:
-            collection = bpy.context.scene.collection
-        collection.objects.link(obj)
-    else:
-        bpy.context.scene.objects.link(obj)
+    if not collection:
+        collection = bpy.context.scene.collection
+    collection.objects.link(obj)
     return obj
 
 
 def createEmptyObject(name, location, hide=False, collection=None, **kwargs):
     obj = bpy.data.objects.new(name, None)
     obj.location = location
-    if _isBlender280:
-        obj.hide_viewport = hide
-    else:
-        obj.hide = hide
+    obj.hide_viewport = hide
     obj.hide_select = hide
     obj.hide_render = True
     if kwargs:
-        if _isBlender280 and "empty_draw_size" in kwargs:
-            kwargs["empty_display_size"] = kwargs["empty_draw_size"]
-            del kwargs["empty_draw_size"]
         for key in kwargs:
             setattr(obj, key, kwargs[key])
-    if _isBlender280:
-        if not collection:
-            collection = bpy.context.scene.collection
-        collection.objects.link(obj)
-    else:
-        bpy.context.scene.objects.link(obj)
+    if not collection:
+        collection = bpy.context.scene.collection
+    collection.objects.link(obj)
     return obj
 
 
@@ -100,7 +82,7 @@ def pointNormalUpward(face):
 
 def createDiffuseMaterial(name, color):
     material = bpy.data.materials.new(name)
-    material.diffuse_color = (color[0], color[1], color[2], 1.) if _isBlender280 else color
+    material.diffuse_color = (color[0], color[1], color[2], 1.)
     return material
 
 
@@ -193,16 +175,12 @@ def appendObjectsFromFile(filepath, collection, *names):
     with bpy.data.libraries.load(filepath) as (data_from, data_to):
         # a Python list (not a Python tuple!) must be set to <data_to.objects>
         data_to.objects = list(names)
-    # append the objects to the Blender scene
-    for obj in data_to.objects:
-        if obj:
-            if _isBlender280:
-                if collection:
+    if collection:
+        # append the objects to the Blender scene
+        for obj in data_to.objects:
+            if obj:
                     collection.objects.link(obj)
                     obj.select_set(False)
-            else:
-                obj.select = False
-                bpy.context.scene.objects.link(obj)
     # return the appended Blender objects
     return data_to.objects
 

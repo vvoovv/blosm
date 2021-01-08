@@ -22,8 +22,6 @@ import parse
 from manager import BaseManager
 from .renderer import AreaRenderer#, TerrainRenderer
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 class AreaManager(BaseManager):
     
@@ -97,7 +95,4 @@ class AreaManager(BaseManager):
         # set material for the terrain
         #self.terrainRenderer.render(app)
         
-        if _isBlender280:
-            terrain.select_set(False)
-        else:
-            terrain.select = False
+        terrain.select_set(False)

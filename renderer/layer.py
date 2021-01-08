@@ -23,8 +23,6 @@ from mathutils import Vector
 from renderer import Renderer
 from util.blender import createCollection, createEmptyObject, getBmesh, setBmesh, addShrinkwrapModifier
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 class Layer:
     
@@ -65,10 +63,8 @@ class Layer:
                 self.name,
                 self.parentLocation.copy(),
                 collection = collection,
-                empty_draw_size=0.01
+                empty_display_size=0.01
             )
-            if not _isBlender280:
-                parent.parent = Renderer.parent
             self.parent = parent
         return parent
 

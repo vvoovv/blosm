@@ -25,8 +25,6 @@ from mathutils.bvhtree import BVHTree
 from util import zAxis, zeroVector
 from util.blender import makeActive, createMeshObject, getBmesh, setBmesh, pointNormalUpward, addShrinkwrapModifier
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 direction = -zAxis # downwards
 
@@ -64,9 +62,7 @@ class Terrain:
         terrain = self.terrain
         
         # transform <terrain.bound_box> to the world system of coordinates
-        bound_box = tuple(terrain.matrix_world @ Vector(v) for v in terrain.bound_box)\
-            if _isBlender280 else\
-            tuple(terrain.matrix_world*Vector(v) for v in terrain.bound_box)
+        bound_box = tuple(terrain.matrix_world @ Vector(v) for v in terrain.bound_box)
         self.minZ = min(bound_box, key = lambda v: v[2])[2]
         self.maxZ = max(bound_box, key = lambda v: v[2])[2]
         
@@ -85,9 +81,6 @@ class Terrain:
                 self.location = terrain.location.copy()
                 # set origin of the terrain Blender object to zero
                 self.setOrigin(zeroVector())
-                # execute the line below to get correct results (i.e. update transformation matrix)
-                if not _isBlender280:
-                    bpy.context.scene.update()
             bm = bmesh.new()
             bm.from_mesh(terrain.data)
             self.bvhTree = BVHTree.FromBMesh(bm)
@@ -187,7 +180,7 @@ class Terrain:
                 use_relative_offset=False, use_edge_rail=False, use_outset=False,
                 thickness=self.envelopeInset, depth=0.
             )['faces']
-            bmesh.ops.delete(bm, geom=insetFaces, context='FACES' if _isBlender280 else 5)
+            bmesh.ops.delete(bm, geom=insetFaces, context='FACES')
             setBmesh(envelope, bm)
             # SOLIDIFY modifier instead of BMesh extrude operator
             m = envelope.modifiers.new(name="Solidify", type='SOLIDIFY')
@@ -197,12 +190,8 @@ class Terrain:
         self.envelope = envelope
         envelope.hide_render = True
         # hide <envelope> after all Blender operators
-        if _isBlender280:
-            envelope.select_set(False)
-            envelope.hide_viewport = True
-        else:
-            envelope.select = False
-            envelope.hide = True
+        envelope.select_set(False)
+        envelope.hide_viewport = True
     
     def initProjectionProxy(self, buildingsP, data):
         # <buildingsP> means "buildings from the parser"
@@ -276,8 +265,5 @@ class Terrain:
         mesh.from_pydata(verts, [], indices)
         mesh.update()
         obj = bpy.data.objects.new("Terrain", mesh)
-        if _isBlender280:
-            bpy.context.scene.collection.objects.link(obj)
-        else:
-            context.scene.objects.link(obj)
+        bpy.context.scene.collection.objects.link(obj)
         return obj.name

@@ -23,8 +23,6 @@ from app import app
 from util.blender import makeActive, createMeshObject, getBmesh,\
     loadParticlesFromFile, loadNodeGroupsFromFile, getMaterialIndexByName, getMaterialByName, getModifier,\
     addShrinkwrapModifier
-
-_isBlender280 = bpy.app.version[1] >= 80
   
 
 class TerrainRenderer:
@@ -171,10 +169,7 @@ class AreaRenderer:
         layer.slice(obj, terrain, app)
         addShrinkwrapModifier(obj, terrain.terrain, layer.swOffset)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
-        if _isBlender280:
-            obj.select_set(False)
-        else:
-            obj.select = False
+        obj.select_set(False)
 
     def renderTerrain(self, layer, terrain, **kwargs):
         vertexColors = kwargs.get("vertexColors", True)
@@ -186,14 +181,9 @@ class AreaRenderer:
         m = getModifier(terrain, 'DYNAMIC_PAINT')
         # create a brush collection if necessary
         collectionName = "%s_brush" % layerId
-        if _isBlender280:
-            collection = bpy.data.collections[collectionName]\
-                if collectionName in bpy.data.collections\
-                else bpy.data.collections.new(collectionName)
-        else:
-            collection = bpy.data.groups[collectionName]\
-                if collectionName in bpy.data.groups\
-                else bpy.data.groups.new(collectionName)
+        collection = bpy.data.collections[collectionName]\
+            if collectionName in bpy.data.collections\
+            else bpy.data.collections.new(collectionName)
         # add <obj> to the brush collection
         collection.objects.link(obj)
         # vertex colors
@@ -229,16 +219,10 @@ class AreaRenderer:
         brush.use_proximity_project = True
         brush.ray_direction = 'Z_AXIS'
         brush.proximity_falloff = 'CONSTANT'
-        if _isBlender280:
-            obj.hide_viewport = True
-            obj.hide_render = True
-            # deselect <obj> to ensure correct work of subsequent operators
-            obj.select_set(False)
-        else:
-            obj.hide = True
-            # deselect <obj> to ensure correct work of subsequent operators
-            obj.select = False
-            obj.hide_render = True
+        obj.hide_viewport = True
+        obj.hide_render = True
+        # deselect <obj> to ensure correct work of subsequent operators
+        obj.select_set(False)
     
     @staticmethod
     def addSubsurfModifier(terrain):
@@ -250,8 +234,6 @@ class AreaRenderer:
             # add a SUBSURF modifier
             m = terrain.modifiers.new("Subsurf", 'SUBSURF')
             m.subdivision_type = 'SIMPLE'
-            if not _isBlender280:
-                m.use_subsurf_uv = False
             m.levels = 0
             m.render_levels = 2
     
@@ -271,13 +253,8 @@ class AreaRenderer:
         # DYNAMIC_PAINT modifier of <terrain>
         m = getModifier(terrain, 'DYNAMIC_PAINT')
         # setup a DYNAMIC_PAINT modifier for <terrain> with canvas surfaces
-        if not _isBlender280:
-            m.canvas_settings.canvas_surfaces[-1].show_preview = False
         m.canvas_settings.canvas_surfaces.active_index = 0
-        if _isBlender280:
-            terrain.select_set(False)
-        else:
-            terrain.select = False
+        terrain.select_set(False)
     
     @staticmethod
     def prepareDynamicPaintSurface(surface, collection, output_name_a, use_antialiasing=True):
@@ -285,10 +262,7 @@ class AreaRenderer:
         surface.use_drying = False
         surface.use_dry_log = False
         surface.use_dissolve_log = False
-        if _isBlender280:
-            surface.brush_collection = collection
-        else:
-            surface.brush_group = collection
+        surface.brush_collection = collection
         surface.output_name_a = output_name_a
         surface.output_name_b = ""
 
@@ -321,20 +295,14 @@ class VertexGroupBaker(AreaRenderer):
         addShrinkwrapModifier(obj, terrainObj, layer.swOffset)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
         super().renderArea(layer, app)
-        if _isBlender280:
-            obj.select_set(False)
-        else:
-            obj.select = False
+        obj.select_set(False)
         
         AreaRenderer.beginDynamicPaintCanvas(terrainObj)
         super().renderTerrain(layer, terrainObj, vertexColors=False, use_antialiasing=False)
         # a reference to the Blender group created in <super().renderTerrain(..)>
         group = bpy.data.groups[-1]
         bpy.ops.object.modifier_apply(modifier="Dynamic Paint")
-        if _isBlender280:
-            terrainObj.select_set(False)
-        else:
-            terrainObj.select = False
+        terrainObj.select_set(False)
         # delete dynamic paint brush object
         bpy.data.meshes.remove(obj.data, True)
         # delete <group>
@@ -389,10 +357,7 @@ class VertexGroupBaker(AreaRenderer):
         
         bpy.ops.object.mode_set(mode='OBJECT')
         
-        if _isBlender280:
-            terrain.select_set(False)
-        else:
-            terrain.select = False
+        terrain.select_set(False)
     
     def renderTerrain(self, layer, terrain):
         pass
@@ -420,7 +385,7 @@ class ForestRenderer(AreaRenderer):
         layerId = layer.id
         
         # make the Blender object for the terrain the active one
-        if not ((_isBlender280 and terrain.select_get()) or (not _isBlender280 and terrain.select)):
+        if not terrain.select_get():
             makeActive(terrain)
         
         bpy.ops.object.particle_system_add()
@@ -437,10 +402,7 @@ class ForestRenderer(AreaRenderer):
         # the total number of particles
         count = math.ceil(app.treeDensity/10000*layer.surfaceArea)
         if count > self.maxDisplayCount:
-            if _isBlender280:
-                particles.display_percentage = math.floor(self.maxDisplayCount/count*100)
-            else:
-                particles.draw_percentage = math.floor(self.maxDisplayCount/count*100)
+            particles.display_percentage = math.floor(self.maxDisplayCount/count*100)
         particles.count = count
         ps.vertex_group_density = layerId
         ps.settings = particles
@@ -461,10 +423,7 @@ class WaterRenderer(VertexGroupBaker):
         terrain.active_material_index = getMaterialIndexByName(terrain, layer.id, self.assetPath)
         bpy.ops.object.material_slot_assign()
         bpy.ops.object.mode_set(mode='OBJECT')
-        if _isBlender280:
-            terrain.select_set(False)
-        else:
-            terrain.select = False
+        terrain.select_set(False)
 
 
 class BareRockRenderer(VertexGroupBaker):

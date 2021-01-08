@@ -22,8 +22,6 @@ import bpy
 from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import setCustomNodeValue
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 _colors = (
     (0.502, 0., 0.502), # purple
@@ -118,14 +116,14 @@ class MaterialRenderer:
             color = self.colors[self.colorIndex]
         vertexColorLayer = self.r.bm.loops.layers.color[layerName]
         for loop in face.loops:
-            loop[vertexColorLayer] = (color[0], color[1], color[2], 1.) if _isBlender280 else color
+            loop[vertexColorLayer] = (color[0], color[1], color[2], 1.)
     
     def setColorForObject(self, obj, layerName, color):
         if not color:
             color = self.colors[self.colorIndex]
         vertexColorLayer = obj.data.vertex_colors[layerName]
         for d in vertexColorLayer.data:
-            d.color = (color[0], color[1], color[2], 1.) if _isBlender280 else color
+            d.color = (color[0], color[1], color[2], 1.)
     
     def setupMaterial(self, name):
         """

@@ -32,8 +32,6 @@ if "bpy" in sys.modules:
     from terrain import Terrain
     from util.blender import makeActive
     from util.polygon import Polygon
-    
-    _isBlender280 = bpy.app.version[1] >= 80
 
 
 class App(BaseApp):
@@ -151,7 +149,7 @@ class App(BaseApp):
     def initOsm(self, op, context):
         addonName = self.addonName
         addon = context.scene.blosm
-        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+        prefs = context.preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
             self.mode = App.realistic\
@@ -355,7 +353,7 @@ class App(BaseApp):
         self.gpxFilepath = gpxFilepath
     
     def initGeoJson(self, op, context):
-        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+        prefs = context.preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
             self.mode = App.realistic\
@@ -434,7 +432,7 @@ class App(BaseApp):
         """
         Sets <self.dataDir>, i.e. path to data
         """
-        prefs = context.preferences.addons if _isBlender280 else context.user_preferences.addons
+        prefs = context.preferences.addons
         j = os.path.join
         if addonName in prefs:
             dataDir = prefs[addonName].preferences.dataDir
@@ -643,10 +641,7 @@ class App(BaseApp):
         mesh.update()
         obj = bpy.data.objects.new("Terrain", mesh)
         obj["height_offset"] = minHeight
-        if _isBlender280:
-            context.scene.collection.objects.link(obj)
-        else:
-            context.scene.objects.link(obj)
+        context.scene.collection.objects.link(obj)
         context.scene.blosm.terrainObject = obj.name
         # force smooth shading
         makeActive(obj, context)
@@ -788,9 +783,7 @@ class App(BaseApp):
         Returns a tuple minLon, minLat, maxLon, maxLat
         """
         # transform <obj.bound_box> to the world system of coordinates
-        bound_box = tuple(obj.matrix_world @ Vector(v) for v in obj.bound_box)\
-            if _isBlender280 else\
-            tuple(obj.matrix_world*Vector(v) for v in obj.bound_box)
+        bound_box = tuple(obj.matrix_world @ Vector(v) for v in obj.bound_box)
         bbox = []
         for i in (0,1):
             for f in (min, max):
@@ -811,7 +804,7 @@ class App(BaseApp):
         numExtensions = 0
         import sys
         # check if <bpyproj> is activated and is available in sys.modules
-        self.bpyproj = "bpyproj" in (context.preferences.addons if _isBlender280 else context.user_preferences.addons) and sys.modules.get("bpyproj")
+        self.bpyproj = "bpyproj" in context.preferences.addons and sys.modules.get("bpyproj")
         if self.bpyproj:
             numExtensions += 1
         return numExtensions
@@ -821,7 +814,7 @@ class App(BaseApp):
         
         projection = None
         # check if <bpyproj> is activated and is available in sys.modules
-        bpyproj = "bpyproj" in (bpy.context.preferences.addons if _isBlender280 else bpy.context.user_preferences.addons) and sys.modules.get("bpyproj")
+        bpyproj = "bpyproj" in bpy.context.preferences.addons and sys.modules.get("bpyproj")
         if bpyproj:
             projection = bpyproj.getProjection(lat, lon)
         if not projection:

@@ -71,7 +71,6 @@ app.app.setMinAssetsVersion(bl_info["blosmAssets"])
 # set addon version
 app.app.version = bl_info["version"]
 app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
-_isBlender280 = bpy.app.version[1] >= 80
 
 
 class BlenderOsmPreferences(bpy.types.AddonPreferences):
@@ -512,22 +511,14 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         # setting active object if there is no active object
         if context.mode != "OBJECT":
             # if there is no object in the scene, only "OBJECT" mode is available
-            if _isBlender280:
-                if not context.view_layer.objects.active:
-                    context.view_layer.objects.active = scene.objects[0]
-            else:
-                if not scene.objects.active:
-                    scene.objects.active = scene.objects[0]
+            if not context.view_layer.objects.active:
+                context.view_layer.objects.active = scene.objects[0]
             bpy.ops.object.mode_set(mode="OBJECT")
         # Also deselect the active object since the operator
         # <bpy.ops.object.select_all(action='DESELECT')> does not affect hidden objects and
         # the hidden active object
-        if _isBlender280:
-            if context.view_layer.objects.active:
-                context.view_layer.objects.active.select_set(False)
-        else:
-            if scene.objects.active:
-                scene.objects.active.select = False
+        if context.view_layer.objects.active:
+            context.view_layer.objects.active.select_set(False)
 
 
 class BLOSM_OT_ControlOverlay(bpy.types.Operator):
@@ -579,11 +570,8 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
         message = app.app.stateMessage
         if message:
             # draw message
-            if _isBlender280:
-                fontId = 0
-                blf.color(fontId, 0., 1., 0., 1.)
-            else:
-                bgl.glColor4f(0., 1., 0., 1.)
+            fontId = 0
+            blf.color(fontId, 0., 1., 0., 1.)
             if len(message)<=self.lineWidth:
                 self.drawLine(message, 60)
             else:

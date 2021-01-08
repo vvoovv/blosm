@@ -24,8 +24,6 @@ from util.blender import loadCollectionFromFile, loadGroupFromFile
 from util.osm import parseNumber
 from util.random import RandomNormal, RandomWeighted
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 class BaseNodeRenderer(Renderer):
     
@@ -56,7 +54,7 @@ class BaseNodeRenderer(Renderer):
         
         self.init()
         
-        collection = bpy.data.collections[self.collectionName] if _isBlender280 else bpy.data.groups[self.collectionName]
+        collection = bpy.data.collections[self.collectionName]
         
         # calculate z-coordinate of the object
         z = parseNumber(tags["min_height"], 0.) if "min_height" in tags else 0.
@@ -71,8 +69,8 @@ class BaseNodeRenderer(Renderer):
             self.getName(node),
             (coords[0], coords[1], z),
             collection.objects[self.objectIndex].data,
-            collection = layer.getCollection(self.collection) if _isBlender280 else None,
-            parent = None if _isBlender280 else layer.getParent()
+            collection = layer.getCollection(self.collection),
+            parent = None
         )
         
         if obj:
@@ -91,12 +89,8 @@ class BaseNodeRenderer(Renderer):
     def init(self):
         if self._initialized:
             return
-        if _isBlender280:
-            collection = loadCollectionFromFile(self.filepath, self.collectionName)
-            self.numObjects = len(collection.objects)
-        else:
-            group = loadGroupFromFile(self.filepath, self.collectionName)
-            self.numObjects = len(group.objects)
+        collection = loadCollectionFromFile(self.filepath, self.collectionName)
+        self.numObjects = len(collection.objects)
         self._initialized = True
     
     @classmethod
@@ -104,10 +98,7 @@ class BaseNodeRenderer(Renderer):
         obj = bpy.data.objects.new(name, objectData)
         if location:
             obj.location = location
-        if _isBlender280:
-            collection.objects.link(obj)
-        else:
-            bpy.context.scene.objects.link(obj)
+        collection.objects.link(obj)
         if parent:
             # perform parenting
             obj.parent = parent

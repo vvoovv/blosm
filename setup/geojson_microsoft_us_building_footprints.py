@@ -31,9 +31,6 @@ from util.blender import getBmesh
 from util import zeroVector, zAxis
 
 
-_isBlender280 = bpy.app.version[1] >= 80
-
-
 filterMeshObjectName = "filter_mesh"
 
 

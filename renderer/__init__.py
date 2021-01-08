@@ -23,12 +23,9 @@ from util.blender import createCollection, createEmptyObject, createDiffuseMater
     getBmesh, setBmesh
 from util.osm import assignTags
 
-_isBlender280 = bpy.app.version[1] >= 80
-
 
 class Renderer:
     
-    # _isBlender280 delete below
     parent = None
     collection = None
     name = None
@@ -51,14 +48,7 @@ class Renderer:
     def begin(self, app):
         self.name = os.path.basename(app.osmFilepath)
         
-        if _isBlender280:
-            self.collection = createCollection(self.name)
-        else:
-            self.parent = createEmptyObject(
-                self.name,
-                zeroVector(),
-                empty_draw_size=0.01
-            )
+        self.collection = createCollection(self.name)
         
         # store here Blender object that are to be joined
         self.toJoin = {}
@@ -73,7 +63,7 @@ class Renderer:
                     layer.name,
                     layer.location,
                     collection = self.collection,
-                    parent = None if _isBlender280 else self.parent
+                    parent = None
                 )
                 layer.prepare(layer)
             self.bm = layer.bm
@@ -83,8 +73,8 @@ class Renderer:
             self.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
-                collection = layer.getCollection(self.collection) if _isBlender280 else None,
-                parent = layer.getParent(layer.getCollection(self.collection) if _isBlender280 else None)
+                collection = layer.getCollection(self.collection),
+                parent = layer.getParent(layer.getCollection(self.collection))
             )
             layer.prepare(self)
     
@@ -137,22 +127,12 @@ class Renderer:
         if join:
             for target in join:
                 for o in join[target]:
-                    if _isBlender280:
-                        o.select_set(True)
-                    else:
-                        o.select = True
+                    o.select_set(True)
                 target = bpy.data.objects[target]
-                if _isBlender280:
-                    target.select_set(True)
-                    bpy.context.view_layer.objects.active = target
-                else:
-                    target.select = True
-                    bpy.context.scene.objects.active = target
+                target.select_set(True)
+                bpy.context.view_layer.objects.active = target
                 bpy.ops.object.join()
-                if _isBlender280:
-                    target.select_set(False)
-                else:
-                    target.select = False
+                target.select_set(False)
         join.clear()
     
     @classmethod
@@ -172,13 +152,10 @@ class Renderer:
         obj = bpy.data.objects.new(name, mesh)
         if location:
             obj.location = location
-        if _isBlender280:
-            if not collection:
-                collection = bpy.context.scene.collection
-            # adding to the collection
-            collection.objects.link(obj)
-        else:
-            bpy.context.scene.objects.link(obj)
+        if not collection:
+            collection = bpy.context.scene.collection
+        # adding to the collection
+        collection.objects.link(obj)
         if parent:
             # perform parenting
             obj.parent = parent
