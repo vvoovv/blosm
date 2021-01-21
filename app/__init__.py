@@ -146,6 +146,18 @@ class App(BaseApp):
         self.nodeLayer = NodeLayer
         self.wayLayer = CurveLayer
     
+    def getAssetsDir(self, context):
+        addonName = self.addonName
+        prefs = context.preferences.addons
+        # first try the <assetsDir> from the addon GUI
+        assetsDir = context.scene.blosm.assetsDir
+        if not assetsDir:
+            # second try the <assetsDir> from the addon preferences
+            assetsDir = prefs[addonName].preferences.assetsDir if addonName in prefs else None
+        if assetsDir:
+            assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
+        return assetsDir
+    
     def initOsm(self, op, context):
         addonName = self.addonName
         addon = context.scene.blosm
@@ -160,13 +172,8 @@ class App(BaseApp):
             
         if self.mode is App.realistic:
             _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
-            # first try the <assetsDir> from the addon GUI
-            assetsDir = self.assetsDir
-            if not assetsDir:
-                # second try the <assetsDir> from the addon preferences
-                assetsDir = prefs[addonName].preferences.assetsDir if addonName in prefs else None
+            assetsDir = self.getAssetsDir(context)
             if assetsDir:
-                assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
                 if not os.path.isdir(assetsDir):
                     raise Exception(
                         "The directory with assets %s doesn't exist. " % assetsDir +

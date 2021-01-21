@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import bpy
-import math, webbrowser
+import os, math, webbrowser, json
 from bpy.app.handlers import persistent
 from app import app
 from defs import Keys
@@ -118,6 +118,18 @@ class BlosmDefaultLevelsEntry(bpy.types.PropertyGroup):
         default = 10,
         description="Weight between 1 and 100 for the default number of levels"
     )
+
+
+class BLOSM_OT_ReloadAssetPackageList(bpy.types.Operator):
+    bl_idname = "blosm.reload_asset_package_list"
+    bl_label = "Reload asset package list"
+    bl_description = "Reload the list of asset packages"
+    bl_options = {'INTERNAL'}
+    
+    def invoke(self, context, event):
+        global _loadAssetPackages
+        _loadAssetPackages = True
+        return {'FINISHED'}
 
 
 class BLOSM_OT_SelectExtent(bpy.types.Operator):
@@ -354,6 +366,12 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             split = box.split(factor=0.5)
             split.label(text="Asset package:")
+            row = split.row(align=True)
+            row.prop(addon, "assetPackage", text='')
+            row.operator("blosm.reload_asset_package_list", icon='FILE_REFRESH', text='')
+            
+            split = box.split(factor=0.5)
+            split.label(text="Asset package:")
             split.prop(addon, "assetPackageDir", text="")
             
             split = box.split(factor=0.5)
@@ -483,6 +501,23 @@ class BLOSM_PT_BpyProj(bpy.types.Panel):
     def draw(self, context):
         import bpyproj
         bpyproj.draw(context, self.layout)
+
+
+_loadAssetPackages = False
+_enumAssetPackages = []
+def getAssetPackages(self, context):
+    global _loadAssetPackages
+    if _loadAssetPackages:
+        # It has been just tested in the operator <blosm.reload_asset_package_list>
+        # that the file does exist
+        with open(os.path.join(app.getAssetsDir(context), "asset_packages.json"), 'r') as jsonFile:
+            apListJson = json.load(jsonFile)["assetPackages"]
+        _enumAssetPackages.clear()
+        _enumAssetPackages.extend(tuple(apInfo) for apInfo in apListJson)
+        _loadAssetPackages = False
+    elif not _enumAssetPackages:
+        _enumAssetPackages.append(("default", "default", "default"))
+    return _enumAssetPackages
 
 
 class BlenderOsmProperties(bpy.types.PropertyGroup):
@@ -853,6 +888,12 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         default = ""
     )
     
+    assetPackage: bpy.props.EnumProperty(
+        name = "Asset package",
+        items = getAssetPackages,
+        description = "Asset package to use for a scene import"
+    )
+    
     #    
     # A group of properties for Blender material utilities
     #
@@ -901,6 +942,7 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
 _classes = (
     BLOSM_UL_DefaultLevels,
     BlosmDefaultLevelsEntry,
+    BLOSM_OT_ReloadAssetPackageList,
     BLOSM_OT_SelectExtent,
     BLOSM_OT_PasteExtent,
     BLOSM_OT_ExtentFromActive,
