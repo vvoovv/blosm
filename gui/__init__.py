@@ -127,6 +127,23 @@ class BLOSM_OT_ReloadAssetPackageList(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def invoke(self, context, event):
+        # check if all needed paths do exist
+        assetsDir = app.getAssetsDir(context)
+        try:
+            app.validateAssetsDir(assetsDir)
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+        
+        # additional validation
+        if not os.path.isfile( os.path.join(assetsDir, "asset_packages.json") ):
+            self.report({'ERROR'}, "The assets directory doesn't contain the file \"asset_packages.json\"")
+            _enumAssetPackages.clear()
+            return {'CANCELLED'}
+        
+        if len( app.getAssetPackageList(assetsDir) ) == 1:
+            self.report({'WARNING'}, "There is only the default asset package. Use the Asset Package Editor to add one")
+        
         global _loadAssetPackages
         _loadAssetPackages = True
         return {'FINISHED'}
@@ -366,13 +383,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             split = box.split(factor=0.5)
             split.label(text="Asset package:")
-            row = split.row(align=True)
+            row = split.row()
             row.prop(addon, "assetPackage", text='')
             row.operator("blosm.reload_asset_package_list", icon='FILE_REFRESH', text='')
-            
-            split = box.split(factor=0.5)
-            split.label(text="Asset package:")
-            split.prop(addon, "assetPackageDir", text="")
             
             split = box.split(factor=0.5)
             split.label(text="Setup script:")
@@ -510,10 +523,9 @@ def getAssetPackages(self, context):
     if _loadAssetPackages:
         # It has been just tested in the operator <blosm.reload_asset_package_list>
         # that the file does exist
-        with open(os.path.join(app.getAssetsDir(context), "asset_packages.json"), 'r') as jsonFile:
-            apListJson = json.load(jsonFile)["assetPackages"]
+        apList = app.getAssetPackageList( app.getAssetsDir(context) )
         _enumAssetPackages.clear()
-        _enumAssetPackages.extend(tuple(apInfo) for apInfo in apListJson)
+        _enumAssetPackages.extend(tuple(apInfo) for apInfo in apList)
         _loadAssetPackages = False
     elif not _enumAssetPackages:
         _enumAssetPackages.append(("default", "default", "default"))

@@ -34,6 +34,9 @@ if "bpy" in sys.modules:
     from util.polygon import Polygon
 
 
+_setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
+
+
 class App(BaseApp):
     
     #layerIds = ["buildings", "highways", "railways", "water", "forests", "vegetation"]
@@ -158,6 +161,15 @@ class App(BaseApp):
             assetsDir = os.path.realpath(bpy.path.abspath(assetsDir))
         return assetsDir
     
+    def validateAssetsDir(self, assetsDir):
+        if not assetsDir:
+            raise Exception(_setAssetsDirStr)
+        if not os.path.isdir(assetsDir):
+            raise Exception(
+                "The directory with assets %s doesn't exist. " % assetsDir +
+                _setAssetsDirStr
+            )
+    
     def initOsm(self, op, context):
         addonName = self.addonName
         addon = context.scene.blosm
@@ -171,32 +183,26 @@ class App(BaseApp):
             self.mode = App.twoD
             
         if self.mode is App.realistic:
-            _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
             assetsDir = self.getAssetsDir(context)
-            if assetsDir:
-                if not os.path.isdir(assetsDir):
+            self.validateAssetsDir(assetsDir)
+            self.assetsDir = assetsDir
+            # Additional validation. The execution couldn't come here
+            # if there were an exception in <self.validateAssetsDir(..)>
+            bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
+            if not os.path.isfile(bldgMaterialsFilepath):
+                raise Exception(
+                    "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
+                    _setAssetsDirStr
+                )
+            self.bldgMaterialsFilepath = bldgMaterialsFilepath
+            if self.forests:
+                vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
+                if not os.path.isfile(vegetationFilepath):
                     raise Exception(
-                        "The directory with assets %s doesn't exist. " % assetsDir +
+                        "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
                         _setAssetsDirStr
                     )
-                self.assetsDir = assetsDir
-                bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
-                if not os.path.isfile(bldgMaterialsFilepath):
-                    raise Exception(
-                        "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
-                        _setAssetsDirStr
-                    )
-                self.bldgMaterialsFilepath = bldgMaterialsFilepath
-                if self.forests:
-                    vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
-                    if not os.path.isfile(vegetationFilepath):
-                        raise Exception(
-                            "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
-                            _setAssetsDirStr
-                        )
-                    self.vegetationFilepath = vegetationFilepath
-            else:
-                raise Exception(_setAssetsDirStr)
+                self.vegetationFilepath = vegetationFilepath
         
         basePath = self.basePath
         self.op = op
@@ -838,6 +844,12 @@ class App(BaseApp):
         from datetime import date
         version = strVersion.split('.')
         return date( int(version[0]), int(version[1]), int(version[2]) )
+    
+    @staticmethod
+    def getAssetPackageList(assetsDir):
+        with open(os.path.join(assetsDir, "asset_packages.json"), 'r') as jsonFile:
+            apListJson = json.load(jsonFile)
+        return apListJson["assetPackages"]
 
 
 if "bpy" in sys.modules:
