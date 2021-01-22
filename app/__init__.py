@@ -266,11 +266,7 @@ class App(BaseApp):
                     "using the download link in your purchase confirmation email."
                 )
             
-            assetPackageDir = self.assetPackageDir
-            if assetPackageDir:
-                assetPackageDir = os.path.realpath(bpy.path.abspath(assetPackageDir))
-            else:
-                assetPackageDir = os.path.join(self.assetsDir, "default")
+            assetPackageDir = os.path.join(self.assetsDir, self.assetPackage)
             if not os.path.isdir(assetPackageDir):
                 raise Exception("The directory for the asset package %s doesn't exist" % assetPackageDir)
             self.assetPackageDir = assetPackageDir

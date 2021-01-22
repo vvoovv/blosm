@@ -893,13 +893,6 @@ class BlenderOsmProperties(bpy.types.PropertyGroup):
         update = FacadeWithColor.updateLitWindows if _has3dRealistic else None
     )
     
-    assetPackageDir: bpy.props.StringProperty(
-        name = "Asset package folder",
-        subtype = 'DIR_PATH',
-        description = "A path to the asset package",
-        default = ""
-    )
-    
     assetPackage: bpy.props.EnumProperty(
         name = "Asset package",
         items = getAssetPackages,
