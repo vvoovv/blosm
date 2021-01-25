@@ -364,6 +364,13 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         enableExperimentalFeatures = (app.addonName in prefs and prefs[app.addonName].preferences.enableExperimentalFeatures) or not app.addonName in prefs
         
         if enableExperimentalFeatures and mode3dRealistic:
+
+            split = layout.box().split(factor=0.5)
+            split.label(text="Asset package:")
+            row = split.row()
+            row.prop(addon, "assetPackage", text='')
+            row.operator("blosm.reload_asset_package_list", icon='FILE_REFRESH', text='')
+            
             layout.box().prop(addon, "importForExport")
             
             box = layout.box()
@@ -380,12 +387,6 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             box = layout.box()
             box.label(text = "[Advanced]:")
-            
-            split = box.split(factor=0.5)
-            split.label(text="Asset package:")
-            row = split.row()
-            row.prop(addon, "assetPackage", text='')
-            row.operator("blosm.reload_asset_package_list", icon='FILE_REFRESH', text='')
             
             split = box.split(factor=0.5)
             split.label(text="Setup script:")
