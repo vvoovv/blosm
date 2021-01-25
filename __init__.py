@@ -29,7 +29,7 @@ bl_info = {
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
-    "blosmAssets": "2021.01.05"
+    "blosmAssets": "2021.01.25"
 }
 
 import os, sys, textwrap
