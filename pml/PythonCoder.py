@@ -473,6 +473,7 @@ class PythonCoder():
     #     | 'item' '.' IDENTIFIER '.' IDENTIFIER                  # ATOM_SINGLE
     #     | 'item' '.' IDENTIFIER LBRACK STRING_LITERAL RBRACK    # ATOM_FROMATTR
     #     | 'item' LBRACK STRING_LITERAL RBRACK                   # ATOM_FROMATTR_SHORT
+    #|    | 'style' '.' IDENTIFIER                                # ATOM_STYLE
     #     | identifier                                            # ATOM_IDENT
     #     | NUMBER                                                # ATOM_IDENT
     #     | STRING_LITERAL                                        # ATOM_IDENT
@@ -496,6 +497,14 @@ class PythonCoder():
         else:
             self.write(self.alterCommaStack[-1])
             self.write(self.indent()+"FromStyleBlockAttr("+literal+")")
+            self.alterCommaStack[-1] = ",\n"
+
+    def enterATOM_STYLE(self,identifier):
+        if self.conditionContext:
+            self.write( 'self.' + identifier )
+        else:
+            self.write(self.alterCommaStack[-1])
+            self.write(self.indent()+'self.' + identifier)
             self.alterCommaStack[-1] = ",\n"
 
     def enterATOM_IDENT(self,ident):

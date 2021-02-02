@@ -332,6 +332,15 @@ class pmlListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by pmlParser#ATOM_STYLE.
+    def enterATOM_STYLE(self, ctx:pmlParser.ATOM_STYLEContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#ATOM_STYLE.
+    def exitATOM_STYLE(self, ctx:pmlParser.ATOM_STYLEContext):
+        pass
+
+
     # Enter a parse tree produced by pmlParser#ATOM_IDENT.
     def enterATOM_IDENT(self, ctx:pmlParser.ATOM_IDENTContext):
         pass

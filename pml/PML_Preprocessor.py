@@ -4,8 +4,13 @@ import re, os
 # Editors normally start with line numbe 1, so error messages have to correct for this.
 
 class PML_Preprocessor():
-    def __init__(self, _pathToAssets):
-        self.pathToAssets = _pathToAssets
+    def __init__(self, rootDir):
+        """
+        Args:
+            rootDir (str): Root directory to use for includes <@include>
+                if the path in <@include> starts with '/'
+        """
+        self.rootDir = rootDir
         self.incl_patt = re.compile('@include.\"')
         self.quot_patt = re.compile('\"(.*?)\"')
         self.cmnt_patt = re.compile('//.*?\n')
@@ -50,9 +55,12 @@ class PML_Preprocessor():
                         file = path, line = localLine+1, col = 0, msg = line)
                         raise Exception(errorText)
                     else:
-                        # if first character of path is '/', add path to assets
+                        # if the first character of path is '/', add path to the root directory
                         if inclPath[0] == '/':
-                            inclPath = self.pathToAssets + inclPath
+                            inclPath = os.path.join(
+                                self.rootDir,
+                                os.path.join(*inclPath[1:].split('/'))
+                            )
                         # check for recursive inclusion
                         if inclPath in self.includeStack:
                             errorText = 'Error in file {file} on line {line}, col {col}: {msg}'.format(
