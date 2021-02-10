@@ -70,12 +70,13 @@ class BlosmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
     screenType: bpy.props.EnumProperty(
-        name = "Screen type in the addon preferences",
-        item = (
+        name = '',
+        items = (
             ("preferences", "preferences", "preferences"),
             ("ape", "asset package editor", "asset package editor")
         ),
-        description = "Preferences of Asset Package Editor" 
+        description = "Preferences of Asset Package Editor",
+        default = "preferences"
     )
     
     dataDir: bpy.props.StringProperty(
