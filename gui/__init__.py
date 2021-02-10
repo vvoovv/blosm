@@ -533,7 +533,7 @@ def getAssetPackages(self, context):
     return _enumAssetPackages
 
 
-class BlenderOsmProperties(bpy.types.PropertyGroup):
+class BlosmProperties(bpy.types.PropertyGroup):
     
     commandLineMode: bpy.props.BoolProperty(
         name = "Command line mode",
@@ -957,14 +957,14 @@ _classes = (
     BLOSM_PT_Extent,
     BLOSM_PT_Settings,
     BLOSM_PT_BpyProj,
-    BlenderOsmProperties
+    BlosmProperties
 )
 
 def register():
     for c in _classes:
         bpy.utils.register_class(c)
     # a group for all GUI attributes related to blender-osm
-    bpy.types.Scene.blosm = bpy.props.PointerProperty(type=BlenderOsmProperties)
+    bpy.types.Scene.blosm = bpy.props.PointerProperty(type=BlosmProperties)
     bpy.app.timers.register(_onRegister280, first_interval=2)
     # see the notes near the code for <_onFileLoaded>
     bpy.app.handlers.load_post.append(_onFileLoaded)

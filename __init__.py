@@ -73,7 +73,7 @@ app.app.version = bl_info["version"]
 app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
 
 
-class BlenderOsmPreferences(bpy.types.AddonPreferences):
+class BlosmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
     dataDir: bpy.props.StringProperty(
@@ -139,7 +139,7 @@ class BlenderOsmPreferences(bpy.types.AddonPreferences):
         
         layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
-app.app.addonName = BlenderOsmPreferences.bl_idname
+app.app.addonName = BlosmPreferences.bl_idname
 
 
 class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
@@ -399,7 +399,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         a = app.app
         try:
-            a.initGpx(context, BlenderOsmPreferences.bl_idname)
+            a.initGpx(context, BlosmPreferences.bl_idname)
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
@@ -593,7 +593,7 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
 
 
 _classes = (
-    BlenderOsmPreferences,
+    BlosmPreferences,
     BLOSM_OT_GetMapboxToken,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,
