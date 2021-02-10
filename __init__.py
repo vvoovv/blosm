@@ -69,7 +69,7 @@ app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(
 class BlosmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
-    screenType = bpy.props.EnumProperty(
+    screenType: bpy.props.EnumProperty(
         name = "Screen type in the addon preferences",
         item = (
             ("preferences", "preferences", "preferences"),
