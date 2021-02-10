@@ -68,6 +68,14 @@ class Osm:
         self.conditions = []
         # use separate conditions for nodes to get some performance gain
         self.nodeConditions = []
+        
+        # the variable below is used for the bounds calculation
+        self.firstPoint = True
+        
+        self.minLat = 0.
+        self.maxLat = 0.
+        self.minLon = 0.
+        self.maxLon = 0.
     
     def addCondition(self, condition, layerId=None, manager=None, renderer=None):
         self.conditions.append(
@@ -88,10 +96,7 @@ class Osm:
         if not self.projection:
             self.projection = self.app.projection
         if not self.projection or forceExtentCalculation:
-            self.minLat = 90.
-            self.maxLat = -90.
-            self.minLon = 180.
-            self.maxLon = -180.
+            self.firstPoint = True
         
         relations = self.relations
         
@@ -195,14 +200,12 @@ class Osm:
                     self.setProjection(lat, lon)
                     forceExtentCalculation = False
         
-        # The condition (self.minLat > self.maxLat and self.minLon > self.maxLon) means,
-        # that <self.minLat==90.>, <self.maxLat==-90.>, <self.minLon==180.>, <self.maxLon==-180.>,
-        # i.e to their original values. It means the method <updateBounds(..)> was never called
+        # The condition <self.firstPoint> means that the method <updateBounds(..)> was never called
         # and there was no OSM way with tags that satisfy <self.conditions>. There were
         # only incomplete relations available that satisfy <self.conditions>.
         # So <self.projection> will be set in blender-osm/__init__.py after
         # the call to <app.processIncompleteRelations(..)>
-        if not self.projection and not (self.minLat > self.maxLat and self.minLon > self.maxLon):
+        if not self.projection and not self.firstPoint:
             # set projection using the calculated bounds (self.minLat, self.maxLat, self.minLon, self.maxLon)
             lat = (self.minLat + self.maxLat)/2.
             lon = (self.minLon + self.maxLon)/2.
@@ -258,14 +261,19 @@ class Osm:
             node = self.nodes[way.nodes[i]]
             lat = node.lat
             lon = node.lon
-            if lat<self.minLat:
-                self.minLat = lat
-            elif lat>self.maxLat:
-                self.maxLat = lat
-            if lon<self.minLon:
-                self.minLon = lon
-            elif lon>self.maxLon:
-                self.maxLon = lon
+            if self.firstPoint:
+                self.minLat = self.maxLat = lat
+                self.minLon = self.maxLon = lon
+                self.firstPoint = False
+            else:
+                if lat < self.minLat:
+                    self.minLat = lat
+                elif lat > self.maxLat:
+                    self.maxLat = lat
+                if lon < self.minLon:
+                    self.minLon = lon
+                elif lon > self.maxLon:
+                    self.maxLon = lon
         # mark <way> as used for bounds calculation
         way.used = True
 
