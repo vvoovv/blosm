@@ -69,6 +69,15 @@ app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(
 class BlosmPreferences(bpy.types.AddonPreferences):
     bl_idname = __name__
     
+    screenType = bpy.props.EnumProperty(
+        name = "Screen type in the addon preferences",
+        item = (
+            ("preferences", "preferences", "preferences"),
+            ("ape", "asset package editor", "asset package editor")
+        ),
+        description = "Preferences of Asset Package Editor" 
+    )
+    
     dataDir: bpy.props.StringProperty(
         name = '',
         subtype = 'DIR_PATH',
@@ -108,6 +117,8 @@ class BlosmPreferences(bpy.types.AddonPreferences):
         layout = self.layout
         
         if app.app.isPremium:
+            if self.enableExperimentalFeatures:
+                layout.box().prop(self, "screenType", expand=True)
             box = layout.box()
             box.label(text="Thank you for purchasing the premium version!")
         
