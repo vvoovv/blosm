@@ -37,14 +37,7 @@ import os, sys, textwrap
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
         "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
-        "renderer", "terrain", "util", "defs", "setup"
-    ]:
-    sys.modules.pop(m, 0)
-
-# force cleanup of sys.modules to avoid conflicts with the other addons for Blender
-for m in [
-        "app", "building", "gui", "manager", "material", "parse",
-        "renderer", "terrain", "util", "defs", "setup"
+        "renderer", "terrain", "util", "defs", "setup", "ape"
     ]:
     sys.modules.pop(m, 0)
 
@@ -63,7 +56,7 @@ import bpy, bmesh, bgl, blf
 from util.transverse_mercator import TransverseMercator
 from renderer import Renderer
 from parse.osm import Osm
-import app, gui
+import app, gui, ape
 from defs import Keys
 
 # set the minimum version for BLOSM assets
@@ -604,6 +597,7 @@ def register():
     for c in _classes:
         bpy.utils.register_class(c)
     gui.register()
+    ape.register()
     if app.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.register()
@@ -612,6 +606,7 @@ def unregister():
     for c in _classes:
         bpy.utils.unregister_class(c)
     gui.unregister()
+    ape.register()
     if app.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.unregister()
