@@ -119,7 +119,7 @@ class BlosmPreferences(bpy.types.AddonPreferences):
         
         if app.app.isPremium:
             if self.enableExperimentalFeatures:
-                layout.prop(self, "screenType", expand=True)
+                layout.row().prop(self, "screenType", expand=True)
             box = layout.box()
             box.label(text="Thank you for purchasing the premium version!")
         
