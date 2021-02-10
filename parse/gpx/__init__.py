@@ -13,15 +13,20 @@ class Gpx:
         
         # a list of track segments (trkseg)
         self.segments = []
+        
+        # the variable below is used for the bounds calculation
+        self.firstPoint = True
+        
+        self.minLat = 0.
+        self.maxLat = 0.
+        self.minLon = 0.
+        self.maxLon = 0.
     
     def parse(self, filepath):
         
-        projection = self.projection
-        if not self.projection:
-            self.minLat = 90.
-            self.maxLat = -90.
-            self.minLon = 180.
-            self.maxLon = -180.
+        projection = self.app.projection
+        
+        self.firstPoint = True
         
         gpx = etree.parse(filepath).getroot()
         
@@ -57,14 +62,19 @@ class Gpx:
             )
     
     def updateBounds(self, lat, lon):
-        if lat < self.minLat:
-            self.minLat = lat
-        elif lat > self.maxLat:
-            self.maxLat = lat
-        if lon < self.minLon:
-            self.minLon = lon
-        elif lon > self.maxLon:
-            self.maxLon = lon
+        if self.firstPoint:
+            self.minLat = self.maxLat = lat
+            self.minLon = self.maxLon = lon
+            self.firstPoint = False
+        else:
+            if lat < self.minLat:
+                self.minLat = lat
+            elif lat > self.maxLat:
+                self.maxLat = lat
+            if lon < self.minLon:
+                self.minLon = lon
+            elif lon > self.maxLon:
+                self.maxLon = lon
     
     def setProjection(self, lat, lon):
         self.lat = lat

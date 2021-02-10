@@ -412,7 +412,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         gpx = Gpx(a)
         
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
-            a.setProjection(scene["lat"], scene["lon"])
+            gpx.setProjection(scene["lat"], scene["lon"])
             setLatLon = False
         else:
             setLatLon = True
