@@ -118,10 +118,9 @@ class BlosmPreferences(bpy.types.AddonPreferences):
         layout = self.layout
         
         if app.app.isPremium:
+            layout.box().label(text="Thank you for purchasing the premium version!")
             if self.enableExperimentalFeatures:
                 layout.row().prop(self, "screenType", expand=True)
-            box = layout.box()
-            box.label(text="Thank you for purchasing the premium version!")
         
         layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
         layout.prop(self, "dataDir")
@@ -618,7 +617,7 @@ def unregister():
     for c in _classes:
         bpy.utils.unregister_class(c)
     gui.unregister()
-    ape.register()
+    ape.unregister()
     if app.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.unregister()
