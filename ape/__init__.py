@@ -297,6 +297,10 @@ class BLOSM_PT_DevApePanel(bpy.types.Panel, AssetPackageEditor):
     bl_context = "objectmode"
     bl_category = "blosm ape"
     
+    @classmethod
+    def poll(cls, context):
+        return not app.addonName in context.preferences.addons
+    
     def draw(self, context):
         self.drawApe(context)
 
