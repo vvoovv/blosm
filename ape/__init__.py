@@ -593,6 +593,13 @@ class BLOSM_OT_ApeLoadApList(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def execute(self, context):
+        # check if we have a valid directory with assets
+        try:
+            app.validateAssetsDir(getAssetsDir(context))
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+        
         assetPackages.clear()
         assetPackagesLookup.clear()
         
