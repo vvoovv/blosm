@@ -22,7 +22,6 @@ import os, math, webbrowser, json
 from bpy.app.handlers import persistent
 from app import app
 from defs import Keys
-from util.transverse_mercator import TransverseMercator
 
 _has3dRealistic = app.has(Keys.mode3dRealistic)
 

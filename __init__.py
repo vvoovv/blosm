@@ -66,7 +66,7 @@ app.app.version = bl_info["version"]
 app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
 
 
-class BlosmPreferences(bpy.types.AddonPreferences):
+class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
     bl_idname = __name__
     
     screenType: bpy.props.EnumProperty(
@@ -122,26 +122,29 @@ class BlosmPreferences(bpy.types.AddonPreferences):
             if self.enableExperimentalFeatures:
                 layout.row().prop(self, "screenType", expand=True)
         
-        layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
-        layout.prop(self, "dataDir")
-        
-        if app.app.isPremium:
-            layout.label(text="Directory with assets (building_materials.blend, vegetation.blend):")
-            layout.prop(self, "assetsDir")
-        
-        layout.separator()
-        layout.box().label(text="Optional:")
-        split = layout.split(factor=0.9)
-        split.prop(self, "mapboxAccessToken")
-        split.operator("blosm.get_mapbox_token", text="Get it!")
-        
-        layout.separator()
-        layout.box().label(text="Advanced settings:")
-        # Extensions might come later
-        #layout.operator("blosm.load_extensions", text="Load extensions")
-        layout.prop(self, "osmServer")
-        
-        layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
+        if self.screenType == "ape":
+            self.drawApe(context)
+        else:
+            layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
+            layout.prop(self, "dataDir")
+            
+            if app.app.isPremium:
+                layout.label(text="Directory with assets (building_materials.blend, vegetation.blend):")
+                layout.prop(self, "assetsDir")
+            
+            layout.separator()
+            layout.box().label(text="Optional:")
+            split = layout.split(factor=0.9)
+            split.prop(self, "mapboxAccessToken")
+            split.operator("blosm.get_mapbox_token", text="Get it!")
+            
+            layout.separator()
+            layout.box().label(text="Advanced settings:")
+            # Extensions might come later
+            #layout.operator("blosm.load_extensions", text="Load extensions")
+            layout.prop(self, "osmServer")
+            
+            layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
 app.app.addonName = BlosmPreferences.bl_idname
 
