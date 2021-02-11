@@ -17,10 +17,10 @@ maxFileNameLength = 27
 
 
 assetPackages = []
-# the content of the current asset package
-assetPackage = [0]
+# the content of the current asset package: <assetPackage[0]>
+assetPackage = []
 assetPackagesLookup = {}
-imagePreviews = [0]
+imagePreviews = []
 # a mapping between an asset attribute in a JSON file and the attribute of <BlosmApeProperties>
 assetAttr2ApeAttr = {
     "category": "assetCategory",
@@ -1161,7 +1161,8 @@ def register():
     
     bpy.types.Scene.blosmApe = bpy.props.PointerProperty(type=BlosmApeProperties)
     
-    imagePreviews[0] = bpy.utils.previews.new()
+    assetPackage.append(0)
+    imagePreviews.append( bpy.utils.previews.new() )
 
 
 def unregister():
@@ -1170,6 +1171,8 @@ def unregister():
     
     del bpy.types.Scene.blosmApe
     
-    global imagePreviews
+    assetPackages.clear()
+    assetPackage.clear()
+    assetPackagesLookup.clear()
     imagePreviews[0].close()
-    imagePreviews = [0]
+    imagePreviews.clear()
