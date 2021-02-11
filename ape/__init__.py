@@ -1171,4 +1171,4 @@ def unregister():
     del bpy.types.Scene.blosmApe
     
     imagePreviews[0].close()
-    imagePreviews.clear()
+    imagePreviews = [0]
