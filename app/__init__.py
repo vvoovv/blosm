@@ -34,7 +34,7 @@ if "bpy" in sys.modules:
     from util.polygon import Polygon
 
 
-_setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
+_setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preference!"
 
 
 class App(BaseApp):
@@ -372,7 +372,6 @@ class App(BaseApp):
             self.mode = App.twoD
             
         if self.mode is App.realistic:
-            _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences or addon GUI!"
             # first try the <assetsDir> from the addon GUI
             assetsDir = self.assetsDir
             if not assetsDir:
