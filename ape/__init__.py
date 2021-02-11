@@ -610,6 +610,7 @@ class BLOSM_OT_ApeLoadApList(bpy.types.Operator):
         assetPackages.extend( self.getApListJson(context)["assetPackages"] )
         assetPackagesLookup.update( (assetPackage[0],assetPackage) for assetPackage in assetPackages )
         
+        context.scene.blosmApe.assetPackage = "default"
         context.scene.blosmApe.state = "apSelection"
         return {'FINISHED'}
     
