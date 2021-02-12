@@ -2,7 +2,7 @@ import os
 from string import Template
 import bpy
 
-from app import app
+from app.blender import app
 
 
 def getTemplate():

@@ -56,14 +56,15 @@ import bpy, bmesh, bgl, blf
 from util.transverse_mercator import TransverseMercator
 from renderer import Renderer
 from parse.osm import Osm
-import app, gui, ape
+import gui, ape
+import app.blender as blenderApp
 from defs import Keys
 
 # set the minimum version for BLOSM assets
-app.app.setMinAssetsVersion(bl_info["blosmAssets"])
+blenderApp.app.setMinAssetsVersion(bl_info["blosmAssets"])
 # set addon version
-app.app.version = bl_info["version"]
-app.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
+blenderApp.app.version = bl_info["version"]
+blenderApp.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
 
 
 # try reading the file <preferences.txt>
@@ -128,7 +129,7 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
     def draw(self, context):
         layout = self.layout
         
-        if app.app.isPremium:
+        if blenderApp.app.isPremium:
             layout.box().label(text="Thank you for purchasing the premium version!")
             if self.enableExperimentalFeatures:
                 layout.row().prop(self, "screenType", expand=True)
@@ -139,7 +140,7 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             layout.label(text="Directory to store downloaded OpenStreetMap and terrain files:")
             layout.prop(self, "dataDir")
             
-            if app.app.isPremium:
+            if blenderApp.app.isPremium:
                 layout.label(text="Directory with assets (building_materials.blend, vegetation.blend):")
                 layout.prop(self, "assetsDir")
             
@@ -157,7 +158,7 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             
             layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
-app.app.addonName = BlosmPreferences.bl_idname
+blenderApp.app.addonName = BlosmPreferences.bl_idname
 
 
 class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
@@ -181,7 +182,7 @@ class BLOSM_OT_LoadExtensions(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def execute(self, context):
-        numExtensions = app.app.loadExtensions(context)
+        numExtensions = blednerApp.app.loadExtensions(context)
         self.report({'INFO'},
             "No extension found" if not numExtensions else\
             ("Loaded 1 extension" if numExtensions==1 else "Loaded %s extensions" % numExtensions)
@@ -198,7 +199,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
-        a = app.app
+        a = blenderApp.app
         dataType = context.scene.blosm.dataType
         
         a.projection = None
@@ -218,7 +219,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         return {'FINISHED'}
     
     def importOsm(self, context):
-        a = app.app
+        a = blenderApp.app
         addon = context.scene.blosm
         
         try:
@@ -306,7 +307,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         return {'FINISHED'}
     
     def getCenterLatLon(self, context):
-        a = app.app
+        a = blenderApp.app
         scene = context.scene
         if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
             lat = scene["lat"]
@@ -348,7 +349,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return None
     
     def importTerrain(self, context):
-        a = app.app
+        a = blenderApp.app
         try:
             a.initTerrain(context)
         except Exception as e:
@@ -366,7 +367,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         return {'FINISHED'}
     
     def importOverlay(self, context):
-        a = app.app
+        a = blenderApp.app
         blosm = context.scene.blosm
         
         # find the Blender area holding 3D View
@@ -397,8 +398,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         if blosm.commandLineMode:
             hasTiles = True
             while hasTiles:
-                hasTiles = app.app.overlay.importNextTile()
-            if app.app.overlay.finalizeImport():
+                hasTiles = blenderApp.app.overlay.importNextTile()
+            if blenderApp.app.overlay.finalizeImport():
                 self.report({'INFO'}, "Overlay import is finished!")
             else:
                 self.report({'ERROR'}, "Probably something is wrong with the tile server!")
@@ -415,7 +416,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         from parse.gpx import Gpx
         from gpx import GpxRenderer
         
-        a = app.app
+        a = blenderApp.app
         try:
             a.initGpx(context, BlosmPreferences.bl_idname)
         except Exception as e:
@@ -455,7 +456,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
     def importGeoJson(self, context):
         from parse.geojson import GeoJson
         
-        a = app.app
+        a = blenderApp.app
         addon = context.scene.blosm
         
         try:
@@ -549,15 +550,15 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type == 'TIMER':
-            hasTiles = app.app.overlay.importNextTile()
+            hasTiles = blenderApp.app.overlay.importNextTile()
             if not hasTiles:
                 self.stop(context)
-                if app.app.overlay.finalizeImport():
+                if blenderApp.app.overlay.finalizeImport():
                     self.report({'INFO'}, "Overlay import is finished!")
                 else:
                     self.report({'ERROR'}, "Probably something is wrong with the tile server!")
                 # cleanup
-                app.app.area = None
+                blenderApp.app.area = None
                 return {'FINISHED'}
 
         return {'RUNNING_MODAL'}
@@ -580,12 +581,12 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
     def stop(self, context):
         context.window_manager.event_timer_remove(self._timer)
         bpy.types.SpaceView3D.draw_handler_remove(self._drawHandle, 'WINDOW')
-        app.app.stateMessage = None
+        blenderApp.app.stateMessage = None
         self._timer = None
         self._drawHandle = None
 
     def drawMessage(self):
-        message = app.app.stateMessage
+        message = blenderApp.app.stateMessage
         if message:
             # draw message
             fontId = 0
@@ -605,8 +606,8 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
     def setHeaderText(self, context):
         for area in context.screen.areas:
             if area.type == "VIEW_3D":
-                area.header_text_set(app.app.stateMessage)
-                app.app.stateMessage = ''
+                area.header_text_set(blenderApp.app.stateMessage)
+                blenderApp.app.stateMessage = ''
                 return
 
 
@@ -623,7 +624,7 @@ def register():
         bpy.utils.register_class(c)
     gui.register()
     ape.register()
-    if app.app.has(Keys.mode3dRealistic):
+    if blenderApp.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.register()
 
@@ -632,6 +633,6 @@ def unregister():
         bpy.utils.unregister_class(c)
     gui.unregister()
     ape.unregister()
-    if app.app.has(Keys.mode3dRealistic):
+    if blenderApp.app.has(Keys.mode3dRealistic):
         import realistic
         realistic.unregister()

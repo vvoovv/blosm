@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import bpy
-from app import app
+from app.blender import app
 from defs import Keys
 
 

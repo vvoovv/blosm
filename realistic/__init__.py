@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy, bmesh
 import math
-from app import app
+from app.blender import app
 from util.blender import getBmesh, setBmesh
 from .renderer import AreaRenderer, ForestRenderer, WaterRenderer
 

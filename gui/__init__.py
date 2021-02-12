@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import bpy
 import os, math, webbrowser, json
 from bpy.app.handlers import persistent
-from app import app
+from app.blender import app
 from defs import Keys
 
 _has3dRealistic = app.has(Keys.mode3dRealistic)

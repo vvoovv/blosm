@@ -24,7 +24,7 @@ from urllib import request
 import bpy
 
 from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
-from app import app
+from app.blender import app
 
 
 earthRadius = 6378137.

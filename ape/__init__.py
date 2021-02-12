@@ -9,7 +9,7 @@ from shutil import copyfile
 import bpy
 import bpy.utils.previews
 
-from app import app
+from app.blender import app
 
 
 # the maximum file name length for a texture file

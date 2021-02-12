@@ -65,16 +65,16 @@ def redefineMethods():
     
     
     #
-    # augment App.clean(..)
+    # augment BlenderApp.clean(..)
     #
-    from app import App
+    from app.blender import BlenderApp
     
-    _clean = App.clean
+    _clean = BlenderApp.clean
     def clean(self):
         self.log.close()
         _clean(self)
     
-    App.clean = clean
+    BlenderApp.clean = clean
     
     
     #
