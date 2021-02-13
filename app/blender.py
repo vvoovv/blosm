@@ -31,7 +31,6 @@ if "bpy" in sys.modules:
     from renderer import Renderer
     from terrain import Terrain
     from util.blender import makeActive
-    from util.polygon import Polygon
 
 
 _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences!"
@@ -171,6 +170,8 @@ class BlenderApp(BaseApp):
             )
     
     def initOsm(self, op, context):
+        super().initOsm()
+        
         addonName = self.addonName
         addon = context.scene.blosm
         prefs = context.preferences.addons
@@ -181,28 +182,9 @@ class BlenderApp(BaseApp):
                 else BlenderApp.simple
         else:
             self.mode = BlenderApp.twoD
-            
+        
         if self.mode is BlenderApp.realistic:
-            assetsDir = self.getAssetsDir(context)
-            self.validateAssetsDir(assetsDir)
-            self.assetsDir = assetsDir
-            # Additional validation. The execution couldn't come here
-            # if there were an exception in <self.validateAssetsDir(..)>
-            bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
-            if not os.path.isfile(bldgMaterialsFilepath):
-                raise Exception(
-                    "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
-                    _setAssetsDirStr
-                )
-            self.bldgMaterialsFilepath = bldgMaterialsFilepath
-            if self.forests:
-                vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
-                if not os.path.isfile(vegetationFilepath):
-                    raise Exception(
-                        "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
-                        _setAssetsDirStr
-                    )
-                self.vegetationFilepath = vegetationFilepath
+            assetsDir = self.validateAssetsDirContent(context)
         
         basePath = self.basePath
         self.op = op
@@ -229,28 +211,12 @@ class BlenderApp(BaseApp):
             self.downloadOsmFile(osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat)
         else:
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
-        
-        if self.loadMissingMembers:
-            self.incompleteRelations = []
-            self.missingWays = set()
-        
-        # managers (derived from manager.Manager) performing some processing
-        self.managers = []
-        
-        # renderers (derived from renderer.Renderer) actually making 3D objects
-        self.renderers = []
-        
-        # tangent to check if an angle of the polygon is straight
-        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
 
         # dealing with export to the popular 3D formats
         if self.mode is BlenderApp.realistic:
             self.enableExperimentalFeatures = prefs[addonName].preferences.enableExperimentalFeatures if addonName in prefs else True
         else:
             self.enableExperimentalFeatures = False
-        
-        # a data attribute to mark a building entrance
-        self.buildingEntranceAttr = "entrance"
         
         if self.enableExperimentalFeatures and self.mode is BlenderApp.realistic:
             # Check the version of the assets. It must be equal or greater than <self.minAssetsVersion>
@@ -266,24 +232,30 @@ class BlenderApp(BaseApp):
                     "using the download link in your purchase confirmation email."
                 )
             
-            assetPackageDir = os.path.join(self.assetsDir, self.assetPackage)
-            if not os.path.isdir(assetPackageDir):
-                raise Exception("The directory for the asset package %s doesn't exist" % assetPackageDir)
-            self.assetPackageDir = assetPackageDir
-            
-            pmlFilepath = os.path.join(assetPackageDir, "style/building/main.pml")
-            if not os.path.isfile(pmlFilepath):
-                raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
-            self.pmlFilepath = pmlFilepath
-            
-            assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/asset_info.json")
-            if self.enableExperimentalFeatures and self.importForExport:
-                _assetInfoFilepath = "%s_export.json" % assetInfoFilepath[:-5]
-                if os.path.isfile(_assetInfoFilepath):
-                    assetInfoFilepath = _assetInfoFilepath
-            if not os.path.isfile(assetInfoFilepath):
-                raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
-            self.assetInfoFilepath = assetInfoFilepath
+            self.setAssetPackagePaths()
+    
+    def validateAssetsDirContent(self, context):
+        assetsDir = self.getAssetsDir(context)
+        self.validateAssetsDir(assetsDir)
+        self.assetsDir = assetsDir
+        # Additional validation. The execution couldn't come here
+        # if there were an exception in <self.validateAssetsDir(..)>
+        bldgMaterialsFilepath = os.path.join(assetsDir, self.bldgMaterialsFileName)
+        if not os.path.isfile(bldgMaterialsFilepath):
+            raise Exception(
+                "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.bldgMaterialsFileName) +
+                _setAssetsDirStr
+            )
+        self.bldgMaterialsFilepath = bldgMaterialsFilepath
+        if self.forests:
+            vegetationFilepath = os.path.join(assetsDir, self.vegetationFileName)
+            if not os.path.isfile(vegetationFilepath):
+                raise Exception(
+                    "The directory with assets %s doesn't contain the file %s. " % (assetsDir, self.vegetationFileName) +
+                    _setAssetsDirStr
+                )
+            self.vegetationFilepath = vegetationFilepath
+        return assetsDir
     
     def setTerrain(self, context, createFlatTerrain=True, createBvhTree=False):
         addon = context.scene.blosm
