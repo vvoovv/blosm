@@ -14,6 +14,9 @@ class BaseApp:
         # a data attribute to mark a building entrance
         self.buildingEntranceAttr = "entrance"
         
+        # <self.logger> may be set in <setup(..)>
+        self.logger = None
+        
         if self.loadMissingMembers:
             self.incompleteRelations = []
             self.missingWays = set()
@@ -97,3 +100,12 @@ class BaseApp:
             raise Exception(
                 "Unable to execute the setup script! See the error message in the Blender console!"
             )
+    
+    def process(self):
+        logger = self.logger
+        if logger: logger.processStart()
+        
+        for m in self.managers:
+            m.process()
+        
+        if logger: logger.processEnd()

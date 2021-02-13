@@ -195,8 +195,6 @@ class BlenderApp(BaseApp):
         if not os.path.exists(osmDir):
             os.makedirs(osmDir)
         
-        # <self.logger> may be set in <setup(..)>
-        self.logger = None
         # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
         self.meshes = {}
         
@@ -379,8 +377,6 @@ class BlenderApp(BaseApp):
         self.op = op
         self.assetPath = os.path.join(basePath, "assets")
         
-        # <self.logger> may be set in <setup(..)>
-        self.logger = None
         # a Python dict to cache Blender meshes loaded from Blender files serving as an asset library
         self.meshes = {}
         
@@ -484,15 +480,6 @@ class BlenderApp(BaseApp):
     def initLayers(self):
         for layer in self.layers:
             layer.init()
-    
-    def process(self):
-        logger = self.logger
-        if logger: logger.processStart()
-        
-        for m in self.managers:
-            m.process()
-        
-        if logger: logger.processEnd()
     
     def render(self):
         logger = self.logger
