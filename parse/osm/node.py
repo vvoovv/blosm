@@ -32,7 +32,7 @@ class Node:
             of <building.manager.BuildingManager>)
         rr: A renderer for the OSM node
     """
-    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "f", "m", "rr", "valid")
+    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "m", "rr", "valid")
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
