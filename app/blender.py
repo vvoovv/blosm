@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 from . import BaseApp
 if "bpy" in sys.modules:
-    import os, json, webbrowser, math, gzip, struct
+    import os, json, math, gzip, struct
     import bpy
     from mathutils import Vector
     
@@ -62,8 +62,6 @@ class BlenderApp(BaseApp):
     
     devOsmServer = "overpass-api.de"
     
-    osmUrlPath2 = "/api/interpreter"
-    
     terrainUrl = "http://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
     
     osmDir = "osm"
@@ -71,11 +69,6 @@ class BlenderApp(BaseApp):
     terrainSubDir = "terrain"
     
     overlaySubDir = "overlay"
-    
-    osmFileExtraName = "%s_extra.osm"
-    
-    # request to the Overpass server to get both ways and their nodes for the given way ids
-    overpassWays = "((way(%s););node(w););out;"
     
     bldgMaterialsFileName = "building_materials.blend"
     
@@ -127,6 +120,8 @@ class BlenderApp(BaseApp):
     voidSubstitution = 0
     
     def __init__(self):
+        super().__init__()
+        
         # path to the top directory of the addon
         self.basePath = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -140,8 +135,11 @@ class BlenderApp(BaseApp):
         
         self.version = None
         self.isPremium = False
-        self.layerIndices = {}
-        self.layers = []
+        
+        # default layer class used in <self.createLayer(..)>
+        self.layerClass = Layer
+        # default node layer class used in <self.createLayer(..)>
+        self.nodeLayerClass = NodeLayer
         
         # the constructors for the layers
         self.polygonLayer = MeshLayer
@@ -422,65 +420,6 @@ class BlenderApp(BaseApp):
             # set <self.dataDir> to basePath/../../../data (development version)
             self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
     
-    def createLayers(self, osm):
-        layerIndices = self.layerIndices
-        kwargs = dict(swOffset=self.swOffsetDp) if self.mode is BlenderApp.realistic else {}
-        
-        if osm.conditions:
-            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
-            for c in osm.conditions:
-                manager = c[1]
-                layerId = c[3]
-                if layerId and not layerId in layerIndices:
-                    if manager:
-                        manager.createLayer(
-                            layerId,
-                            self,
-                            **kwargs
-                        )
-                    else:  
-                        self.createLayer(
-                            layerId,
-                            Layer,
-                            **kwargs
-                        )
-            # Replace <osm.conditions> with new entries
-            # where <layerId> is replaced by the related instance of <Layer>
-            osm.conditions = tuple(
-                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
-                for c in osm.conditions
-            )
-        
-        # the same for <osm.nodeConditions> 
-        if osm.nodeConditions:
-            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
-            for c in osm.nodeConditions:
-                manager = c[1]
-                layerId = c[3]
-                if layerId and not layerId in layerIndices:
-                    if manager:
-                        manager.createNodeLayer(
-                            layerId,
-                            self,
-                            **kwargs
-                        )
-                    else:  
-                        self.createLayer(
-                            layerId,
-                            NodeLayer,
-                            **kwargs
-                        )
-            # Replace <osm.nodeConditions> with new entries
-            # where <layerId> is replaced by the related instance of <Layer>
-            osm.nodeConditions = tuple(
-                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
-                for c in osm.nodeConditions
-            )
-    
-    def initLayers(self):
-        for layer in self.layers:
-            layer.init()
-    
     def render(self):
         logger = self.logger
         if logger: logger.renderStart()
@@ -504,6 +443,10 @@ class BlenderApp(BaseApp):
     def addRenderer(self, renderer):
         self.renderers.append(renderer)
     
+    def createLayers(self, osm):
+        self.layerKwargs = dict(swOffset=self.swOffsetDp) if self.mode is BlenderApp.realistic else {}
+        super().createLayers(osm)
+    
     def clean(self):
         self.meshes = None
         self.managers = None
@@ -523,50 +466,6 @@ class BlenderApp(BaseApp):
             self._keys[key] = has
             
         return has
-    
-    def downloadOsmWays(self, ways, filepath):
-        self.download(
-            self.osmServer + self.osmUrlPath2,
-            filepath,
-            self.overpassWays % ");way(".join(ways)
-        )
-    
-    def loadMissingWays(self, osm):
-        filepath = self.osmFileExtraName % self.osmFilepath[:-4]
-        if not os.path.isfile(filepath):
-            print("Downloading data for incomplete OSM relations")
-            self.downloadOsmWays(self.missingWays, filepath)
-        self.loadMissingMembers = False
-        print("Parsing and processing data from the file %s for incomplete OSM relations" % filepath)
-        osm.parse(filepath)
-    
-    def processIncompleteRelations(self, osm):
-        """
-        Download missing OSM ways with ids stored in <self.missingWays>,
-        add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
-        """
-        for relation, _id, members, tags, condition in self.incompleteRelations:
-            # below there is the same code for a relation as in osm.parse(..)
-            relation.process(members, tags, osm)
-            if relation.valid:
-                skip = osm.processCondition(condition, relation, _id, osm.parseRelation)
-                if not _id in osm.relations and not skip:
-                    osm.relations[_id] = relation
-        # cleanup
-        self.incompleteRelations = None
-        self.missingWays = None
-    
-    def getLayer(self, layerId):
-        layerIndex = self.layerIndices.get(layerId)
-        return None if layerIndex is None else self.layers[layerIndex] 
-    
-    def createLayer(self, layerId, layerConstructor, **kwargs):
-        layer = layerConstructor(layerId, self)
-        for k in kwargs:
-            setattr(layer, k, kwargs[k])
-        self.layerIndices[layerId] = len(self.layers)
-        self.layers.append(layer)
-        return layer
 
     def getMissingHgtFiles(self):
         """

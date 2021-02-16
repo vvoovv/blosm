@@ -8,7 +8,19 @@ class BaseApp:
     
     osmFileName = "map%s.osm"
     
+    osmFileExtraName = "%s_extra.osm"
+    
+    # request to the Overpass server to get both ways and their nodes for the given way ids
+    overpassWays = "((way(%s););node(w););out;"
+    
     osmUrlPath = "/api/map?bbox=%s,%s,%s,%s"
+    
+    osmUrlPath2 = "/api/interpreter"
+    
+    def __init__(self):
+        self.layerIndices = {}
+        self.layers = []
+        self.layerKwargs = {}
     
     def initOsm(self):
         # a data attribute to mark a building entrance
@@ -39,20 +51,52 @@ class BaseApp:
     
     def downloadOsmFile(self, osmDir, minLon, minLat, maxLon, maxLat):
         # find a file name for the OSM file
-        osmFileName = self.osmFileName % ""
+        osmFileName = BaseApp.osmFileName % ""
         counter = 1
         while True:
             osmFilepath = os.path.realpath( os.path.join(osmDir, osmFileName) )
             if os.path.isfile(osmFilepath):
                 counter += 1
-                osmFileName = self.osmFileName % "_%s" % counter
+                osmFileName = BaseApp.osmFileName % "_%s" % counter
             else:
                 break
         self.osmFilepath = osmFilepath
         self.download(
-            self.osmServer + self.osmUrlPath % (minLon, minLat, maxLon, maxLat),
+            self.osmServer + BaseApp.osmUrlPath % (minLon, minLat, maxLon, maxLat),
             osmFilepath
         )
+    
+    def downloadOsmWays(self, ways, filepath):
+        self.download(
+            self.osmServer + BaseApp.osmUrlPath2,
+            filepath,
+            BaseApp.overpassWays % ");way(".join(ways)
+        )
+    
+    def loadMissingWays(self, osm):
+        filepath = BaseApp.osmFileExtraName % self.osmFilepath[:-4]
+        if not os.path.isfile(filepath):
+            print("Downloading data for incomplete OSM relations")
+            self.downloadOsmWays(self.missingWays, filepath)
+        self.loadMissingMembers = False
+        print("Parsing and processing data from the file %s for incomplete OSM relations" % filepath)
+        osm.parse(filepath)
+    
+    def processIncompleteRelations(self, osm):
+        """
+        Download missing OSM ways with ids stored in <self.missingWays>,
+        add them to <osm.ways>. Process incomplete relations stored in <self.incompleteRelations>
+        """
+        for relation, _id, members, tags, condition in self.incompleteRelations:
+            # below there is the same code for a relation as in osm.parse(..)
+            relation.process(members, tags, osm)
+            if relation.valid:
+                skip = osm.processCondition(condition, relation, _id, osm.parseRelation)
+                if not _id in osm.relations and not skip:
+                    osm.relations[_id] = relation
+        # cleanup
+        self.incompleteRelations = None
+        self.missingWays = None
     
     def setAssetPackagePaths(self):
         """
@@ -106,3 +150,73 @@ class BaseApp:
             m.process()
         
         if logger: logger.processEnd()
+        
+    def createLayers(self, osm):
+        layerIndices = self.layerIndices
+        
+        if osm.conditions:
+            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+            for c in osm.conditions:
+                manager = c[1]
+                layerId = c[3]
+                if layerId and not layerId in layerIndices:
+                    if manager:
+                        manager.createLayer(
+                            layerId,
+                            self,
+                            **self.layerKwargs
+                        )
+                    else:  
+                        self.createLayer(
+                            layerId,
+                            self.layerClass,
+                            **self.layerKwargs
+                        )
+            # Replace <osm.conditions> with new entries
+            # where <layerId> is replaced by the related instance of <Layer>
+            osm.conditions = tuple(
+                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+                for c in osm.conditions
+            )
+        
+        # the same for <osm.nodeConditions> 
+        if osm.nodeConditions:
+            # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
+            for c in osm.nodeConditions:
+                manager = c[1]
+                layerId = c[3]
+                if layerId and not layerId in layerIndices:
+                    if manager:
+                        manager.createNodeLayer(
+                            layerId,
+                            self,
+                            **self.layerKwargs
+                        )
+                    else:  
+                        self.createLayer(
+                            layerId,
+                            self.nodeLayerClass,
+                            **self.layerKwargs
+                        )
+            # Replace <osm.nodeConditions> with new entries
+            # where <layerId> is replaced by the related instance of <Layer>
+            osm.nodeConditions = tuple(
+                (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
+                for c in osm.nodeConditions
+            )
+
+    def initLayers(self):
+        for layer in self.layers:
+            layer.init()
+    
+    def getLayer(self, layerId):
+        layerIndex = self.layerIndices.get(layerId)
+        return None if layerIndex is None else self.layers[layerIndex] 
+    
+    def createLayer(self, layerId, layerConstructor, **kwargs):
+        layer = layerConstructor(layerId, self)
+        for k in kwargs:
+            setattr(layer, k, kwargs[k])
+        self.layerIndices[layerId] = len(self.layers)
+        self.layers.append(layer)
+        return layer
