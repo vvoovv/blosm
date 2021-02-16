@@ -30,15 +30,18 @@ class Node:
         b (dict): Here we store building indices (i.e. the indices of instances of
             the wrapper class <building.manager.Building> in Python list <buildings> of an instance
             of <building.manager.BuildingManager>)
+        w (dict): Here we store ids of OSM that represent physical ways. It is used only by the
+            WayManager responsible for physical ways
         rr: A renderer for the OSM node
     """
-    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "m", "rr", "valid")
+    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "w", "rr", "valid")
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
         self.lat = lat
         self.lon = lon
         self.b = dict()
+        self.w = dict()
         # projected coordinates
         self.coords = None
         self.rr = None
