@@ -93,10 +93,7 @@ class BaseApp:
             module = imp.load_module(moduleName, _file, _pathname, _description)
             _file.close()
             return module.setup
-        except Exception as e:
-            print("File \"%s\", line %s" % (e.filename, e.lineno))
-            print(e.text)
-            print("Error: %s", e.msg)
+        except Exception:
             raise Exception(
                 "Unable to execute the setup script! See the error message in the Blender console!"
             )
