@@ -154,6 +154,9 @@ class BaseApp:
     def createLayers(self, osm):
         layerIndices = self.layerIndices
         
+        # create mapping between user or GUI layer names and the layer ids used in the managers
+        self.createLayerMapping()
+        
         if osm.conditions:
             # go through <osm.conditions> to fill <layerIndices> and <self.layers> with values
             for c in osm.conditions:
@@ -204,9 +207,34 @@ class BaseApp:
                 (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
                 for c in osm.nodeConditions
             )
+            
+    def createLayerMapping(self):
+        """
+        Create mapping between user or GUI layer names and the layer ids used in the managers
+        """
+        self.layerMapping = dict(
+            roads_motorway = "motorway",
+            roads_trunk = "trunk",
+            roads_primary = "primary",
+            roads_secondary = "secondary",
+            roads_tertiary = "tertiary",
+            roads_unclassified = "unclassified",
+            roads_residential = "residential",
+            paths_footway = "footway",
+            roads_service = "service",
+            roads_pedestrian = "pedestrian",
+            roads_track = "track",
+            paths_steps = "steps",
+            paths_cycleway = "cycleway",
+            paths_bridleway = "bridleway",
+            roads_other = "other"
+        )
 
     def initLayers(self):
         for layer in self.layers:
+            # set layer if used in the managers
+            if layer.id in self.layerMapping:
+                layer.mlId = self.layerMapping[layer.id]
             layer.init()
     
     def getLayer(self, layerId):

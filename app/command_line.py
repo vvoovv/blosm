@@ -4,6 +4,15 @@ from . import BaseApp
 from util.transverse_mercator import TransverseMercator
 
 
+class Layer:
+    
+    def __init__(self, layerId, app):
+        self.app = app
+        self.id = layerId
+        # a layer id used in the managers; <mlId> stands for "layer id used in the managers"
+        self.mlId = None
+
+
 class CommandLineApp(BaseApp):
     
     def __init__(self):
@@ -12,6 +21,11 @@ class CommandLineApp(BaseApp):
         self.osmServer = "http://overpass-api.de"
         self.loadMissingMembers = True
         self.straightAngleThreshold = 175.5
+        
+        # default layer class used in <self.createLayer(..)>
+        self.layerClass = Layer
+        # default node layer class used in <self.createLayer(..)>
+        self.nodeLayerClass = Layer
         
         self.initArgParser()
     

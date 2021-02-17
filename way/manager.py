@@ -30,14 +30,6 @@ class RealWayManager:
         self.createLayerMapping()
         
         self.app.managers.append(self)
-    
-    def createLayerMapping(self):
-        """
-        Create mapping between user or GUI layer names and the layer names from <_allWays>
-        """
-        self.layerMapping = dict(
-        
-        )
 
     def parseWay(self, element, elementId):
         self.createRealWay(element)
@@ -47,7 +39,7 @@ class RealWayManager:
     
     def createRealWay(self, element):
         # create a wrapper for the OSM way <element>
-        self.layers[element.l.appId].append( RealWay(element) )
+        self.layers[element.l.mlId].append( RealWay(element) )
     
     def getAllWays(self):
         return (way in way for layerId in _allWays for way in self.layers[layerId])

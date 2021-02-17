@@ -29,7 +29,7 @@ def importOsm():
     # additional command line arguments may have introduced in <setup_function(..)>
     a.parseArgs()
     
-    #a.createLayers(osm)
+    a.createLayers(osm)
     
     if not a.osmFile and a.coords:
         osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
@@ -55,7 +55,7 @@ def importOsm():
         a.minLon = osm.minLon
         a.maxLon = osm.maxLon
     
-    #a.initLayers()
+    a.initLayers()
     
     a.process()
     a.render()
