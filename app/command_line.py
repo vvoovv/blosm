@@ -54,6 +54,10 @@ class CommandLineApp(BaseApp):
         args = vars(args)
         for arg in args:
             setattr(self, arg, args[arg])
+
+        if self.coords:
+            self.minLon, self.minLat, self.maxLon, self.maxLat =\
+                map(lambda coord: float(coord), self.coords.split(',') )
     
     def parseArgs(self):
         """
@@ -63,10 +67,6 @@ class CommandLineApp(BaseApp):
             args = vars( self.argParser.parse_args(self.unparsedArgs) )
             for arg in args:
                 setattr(self, arg, args[arg])
-        
-        if self.coords:
-            self.minLon, self.minLat, self.maxLon, self.maxLat =\
-                map(lambda coord: float(coord), self.coords.split(',') )
     
     def setProjection(self, lat, lon):
         self.projection = TransverseMercator(lat=lat, lon=lon)
