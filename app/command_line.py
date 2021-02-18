@@ -11,12 +11,17 @@ class Layer:
         self.id = layerId
         # a layer id used in the managers; <mlId> stands for "layer id used in the managers"
         self.mlId = None
+    
+    def init(self):
+        pass
 
 
 class CommandLineApp(BaseApp):
     
     def __init__(self):
         super().__init__()
+        
+        self.projection = None
         
         self.osmServer = "http://overpass-api.de"
         self.loadMissingMembers = True
@@ -28,6 +33,8 @@ class CommandLineApp(BaseApp):
         self.nodeLayerClass = Layer
         
         self.initArgParser()
+        
+        self.mode = BaseApp.twoD
     
     def initArgParser(self):
         self.argParser = argParser = argparse.ArgumentParser()
@@ -36,30 +43,26 @@ class CommandLineApp(BaseApp):
         argParser.add_argument("--osmDir", help="A directory for the downloaded OSM files")
         argParser.add_argument("--setupScript", help="The path to a custom setup script")
         
-        argParser.add_argument("--buildings", action='store_true', help="Import buildings")
-        argParser.add_argument("--highways", action='store_true', help="Import roads and paths")
-        argParser.add_argument("--railways", action='store_true', help="Import railways")
-        argParser.add_argument("--water", action='store_true', help="Import water objects")
-        argParser.add_argument("--forests", action='store_true', help="Import forests")
-        argParser.add_argument("--vegetation", action='store_true', help="Import vegetation")
+        argParser.add_argument("--buildings", action='store_true', help="Import buildings", default=False)
+        argParser.add_argument("--highways", action='store_true', help="Import roads and paths", default=False)
+        argParser.add_argument("--railways", action='store_true', help="Import railways", default=False)
+        argParser.add_argument("--water", action='store_true', help="Import water objects", default=False)
+        argParser.add_argument("--forests", action='store_true', help="Import forests", default=False)
+        argParser.add_argument("--vegetation", action='store_true', help="Import vegetation", default=False)
         
         args, self.unparsedArgs = argParser.parse_known_args()
-        
-        self.setupScript = args.setupScript
-        self.osmFilepath = args.osmFilepath
-        
-        self.args = args
+        args = vars(args)
+        for arg in args:
+            setattr(self, arg, args[arg])
     
     def parseArgs(self):
         """
         Parse <self.unparsedArgs>
         """
         if self.unparsedArgs:
-            self.argParser.parse_args(self.unparsedArgs, self.args)
-        
-        args = vars(self.args)
-        for arg in args:
-            setattr(self, arg, args[arg])
+            args = vars( self.argParser.parse_args(self.unparsedArgs) )
+            for arg in args:
+                setattr(self, arg, args[arg])
         
         if self.coords:
             self.minLon, self.minLat, self.maxLon, self.maxLat =\
@@ -74,6 +77,22 @@ class CommandLineApp(BaseApp):
             self.osmFilepath = os.path.realpath(self.osmFilepath)
         else:
             self.downloadOsmFile(self.osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat)
+
+    def render(self):
+        logger = self.logger
+        if logger: logger.renderStart()
+        
+        for r in self.renderers:
+            r.prepare()
+        
+        for m in self.managers:
+            m.render()
+        
+        for r in self.renderers:
+            r.finalize()
+            r.cleanup()
+        
+        if logger: logger.renderEnd()
     
     def clean(self):
         self.managers = None

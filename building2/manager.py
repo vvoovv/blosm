@@ -47,9 +47,9 @@ class RealisticBuildingLayerExport(BuildingLayer):
 
 class RealisticBuildingManager(BuildingManager):
     
-    def __init__(self, osm, buildingParts, layerConstructor=None):
+    def __init__(self, osm, buildingParts, layerClass=None):
         super().__init__(osm, buildingParts)
-        self.layerConstructor = layerConstructor if layerConstructor else RealisticBuildingLayer
+        self.layerClass = layerClass if layerClass else RealisticBuildingLayer
     
     def process(self):
         super().process()
@@ -58,5 +58,5 @@ class RealisticBuildingManager(BuildingManager):
 
 class RealisticBuildingManagerExport(RealisticBuildingManager):
 
-    def __init__(self, osm, buildingParts, layerConstructor=None):
-        super().__init__(osm, buildingParts, layerConstructor if layerConstructor else RealisticBuildingLayerExport)
+    def __init__(self, osm, buildingParts, layerClass=None):
+        super().__init__(osm, buildingParts, layerClass if layerClass else RealisticBuildingLayerExport)

@@ -31,6 +31,8 @@ class Manager:
         self.osm = data
         # don't accept broken multipolygons
         self.acceptBroken = False
+        # the variable below is needed for the condition in <app.createLayers(..)>
+        self.layerClass = True
     
     def setRenderer(self, renderer):
         self.renderer = renderer
@@ -119,6 +121,8 @@ class WayManager(Manager):
         super().__init__(data)
         # the special renderer
         self.renderer = renderer
+        # the variable below is needed for the condition in <app.createLayers(..)>
+        self.layerClass = True
 
     def parseWay(self, element, elementId):
         if element.tags.get("area")=="yes":

@@ -1,8 +1,8 @@
-from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
+#from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
 from way.manager import RealWayManager
-from mpl.renderer import MplRenderer
+from mpl.renderer import WayRenderer
 
-from manager.logging import Logger
+#from manager.logging import Logger
 
 
 def tunnel(tags, e):
@@ -14,14 +14,15 @@ def tunnel(tags, e):
 
 def setup(app, osm):
     # comment the next line if logging isn't needed
-    Logger(app, osm)
+    #Logger(app, osm)
     
     # create managers
     wayManager = RealWayManager(osm, app)
+    wayManager.setRenderer(WayRenderer(), app)
     
-    linestring = Linestring(osm)
-    polygon = Polygon(osm)
-    polygonAcceptBroken = PolygonAcceptBroken(osm)
+    #linestring = Linestring(osm)
+    #polygon = Polygon(osm)
+    #polygonAcceptBroken = PolygonAcceptBroken(osm)
     
     # conditions for point objects in OSM
     #osm.addNodeCondition(
@@ -149,8 +150,3 @@ def setup(app, osm):
             "vegetation",
             polygon
         )
-    
-    if len(osm.conditions):
-        m = BaseManager(osm)
-        m.setRenderer(Renderer2d(app))
-        app.managers.append(m)

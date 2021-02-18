@@ -31,7 +31,7 @@ def importOsm():
     
     a.createLayers(osm)
     
-    if not a.osmFile and a.coords:
+    if not a.osmFilepath and a.coords:
         osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
     
     osm.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)

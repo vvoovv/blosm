@@ -6,6 +6,11 @@ from util.polygon import Polygon
 
 class BaseApp:
     
+    # app mode
+    twoD = 1
+    simple = 2
+    realistic = 3
+    
     osmFileName = "map%s.osm"
     
     osmFileExtraName = "%s_extra.osm"
@@ -163,7 +168,7 @@ class BaseApp:
                 manager = c[1]
                 layerId = c[3]
                 if layerId and not layerId in layerIndices:
-                    if manager:
+                    if manager and manager.layerClass:
                         manager.createLayer(
                             layerId,
                             self,
@@ -207,6 +212,11 @@ class BaseApp:
                 (c[0], c[1], c[2], None if c[3] is None else self.getLayer(c[3])) \
                 for c in osm.nodeConditions
             )
+        
+        for layer in self.layers:
+            # set layer if used in the managers
+            if layer.id in self.layerMapping:
+                layer.mlId = self.layerMapping[layer.id]
             
     def createLayerMapping(self):
         """
@@ -232,19 +242,20 @@ class BaseApp:
 
     def initLayers(self):
         for layer in self.layers:
-            # set layer if used in the managers
-            if layer.id in self.layerMapping:
-                layer.mlId = self.layerMapping[layer.id]
             layer.init()
     
     def getLayer(self, layerId):
         layerIndex = self.layerIndices.get(layerId)
         return None if layerIndex is None else self.layers[layerIndex] 
     
-    def createLayer(self, layerId, layerConstructor, **kwargs):
-        layer = layerConstructor(layerId, self)
+    def createLayer(self, layerId, layerClass, **kwargs):
+        layer = layerClass(layerId, self)
         for k in kwargs:
             setattr(layer, k, kwargs[k])
         self.layerIndices[layerId] = len(self.layers)
         self.layers.append(layer)
         return layer
+
+    def addRenderer(self, renderer):
+        if not renderer in self.renderers:
+            self.renderers.append(renderer)

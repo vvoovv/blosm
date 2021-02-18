@@ -6,4 +6,4 @@ class RealisticBuildingManager(BuildingManager):
     
     def __init__(self, osm, buildingParts):
         super().__init__(osm, buildingParts)
-        self.layerConstructor = RealisticBuildingLayer
+        self.layerClass = RealisticBuildingLayer

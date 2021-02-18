@@ -36,14 +36,14 @@ class BuildingManager(Manager):
             buildingParts (BuildingParts): A manager for 3D parts of an OSM building
         """
         super().__init__(osm)
-        self.layerConstructor = BuildingLayer
+        self.layerClass = BuildingLayer
         self.buildings = []
         self.buildingCounter = 0
         if buildingParts:
             self.parts = buildingParts.parts
 
     def createLayer(self, layerId, app, **kwargs):
-        return app.createLayer(layerId, self.layerConstructor)
+        return app.createLayer(layerId, self.layerClass)
 
     def parseWay(self, element, elementId):
         if element.closed:

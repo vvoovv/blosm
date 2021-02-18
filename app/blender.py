@@ -74,11 +74,6 @@ class BlenderApp(BaseApp):
     
     vegetationFileName = "vegetation.blend"
     
-    # app mode
-    twoD = 1
-    simple = 2
-    realistic = 3
-    
     layerOffsets = {
         "buildings": 0.2,
         "water": 0.2,
@@ -175,13 +170,13 @@ class BlenderApp(BaseApp):
         prefs = context.preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
-            self.mode = BlenderApp.realistic\
+            self.mode = BaseApp.realistic\
                 if app.has(defs.Keys.mode3dRealistic) and self.mode == "3Drealistic"\
-                else BlenderApp.simple
+                else BaseApp.simple
         else:
-            self.mode = BlenderApp.twoD
+            self.mode = BaseApp.twoD
         
-        if self.mode is BlenderApp.realistic:
+        if self.mode is BaseApp.realistic:
             assetsDir = self.validateAssetsDirContent(context)
         
         basePath = self.basePath
@@ -209,12 +204,12 @@ class BlenderApp(BaseApp):
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
 
         # dealing with export to the popular 3D formats
-        if self.mode is BlenderApp.realistic:
+        if self.mode is BaseApp.realistic:
             self.enableExperimentalFeatures = prefs[addonName].preferences.enableExperimentalFeatures if addonName in prefs else True
         else:
             self.enableExperimentalFeatures = False
         
-        if self.enableExperimentalFeatures and self.mode is BlenderApp.realistic:
+        if self.enableExperimentalFeatures and self.mode is BaseApp.realistic:
             # Check the version of the assets. It must be equal or greater than <self.minAssetsVersion>
             try:
                 with open(os.path.join(assetsDir, "version.txt"), 'r') as _file:
@@ -333,13 +328,13 @@ class BlenderApp(BaseApp):
         prefs = context.preferences.addons
         
         if app.has(defs.Keys.mode3d) and self.mode != "2D":
-            self.mode = BlenderApp.realistic\
+            self.mode = BaseApp.realistic\
                 if app.has(defs.Keys.mode3dRealistic) and self.mode == "3Drealistic"\
-                else BlenderApp.simple
+                else BaseApp.simple
         else:
-            self.mode = BlenderApp.twoD
+            self.mode = BaseApp.twoD
             
-        if self.mode is BlenderApp.realistic:
+        if self.mode is BaseApp.realistic:
             # first try the <assetsDir> from the addon GUI
             assetsDir = self.assetsDir
             if not assetsDir:
@@ -440,11 +435,8 @@ class BlenderApp(BaseApp):
         
         if logger: logger.renderEnd()
     
-    def addRenderer(self, renderer):
-        self.renderers.append(renderer)
-    
     def createLayers(self, osm):
-        self.layerKwargs = dict(swOffset=self.swOffsetDp) if self.mode is BlenderApp.realistic else {}
+        self.layerKwargs = dict(swOffset=self.swOffsetDp) if self.mode is BaseApp.realistic else {}
         super().createLayers(osm)
     
     def clean(self):
