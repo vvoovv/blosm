@@ -300,7 +300,9 @@ class Renderer2d(Renderer):
 
 
 class Renderer3d(Renderer2d):
-    
+    """
+    Currently unused
+    """
     def renderPolygon(self, element, data):
         bm = self.bm
         edges = super().renderPolygon(element, data)

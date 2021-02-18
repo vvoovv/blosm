@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
 import parse
-from renderer import Renderer3d
+from renderer import Renderer2d
 from manager import Manager
 from .roof.flat import RoofFlat, RoofFlatMulti
 from .roof.pyramidal import RoofPyramidal
@@ -41,7 +41,7 @@ defaultColorNames = ("roof", "wall")
 defaultColors = ( (0.29, 0.25, 0.21), (1., 0.5, 0.2) )
 
 
-class BuildingRenderer(Renderer3d):
+class BuildingRenderer(Renderer2d):
     
     # default number of levels for a single family house and its relative weight between 1 and 100
     defaultLevelsHouse = (
