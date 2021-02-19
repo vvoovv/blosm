@@ -23,7 +23,8 @@ from building.manager import BuildingParts, BuildingRelations
 
 from manager.logging import Logger
 
-from realistic.building.manager import RealisticBuildingManager
+from building.manager import BuildingManager
+from realistic.building.layer import RealisticBuildingLayer
 from realistic.building.renderer import RealisticBuildingRenderer
 
 
@@ -34,7 +35,7 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManager(osm, buildingParts)
+        buildings = BuildingManager(osm, buildingParts, RealisticBuildingLayer)
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'

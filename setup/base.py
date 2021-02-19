@@ -25,6 +25,7 @@ from renderer.node_renderer import BaseNodeRenderer
 from renderer.curve_renderer import CurveRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
+from building.layer import BuildingLayer
 from building.renderer import BuildingRenderer
 
 from manager.logging import Logger
@@ -65,7 +66,7 @@ def setup(app, osm):
         else: # 3D
             buildingParts = BuildingParts()
             buildingRelations = BuildingRelations()
-            buildings = BuildingManager(osm, buildingParts)
+            buildings = BuildingManager(osm, buildingParts, BuildingLayer)
             
             # Important: <buildingRelation> beform <building>,
             # since there may be a tag building=* in an OSM relation of the type 'building'

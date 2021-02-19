@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from manager import Manager
 import parse
-from .layer import BuildingLayer
 from parse.osm import Osm
 from util import zAxis
 from . import Building
@@ -29,14 +28,15 @@ from mathutils.bvhtree import BVHTree
 
 class BuildingManager(Manager):
     
-    def __init__(self, osm, buildingParts):
+    def __init__(self, osm, buildingParts, layerClass):
         """
         Args:
             osm (parse.Osm): Parsed OSM data
             buildingParts (BuildingParts): A manager for 3D parts of an OSM building
+            layerClass: A layer class
         """
         super().__init__(osm)
-        self.layerClass = BuildingLayer
+        self.layerClass = layerClass
         self.buildings = []
         self.buildingCounter = 0
         if buildingParts:

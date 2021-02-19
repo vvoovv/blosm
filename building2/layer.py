@@ -1,28 +1,43 @@
-from renderer.layer import MeshLayer
-from util import zeroVector
+from building.layer import BuildingLayer
 
 
-class BuildingLayer(MeshLayer):
-    
+class RealisticBuildingLayer(BuildingLayer):
+        
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
-        # does the layer represents an area (natural or landuse)?
-        self.area = False
+        
+        # the name for the base UV map used for facade textures
+        self.uvLayerNameFacade = "facade"
+        # the name for the auxiliary UV map used for claddding textures
+        self.uvLayerNameCladding = "cladding"
+        # the name for the vertex color layer
+        self.vertexColorLayerNameCladding = "cladding_color"
     
-    def init(self):
-        super().init()
+    def prepare(self, instance):
+        mesh = instance.obj.data
+        uv_layers = mesh.uv_layers
+        uv_layers.new(name=self.uvLayerNameFacade)
+        uv_layers.new(name=self.uvLayerNameCladding)
         
-        # set layer offsets <layer.location>, <layer.meshZ> and <layer.parentLocation> to zero
-        self.location = None
-        self.meshZ = 0.
-        if self.parentLocation:
-            self.parentLocation[2] = 0.
-        else:
-            self.parentLocation = zeroVector()
+        mesh.vertex_colors.new(name=self.vertexColorLayerNameCladding)
         
-        if self.app.terrain:
-            # the attribute <singleObject> of the buildings layer doesn't depend on availability of a terrain
-            # no need to apply any Blender modifier for buildings
-            self.modifiers = False
-            # no need to slice Blender mesh
-            self.sliceMesh = False
+        super().prepare(instance)
+
+
+class RealisticBuildingLayerExport(BuildingLayer):
+        
+    def __init__(self, layerId, app):
+        super().__init__(layerId, app)
+        
+        # The name for the base UV map used for facade textures
+        self.uvLayerNameFacade = "facade"
+        # The name for the base UV map used for cladding textures.
+        # The same UV-map is used for both the facade and cladding textures
+        self.uvLayerNameCladding = "facade"
+    
+    def prepare(self, instance):
+        mesh = instance.obj.data
+        uv_layers = mesh.uv_layers
+        uv_layers.new(name=self.uvLayerNameFacade)
+        
+        super().prepare(instance)

@@ -6,8 +6,9 @@ from building.manager import BuildingParts, BuildingRelations
 
 from manager.logging import Logger
 
-from building2.manager import RealisticBuildingManager, RealisticBuildingManagerExport
+from building2.manager import RealisticBuildingManager
 from building2.renderer import BuildingRendererNew, Building
+from building2.layer import RealisticBuildingLayer, RealisticBuildingLayerExport
 
 from item.footprint import Footprint
 
@@ -60,9 +61,11 @@ def setup(app, data):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManagerExport(data, buildingParts)\
-            if doExport else\
-            RealisticBuildingManager(data, buildingParts)
+        buildings = RealisticBuildingManager(
+            data,
+            buildingParts,
+            RealisticBuildingLayerExport if doExport else RealisticBuildingLayer
+        )
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
