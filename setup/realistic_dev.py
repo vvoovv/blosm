@@ -116,7 +116,7 @@ def setup(app, data):
         volumeAction = Volume(app, data, br.itemStore, br.itemFactory, itemRenderers)
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
-        buildings.setRenderer(br)
+        buildings.setRenderer(br, app)
         app.managers.append(buildings)
     
     if app.forests:

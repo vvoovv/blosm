@@ -1,6 +1,7 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
+from building.manager import BaseBuildingManager
 from way.manager import RealWayManager
-from mpl.renderer import WayRenderer
+from mpl.renderer import BuildingRenderer, WayRenderer
 
 #from manager.logging import Logger
 
@@ -17,6 +18,7 @@ def setup(app, osm):
     #Logger(app, osm)
     
     # create managers
+    
     wayManager = RealWayManager(osm, app)
     wayManager.setRenderer(WayRenderer(), app)
     
@@ -33,12 +35,13 @@ def setup(app, osm):
     #)
     
     if app.buildings:
-        buildings = BuildingManager(osm, buildingParts)
+        buildings = BaseBuildingManager(osm, None, None)
         app.managers.append(buildings)
+        buildings.setRenderer(BuildingRenderer(), app)
         osm.addCondition(
             lambda tags, e: "building" in tags,
             "buildings", 
-            polygon
+            buildings
         )
     
     if app.highways or app.railways:

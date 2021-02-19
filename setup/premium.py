@@ -61,7 +61,7 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
             materials = getMaterials()
         )
         # <br> stands for "building renderer"
-        buildings.setRenderer(br)
+        buildings.setRenderer(br, app)
         app.managers.append(buildings)
     
     if app.forests:

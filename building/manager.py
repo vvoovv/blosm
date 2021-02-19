@@ -24,25 +24,31 @@ from util import zAxis
 from . import Building
 
 
-class BuildingManager(Manager):
+class BaseBuildingManager:
     
-    def __init__(self, osm, buildingParts, layerClass):
+    def __init__(self, data, buildingParts, layerClass):
         """
         Args:
             osm (parse.Osm): Parsed OSM data
             buildingParts (BuildingParts): A manager for 3D parts of an OSM building
             layerClass: A layer class
         """
-        super().__init__(osm)
+        self.data = data
         self.layerClass = layerClass
         self.buildings = []
         self.buildingCounter = 0
+        # don't accept broken multipolygons
+        self.acceptBroken = False
         if buildingParts:
             self.parts = buildingParts.parts
 
+    def setRenderer(self, renderer, app):
+        self.renderer = renderer
+        app.addRenderer(renderer)
+    
     def createLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, self.layerClass)
-
+    
     def parseWay(self, element, elementId):
         if element.closed:
             element.t = parse.polygon
@@ -55,11 +61,26 @@ class BuildingManager(Manager):
     
     def createBuilding(self, element):
         # create a wrapper for the OSM way <element>
-        building = Building(element, self.buildingCounter, self.osm)
+        building = Building(element, self.buildingCounter, self.data)
         # store the related wrapper in the attribute <b>
         element.b = building
         self.buildings.append(building)
         self.buildingCounter += 1
+    
+    def process(self):
+        pass
+    
+    def render(self):
+        for building in self.buildings:
+            self.renderer.render(building, self.data)
+
+
+class BuildingManager(BaseBuildingManager, Manager):
+    
+    def __init__(self, osm, buildingParts, layerClass):
+        self.osm = osm
+        Manager.__init__(self, osm)
+        BaseBuildingManager.__init__(self, osm, buildingParts, layerClass)
     
     def process(self):
         # create a Python set for each OSM node to store indices of the entries from <self.buildings>,
@@ -138,10 +159,6 @@ class BuildingManager(Manager):
                 # the case numCandidates > 1 probably means some weird configuration, so skip that <part>
                 if numCandidates == 1:
                     buildings[candidates[0]].addPart(part)
-    
-    def render(self):
-        for building in self.buildings:
-            self.renderer.render(building, self.osm)
     
     def createBvhTree(self):
         from mathutils.bvhtree import BVHTree

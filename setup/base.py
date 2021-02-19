@@ -86,7 +86,8 @@ def setup(app, osm):
                 buildingParts
             )
             buildings.setRenderer(
-                BuildingRenderer(app)
+                BuildingRenderer(app),
+                app
             )
             app.managers.append(buildings)
     
