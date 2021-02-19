@@ -23,8 +23,6 @@ from parse.osm import Osm
 from util import zAxis
 from . import Building
 
-from mathutils.bvhtree import BVHTree
-
 
 class BuildingManager(Manager):
     
@@ -146,6 +144,8 @@ class BuildingManager(Manager):
             self.renderer.render(building, self.osm)
     
     def createBvhTree(self):
+        from mathutils.bvhtree import BVHTree
+        
         osm = self.osm
         vertices = []
         polygons = []
