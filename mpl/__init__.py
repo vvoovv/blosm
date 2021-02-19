@@ -15,6 +15,7 @@ class Mpl:
     def show(self):
         if not self.shown:
             self.shown = True
+            self.ax.axis('equal')
             plt.show()
         
     @staticmethod
