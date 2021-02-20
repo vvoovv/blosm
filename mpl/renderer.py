@@ -22,8 +22,8 @@ class Renderer:
             prevCoord = coord
         if closed:
             self.mpl.ax.plot(
-                (coord0[0], coord0[0]),
-                (coord[1], coord[1]),
+                (coord[0], coord0[0]),
+                (coord[1], coord0[1]),
                 **style
             )
 
