@@ -7,9 +7,9 @@ class Renderer:
     def __init__(self):
         self.mpl = Mpl.getMpl()
     
-    def renderLineString(self, element, data, closed, style):
+    def renderLineString(self, coords, closed, style):
         prevCoord = coord0 = None
-        for coord in element.getData(data):
+        for coord in coords:
             if prevCoord:
                 self.mpl.ax.plot(
                     (prevCoord[0], coord[0]),
@@ -48,7 +48,7 @@ class WayRenderer(Renderer):
     )
     
     def render(self, way, data):
-        self.renderLineString(way.element, data, way.element.isClosed(), WayRenderer.style)
+        self.renderLineString(way.element.getData(data), way.element.isClosed(), WayRenderer.style)
 
 
 class BuildingRenderer(Renderer):
@@ -63,6 +63,8 @@ class BuildingRenderer(Renderer):
     
     def render(self, building, data):
         if building.outline.t is parse.polygon:
-            self.renderLineString(building.outline, data, True, BuildingRenderer.style)
+            self.renderLineString(building.outline.getData(data), True, BuildingRenderer.style)
         else:
-            pass
+            # multipolygon
+            for coords in building.outline.getDataMulti(data):
+                self.renderLineString(coords, True, BuildingRenderer.style)
