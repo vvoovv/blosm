@@ -17,7 +17,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from util.osm import parseNumber
+import parse
+from mathutils import Vector
+from util.polygon import Polygon
 
 
 class Building:
@@ -27,6 +29,10 @@ class Building:
     def __init__(self, element, buildingIndex, osm):
         self.outline = element
         self.parts = []
+        # a polygon for the outline, used for facade classification only
+        self.polygon = None
+        # a Python list to store facade visibility
+        self.visibility = None
         self.markUsedNodes(buildingIndex, osm)
     
     def addPart(self, part):
@@ -40,3 +46,24 @@ class Building:
         """
         for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
+    
+    def initPolygon(self, data):
+        outline = self.outline
+        polygon = Polygon()
+        if outline.t is parse.multipolygon:
+            polygon.init( Vector((coord[0], coord[1], 0.)) for coord in outline.getOuterData(data) )
+        else:
+            polygon.init( Vector((coord[0], coord[1], 0.)) for coord in outline.getData(data) )
+        if polygon.n < 3:
+            # skip it
+            return
+        # check the direction of vertices, it must be counterclockwise
+        polygon.checkDirection()
+        self.polygon = polygon
+    
+    def initVisibility(self):
+        # <self.polygon> must be already initialized
+        
+        # The number of elements in <self.visibility> is equal to the number of vertices in
+        # <self.polygon.allVerts>, i.e. the vertices forming a straight angle are also included
+        self.visibility = [ 0 for _ in range(len(self.polygon.allVerts)) ]

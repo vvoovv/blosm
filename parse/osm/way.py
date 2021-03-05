@@ -37,8 +37,6 @@ class Way:
         o (tuple): Defines the related outline for a building part (building:part=*);
             has the form (osmId, osmElement); set only in the case of 3D buildings
         b (building.manager.Building): A related 3D Building; set only for 3D buildings
-        o (tuple): Defines the related outline for a building part (building:part=*);
-            has the form (osmId, osmElement); set only in the case of 3D buildings
     """
     
     __slots__ = ("l", "t", "tags", "nodes", "m", "r", "rr", "used", "n", "closed", "valid", "b", "o")

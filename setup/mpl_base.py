@@ -2,6 +2,7 @@
 from building.manager import BaseBuildingManager
 from way.manager import RealWayManager
 from mpl.renderer import BuildingRenderer, WayRenderer
+from action.facade_visibility import FacadeVisibilityOther
 
 #from manager.logging import Logger
 
@@ -35,9 +36,9 @@ def setup(app, osm):
     #)
     
     if app.buildings:
-        buildings = BaseBuildingManager(osm, None, None)
-        app.managers.append(buildings)
-        buildings.setRenderer(BuildingRenderer(), app)
+        buildings = BaseBuildingManager(osm, app, None, None)
+        buildings.setRenderer(BuildingRenderer())
+        buildings.addAction(FacadeVisibilityOther())
         osm.addCondition(
             lambda tags, e: "building" in tags,
             "buildings", 

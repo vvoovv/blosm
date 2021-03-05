@@ -22,12 +22,9 @@ class BaseApp:
     
     osmUrlPath2 = "/api/interpreter"
     
-    def __init__(self):
-        self.layerIndices = {}
-        self.layers = []
-        self.layerKwargs = {}
-    
     def initOsm(self):
+        self.baseInit()
+        
         # a data attribute to mark a building entrance
         self.buildingEntranceAttr = "entrance"
         
@@ -37,12 +34,19 @@ class BaseApp:
         if self.loadMissingMembers:
             self.incompleteRelations = []
             self.missingWays = set()
-        
+    
+    def baseInit(self):
         # managers (derived from manager.Manager) performing some processing
         self.managers = []
         
+        self.managersById = {}
+        
         # renderers (derived from renderer.Renderer) actually making 3D objects
         self.renderers = []
+        
+        self.layerIndices = {}
+        self.layers = []
+        self.layerKwargs = {}
         
         # tangent to check if an angle of the polygon is straight
         Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
@@ -259,3 +263,8 @@ class BaseApp:
     def addRenderer(self, renderer):
         if not renderer in self.renderers:
             self.renderers.append(renderer)
+            
+    def addManager(self, manager):
+        if manager.id:
+            self.managersById[manager.id] = manager
+        self.managers.append(manager)

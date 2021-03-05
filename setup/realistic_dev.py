@@ -64,6 +64,7 @@ def setup(app, data):
         buildingRelations = BuildingRelations()
         buildings = RealisticBuildingManager(
             data,
+            app,
             buildingParts,
             RealisticBuildingLayerExport if doExport else RealisticBuildingLayer
         )
@@ -116,8 +117,7 @@ def setup(app, data):
         volumeAction = Volume(app, data, br.itemStore, br.itemFactory, itemRenderers)
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
-        buildings.setRenderer(br, app)
-        app.managers.append(buildings)
+        buildings.setRenderer(br)
     
     if app.forests:
         setup_forests(app, data)

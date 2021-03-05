@@ -58,9 +58,6 @@ class BuildingRenderer(Renderer):
         color = "gray"
     )
     
-    def __init__(self):
-        self.mpl = Mpl.getMpl()
-    
     def render(self, building, data):
         if building.outline.t is parse.polygon:
             self.renderLineString(building.outline.getData(data), True, BuildingRenderer.style)
@@ -68,3 +65,14 @@ class BuildingRenderer(Renderer):
             # multipolygon
             for coords in building.outline.getDataMulti(data):
                 self.renderLineString(coords, True, BuildingRenderer.style)
+
+
+class BuildingVisibilityRender(Renderer):
+    
+    def render(self, building, data):
+        if building.outline.t is parse.polygon:
+            pass
+        else:
+            # multipolygon
+            for coords in building.outline.getDataMulti(data):
+                pass

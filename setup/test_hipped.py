@@ -150,7 +150,7 @@ def setup(app, data):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManager(data, buildingParts, RealisticBuildingLayer)
+        buildings = RealisticBuildingManager(data, app, buildingParts, RealisticBuildingLayer)
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
@@ -196,7 +196,6 @@ def setup(app, data):
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)
-        app.managers.append(buildings)
 
 
 def getStyle(building, app):

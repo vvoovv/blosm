@@ -26,14 +26,17 @@ from . import Building
 
 class BaseBuildingManager:
     
-    def __init__(self, data, buildingParts, layerClass):
+    def __init__(self, data, app, buildingParts, layerClass):
         """
         Args:
-            osm (parse.Osm): Parsed OSM data
+            data (parse.Osm): Parsed OSM data
+            app (app.App): An application
             buildingParts (BuildingParts): A manager for 3D parts of an OSM building
             layerClass: A layer class
         """
+        self.id = "buildings"
         self.data = data
+        self.app = app
         self.layerClass = layerClass
         self.buildings = []
         self.buildingCounter = 0
@@ -41,10 +44,12 @@ class BaseBuildingManager:
         self.acceptBroken = False
         if buildingParts:
             self.parts = buildingParts.parts
-
-    def setRenderer(self, renderer, app):
+        self.actions = []
+        app.addManager(self)
+    
+    def setRenderer(self, renderer):
         self.renderer = renderer
-        app.addRenderer(renderer)
+        self.app.addRenderer(renderer)
     
     def createLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, self.layerClass)
@@ -68,21 +73,27 @@ class BaseBuildingManager:
         self.buildingCounter += 1
     
     def process(self):
-        pass
+        for action in self.actions:
+            action.do(self)
     
     def render(self):
         for building in self.buildings:
             self.renderer.render(building, self.data)
+    
+    def addAction(self, action):
+        action.app = self.app
+        self.actions.append(action)
 
 
 class BuildingManager(BaseBuildingManager, Manager):
     
-    def __init__(self, osm, buildingParts, layerClass):
+    def __init__(self, osm, app, buildingParts, layerClass):
         self.osm = osm
         Manager.__init__(self, osm)
-        BaseBuildingManager.__init__(self, osm, buildingParts, layerClass)
+        BaseBuildingManager.__init__(self, osm, app, buildingParts, layerClass)
     
     def process(self):
+        BaseBuildingManager.process(self)
         # create a Python set for each OSM node to store indices of the entries from <self.buildings>,
         # where instances of the wrapper class <building.manager.Building> are stored
         buildings = self.buildings

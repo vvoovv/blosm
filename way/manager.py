@@ -25,6 +25,7 @@ class RealWayManager:
     def __init__(self, data, app):
         self.id = "ways"
         self.data = data
+        self.app = app
         
         # use the default layer class in the <app>
         self.layerClass = None
@@ -34,7 +35,9 @@ class RealWayManager:
         
         self.layers = dict((layerId, []) for layerId in _allWays)
         
-        app.managers.append(self)
+        self.actions = []
+        
+        app.addManager(self)
 
     def parseWay(self, element, elementId):
         self.createRealWay(element)
@@ -50,7 +53,8 @@ class RealWayManager:
         return (way for layerId in _allWays for way in self.layers[layerId])
     
     def process(self):
-        pass
+        for action in self.actions:
+            action.do(self)
     
     def setRenderer(self, renderer, app):
         self.renderer = renderer
@@ -59,3 +63,7 @@ class RealWayManager:
     def render(self):
         for way in self.getAllWays():
             self.renderer.render(way, self.data)
+    
+    def addAction(self, action):
+        action.app = self.app
+        self.actions.append(action)

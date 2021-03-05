@@ -35,7 +35,7 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
     if app.buildings:
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()
-        buildings = BuildingManager(osm, buildingParts, RealisticBuildingLayer)
+        buildings = BuildingManager(osm, app, buildingParts, RealisticBuildingLayer)
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
@@ -61,8 +61,7 @@ def setup_base(app, osm, getMaterials, bldgPreRender):
             materials = getMaterials()
         )
         # <br> stands for "building renderer"
-        buildings.setRenderer(br, app)
-        app.managers.append(buildings)
+        buildings.setRenderer(br)
     
     if app.forests:
         setup_forests(app, osm)
@@ -92,4 +91,4 @@ def setup_forests(app, osm):
     )
     
     m.setRenderer(Renderer2d(app, applyMaterial=False))
-    app.managers.append(m)
+    app.addManager(m)

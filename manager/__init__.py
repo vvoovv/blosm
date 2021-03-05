@@ -27,6 +27,8 @@ class Manager:
     hexdigits = set("0123456789abcdef")
     
     def __init__(self, data):
+        # no manager <id> by default
+        self.id = None
         self.data = data
         self.osm = data
         # don't accept broken multipolygons
