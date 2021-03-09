@@ -34,14 +34,16 @@ class FacadeVisibility:
         
         self.createKdTree(buildings, totalNumVerts)
         
-        self.calculateFacadeVisibility(buildings)
+        self.calculateFacadeVisibility(manager)
     
     def cleanup(self):
         self.kdTree = None
         self.bldgVerts = None
         self.vertIndexToBldg.clear()
 
-    def calculateFacadeVisibility(self, buildings):
+    def calculateFacadeVisibility(self, manager):
+        buildings = manager.buildings
+        
         for way in self.app.managersById["ways"].getAllWays():
             # calculate facade visibility here
             pass
