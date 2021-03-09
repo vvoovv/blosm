@@ -5,10 +5,11 @@ class FacadeVisibility:
     def __init__(self):
         self.app = None
         self.kdTree = None
+        self.bldgVerts = None
         self.vertIndexToBldg = []
     
     def do(self, manager):
-        # check if a way manager
+        # check if have a way manager
         if not self.app.managersById["ways"]:
             return
         
@@ -37,6 +38,8 @@ class FacadeVisibility:
     
     def cleanup(self):
         self.kdTree = None
+        self.bldgVerts = None
+        self.vertIndexToBldg.clear()
 
     def calculateFacadeVisibility(self, buildings):
         for way in self.app.managersById["ways"].getAllWays():
@@ -50,14 +53,14 @@ class FacadeVisibilityBlender(FacadeVisibility):
         from mathutils.kdtree import KDTree
         kdTree = KDTree(totalNumVerts)
         
-        index = 0
-        for building in buildings:
-            if building.polygon:
-                for vert in building.polygon.verts:
-                    kdTree.insert(vert, index)
-                    index += 1
+        # fill in <self.bldgVerts>
+        self.bldgVerts = tuple( vert for building in buildings if building.polygon for vert in building.polygon.verts )
+        
+        for index, vert in enumerate(self.bldgVerts):
+            kdTree.insert(vert, index)
         kdTree.balance()
         self.kdTree = kdTree
+        
 
 
 class FacadeVisibilityOther(FacadeVisibility):
@@ -75,3 +78,4 @@ class FacadeVisibilityOther(FacadeVisibility):
                     bldgVerts[index] = (vert[0], vert[1])
                     index += 1
         self.kdTree = KDTree(bldgVerts)
+        self.bldgVerts = bldgVerts
