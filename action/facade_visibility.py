@@ -1,12 +1,15 @@
+from math import sqrt
 
 
 class FacadeVisibility:
     
-    def __init__(self):
+    def __init__(self, searchRange=(10., 100.)):
         self.app = None
         self.kdTree = None
         self.bldgVerts = None
-        self.vertIndexToBldg = []
+        self.searchWidthMargin = searchRange[0]
+        self.searchHeight_2 = searchRange[1]*searchRange[1]
+        self.vertIndexToBldgIndex = []
     
     def do(self, manager):
         # check if have a way manager
@@ -28,7 +31,7 @@ class FacadeVisibility:
         # the total number of vertices
         totalNumVerts = sum(building.polygon.n for building in buildings if building.polygon)
         # create mapping between the index of the vertex and index of the building in <buildings>
-        self.vertIndexToBldg.extend(
+        self.vertIndexToBldgIndex.extend(
             bldgIndex for bldgIndex, building in enumerate(buildings) if building.polygon for _ in range(building.polygon.n)
         )
         
@@ -39,14 +42,17 @@ class FacadeVisibility:
     def cleanup(self):
         self.kdTree = None
         self.bldgVerts = None
-        self.vertIndexToBldg.clear()
+        self.vertIndexToBldgIndex.clear()
 
     def calculateFacadeVisibility(self, manager):
         buildings = manager.buildings
         
         for way in self.app.managersById["ways"].getAllWays():
-            # calculate facade visibility here
-            pass
+            if not way.polyline:
+                way.initPolyline()
+            for segmentCenter, segmentUnitVector, segmentLength in way.segments:
+                searchWidth = segmentLength/2. + self.searchWidthMargin
+                bldgIndices = self.makeKdQuery(segmentCenter, sqrt(searchWidth*searchWidth + self.searchHeight_2))
 
 
 class FacadeVisibilityBlender(FacadeVisibility):
@@ -62,7 +68,11 @@ class FacadeVisibilityBlender(FacadeVisibility):
             kdTree.insert(vert, index)
         kdTree.balance()
         self.kdTree = kdTree
-        
+    
+    def makeKdQuery(self, searchCenter, searchRadius):
+        return set(
+            self.vertIndexToBldgIndex[vertIndex] for _,vertIndex,_ in self.kdTree.find_range(searchCenter, searchRadius)
+        )
 
 
 class FacadeVisibilityOther(FacadeVisibility):
@@ -81,3 +91,8 @@ class FacadeVisibilityOther(FacadeVisibility):
                     index += 1
         self.kdTree = KDTree(bldgVerts)
         self.bldgVerts = bldgVerts
+    
+    def makeKdQuery(self, searchCenter, searchRadius):
+        return set(
+            self.vertIndexToBldgIndex[vertIndex] for vertIndex in self.kdTree.query_ball_point(searchCenter, searchRadius)
+        )
