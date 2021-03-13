@@ -1,4 +1,5 @@
 from math import sqrt
+import numpy as np
 
 
 class FacadeVisibility:
@@ -35,6 +36,19 @@ class FacadeVisibility:
             bldgIndex for bldgIndex, building in enumerate(buildings) if building.polygon for _ in range(building.polygon.n)
         )
         
+        # allocate the memory for an empty numpy array
+        bldgVerts = np.zeros((totalNumVerts, 2))
+        # fill in <self.bldgVerts>
+        index = 0
+        for building in buildings:
+            if building.polygon:
+                # store the index of the first vertex of <building> in <self.bldgVerts> 
+                building.auxIndex = index
+                for vert in building.polygon.verts:
+                    bldgVerts[index] = (vert[0], vert[1])
+                    index += 1
+        self.bldgVerts = bldgVerts
+        
         self.createKdTree(buildings, totalNumVerts)
         
         self.calculateFacadeVisibility(manager)
@@ -52,7 +66,23 @@ class FacadeVisibility:
                 way.initPolyline()
             for segmentCenter, segmentUnitVector, segmentLength in way.segments:
                 searchWidth = segmentLength/2. + self.searchWidthMargin
-                bldgIndices = self.makeKdQuery(segmentCenter, sqrt(searchWidth*searchWidth + self.searchHeight_2))
+                # Get all building vertices for the buildings whose vertices are returned
+                # by the query to the KD tree
+                queryBldgIndices = set(
+                    self.makeKdQuery(segmentCenter, sqrt(searchWidth*searchWidth + self.searchHeight_2))
+                )
+                queryBldgVertIndices = tuple(
+                    vertIndex for bldgIndex in queryBldgIndices for vertIndex in range(buildings[bldgIndex].auxIndex, buildings[bldgIndex].auxIndex + buildings[bldgIndex].polygon.n)
+                )
+                queryBldgVerts = self.bldgVerts[queryBldgVertIndices,:]
+                
+                # transform <queryBldgVerts> to the system of reference of <way>
+                matrix = np.array(( segmentUnitVector, (segmentUnitVector[1], -segmentUnitVector[0]) ))
+                
+                # shift origin to the segment center
+                queryBldgVerts -= segmentCenter
+                # rotate <queryBldgVerts>, output back to <queryBldgVerts>
+                np.matmul(queryBldgVerts, matrix, out=queryBldgVerts)
 
 
 class FacadeVisibilityBlender(FacadeVisibility):
@@ -61,16 +91,21 @@ class FacadeVisibilityBlender(FacadeVisibility):
         from mathutils.kdtree import KDTree
         kdTree = KDTree(totalNumVerts)
         
-        # fill in <self.bldgVerts>
-        self.bldgVerts = tuple( vert for building in buildings if building.polygon for vert in building.polygon.verts )
-        
-        for index, vert in enumerate(self.bldgVerts):
-            kdTree.insert(vert, index)
+        index = 0
+        for building in buildings:
+            if building.polygon:
+                for vert in building.polygon.verts:
+                    kdTree.insert(vert, index)
+                    index += 1
         kdTree.balance()
         self.kdTree = kdTree
     
     def makeKdQuery(self, searchCenter, searchRadius):
-        return set(
+        """
+        Returns a generator of building indices in <manager.buldings>.
+        The buildings indices aren't unique
+        """
+        return (
             self.vertIndexToBldgIndex[vertIndex] for _,vertIndex,_ in self.kdTree.find_range(searchCenter, searchRadius)
         )
 
@@ -79,20 +114,14 @@ class FacadeVisibilityOther(FacadeVisibility):
     
     def createKdTree(self, buildings, totalNumVerts):
         from scipy.spatial import KDTree
-        import numpy as np
         
-        # allocate the memory for an empty numpy array
-        bldgVerts = np.zeros((totalNumVerts, 2))
-        index = 0
-        for building in buildings:
-            if building.polygon:
-                for vert in building.polygon.verts:
-                    bldgVerts[index] = (vert[0], vert[1])
-                    index += 1
-        self.kdTree = KDTree(bldgVerts)
-        self.bldgVerts = bldgVerts
+        self.kdTree = KDTree(self.bldgVerts)
     
     def makeKdQuery(self, searchCenter, searchRadius):
-        return set(
+        """
+        Returns a generator of building indices in <manager.buldings>.
+        The buildings indices aren't unique
+        """
+        return (
             self.vertIndexToBldgIndex[vertIndex] for vertIndex in self.kdTree.query_ball_point(searchCenter, searchRadius)
         )

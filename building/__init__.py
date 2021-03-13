@@ -26,6 +26,9 @@ class Building:
     """
     A wrapper for a OSM building
     """
+    
+    __slots__ = ("outline", "parts", "polygon", "visibility", "auxIndex")
+    
     def __init__(self, element, buildingIndex, osm):
         self.outline = element
         self.parts = []
@@ -33,6 +36,8 @@ class Building:
         self.polygon = None
         # a Python list to store facade visibility
         self.visibility = None
+        # an auxiliary variable used to store the first index of the building vertices in an external list or array
+        self.auxIndex = 0
         self.markUsedNodes(buildingIndex, osm)
     
     def addPart(self, part):
