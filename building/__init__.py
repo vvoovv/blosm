@@ -72,3 +72,6 @@ class Building:
         # The number of elements in <self.visibility> is equal to the number of vertices in
         # <self.polygon.allVerts>, i.e. the vertices forming a straight angle are also included
         self.visibility = [ 0 for _ in range(len(self.polygon.allVerts)) ]
+    
+    def setVisibility(self, polygonEdgeIndex, visibility):
+        self.visibility[self.polygon.indices[polygonEdgeIndex]] = visibility
