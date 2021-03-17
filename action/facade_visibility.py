@@ -167,12 +167,16 @@ class FacadeVisibility:
                     building = buildings[bldgIndex]
                     
                     for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                        dx = abs(edgeVert2[0] - edgeVert1[0])
+                        dy = abs(edgeVert2[1] - edgeVert1[1])
                         # at least one vertice of the edge must be in rectangular search range
                         if (edgeVert1[0] < searchWidth and edgeVert1[1] < self.searchHeight) or\
                                 (edgeVert2[0] < searchWidth and edgeVert2[1] < self.searchHeight):
                             building.updateAuxVisibility(edgeIndex, 0.)
                         else:
-                            building.updateAuxVisibilityDivide( abs(edgeVert2[0] - edgeVert1[0]) )
+                            building.updateAuxVisibilityDivide(edgeIndex, dx)
+                        if dx > dy: # abs of angle to way-segment < 45°
+                            building.updateVisibilityMax(edgeIndex)
                     firstVertIndex += building.n
     
     def processEvents(self, events):
