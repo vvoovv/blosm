@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from numpy import zeros
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
@@ -34,7 +35,10 @@ class Building:
         self.parts = []
         # a polygon for the outline, used for facade classification only
         self.polygon = None
-        # a Python list to store facade visibility
+        # A numpy array to store facade visibility. It consists of two rows.
+        # The first row contains the final visibility.
+        # The second one contains the intermediary or auxiliary visibility.
+        # After each calculation cycle the maximum of the above visibilities is stored in the elements of the first row.
         self.visibility = None
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
@@ -69,9 +73,9 @@ class Building:
     def initVisibility(self):
         # <self.polygon> must be already initialized
         
-        # The number of elements in <self.visibility> is equal to the number of vertices in
+        # The number of elements in each row of <self.visibility> is equal to the number of vertices in
         # <self.polygon.allVerts>, i.e. the vertices forming a straight angle are also included
-        self.visibility = [ 0 for _ in range(len(self.polygon.allVerts)) ]
+        self.visibility = zeros((2, len(self.polygon.allVerts)))
     
-    def setVisibility(self, polygonEdgeIndex, visibility):
-        self.visibility[self.polygon.indices[polygonEdgeIndex]] = visibility
+    def updateAuxVisibility(self, polygonEdgeIndex, visibility):
+        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] =+ visibility

@@ -113,6 +113,7 @@ class FacadeVisibility:
                 queryBldgVertIndices = tuple(
                     vertIndex for bldgIndex in queryBldgIndices for vertIndex in range(buildings[bldgIndex].auxIndex, buildings[bldgIndex].auxIndex + buildings[bldgIndex].polygon.n)
                 )
+                # slice <self.bldgVerts> using <queryBldgVertIndices>
                 queryBldgVerts = self.bldgVerts[queryBldgVertIndices,:]
                 
                 # transform <queryBldgVerts> to the system of reference of <way>
@@ -180,7 +181,7 @@ class FacadeVisibility:
             elif edgeStarts:
                 activeEventY = activeEvent[4]
                 if eventY <= activeEventY: # the new edges hides the active edge
-                    building.setVisibility(activeEvent[1], eventX - activeX)
+                    building.updateAuxVisibility(activeEvent[1], eventX - activeX)
                     queue.push(activeEventY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
@@ -188,7 +189,7 @@ class FacadeVisibility:
                     queue.push(eventY, event)
             else:
                 if event is activeEvent: # the active edge ends
-                    building.setVisibility(activeEvent[1], eventX - activeX)
+                    building.updateAuxVisibility(activeEvent[1], eventX - activeX)
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX
