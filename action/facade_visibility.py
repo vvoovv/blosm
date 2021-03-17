@@ -195,7 +195,6 @@ class FacadeVisibility:
                     else:
                         activeEvent = None
                         activeX = 0.
-                    continue
                 else: # there must be an edge in the queue, that ended before
                     queue.remove(event)
             
