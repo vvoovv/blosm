@@ -173,17 +173,17 @@ class FacadeVisibility:
         queue.cleanup()
         
         for event in events:
-            building, edgeIndex, edgeStarts, eventX, eventY = event
+            building, _, edgeStarts, eventX, eventY = event
             if not activeEvent:
                 activeEvent = event
-                eventX = eventX
+                activeX = eventX
             elif edgeStarts:
                 activeEventY = activeEvent[4]
                 if eventY <= activeEventY: # the new edges hides the active edge
                     building.setVisibility(activeEvent[1], eventX - activeX)
                     queue.push(activeEventY, activeEvent)
                     activeEvent = event
-                    eventX = eventX # the new edges is behind the active edge
+                    activeX = eventX # the new edges is behind the active edge
                 else: 
                     queue.push(eventY, event)
             else:
@@ -194,7 +194,7 @@ class FacadeVisibility:
                         activeX = eventX
                     else:
                         activeEvent = None
-                        activeIn = None
+                        activeX = 0.
                     continue
                 else: # there must be an edge in the queue, that ended before
                     queue.remove(event)
