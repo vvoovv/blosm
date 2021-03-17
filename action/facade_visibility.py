@@ -38,6 +38,7 @@ class FacadeVisibility:
         self.kdTree = None
         self.bldgVerts = None
         self.searchWidthMargin = searchRange[0]
+        self.searchHeight = searchRange[1]
         self.searchHeight_2 = searchRange[1]*searchRange[1]
         self.vertIndexToBldgIndex = []
         self.priorityQueue = PriorityQueue()
@@ -147,7 +148,7 @@ class FacadeVisibility:
                                 (building, edgeIndex, False, edgeVert2[0], maxY)
                             )
                         else:
-                            maxY = max(abs(edgeVert1[1]), (edgeVert2[1]))
+                            maxY = max(abs(edgeVert1[1]), abs(edgeVert2[1]))
                             posEvents.append(
                                 (building, edgeIndex, True, edgeVert1[0], maxY)
                             )
@@ -159,6 +160,20 @@ class FacadeVisibility:
                 
                 self.processEvents(posEvents)
                 self.processEvents(negEvents)
+                
+                # index in <queryBldgVerts>
+                firstVertIndex = 0
+                for bldgIndex in queryBldgIndices:
+                    building = buildings[bldgIndex]
+                    
+                    for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                        # at least one vertice of the edge must be in rectangular search range
+                        if (edgeVert1[0] < searchWidth and edgeVert1[1] < self.searchHeight) or\
+                                (edgeVert2[0] < searchWidth and edgeVert2[1] < self.searchHeight):
+                            building.updateAuxVisibility(edgeIndex, 0.)
+                        else:
+                            building.updateAuxVisibilityDivide( abs(edgeVert2[0] - edgeVert1[0]) )
+                    firstVertIndex += building.n
     
     def processEvents(self, events):
         """
@@ -181,7 +196,7 @@ class FacadeVisibility:
             elif edgeStarts:
                 activeEventY = activeEvent[4]
                 if eventY <= activeEventY: # the new edges hides the active edge
-                    building.updateAuxVisibility(activeEvent[1], eventX - activeX)
+                    building.updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     queue.push(activeEventY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
@@ -189,7 +204,7 @@ class FacadeVisibility:
                     queue.push(eventY, event)
             else:
                 if event is activeEvent: # the active edge ends
-                    building.updateAuxVisibility(activeEvent[1], eventX - activeX)
+                    building.updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX

@@ -77,5 +77,8 @@ class Building:
         # <self.polygon.allVerts>, i.e. the vertices forming a straight angle are also included
         self.visibility = zeros((2, len(self.polygon.allVerts)))
     
-    def updateAuxVisibility(self, polygonEdgeIndex, visibility):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] =+ visibility
+    def updateAuxVisibilityAdd(self, polygonEdgeIndex, term):
+        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
+        
+    def updateAuxVisibilityDivide(self, polygonEdgeIndex, denominator):
+        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] /= denominator
