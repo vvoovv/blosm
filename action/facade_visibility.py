@@ -192,6 +192,8 @@ class FacadeVisibility:
         
         queue.cleanup()
         
+        self.drawEvents(events)
+        
         for event in events:
             building, _, edgeStarts, eventX, eventY = event
             if not activeEvent:
@@ -217,7 +219,20 @@ class FacadeVisibility:
                         activeX = 0.
                 else: # there must be an edge in the queue, that ended before
                     queue.remove(event)
-            
+    
+    def drawEvents(self, events):
+        import matplotlib.pyplot as plt
+        
+        fig = plt.figure()
+        ax = fig.gca()
+        ax.axis('equal')
+        
+        for building, edgeIndex, edgeStarts, eventX, eventY in events:
+            ax.plot(
+                eventX, eventY, marker='+', color='green' if edgeStarts else 'red'
+            )
+        
+        plt.show()
 
 
 class FacadeVisibilityBlender(FacadeVisibility):
