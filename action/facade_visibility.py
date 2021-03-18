@@ -144,18 +144,22 @@ class FacadeVisibility:
                         if edgeVert1[1] > 0. and edgeVert2[1] > 0.:
                             maxY = max(edgeVert1[1], edgeVert2[1])
                             posEvents.append(
-                                (building, edgeIndex, True, edgeVert1[0], maxY)
+                                (building, edgeIndex, None, edgeVert1[0], maxY)
                             )
+                            # Keep track of the related "edge starts" event,
+                            # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edgeIndex, False, edgeVert2[0], maxY)
+                                (building, edgeIndex, posEvents[-1], edgeVert2[0], maxY)
                             )
                         else:
                             maxY = max(abs(edgeVert1[1]), abs(edgeVert2[1]))
                             negEvents.append(
-                                (building, edgeIndex, True, edgeVert1[0], maxY)
+                                (building, edgeIndex, None, edgeVert1[0], maxY)
                             )
+                            # Keep track of the related "edge starts" event,
+                            # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edgeIndex, False, edgeVert2[0], maxY)
+                                (building, edgeIndex, negEvents[-1], edgeVert2[0], maxY, negEvents[-1])
                             )
                     
                     firstVertIndex += building.polygon.n
@@ -197,11 +201,11 @@ class FacadeVisibility:
         self.drawEvents(events)
         
         for event in events:
-            building, _, edgeStarts, eventX, eventY = event
+            building, _, relatedEdgeStartsEvent, eventX, eventY = event
             if not activeEvent:
                 activeEvent = event
                 activeX = eventX
-            elif edgeStarts:
+            elif not relatedEdgeStartsEvent: # an "edge starts" event here
                 activeEventY = activeEvent[4]
                 if eventY <= activeEventY: # the new edges hides the active edge
                     building.updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
@@ -211,7 +215,7 @@ class FacadeVisibility:
                 else: 
                     queue.push(eventY, event)
             else:
-                if event is activeEvent: # the active edge ends
+                if activeEvent is relatedEdgeStartsEvent: # the active edge ends
                     building.updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
@@ -220,7 +224,7 @@ class FacadeVisibility:
                         activeEvent = None
                         activeX = 0.
                 else: # there must be an edge in the queue, that ended before
-                    queue.remove(event)
+                    queue.remove(relatedEdgeStartsEvent)
     
     def drawEvents(self, events):
         mpl = Mpl.getMpl()
