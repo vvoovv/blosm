@@ -159,7 +159,7 @@ class FacadeVisibility:
                             # Keep track of the related "edge starts" event,
                             # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edgeIndex, negEvents[-1], edgeVert2[0], maxY, negEvents[-1])
+                                (building, edgeIndex, negEvents[-1], edgeVert2[0], maxY)
                             )
                     
                     firstVertIndex += building.polygon.n
