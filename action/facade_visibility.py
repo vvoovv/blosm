@@ -151,7 +151,7 @@ class FacadeVisibility:
                             )
                         else:
                             maxY = max(abs(edgeVert1[1]), abs(edgeVert2[1]))
-                            posEvents.append(
+                            negEvents.append(
                                 (building, edgeIndex, True, edgeVert1[0], maxY)
                             )
                             negEvents.append(
