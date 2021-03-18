@@ -208,7 +208,7 @@ class FacadeVisibility:
             elif not relatedEdgeStartsEvent: # an "edge starts" event here
                 activeEventY = activeEvent[4]
                 if eventY <= activeEventY: # the new edges hides the active edge
-                    building.updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
+                    activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     queue.push(activeEventY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
@@ -216,7 +216,7 @@ class FacadeVisibility:
                     queue.push(eventY, event)
             else:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
-                    building.updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
+                    activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX
