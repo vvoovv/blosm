@@ -170,8 +170,8 @@ class FacadeVisibility:
                         dx = abs(edgeVert2[0] - edgeVert1[0])
                         dy = abs(edgeVert2[1] - edgeVert1[1])
                         # at least one vertice of the edge must be in rectangular search range
-                        if (edgeVert1[0] < searchWidth and edgeVert1[1] < self.searchHeight) or\
-                                (edgeVert2[0] < searchWidth and edgeVert2[1] < self.searchHeight):
+                        if (abs(edgeVert1[0]) < searchWidth and abs(edgeVert1[1]) < self.searchHeight) or\
+                                (abs(edgeVert2[0]) < searchWidth and abs(edgeVert2[1]) < self.searchHeight):
                             building.updateAuxVisibility(edgeIndex, 0.)
                         else:
                             building.updateAuxVisibilityDivide(edgeIndex, dx)
