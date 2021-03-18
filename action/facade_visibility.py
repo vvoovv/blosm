@@ -98,10 +98,10 @@ class FacadeVisibility:
         negEvents = self.negEvents
         
         for way in self.app.managersById["ways"].getAllWays():
-            if not way.polyline:
-                way.initPolyline()
+            #if not way.polyline:
+            #    way.initPolyline()
             
-            for segmentCenter, segmentUnitVector, segmentLength in way.segments:
+            for segmentCenter, segmentUnitVector, segmentLength in way.segments(manager.data):
                 posEvents.clear()
                 negEvents.clear()
                 
@@ -156,7 +156,7 @@ class FacadeVisibility:
                                 (building, edgeIndex, False, edgeVert2[0], maxY)
                             )
                     
-                    firstVertIndex += building.n
+                    firstVertIndex += building.polygon.n
                 
                 self.processEvents(posEvents)
                 self.processEvents(negEvents)
@@ -177,7 +177,7 @@ class FacadeVisibility:
                             building.updateAuxVisibilityDivide(edgeIndex, dx)
                         if dx > dy: # abs of angle to way-segment < 45°
                             building.updateVisibilityMax(edgeIndex)
-                    firstVertIndex += building.n
+                    firstVertIndex += building.polygon.n
     
     def processEvents(self, events):
         """

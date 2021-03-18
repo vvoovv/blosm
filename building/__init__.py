@@ -86,3 +86,15 @@ class Building:
     def updateVisibilityMax(self, polygonEdgeIndex):
         index = self.polygon.indices[polygonEdgeIndex]
         self.visibility[0][index] = max(self.visibility[0][index], self.visibility[1][index])
+    
+    def edgeInfo(self, queryBldgVerts, firstVertIndex):
+        """
+        A generator that yields edge info (edge index, the first edge vertex, the second edge vertex)
+        out of numpy array <queryBldgVerts> and the index of the first vertex <firstVertIndex> of
+        the building polygon at <queryBldgVerts>
+        """
+        n_1 = self.polygon.n - 1
+        for edgeIndex, vertIndex in zip(range(n_1), range(firstVertIndex, firstVertIndex + n_1)):
+            yield edgeIndex, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
+        # the last edge
+        yield n_1, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
