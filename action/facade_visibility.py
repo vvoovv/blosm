@@ -3,6 +3,8 @@ import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
 
+from mpl import Mpl
+
 
 class PriorityQueue():
     def __init__(self):
@@ -221,18 +223,15 @@ class FacadeVisibility:
                     queue.remove(event)
     
     def drawEvents(self, events):
-        import matplotlib.pyplot as plt
-        
-        fig = plt.figure()
-        ax = fig.gca()
-        ax.axis('equal')
+        mpl = Mpl.getMpl()
+        ax = mpl.ax
         
         for building, edgeIndex, edgeStarts, eventX, eventY in events:
             ax.plot(
                 eventX, eventY, marker='+', color='green' if edgeStarts else 'red'
             )
         
-        plt.show()
+        mpl.show()
 
 
 class FacadeVisibilityBlender(FacadeVisibility):
