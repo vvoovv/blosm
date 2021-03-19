@@ -71,8 +71,34 @@ class BuildingVisibilityRender(Renderer):
     
     def render(self, building, data):
         if building.outline.t is parse.polygon:
-            pass
+            self.renderBuildingFootprint(building)
         else:
             # multipolygon
             for coords in building.outline.getDataMulti(data):
                 pass
+
+    def renderBuildingFootprint(self, building):
+        polygon = building.polygon
+        allVerts = polygon.allVerts
+        indices = polygon.indices
+        
+        for edgeIndex in range(polygon.n-1):
+            vert1 = allVerts[indices[edgeIndex]]
+            vert2 = allVerts[indices[edgeIndex+1]]
+            visibility = building.visibility[0][indices[edgeIndex]]
+            self.mpl.ax.plot(
+                (vert1[0], vert2[0]),
+                (vert1[1], vert2[1]),
+                linewidth = 1.,
+                color = 'green' if visibility else 'gray'
+            )
+        
+        vert1 = allVerts[indices[-1]]
+        vert2 = allVerts[indices[0]]
+        visibility = building.visibility[0][indices[-1]]
+        self.mpl.ax.plot(
+            (vert1[0], vert2[0]),
+            (vert1[1], vert2[1]),
+            linewidth = 1.,
+            color = 'green' if visibility else 'gray'
+        )

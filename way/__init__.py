@@ -12,7 +12,7 @@ class RealWay:
         coord0 = coord1 = None
         for coord2 in ( numpy.array((coord[0], coord[1])) for coord in self.element.getData(data) ):
             if coord1 is None:
-                coord0 = coord1
+                coord0 = coord2
             else:
                 segmentVector = coord2 - coord1
                 segmentLength = numpy.linalg.norm(segmentVector)

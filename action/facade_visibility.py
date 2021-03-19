@@ -178,7 +178,7 @@ class FacadeVisibility:
                         # at least one vertice of the edge must be in rectangular search range
                         if (abs(edgeVert1[0]) < searchWidth and abs(edgeVert1[1]) < self.searchHeight) or\
                                 (abs(edgeVert2[0]) < searchWidth and abs(edgeVert2[1]) < self.searchHeight):
-                            building.updateAuxVisibility(edgeIndex, 0.)
+                            building.updateAuxVisibilitySet(edgeIndex, 0.)
                         else:
                             building.updateAuxVisibilityDivide(edgeIndex, dx)
                         if dx > dy: # abs of angle to way-segment < 45°
@@ -198,10 +198,10 @@ class FacadeVisibility:
         
         queue.cleanup()
         
-        self.drawEvents(events)
+        #self.drawEvents(events)
         
         for event in events:
-            building, _, relatedEdgeStartsEvent, eventX, eventY = event
+            _, _, relatedEdgeStartsEvent, eventX, eventY = event
             if not activeEvent:
                 activeEvent = event
                 activeX = eventX
@@ -236,6 +236,7 @@ class FacadeVisibility:
             )
         
         mpl.show()
+        mpl.shown = False
 
 
 class FacadeVisibilityBlender(FacadeVisibility):
