@@ -90,7 +90,7 @@ class BuildingVisibilityRender(Renderer):
                 (vert1[0], vert2[0]),
                 (vert1[1], vert2[1]),
                 linewidth = 1.,
-                color = 'green' if visibility else 'gray'
+                color = 'green' if visibility else 'red'
             )
         
         vert1 = allVerts[indices[-1]]
@@ -100,5 +100,5 @@ class BuildingVisibilityRender(Renderer):
             (vert1[0], vert2[0]),
             (vert1[1], vert2[1]),
             linewidth = 1.,
-            color = 'green' if visibility else 'gray'
+            color = 'green' if visibility else 'red'
         )
