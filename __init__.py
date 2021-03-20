@@ -156,7 +156,8 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             #layout.operator("blosm.load_extensions", text="Load extensions")
             layout.prop(self, "osmServer")
             
-            layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
+            if blenderApp.app.isPremium:
+                layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
 blenderApp.app.addonName = BlosmPreferences.bl_idname
 
