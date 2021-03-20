@@ -178,9 +178,9 @@ class FacadeVisibility:
                         # at least one vertice of the edge must be in rectangular search range
                         if (abs(edgeVert1[0]) < searchWidth and abs(edgeVert1[1]) < self.searchHeight) or\
                                 (abs(edgeVert2[0]) < searchWidth and abs(edgeVert2[1]) < self.searchHeight):
-                            building.updateAuxVisibilitySet(edgeIndex, 0.)
-                        else:
                             building.updateAuxVisibilityDivide(edgeIndex, dx)
+                        else:
+                            building.updateAuxVisibilitySet(edgeIndex, 0.)
                         if dx > dy: # abs of angle to way-segment < 45°
                             building.updateVisibilityMax(edgeIndex)
                     firstVertIndex += building.polygon.n
