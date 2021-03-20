@@ -20,6 +20,25 @@ _allWays = (
 )
 
 
+_facadeVisibilityWays = (
+    "motorway",
+    "trunk",
+    "primary",
+    "secondary",
+    "tertiary",
+    "unclassified",
+    "residential",
+    #"service",
+    "pedestrian",
+    "track",
+    #"footway",
+    #"steps",
+    #"cycleway",
+    #"bridleway",
+    #"other"
+)
+
+
 class RealWayManager:
     
     def __init__(self, data, app):
@@ -51,6 +70,9 @@ class RealWayManager:
     
     def getAllWays(self):
         return (way for layerId in _allWays for way in self.layers[layerId])
+    
+    def getFacadeVisibilityWays(self):
+        return (way for layerId in _facadeVisibilityWays for way in self.layers[layerId])
     
     def process(self):
         for action in self.actions:

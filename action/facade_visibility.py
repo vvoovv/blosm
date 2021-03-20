@@ -99,7 +99,7 @@ class FacadeVisibility:
         posEvents = self.posEvents
         negEvents = self.negEvents
         
-        for way in self.app.managersById["ways"].getAllWays():
+        for way in self.app.managersById["ways"].getFacadeVisibilityWays():
             #if not way.polyline:
             #    way.initPolyline()
             
