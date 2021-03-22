@@ -142,27 +142,29 @@ class FacadeVisibility:
                             # because the algorithm scans with increasing x, the first vertice has to get smaller x
                             edgeVert1, edgeVert2 = edgeVert2, edgeVert1
                         
+                        dx = edgeVert2[0] - edgeVert1[0]
+                        dy = edgeVert2[1] - edgeVert1[1]
+                        slope = dy/0.0000001 if dx == 0. else dy/dx
+
                         if edgeVert1[1] > 0. and edgeVert2[1] > 0.:
-                            maxY = max(edgeVert1[1], edgeVert2[1])
                             posEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], maxY)
+                                (building, edgeIndex, None, edgeVert1[0], edgeVert1[1], edgeVert2[1], slope)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edgeIndex, posEvents[-1], edgeVert2[0], maxY)
+                                (building, edgeIndex, posEvents[-1], edgeVert2[0], edgeVert1[1], edgeVert2[1], slope)
                             )
                         else:
-                            maxY = max(abs(edgeVert1[1]), abs(edgeVert2[1]))
                             negEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], maxY)
+                                (building, edgeIndex, None, edgeVert1[0], -edgeVert1[1], -edgeVert2[1], -slope)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edgeIndex, negEvents[-1], edgeVert2[0], maxY)
+                                (building, edgeIndex, negEvents[-1], edgeVert2[0], -edgeVert1[1], -edgeVert2[1], -slope)
                             )
-                    
+                     
                     firstVertIndex += building.polygon.n
                 
                 self.processEvents(posEvents)
@@ -195,26 +197,29 @@ class FacadeVisibility:
         activeX = 0.
         
         # sort events by increasing x and then by increasing y
-        events.sort(key=itemgetter(3,4))
+        events.sort(key=itemgetter(3,5))
         
         queue.cleanup()
         
         #self.drawEvents(events)
         
         for event in events:
-            _, _, relatedEdgeStartsEvent, eventX, eventY = event
+            _, _, relatedEdgeStartsEvent, eventX, startY, endY, slope = event
             if not activeEvent:
                 activeEvent = event
                 activeX = eventX
             elif not relatedEdgeStartsEvent: # an "edge starts" event here
-                activeEventY = activeEvent[4]
-                if eventY <= activeEventY: # the new edges hides the active edge
+                # if both edges start at a common vertice, use y of endpoints,
+                # else compute true y of active edge: y = startY + differenceOfX * slope
+                isInFront = (endY < activeEvent[5]) if eventX == activeEvent[3] \
+                            else (startY < activeEvent[4]+(eventX-activeEvent[3])*activeEvent[6])
+                if isInFront: # the new edges hides the active edge
                     activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
-                    queue.push(activeEventY, activeEvent)
+                    queue.push(activeEvent[4], activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
                 else: 
-                    queue.push(eventY, event)
+                    queue.push(endY, event)
             else:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
                     activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
