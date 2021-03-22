@@ -135,6 +135,7 @@ class FacadeVisibility:
                 firstVertIndex = 0
                 for bldgIndex in queryBldgIndices:
                     building = buildings[bldgIndex]
+                    building.resetAuxVisibility()
                     
                     for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
                         if edgeVert1[0] > edgeVert2[0]:

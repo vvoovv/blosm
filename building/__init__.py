@@ -81,7 +81,10 @@ class Building:
         self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
         
     def updateAuxVisibilityDivide(self, polygonEdgeIndex, denominator):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] /= denominator
+        if denominator:
+            self.visibility[1][self.polygon.indices[polygonEdgeIndex]] /= denominator
+        else:
+            self.visibility[1][self.polygon.indices[polygonEdgeIndex]] = 0.
     
     def updateAuxVisibilitySet(self, polygonEdgeIndex, value):
         self.visibility[1][self.polygon.indices[polygonEdgeIndex]] = value
@@ -89,6 +92,9 @@ class Building:
     def updateVisibilityMax(self, polygonEdgeIndex):
         index = self.polygon.indices[polygonEdgeIndex]
         self.visibility[0][index] = max(self.visibility[0][index], self.visibility[1][index])
+    
+    def resetAuxVisibility(self):
+        self.visibility[1] = 0.
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex):
         """
