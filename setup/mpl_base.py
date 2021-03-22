@@ -95,8 +95,9 @@ def setup(app, osm):
             "roads_service",
             wayManager
         )
+        # filter out pedestrian areas for now
         osm.addCondition(
-            lambda tags, e: tags.get("highway") == "pedestrian",
+            lambda tags, e: tags.get("highway") == "pedestrian" and not tags.get("area") and not tags.get("area:highway"),
             "roads_pedestrian",
             wayManager
         )
