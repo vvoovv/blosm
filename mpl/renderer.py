@@ -85,20 +85,27 @@ class BuildingVisibilityRender(Renderer):
         for edgeIndex in range(polygon.n-1):
             vert1 = allVerts[indices[edgeIndex]]
             vert2 = allVerts[indices[edgeIndex+1]]
-            visibility = building.visibility[0][indices[edgeIndex]]
             self.mpl.ax.plot(
                 (vert1[0], vert2[0]),
                 (vert1[1], vert2[1]),
                 linewidth = 1.,
-                color = 'green' if visibility else 'red'
+                color = BuildingVisibilityRender.getFootprintEdgeColor(building, edgeIndex)
             )
         
         vert1 = allVerts[indices[-1]]
         vert2 = allVerts[indices[0]]
-        visibility = building.visibility[0][indices[-1]]
         self.mpl.ax.plot(
             (vert1[0], vert2[0]),
             (vert1[1], vert2[1]),
             linewidth = 1.,
-            color = 'green' if visibility else 'red'
+            color = BuildingVisibilityRender.getFootprintEdgeColor(building, -1)
+        )
+    
+    @staticmethod
+    def getFootprintEdgeColor(building, edgeIndex):
+        visibility = building.visibility[0][building.polygon.indices[edgeIndex]]
+        return 'red' if not visibility else (
+            'green' if visibility > 0.75 else (
+                'yellow' if visibility > 0.3 else 'blue'
+            )
         )
