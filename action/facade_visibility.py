@@ -152,21 +152,19 @@ class FacadeVisibility:
                                 (building, edgeIndex, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                         else:
-                            edgeVert1Neg = np.array((edgeVert1[0],-edgeVert1[1]))
-                            edgeVert2Neg = np.array((edgeVert2[0],-edgeVert2[1]))
                             negEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], edgeVert1Neg, edgeVert2Neg)
+                                (building, edgeIndex, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edgeIndex, negEvents[-1], edgeVert2[0], edgeVert1Neg, edgeVert2Neg)
+                                (building, edgeIndex, negEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                      
                     firstVertIndex += building.polygon.n
                 
-                self.processEvents(posEvents)
-                self.processEvents(negEvents)
+                self.processEvents(posEvents, True)
+                self.processEvents(negEvents, False)
 
                 # index in <queryBldgVerts>
                 firstVertIndex = 0
@@ -187,7 +185,7 @@ class FacadeVisibility:
 
                     firstVertIndex += building.polygon.n
 
-    def processEvents(self, events):
+    def processEvents(self, events, positiveY):
         """
         Process <self.posEvents> or <self.negEvents>
         """
@@ -195,8 +193,10 @@ class FacadeVisibility:
         activeEvent = None
         activeX = 0.
         
-        # sort events by increasing start x and then by increasing end y
-        events.sort(key = lambda x: (x[3], x[5][1]))
+        # sort events by increasing start x and then by increasing abs(end y)
+        events.sort(
+            key = (lambda x: (x[3], x[5][1])) if positiveY else (lambda x: (x[3], -x[5][1]))
+        )
 
         queue.cleanup()
         
@@ -204,16 +204,24 @@ class FacadeVisibility:
         
         for event in events:
             _, _, relatedEdgeStartsEvent, eventX, edgeVert1, edgeVert2 = event
-            startY = edgeVert1[1]
-            endY = edgeVert2[1]
+            if positiveY:
+                startY = edgeVert1[1]
+                endY = edgeVert2[1]
+            else:
+                startY = -edgeVert1[1]
+                endY = -edgeVert2[1]
             if not activeEvent:
                 activeEvent = event
                 activeX = eventX
             elif not relatedEdgeStartsEvent: # an "edge starts" event here
                 activeStartX = activeEvent[4][0]
                 activeEndX = activeEvent[5][0]
-                activeStartY = activeEvent[4][1]
-                activeEndY = activeEvent[5][1]
+                if positiveY:
+                    activeStartY = activeEvent[4][1]
+                    activeEndY = activeEvent[5][1]
+                else:
+                    activeStartY = -activeEvent[4][1]
+                    activeEndY = -activeEvent[5][1]
                 # if both edges start at the same x-coord, the new edge is in front,
                 # when its endpoint is nearer to the way-segment.
                 isInFront = False
