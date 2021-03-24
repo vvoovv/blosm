@@ -1,4 +1,5 @@
 import parse
+from parse.osm import Osm
 from . import Mpl
 
 
@@ -70,12 +71,12 @@ class BuildingRenderer(Renderer):
 class BuildingVisibilityRender(Renderer):
     
     def render(self, building, data):
-        if building.outline.t is parse.polygon:
-            self.renderBuildingFootprint(building)
-        else:
-            # multipolygon
-            for coords in building.outline.getDataMulti(data):
-                pass
+        outline = building.outline
+        self.renderBuildingFootprint(building)
+        if outline.t is parse.multipolygon:
+            for l in outline.ls:
+                if not l.role is Osm.outer:
+                    self.renderLineString(outline.getLinestringData(l, data), True, BuildingRenderer.style)
 
     def renderBuildingFootprint(self, building):
         polygon = building.polygon
