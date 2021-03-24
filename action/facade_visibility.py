@@ -143,31 +143,31 @@ class FacadeVisibility:
                             edgeVert1, edgeVert2 = edgeVert2, edgeVert1
                         
                         if edgeVert1[1] > 0. and edgeVert2[1] > 0.:
-                            maxY = max(edgeVert1[1], edgeVert2[1])
                             posEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], maxY)
+                                (building, edgeIndex, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edgeIndex, posEvents[-1], edgeVert2[0], maxY)
+                                (building, edgeIndex, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                         else:
-                            maxY = max(abs(edgeVert1[1]), abs(edgeVert2[1]))
+                            edgeVert1Neg = np.array((edgeVert1[0],-edgeVert1[1]))
+                            edgeVert2Neg = np.array((edgeVert2[0],-edgeVert2[1]))
                             negEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], maxY)
+                                (building, edgeIndex, None, edgeVert1[0], edgeVert1Neg, edgeVert2Neg)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edgeIndex, negEvents[-1], edgeVert2[0], maxY)
+                                (building, edgeIndex, negEvents[-1], edgeVert2[0], edgeVert1Neg, edgeVert2Neg)
                             )
-                    
+                     
                     firstVertIndex += building.polygon.n
                 
                 self.processEvents(posEvents)
                 self.processEvents(negEvents)
-                
+
                 # index in <queryBldgVerts>
                 firstVertIndex = 0
                 for bldgIndex in queryBldgIndices:
@@ -184,8 +184,9 @@ class FacadeVisibility:
                             building.updateAuxVisibilitySet(edgeIndex, 0.)
                         if dx > dy: # abs of angle to way-segment < 45°
                             building.updateVisibilityMax(edgeIndex)
+
                     firstVertIndex += building.polygon.n
-    
+
     def processEvents(self, events):
         """
         Process <self.posEvents> or <self.negEvents>
@@ -194,27 +195,52 @@ class FacadeVisibility:
         activeEvent = None
         activeX = 0.
         
-        # sort events by increasing x and then by increasing y
-        events.sort(key=itemgetter(3,4))
-        
+        # sort events by increasing start x and then by increasing end y
+        events.sort(key = lambda x: (x[3], x[5][1]))
+
         queue.cleanup()
         
         #self.drawEvents(events)
         
         for event in events:
-            _, _, relatedEdgeStartsEvent, eventX, eventY = event
+            _, _, relatedEdgeStartsEvent, eventX, edgeVert1, edgeVert2 = event
+            startY = edgeVert1[1]
+            endY = edgeVert2[1]
             if not activeEvent:
                 activeEvent = event
                 activeX = eventX
             elif not relatedEdgeStartsEvent: # an "edge starts" event here
-                activeEventY = activeEvent[4]
-                if eventY <= activeEventY: # the new edges hides the active edge
+                activeStartX = activeEvent[4][0]
+                activeEndX = activeEvent[5][0]
+                activeStartY = activeEvent[4][1]
+                activeEndY = activeEvent[5][1]
+                # if both edges start at the same x-coord, the new edge is in front,
+                # when its endpoint is nearer to the way-segment.
+                isInFront = False
+                if eventX == activeStartX:
+                    isInFront = endY < activeEndY 
+                # potentially, if the new edge starts in front of the active edge's 
+                # maximum y-coord, it could be in front of the active edge.
+                elif startY < max(activeStartY,activeEndY):
+                    # if the new edge starts in behind the active edge's 
+                    # minimum y-coord, the decision has to be based on the true y-coord 
+                    # of the active edge at this x-coord.
+                    if startY > min(activeStartY,activeEndY):
+                        dx = activeEndX - activeStartX
+                        dy = activeEndY - activeStartY
+                        slope = dy/dx if dx else inf
+                        isInFront = startY < activeStartY+(eventX-activeStartX)*slope
+                    # else, the new edge is in front for sure
+                    else:
+                        isInFront = True
+
+                if isInFront: # the new edges hides the active edge
                     activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
-                    queue.push(activeEventY, activeEvent)
+                    queue.push(activeEndY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
                 else: 
-                    queue.push(eventY, event)
+                    queue.push(endY, event)
             else:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
                     activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
