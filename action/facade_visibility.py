@@ -120,7 +120,7 @@ class FacadeVisibility:
                 queryBldgVerts = self.bldgVerts[queryBldgVertIndices,:]
                 
                 # transform <queryBldgVerts> to the system of reference of <way>
-                matrix = np.array(( segmentUnitVector, (segmentUnitVector[1], -segmentUnitVector[0]) ))
+                matrix = np.array(( (segmentUnitVector[0], -segmentUnitVector[1]), (segmentUnitVector[1], segmentUnitVector[0]) ))
                 
                 # shift origin to the segment center
                 queryBldgVerts -= segmentCenter
