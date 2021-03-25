@@ -235,9 +235,9 @@ class FacadeVisibility:
                     # of the active edge at this x-coord.
                     if startY > min(activeStartY,activeEndY):
                         dx = activeEndX - activeStartX
-                        dy = activeEndY - activeStartY
-                        slope = dy/dx if dx else inf
-                        isInFront = startY < activeStartY+(eventX-activeStartX)*slope
+                        # dy = activeEndY - activeStartY
+                        isInFront = startY < activeStartY + (eventX-activeStartX) * (activeEndY - activeStartY) / dx\
+                            if dx else False
                     # else, the new edge is in front for sure
                     else:
                         isInFront = True
