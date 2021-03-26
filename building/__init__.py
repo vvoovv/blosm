@@ -28,7 +28,7 @@ class Building:
     A wrapper for a OSM building
     """
     
-    __slots__ = ("outline", "parts", "polygon", "visibility", "auxIndex")
+    __slots__ = ("outline", "parts", "polygon", "visibility", "auxIndex", "crossedEdges")
     
     def __init__(self, element, buildingIndex, osm):
         self.outline = element
@@ -42,6 +42,9 @@ class Building:
         self.visibility = None
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
+        # A dictionary with edge indices as keys and crossing ratio as value,
+        # used for buildings that get crossed by way-segments.
+        self.crossedEdges = {}
         self.markUsedNodes(buildingIndex, osm)
     
     def addPart(self, part):
@@ -95,6 +98,16 @@ class Building:
     
     def resetAuxVisibility(self):
         self.visibility[1] = 0.
+
+    def resetCrossedEdges(self):
+        self.crossedEdges.clear()
+
+    def addCrossedEdge(self,edgeIndex,intsectX):
+        self.crossedEdges[edgeIndex] = intsectX
+
+    def getCrossedEdgeIntsects(self):
+        return self.crossedEdges
+
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex):
         """
