@@ -148,7 +148,7 @@ class FacadeVisibility:
                             dy = edgeVert2[1]-edgeVert1[1]
                             x0 = edgeVert1[0]
                             y0 = edgeVert1[1]
-                            intsectX = abs( x0+abs(y0/dy)*dx ) / (segmentLength/2.) if dy else 0.
+                            intsectX = (x0+abs(y0/dy)*dx ) / (segmentLength/2.) if dy else 0.
                             # store result in building for later analysis
                             building.addCrossedEdge(edgeIndex, intsectX)
 
@@ -190,19 +190,24 @@ class FacadeVisibility:
                     if edgeIntersections:
                         building.resetAuxVisibility()
                         # for values between 0 and 1, the intersection is in the way-segment
-                        directIntersects =  [edgeIndex for edgeIndex, intsectX in edgeIntersections.items() if intsectX <= 1.]
+                        directIntersects =  [edgeIndex for edgeIndex, intsectX in edgeIntersections.items() if abs(intsectX) <= 1.]
                         if directIntersects:
                             # all intersections with the way-segment itself become full visible
                             for edgeIndex in directIntersects:
                                 building.updateAuxVisibilitySet(edgeIndex, 1.)
                                 building.updateVisibilityMax(edgeIndex)
                         else:
-                            # for intersections with the way-segment axis only, only the nearest
-                            # edge becomes visible (dead end in front of building assumed)
-                            minEdgeIndex = min(edgeIntersections,key=edgeIntersections.get)
-                            if edgeIntersections[minEdgeIndex] < 2* searchWidth/segmentLength:
-                                building.updateAuxVisibilitySet(minEdgeIndex, 1.)
-                                building.updateVisibilityMax(minEdgeIndex)
+                            outerIntersectsX = [intsectX for edgeIndex, intsectX in edgeIntersections.items()]
+                            # check for way in courtyard or similar
+                            if len(outerIntersectsX) == 2 and np.diff( (np.sign(outerIntersectsX[0]),np.sign(outerIntersectsX[1])) ):
+                                pass    # if courtyard, do nothing
+                            else:
+                                # for intersections with the way-segment axis only, only the nearest
+                                # edge becomes visible (dead end in front of building assumed)
+                                minEdgeIndex = min(edgeIntersections,key=edgeIntersections.get)
+                                if edgeIntersections[minEdgeIndex] < 2* searchWidth/segmentLength:
+                                    building.updateAuxVisibilitySet(minEdgeIndex, 1.)
+                                    building.updateVisibilityMax(minEdgeIndex)
                     else:
                         for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
                             dx = abs(edgeVert2[0] - edgeVert1[0])
