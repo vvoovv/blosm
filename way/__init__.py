@@ -3,9 +3,27 @@ import numpy
 
 class RealWay:
     
+    motorway = 1
+    primary = 2
+    secondary = 3
+    tertiary = 4
+    residential = 5
+    # service
+    service = 6
+    parking_aisle = 7
+    driveway = 8
+    #
+    pedestrian = 9
+    track = 10
+    footway = 11
+    steps = 12
+    cycleway = 13
+    other = 14
+    
     def __init__(self, element):
         self.element = element
         self.polyline = None
+        self.category = RealWay.osmClassify(self)
     
     def segments(self, data):
         # segmentCenter, segmentUnitVector, segmentLength
@@ -22,3 +40,10 @@ class RealWay:
             segmentVector = coord0 - coord1
             segmentLength = numpy.linalg.norm(segmentVector)
             yield (coord1 + coord0)/2., segmentVector/segmentLength, segmentLength
+    
+    @staticmethod
+    def osmClassify(way):
+        tags = way.element.tags
+
+
+_osmHighwayToCategory

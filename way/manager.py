@@ -28,7 +28,7 @@ _facadeVisibilityWays = (
     "tertiary",
     "unclassified",
     "residential",
-    #"service",
+    "service",
     "pedestrian",
     "track",
     #"footway",
