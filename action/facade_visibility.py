@@ -157,7 +157,7 @@ class FacadeVisibility:
                             # because the algorithm scans with increasing x, the first vertice has to get smaller x
                             edgeVert1, edgeVert2 = edgeVert2, edgeVert1
                         
-                        if edgeVert1[1] > 0. and edgeVert2[1] > 0. or building.getCrossedEdgeIntsects():
+                        if edgeVert1[1] > 0. or edgeVert2[1] > 0.:
                             posEvents.append(
                                 (building, edgeIndex, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
@@ -166,7 +166,7 @@ class FacadeVisibility:
                             posEvents.append(
                                 (building, edgeIndex, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
-                        if edgeVert1[1] < 0. and edgeVert2[1] < 0. or building.getCrossedEdgeIntsects():
+                        if edgeVert1[1] < 0. or edgeVert2[1] < 0.:
                             negEvents.append(
                                 (building, edgeIndex, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
@@ -197,6 +197,20 @@ class FacadeVisibility:
                     # check for intersections and process them
                     edgeIntersections = building.getCrossedEdgeIntsects()
                     if edgeIntersections:
+                        # because buildings that are crossed by way-segment axes have only partly included to the
+                        # events, false visibilities hev to be corrected. The clockwise order of the polygons is 
+                        # used to detect and correct these cases.
+                        for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                            # for edges with positive y, only edges that go to the right can be visible.
+                            if edgeVert1[1] > 0.:
+                                if edgeVert2[0] < edgeVert1[0]:
+                                    building.updateAuxVisibilitySet(edgeIndex, 0.)
+                            # for edges with negative y, only edges that go to the left can be visible.
+                            else:
+                                if edgeVert2[0] > edgeVert1[0]:
+                                    building.updateAuxVisibilitySet(edgeIndex, 0.)
+
+                        # now process the edges that have crossings.
                         # for values between 0 and 1, the intersection is in the way-segment
                         wayIntersects =  [edgeIndex for edgeIndex, intsectX in edgeIntersections.items() if abs(intsectX) <= 1.]
                         if wayIntersects:
@@ -288,8 +302,7 @@ class FacadeVisibility:
                         isInFront = True
 
                 if isInFront: # the new edges hides the active edge
-                    if activeStartY > 0.:   # visibility only for positive edges
-                        activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
+                    activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     queue.push(activeEndY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
@@ -297,8 +310,7 @@ class FacadeVisibility:
                     queue.push(endY, event)
             else:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
-                    if activeEndY > 0.:   # visibility only for positive edges
-                        activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
+                    activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX
