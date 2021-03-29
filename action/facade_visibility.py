@@ -188,11 +188,12 @@ class FacadeVisibility:
 
                     # compute visibility ratio and select edges in range
                     for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
-                        building.updateAuxVisibilityDivide(edgeIndex, abs(edgeVert2[0] - edgeVert1[0]))
                         dx = abs(edgeVert2[0] - edgeVert1[0])
                         dy = abs(edgeVert2[1] - edgeVert1[1])
                         if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
                             building.updateAuxVisibilitySet(edgeIndex, 0.)
+                        else:
+                            building.updateAuxVisibilityDivide(edgeIndex, dx)
 
                     # check for intersections and process them
                     edgeIntersections = building.getCrossedEdgeIntsects()
