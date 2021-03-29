@@ -46,4 +46,4 @@ class RealWay:
         tags = way.element.tags
 
 
-_osmHighwayToCategory
+#_osmHighwayToCategory
