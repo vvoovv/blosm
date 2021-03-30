@@ -1,29 +1,52 @@
 import numpy
 
 
+allWayCategories = set((
+    "other",
+    "motorway",
+    "motorway_link",
+    "trunk",
+    "trunk_link",
+    "primary",
+    "primary_link",
+    "secondary",
+    "secondary_link",
+    "tertiary",
+    "tertiary_link",
+    "unclassified",
+    "residential",
+    "living_street",
+    "service",
+    "pedestrian",
+    "track",
+    "escape",
+    "raceway",
+    # "road", # other
+    "footway",
+    "bridleway",
+    "steps",
+    "path",
+    "cycleway"
+))
+
+
+class Category:
+    __slots__ = tuple()
+    @staticmethod
+    def addCategories():
+        for category in allWayCategories:
+            setattr(Category, category, category)
+Category.addCategories()
+
+
 class RealWay:
     
-    motorway = 1
-    primary = 2
-    secondary = 3
-    tertiary = 4
-    residential = 5
-    # service
-    service = 6
-    parking_aisle = 7
-    driveway = 8
-    #
-    pedestrian = 9
-    track = 10
-    footway = 11
-    steps = 12
-    cycleway = 13
-    other = 14
+    __slots__ = ("element", "polyline", "category", "tunnel", "bridge")
     
     def __init__(self, element):
         self.element = element
+        RealWay.initOsm(self, element)
         self.polyline = None
-        self.category = RealWay.osmClassify(self)
     
     def segments(self, data):
         # segmentCenter, segmentUnitVector, segmentLength
@@ -42,8 +65,11 @@ class RealWay:
             yield (coord1 + coord0)/2., segmentVector/segmentLength, segmentLength
     
     @staticmethod
-    def osmClassify(way):
-        tags = way.element.tags
+    def initOsm(way, element):
+        highwayTag = element.tags.get("highway")
+        way.category = highwayTag if highwayTag in allWayCategories else "other"
+        way.tunnel = "tunnel" in element.tags
+        way.bridge = "bridge" in element.tags
 
 
 #_osmHighwayToCategory

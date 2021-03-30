@@ -9,8 +9,6 @@ class Layer:
     def __init__(self, layerId, app):
         self.app = app
         self.id = layerId
-        # a layer id used in the managers; <mlId> stands for "layer id used in the managers"
-        self.mlId = None
     
     def init(self):
         pass

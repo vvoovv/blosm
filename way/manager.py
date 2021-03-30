@@ -1,9 +1,7 @@
-from . import RealWay
+from . import RealWay, allWayCategories
 
 
-_allWays = (
-    "motorway",
-    "trunk",
+facadeVisibilityWayCategories = set((
     "primary",
     "secondary",
     "tertiary",
@@ -11,32 +9,11 @@ _allWays = (
     "residential",
     "service",
     "pedestrian",
-    "track",
-    "footway",
-    "steps",
-    "cycleway",
-    "bridleway",
-    "other"
-)
-
-
-_facadeVisibilityWays = (
-    "motorway",
-    "trunk",
-    "primary",
-    "secondary",
-    "tertiary",
-    "unclassified",
-    "residential",
-    "service",
-    "pedestrian",
-    "track",
+    "track"
     #"footway",
     #"steps",
-    #"cycleway",
-    #"bridleway",
-    #"other"
-)
+    #"cycleway"
+))
 
 
 class RealWayManager:
@@ -52,7 +29,7 @@ class RealWayManager:
         # don't accept broken multipolygons
         self.acceptBroken = False
         
-        self.layers = dict((layerId, []) for layerId in _allWays)
+        self.layers = dict((category, []) for category in allWayCategories)
         
         self.actions = []
         
@@ -66,13 +43,14 @@ class RealWayManager:
     
     def createRealWay(self, element):
         # create a wrapper for the OSM way <element>
-        self.layers[element.l.mlId].append( RealWay(element) )
+        way = RealWay(element)
+        self.layers[way.category].append(way)
     
     def getAllWays(self):
-        return (way for layerId in _allWays for way in self.layers[layerId])
+        return (way for category in allWayCategories for way in self.layers[category])
     
     def getFacadeVisibilityWays(self):
-        return (way for layerId in _facadeVisibilityWays for way in self.layers[layerId])
+        return (way for category in facadeVisibilityWayCategories for way in self.layers[category])
     
     def process(self):
         for action in self.actions:

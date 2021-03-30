@@ -1,7 +1,7 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
 from building.manager import BaseBuildingManager
 from way.manager import RealWayManager
-from mpl.renderer import BuildingRenderer, WayRenderer, BuildingVisibilityRender
+from mpl.renderer import BuildingVisibilityRender, WayVisibilityRenderer
 from action.facade_visibility import FacadeVisibilityOther
 
 #from manager.logging import Logger
@@ -21,7 +21,7 @@ def setup(app, osm):
     # create managers
     
     wayManager = RealWayManager(osm, app)
-    wayManager.setRenderer(WayRenderer(), app)
+    wayManager.setRenderer(WayVisibilityRenderer(), app)
     
     #linestring = Linestring(osm)
     #polygon = Polygon(osm)

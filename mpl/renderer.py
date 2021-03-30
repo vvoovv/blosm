@@ -1,5 +1,6 @@
 import parse
 from parse.osm import Osm
+from way.manager import facadeVisibilityWayCategories
 from . import Mpl
 
 
@@ -72,7 +73,9 @@ class BuildingVisibilityRender(Renderer):
     
     def render(self, building, data):
         outline = building.outline
+        # render the outer footprint
         self.renderBuildingFootprint(building)
+        # render holes for a multipolygon
         if outline.t is parse.multipolygon:
             for l in outline.ls:
                 if not l.role is Osm.outer:
@@ -110,3 +113,10 @@ class BuildingVisibilityRender(Renderer):
                 'yellow' if visibility > 0.3 else 'blue'
             )
         )
+
+
+class WayVisibilityRenderer(WayRenderer):
+    
+    def render(self, way, data):
+        if way.category in facadeVisibilityWayCategories:
+            super().render(way, data)
