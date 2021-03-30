@@ -142,15 +142,42 @@ class FacadeVisibility:
                         # check if there are edges crossed by this way-segment (the vertices have different signs of y-coord)
                         if np.diff( (np.sign(edgeVert1[1]),np.sign(edgeVert2[1])) ):
                             # find x-coord of intersection with way-segment axis (the x-axis in this coordinate system).
-                            # divide its value by the half of the segment length to get a relaive number.
+                            # divide its value by the half of the segment length to get a relative number.
                             # for absolute values between 0 and 1, the intersection is in the way-segment, else out of it.
                             dx = edgeVert2[0]- edgeVert1[0]
-                            dy = edgeVert2[1]-edgeVert1[1]
+                            dy = edgeVert2[1]- edgeVert1[1]
                             x0 = edgeVert1[0]
                             y0 = edgeVert1[1]
                             intsectX = (x0+abs(y0/dy)*dx ) / (segmentLength/2.) if dy else 0.
                             # store result in building for later analysis
                             building.addCrossedEdge(edgeIndex, intsectX)
+
+                    intersections = building.getCrossedEdgeIntsects()
+                    # if there are intersections, fill a dummy line in the interior of the building
+                    # between the intersection. The edge index is neagtive, so that it can be 
+                    # excluded in Building's method updateAuxVisibilityAdd().
+                    if intersections:
+                        intersections.sort(key=lambda x:x[1])
+                        for i in range(0,len(intersections),2):
+                            x1 = intersections[i][1] * segmentLength/2.
+                            x2 = intersections[i+1][1] * segmentLength/2.
+                            edgIndex = -intersections[i][0]  # negative to mark it as dummy edge
+                            posEvents.append(
+                                (building, edgIndex, None, x1, np.array((x1,0.)), np.array((x2,0.)))
+                            )
+                            # Keep track of the related "edge starts" event,
+                            # that's why <posEvents[-1]>
+                            posEvents.append(
+                                (building, edgIndex, posEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
+                            )
+                            negEvents.append(
+                                (building, edgIndex, None, x1, np.array((x1,0.)), np.array((x2,0.)))
+                            )
+                            # Keep track of the related "edge starts" event,
+                            # that's why <posEvents[-1]>
+                            negEvents.append(
+                                (building, edgIndex, negEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
+                            )
 
                     for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
                         if edgeVert1[0] > edgeVert2[0]:
@@ -197,26 +224,13 @@ class FacadeVisibility:
 
                     # check for intersections and process them
                     edgeIntersections = building.getCrossedEdgeIntsects()
+                    # if there are intersections, process their edges
                     if edgeIntersections:
-                        # because buildings that are crossed by way-segment axes have only partly included to the
-                        # events, false visibilities hev to be corrected. The clockwise order of the polygons is 
-                        # used to detect and correct these cases.
-                        for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
-                            # for edges with positive y, only edges that go to the right can be visible.
-                            if edgeVert1[1] > 0.:
-                                if edgeVert2[0] < edgeVert1[0]:
-                                    building.updateAuxVisibilitySet(edgeIndex, 0.)
-                            # for edges with negative y, only edges that go to the left can be visible.
-                            else:
-                                if edgeVert2[0] > edgeVert1[0]:
-                                    building.updateAuxVisibilitySet(edgeIndex, 0.)
-
-                        # now process the edges that have crossings.
                         # for values between 0 and 1, the intersection is in the way-segment
-                        wayIntersects =  [edgeIndex for edgeIndex, intsectX in edgeIntersections.items() if abs(intsectX) <= 1.]
+                        wayIntersects =  [isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1.]
                         if wayIntersects:
                             # all intersections with the way-segment itself become full visible
-                            for edgeIndex, intsectX in edgeIntersections.items():
+                            for edgeIndex, intsectX in edgeIntersections:
                                 if abs(intsectX) <= 1.:
                                     building.updateAuxVisibilitySet(edgeIndex, 1.)
                                 else:
@@ -226,10 +240,10 @@ class FacadeVisibility:
                             # courtyard. Else, the edge gets visible.
 
                             # largest index on negative (left) side
-                            axisLeftIndex, _ = max( (isec for isec in edgeIntersections.items() if isec[1]<0.), key=itemgetter(1), default=(None,None))
+                            axisLeftIndex, _ = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
                             if axisLeftIndex is None:
                                 # smallest index on positive (right) side
-                                axisRightIndex, _ = min( (isec for isec in edgeIntersections.items() if isec[1]>=0.), key=itemgetter(1), default=(None,None))
+                                axisRightIndex, _ = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
                                 if axisRightIndex: # and edgeIntersections[axisRightIndex] < 2* searchWidth/segmentLength:
                                     building.updateAuxVisibilitySet(axisRightIndex, 1.)
                             else: # if edgeIntersections[axisLeftIndex] > 2* searchWidth/segmentLength:

@@ -44,7 +44,7 @@ class Building:
         self.auxIndex = 0
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
-        self.crossedEdges = {}
+        self.crossedEdges = []
         self.markUsedNodes(buildingIndex, osm)
     
     def addPart(self, part):
@@ -81,7 +81,8 @@ class Building:
         self.visibility = zeros((2, len(self.polygon.allVerts)))
     
     def updateAuxVisibilityAdd(self, polygonEdgeIndex, term):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
+        if polygonEdgeIndex >= 0:   # exclude dummy edges of crossongs
+            self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
         
     def updateAuxVisibilityDivide(self, polygonEdgeIndex, denominator):
         if denominator:
@@ -100,10 +101,10 @@ class Building:
         self.visibility[1] = 0.
 
     def resetCrossedEdges(self):
-        self.crossedEdges.clear()
+        self.crossedEdges = []
 
     def addCrossedEdge(self,edgeIndex,intsectX):
-        self.crossedEdges[edgeIndex] = intsectX
+        self.crossedEdges.append((edgeIndex, intsectX))
 
     def getCrossedEdgeIntsects(self):
         return self.crossedEdges
