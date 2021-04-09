@@ -21,7 +21,7 @@ from manager import Manager
 import parse
 from parse.osm import Osm
 from util import zAxis
-from . import Building
+from . import Building, BldgEdge
 
 
 class BaseBuildingManager:
@@ -45,6 +45,7 @@ class BaseBuildingManager:
         if buildingParts:
             self.parts = buildingParts.parts
         self.actions = []
+        self.edges = {}
         app.addManager(self)
     
     def setRenderer(self, renderer):
@@ -83,7 +84,24 @@ class BaseBuildingManager:
     def addAction(self, action):
         action.app = self.app
         self.actions.append(action)
-
+    
+    def getEdge(self, building, nodeId1, nodeId2):
+        data = self.data
+        
+        if nodeId1 > nodeId2:
+            nodeId1, nodeId2 = nodeId2, nodeId1
+        key = "%s_%s" % (nodeId1, nodeId2)
+        edge = self.edges.get(key)
+        if not edge:
+            edge = BldgEdge(
+                nodeId1,
+                data.nodes[nodeId1].getData(data),
+                nodeId2,
+                data.nodes[nodeId2].getData(data)
+            )
+            self.edges[key] = edge
+        edge.addBuilding(edge)
+        return edge
 
 class BuildingManager(BaseBuildingManager, Manager):
     

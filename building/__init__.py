@@ -21,6 +21,124 @@ from numpy import zeros
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
+from builtins import property
+
+
+class BldgPolygon:
+    
+    __slots__ = ("vectors", "edges", "numEdges", "reversed")
+    
+    def __init__(self, outline, manager):
+        self.reversed = False
+        # vectors
+        self.vectors = vectors = tuple(
+            BldgVector( self.getVector(nodeId1, nodeId2, manager) ) \
+                for nodeId1,nodeId2 in outline.outerVectorNodeIds()
+        )
+        # edges
+        self.edges = tuple(vector.edge for vector in vectors)
+        self.numEdges = len(self.edges)
+        # set the previous and the next vector for each vector from <self.vectors>
+        for i in range(self.numEdges-1):
+            vectors[i].prev = vectors[i-1]
+            vectors[i].next = vectors[i+1]
+        vectors[i].prev = vectors[i-1]
+        vectors[i].next = vectors[0]
+        
+        self.forceCcwDirection()
+
+    def forceCcwDirection(self):
+        """
+        Check direction of the building outer polygon and
+        force their direction to be counterclockwise
+        """
+        vectors = self.vectors
+        # Get index of the vertex with the minimum Y-coordinate and maximum X-coordinate,
+        # i.e. the index of the rightmost lowest vertex
+        
+        index = min(
+            range(self.numEdges),
+            key = lambda index: ( vectors[index].vert1[1], -vectors[index].vert1[0] )
+        )
+        
+        # <vector1=vectors[index].prev>: the vector entering the vertex with the <index>
+        # <vector2=vectors[index]>: the vector leaving the vertex with the <index>
+        # Check if the <vector2> is to the left from the vector <vector1>;
+        # in that case the direction of vertices is counterclockwise,
+        # it's clockwise in the opposite case.
+        if self.directionCondition(vectors[index].prev, vectors[index]):
+            self.reverse()
+    
+    def directionCondition(self, vectorIn, vectorOut):
+        return vectorIn[0] * vectorOut[1] - vectorIn[1] * vectorOut[0] < 0.
+    
+    def getVector(self, nodeId1, nodeId2, manager):
+        edge = manager.getEdge(self, nodeId1, nodeId2)
+        return BldgVector(edge, edge.id1 is nodeId1)
+    
+    def reverse(self):
+        self.reversed = True
+        for vector in self.vectors:
+            vector.reverse()
+    
+    @property
+    def verts(self):
+        return (
+            vector.v1 for vector in (reversed(self.vectors) if self.reversed else self.vectors)
+        )
+
+
+class BldgEdge:
+    
+    __slots__ = ("id1", "v1", "id2", "v2", "visibility", "visibilityTmp")
+    
+    def __init__(self, id1, v1, id2, v2):
+        #
+        # Important: always id1 < id2 
+        #
+        self.id1 = id1
+        self.v1 = v1
+        self.id2 = id2
+        self.v2 = v2
+        
+        self.visibility = self.visibilityTmp = 0.
+        # instances of the class <Building> shared by the edge are stored in <self.buildings>
+        self.buildings = None
+    
+    def addBuilding(self, building):
+        if self.buildings:
+            self.buildings = (self.buildings[0], building)
+        else:
+            # a Python tuple with one element
+            self.buildings = (building,)
+    
+    def hasSharedBuildings(self):
+        return len(self.buildings) == 2
+
+    def updateVisibility(self):
+        self.visibility = max(self.visibility, self.visibilityTmp)
+
+
+class BldgVector:
+    """
+    A wrapper for the class BldgEdge
+    """
+    
+    __slots__ = ("edge", "direct", "prev", "next")
+    
+    def __init__(self, edge, direct):
+        self.edge = edge
+        # <self.direct> defines the direction given the <edge> defined by node1 and node2
+        # True: the direction of the vector is from node1 to node2
+        self.direct = direct
+    
+    def reverse(self):
+        self.direct = not self.direct
+        self.prev, self.next = self.next, self.prev
+    
+    @property
+    def v1(self):
+        return self.edge.v1 if self.direct else self.edge.v2
 
 
 class Building:
@@ -28,24 +146,22 @@ class Building:
     A wrapper for a OSM building
     """
     
-    __slots__ = ("outline", "parts", "polygon", "visibility", "auxIndex", "crossedEdges")
+    __slots__ = ("outline", "parts", "polygon", "auxIndex", "crossedEdges")
     
     def __init__(self, element, buildingIndex, osm):
         self.outline = element
         self.parts = []
         # a polygon for the outline, used for facade classification only
         self.polygon = None
-        # A numpy array to store facade visibility. It consists of two rows.
-        # The first row contains the final visibility.
-        # The second one contains the intermediary or auxiliary visibility.
-        # After each calculation cycle the maximum of the above visibilities is stored in the elements of the first row.
-        self.visibility = None
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
         self.crossedEdges = []
         self.markUsedNodes(buildingIndex, osm)
+    
+    def initPolygon(self, manager):
+        self.polygon = BldgPolygon(self.outline, manager)
     
     def addPart(self, part):
         self.parts.append(part)
@@ -59,27 +175,6 @@ class Building:
         for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
     
-    def initPolygon(self, data):
-        outline = self.outline
-        polygon = Polygon()
-        if outline.t is parse.multipolygon:
-            polygon.init( Vector((coord[0], coord[1], 0.)) for coord in outline.getOuterData(data) )
-        else:
-            polygon.init( Vector((coord[0], coord[1], 0.)) for coord in outline.getData(data) )
-        if polygon.n < 3:
-            # skip it
-            return
-        # check the direction of vertices, it must be counterclockwise
-        polygon.checkDirection()
-        self.polygon = polygon
-    
-    def initVisibility(self):
-        # <self.polygon> must be already initialized
-        
-        # The number of elements in each row of <self.visibility> is equal to the number of vertices in
-        # <self.polygon.allVerts>, i.e. the vertices forming a straight angle are also included
-        self.visibility = zeros((2, len(self.polygon.allVerts)))
-    
     def updateAuxVisibilityAdd(self, polygonEdgeIndex, term):
         if polygonEdgeIndex >= 0:   # exclude dummy edges of crossongs
             self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
@@ -90,34 +185,24 @@ class Building:
         else:
             self.visibility[1][self.polygon.indices[polygonEdgeIndex]] = 0.
     
-    def updateAuxVisibilitySet(self, polygonEdgeIndex, value):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] = value
-    
-    def updateVisibilityMax(self, polygonEdgeIndex):
-        index = self.polygon.indices[polygonEdgeIndex]
-        self.visibility[0][index] = max(self.visibility[0][index], self.visibility[1][index])
-    
-    def resetAuxVisibility(self):
-        self.visibility[1] = 0.
+    def resetTmpVisibility(self):
+        for edge in self.polygon.edges:
+            edge.visibilityTmp = 0.
 
     def resetCrossedEdges(self):
-        self.crossedEdges = []
+        self.crossedEdges.clear()
 
-    def addCrossedEdge(self,edgeIndex,intsectX):
-        self.crossedEdges.append((edgeIndex, intsectX))
-
-    def getCrossedEdgeIntsects(self):
-        return self.crossedEdges
-
+    def addCrossedEdge(self, edge, intsectX):
+        self.crossedEdges.append( (edge, intsectX) )
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex):
         """
-        A generator that yields edge info (edge index, the first edge vertex, the second edge vertex)
+        A generator that yields edge info (the first edge vertex, the second edge vertex)
         out of numpy array <queryBldgVerts> and the index of the first vertex <firstVertIndex> of
         the building polygon at <queryBldgVerts>
         """
-        n_1 = self.polygon.n - 1
-        for edgeIndex, vertIndex in zip(range(n_1), range(firstVertIndex, firstVertIndex + n_1)):
-            yield edgeIndex, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
+        n_1 = self.polygon.numEdges - 1
+        for vertIndex in range(firstVertIndex, firstVertIndex + n_1):
+            yield queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
         # the last edge
-        yield n_1, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
+        yield queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]

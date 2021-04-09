@@ -207,7 +207,7 @@ class Multipolygon(Relation):
     """
     
     # use __slots__ for memory optimization
-    __slots__ = ("t", "ls", "b", "o")
+    __slots__ = ("t", "ls", "b", "o", "outer", "hasInner", "singleOuter")
     
     def __init__(self, osm=None):
         super().__init__()
@@ -302,11 +302,12 @@ class Multipolygon(Relation):
             if len(polygons) == 1:
                 self.t = parse.polygon
                 # the only linestring is the valid polygon
-                self.ls = polygons[0]
+                self.outer = self.ls = polygons[0]
             else:
                 self.t = parse.multipolygon
                 # all linestrings are valid polygon
                 self.ls = polygons
+                self.validateMultipolygon()
             # update bounds of the OSM data with the valid elements of the relation
             if not osm.projection:
                 for p in polygons:
@@ -344,6 +345,29 @@ class Multipolygon(Relation):
             self.valid = False
         return True
     
+    def validateMultipolygon(self):
+        # check if have exactly one outer line string and at least on
+        outer = None
+        hasInner = False
+        singleOuter = True
+        
+        for _l in self.ls:
+            if _l.role is Osm.inner:
+                if not hasInner:
+                    hasInner = True
+            elif outer:
+                if singleOuter:
+                    singleOuter = False
+            else:
+                outer = _l
+        
+        if outer:
+            self.outer = outer
+            self.singleOuter = singleOuter
+            self.hasInner = hasInner
+        else:
+            self.valid = False
+    
     def getData(self, osm):
         """
         Get projected data for the relation if it is composed of the only linestring
@@ -374,15 +398,7 @@ class Multipolygon(Relation):
         
         Returns a Python generator
         """
-        # the method is applicable only for <self.t is Render.multipolygon>
-        
-        # iterate through the linestrings in the list <self.l>
-        for _l in self.ls:
-            if _l.role is Osm.outer:
-                break
-        else:
-            return
-        return self.getLinestringData(_l, osm)
+        return self.getLinestringData(self.outer, osm)
     
     def getNodes(self, osm):
         """
@@ -390,17 +406,7 @@ class Multipolygon(Relation):
         
         Returns a Python generator
         """
-        if self.t is parse.polygon:
-            _l = self.ls
-        else:
-            # iterate through the linestrings in the list <self.l>
-            for _l in self.ls:
-                if _l.role is Osm.outer:
-                    break
-            else:
-                return
-        
-        return (osm.nodes[nodeId] for nodeId in _l.nodeIds(osm))
+        return (osm.nodes[nodeId] for nodeId in self.outer.nodeIds(osm))
     
     def isClosed(self, linestringIndex=None):
         """
@@ -413,17 +419,6 @@ class Multipolygon(Relation):
             l = self.ls[linestringIndex]
             return not l.parts or self.ls[linestringIndex].end is None
     
-    def hasInner(self):
-        """
-        Check if the multipolygons has a hole (i.e has an inner polygon)
-        
-        The method can be called only if <self.t> is <parse.multipolygon>
-        """
-        for _l in self.ls:
-            if _l.role is Osm.inner:
-                return True
-        return False
-    
     def nodeIds(self, osm):
         """
         A generator to get id of OSM nodes of all linestrings of the relation
@@ -434,6 +429,16 @@ class Multipolygon(Relation):
         return (nodeId for _l in l for nodeId in _l.nodeIds(osm))\
             if isinstance(l, list) else\
             (nodeId for nodeId in l.nodeIds(osm))
+
+    def outerVectorNodeIds(self, osm):
+        prevNodeId = firstNodeId = None
+        for nodeId in self.outer.nodeIds(osm):
+            if prevNodeId:
+                yield prevNodeId, nodeId
+            else:
+                firstNodeId = nodeId
+            prevNodeId = nodeId
+        yield nodeId, firstNodeId
     
     def makePolygon(self):
         # get the outer linestring

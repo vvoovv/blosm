@@ -97,3 +97,10 @@ class Way:
         Returns a Python generator
         """
         return (self.nodes[i] for i in range(self.n))
+    
+    def outerVectorNodeIds(self, osm):
+        nodes = self.nodes
+        for i in range(1, self.n):
+            yield nodes[-1], nodes[i]
+        if self.closed:
+            yield nodes[self.n-1], nodes[0]

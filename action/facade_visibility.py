@@ -58,17 +58,13 @@ class FacadeVisibility:
         # remove straight angles for them and calculate the total number of vertices
         for building in buildings:
             if not building.polygon:
-                building.initPolygon(manager.data)
-                if not building.polygon:
-                    continue
-            if not building.visibility:
-                building.initVisibility()
+                building.initPolygon(manager)
         
         # the total number of vertices
-        totalNumVerts = sum(building.polygon.n for building in buildings if building.polygon)
+        totalNumVerts = sum(building.polygon.numEdges for building in buildings if building.polygon)
         # create mapping between the index of the vertex and index of the building in <buildings>
         self.vertIndexToBldgIndex.extend(
-            bldgIndex for bldgIndex, building in enumerate(buildings) if building.polygon for _ in range(building.polygon.n)
+            bldgIndex for bldgIndex, building in enumerate(buildings) if building.polygon for _ in range(building.polygon.numEdges)
         )
         
         # allocate the memory for an empty numpy array
@@ -114,7 +110,7 @@ class FacadeVisibility:
                     self.makeKdQuery(segmentCenter, sqrt(searchWidth*searchWidth + self.searchHeight_2))
                 )
                 queryBldgVertIndices = tuple(
-                    vertIndex for bldgIndex in queryBldgIndices for vertIndex in range(buildings[bldgIndex].auxIndex, buildings[bldgIndex].auxIndex + buildings[bldgIndex].polygon.n)
+                    vertIndex for bldgIndex in queryBldgIndices for vertIndex in range(buildings[bldgIndex].auxIndex, buildings[bldgIndex].auxIndex + buildings[bldgIndex].polygon.numEdges)
                 )
                 # slice <self.bldgVerts> using <queryBldgVertIndices>
                 queryBldgVerts = self.bldgVerts[queryBldgVertIndices,:]
@@ -138,7 +134,7 @@ class FacadeVisibility:
                     building.resetAuxVisibility()
                     building.resetCrossedEdges()
                     
-                    for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                    for edge, (edgeVert1, edgeVert2) in zip( building.getEdges(), building.edgeInfo(queryBldgVerts, firstVertIndex) ):
                         # check if there are edges crossed by this way-segment (the vertices have different signs of y-coord)
                         if np.diff( (np.sign(edgeVert1[1]),np.sign(edgeVert2[1])) ):
                             # find x-coord of intersection with way-segment axis (the x-axis in this coordinate system).
@@ -150,57 +146,57 @@ class FacadeVisibility:
                             y0 = edgeVert1[1]
                             intsectX = (x0+abs(y0/dy)*dx ) / (segmentLength/2.) if dy else 0.
                             # store result in building for later analysis
-                            building.addCrossedEdge(edgeIndex, intsectX)
+                            building.addCrossedEdge(edge, intsectX)
 
-                    intersections = building.getCrossedEdgeIntsects()
+                    intersections = building.crossedEdges
                     # if there are intersections, fill a dummy line in the interior of the building
-                    # between the intersection. The edge index is neagtive, so that it can be 
+                    # between the intersection. The edge index is negative, so that it can be 
                     # excluded in Building's method updateAuxVisibilityAdd().
                     if intersections:
                         intersections.sort(key=lambda x:x[1])
-                        for i in range(0,len(intersections),2):
+                        for i in range(0, len(intersections), 2):
                             x1 = intersections[i][1] * segmentLength/2.
                             x2 = intersections[i+1][1] * segmentLength/2.
-                            edgIndex = -intersections[i][0]  # negative to mark it as dummy edge
+                            edge = None  # None to mark it as a dummy edge
                             posEvents.append(
-                                (building, edgIndex, None, x1, np.array((x1,0.)), np.array((x2,0.)))
+                                (building, edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edgIndex, posEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
+                                (building, edge, posEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
                             )
                             negEvents.append(
-                                (building, edgIndex, None, x1, np.array((x1,0.)), np.array((x2,0.)))
+                                (building, edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             negEvents.append(
-                                (building, edgIndex, negEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
+                                (building, edge, negEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
                             )
 
-                    for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                    for edge, (edgeVert1, edgeVert2) in zip( building.getEdges(), building.edgeInfo(queryBldgVerts, firstVertIndex) ):
                         if edgeVert1[0] > edgeVert2[0]:
                             # because the algorithm scans with increasing x, the first vertice has to get smaller x
                             edgeVert1, edgeVert2 = edgeVert2, edgeVert1
                         
                         if edgeVert1[1] > 0. or edgeVert2[1] > 0.:
                             posEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], edgeVert1, edgeVert2)
+                                (building, edge, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edgeIndex, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
+                                (building, edge, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                         if edgeVert1[1] < 0. or edgeVert2[1] < 0.:
                             negEvents.append(
-                                (building, edgeIndex, None, edgeVert1[0], edgeVert1, edgeVert2)
+                                (building, edge, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edgeIndex, negEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
+                                (building, edge, negEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                      
                     firstVertIndex += building.polygon.n
@@ -214,48 +210,45 @@ class FacadeVisibility:
                     building = buildings[bldgIndex]
 
                     # compute visibility ratio and select edges in range
-                    for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                    for edge, (edgeVert1, edgeVert2) in zip( building.getEdges(), building.edgeInfo(queryBldgVerts, firstVertIndex) ):
                         dx = abs(edgeVert2[0] - edgeVert1[0])
                         dy = abs(edgeVert2[1] - edgeVert1[1])
                         if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
-                            building.updateAuxVisibilitySet(edgeIndex, 0.)
+                            building.updateAuxVisibilitySet(edge, 0.)
                         else:
-                            building.updateAuxVisibilityDivide(edgeIndex, dx)
+                            building.updateAuxVisibilityDivide(edge, dx)
 
                     # check for intersections and process them
-                    edgeIntersections = building.getCrossedEdgeIntsects()
+                    edgeIntersections = building.crossedEdges
                     # if there are intersections, process their edges
                     if edgeIntersections:
                         # for values between 0 and 1, the intersection is in the way-segment
-                        wayIntersects =  [isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1.]
+                        wayIntersects =  tuple( isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1. )
                         if wayIntersects:
                             # all intersections with the way-segment itself become full visible
-                            for edgeIndex, intsectX in edgeIntersections:
-                                if abs(intsectX) <= 1.:
-                                    building.updateAuxVisibilitySet(edgeIndex, 1.)
-                                else:
-                                    building.updateAuxVisibilitySet(edgeIndex, 0.)
+                            for edge, intsectX in edgeIntersections:
+                                edge.visibilityTmp = 1. if abs(intsectX) <= 1. else 0.
                         else:
                             # process the nearest axis intersections. If there are on both sides, we assume a street within a
                             # courtyard. Else, the edge gets visible.
 
                             # largest index on negative (left) side
-                            axisLeftIndex, _ = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
-                            if axisLeftIndex is None:
+                            axisLeftEdge, _ = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
+                            if axisLeftEdge: # if edgeIntersections[axisLeftIndex] > 2* searchWidth/segmentLength:
+                                axisLeftEdge.visibilityTmp = 1.
+                            else:
                                 # smallest index on positive (right) side
-                                axisRightIndex, _ = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
-                                if axisRightIndex: # and edgeIntersections[axisRightIndex] < 2* searchWidth/segmentLength:
-                                    building.updateAuxVisibilitySet(axisRightIndex, 1.)
-                            else: # if edgeIntersections[axisLeftIndex] > 2* searchWidth/segmentLength:
-                                    building.updateAuxVisibilitySet(axisLeftIndex, 1.)
+                                axisRightEdge, _ = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
+                                if axisRightEdge: # and edgeIntersections[axisRightIndex] < 2* searchWidth/segmentLength:
+                                    axisRightEdge.visibilityTmp = 1.
 
                     # check for range and angles
-                    for edgeIndex, edgeVert1, edgeVert2 in building.edgeInfo(queryBldgVerts, firstVertIndex):
+                    for edge, (edgeVert1, edgeVert2) in zip( building.getEdges(), building.edgeInfo(queryBldgVerts, firstVertIndex) ):
                         # at least one vertice of the edge must be in rectangular search range
                         if not ( (abs(edgeVert1[0]) < searchWidth and abs(edgeVert1[1]) < self.searchHeight) or\
                                 (abs(edgeVert2[0]) < searchWidth and abs(edgeVert2[1]) < self.searchHeight) ):
-                            building.updateAuxVisibilitySet(edgeIndex, 0.)
-                        building.updateVisibilityMax(edgeIndex)
+                            edge.visibilityTmp = 0.
+                        edge.updateVisibility()
 
                     firstVertIndex += building.polygon.n
 
@@ -325,7 +318,9 @@ class FacadeVisibility:
                     queue.push(endY, event)
             else:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
-                    activeEvent[0].updateAuxVisibilityAdd(activeEvent[1], eventX - activeX)
+                    # edge = activeEvent[1]
+                    if activeEvent[1]:   # exclude dummy edges of crossings
+                        activeEvent[1].visibilityTmp += eventX - activeX # updateAuxVisibilityAdd
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX
