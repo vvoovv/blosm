@@ -32,8 +32,8 @@ class BldgPolygon:
         self.reversed = False
         # vectors
         self.vectors = vectors = tuple(
-            BldgVector( self.getVector(nodeId1, nodeId2, manager) ) \
-                for nodeId1,nodeId2 in outline.outerVectorNodeIds()
+            self.getVector(nodeId1, nodeId2, manager) \
+                for nodeId1,nodeId2 in outline.outerVectorNodeIds(manager.data)
         )
         # edges
         self.edges = tuple(vector.edge for vector in vectors)
@@ -58,7 +58,7 @@ class BldgPolygon:
         
         index = min(
             range(self.numEdges),
-            key = lambda index: ( vectors[index].vert1[1], -vectors[index].vert1[0] )
+            key = lambda index: ( vectors[index].v1[1], -vectors[index].v1[0] )
         )
         
         # <vector1=vectors[index].prev>: the vector entering the vertex with the <index>
@@ -66,7 +66,7 @@ class BldgPolygon:
         # Check if the <vector2> is to the left from the vector <vector1>;
         # in that case the direction of vertices is counterclockwise,
         # it's clockwise in the opposite case.
-        if self.directionCondition(vectors[index].prev, vectors[index]):
+        if self.directionCondition(vectors[index].prev.vector, vectors[index].vector):
             self.reverse()
     
     def directionCondition(self, vectorIn, vectorOut):
@@ -86,11 +86,16 @@ class BldgPolygon:
         return (
             vector.v1 for vector in (reversed(self.vectors) if self.reversed else self.vectors)
         )
+    
+    def getEdges(self):
+        return (edge for edge in reversed(self.edges)) \
+            if self.reverse else\
+            (edge for edge in self.edges)
 
 
 class BldgEdge:
     
-    __slots__ = ("id1", "v1", "id2", "v2", "visibility", "visibilityTmp")
+    __slots__ = ("id1", "v1", "id2", "v2", "visibility", "visibilityTmp", "buildings")
     
     def __init__(self, id1, v1, id2, v2):
         #
@@ -140,6 +145,16 @@ class BldgVector:
     def v1(self):
         return self.edge.v1 if self.direct else self.edge.v2
 
+    @property
+    def vector(self):
+        if self.direct:
+            v1 = self.edge.v1
+            v2 = self.edge.v2
+        else:
+            v1 = self.edge.v2
+            v2 = self.edge.v1
+        return (v2[0] - v1[0], v2[1] - v1[1])
+
 
 class Building:
     """
@@ -174,16 +189,6 @@ class Building:
         """
         for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
-    
-    def updateAuxVisibilityAdd(self, polygonEdgeIndex, term):
-        if polygonEdgeIndex >= 0:   # exclude dummy edges of crossongs
-            self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
-        
-    def updateAuxVisibilityDivide(self, polygonEdgeIndex, denominator):
-        if denominator:
-            self.visibility[1][self.polygon.indices[polygonEdgeIndex]] /= denominator
-        else:
-            self.visibility[1][self.polygon.indices[polygonEdgeIndex]] = 0.
     
     def resetTmpVisibility(self):
         for edge in self.polygon.edges:
