@@ -42,8 +42,8 @@ class BldgPolygon:
         for i in range(self.numEdges-1):
             vectors[i].prev = vectors[i-1]
             vectors[i].next = vectors[i+1]
-        vectors[i].prev = vectors[i-1]
-        vectors[i].next = vectors[0]
+        vectors[-1].prev = vectors[i]
+        vectors[-1].next = vectors[0]
         
         self.forceCcwDirection()
 

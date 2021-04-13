@@ -101,6 +101,6 @@ class Way:
     def outerVectorNodeIds(self, osm):
         nodes = self.nodes
         for i in range(1, self.n):
-            yield nodes[-1], nodes[i]
+            yield nodes[i-1], nodes[i]
         if self.closed:
             yield nodes[self.n-1], nodes[0]

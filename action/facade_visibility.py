@@ -10,27 +10,32 @@ class PriorityQueue():
     def __init__(self):
         self.keys = []
         self.queue = []
-
+        self.ids = []
+    
     def push(self, key, item):
         i = bisect_left(self.keys, key) # Determine where to insert item.
         self.keys.insert(i, key)        # Insert key of item to keys list.
         self.queue.insert(i, item)      # Insert the item itself in the corresponding place.
-
+        self.ids.insert(i, id(item))
+    
     def pop(self):
         self.keys.pop(0)
+        self.ids.pop(0)
         return self.queue.pop(0)
-
+    
     def remove(self, item):
-        itemIndex = self.queue.index(item)
+        itemIndex = self.ids.index(id(item))
+        del self.ids[itemIndex]
         del self.queue[itemIndex]
         del self.keys[itemIndex]
-
+    
     def empty(self):
         return not self.queue
     
     def cleanup(self):
         self.keys.clear()
         self.queue.clear()
+        self.ids.clear()
 
 
 class FacadeVisibility:
@@ -215,7 +220,7 @@ class FacadeVisibility:
                         dy = abs(edgeVert2[1] - edgeVert1[1])
                         if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
                             edge.visibilityTmp = 0.
-                        else:
+                        elif dy:
                             edge.visibilityTmp /= dx
                     
                     # check for intersections and process them
