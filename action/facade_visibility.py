@@ -164,20 +164,20 @@ class FacadeVisibility:
                             x2 = intersections[i+1][1] * segmentLength/2.
                             edge = None  # None to mark it as a dummy edge
                             posEvents.append(
-                                (building, edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
+                                (edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edge, posEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
+                                (edge, posEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
                             )
                             negEvents.append(
-                                (building, edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
+                                (edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             negEvents.append(
-                                (building, edge, negEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
+                                (edge, negEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
                             )
 
                     for edge, (edgeVert1, edgeVert2) in zip( building.polygon.getEdges(), building.edgeInfo(queryBldgVerts, firstVertIndex) ):
@@ -187,21 +187,21 @@ class FacadeVisibility:
                         
                         if edgeVert1[1] > 0. or edgeVert2[1] > 0.:
                             posEvents.append(
-                                (building, edge, None, edgeVert1[0], edgeVert1, edgeVert2)
+                                (edge, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <posEvents[-1]>
                             posEvents.append(
-                                (building, edge, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
+                                (edge, posEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                         if edgeVert1[1] < 0. or edgeVert2[1] < 0.:
                             negEvents.append(
-                                (building, edge, None, edgeVert1[0], edgeVert1, edgeVert2)
+                                (edge, None, edgeVert1[0], edgeVert1, edgeVert2)
                             )
                             # Keep track of the related "edge starts" event,
                             # that's why <negEvents[-1]>
                             negEvents.append(
-                                (building, edge, negEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
+                                (edge, negEvents[-1], edgeVert2[0], edgeVert1, edgeVert2)
                             )
                      
                     firstVertIndex += building.polygon.numEdges
@@ -267,7 +267,7 @@ class FacadeVisibility:
         
         # sort events by increasing start x and then by increasing abs(end y)
         events.sort(
-            key = (lambda x: (x[3], x[5][1])) if positiveY else (lambda x: (x[3], -x[5][1]))
+            key = (lambda x: (x[2], x[4][1])) if positiveY else (lambda x: (x[2], -x[4][1]))
         )
 
         queue.cleanup()
@@ -275,7 +275,7 @@ class FacadeVisibility:
         #self.drawEvents(events)
         
         for event in events:
-            _, _, relatedEdgeStartsEvent, eventX, edgeVert1, edgeVert2 = event
+            _, relatedEdgeStartsEvent, eventX, edgeVert1, edgeVert2 = event
             if positiveY:
                 startY = edgeVert1[1]
                 endY = edgeVert2[1]
@@ -286,14 +286,14 @@ class FacadeVisibility:
                 activeEvent = event
                 activeX = eventX
             elif not relatedEdgeStartsEvent: # an "edge starts" event here
-                activeStartX = activeEvent[4][0]
-                activeEndX = activeEvent[5][0]
+                activeStartX = activeEvent[3][0]
+                activeEndX = activeEvent[4][0]
                 if positiveY:
-                    activeStartY = activeEvent[4][1]
-                    activeEndY = activeEvent[5][1]
+                    activeStartY = activeEvent[3][1]
+                    activeEndY = activeEvent[4][1]
                 else:
-                    activeStartY = -activeEvent[4][1]
-                    activeEndY = -activeEvent[5][1]
+                    activeStartY = -activeEvent[3][1]
+                    activeEndY = -activeEvent[4][1]
                 # if both edges start at the same x-coord, the new edge is in front,
                 # when its endpoint is nearer to the way-segment.
                 isInFront = False
@@ -315,9 +315,9 @@ class FacadeVisibility:
                         isInFront = True
 
                 if isInFront: # the new edges hides the active edge
-                    # edge = activeEvent[1]
-                    if activeEvent[1]: # exclude dummy edges of crossings updateAuxVisibilityAdd
-                        activeEvent[1].visibilityTmp += eventX - activeX
+                    # edge = activeEvent[0]
+                    if activeEvent[0]: # exclude dummy edges of crossings updateAuxVisibilityAdd
+                        activeEvent[0].visibilityTmp += eventX - activeX
                     queue.push(activeEndY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
@@ -325,9 +325,9 @@ class FacadeVisibility:
                     queue.push(endY, event)
             else:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
-                    # edge = activeEvent[1]
-                    if activeEvent[1]:   # exclude dummy edges of crossings updateAuxVisibilityAdd
-                        activeEvent[1].visibilityTmp += eventX - activeX
+                    # edge = activeEvent[0]
+                    if activeEvent[0]:   # exclude dummy edges of crossings updateAuxVisibilityAdd
+                        activeEvent[0].visibilityTmp += eventX - activeX
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX
@@ -336,18 +336,6 @@ class FacadeVisibility:
                         activeX = 0.
                 else: # there must be an edge in the queue, that ended before
                     queue.remove(relatedEdgeStartsEvent)
-    
-    def drawEvents(self, events):
-        mpl = Mpl.getMpl()
-        ax = mpl.ax
-        
-        for building, edgeIndex, edgeStarts, eventX, eventY in events:
-            ax.plot(
-                eventX, eventY, marker='+', color='green' if edgeStarts else 'red'
-            )
-        
-        mpl.show()
-        mpl.shown = False
 
 
 class FacadeVisibilityBlender(FacadeVisibility):
