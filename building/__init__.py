@@ -89,7 +89,7 @@ class BldgPolygon:
     
     def getEdges(self):
         return (edge for edge in reversed(self.edges)) \
-            if self.reverse else\
+            if self.reversed else\
             (edge for edge in self.edges)
 
 
