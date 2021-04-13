@@ -3,8 +3,6 @@ import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
 
-from mpl import Mpl
-
 
 class PriorityQueue():
     def __init__(self):
