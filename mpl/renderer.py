@@ -82,13 +82,24 @@ class BuildingVisibilityRender(Renderer):
                     self.renderLineString(outline.getLinestringData(l, data), True, BuildingRenderer.style)
 
     def renderBuildingFootprint(self, building):
-        for edge in building.polygon.edges:
-            self.mpl.ax.plot(
-                (edge.v1[0], edge.v2[0]),
-                (edge.v1[1], edge.v2[1]),
+        for vector in building.polygon.vectors:
+            edge, v1, v2 = vector.edge, vector.v1, vector.v2
+            ax = self.mpl.ax
+            color = BuildingVisibilityRender.getFootprintEdgeColor(edge)
+            ax.plot(
+                (v1[0], v2[0]),
+                (v1[1], v2[1]),
                 linewidth = 1.,
-                color = BuildingVisibilityRender.getFootprintEdgeColor(edge)
+                color = color
             )
+            ax.plot(v1[0], v1[1], 'k.')
+            if not edge.hasSharedBuildings():
+                ax.annotate(
+                    '',
+                    xytext = (v1[0], v1[1]),
+                    xy=(v2[0], v2[1]),
+                    arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
+                )
     
     @staticmethod
     def getFootprintEdgeColor(edge):

@@ -144,6 +144,10 @@ class BldgVector:
     @property
     def v1(self):
         return self.edge.v1 if self.direct else self.edge.v2
+    
+    @property
+    def v2(self):
+        return self.edge.v2 if self.direct else self.edge.v1
 
     @property
     def vector(self):
