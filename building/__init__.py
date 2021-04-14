@@ -74,7 +74,7 @@ class BldgPolygon:
     
     def getVector(self, nodeId1, nodeId2, manager):
         edge = manager.getEdge(self, nodeId1, nodeId2)
-        return BldgVector(edge, edge.id1 is nodeId1)
+        return BldgVector(edge, edge.id1 == nodeId1)
     
     def reverse(self):
         self.reversed = True
