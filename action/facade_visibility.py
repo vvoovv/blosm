@@ -218,8 +218,10 @@ class FacadeVisibility:
                         dy = abs(edgeVert2[1] - edgeVert1[1])
                         if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
                             edge.visibilityTmp = 0.
-                        elif dy:
-                            edge.visibilityTmp /= dx
+                        elif dx:
+                            edge.visibilityTmp /= dx    # normalization of visibility
+                        else:
+                            edge.visibilityTmp = 0.     # edge perpendicular to way-segment
                     
                     # check for intersections and process them
                     edgeIntersections = building.crossedEdges
