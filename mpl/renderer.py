@@ -83,6 +83,8 @@ class BuildingVisibilityRender(Renderer):
 
     def renderBuildingFootprint(self, building):
         for vector in building.polygon.vectors:
+            if vector.straightAngle:
+                continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
             ax = self.mpl.ax
             color = BuildingVisibilityRender.getFootprintEdgeColor(edge)

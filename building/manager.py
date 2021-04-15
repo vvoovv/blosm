@@ -85,7 +85,7 @@ class BaseBuildingManager:
         action.app = self.app
         self.actions.append(action)
     
-    def getEdge(self, building, nodeId1, nodeId2):
+    def getEdge(self, nodeId1, nodeId2):
         data = self.data
         
         if nodeId1 > nodeId2:

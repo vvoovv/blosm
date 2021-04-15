@@ -21,12 +21,13 @@ from numpy import zeros
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
-from builtins import property
+
+Polygon.straightAngleTan = 0.2
 
 
 class BldgPolygon:
     
-    __slots__ = ("vectors", "edges", "numEdges", "reversed")
+    __slots__ = ("vectors", "numEdges", "reversed")
     
     def __init__(self, outline, manager):
         self.reversed = False
@@ -35,9 +36,7 @@ class BldgPolygon:
             self.getVector(nodeId1, nodeId2, manager) \
                 for nodeId1,nodeId2 in outline.outerVectorNodeIds(manager.data)
         )
-        # edges
-        self.edges = tuple(vector.edge for vector in vectors)
-        self.numEdges = len(self.edges)
+        self.numEdges = len(self.vectors)
         # set the previous and the next vector for each vector from <self.vectors>
         for i in range(self.numEdges-1):
             vectors[i].prev = vectors[i-1]
@@ -46,6 +45,7 @@ class BldgPolygon:
         vectors[-1].next = vectors[0]
         
         self.forceCcwDirection()
+        self.processStraightAngles(manager)
 
     def forceCcwDirection(self):
         """
@@ -68,12 +68,53 @@ class BldgPolygon:
         # it's clockwise in the opposite case.
         if self.directionCondition(vectors[index].prev.vector, vectors[index].vector):
             self.reverse()
+
+    def processStraightAngles(self, manager):
+        """
+        Given <verts> constituting a polygon, removes vertices forming a straight angle
+        """
+        hasStraightAngle = False
+        # <refVector> is used if <hasStraightAngle> to mark a vector without the straight angle
+        refVector = None
+        
+        vec_ = self.vectors[0 if self.reversed else -1].vector
+        for vector in (reversed(self.vectors) if self.reversed else self.vectors):
+            vec = vector.vector
+            dot = vec_[0]*vec[0] + vec_[1]*vec[1]
+            if dot and abs( vec_[0]*vec[1]-vec_[1]*vec[0] ) < Polygon.straightAngleTan:
+                # got a straight angle
+                vector.straightAngle = True
+                if not hasStraightAngle:
+                    hasStraightAngle = True
+            elif not refVector:
+                refVector = vector
+            vec_ = vec
+        
+        if hasStraightAngle:
+            vector = prevNonStraightVector = refVector
+            isPrevVectorStraight = False
+            while True:
+                if vector.straightAngle:
+                    self.numEdges -= 1
+                    isPrevVectorStraight = True
+                elif isPrevVectorStraight:
+                    prevNonStraightVector.skipNodes(vector, manager)
+                    isPrevVectorStraight = False
+                else:
+                    # remember the last vector with a non straight angle
+                    prevNonStraightVector = vector
+                    
+                vector = vector.next
+                if vector is refVector:
+                    if isPrevVectorStraight:
+                        prevNonStraightVector.skipNodes(vector, manager)
+                    break
     
     def directionCondition(self, vectorIn, vectorOut):
         return vectorIn[0] * vectorOut[1] - vectorIn[1] * vectorOut[0] < 0.
     
     def getVector(self, nodeId1, nodeId2, manager):
-        edge = manager.getEdge(self, nodeId1, nodeId2)
+        edge = manager.getEdge(nodeId1, nodeId2)
         return BldgVector(edge, edge.id1 == nodeId1)
     
     def reverse(self):
@@ -84,13 +125,13 @@ class BldgPolygon:
     @property
     def verts(self):
         return (
-            vector.v1 for vector in (reversed(self.vectors) if self.reversed else self.vectors)
+            vector.v1 for vector in (reversed(self.vectors) if self.reversed else self.vectors) if not vector.straightAngle
         )
     
     def getEdges(self):
-        return (edge for edge in reversed(self.edges)) \
+        return (vector.edge for vector in reversed(self.vectors) if not vector.straightAngle) \
             if self.reversed else\
-            (edge for edge in self.edges)
+            (vector.edge for vector in self.vectors if not vector.straightAngle)
 
 
 class BldgEdge:
@@ -129,13 +170,14 @@ class BldgVector:
     A wrapper for the class BldgEdge
     """
     
-    __slots__ = ("edge", "direct", "prev", "next")
+    __slots__ = ("edge", "direct", "prev", "next", "straightAngle")
     
     def __init__(self, edge, direct):
         self.edge = edge
         # <self.direct> defines the direction given the <edge> defined by node1 and node2
         # True: the direction of the vector is from node1 to node2
         self.direct = direct
+        self.straightAngle = False
     
     def reverse(self):
         self.direct = not self.direct
@@ -158,6 +200,19 @@ class BldgVector:
             v1 = self.edge.v2
             v2 = self.edge.v1
         return (v2[0] - v1[0], v2[1] - v1[1])
+    
+    def skipNodes(self, nextVector, manager):
+        """
+        Skip nodes between <self> and <nextVector>
+        Update <prev> and <next> attributes. Set a new <BldgEdge>
+        """
+        self.next = nextVector
+        nextVector.prev = self
+        # set an instance of <BldgEdge> between <self> and <nextVector>
+        nodeId1 = self.edge.id1 if self.direct else self.edge.id2
+        nodeId2 = nextVector.edge.id1 if nextVector.direct else nextVector.edge.id2
+        self.edge = manager.getEdge(nodeId1, nodeId2)
+        self.direct = nodeId1 == self.edge.id1
 
 
 class Building:
@@ -195,8 +250,8 @@ class Building:
             osm.nodes[nodeId].b[buildingIndex] = 1
     
     def resetTmpVisibility(self):
-        for edge in self.polygon.edges:
-            edge.visibilityTmp = 0.
+        for vector in self.polygon.vectors:
+            vector.edge.visibilityTmp = 0.
 
     def resetCrossedEdges(self):
         self.crossedEdges.clear()
