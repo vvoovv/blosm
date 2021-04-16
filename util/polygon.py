@@ -478,9 +478,10 @@ class Polygon:
             uy = v_[1] - v[1]
             # dot product of the vectors <_u> and <u>
             dot = _ux*ux + _uy*uy
-            # Check if tangent of angle between the vectors <_u> and <u> is nearly equal to zero;
+            # Check if have a zero length vector due to duplicated nodes or
+            # if tangent of angle between the vectors <_u> and <u> is nearly equal to zero;
             # the tangent can be calculated as ration of cross product and dot product
-            if dot and abs((_ux*uy - _uy*ux)/dot) < Polygon.straightAngleTan:
+            if not (ux and uy) or ( dot and abs((_ux*uy - _uy*ux)/dot) < Polygon.straightAngleTan ):
                 if newIndices is None:
                     # Found the first straight angle in the polygon.
                     # Copy indices for the non-straight angles that we encountered before to <newIndices>
