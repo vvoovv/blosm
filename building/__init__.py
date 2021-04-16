@@ -22,8 +22,6 @@ import parse
 from mathutils import Vector
 from util.polygon import Polygon
 
-Polygon.straightAngleTan = 0.2
-
 
 class BldgPolygon:
     
@@ -81,7 +79,7 @@ class BldgPolygon:
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vec = vector.vector
             dot = vec_[0]*vec[0] + vec_[1]*vec[1]
-            if dot and abs( vec_[0]*vec[1]-vec_[1]*vec[0] ) < Polygon.straightAngleTan:
+            if dot and abs( (vec_[0]*vec[1]-vec_[1]*vec[0])/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
                 vector.straightAngle = True
                 if not hasStraightAngle:
