@@ -63,6 +63,12 @@ class FacadeVisibility:
             if not building.polygon:
                 building.initPolygon(manager)
         
+        for building in buildings:
+            building.polygon.processStraightAngles(manager)
+        
+        for building in buildings:
+            building.polygon.processStraightAnglesExtra(manager)
+        
         # the total number of vertices
         totalNumVerts = sum(building.polygon.numEdges for building in buildings if building.polygon)
         # create mapping between the index of the vertex and index of the building in <buildings>

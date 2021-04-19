@@ -83,7 +83,7 @@ class BuildingVisibilityRender(Renderer):
 
     def renderBuildingFootprint(self, building):
         for vector in building.polygon.vectors:
-            if vector.straightAngle:
+            if vector.skip:
                 continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
             ax = self.mpl.ax
@@ -95,16 +95,20 @@ class BuildingVisibilityRender(Renderer):
                 color = color
             )
             ax.plot(v1[0], v1[1], 'k.')
-            if not edge.hasSharedBuildings():
-                ax.annotate(
-                    '',
-                    xytext = (v1[0], v1[1]),
-                    xy=(v2[0], v2[1]),
-                    arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
-                )
+            #if not skip:
+            #    ax.annotate(str(vector.index), xy=(v1[0], v1[1]))
+            #if not edge.hasSharedBuildings():
+            #    ax.annotate(
+            #        '',
+            #        xytext = (v1[0], v1[1]),
+            #        xy=(v2[0], v2[1]),
+            #        arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
+            #    )
     
     @staticmethod
     def getFootprintEdgeColor(edge):
+        if edge.hasSharedBuildings():
+            return 'black'
         visibility = edge.visibility
         return 'red' if not visibility else (
             'green' if visibility > 0.75 else (

@@ -7,6 +7,7 @@ facadeVisibilityWayCategories = set((
     "tertiary",
     "unclassified",
     "residential",
+    "living_street",
     "service",
     "pedestrian",
     "track"
