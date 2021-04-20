@@ -189,6 +189,7 @@ class BldgPolygon:
         # The iterator <edges> yields one element more than <range(..)>, so we place it
         # after the <range(..)> in <zip(..)>, otherwise we get StopIteration exception
         for vertIndex, edge in zip( range(firstVertIndex, firstVertIndex + n_1), edges ):
+            #if edge.hasSharedBuildings(): continue
             yield edge, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
         # the last edge
         yield next(edges), queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
