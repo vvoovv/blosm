@@ -94,7 +94,7 @@ class BuildingVisibilityRender(Renderer):
                 linewidth = 1.,
                 color = color
             )
-            ax.plot(v1[0], v1[1], 'k.')
+            ax.plot(v1[0], v1[1], 'k.', markersize=3.5)
             #if not skip:
             #    ax.annotate(str(vector.index), xy=(v1[0], v1[1]))
             #if not edge.hasSharedBuildings():

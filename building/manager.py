@@ -100,7 +100,6 @@ class BaseBuildingManager:
                 data.nodes[nodeId2].getData(data)
             )
             self.edges[key] = edge
-        edge.addBuilding(edge)
         return edge
 
 class BuildingManager(BaseBuildingManager, Manager):
