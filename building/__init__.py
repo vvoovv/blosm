@@ -43,7 +43,8 @@ class BldgPolygon:
         # vectors
         self.vectors = vectors = tuple(
             self.getVector(nodeId1, nodeId2, manager) \
-                for nodeId1,nodeId2 in building.outline.outerVectorNodeIds(manager.data)
+                for nodeId1,nodeId2 in building.outline.outerVectorNodeIds(manager.data) \
+                    if not manager.data.haveSamePosition(nodeId1, nodeId2)
         )
         self.numEdges = len(self.vectors)
         # set the previous and the next vector for each vector from <self.vectors>

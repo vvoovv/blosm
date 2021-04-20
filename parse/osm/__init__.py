@@ -294,6 +294,11 @@ class Osm:
         self.lon = lon
         self.app.setProjection(lat, lon)
         self.projection = self.app.projection
+    
+    def haveSamePosition(self, nodeId1, nodeId2):
+        node1 = self.nodes[nodeId1]
+        node2 = self.nodes[nodeId2]
+        return node1.lat == node2.lat and node1.lon == node2.lon
 
 
 from .relation.multipolygon import Multipolygon
