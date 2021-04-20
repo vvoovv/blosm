@@ -177,6 +177,21 @@ class BldgPolygon:
         return (vector.edge for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector.edge for vector in self.vectors if not vector.skip)
+    
+    def edgeInfo(self, queryBldgVerts, firstVertIndex):
+        """
+        A generator that yields edge info (edge(BldgEdge), the first edge vertex, the second edge vertex)
+        out of numpy array <queryBldgVerts> and the index of the first vertex <firstVertIndex> of
+        the building polygon at <queryBldgVerts>
+        """
+        edges = self.getEdges()
+        n_1 = self.numEdges - 1
+        # The iterator <edges> yields one element more than <range(..)>, so we place it
+        # after the <range(..)> in <zip(..)>, otherwise we get StopIteration exception
+        for vertIndex, edge in zip( range(firstVertIndex, firstVertIndex + n_1), edges ):
+            yield edge, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
+        # the last edge
+        yield next(edges), queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
 
 
 class BldgEdge:
@@ -321,15 +336,3 @@ class Building:
 
     def addCrossedEdge(self, edge, intsectX):
         self.crossedEdges.append( (edge, intsectX) )
-    
-    def edgeInfo(self, queryBldgVerts, firstVertIndex):
-        """
-        A generator that yields edge info (the first edge vertex, the second edge vertex)
-        out of numpy array <queryBldgVerts> and the index of the first vertex <firstVertIndex> of
-        the building polygon at <queryBldgVerts>
-        """
-        n_1 = self.polygon.numEdges - 1
-        for vertIndex in range(firstVertIndex, firstVertIndex + n_1):
-            yield queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
-        # the last edge
-        yield queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
