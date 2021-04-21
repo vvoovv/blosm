@@ -143,7 +143,7 @@ class FacadeVisibility:
                     building.resetTmpVisibility()
                     building.resetCrossedEdges()
                     
-                    for shared, edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex):
+                    for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=False):
                         # check if there are edges crossed by this way-segment (the vertices have different signs of y-coord)
                         if np.diff( (np.sign(edgeVert1[1]),np.sign(edgeVert2[1])) ):
                             # find x-coord of intersection with way-segment axis (the x-axis in this coordinate system).
@@ -184,9 +184,7 @@ class FacadeVisibility:
                                 (edge, negEvents[-1], x2, np.array((x1,0.)), np.array((x2,0.)))
                             )
 
-                    for shared, edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex):
-                        if shared:
-                            continue
+                    for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
                         if edgeVert1[0] > edgeVert2[0]:
                             # because the algorithm scans with increasing x, the first vertice has to get smaller x
                             edgeVert1, edgeVert2 = edgeVert2, edgeVert1
@@ -221,16 +219,15 @@ class FacadeVisibility:
                     building = buildings[bldgIndex]
 
                     # compute visibility ratio and select edges in range
-                    for shared, edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex):
-                        if not shared:
-                            dx = abs(edgeVert2[0] - edgeVert1[0])
-                            dy = abs(edgeVert2[1] - edgeVert1[1])
-                            if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
-                                edge.visibilityTmp = 0.
-                            elif dx:
-                                edge.visibilityTmp /= dx    # normalization of visibility
-                            else:
-                                edge.visibilityTmp = 0.     # edge perpendicular to way-segment
+                    for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
+                        dx = abs(edgeVert2[0] - edgeVert1[0])
+                        dy = abs(edgeVert2[1] - edgeVert1[1])
+                        if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
+                            edge.visibilityTmp = 0.
+                        elif dx:
+                            edge.visibilityTmp /= dx    # normalization of visibility
+                        else:
+                            edge.visibilityTmp = 0.     # edge perpendicular to way-segment
                     
                     # check for intersections and process them
                     edgeIntersections = building.crossedEdges
@@ -257,9 +254,7 @@ class FacadeVisibility:
                                     axisRightEdge.visibilityTmp = 1.
 
                     # check for range and angles
-                    for shared, edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex):
-                        if shared:
-                            continue
+                    for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
                         # at least one vertice of the edge must be in rectangular search range
                         if not ( (abs(edgeVert1[0]) < searchWidth and abs(edgeVert1[1]) < self.searchHeight) or\
                                 (abs(edgeVert2[0]) < searchWidth and abs(edgeVert2[1]) < self.searchHeight) ):

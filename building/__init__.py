@@ -126,8 +126,8 @@ class BldgPolygon:
                     # The condition <vector.neighbor.polygon is vector.prev.neighbor.polygon> means:
                     # check if the <vector> and its previous vector (<vector.prev>) share
                     # the same building polygon (BldgPolygon)
-                    if vector.edge.hasSharedBuildings() and\
-                            vector.prev.edge.hasSharedBuildings() and\
+                    if vector.edge.hasSharedBldgVectors() and\
+                            vector.prev.edge.hasSharedBldgVectors() and\
                             vector.neighbor.polygon is vector.prev.neighbor.polygon:
                         vector.skip = SharedBldgBothEdges
             self.skipStraightAngles(manager, SharedBldgBothEdges)
@@ -178,7 +178,7 @@ class BldgPolygon:
             if self.reversed else\
             (vector.edge for vector in self.vectors if not vector.skip)
     
-    def edgeInfo(self, queryBldgVerts, firstVertIndex):
+    def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """
         A generator that yields edge info (edge(BldgEdge), the first edge vertex, the second edge vertex)
         out of numpy array <queryBldgVerts> and the index of the first vertex <firstVertIndex> of
@@ -189,10 +189,13 @@ class BldgPolygon:
         # The iterator <edges> yields one element more than <range(..)>, so we place it
         # after the <range(..)> in <zip(..)>, otherwise we get StopIteration exception
         for vertIndex, edge in zip( range(firstVertIndex, firstVertIndex + n_1), edges ):
-            yield edge.hasSharedBuildings(), edge, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
+            if skipShared and edge.hasSharedBldgVectors():
+                continue
+            yield edge, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
         # the last edge
-        next_edge = next(edges)
-        yield next_edge.hasSharedBuildings(), next_edge, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
+        edge = next(edges)
+        if not (skipShared and edge.hasSharedBldgVectors()):
+            yield edge, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
 
 
 class BldgEdge:
@@ -219,7 +222,7 @@ class BldgEdge:
             # a Python tuple with one element
             self.vectors = (vector,)
     
-    def hasSharedBuildings(self):
+    def hasSharedBldgVectors(self):
         return len(self.vectors) == 2
 
     def updateVisibility(self):
