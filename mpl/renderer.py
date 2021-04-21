@@ -82,11 +82,17 @@ class BuildingVisibilityRender(Renderer):
                     self.renderLineString(outline.getLinestringData(l, data), True, BuildingRenderer.style)
 
     def renderBuildingFootprint(self, building):
+        ax = self.mpl.ax
+        
+        ax.fill(
+            tuple(vector.v1[0] for vector in building.polygon.vectors),
+            tuple(vector.v1[1] for vector in building.polygon.vectors),
+            '#fdd5b6'
+        )
         for vector in building.polygon.vectors:
             if vector.skip:
                 continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
-            ax = self.mpl.ax
             color = BuildingVisibilityRender.getFootprintEdgeColor(edge)
             ax.plot(
                 (v1[0], v2[0]),
