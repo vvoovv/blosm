@@ -162,10 +162,12 @@ class FacadeVisibility:
                     # between the intersection. The edge index is negative, so that it can be 
                     # excluded in lines marked with "updateAuxVisibilityAdd".
                     if intersections:
-                        intersections.sort(key=lambda x:x[1])
-                        for i in range(0, len(intersections), 2):
-                            x1 = intersections[i][1] * segmentLength/2.
-                            x2 = intersections[i+1][1] * segmentLength/2.
+                        # create list of intersections and remove duplicates 
+                        intsectList = list(dict.fromkeys( x[1] for x in intersections ))
+                        intsectList.sort()
+                        for i in range(0, len(intsectList), 2):
+                            x1 = intsectList[i] * segmentLength/2.
+                            x2 = intsectList[i+1] * segmentLength/2.
                             edge = None  # None to mark it as a dummy edge
                             posEvents.append(
                                 (edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
