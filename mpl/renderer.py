@@ -87,7 +87,7 @@ class BuildingVisibilityRender(Renderer):
         ax.fill(
             tuple(vector.v1[0] for vector in building.polygon.vectors),
             tuple(vector.v1[1] for vector in building.polygon.vectors),
-            '#fdd5b6'
+            '#f5f5dc'
         )
         for vector in building.polygon.vectors:
             if vector.skip:

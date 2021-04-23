@@ -42,7 +42,7 @@ class BldgPolygon:
         self.refVector = None
         # vectors
         self.vectors = vectors = tuple(
-            self.getVector(nodeId1, nodeId2, manager) \
+            self.createVector(nodeId1, nodeId2, manager) \
                 for nodeId1,nodeId2 in building.outline.outerVectorNodeIds(manager.data) \
                     if not manager.data.haveSamePosition(nodeId1, nodeId2)
         )
@@ -156,7 +156,7 @@ class BldgPolygon:
     def directionCondition(self, vectorIn, vectorOut):
         return vectorIn[0] * vectorOut[1] - vectorIn[1] * vectorOut[0] < 0.
     
-    def getVector(self, nodeId1, nodeId2, manager):
+    def createVector(self, nodeId1, nodeId2, manager):
         edge = manager.getEdge(nodeId1, nodeId2)
         vector = BldgVector(edge, edge.id1 == nodeId1, self)
         edge.addVector(vector)
@@ -177,6 +177,11 @@ class BldgPolygon:
         return (vector.edge for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector.edge for vector in self.vectors if not vector.skip)
+
+    def getVectors(self):
+        return (vector for vector in reversed(self.vectors) if not vector.skip) \
+            if self.reversed else\
+            (vector for vector in self.vectors if not vector.skip)
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """
@@ -200,7 +205,7 @@ class BldgPolygon:
 
 class BldgEdge:
     
-    __slots__ = ("id1", "v1", "id2", "v2", "visibility", "visibilityTmp", "vectors")
+    __slots__ = ("id1", "v1", "id2", "v2", "visibility", "visibilityTmp", "vectors", "cl")
     
     def __init__(self, id1, v1, id2, v2):
         #
@@ -214,6 +219,8 @@ class BldgEdge:
         self.visibility = self.visibilityTmp = 0.
         # instances of the class <BldgVector> shared by the edge are stored in <self.vectorss>
         self.vectors = None
+        # edge or facade class (front, side, back, shared)
+        self.cl = 0
     
     def addVector(self, vector):
         if self.vectors:
