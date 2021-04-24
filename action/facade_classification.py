@@ -1,11 +1,15 @@
 
 
-class FacadeClassification:
-    
+class FacadeClass:
+    unknown = 0
     front = 1
     side = 2
     back = 3
     shared = 4
+    crossed = 5
+
+
+class FacadeClassification:
     
     def __init__(self):
         pass
@@ -18,7 +22,7 @@ class FacadeClassification:
                 # The <edge> could have been already visited earlier if it is the shared one
                 if not edge.cl:
                     if edge.hasSharedBldgVectors():
-                        edge.cl = FacadeClassification.shared
+                        edge.cl = FacadeClass.shared
                     else:
                         pass
                         # classify edge here
