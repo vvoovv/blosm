@@ -112,7 +112,8 @@ class FacadeVisibility:
                 posEvents.clear()
                 negEvents.clear()
                 
-                searchWidth = segmentLength/2. + self.searchWidthMargin
+                halfSegmentWidth = segmentLength/2.
+                searchWidth = halfSegmentWidth + self.searchWidthMargin
                 # Get all building vertices for the buildings whose vertices are returned
                 # by the query to the KD tree
                 queryBldgIndices = set(
@@ -166,8 +167,8 @@ class FacadeVisibility:
                         intsectList = list(dict.fromkeys( x[1] for x in intersections ))
                         intsectList.sort()
                         for i in range(0, len(intsectList), 2):
-                            x1 = intsectList[i] * segmentLength/2.
-                            x2 = intsectList[i+1] * segmentLength/2.
+                            x1 = intsectList[i] * halfSegmentWidth
+                            x2 = intsectList[i+1] * halfSegmentWidth
                             edge = None  # None to mark it as a dummy edge
                             posEvents.append(
                                 (edge, None, x1, np.array((x1,0.)), np.array((x2,0.)))
@@ -240,26 +241,31 @@ class FacadeVisibility:
                         if wayIntersects:
                             # all intersections with the way-segment itself become full visible
                             for edge, intsectX in edgeIntersections:
-                                edge.visibilityTmp = 1. if abs(intsectX) <= 1. else 0.
+                                if abs(intsectX) <= 1.:
+                                    edge.cl = 5     # facade class is "Crossed Facade" 
                         else:
                             # process the nearest axis intersections. If there are on both sides, we assume a street within a
                             # courtyard. Else, the edge gets visible.
 
                             # largest index on negative (left) side
-                            axisLeftEdge, _ = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
-                            if axisLeftEdge: # if edgeIntersections[axisLeftIndex] > 2* searchWidth/segmentLength:
-                                axisLeftEdge.visibilityTmp = 1.
+                            axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
+                            if axisLeftEdge:
+                                if isec > - 2* searchWidth/segmentLength:
+                                    axisLeftEdge.cl = 5     # facade class is "Crossed Facade"
                             else:
                                 # smallest index on positive (right) side
-                                axisRightEdge, _ = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
-                                if axisRightEdge: # and edgeIntersections[axisRightIndex] < 2* searchWidth/segmentLength:
-                                    axisRightEdge.visibilityTmp = 1.
+                                axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
+                                if axisRightEdge:
+                                    if isec < 2* searchWidth/segmentLength:
+                                        axisRightEdge.cl = 5     # facade class is "Crossed Facade"
 
                     # check for range and angles
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
                         # at least one vertice of the edge must be in rectangular search range
-                        if not ( (abs(edgeVert1[0]) < searchWidth and abs(edgeVert1[1]) < self.searchHeight) or\
-                                (abs(edgeVert2[0]) < searchWidth and abs(edgeVert2[1]) < self.searchHeight) ):
+                        if edge.cl == 5: # crossed facades have wider range
+                            edge.visibilityTmp = 1.
+                        elif not ( (abs(edgeVert1[0]) < halfSegmentWidth and abs(edgeVert1[1]) < self.searchHeight) or\
+                                (abs(edgeVert2[0]) < halfSegmentWidth and abs(edgeVert2[1]) < self.searchHeight) ):
                             edge.visibilityTmp = 0.
                         edge.updateVisibility()
 
