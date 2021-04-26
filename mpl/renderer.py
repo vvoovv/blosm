@@ -45,7 +45,7 @@ class WayRenderer(Renderer):
     """
     
     style = dict(
-        linewidth = 1.,
+        linewidth = 2.,
         color = "brown"
     )
     
