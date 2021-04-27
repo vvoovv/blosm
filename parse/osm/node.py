@@ -31,7 +31,7 @@ class Node:
             the wrapper class <building.manager.Building> in Python list <buildings> of an instance
             of <building.manager.BuildingManager>)
         w (dict): Here we store ids of OSM that represent real ways. It is used only by the
-            RealWayManager responsible for real ways
+            WayManager responsible for real ways
         rr: A renderer for the OSM node
     """
     __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "w", "rr", "valid", "bldgs")

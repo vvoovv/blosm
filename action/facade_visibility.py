@@ -106,10 +106,10 @@ class FacadeVisibility:
         negEvents = self.negEvents
         
         for way in self.app.managersById["ways"].getFacadeVisibilityWays():
-            #if not way.polyline:
-            #    way.initPolyline()
             
-            for segmentCenter, segmentUnitVector, segmentLength in way.segments(manager.data):
+            for segment in way.segments:
+                segmentCenter, segmentUnitVector, segmentLength = segment.getSegmentInfo()
+                
                 posEvents.clear()
                 negEvents.clear()
                 

@@ -98,9 +98,14 @@ class Way:
         """
         return (self.nodes[i] for i in range(self.n))
     
-    def outerVectorNodeIds(self, osm):
+    def pairNodeIds(self, osm):
+        """
+        A generator to get a pair of OSM node ids for a building footprint
+        
+        Returns a Python generator
+        """
         nodes = self.nodes
-        for i in range(1, self.n):
-            yield nodes[i-1], nodes[i]
+        for i in range(self.n-1):
+            yield nodes[i], nodes[i+1]
         if self.closed:
-            yield nodes[self.n-1], nodes[0]
+            yield nodes[-1], nodes[0]

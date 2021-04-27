@@ -1,4 +1,4 @@
-from . import RealWay, allWayCategories
+from . import Way, allWayCategories
 
 
 facadeVisibilityWayCategories = set((
@@ -17,7 +17,7 @@ facadeVisibilityWayCategories = set((
 ))
 
 
-class RealWayManager:
+class WayManager:
     
     def __init__(self, data, app):
         self.id = "ways"
@@ -37,14 +37,14 @@ class RealWayManager:
         app.addManager(self)
 
     def parseWay(self, element, elementId):
-        self.createRealWay(element)
+        self.createWay(element)
     
     def parseRelation(self, element, elementId):
         return
     
-    def createRealWay(self, element):
+    def createWay(self, element):
         # create a wrapper for the OSM way <element>
-        way = RealWay(element)
+        way = Way(element, self)
         self.layers[way.category].append(way)
     
     def getAllWays(self):

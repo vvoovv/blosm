@@ -43,7 +43,7 @@ class BldgPolygon:
         # vectors
         self.vectors = vectors = tuple(
             self.createVector(nodeId1, nodeId2, manager) \
-                for nodeId1,nodeId2 in building.outline.outerVectorNodeIds(manager.data) \
+                for nodeId1,nodeId2 in building.outline.pairNodeIds(manager.data) \
                     if not manager.data.haveSamePosition(nodeId1, nodeId2)
         )
         self.numEdges = len(self.vectors)
@@ -51,10 +51,8 @@ class BldgPolygon:
         for i in range(self.numEdges-1):
             vectors[i].prev = vectors[i-1]
             vectors[i].next = vectors[i+1]
-            vectors[i].index = i
         vectors[-1].prev = vectors[i]
         vectors[-1].next = vectors[0]
-        vectors[-1].index = self.numEdges-1
         
         self.forceCcwDirection()
         for vector in self.vectors:
@@ -241,7 +239,7 @@ class BldgVector:
     A wrapper for the class BldgEdge
     """
     
-    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "skip", "index")
+    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "skip")
     
     def __init__(self, edge, direct, polygon):
         self.edge = edge

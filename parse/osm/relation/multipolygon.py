@@ -430,7 +430,12 @@ class Multipolygon(Relation):
             if isinstance(l, list) else\
             (nodeId for nodeId in l.nodeIds(osm))
 
-    def outerVectorNodeIds(self, osm):
+    def pairNodeIds(self, osm):
+        """
+        A generator to get a pair of OSM node ids for a building footprint (namely it outer ring)
+        
+        Returns a Python generator
+        """
         prevNodeId = firstNodeId = None
         for nodeId in self.outer.nodeIds(osm):
             if prevNodeId:
