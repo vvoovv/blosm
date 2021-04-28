@@ -100,7 +100,7 @@ class Way:
     
     def pairNodeIds(self, osm):
         """
-        A generator to get a pair of OSM node ids for a building footprint
+        A generator to get a pair of OSM node ids for a building footprint or a real way
         
         Returns a Python generator
         """
@@ -108,4 +108,5 @@ class Way:
         for i in range(self.n-1):
             yield nodes[i], nodes[i+1]
         if self.closed:
-            yield nodes[-1], nodes[0]
+            # we use <-2> since <nodes[-1] == nodes[0]> according to OSM specification for a closed way
+            yield nodes[-2], nodes[0]
