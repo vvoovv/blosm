@@ -116,7 +116,7 @@ class BuildingVisibilityRender(Renderer):
     def getFootprintEdgeColor(edge):
         if edge.hasSharedBldgVectors():
             return 'black'
-        visibility = edge.visibility
+        visibility = edge.visInfo.value
         return 'red' if not visibility else (
             'green' if visibility > 0.75 else (
                 'yellow' if visibility > 0.3 else 'blue'

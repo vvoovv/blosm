@@ -203,7 +203,7 @@ class BldgPolygon:
 
 class BldgEdge:
     
-    __slots__ = ("id1", "v1", "id2", "v2", "visibility", "visibilityTmp", "vectors", "cl")
+    __slots__ = ("id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl")
     
     def __init__(self, id1, v1, id2, v2):
         #
@@ -214,7 +214,9 @@ class BldgEdge:
         self.id2 = id2
         self.v2 = v2
         
-        self.visibility = self.visibilityTmp = 0.
+        self.visInfo = VisibilityInfo()
+        # a temporary visibility info
+        self._visInfo = VisibilityInfo()
         # instances of the class <BldgVector> shared by the edge are stored in <self.vectorss>
         self.vectors = None
         # edge or facade class (front, side, back, shared)
@@ -229,9 +231,6 @@ class BldgEdge:
     
     def hasSharedBldgVectors(self):
         return len(self.vectors) == 2
-
-    def updateVisibility(self):
-        self.visibility = max(self.visibility, self.visibilityTmp)
 
 
 class BldgVector:
@@ -336,12 +335,50 @@ class Building:
         for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
     
-    def resetTmpVisibility(self):
+    def resetVisInfoTmp(self):
         for vector in self.polygon.vectors:
-            vector.edge.visibilityTmp = 0.
+            vector.edge._visInfo.reset()
 
     def resetCrossedEdges(self):
         self.crossedEdges.clear()
 
     def addCrossedEdge(self, edge, intsectX):
         self.crossedEdges.append( (edge, intsectX) )
+
+
+class VisibilityInfo:
+    
+    __slots__ = ("value", "waySegment", "distance", "dx", "dy")
+    
+    def __init__(self):
+        self.value = -1.
+    
+    def __gt__(self, other):
+        return self.value > other.value
+    
+    def reset(self):
+        self.value = 0.
+    
+    def set(self, segment, distance, dx, dy):
+        self.waySegment,\
+        self.distance,\
+        self.dx,\
+        self.dy\
+        = \
+        segment,\
+        distance,\
+        dx,\
+        dy
+    
+    def update(self, other):
+        self.value,\
+        self.waySegment,\
+        self.distance,\
+        self.dx,\
+        self.dy \
+        = \
+        other.value,\
+        other.waySegment,\
+        other.distance,\
+        other.dx,\
+        other.dy

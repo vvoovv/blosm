@@ -142,7 +142,7 @@ class FacadeVisibility:
                 firstVertIndex = 0
                 for bldgIndex in queryBldgIndices:
                     building = buildings[bldgIndex]
-                    building.resetTmpVisibility()
+                    building.resetVisInfoTmp()
                     building.resetCrossedEdges()
                     
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=False):
@@ -224,14 +224,22 @@ class FacadeVisibility:
 
                     # compute visibility ratio and select edges in range
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
+                        _visInfo = edge._visInfo
                         dx = abs(edgeVert2[0] - edgeVert1[0])
                         dy = abs(edgeVert2[1] - edgeVert1[1])
                         if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
-                            edge.visibilityTmp = 0.
+                            _visInfo.value = 0.
                         elif dx:
-                            edge.visibilityTmp /= dx    # normalization of visibility
+                            _visInfo.value /= dx    # normalization of visibility
                         else:
-                            edge.visibilityTmp = 0.     # edge perpendicular to way-segment
+                            _visInfo.value = 0.     # edge perpendicular to way-segment
+                        # setting attributes for <_visInfo>
+                        _visInfo.set(
+                            segment,
+                            abs(edgeVert1[1]) + abs(edgeVert2[1]),
+                            dx,
+                            dy
+                        )
                     
                     # check for intersections and process them
                     edgeIntersections = building.crossedEdges
@@ -264,11 +272,12 @@ class FacadeVisibility:
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
                         # at least one vertice of the edge must be in rectangular search range
                         if edge.cl == FacadeClass.crossed: # crossed facades have wider range
-                            edge.visibilityTmp = 1.
+                            edge._visInfo.value = 1.
                         elif not ( (abs(edgeVert1[0]) < halfSegmentWidth and abs(edgeVert1[1]) < self.searchHeight) or\
                                 (abs(edgeVert2[0]) < halfSegmentWidth and abs(edgeVert2[1]) < self.searchHeight) ):
-                            edge.visibilityTmp = 0.
-                        edge.updateVisibility()
+                            edge._visInfo.value = 0.
+                        if edge._visInfo > edge.visInfo:
+                            edge.visInfo.update(edge._visInfo)
 
                     firstVertIndex += building.polygon.numEdges
 
@@ -332,7 +341,7 @@ class FacadeVisibility:
                 if isInFront: # the new edges hides the active edge
                     # edge = activeEvent[0]
                     if activeEvent[0]: # exclude dummy edges of crossings updateAuxVisibilityAdd
-                        activeEvent[0].visibilityTmp += eventX - activeX
+                        activeEvent[0]._visInfo.value += eventX - activeX
                     queue.push(activeEndY, activeEvent)
                     activeEvent = event
                     activeX = eventX # the new edges is behind the active edge
@@ -342,7 +351,7 @@ class FacadeVisibility:
                 if activeEvent is relatedEdgeStartsEvent: # the active edge ends
                     # edge = activeEvent[0]
                     if activeEvent[0]:   # exclude dummy edges of crossings updateAuxVisibilityAdd
-                        activeEvent[0].visibilityTmp += eventX - activeX
+                        activeEvent[0]._visInfo.value += eventX - activeX
                     if not queue.empty(): # there is an hidden edge that already started                   
                         activeEvent = queue.pop()
                         activeX = eventX
