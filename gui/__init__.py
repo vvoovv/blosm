@@ -477,7 +477,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             box.label(text="Paste overlay URL here:")
             box.prop(addon, "overlayUrl")
         
-        layout.box().prop(addon, "setOverlayMaterial")
+        box = layout.box()
+        box.prop(addon, "setOverlayMaterial")
+        box.prop(addon, "saveOverlayToFile")
         
         box = self.layout.box()
         box.label(text="[Advanced]")
@@ -811,6 +813,13 @@ class BlosmProperties(bpy.types.PropertyGroup):
         description = "Set the default Cycles material and " +
             "use the image overlay in the \"Image Texture\" node",
         default = True
+    )
+    
+    saveOverlayToFile: bpy.props.BoolProperty(
+        name = "Save overlay to file",
+        description = "Save the image overlay to a local file if checked or " +
+            "pack it to the current .blend file otherwise",
+        default = False
     )
     
     maxNumTiles: bpy.props.IntProperty(
