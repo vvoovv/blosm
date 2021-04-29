@@ -236,7 +236,7 @@ class FacadeVisibility:
                         # setting attributes for <_visInfo>
                         _visInfo.set(
                             segment,
-                            abs(edgeVert1[1]) + abs(edgeVert2[1]),
+                            abs(edgeVert1[1] + edgeVert2[1]),
                             dx,
                             dy
                         )
@@ -259,13 +259,13 @@ class FacadeVisibility:
                             # largest index on negative (left) side
                             axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
                             if axisLeftEdge:
-                                if isec > - 2. * searchWidth/segmentLength:
+                                if isec > -2.*searchWidth/segmentLength:
                                     axisLeftEdge.cl = FacadeClass.crossed # facade class is "Crossed Facade"
                             else:
                                 # smallest index on positive (right) side
                                 axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
                                 if axisRightEdge:
-                                    if isec < 2* searchWidth/segmentLength:
+                                    if isec < 2.*searchWidth/segmentLength:
                                         axisRightEdge.cl = FacadeClass.crossed # facade class is "Crossed Facade"
 
                     # check for range and angles
