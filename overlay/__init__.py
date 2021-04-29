@@ -207,8 +207,15 @@ class Overlay:
         image.pixels = self.imageData
         # cleanup
         self.imageData = None
-        # pack the image into .blend file
-        image.pack()
+        
+        if app.saveOverlayToFile:
+            path = os.path.join(app.dataDir, "texture", f"overlay.{image.file_format.lower()}")
+            image.save_render(path)
+            image.source = 'FILE'
+            image.filepath = path
+        else:
+            # pack the image into .blend file
+            image.pack()
         
         if app.terrain:
             self.setUvForTerrain(
