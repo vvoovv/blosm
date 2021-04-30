@@ -54,6 +54,10 @@ class WayManager:
         return (way for category in facadeVisibilityWayCategories for way in self.layers[category])
     
     def process(self):
+        for way in self.getAllWays():
+            # <osm.projection> may not be availabe in the constructor of a <Way>, but it's needed to
+            # create way-segments. That's why an additional <init(..)> method is needed.
+            way.init(self)
         for action in self.actions:
             action.do(self)
     

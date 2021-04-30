@@ -69,7 +69,9 @@ class Way:
         self.category = highwayTag if highwayTag in allWayCategories else "other"
         self.tunnel = "tunnel" in element.tags
         self.bridge = "bridge" in element.tags
-        
+    
+    def init(self, manager):
+        data = manager.data
         # segments
         self.segments = segments = tuple(
             WaySegment(
@@ -78,7 +80,7 @@ class Way:
                 nodeId2,
                 data.nodes[nodeId2].getData(data),
                 self
-            ) for nodeId1,nodeId2 in element.pairNodeIds(manager.data) \
+            ) for nodeId1,nodeId2 in self.element.pairNodeIds(manager.data) \
                 if not manager.data.haveSamePosition(nodeId1, nodeId2)
         )
         self.numSegments = len(self.segments)
