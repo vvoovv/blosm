@@ -1,6 +1,3 @@
-from grammar import perBuilding
-
-
 class Item:
     
     def __init__(self):
@@ -85,3 +82,6 @@ class Item:
     
     def getCladdingColor(self):
         return self.getStyleBlockAttrDeep("claddingColor")
+
+
+from grammar import perBuilding

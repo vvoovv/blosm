@@ -67,7 +67,7 @@ class Roof:
         self.itemRenderers = itemRenderers
         
         self.facadeRenderer = itemRenderers["Facade"]
-        self.roofRenderer = itemRenderers[roofRendererId]
+        self.roofRenderer = itemRenderers.get(roofRendererId)
         
         self.itemStore = volumeAction.itemStore
         self.itemFactory = volumeAction.itemFactory

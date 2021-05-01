@@ -49,7 +49,6 @@ class Volume(Action):
                 _footprint.parent = footprint
                 _footprint.buildingStyle = buildingStyle
                 self.itemStore.add(_footprint)
-        return footprint
     
     def do(self, building, itemClass, buildingStyle, globalRenderer):
         itemStore = self.itemStore
