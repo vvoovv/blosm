@@ -273,13 +273,27 @@ class FacadeVisibility:
                         # at least one vertice of the edge must be in rectangular search range
                         if edge.cl in [FacadeClass.front,FacadeClass.passage]: # crossed facades have wider range
                             edge._visInfo.value = 1.
-                        elif not ( (abs(edgeVert1[0]) < halfSegmentWidth and abs(edgeVert1[1]) < self.searchHeight) or\
-                                (abs(edgeVert2[0]) < halfSegmentWidth and abs(edgeVert2[1]) < self.searchHeight) ):
+                        elif not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
                             edge._visInfo.value = 0.
                         if edge._visInfo > edge.visInfo:
                             edge.visInfo.update(edge._visInfo)
 
                     firstVertIndex += building.polygon.numEdges
+
+    def insideRange( self, v1, v2, xRange, yRange):
+        # Checks if an edge given by vertices v1 and v2 is within or intersects
+        # a rectangle parallel to the axes of the coordinate system with a range
+        # of +-xRange in x-direction and +-yRange in y-direction.
+        if v1[0] < v2[0]:
+            xInRange = v1[0] < xRange and v2[0] > -xRange
+        else:
+            xInRange = v1[0] > -xRange and v2[0] < xRange
+        if v1[1] < v2[1]:
+            yInRange = v1[1] < yRange and v2[1] > -yRange
+        else:
+            yInRange = v1[1] > -yRange and v2[1] < yRange
+        return xInRange and yInRange
+
 
     def processEvents(self, events, positiveY):
         """
