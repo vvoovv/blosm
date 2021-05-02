@@ -246,11 +246,11 @@ class FacadeVisibility:
                     # if there are intersections, process their edges
                     if edgeIntersections:
                         # for values between 0 and 1, the intersection is in the way-segment
-                        wayIntersects =  tuple( isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1. )
+                        wayIntersects =  tuple( isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1.001 )
                         if wayIntersects:
                             # all intersections with the way-segment itself are passages
                             for edge, intsectX in edgeIntersections:
-                                if abs(intsectX) <= 1.:
+                                if abs(intsectX) <= 1.001:
                                     edge.cl = FacadeClass.passage # facade class is "Passage" 
                         else:
                             # process the nearest axis intersections. If there are on both sides, we assume a street within a
