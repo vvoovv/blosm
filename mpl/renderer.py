@@ -1,6 +1,7 @@
 import parse
 from parse.osm import Osm
 from way.manager import facadeVisibilityWayCategories
+from action.facade_classification import FacadeClass
 from . import Mpl
 
 
@@ -127,6 +128,56 @@ class BuildingVisibilityRender(Renderer):
     def getLineWidth(edge):
         return 0.5 if edge.hasSharedBldgVectors() else 1.5
 
+class BuildingClassificationRender(Renderer):
+    
+    def render(self, building, data):
+        outline = building.outline
+        # render the outer footprint
+        self.renderBuildingFootprint(building)
+        # render holes for a multipolygon
+        if outline.t is parse.multipolygon:
+            for l in outline.ls:
+                if not l.role is Osm.outer:
+                    self.renderLineString(outline.getLinestringData(l, data), True, BuildingRenderer.style)
+
+    def renderBuildingFootprint(self, building):
+        ax = self.mpl.ax
+        
+        ax.fill(
+            tuple(vector.v1[0] for vector in building.polygon.vectors),
+            tuple(vector.v1[1] for vector in building.polygon.vectors),
+            '#f5f5dc'
+        )
+        for vector in building.polygon.vectors:
+            if vector.skip:
+                continue
+            edge, v1, v2 = vector.edge, vector.v1, vector.v2
+            color = BuildingClassificationRender.getFootprintEdgeColor(edge)
+            linewidth = BuildingClassificationRender.getLineWidth(edge)
+            ax.plot(
+                (v1[0], v2[0]),
+                (v1[1], v2[1]),
+                linewidth = linewidth,
+                color = color
+            )
+            ax.plot(v1[0], v1[1], 'k.', markersize=2.)
+    
+    @staticmethod
+    def getFootprintEdgeColor(edge):
+        cl = edge.cl
+        return 'gray' if cl == FacadeClass.unknown else (
+            'green' if cl == FacadeClass.front else (
+                'blue' if cl == FacadeClass.side else (
+                    'red' if cl == FacadeClass.back else (
+                        'magenta' if cl == FacadeClass.passage else 'black'
+                    )
+                )
+            )
+        )
+    
+    @staticmethod
+    def getLineWidth(edge):
+        return 0.5 if edge.cl == FacadeClass.shared else 1.5
 
 class WayVisibilityRenderer(WayRenderer):
     

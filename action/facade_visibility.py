@@ -248,10 +248,10 @@ class FacadeVisibility:
                         # for values between 0 and 1, the intersection is in the way-segment
                         wayIntersects =  tuple( isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1. )
                         if wayIntersects:
-                            # all intersections with the way-segment itself become full visible
+                            # all intersections with the way-segment itself are passages
                             for edge, intsectX in edgeIntersections:
                                 if abs(intsectX) <= 1.:
-                                    edge.cl = FacadeClass.crossed # facade class is "Crossed Facade" 
+                                    edge.cl = FacadeClass.passage # facade class is "Passage" 
                         else:
                             # process the nearest axis intersections. If there are on both sides, we assume a street within a
                             # courtyard. Else, the edge gets visible.
@@ -260,18 +260,18 @@ class FacadeVisibility:
                             axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
                             if axisLeftEdge:
                                 if isec > -2.*searchWidth/segmentLength:
-                                    axisLeftEdge.cl = FacadeClass.crossed # facade class is "Crossed Facade"
+                                    axisLeftEdge.cl = FacadeClass.front # dead-end at a building becomes a front facade
                             else:
                                 # smallest index on positive (right) side
                                 axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
                                 if axisRightEdge:
                                     if isec < 2.*searchWidth/segmentLength:
-                                        axisRightEdge.cl = FacadeClass.crossed # facade class is "Crossed Facade"
+                                        axisRightEdge.cl = FacadeClass.front # dead-end at a building becomes a front facade
 
                     # check for range and angles
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
                         # at least one vertice of the edge must be in rectangular search range
-                        if edge.cl == FacadeClass.crossed: # crossed facades have wider range
+                        if edge.cl in [FacadeClass.front,FacadeClass.passage]: # crossed facades have wider range
                             edge._visInfo.value = 1.
                         elif not ( (abs(edgeVert1[0]) < halfSegmentWidth and abs(edgeVert1[1]) < self.searchHeight) or\
                                 (abs(edgeVert2[0]) < halfSegmentWidth and abs(edgeVert2[1]) < self.searchHeight) ):

@@ -1,7 +1,7 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
 from building.manager import BaseBuildingManager
 from way.manager import WayManager
-from mpl.renderer import BuildingVisibilityRender, WayVisibilityRenderer
+from mpl.renderer import BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 
@@ -38,7 +38,8 @@ def setup(app, osm):
     
     if app.buildings:
         buildings = BaseBuildingManager(osm, app, None, None)
-        buildings.setRenderer(BuildingVisibilityRender())
+        # buildings.setRenderer(BuildingVisibilityRender())
+        buildings.setRenderer(BuildingClassificationRender())
         buildings.addAction(FacadeVisibilityOther())
         buildings.addAction(FacadeClassification())
         osm.addCondition(

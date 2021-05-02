@@ -351,7 +351,7 @@ class VisibilityInfo:
     __slots__ = ("value", "waySegment", "distance", "dx", "dy")
     
     def __init__(self):
-        self.value = -1.
+        self.value = 0.
     
     def __gt__(self, other):
         return self.value > other.value
