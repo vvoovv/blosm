@@ -26,9 +26,6 @@ def importOsm():
     
     setup_function(a, osm)
     
-    # additional command line arguments may have introduced in <setup_function(..)>
-    a.parseArgs()
-    
     a.createLayers(osm)
     
     if not a.osmFilepath and a.coords:

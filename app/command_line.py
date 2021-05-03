@@ -36,6 +36,9 @@ class CommandLineApp(BaseApp):
     
     def initArgParser(self):
         self.argParser = argParser = argparse.ArgumentParser()
+        # a parser for <self.unparsedArgs>
+        self.argParserExtra = argparse.ArgumentParser()
+        
         argParser.add_argument("--coords", help="Coordinates of the area of interest, for example -78.3105468750,39.1982386,-77.5854492188,39.6057213001")
         argParser.add_argument("--osmFilepath", help="Path to an OSM file")
         argParser.add_argument("--osmDir", help="A directory for the downloaded OSM files")
@@ -62,7 +65,7 @@ class CommandLineApp(BaseApp):
         Parse <self.unparsedArgs>
         """
         if self.unparsedArgs:
-            args = vars( self.argParser.parse_args(self.unparsedArgs) )
+            args = vars( self.argParserExtra.parse_args(self.unparsedArgs) )
             for arg in args:
                 setattr(self, arg, args[arg])
     
