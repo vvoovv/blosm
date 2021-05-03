@@ -167,7 +167,7 @@ class BuildingClassificationRender(Renderer):
         cl = edge.cl
         return 'gray' if cl == FacadeClass.unknown else (
             'green' if cl == FacadeClass.front else (
-                'blue' if cl == FacadeClass.side else (
+                'yellow' if cl == FacadeClass.side else (
                     'red' if cl == FacadeClass.back else (
                         'magenta' if cl == FacadeClass.passage else 'black'
                     )
