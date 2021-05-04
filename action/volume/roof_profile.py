@@ -920,9 +920,9 @@ class RoofProfile(Roof):
                 # Create a new part for the new slot
                 # Note that the last part of <self.originSlot> (i.e. <self.originSlot.parts[-1]>)
                 # ends at the new current <slot>
-                y = pv1.y + factorSlots * (p[slotIndexVerts][0] - pv1.x)
+                y = pv1.y + factorSlots * (p[slotIndex][0] - pv1.x)
                 slot.append(vertIndexForSlots, y, self.originSlot)
-                self.onNewSlotVertex(slotIndexVerts, vertIndex, y)
+                self.onNewSlotVertex(slotIndex, vertIndexForSlots, y)
                 # Child classes of <Slot> may use the following function call <slot.processWallFace(..)>
                 # to do some stuff
                 slot.processWallFace(_wallIndices, pv1, pv2)
