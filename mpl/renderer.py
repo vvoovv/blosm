@@ -297,7 +297,9 @@ class RoofProfileItemRenderer():
             ( (vert1[1], vert2[1])  )
         )
         
-        for x,_ in roofProfileVolumeGenerator.profile:
+        # slots
+        for slotIndex,profile in enumerate(roofProfileVolumeGenerator.profile):
+            x = profile[0]
             _vert1 = vert1 + x * polygonWidth * direction
             _vert2 = _vert1 + polygonHeight*pDirection
             ax.plot(
@@ -306,6 +308,7 @@ class RoofProfileItemRenderer():
                 linewidth = 1.,
                 color = 'black'
             )
+            ax.annotate(str(slotIndex), xy=(_vert1[0], _vert1[1]))
         
         for vertIndex in range(polygon.n, len(verts)):
             vert = verts[vertIndex]
