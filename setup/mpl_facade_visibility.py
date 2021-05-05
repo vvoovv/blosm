@@ -1,7 +1,7 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
 from building.manager import BaseBuildingManager
 from way.manager import WayManager
-from mpl.renderer import BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender
+from mpl.renderer.facade_classification import BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 
@@ -139,27 +139,4 @@ def setup(app, osm):
             lambda tags, e: "railway" in tags,
             "railways",
             wayManager
-        )
-    if app.water:
-        osm.addCondition(
-            lambda tags, e: tags.get("natural") == "water" or tags.get("waterway") == "riverbank" or tags.get("landuse") == "reservoir",
-            "water",
-            polygonAcceptBroken
-        )
-        osm.addCondition(
-            lambda tags, e: tags.get("natural") == "coastline",
-            "coastlines",
-            linestring
-        )
-    if app.forests:
-        osm.addCondition(
-            lambda tags, e: tags.get("natural") == "wood" or tags.get("landuse") == "forest",
-            "forest",
-            polygon
-        )
-    if app.vegetation:
-        osm.addCondition(
-            lambda tags, e: ("landuse" in tags and tags["landuse"] in ("grass", "meadow", "farmland")) or ("natural" in tags and tags["natural"] in ("scrub", "grassland", "heath")),
-            "vegetation",
-            polygon
         )

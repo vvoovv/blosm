@@ -1,4 +1,4 @@
-from mpl.renderer import RoofProfileRenderer
+from mpl.renderer.roof_profile import RoofProfileRenderer
 from building.manager import BaseBuildingManager
 
 
