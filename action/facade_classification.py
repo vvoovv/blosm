@@ -23,10 +23,10 @@ WayLevel = {            # way-category
     'residential':   1, # C1
     'pedestrian':    1, # C1
     'unclassified':  1, # C1
-    'living_street': 2, # C2
-    'service':       3, # C3
+    'living_street': 1, # C1
+    'service':       2, # C2
 }
-MaxWayLevel = 3
+MaxWayLevel = 2
 
 class FacadeClassification:
     
