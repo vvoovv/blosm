@@ -1,7 +1,7 @@
 import parse
 from parse.osm import Osm
 from way.manager import facadeVisibilityWayCategories
-from action.facade_classification import FacadeClass
+from action.facade_classification import FacadeClass, WayLevel
 from . import Mpl
 
 
@@ -51,6 +51,10 @@ class WayRenderer(Renderer):
     )
     
     def render(self, way, data):
+        # st = WayRenderer.style
+        # level = WayLevel[way.category]
+        # st['linewidth'] = 4 - level
+        # self.renderLineString(way.element.getData(data), way.element.isClosed(), st)
         self.renderLineString(way.element.getData(data), way.element.isClosed(), WayRenderer.style)
 
 
@@ -169,7 +173,9 @@ class BuildingClassificationRender(Renderer):
             'green' if cl == FacadeClass.front else (
                 'yellow' if cl == FacadeClass.side else (
                     'red' if cl == FacadeClass.back else (
-                        'magenta' if cl == FacadeClass.passage else 'black'
+                        'magenta' if cl == FacadeClass.passage else (
+                            'cyan' if cl == FacadeClass.deadend else 'black'
+                        )
                     )
                 )
             )

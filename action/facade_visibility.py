@@ -2,7 +2,7 @@ from math import sqrt
 import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
-from .facade_classification import FacadeClass
+from .facade_classification import FacadeClass, VisibilityAngleFact
 
 
 class PriorityQueue():
@@ -213,7 +213,7 @@ class FacadeVisibility:
                             )
                      
                     firstVertIndex += building.polygon.numEdges
-                
+
                 self.processEvents(posEvents, True)
                 self.processEvents(negEvents, False)
 
@@ -227,7 +227,9 @@ class FacadeVisibility:
                         _visInfo = edge._visInfo
                         dx = abs(edgeVert2[0] - edgeVert1[0])
                         dy = abs(edgeVert2[1] - edgeVert1[1])
-                        if dx < dy: # abs of angle to way-segment < 45°, done here because crossings are excluded
+                        # limit angle to way-segment (explanation see facade_classification.py),
+                        # applied already her, here because not applicable for crossings.
+                        if VisibilityAngleFact*dx < dy: 
                             _visInfo.value = 0.
                         elif dx:
                             _visInfo.value /= dx    # normalization of visibility
@@ -251,7 +253,7 @@ class FacadeVisibility:
                             # all intersections with the way-segment itself are passages
                             for edge, intsectX in edgeIntersections:
                                 if abs(intsectX) <= 1.001:
-                                    edge.cl = FacadeClass.passage # facade class is "Passage" 
+                                    edge.cl = FacadeClass.passage # facade with passage 
                         else:
                             # process the nearest axis intersections. If there are on both sides, we assume a street within a
                             # courtyard. Else, the edge gets visible.
@@ -259,19 +261,19 @@ class FacadeVisibility:
                             # largest index on negative (left) side
                             axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<0.), key=itemgetter(1), default=(None,None))
                             if axisLeftEdge:
-                                if isec > -2.*searchWidth/segmentLength:
-                                    axisLeftEdge.cl = FacadeClass.front # dead-end at a building becomes a front facade
+                                if isec > -2.*searchWidth/segmentLength and not axisLeftEdge.hasSharedBldgVectors():
+                                    axisLeftEdge.cl = FacadeClass.deadend # dead-end at a building 
                             else:
                                 # smallest index on positive (right) side
                                 axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
                                 if axisRightEdge:
-                                    if isec < 2.*searchWidth/segmentLength:
-                                        axisRightEdge.cl = FacadeClass.front # dead-end at a building becomes a front facade
+                                    if isec < 2.*searchWidth/segmentLength and not axisRightEdge.hasSharedBldgVectors():
+                                        axisRightEdge.cl = FacadeClass.deadend # dead-end at a building 
 
                     # check for range and angles
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
                         # at least one vertice of the edge must be in rectangular search range
-                        if edge.cl in [FacadeClass.front,FacadeClass.passage]: # crossed facades have wider range
+                        if edge.cl in [FacadeClass.deadend,FacadeClass.passage]: # crossed facades have wider range
                             edge._visInfo.value = 1.
                         elif not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
                             edge._visInfo.value = 0.

@@ -21,6 +21,7 @@ from numpy import zeros
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
+from action.facade_classification import WayLevel, FrontFacadeVisibility
 
 #
 # values for <BldgVector.skip>
@@ -354,6 +355,11 @@ class VisibilityInfo:
         self.value = 0.
     
     def __gt__(self, other):
+        # if the new measurment is potentially of a front edge
+        if self.value >= FrontFacadeVisibility:
+            # prioritize using level of way segment
+            if hasattr(other,'waySegment'):
+                return WayLevel[self.waySegment.way.category] < WayLevel[other.waySegment.way.category]
         return self.value > other.value
     
     def reset(self):
