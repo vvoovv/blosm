@@ -67,7 +67,7 @@ class FacadeClassification:
                         # deadend becomes front, while passage remains
                         accepted_level = way_level
                         if edge.cl == FacadeClass.deadend:
-                            edge.cl == FacadeClass.front
+                            edge.cl = FacadeClass.front
                         continue
                     if not edge.cl:
                         if visInfo.value > maxVisibility:
