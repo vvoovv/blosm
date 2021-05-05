@@ -21,6 +21,7 @@ def setup(app, osm):
     
     # add the definition of the custom command line arguments
     app.argParserExtra.add_argument("--classification", action='store_true', help="Display facade classification", default=False)
+    app.argParserExtra.add_argument("--sideFacadeColor", help="The color for a side facade", default="yellow")
     # parse the newly added command line arguments
     app.parseArgs()
     displayClassification = getattr(app, "classification", False)
@@ -44,7 +45,11 @@ def setup(app, osm):
     
     if app.buildings:
         buildings = BaseBuildingManager(osm, app, None, None)
-        buildings.setRenderer(BuildingClassificationRender() if displayClassification else BuildingVisibilityRender())
+        buildings.setRenderer(
+            BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor)\
+                if displayClassification else\
+                BuildingVisibilityRender()
+        )
         buildings.addAction(FacadeVisibilityOther())
         buildings.addAction(FacadeClassification())
         osm.addCondition(

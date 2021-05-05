@@ -66,6 +66,10 @@ class BuildingVisibilityRender(Renderer):
 
 class BuildingClassificationRender(Renderer):
     
+    def __init__(self, sideFacadeColor):
+        super().__init__()
+        self.sideFacadeColor = sideFacadeColor
+    
     def render(self, building, data):
         outline = building.outline
         # render the outer footprint
@@ -88,7 +92,7 @@ class BuildingClassificationRender(Renderer):
             if vector.skip:
                 continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
-            color = BuildingClassificationRender.getFootprintEdgeColor(edge)
+            color = self.getFootprintEdgeColor(edge)
             linewidth = BuildingClassificationRender.getLineWidth(edge)
             ax.plot(
                 (v1[0], v2[0]),
@@ -98,12 +102,11 @@ class BuildingClassificationRender(Renderer):
             )
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
     
-    @staticmethod
-    def getFootprintEdgeColor(edge):
+    def getFootprintEdgeColor(self, edge):
         cl = edge.cl
         return 'gray' if cl == FacadeClass.unknown else (
             'green' if cl == FacadeClass.front else (
-                'yellow' if cl == FacadeClass.side else (
+                self.sideFacadeColor if cl == FacadeClass.side else (
                     'red' if cl == FacadeClass.back else (
                         'magenta' if cl == FacadeClass.passage else (
                             'cyan' if cl == FacadeClass.deadend else 'black'
