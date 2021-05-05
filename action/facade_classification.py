@@ -1,5 +1,7 @@
 from math import tan, pi
 
+from way import Category, facadeVisibilityWayCategories
+
 class FacadeClass:
     unknown = 0
     front = 1
@@ -16,16 +18,8 @@ FrontFacadeVisibility = 0.75                        # visibility required to cla
 VisibilityAngle = 50                                # maximum angle in ° between way-segment and facade to be accepted as visible
 VisibilityAngleFact = tan(pi*VisibilityAngle/180.)  # Factor used in angle condition: VisibilityAngleFact*dx > dy
 
-WayLevel = {            # way-category
-    'primary':       1, # C1
-    'secondary':     1, # C1
-    'tertiary':      1, # C1
-    'residential':   1, # C1
-    'pedestrian':    1, # C1
-    'unclassified':  1, # C1
-    'living_street': 1, # C1
-    'service':       2, # C2
-}
+WayLevel = dict((category,1) for category in facadeVisibilityWayCategories)
+WayLevel[Category.service] = 2
 MaxWayLevel = 2
 
 class FacadeClassification:

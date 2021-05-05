@@ -1,7 +1,7 @@
 from . import Renderer, BuildingRenderer, WayRenderer
 import parse
 from parse.osm import Osm
-from way.manager import facadeVisibilityWayCategories
+from way import facadeVisibilityWayCategories
 from action.facade_classification import FacadeClass, WayLevel
 
 

@@ -24,7 +24,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--sideFacadeColor", help="The color for a side facade", default="yellow")
     # parse the newly added command line arguments
     app.parseArgs()
-    displayClassification = getattr(app, "classification", False)
+    classifyFacades = getattr(app, "classification", False)
     
     # create managers
     
@@ -47,11 +47,12 @@ def setup(app, osm):
         buildings = BaseBuildingManager(osm, app, None, None)
         buildings.setRenderer(
             BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor)\
-                if displayClassification else\
+                if classifyFacades else\
                 BuildingVisibilityRender()
         )
         buildings.addAction(FacadeVisibilityOther())
-        buildings.addAction(FacadeClassification())
+        if classifyFacades:
+            buildings.addAction(FacadeClassification())
         osm.addCondition(
             lambda tags, e: "building" in tags,
             "buildings", 

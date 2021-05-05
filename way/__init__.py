@@ -30,6 +30,22 @@ allWayCategories = set((
 ))
 
 
+facadeVisibilityWayCategories = set((
+    "primary",
+    "secondary",
+    "tertiary",
+    "unclassified",
+    "residential",
+    "living_street",
+    "service",
+    "pedestrian"
+    #"track"
+    #"footway",
+    #"steps",
+    #"cycleway"
+))
+
+
 class Category:
     __slots__ = tuple()
     @staticmethod

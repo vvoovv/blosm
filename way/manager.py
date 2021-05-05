@@ -1,20 +1,4 @@
-from . import Way, allWayCategories
-
-
-facadeVisibilityWayCategories = set((
-    "primary",
-    "secondary",
-    "tertiary",
-    "unclassified",
-    "residential",
-    "living_street",
-    "service",
-    "pedestrian",
-    "track"
-    #"footway",
-    #"steps",
-    #"cycleway"
-))
+from . import Way, allWayCategories, facadeVisibilityWayCategories
 
 
 class WayManager:
