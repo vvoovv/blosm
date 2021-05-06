@@ -7,6 +7,10 @@ from action.facade_classification import FacadeClass, WayLevel
 
 class BuildingVisibilityRender(Renderer):
     
+    def __init__(self, showAssoc):
+        super().__init__()
+        self.showAssoc = showAssoc
+
     def render(self, building, data):
         outline = building.outline
         # render the outer footprint
@@ -38,6 +42,25 @@ class BuildingVisibilityRender(Renderer):
                 color = color
             )
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
+
+            if self.showAssoc:
+                # visalization of association between way-segment and edge
+                visInfo = edge.visInfo
+                if hasattr(visInfo,'waySegment'):
+                    seg = visInfo.waySegment
+                    s1, s2 = seg.v1, seg.v2
+                    ax.plot(s1[0], s1[1], 'k.', markersize=5.)
+                    vx = (v1[0]+v2[0])/2.
+                    vy = (v1[1]+v2[1])/2.
+                    sx = (s1[0]+s2[0])/2.
+                    sy = (s1[1]+s2[1])/2.
+                    ax.annotate(
+                        '',
+                        xytext = (sx,sy),
+                        xy=(vx,vy),
+                        arrowprops=dict(color='magenta', width = 0.25, shrink=0., headwidth=3, headlength=8)
+                    )
+                    ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f'%(visInfo.value))
             #if not skip:
             #    ax.annotate(str(vector.index), xy=(v1[0], v1[1]))
             #if not edge.hasSharedBuildings():
@@ -66,9 +89,10 @@ class BuildingVisibilityRender(Renderer):
 
 class BuildingClassificationRender(Renderer):
     
-    def __init__(self, sideFacadeColor):
+    def __init__(self, sideFacadeColor, showAssoc):
         super().__init__()
         self.sideFacadeColor = sideFacadeColor
+        self.showAssoc = showAssoc
     
     def render(self, building, data):
         outline = building.outline
@@ -101,7 +125,26 @@ class BuildingClassificationRender(Renderer):
                 color = color
             )
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
-    
+
+            if self.showAssoc:
+                # visalization of association between way-segment and edge
+                visInfo = edge.visInfo
+                if hasattr(visInfo,'waySegment'):
+                    seg = visInfo.waySegment
+                    s1, s2 = seg.v1, seg.v2
+                    ax.plot(s1[0], s1[1], 'k.', markersize=5.)
+                    vx = (v1[0]+v2[0])/2.
+                    vy = (v1[1]+v2[1])/2.
+                    sx = (s1[0]+s2[0])/2.
+                    sy = (s1[1]+s2[1])/2.
+                    ax.annotate(
+                        '',
+                        xytext = (sx,sy),
+                        xy=(vx,vy),
+                        arrowprops=dict(color='magenta', width = 0.25, shrink=0., headwidth=3, headlength=8)
+                    )
+                    ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f'%(visInfo.value))
+
     def getFootprintEdgeColor(self, edge):
         cl = edge.cl
         return 'gray' if cl == FacadeClass.unknown else (

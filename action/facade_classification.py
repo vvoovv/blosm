@@ -104,13 +104,15 @@ class FacadeClassification:
         longest = 0.
         longestEdge = None
         for vector in building.polygon.getVectors():
-            x = vector.vector[0]
-            y = vector.vector[1]
-            lengthSquared = x*x+y*y
-            if lengthSquared > longest:
-                longest = lengthSquared
-                longestEdge = vector.edge
-        longestEdge.cl = FacadeClass.front
+            if vector.edge.cl != FacadeClass.shared:
+                x = vector.vector[0]
+                y = vector.vector[1]
+                lengthSquared = x*x+y*y
+                if lengthSquared > longest:
+                    longest = lengthSquared
+                    longestEdge = vector.edge
+        if longestEdge:
+            longestEdge.cl = FacadeClass.front
 
     def classifySideFacades(self, building):    
         for vector in building.polygon.getVectors():
