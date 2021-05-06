@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 4, 32),
+    "version": (2, 5, 1),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -29,7 +29,7 @@ bl_info = {
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
-    "blosmAssets": "2021.01.25"
+    "blosmAssets": "2021.05.07"
 }
 
 import os, sys, json, textwrap
@@ -67,14 +67,6 @@ blenderApp.app.version = bl_info["version"]
 blenderApp.app.isPremium = os.path.isdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "realistic"))
 
 
-# try reading the file <preferences.txt>
-try:
-    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "preferences.txt"), 'r') as preferencesFile:
-        preferences = json.load(preferencesFile)
-except Exception as e:
-    preferences = dict(dataDir='', assetsDir='', mapboxAccessToken='')
-
-
 class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
     bl_idname = __name__
     
@@ -91,22 +83,19 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
     dataDir: bpy.props.StringProperty(
         name = '',
         subtype = 'DIR_PATH',
-        description = "Directory to store downloaded OpenStreetMap and terrain files",
-        default = os.path.expanduser(preferences["dataDir"])
+        description = "Directory to store downloaded OpenStreetMap and terrain files"
     )
     
     assetsDir: bpy.props.StringProperty(
         name = '',
         subtype = 'DIR_PATH',
         description = "Directory with assets (building_materials.blend, vegetation.blend). "+
-            "It can be also set in the addon GUI",
-        default = os.path.expanduser(preferences["assetsDir"])
+            "It can be also set in the addon GUI"
     )
     
     mapboxAccessToken: bpy.props.StringProperty(
         name = "Mapbox access token",
-        description = "A string token to access overlays from Mapbox company",
-        default = preferences["mapboxAccessToken"]
+        description = "A string token to access overlays from Mapbox company"
     )
     
     osmServer: bpy.props.EnumProperty(
@@ -203,6 +192,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a = blenderApp.app
         dataType = context.scene.blosm.dataType
         
+        self.setup(context, a.addonName)
+        
         a.projection = None
         a.setAttributes(context)
         
@@ -218,6 +209,15 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return self.importGeoJson(context)
         
         return {'FINISHED'}
+
+    def setup(self, context, addonName):
+        # check if the file <setup_execute.py> is available
+        setup_function = self.loadSetupScript(
+            os.path.join(os.path.dirname(os.path.realpath(__file__)), "setup_execute.py"),
+            reportError=False
+        )
+        if setup_function:
+            setup_function(context, addonName)
     
     def importOsm(self, context):
         a = blenderApp.app
@@ -234,7 +234,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         setupScript = addon.setupScript
         if setupScript:
-            setup_function = self.loadSetupScript(setupScript)
+            setup_function = self.loadSetupScript(setupScript, reportError=True)
             if not setup_function:
                 return {'CANCELLED'}
         else:
@@ -324,12 +324,13 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         context.scene["lat"] = lat
         context.scene["lon"] = lon
     
-    def loadSetupScript(self, setupScript):
+    def loadSetupScript(self, setupScript, reportError):
         setupScript = os.path.realpath(bpy.path.abspath(setupScript))
         if not os.path.isfile(setupScript):
-            self.report({'ERROR'},
-                "The script file doesn't exist"
-            )
+            if reportError:
+                self.report({'ERROR'},
+                    "The script file doesn't exist"
+                )
             return None
         import imp
         # remove extension from the path
@@ -475,7 +476,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         setupScript = addon.setupScript
         if setupScript:
-            setup_function = self.loadSetupScript(setupScript)
+            setup_function = self.loadSetupScript(setupScript, reportError=True)
             if not setup_function:
                 return {'CANCELLED'}
         else:
