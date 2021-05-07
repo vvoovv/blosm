@@ -35,7 +35,10 @@ class WayManager:
         return (way for category in allWayCategories for way in self.layers[category])
     
     def getFacadeVisibilityWays(self):
-        return (way for category in facadeVisibilityWayCategories for way in self.layers[category])
+        return (
+            way for category in facadeVisibilityWayCategories for way in self.layers[category] \
+            if not way.bridge and not way.tunnel
+        )
     
     def process(self):
         for way in self.getAllWays():
