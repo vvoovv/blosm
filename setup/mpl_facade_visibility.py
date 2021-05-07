@@ -26,7 +26,7 @@ def setup(app, osm):
     # parse the newly added command line arguments
     app.parseArgs()
     classifyFacades = getattr(app, "classification", False)
-    # showAssoc = getattr(app, "showAssoc", False)
+    showAssoc = getattr(app, "showAssoc", False)
     
     # create managers
     
@@ -48,9 +48,9 @@ def setup(app, osm):
     if app.buildings:
         buildings = BaseBuildingManager(osm, app, None, None)
         buildings.setRenderer(
-            BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor,showAssoc=app.showAssoc)\
+            BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc)\
                 if classifyFacades else\
-                BuildingVisibilityRender(showAssoc=app.showAssoc)
+                BuildingVisibilityRender(showAssoc=showAssoc)
         )
         buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
