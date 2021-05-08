@@ -46,7 +46,7 @@ class BuildingVisibilityRender(Renderer):
             if self.showAssoc:
                 # visalization of association between way-segment and edge
                 visInfo = edge.visInfo
-                if hasattr(visInfo,'waySegment'):
+                if hasattr(visInfo,'waySegment') and visInfo.value>=0.5:
                     seg = visInfo.waySegment
                     s1, s2 = seg.v1, seg.v2
                     ax.plot(s1[0], s1[1], 'k.', markersize=5.)
@@ -129,7 +129,7 @@ class BuildingClassificationRender(Renderer):
             if self.showAssoc:
                 # visalization of association between way-segment and edge
                 visInfo = edge.visInfo
-                if hasattr(visInfo,'waySegment'):
+                if hasattr(visInfo,'waySegment') and visInfo.value>=0.5:
                     seg = visInfo.waySegment
                     s1, s2 = seg.v1, seg.v2
                     ax.plot(s1[0], s1[1], 'k.', markersize=5.)

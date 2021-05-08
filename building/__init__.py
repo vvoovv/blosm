@@ -354,13 +354,26 @@ class VisibilityInfo:
     def __init__(self):
         self.value = 0.
     
+    def weight(self, info):
+        if hasattr(info,'dx'):
+            w_angle = info.dx/(info.dx+info.dy)   # almost linear from 1.0 if angle is 0° to 0.0 if 90° 
+            w_dist = (100.-info.distance/2.)/100. if info.distance/2. < 100. else 0.  # 1.0 if at way-segment and 0.0 if at end of search range height
+            w_way = 0.5 if WayLevel[info.waySegment.way.category] == 1 else 0.0
+            return w_angle + w_dist + w_way + info.value
+        else:
+            return info.value
+
     def __gt__(self, other):
-        # if the new measurment is potentially of a front edge
-        if self.value >= FrontFacadeVisibility:
-            # prioritize using level of way segment
-            if hasattr(other,'waySegment'):
-                return WayLevel[self.waySegment.way.category] < WayLevel[other.waySegment.way.category]
-        return self.value > other.value
+        if other.value and self.value >= other.value:
+            return self.weight(self) > self.weight(other)
+        else:
+            return self.value > other.value        
+        # # if the new measurment is potentially of a front edge
+        # if self.value >= FrontFacadeVisibility:
+        #     # prioritize using level of way segment
+        #     if hasattr(other,'waySegment'):
+        #         return WayLevel[self.waySegment.way.category] < WayLevel[other.waySegment.way.category]
+        # return self.value > other.value
     
     def reset(self):
         self.value = 0.
