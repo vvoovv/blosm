@@ -54,11 +54,14 @@ class BuildingVisibilityRender(Renderer):
                     vy = (v1[1]+v2[1])/2.
                     sx = (s1[0]+s2[0])/2.
                     sy = (s1[1]+s2[1])/2.
+                    color = 'blue' if edge.cl==FacadeClass.deadend else (
+                        'green' if edge.cl==FacadeClass.passage else 'magenta'
+                        )
                     ax.annotate(
                         '',
                         xytext = (sx,sy),
                         xy=(vx,vy),
-                        arrowprops=dict(color='magenta', width = 0.25, shrink=0., headwidth=3, headlength=8)
+                        arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
                     )
                     ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f'%(visInfo.value))
             #if not skip:
@@ -137,11 +140,14 @@ class BuildingClassificationRender(Renderer):
                     vy = (v1[1]+v2[1])/2.
                     sx = (s1[0]+s2[0])/2.
                     sy = (s1[1]+s2[1])/2.
+                    color = 'blue' if edge.cl==FacadeClass.deadend else (
+                        'green' if edge.cl==FacadeClass.passage else 'magenta'
+                        )
                     ax.annotate(
                         '',
                         xytext = (sx,sy),
                         xy=(vx,vy),
-                        arrowprops=dict(color='magenta', width = 0.25, shrink=0., headwidth=3, headlength=8)
+                        arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
                     )
                     ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f'%(visInfo.value))
 

@@ -247,41 +247,43 @@ class FacadeVisibility:
                     edgeIntersections = building.crossedEdges
                     # if there are intersections, process their edges
                     if edgeIntersections:
-                        # tunnels are skipped in the WayManager, therefore, the commented part is no more required
-                        # for values between 0 and 1, the intersection is in the way-segment
-                        # wayIntersects =  tuple( isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1.001 )
-                        # if wayIntersects:
-                        #     # all intersections with the way-segment itself are passages
-                        #     for edge, intsectX in edgeIntersections:
-                        #         if abs(intsectX) <= 1.001:
-                        #             edge.cl = FacadeClass.passage # facade with passage 
-                        # else:
-                            # process the nearest axis intersections. If there are on both sides, we assume a street within a
-                            # courtyard. Else, the edge gets visible.
+                        # for values between 0 and 1, the intersection is in the way-segment.
+                        # these may also be tunnels, which are skipped in the WayManager currently.
+                            wayIntersects =  tuple( isect[0] for isect in edgeIntersections if abs(isect[1]) <= 1.001 )
+                            if wayIntersects:
+                                # all intersections with the way-segment itself are passages
+                                for edge, intsectX in edgeIntersections:
+                                    if abs(intsectX) <= 1.001:
+                                        edge.cl = FacadeClass.passage # facade with passage 
+                                        edge._visInfo.value = 1.
+                                        edge.visInfo.update(edge._visInfo)
+                            else:
+                                # process the nearest axis intersections. If there are on both sides, we assume a street within a
+                                # courtyard. Else, the edge gets visible.
 
-                        # largest index on negative (left) side
-                        axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<=0), key=itemgetter(1), default=(None,None))
-                        if axisLeftEdge:
-                            if isec > -2.*searchWidth/segmentLength and not axisLeftEdge.hasSharedBldgVectors():
-                                axisLeftEdge.cl = FacadeClass.deadend # dead-end at a building 
-                        else:
-                            # smallest index on positive (right) side
-                            axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
-                            if axisRightEdge:
-                                if isec < 2.*searchWidth/segmentLength and not axisRightEdge.hasSharedBldgVectors():
-                                    axisRightEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                # largest index on negative (left) side
+                                axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<=0), key=itemgetter(1), default=(None,None))
+                                if axisLeftEdge:
+                                    if isec > -2.*searchWidth/segmentLength and not axisLeftEdge.hasSharedBldgVectors():
+                                        axisLeftEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                        axisLeftEdge._visInfo.value = 1.
+                                        axisLeftEdge.visInfo.update(axisLeftEdge._visInfo)
+                                else:
+                                    # smallest index on positive (right) side
+                                    axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
+                                    if axisRightEdge:
+                                        if isec < 2.*searchWidth/segmentLength and not axisRightEdge.hasSharedBldgVectors():
+                                            axisRightEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                            axisRightEdge._visInfo.value = 1.
+                                            axisRightEdge.visInfo.update(axisRightEdge._visInfo)
 
                     # check for range and angles
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
-                        # at least one vertice of the edge must be in rectangular search range
-                        # if edge.cl in [FacadeClass.deadend,FacadeClass.passage]: # crossed facades have wider range
-                        #     edge._visInfo.value = 1.
-                        #     edge.visInfo.update(edge._visInfo)
-                        # else:
-                            if not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
-                                edge._visInfo.value = 0.
-                            if edge._visInfo > edge.visInfo and not edge.cl:
-                                edge.visInfo.update(edge._visInfo)
+                        # update edges that are within search range
+                        if not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
+                            edge._visInfo.value = 0.
+                        if edge._visInfo > edge.visInfo and not edge.cl:
+                            edge.visInfo.update(edge._visInfo)
 
                     firstVertIndex += building.polygon.numEdges
 
