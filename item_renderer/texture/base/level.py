@@ -50,8 +50,6 @@ class CurtainWall(CurtainWallBase, Container):
             materialTemplateName = "facade_specular_color"
         elif useSpecularMap:
             materialTemplateName = "facade_specular"
-        elif useCladdingColor:
-            materialTemplateName = "facade_color"
         else:
             materialTemplateName = "export"
         
