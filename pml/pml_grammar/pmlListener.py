@@ -260,6 +260,60 @@ class pmlListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by pmlParser#SPEC_LEVEL.
+    def enterSPEC_LEVEL(self, ctx:pmlParser.SPEC_LEVELContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#SPEC_LEVEL.
+    def exitSPEC_LEVEL(self, ctx:pmlParser.SPEC_LEVELContext):
+        pass
+
+
+    # Enter a parse tree produced by pmlParser#SPEC_ROOF.
+    def enterSPEC_ROOF(self, ctx:pmlParser.SPEC_ROOFContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#SPEC_ROOF.
+    def exitSPEC_ROOF(self, ctx:pmlParser.SPEC_ROOFContext):
+        pass
+
+
+    # Enter a parse tree produced by pmlParser#SPEC_SINGLE.
+    def enterSPEC_SINGLE(self, ctx:pmlParser.SPEC_SINGLEContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#SPEC_SINGLE.
+    def exitSPEC_SINGLE(self, ctx:pmlParser.SPEC_SINGLEContext):
+        pass
+
+
+    # Enter a parse tree produced by pmlParser#SPEC_FULL_INDX.
+    def enterSPEC_FULL_INDX(self, ctx:pmlParser.SPEC_FULL_INDXContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#SPEC_FULL_INDX.
+    def exitSPEC_FULL_INDX(self, ctx:pmlParser.SPEC_FULL_INDXContext):
+        pass
+
+
+    # Enter a parse tree produced by pmlParser#SPEC_LEFT_INDX.
+    def enterSPEC_LEFT_INDX(self, ctx:pmlParser.SPEC_LEFT_INDXContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#SPEC_LEFT_INDX.
+    def exitSPEC_LEFT_INDX(self, ctx:pmlParser.SPEC_LEFT_INDXContext):
+        pass
+
+
+    # Enter a parse tree produced by pmlParser#SPEC_RIGHT_INDX.
+    def enterSPEC_RIGHT_INDX(self, ctx:pmlParser.SPEC_RIGHT_INDXContext):
+        pass
+
+    # Exit a parse tree produced by pmlParser#SPEC_RIGHT_INDX.
+    def exitSPEC_RIGHT_INDX(self, ctx:pmlParser.SPEC_RIGHT_INDXContext):
+        pass
+
+
     # Enter a parse tree produced by pmlParser#condition.
     def enterCondition(self, ctx:pmlParser.ConditionContext):
         pass

@@ -15,6 +15,7 @@ class PythonCoder():
         self.alternativesContext = False
         self.conditionContext = False
         self.conditionalContext = False
+        self.spec_condition = []
 
     def getCode(self):
         return self.code
@@ -129,7 +130,8 @@ class PythonCoder():
 
     # ------------------------------------------------------------
     # element 
-    #     : '@'? element_name (STRUDEL def_name)? (LBRACK condition RBRACK)? LCURLY attributes RCURLY
+    #     : '@'? 'level' (STRUDEL def_name)? spec_conditions* (LPAREN condition RPAREN)? LCURLY attributes RCURLY
+    #     | '@'? element_name (STRUDEL def_name)? (LPAREN condition RPAREN)? LCURLY attributes RCURLY
     #     ;
     # ------------------------------------------------------------
 
@@ -138,9 +140,13 @@ class PythonCoder():
         self.write(self.indent()+txt+'(')
         self.indents += 1
 
-    def enterElement(self):
+    def enterElement(self,txt):
         self.write(self.elementCommaStack[-1])
         self.attribCommaStack.append("\n")  # maybe we have a condition first
+        if 'level' in txt:
+            self.write(self.indent()+'Level(')
+            self.indents += 1
+
  
     def exitElement(self):
         self.indents -=1
@@ -467,6 +473,61 @@ class PythonCoder():
     def exitINNESTED(self,li):
         list = self.literalize(li,True)
         self.write( list )
+
+    # ------------------------------------------------------------
+    # spec_conditions
+    #     : LBRACK spec_condition RBRACK  #SPEC_LEVEL
+    #     ;
+    # spec_condition
+    #     : 'roof'                    #SPEC_ROOF
+    #     | 'all'                     #SPEC_ALL
+    #     | NUMBER COLON NUMBER       #SPEC_FULL_INDX
+    #     | NUMBER COLON              #SPEC_LEFT_INDX
+    #     | COLON NUMBER              #SPEC_RIGHT_INDX
+    #     ;
+    # ------------------------------------------------------------
+
+    def enterSPEC_LEVEL(self):
+        self.spec_condition = []
+
+    def exitSPEC_LEVEL(self):
+        roof_val = 'True' if 'roof' in self.spec_condition else 'False'
+        self.write(self.attribCommaStack[-1])
+        self.write(self.indent()+'roofLevels = '+roof_val )
+        self.attribCommaStack[-1] = ",\n"
+        all_val = 'True' if 'all' in self.spec_condition else 'False'
+        self.write(self.attribCommaStack[-1])
+        self.write(self.indent()+'allLevels  = '+all_val )
+        self.attribCommaStack[-1] = ",\n"
+        self.spec_condition = []
+
+
+    def enterSPEC_ROOF(self,cond):
+        self.spec_condition.append(cond)
+
+    def enterSPEC_FULL_INDX(self, index_text):
+        indices = index_text.split(':')
+        self.write(self.attribCommaStack[-1])
+        self.write(self.indent()+'indices = ('+indices[0]+','+indices[1]+')' )
+        self.attribCommaStack[-1] = ",\n"
+
+    def enterSPEC_SINGLE(self,index_text):
+        self.write(self.attribCommaStack[-1])
+        self.write(self.indent()+'indices = ('+index_text+','+index_text+')' )
+        self.attribCommaStack[-1] = ",\n"
+
+    def enterSPEC_LEFT_INDX(self, index_text):
+        indices = index_text.split(':')
+        self.write(self.attribCommaStack[-1])
+        self.write(self.indent()+'indices = ('+indices[0]+',-1)' )
+        self.attribCommaStack[-1] = ",\n"
+
+    def enterSPEC_RIGHT_INDX(self, index_text):
+        indices = index_text.split(':')
+        self.write(self.attribCommaStack[-1])
+        self.write(self.indent()+'indices = (0,'+indices[1]+')' )
+        self.attribCommaStack[-1] = ",\n"
+
     # ------------------------------------------------------------
     # arith_atom
     #     : 'item' '.' IDENTIFIER                                 # ATOM_SINGLE

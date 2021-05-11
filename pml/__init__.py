@@ -9,12 +9,18 @@ from .ExceptionManagement import ParserException
 
 class PML:
     
-    def __init__(self, pmlFilePath, assetsDir):
+    def __init__(self, pmlFilePath, rootDir):
+        """
+        Args:
+            pmlFilePath (str): Path to a PML file
+            rootDir (str): Root directory to use for includes <@include>
+                if the path in <@include> starts with '/'
+        """
         self.pmlFilePath = pmlFilePath
-        self.assetsDir = assetsDir
+        self.rootDir = rootDir
     
     def getPythonCode(self):
-        preprocessor = PML_Preprocessor(self.assetsDir)
+        preprocessor = PML_Preprocessor(self.rootDir)
         preprocessor.process(self.pmlFilePath)
         
         inputStream = InputStream(preprocessor.getStream())

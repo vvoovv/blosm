@@ -17,7 +17,8 @@ elements
     ;
 
 element 
-    : '@'? element_name (STRUDEL def_name)? (LBRACK condition RBRACK)? LCURLY attributes RCURLY
+    : '@'? 'level' (STRUDEL def_name)? spec_conditions (LPAREN condition RPAREN)? LCURLY attributes RCURLY  
+    | '@'? element_name (STRUDEL def_name)? (LPAREN condition RPAREN)? LCURLY attributes RCURLY             
     ;
 
 attributes
@@ -83,6 +84,18 @@ def_name
 
 conditional
     : bool_expr 
+    ;
+
+spec_conditions
+    : (LBRACK spec_condition RBRACK)*  #SPEC_LEVEL
+    ;
+
+spec_condition
+    : ('roof' | 'all')          #SPEC_ROOF
+    | NUMBER                    #SPEC_SINGLE
+    | NUMBER COLON NUMBER       #SPEC_FULL_INDX
+    | NUMBER COLON              #SPEC_LEFT_INDX
+    | COLON NUMBER              #SPEC_RIGHT_INDX
     ;
 
 condition

@@ -28,6 +28,6 @@ java org.antlr.v4.Tool -Dlanguage=Python3 pml.g4
 ### Running the translator
 To run the translator using the example style *example.pml*, execute
 ```
-python PML2PythonTranslator.py example.pml
+python PML2PythonTranslator.py example.pml ''
 ```
 The translated code will be written to *stdout*.
