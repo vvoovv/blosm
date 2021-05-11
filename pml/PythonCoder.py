@@ -491,7 +491,7 @@ class PythonCoder():
         self.spec_condition = []
 
     def exitSPEC_LEVEL(self):
-        roof_val = 'True' if 'roof' in self.spec_condition else 'False'
+        roof_val = 'True' if '@roof' in self.spec_condition else 'False'
         self.write(self.attribCommaStack[-1])
         self.write(self.indent()+'roofLevels = '+roof_val )
         self.attribCommaStack[-1] = ",\n"

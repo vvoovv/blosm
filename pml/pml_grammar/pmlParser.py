@@ -234,7 +234,7 @@ class pmlParser ( Parser ):
     literalNames = [ "<INVALID>", "'@name'", "'level'", "'symmetry'", "'use'", 
                      "'faces'", "'sharpEdges'", "'attr'", "'bldgAttr'", 
                      "'random_normal'", "'random_weighted'", "'if'", "'use_from'", 
-                     "'per_building'", "'rgb'", "'rgba'", "'roof'", "'all'", 
+                     "'per_building'", "'rgb'", "'rgba'", "'@roof'", "'all'", 
                      "'item'", "'.'", "'style'", "'or'", "'and'", "'not'", 
                      "'in'", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "'@'", "'{'", "'}'", "'('", 

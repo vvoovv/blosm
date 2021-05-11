@@ -15,7 +15,7 @@ null
 'per_building'
 'rgb'
 'rgba'
-'roof'
+'@roof'
 'all'
 'item'
 '.'
