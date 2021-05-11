@@ -45,13 +45,13 @@ class PythonListener(pmlListener):
     def enterElement_name(self, ctx:pmlParser.Element_nameContext):
         self.coder.enterElement_name(ctx.getText())
 
-    # Enter a parse tree produced by pmlParser#style_block.
+    # Enter a parse tree produced by pmlParser#ELEM_LEVEL.
     def enterElement(self, ctx:pmlParser.ElementContext):
-        self.coder.enterElement()
+        self.coder.enterElement(ctx.getText())
 
-    # Exit a parse tree produced by pmlParser#style_block.
+    # Exit a parse tree produced by pmlParser#ELEM_LEVEL.
     def exitElement(self, ctx:pmlParser.ElementContext):
-        self.coder.exitElement()
+       self.coder.exitElement()
 
     # Enter a parse tree produced by pmlParser#alternatives.
     def enterAlternatives(self, ctx:pmlParser.AlternativesContext):
@@ -229,3 +229,31 @@ class PythonListener(pmlListener):
     # Enter a parse tree produced by pmlParser#arith_op.
     def enterArith_op(self, ctx:pmlParser.Arith_opContext):
         self.coder.enterArith_op(ctx.getText())
+
+    # Enter a parse tree produced by pmlParser#SPEC_LEVEL.
+    def enterSPEC_LEVEL(self, ctx:pmlParser.SPEC_LEVELContext):
+        self.coder.enterSPEC_LEVEL()
+
+    # Exit a parse tree produced by pmlParser#SPEC_LEVEL.
+    def exitSPEC_LEVEL(self, ctx:pmlParser.SPEC_LEVELContext):
+        self.coder.exitSPEC_LEVEL()
+
+    # Enter a parse tree produced by pmlParser#SPEC_ROOF.
+    def enterSPEC_ROOF(self, ctx:pmlParser.SPEC_ROOFContext):
+        self.coder.enterSPEC_ROOF(ctx.getText())
+
+    # Enter a parse tree produced by pmlParser#SPEC_SINGLE.
+    def enterSPEC_SINGLE(self, ctx:pmlParser.SPEC_SINGLEContext):
+        self.coder.enterSPEC_SINGLE(ctx.getText())
+
+    # Enter a parse tree produced by pmlParser#SPEC_FULL_INDX.
+    def enterSPEC_FULL_INDX(self, ctx:pmlParser.SPEC_FULL_INDXContext):
+        self.coder.enterSPEC_FULL_INDX(ctx.getText())
+
+    # Enter a parse tree produced by pmlParser#SPEC_LEFT_INDX.
+    def enterSPEC_LEFT_INDX(self, ctx:pmlParser.SPEC_LEFT_INDXContext):
+        self.coder.enterSPEC_LEFT_INDX(ctx.getText())
+
+    # Enter a parse tree produced by pmlParser#SPEC_RIGHT_INDX.
+    def enterSPEC_RIGHT_INDX(self, ctx:pmlParser.SPEC_RIGHT_INDXContext):
+        self.coder.enterSPEC_RIGHT_INDX(ctx.getText())

@@ -34,7 +34,8 @@ class Node:
             WayManager responsible for real ways
         rr: A renderer for the OSM node
     """
-    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "w", "rr", "valid", "bldgs")
+    
+    __slots__ = ("l", "tags", "lat", "lon", "coords", "b", "w", "rr", "valid", "bldgs", "m")
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
