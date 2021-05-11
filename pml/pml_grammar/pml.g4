@@ -91,7 +91,7 @@ spec_conditions
     ;
 
 spec_condition
-    : ('roof' | 'all')          #SPEC_ROOF
+    : ('@roof' | 'all')          #SPEC_ROOF
     | NUMBER                    #SPEC_SINGLE
     | NUMBER COLON NUMBER       #SPEC_FULL_INDX
     | NUMBER COLON              #SPEC_LEFT_INDX
