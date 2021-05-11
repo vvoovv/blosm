@@ -17,10 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from numpy import zeros
 import parse
 from mathutils import Vector
-from util.polygon import Polygon
 
 
 class Building:
@@ -28,20 +26,11 @@ class Building:
     A wrapper for a OSM building
     """
     
-    __slots__ = ("outline", "parts", "polygon", "visibility", "auxIndex")
+    __slots__ = ("outline", "parts")
     
     def __init__(self, element, buildingIndex, osm):
         self.outline = element
         self.parts = []
-        # a polygon for the outline, used for facade classification only
-        self.polygon = None
-        # A numpy array to store facade visibility. It consists of two rows.
-        # The first row contains the final visibility.
-        # The second one contains the intermediary or auxiliary visibility.
-        # After each calculation cycle the maximum of the above visibilities is stored in the elements of the first row.
-        self.visibility = None
-        # an auxiliary variable used to store the first index of the building vertices in an external list or array
-        self.auxIndex = 0
         self.markUsedNodes(buildingIndex, osm)
     
     def addPart(self, part):
@@ -55,49 +44,3 @@ class Building:
         """
         for nodeId in self.outline.nodeIds(osm):
             osm.nodes[nodeId].b[buildingIndex] = 1
-    
-    def initPolygon(self, data):
-        outline = self.outline
-        polygon = Polygon()
-        if outline.t is parse.multipolygon:
-            polygon.init( Vector((coord[0], coord[1], 0.)) for coord in outline.getOuterData(data) )
-        else:
-            polygon.init( Vector((coord[0], coord[1], 0.)) for coord in outline.getData(data) )
-        if polygon.n < 3:
-            # skip it
-            return
-        # check the direction of vertices, it must be counterclockwise
-        polygon.checkDirection()
-        self.polygon = polygon
-    
-    def initVisibility(self):
-        # <self.polygon> must be already initialized
-        
-        # The number of elements in each row of <self.visibility> is equal to the number of vertices in
-        # <self.polygon.allVerts>, i.e. the vertices forming a straight angle are also included
-        self.visibility = zeros((2, len(self.polygon.allVerts)))
-    
-    def updateAuxVisibilityAdd(self, polygonEdgeIndex, term):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] += term
-        
-    def updateAuxVisibilityDivide(self, polygonEdgeIndex, denominator):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] /= denominator
-    
-    def updateAuxVisibilitySet(self, polygonEdgeIndex, value):
-        self.visibility[1][self.polygon.indices[polygonEdgeIndex]] = value
-    
-    def updateVisibilityMax(self, polygonEdgeIndex):
-        index = self.polygon.indices[polygonEdgeIndex]
-        self.visibility[0][index] = max(self.visibility[0][index], self.visibility[1][index])
-    
-    def edgeInfo(self, queryBldgVerts, firstVertIndex):
-        """
-        A generator that yields edge info (edge index, the first edge vertex, the second edge vertex)
-        out of numpy array <queryBldgVerts> and the index of the first vertex <firstVertIndex> of
-        the building polygon at <queryBldgVerts>
-        """
-        n_1 = self.polygon.n - 1
-        for edgeIndex, vertIndex in zip(range(n_1), range(firstVertIndex, firstVertIndex + n_1)):
-            yield edgeIndex, queryBldgVerts[vertIndex], queryBldgVerts[vertIndex+1]
-        # the last edge
-        yield n_1, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
