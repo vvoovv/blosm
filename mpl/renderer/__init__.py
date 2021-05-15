@@ -7,7 +7,7 @@ class Renderer:
     def __init__(self):
         self.mpl = Mpl.getMpl()
     
-    def renderLineString(self, coords, closed, style):
+    def renderLineString(self, coords, closed, **style):
         prevCoord = coord0 = None
         for coord in coords:
             if prevCoord:
@@ -42,17 +42,23 @@ class WayRenderer(Renderer):
     A renderer for physical ways
     """
     
-    style = dict(
-        linewidth = 2.,
-        color = "brown"
-    )
-    
     def render(self, way, data):
         # st = WayRenderer.style
         # level = WayLevel[way.category]
         # st['linewidth'] = 4 - level
         # self.renderLineString(way.element.getData(data), way.element.isClosed(), st)
-        self.renderLineString(way.element.getData(data), way.element.isClosed(), WayRenderer.style)
+        self.renderLineString(
+            way.element.getData(data),
+            way.element.isClosed(),
+            linewidth = self.getLineWidth(way),
+            color = self.getColor(way)
+        )
+    
+    def getLineWidth(self, way):
+        return 2.
+    
+    def getColor(self, way):
+        return "brown"
 
 
 class BuildingRenderer(Renderer):

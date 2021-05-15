@@ -1,7 +1,7 @@
 from . import Renderer, BuildingRenderer, WayRenderer
 import parse
 from parse.osm import Osm
-from way import facadeVisibilityWayCategories
+from way import facadeVisibilityWayCategories, Category
 from action.facade_classification import FacadeClass, WayLevel
 
 
@@ -175,3 +175,6 @@ class WayVisibilityRenderer(WayRenderer):
     def render(self, way, data):
         if way.category in facadeVisibilityWayCategories:
             super().render(way, data)
+    
+    def getLineWidth(self, way):
+        return 0.5 if way.category == Category.service else super().getLineWidth(way)
