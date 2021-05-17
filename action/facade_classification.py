@@ -1,5 +1,4 @@
 from math import tan, pi
-
 from way import Category, facadeVisibilityWayCategories
 
 class FacadeClass:
@@ -14,9 +13,12 @@ class FacadeClass:
 CrossedFacades = [FacadeClass.deadend, FacadeClass.passage]
 FrontLikeFacades = [FacadeClass.front, FacadeClass.passage]
 
+searchRange = (10.,100.)                            # (searchWidthMargin, searchHeight)
+
 FrontFacadeVisibility = 0.75                        # visibility required to classify as front facade
 VisibilityAngle = 50                                # maximum angle in ° between way-segment and facade to be accepted as visible
 VisibilityAngleFact = tan(pi*VisibilityAngle/180.)  # Factor used in angle condition: VisibilityAngleFact*dx > dy
+maxDistanceRatio = 7.5                              # maximum allowed ratio of edge diatnce (Y1+Y2) and maximum building dimension
 
 WayLevel = dict((category,1) for category in facadeVisibilityWayCategories)
 WayLevel[Category.service] = 2
@@ -30,11 +32,26 @@ class FacadeClassification:
     def do(self, manager):
             
         for building in manager.buildings:
+            # find maximum building dimension
+            maxX, maxY = -999999., -999999.
+            minX, minY = 999999., 999999.
+            for vector in building.polygon.getVectors():
+                v1 = vector.v1
+                maxX = max(v1[0],maxX)
+                maxY = max(v1[1],maxY)
+                minX = min(v1[0],minX)
+                minY = min(v1[1],minY)
+            maxBuildDimension = max(maxX-minX,maxY-minY)
+          
             # The <edge> could have been already visited earlier if it is the shared one
             for vector in building.polygon.getVectors():
                 edge = vector.edge
+                visInfo = edge.visInfo
                 if not edge.cl and edge.hasSharedBldgVectors():
                     edge.cl = FacadeClass.shared
+                elif hasattr(visInfo,'distance'):
+                    if visInfo.distance/maxBuildDimension > maxDistanceRatio:
+                        visInfo.value = 0.
 
             # Find front facades
             self.classifyFrontFacades(building)

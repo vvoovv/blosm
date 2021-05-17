@@ -2,7 +2,7 @@ from math import sqrt
 import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
-from .facade_classification import FacadeClass, VisibilityAngleFact
+from .facade_classification import searchRange, FacadeClass, VisibilityAngleFact
 
 
 class PriorityQueue():
@@ -39,7 +39,7 @@ class PriorityQueue():
 
 class FacadeVisibility:
     
-    def __init__(self, searchRange=(10., 100.)):
+    def __init__(self):
         self.app = None
         self.kdTree = None
         self.bldgVerts = None

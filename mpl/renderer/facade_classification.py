@@ -3,6 +3,7 @@ import parse
 from parse.osm import Osm
 from way import facadeVisibilityWayCategories, Category
 from action.facade_classification import FacadeClass, WayLevel
+from math import atan2, pi
 
 
 class BuildingVisibilityRender(Renderer):
@@ -63,7 +64,8 @@ class BuildingVisibilityRender(Renderer):
                         xy=(vx,vy),
                         arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
                     )
-                    ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f'%(visInfo.value))
+                    a = atan2(visInfo.dy,visInfo.dx)/pi*180.
+                    ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f,%2.0f°'%(visInfo.value, a))
             #if not skip:
             #    ax.annotate(str(vector.index), xy=(v1[0], v1[1]))
             #if not edge.hasSharedBuildings():
@@ -149,7 +151,8 @@ class BuildingClassificationRender(Renderer):
                         xy=(vx,vy),
                         arrowprops=dict(color=color, width = 0.25, shrink=0., headwidth=3, headlength=8)
                     )
-                    ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f'%(visInfo.value))
+                    a = atan2(visInfo.dy,visInfo.dx)/pi*180.
+                    ax.text((sx+vx)/2.,(sy+vy)/2.,' %4.2f,%2.0f°'%(visInfo.value, a))
 
     def getFootprintEdgeColor(self, edge):
         cl = edge.cl
