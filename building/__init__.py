@@ -352,20 +352,21 @@ class VisibilityInfo:
     __slots__ = ("value", "waySegment", "distance", "dx", "dy")
     
     def __init__(self):
-        self.value = 0.
+        self.reset()
     
-    def weight(self, info):
-        if hasattr(info,'dx'):
-            w_angle = info.dx/(info.dx+info.dy)   # almost linear from 1.0 if angle is 0° to 0.0 if 90° 
-            w_dist = (100.-info.distance/2.)/100. if info.distance/2. < 100. else 0.  # 1.0 if at way-segment and 0.0 if at end of search range height
-            w_way = 0.5 if WayLevel[info.waySegment.way.category] == 1 else 0.0
-            return w_angle + w_dist + w_way + info.value
+    def getWeightedValue(self):
+        # <self.waySegment> is set then <self.dx> and <self.dy> are set too
+        if not self.waySegment is None:
+            w_angle = self.dx/(self.dx+self.dy)   # almost linear from 1.0 if angle is 0° to 0.0 if 90° 
+            w_dist = (100.-self.distance/2.)/100. if self.distance/2. < 100. else 0.  # 1.0 if at way-segment and 0.0 if at end of search range height
+            w_way = 0.5 if WayLevel[self.waySegment.way.category] == 1 else 0.0
+            return w_angle + w_dist + w_way + self.value
         else:
-            return info.value
+            return self.value
 
     def __gt__(self, other):
         if other.value and self.value >= other.value:
-            return self.weight(self) > self.weight(other)
+            return self.getWeightedValue() > other.getWeightedValue()
         else:
             return self.value > other.value        
         # # if the new measurment is potentially of a front edge
@@ -377,6 +378,7 @@ class VisibilityInfo:
     
     def reset(self):
         self.value = 0.
+        self.waySegment = None
     
     def set(self, segment, distance, dx, dy):
         self.waySegment,\
