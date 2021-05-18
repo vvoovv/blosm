@@ -227,11 +227,8 @@ class FacadeVisibility:
                         _visInfo = edge._visInfo
                         dx = abs(edgeVert2[0] - edgeVert1[0])
                         dy = abs(edgeVert2[1] - edgeVert1[1])
-                        # limit angle to way-segment (explanation see facade_classification.py),
-                        # applied already her, here because not applicable for crossings.
-                        if VisibilityAngleFact*dx < dy: 
-                            _visInfo.value = 0.
-                        elif dx:
+                        
+                        if dx:
                             _visInfo.value /= dx    # normalization of visibility
                         else:
                             _visInfo.value = 0.     # edge perpendicular to way-segment

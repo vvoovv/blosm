@@ -73,7 +73,9 @@ class FacadeClassification:
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
-                if visInfo.value and WayLevel[visInfo.waySegment.way.category] == way_level:
+                if visInfo.value and \
+                        VisibilityAngleFact*visInfo.dx > visInfo.dy and \
+                        WayLevel[visInfo.waySegment.way.category] == way_level:
                     if edge.cl in CrossedFacades:
                         # deadend becomes front, while passage remains
                         accepted_level = way_level
