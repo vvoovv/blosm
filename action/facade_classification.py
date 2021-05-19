@@ -62,7 +62,7 @@ class FacadeClassification:
                     if not edge.cl:
                         edgeSight = visInfo.value * visInfo.dx/(visInfo.dx+visInfo.dy) * visInfo.waySegment.avgDist/visInfo.distance
                         if edgeSight > maxSight:
-                            maxSight, maxEdge = (edgeSight, edge)
+                            maxSight, maxEdge = edgeSight, edge
                         # For each building edge satisfying the conditions 
                         #   1) the category of the stored way is equal to a category from the category set AND 
                         #   2) the edge sight is larger than the parameter FrontFacadeSight 
