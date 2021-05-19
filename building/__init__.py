@@ -21,7 +21,7 @@ from numpy import zeros
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
-from defs.facade_classification import WayLevel, FrontFacadeVisibility, VisibilityAngleFactor
+from defs.facade_classification import WayLevel, VisibilityAngleFactor
 
 #
 # values for <BldgVector.skip>
