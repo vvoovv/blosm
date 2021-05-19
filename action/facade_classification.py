@@ -24,6 +24,18 @@ WayLevel = dict((category,1) for category in facadeVisibilityWayCategories)
 WayLevel[Category.service] = 2
 MaxWayLevel = 2
 
+
+def mostlyParallelToWaySegment(visInfo):
+    """
+    Check if the building edge is mostly parallel to the way segment.
+    
+    We could place this method in the class <building.VisibilityInfo>,
+    but then the parameter <VisibilityAngleFact> must be exposed to the module <building>.
+    That's why we are placing this method here.
+    """
+    return VisibilityAngleFact*visInfo.dx > visInfo.dy
+
+
 class FacadeClassification:
     
     def __init__(self):
@@ -74,7 +86,7 @@ class FacadeClassification:
                 edge = vector.edge
                 visInfo = edge.visInfo
                 if visInfo.value and \
-                        VisibilityAngleFact*visInfo.dx > visInfo.dy and \
+                        mostlyParallelToWaySegment(visInfo) and \
                         WayLevel[visInfo.waySegment.way.category] == way_level:
                     if edge.cl in CrossedFacades:
                         # deadend becomes front, while passage remains
