@@ -1,4 +1,5 @@
-from . import Way, allWayCategories, facadeVisibilityWayCategories
+from . import Way
+from defs.way import allWayCategories, facadeVisibilityWayCategories
 
 
 class WayManager:

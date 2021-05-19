@@ -1,8 +1,8 @@
 from . import Renderer, BuildingRenderer, WayRenderer
 import parse
 from parse.osm import Osm
-from way import facadeVisibilityWayCategories, Category
-from action.facade_classification import FacadeClass, WayLevel
+from defs.way import facadeVisibilityWayCategories, Category
+from defs.facade_classification import FacadeClass, WayLevel
 from math import atan2, pi
 
 

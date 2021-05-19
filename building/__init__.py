@@ -21,7 +21,7 @@ from numpy import zeros
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
-from action.facade_classification import WayLevel, FrontFacadeVisibility
+from defs.facade_classification import WayLevel, FrontFacadeVisibility, VisibilityAngleFactor
 
 #
 # values for <BldgVector.skip>
@@ -403,3 +403,9 @@ class VisibilityInfo:
         other.distance,\
         other.dx,\
         other.dy
+
+    def mostlyParallelToWaySegment(self):
+        """
+        Check if the building edge is mostly parallel to the way segment.
+        """
+        return VisibilityAngleFactor*self.dx > self.dy

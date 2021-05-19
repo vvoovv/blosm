@@ -1,39 +1,4 @@
-from math import tan, pi
-from way import Category, facadeVisibilityWayCategories
-
-class FacadeClass:
-    unknown = 0
-    front = 1
-    side = 2
-    back = 3
-    shared = 4
-    passage = 5
-    deadend = 6
-
-CrossedFacades = [FacadeClass.deadend, FacadeClass.passage]
-FrontLikeFacades = [FacadeClass.front, FacadeClass.passage]
-
-searchRange = (10.,100.)                            # (searchWidthMargin, searchHeight)
-
-FrontFacadeVisibility = 0.75                        # visibility required to classify as front facade
-VisibilityAngle = 50                                # maximum angle in ° between way-segment and facade to be accepted as visible
-VisibilityAngleFact = tan(pi*VisibilityAngle/180.)  # Factor used in angle condition: VisibilityAngleFact*dx > dy
-maxDistanceRatio = 7.5                              # maximum allowed ratio of edge diatnce (Y1+Y2) and maximum building dimension
-
-WayLevel = dict((category,1) for category in facadeVisibilityWayCategories)
-WayLevel[Category.service] = 2
-MaxWayLevel = 2
-
-
-def mostlyParallelToWaySegment(visInfo):
-    """
-    Check if the building edge is mostly parallel to the way segment.
-    
-    We could place this method in the class <building.VisibilityInfo>,
-    but then the parameter <VisibilityAngleFact> must be exposed to the module <building>.
-    That's why we are placing this method here.
-    """
-    return VisibilityAngleFact*visInfo.dx > visInfo.dy
+from defs.facade_classification import *
 
 
 class FacadeClassification:
@@ -81,12 +46,12 @@ class FacadeClassification:
         maxEdge = None
         accepted_level = 0
 
-        for way_level in range(1,MaxWayLevel+1): # way-level corresponds to way-categories C1, C2, C3
+        for way_level in range(1, MaxWayLevel+1): # way-level corresponds to way-categories C1, C2, C3
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
                 if visInfo.value and \
-                        mostlyParallelToWaySegment(visInfo) and \
+                        visInfo.mostlyParallelToWaySegment() and \
                         WayLevel[visInfo.waySegment.way.category] == way_level:
                     if edge.cl in CrossedFacades:
                         # deadend becomes front, while passage remains
@@ -100,7 +65,7 @@ class FacadeClassification:
                         # For each building edge satisfying the conditions 
                         #   1) the category of the stored way is equal to a category from the category set AND 
                         #   2) visibility > 0.75 AND 
-                        #   3) dy < dx*VisibilityAngleFact:  (already checked in facade_visibility.py)
+                        #   3) dy < dx*VisibilityAngleFactor:
                         # Mark the building edge as front
                         if visInfo.value >= FrontFacadeVisibility:
                             edge.cl = FacadeClass.front
