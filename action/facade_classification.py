@@ -51,7 +51,7 @@ class FacadeClassification:
                 edge = vector.edge
                 visInfo = edge.visInfo
                 if visInfo.value and \
-                        visInfo.mostlyParallelToWaySegment() and \
+                        ( visInfo.numMostlyPerpWaySegments >= 2 or visInfo.mostlyParallelToWaySegment() ) and\
                         WayLevel[visInfo.waySegment.way.category] == way_level:
                     if edge.cl in CrossedFacades:
                         # deadend becomes front, while passage remains
