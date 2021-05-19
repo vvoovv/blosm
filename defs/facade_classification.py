@@ -18,7 +18,7 @@ FrontLikeFacades = (FacadeClass.front, FacadeClass.passage)
 searchRange = (10., 100.)                               # (searchWidthMargin, searchHeight)
 
 FrontFacadeSight = 0.6                                  # edge sight required to classify as front facade
-VisibilityAngle = 55                                    # maximum angle in ° between way-segment and facade to be accepted as visible
+VisibilityAngle = 50                                    # maximum angle in ° between way-segment and facade to be accepted as visible
 VisibilityAngleFactor = tan(pi*VisibilityAngle/180.)    # Factor used in angle condition: VisibilityAngleFactor*dx > dy
 maxDistanceRatio = 7.5                                  # maximum allowed ratio of edge diatnce (Y1+Y2) and maximum building dimension
 
