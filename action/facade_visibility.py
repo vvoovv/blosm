@@ -283,7 +283,7 @@ class FacadeVisibility:
                         # update edges that are within search range
                         if not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
                             edge._visInfo.value = 0.
-                        if edge._visInfo > edge.visInfo and not edge.cl:
+                        if not edge.cl and edge._visInfo > edge.visInfo:
                             edge.visInfo.update(edge._visInfo)
                             # sum for weighted average distance of way-segment
                             waySumVisibility += edge.visInfo.value
