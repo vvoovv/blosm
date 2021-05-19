@@ -42,7 +42,7 @@ class FacadeClassification:
                     vector.edge.cl = FacadeClass.back
 
     def classifyFrontFacades(self, building):
-        maxVisibility = 0.
+        maxSight = 0.
         maxEdge = None
         accepted_level = 0
 
@@ -60,14 +60,15 @@ class FacadeClassification:
                             edge.cl = FacadeClass.front
                         continue
                     if not edge.cl:
-                        if visInfo.value > maxVisibility:
-                            maxVisibility, maxEdge = (visInfo.value, edge)
+                        edgeSight = visInfo.value * visInfo.dx/(visInfo.dx+visInfo.dy) * visInfo.waySegment.avgDist/visInfo.distance
+                        if edgeSight > maxSight:
+                            maxSight, maxEdge = (edgeSight, edge)
                         # For each building edge satisfying the conditions 
                         #   1) the category of the stored way is equal to a category from the category set AND 
-                        #   2) visibility > 0.75 AND 
+                        #   2) the edge sight is larger than the parameter FrontFacadeSight 
                         #   3) dy < dx*VisibilityAngleFactor:
                         # Mark the building edge as front
-                        if visInfo.value >= FrontFacadeVisibility:
+                        if edgeSight >= FrontFacadeSight:
                             edge.cl = FacadeClass.front
                             accepted_level = way_level
             # If there is at least one building edge satisfying the above condition:
@@ -89,7 +90,7 @@ class FacadeClassification:
             #   1) the category of the stored way is equal to a category from the category set AND 
             #   2) dy < dx: (already checked in facade_visibility.py)
             # Mark the building edge as front
-            if maxVisibility:
+            if maxSight:
                 maxEdge.cl = FacadeClass.front       
             # If no front building edge was found, mark one as front
             else:
