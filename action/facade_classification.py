@@ -50,8 +50,9 @@ class FacadeClassification:
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
+                hasMostlyPerpWaySegments = visInfo.numMostlyPerpWaySegments >= 2
                 if visInfo.value and \
-                        ( visInfo.numMostlyPerpWaySegments >= 2 or visInfo.mostlyParallelToWaySegment() ) and\
+                        ( hasMostlyPerpWaySegments or visInfo.mostlyParallelToWaySegment() ) and\
                         WayLevel[visInfo.waySegment.way.category] == way_level:
                     if edge.cl in CrossedFacades:
                         # deadend becomes front, while passage remains
@@ -71,11 +72,16 @@ class FacadeClassification:
                         if edgeSight >= FrontFacadeSight:
                             edge.cl = FacadeClass.front
                             accepted_level = way_level
+                        # or corner facade facet special case (manhattan_01.osm)
+                        elif hasMostlyPerpWaySegments and visInfo.value > FacetVisibilityLimit:
+                            edge.cl = FacadeClass.passage
+                            accepted_level = way_level
+
             # If there is at least one building edge satisfying the above condition:
             #   Break the cycle of WayClasses C1, C2, C2
             if accepted_level:
                 # only those facades at dead-end of a way are accepted, that are within the accepted way-level
-                # the rest is set as unknown for frther processing
+                # the rest is set as unknown for further processing
                 for vector in building.polygon.getVectors():
                     edge = vector.edge
                     if edge.cl == FacadeClass.deadend:
