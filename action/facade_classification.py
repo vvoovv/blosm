@@ -74,7 +74,7 @@ class FacadeClassification:
                             accepted_level = way_level
                         # or corner facade facet special case (manhattan_01.osm)
                         elif hasMostlyPerpWaySegments and visInfo.value > FacetVisibilityLimit:
-                            edge.cl = FacadeClass.passage
+                            edge.cl = FacadeClass.front
                             accepted_level = way_level
 
             # If there is at least one building edge satisfying the above condition:
