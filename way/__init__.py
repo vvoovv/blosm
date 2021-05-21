@@ -4,7 +4,7 @@ from defs.way import allWayCategories
 
 class WaySegment:
     
-    __slots__ = ("way", "id1", "id2", "v1", "v2", "prev", "next", "avgDist")
+    __slots__ = ("way", "id1", "id2", "v1", "v2", "prev", "next", "sumVisibility", "sumDistance", "avgDist")
     
     def __init__(self, id1, v1, id2, v2, way):
         self.id1 = id1
@@ -13,12 +13,17 @@ class WaySegment:
         self.v2 = numpy.array((v2[0], v2[1]))
         self.way = way
         self.avgDist = 0.
+        self.sumDistance = 0.
+        self.sumVisibility = 0.
 
     def getSegmentInfo(self):
         # segmentCenter, segmentUnitVector, segmentLength
         segmentVector = self.v2 - self.v1
         segmentLength = numpy.linalg.norm(segmentVector)
         return (self.v1 + self.v2)/2., segmentVector/segmentLength, segmentLength
+
+    def update(self):
+        self.avgDist = self.sumDistance / self.sumVisibility if self.sumVisibility else 0.
 
 
 class Way:

@@ -285,13 +285,20 @@ class FacadeVisibility:
                             edge._visInfo.value = 0.
                         if not edge.cl and edge._visInfo > edge.visInfo:
                             edge.visInfo.update(edge._visInfo)
-                            # sum for weighted average distance of way-segment
-                            waySumVisibility += edge.visInfo.value
-                            waySumDistance += edge.visInfo.distance * edge.visInfo.value
 
                     firstVertIndex += building.polygon.numEdges
-                # compute weighted avergae distance of way-segment
-                segment.avgDist = waySumDistance / waySumVisibility if waySumVisibility else 2*self.searchHeight
+
+        # compute weighted average distances of way-segments
+        for building in manager.buildings:
+            for vector in building.polygon.getVectors():
+                edge = vector.edge
+                visInfo = edge.visInfo
+                if visInfo.value and hasattr(visInfo,'waySegment'):
+                    visInfo.waySegment.sumVisibility += visInfo.value
+                    visInfo.waySegment.sumDistance += visInfo.distance * visInfo.value
+        for way in self.app.managersById["ways"].getFacadeVisibilityWays():            
+            for segment in way.segments:
+                segment.update()
 
     def insideRange( self, v1, v2, xRange, yRange):
         # Checks if an edge given by vertices v1 and v2 is within or intersects
