@@ -7,6 +7,9 @@ class Renderer:
     def __init__(self):
         self.mpl = Mpl.getMpl()
     
+    def renderId(self, v1, v2, id):
+        self.mpl.ax.text((v1[0]+v2[0])/2., (v1[1]+v2[1])/2., ' '+str(id) )
+    
     def renderLineString(self, coords, closed, **style):
         prevCoord = coord0 = None
         for coord in coords:
@@ -47,17 +50,21 @@ class WayRenderer(Renderer):
         # level = WayLevel[way.category]
         # st['linewidth'] = 4 - level
         # self.renderLineString(way.element.getData(data), way.element.isClosed(), st)
-        self.renderLineString(
-            way.element.getData(data),
-            way.element.isClosed(),
-            linewidth = self.getLineWidth(way),
-            color = self.getColor(way)
+        for segment in way.segments:
+            self.renderWaySegment(segment)
+    
+    def renderWaySegment(self, segment):
+        self.mpl.ax.plot(
+            (segment.v1[0], segment.v2[0]),
+            (segment.v1[1], segment.v2[1]),
+            linewidth = self.getLineWidth(segment),
+            color = self.getColor(segment)
         )
     
-    def getLineWidth(self, way):
+    def getLineWidth(self, waySegment):
         return 2.
     
-    def getColor(self, way):
+    def getColor(self, waySegment):
         return "brown"
 
 

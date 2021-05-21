@@ -33,7 +33,7 @@ def setup(app, osm):
     # create managers
     
     wayManager = WayManager(osm, app)
-    wayManager.setRenderer(WayVisibilityRenderer(), app)
+    wayManager.setRenderer(WayVisibilityRenderer(showIDs=showIDs), app)
     
     #linestring = Linestring(osm)
     #polygon = Polygon(osm)

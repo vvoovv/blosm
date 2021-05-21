@@ -2,7 +2,7 @@ from . import Renderer, BuildingRenderer, WayRenderer
 import parse
 from parse.osm import Osm
 from defs.way import facadeVisibilityWayCategoriesSet, Category
-from defs.facade_classification import FacadeClass, WayLevel
+from defs.facade_classification import FacadeClass
 from math import atan2, pi
 
 
@@ -46,7 +46,7 @@ class BuildingVisibilityRender(Renderer):
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
 
             if self.showIDs:
-                ax.text((v1[0]+v2[0])/2., (v1[1]+v2[1])/2., ' '+str(edge.id) )
+                self.renderId(v1, v2, edge.id)
 
             if self.showAssoc:
                 # visalization of association between way-segment and edge
@@ -183,9 +183,18 @@ class BuildingClassificationRender(Renderer):
 
 class WayVisibilityRenderer(WayRenderer):
     
+    def __init__(self, showIDs):
+        super().__init__()
+        self.showIDs = showIDs
+    
     def render(self, way, data):
         if way.category in facadeVisibilityWayCategoriesSet:
             super().render(way, data)
     
-    def getLineWidth(self, way):
-        return 0.5 if way.category == Category.service else super().getLineWidth(way)
+    def renderWaySegment(self, segment):
+        super().renderWaySegment(segment)
+        if self.showIDs:
+            self.renderId(segment.v1, segment.v2, segment.id)
+    
+    def getLineWidth(self, waySegment):
+        return 0.5 if waySegment.way.category == Category.service else super().getLineWidth(waySegment)
