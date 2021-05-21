@@ -8,9 +8,10 @@ from math import atan2, pi
 
 class BuildingVisibilityRender(Renderer):
     
-    def __init__(self, showAssoc):
+    def __init__(self, showAssoc, showIDs):
         super().__init__()
         self.showAssoc = showAssoc
+        self.showIDs = showIDs
 
     def render(self, building, data):
         outline = building.outline
@@ -43,6 +44,9 @@ class BuildingVisibilityRender(Renderer):
                 color = color
             )
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
+
+            if self.showIDs:
+                ax.text((v1[0]+v2[0])/2., (v1[1]+v2[1])/2., ' '+str(edge.id) )
 
             if self.showAssoc:
                 # visalization of association between way-segment and edge
@@ -94,10 +98,11 @@ class BuildingVisibilityRender(Renderer):
 
 class BuildingClassificationRender(Renderer):
     
-    def __init__(self, sideFacadeColor, showAssoc):
+    def __init__(self, sideFacadeColor, showAssoc, showIDs):
         super().__init__()
         self.sideFacadeColor = sideFacadeColor
         self.showAssoc = showAssoc
+        self.showIDs = showIDs
     
     def render(self, building, data):
         outline = building.outline
@@ -130,6 +135,9 @@ class BuildingClassificationRender(Renderer):
                 color = color
             )
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
+
+            if self.showIDs:
+                ax.text((v1[0]+v2[0])/2., (v1[1]+v2[1])/2., ' '+str(edge.id) )
 
             if self.showAssoc:
                 # visalization of association between way-segment and edge

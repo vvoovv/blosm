@@ -23,10 +23,12 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--classification", action='store_true', help="Display facade classification", default=False)
     app.argParserExtra.add_argument("--sideFacadeColor", help="The color for a side facade", default="yellow")
     app.argParserExtra.add_argument("--showAssoc", action='store_true', help="Show the associations between way-segment and facade", default=False)
+    app.argParserExtra.add_argument("--showIDs", action='store_true', help="Show the IDs of facades", default=False)
     # parse the newly added command line arguments
     app.parseArgs()
     classifyFacades = getattr(app, "classification", False)
     showAssoc = getattr(app, "showAssoc", False)
+    showIDs = getattr(app, "showIDs", False)
     
     # create managers
     
@@ -48,9 +50,9 @@ def setup(app, osm):
     if app.buildings:
         buildings = BaseBuildingManager(osm, app, None, None)
         buildings.setRenderer(
-            BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc)\
+            BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc,showIDs=showIDs)\
                 if classifyFacades else\
-                BuildingVisibilityRender(showAssoc=showAssoc)
+                BuildingVisibilityRender(showAssoc=showAssoc,showIDs=showIDs)
         )
         buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:

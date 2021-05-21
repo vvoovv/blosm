@@ -204,8 +204,8 @@ class BldgPolygon:
 
 class BldgEdge:
     
-    __slots__ = ("id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl")
-    
+    __slots__ = ("id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "id")
+    ID = 0
     def __init__(self, id1, v1, id2, v2):
         #
         # Important: always id1 < id2 
@@ -214,6 +214,8 @@ class BldgEdge:
         self.v1 = v1
         self.id2 = id2
         self.v2 = v2
+        self.id = BldgEdge.ID
+        BldgEdge.ID += 1
         
         self.visInfo = VisibilityInfo()
         # a temporary visibility info
