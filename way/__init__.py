@@ -22,9 +22,6 @@ class WaySegment:
         segmentLength = numpy.linalg.norm(segmentVector)
         return (self.v1 + self.v2)/2., segmentVector/segmentLength, segmentLength
 
-    def update(self):
-        self.avgDist = self.sumDistance / self.sumVisibility if self.sumVisibility else 0.
-
 
 class Way:
     

@@ -2,7 +2,7 @@ from math import sqrt
 import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
-from defs.facade_classification import searchRange, FacadeClass, VisibilityAngleFactor
+from defs.facade_classification import searchRange, FacadeClass
 
 
 class PriorityQueue():
@@ -108,10 +108,6 @@ class FacadeVisibility:
         for way in self.app.managersById["ways"].getFacadeVisibilityWays():
             
             for segment in way.segments:
-                # sums used for weighted average distance of way-segment
-                waySumVisibility = 0.
-                waySumDistance = 0.
-
                 segmentCenter, segmentUnitVector, segmentLength = segment.getSegmentInfo()
                 
                 posEvents.clear()
@@ -293,12 +289,12 @@ class FacadeVisibility:
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
-                if visInfo.value and hasattr(visInfo,'waySegment'):
+                if visInfo.value and visInfo.waySegment:
                     visInfo.waySegment.sumVisibility += visInfo.value
                     visInfo.waySegment.sumDistance += visInfo.distance * visInfo.value
         for way in self.app.managersById["ways"].getFacadeVisibilityWays():            
             for segment in way.segments:
-                segment.update()
+                segment.avgDist = segment.sumDistance / segment.sumVisibility if segment.sumVisibility else 0.
 
     def insideRange( self, v1, v2, xRange, yRange):
         # Checks if an edge given by vertices v1 and v2 is within or intersects
