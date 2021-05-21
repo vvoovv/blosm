@@ -21,7 +21,7 @@ class BuildingVisibilityRender(Renderer):
         if outline.t is parse.multipolygon:
             for l in outline.ls:
                 if not l.role is Osm.outer:
-                    self.renderLineString(outline.getLinestringData(l, data), True, BuildingRenderer.style)
+                    self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
 
     def renderBuildingFootprint(self, building):
         ax = self.mpl.ax
