@@ -23,12 +23,8 @@ class FacadeClassification:
             # The <edge> could have been already visited earlier if it is the shared one
             for vector in building.polygon.getVectors():
                 edge = vector.edge
-                visInfo = edge.visInfo
                 if not edge.cl and edge.hasSharedBldgVectors():
                     edge.cl = FacadeClass.shared
-                elif hasattr(visInfo,'distance'):
-                    if visInfo.distance/maxBuildDimension > maxDistanceRatio:
-                        visInfo.value = 0.
 
             # Find front facades
             self.classifyFrontFacades(building)
