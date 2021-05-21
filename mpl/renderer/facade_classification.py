@@ -1,7 +1,7 @@
 from . import Renderer, BuildingRenderer, WayRenderer
 import parse
 from parse.osm import Osm
-from defs.way import facadeVisibilityWayCategories, Category
+from defs.way import facadeVisibilityWayCategoriesSet, Category
 from defs.facade_classification import FacadeClass, WayLevel
 from math import atan2, pi
 
@@ -176,7 +176,7 @@ class BuildingClassificationRender(Renderer):
 class WayVisibilityRenderer(WayRenderer):
     
     def render(self, way, data):
-        if way.category in facadeVisibilityWayCategories:
+        if way.category in facadeVisibilityWayCategoriesSet:
             super().render(way, data)
     
     def getLineWidth(self, way):

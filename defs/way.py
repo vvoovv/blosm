@@ -1,6 +1,6 @@
 
 
-allWayCategories = set((
+allWayCategories = (
     "other",
     "motorway",
     "motorway_link",
@@ -26,10 +26,11 @@ allWayCategories = set((
     "steps",
     "path",
     "cycleway"
-))
+)
+allWayCategoriesSet = set(allWayCategories)
 
 
-facadeVisibilityWayCategories = set((
+facadeVisibilityWayCategories = (
     "primary",
     "secondary",
     "tertiary",
@@ -42,7 +43,8 @@ facadeVisibilityWayCategories = set((
     #"footway",
     #"steps",
     #"cycleway"
-))
+)
+facadeVisibilityWayCategoriesSet = set(facadeVisibilityWayCategories)
 
 
 class Category:
