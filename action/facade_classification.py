@@ -18,7 +18,6 @@ class FacadeClassification:
                 maxY = max(v1[1],maxY)
                 minX = min(v1[0],minX)
                 minY = min(v1[1],minY)
-            maxBuildDimension = max(maxX-minX,maxY-minY)
           
             # The <edge> could have been already visited earlier if it is the shared one
             for vector in building.polygon.getVectors():
@@ -46,9 +45,9 @@ class FacadeClassification:
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
-                hasMostlyPerpWaySegments = visInfo.numMostlyPerpWaySegments >= 2
+                #hasMostlyPerpWaySegments = visInfo.numMostlyPerpWaySegments >= 2
+                #( hasMostlyPerpWaySegments or visInfo.mostlyParallelToWaySegment() ) and\
                 if visInfo.value and \
-                        ( hasMostlyPerpWaySegments or visInfo.mostlyParallelToWaySegment() ) and\
                         WayLevel[visInfo.waySegment.way.category] == way_level:
                     if edge.cl in CrossedFacades:
                         # deadend becomes front, while passage remains
@@ -69,9 +68,9 @@ class FacadeClassification:
                             edge.cl = FacadeClass.front
                             accepted_level = way_level
                         # or corner facade facet special case (manhattan_01.osm)
-                        elif hasMostlyPerpWaySegments and visInfo.value > FacetVisibilityLimit:
-                            edge.cl = FacadeClass.front
-                            accepted_level = way_level
+                        #elif hasMostlyPerpWaySegments and visInfo.value > FacetVisibilityLimit:
+                        #    edge.cl = FacadeClass.front
+                        #    accepted_level = way_level
 
             # If there is at least one building edge satisfying the above condition:
             #   Break the cycle of WayClasses C1, C2, C2
