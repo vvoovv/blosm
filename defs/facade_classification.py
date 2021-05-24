@@ -19,6 +19,7 @@ searchRange = (10., 100.)                               # (searchWidthMargin, se
 
 FrontFacadeSight = 0.5                                  # edge sight required to classify as front facade
 FacetVisibilityLimit = 0.75                             # visibility limit for corner facade facet special case (manhattan_01.osm)
+CornerFacadeWayAngle = 0.5                              # Cosine of the angle between way-segments for corner facades
 VisibilityAngle = 50                                    # maximum angle in ° between way-segment and facade to be accepted as visible
 VisibilityAngleFactor = tan(pi*VisibilityAngle/180.)    # Factor used in angle condition: VisibilityAngleFactor*dx > dy
 maxDistanceRatio = 7.5                                  # maximum allowed ratio of edge diatnce (Y1+Y2) and maximum building dimension

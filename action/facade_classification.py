@@ -9,16 +9,7 @@ class FacadeClassification:
     def do(self, manager):
             
         for building in manager.buildings:
-            # find maximum building dimension
-            maxX, maxY = -999999., -999999.
-            minX, minY = 999999., 999999.
-            for vector in building.polygon.getVectors():
-                v1 = vector.v1
-                maxX = max(v1[0],maxX)
-                maxY = max(v1[1],maxY)
-                minX = min(v1[0],minX)
-                minY = min(v1[1],minY)
-          
+
             # The <edge> could have been already visited earlier if it is the shared one
             for vector in building.polygon.getVectors():
                 edge = vector.edge
@@ -27,6 +18,15 @@ class FacadeClassification:
 
             # Find front facades
             self.classifyFrontFacades(building)
+
+           # make crossed facades to front facades
+            for vector in building.polygon.getVectors():
+                edge = vector.edge
+                if edge.cl in CrossedFacades:
+                    # deadend becomes front, while passage remains
+                    # accepted_level = way_level
+                    # if edge.cl == FacadeClass.deadend:
+                    edge.cl = FacadeClass.front
 
             # Find side facades
             self.classifySideFacades(building)
@@ -45,58 +45,56 @@ class FacadeClassification:
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
-                #hasMostlyPerpWaySegments = visInfo.numMostlyPerpWaySegments >= 2
-                #( hasMostlyPerpWaySegments or visInfo.mostlyParallelToWaySegment() ) and\
-                if visInfo.value and \
+                if visInfo.value and not edge.cl and \
                         WayLevel[visInfo.waySegment.way.category] == way_level:
-                    if edge.cl in CrossedFacades:
-                        # deadend becomes front, while passage remains
+                    edgeSight = visInfo.value * visInfo.dx/(visInfo.dx+visInfo.dy) * visInfo.waySegment.avgDist/visInfo.distance
+                    # compute maximum sight for later use
+                    if edgeSight > maxSight:
+                        maxSight, maxEdge = edgeSight, edge
+                    # For each building edge satisfying the conditions 
+                    #   1) the category of the stored way is equal to a category from the category set AND 
+                    #   2) the edge sight is larger than the parameter FrontFacadeSight 
+                    #   3) dy < dx*VisibilityAngleFactor:
+                    # Mark the building edge as front
+                    if edgeSight >= FrontFacadeSight:
+                        edge.cl = FacadeClass.front
                         accepted_level = way_level
-                        if edge.cl == FacadeClass.deadend:
-                            edge.cl = FacadeClass.front
-                        continue
-                    if not edge.cl:
-                        edgeSight = visInfo.value * visInfo.dx/(visInfo.dx+visInfo.dy) * visInfo.waySegment.avgDist/visInfo.distance
-                        if edgeSight > maxSight:
-                            maxSight, maxEdge = edgeSight, edge
-                        # For each building edge satisfying the conditions 
-                        #   1) the category of the stored way is equal to a category from the category set AND 
-                        #   2) the edge sight is larger than the parameter FrontFacadeSight 
-                        #   3) dy < dx*VisibilityAngleFactor:
-                        # Mark the building edge as front
-                        if edgeSight >= FrontFacadeSight:
-                            edge.cl = FacadeClass.front
-                            accepted_level = way_level
-                        # or corner facade facet special case (manhattan_01.osm)
-                        #elif hasMostlyPerpWaySegments and visInfo.value > FacetVisibilityLimit:
-                        #    edge.cl = FacadeClass.front
-                        #    accepted_level = way_level
 
             # If there is at least one building edge satisfying the above condition:
-            #   Break the cycle of WayClasses C1, C2, C2
+            #   do some post-processing and then
+            #   break the cycle of WayClasses C1, C2, C2
             if accepted_level:
-                # only those facades at dead-end of a way are accepted, that are within the accepted way-level
-                # the rest is set as unknown for further processing
+                # process eventuall facet facades at corners 
                 for vector in building.polygon.getVectors():
                     edge = vector.edge
-                    if edge.cl == FacadeClass.deadend:
-                        if WayLevel[edge.visInfo.waySegment.way.category] > accepted_level:
-                            edge.cl = FacadeClass.unknown
-                        else:
-                            edge.cl = FacadeClass.front
+                    visInfo = edge.visInfo
+                    # done only for unclassified facades between two front facades
+                    # where there is an angle between their way-segments
+                    if visInfo.value and not edge.cl and \
+                        vector.prev.edge.cl == FacadeClass.front and \
+                        vector.next.edge.cl == FacadeClass.front:
+                            uNext = vector.next.edge.visInfo.waySegment.unitVector
+                            uPrev = vector.prev.edge.visInfo.waySegment.unitVector
+                            # dot product of unit vectors is cosine of angle 
+                            # between these way-segments
+                            if abs(uPrev @ uNext) < CornerFacadeWayAngle:
+                                edge.cl = FacadeClass.front
+                                accepted_level = way_level
+
                 break
 
-        if not accepted_level:
-            # Else: Find the building edge with the maximum visibility satisfying the conditions 
-            #   1) the category of the stored way is equal to a category from the category set AND 
-            #   2) dy < dx: (already checked in facade_visibility.py)
-            # Mark the building edge as front
-            if maxSight:
-                maxEdge.cl = FacadeClass.front       
-            # If no front building edge was found, mark one as front
-            else:
-                self.frontOfInvisibleBuilding(building)
+            if not accepted_level:
+                # Else: Find the building edge with the maximum visibility satisfying the conditions 
+                #   1) the category of the stored way is equal to a category from the category set AND 
+                #   2) dy < dx: (already checked in facade_visibility.py)
+                # Mark the building edge as front
+                if maxSight:
+                    maxEdge.cl = FacadeClass.front       
+                # If no front building edge was found, mark one as front
+                else:
+                    self.frontOfInvisibleBuilding(building)
 
+ 
     def frontOfInvisibleBuilding(self, building):
         # If no front building edge was found, mark one as front (e.g. the longest one)
         longest = 0.
