@@ -108,7 +108,8 @@ class FacadeVisibility:
         for way in self.app.managersById["ways"].getFacadeVisibilityWays():
             
             for segment in way.segments:
-                segmentCenter, segmentUnitVector, segmentLength = segment.getSegmentInfo()
+                segmentCenter, segmentUnitVector, segmentLength = \
+                (segment.v1 + segment.v2)/2., segment.unitVector, segment.length
                 
                 posEvents.clear()
                 negEvents.clear()
@@ -155,7 +156,7 @@ class FacadeVisibility:
                             dy = edgeVert2[1]- edgeVert1[1]
                             x0 = edgeVert1[0]
                             y0 = edgeVert1[1]
-                            intsectX = (x0+abs(y0/dy)*dx ) / (segmentLength/2.) if dy else 0.
+                            intsectX = (x0+abs(y0/dy)*dx ) / halfSegmentWidth if dy else 0.
                             # store result in building for later analysis
                             building.addCrossedEdge(edge, intsectX)
 
@@ -279,6 +280,7 @@ class FacadeVisibility:
                         # update edges that are within search range
                         if not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
                             edge._visInfo.value = 0.
+                        
                         if not edge.cl and edge._visInfo > edge.visInfo:
                             edge.visInfo.update(edge._visInfo)
 

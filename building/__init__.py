@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from numpy import zeros
+from numpy import zeros, dot
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
@@ -396,6 +396,9 @@ class VisibilityInfo:
         dy
     
     def update(self, other):
+        #if self.numMostlyPerpWaySegments == 1 and not self.mostlyParallelToWaySegment() and abs(dot(self.waySegment.unitVector, other.waySegment.unitVector)) < 0.7:
+        #    self.numMostlyPerpWaySegments = 2
+        
         self.value,\
         self.waySegment,\
         self.distance,\
@@ -408,8 +411,8 @@ class VisibilityInfo:
         other.dx,\
         other.dy
         
-        if not self.mostlyParallelToWaySegment():
-            self.numMostlyPerpWaySegments += 1
+        #if not self.numMostlyPerpWaySegments and not self.mostlyParallelToWaySegment():
+        #    self.numMostlyPerpWaySegments = 1
 
     def mostlyParallelToWaySegment(self):
         """

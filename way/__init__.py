@@ -4,25 +4,31 @@ from defs.way import allWayCategoriesSet
 
 class WaySegment:
     
-    __slots__ = ("way", "id1", "id2", "v1", "v2", "prev", "next", "sumVisibility", "sumDistance", "avgDist", "id")
+    __slots__ = (
+        "way", "id1", "id2", "v1", "v2", "prev", "next",
+        "length", "unitVector",
+        "sumVisibility", "sumDistance", "avgDist",
+        "id"
+    )
+    
     ID = 0
+    
     def __init__(self, id1, v1, id2, v2, way):
         self.id1 = id1
         self.v1 = numpy.array((v1[0], v1[1]))
         self.id2 = id2
         self.v2 = numpy.array((v2[0], v2[1]))
+        vector = self.v2 - self.v1
+        self.length = numpy.linalg.norm(vector)
+        self.unitVector = vector/self.length
+        
         self.way = way
         self.avgDist = 0.
         self.sumDistance = 0.
         self.sumVisibility = 0.
+        
         self.id = WaySegment.ID
         WaySegment.ID += 1
-
-    def getSegmentInfo(self):
-        # segmentCenter, segmentUnitVector, segmentLength
-        segmentVector = self.v2 - self.v1
-        segmentLength = numpy.linalg.norm(segmentVector)
-        return (self.v1 + self.v2)/2., segmentVector/segmentLength, segmentLength
 
 
 class Way:
