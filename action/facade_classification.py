@@ -18,8 +18,8 @@ class FacadeClassification:
 
             # Find front facades
             self.classifyFrontFacades(building)
-
-           # make crossed facades to front facades
+            
+            # make crossed facades to front facades
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 if edge.cl in CrossedFacades:
@@ -62,7 +62,7 @@ class FacadeClassification:
 
             # If there is at least one building edge satisfying the above condition:
             #   do some post-processing and then
-            #   break the cycle of WayClasses C1, C2, C2
+            #   break the cycle of WayClasses C1, C2
             if accepted_level:
                 # process eventuall facet facades at corners 
                 for vector in building.polygon.getVectors():

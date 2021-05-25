@@ -351,11 +351,9 @@ class Building:
 
 class VisibilityInfo:
     
-    __slots__ = ("value", "waySegment", "distance", "dx", "dy", "numMostlyPerpWaySegments")
+    __slots__ = ("value", "waySegment", "distance", "dx", "dy")
     
     def __init__(self):
-        # a mostly perpendicular way segment is detemined by the method <self.mostlyParallelToWaySegment()>
-        self.numMostlyPerpWaySegments = 0
         self.reset()
     
     def getWeightedValue(self):
@@ -396,9 +394,6 @@ class VisibilityInfo:
         dy
     
     def update(self, other):
-        #if self.numMostlyPerpWaySegments == 1 and not self.mostlyParallelToWaySegment() and abs(dot(self.waySegment.unitVector, other.waySegment.unitVector)) < 0.7:
-        #    self.numMostlyPerpWaySegments = 2
-        
         self.value,\
         self.waySegment,\
         self.distance,\
@@ -410,12 +405,11 @@ class VisibilityInfo:
         other.distance,\
         other.dx,\
         other.dy
-        
-        #if not self.numMostlyPerpWaySegments and not self.mostlyParallelToWaySegment():
-        #    self.numMostlyPerpWaySegments = 1
 
     def mostlyParallelToWaySegment(self):
         """
         Check if the building edge is mostly parallel to the related way segment.
+        
+        Currently unused.
         """
         return VisibilityAngleFactor*self.dx > self.dy
