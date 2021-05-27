@@ -91,7 +91,7 @@ class RoofProfileItemRenderer():
         # a unit vector perpendicular to <direction>
         pDirection = zAxis.cross(direction)
         
-        self.renderer.renderLineString(polygon.verts, True, BuildingRenderer.style)
+        self.renderer.renderLineString(polygon.verts, True, **BuildingRenderer.style)
         
         # The following vertices mark min X, min Y and max Y in the system of reference
         # formed by two perpendicular unit vectors <direction> and <pDirection>
