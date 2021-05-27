@@ -47,6 +47,8 @@ class RoofProfileRenderer(Renderer):
                     roofShape = (FromAttr("roof:shape", FromAttr.String, RoofShapes), True),
                     numLevels = (FromAttr("building:levels", FromAttr.Integer, FromAttr.Positive), True)
                 )
+            def __contains__(self, attr):
+                return attr in self.attrs
         class DummyBuildingStyle:
             def __init__(self):
                 self.styleBlocks = dict(
