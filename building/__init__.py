@@ -204,7 +204,7 @@ class BldgPolygon:
 
 class BldgEdge:
     
-    __slots__ = ("id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "id")
+    __slots__ = ("id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "id", "_length")
     ID = 0
     def __init__(self, id1, v1, id2, v2):
         #
@@ -224,6 +224,7 @@ class BldgEdge:
         self.vectors = None
         # edge or facade class (front, side, back, shared)
         self.cl = 0
+        self._length = None
     
     def addVector(self, vector):
         if self.vectors:
@@ -234,6 +235,13 @@ class BldgEdge:
     
     def hasSharedBldgVectors(self):
         return len(self.vectors) == 2
+    
+    @property
+    def length(self):
+        # calculation on demand
+        if not self._length:
+            self._length = (self.v2 - self.v1).length
+        return self._length
 
 
 class BldgVector:
@@ -285,6 +293,10 @@ class BldgVector:
             v1 = self.edge.v2
             v2 = self.edge.v1
         return (v2[0] - v1[0], v2[1] - v1[1])
+    
+    @property
+    def unitVector(self):
+        return self.vector/self.edge.length
     
     def skipNodes(self, nextVector, manager):
         """
