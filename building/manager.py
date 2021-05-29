@@ -225,14 +225,17 @@ class BuildingParts:
             element.t = parse.polygon
             # empty outline
             element.o = None
-            self.parts.append(element)
+            self.createBuildingPart(element)
         else:
             element.valid = False
     
     def parseRelation(self, element, elementId):
         # empty outline
         element.o = None
-        self.parts.append(element)
+        self.createBuildingPart(element)
+    
+    def createBuildingPart(self, element):
+        self.parts.append(BuildingPart(element))
 
 
 class BuildingRelations:

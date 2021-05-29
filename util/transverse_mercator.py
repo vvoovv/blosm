@@ -42,7 +42,7 @@ class TransverseMercator:
         B = math.sin(lon) * math.cos(lat)
         x = 0.5 * self.k * self.radius * math.log((1.+B)/(1.-B))
         y = self.k * self.radius * ( math.atan(math.tan(lat)/math.cos(lon)) - self.latInRadians )
-        return (x, y, 0.)
+        return (x, y)
 
     def toGeographic(self, x, y):
         x = x/(self.k * self.radius)

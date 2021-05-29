@@ -17,7 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from numpy import zeros, dot
+from numpy import array, zeros, dot
+from numpy.linalg import norm
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
@@ -211,9 +212,9 @@ class BldgEdge:
         # Important: always id1 < id2 
         #
         self.id1 = id1
-        self.v1 = v1
+        self.v1 = array(v1)
         self.id2 = id2
-        self.v2 = v2
+        self.v2 = array(v2)
         self.id = BldgEdge.ID
         BldgEdge.ID += 1
         
@@ -240,7 +241,7 @@ class BldgEdge:
     def length(self):
         # calculation on demand
         if not self._length:
-            self._length = (self.v2 - self.v1).length
+            self._length = norm(self.v2 - self.v1)
         return self._length
 
 
