@@ -67,7 +67,7 @@ class BaseBuildingManager:
     
     def createBuilding(self, element):
         # create a wrapper for the OSM way <element>
-        building = Building(element, self.buildingCounter, self.data)
+        building = Building(element, self)
         # store the related wrapper in the attribute <b>
         element.b = building
         self.buildings.append(building)

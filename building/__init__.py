@@ -35,9 +35,10 @@ SharedBldgBothEdges = 2
 
 class BldgPolygon:
     
-    __slots__ = ("vectors", "numEdges", "reversed", "refVector")
+    __slots__ = ("vectors", "numEdges", "reversed", "refVector", "isBldgPart")
     
-    def __init__(self, building, manager):
+    def __init__(self, outline, manager, isBldgPart):
+        self.isBldgPart = isBldgPart
         self.reversed = False
         # If <self.refVector> is not None, it indicates that the polygon has at least one
         # straight angle. In that case is stores a reference vector WITHOUT a straight angle
@@ -45,7 +46,7 @@ class BldgPolygon:
         # vectors
         self.vectors = vectors = tuple(
             self.createVector(nodeId1, nodeId2, manager) \
-                for nodeId1,nodeId2 in building.outline.pairNodeIds(manager.data) \
+                for nodeId1,nodeId2 in outline.pairNodeIds(manager.data) \
                     if not manager.data.haveSamePosition(nodeId1, nodeId2)
         )
         self.numEdges = len(self.vectors)
@@ -57,8 +58,9 @@ class BldgPolygon:
         vectors[-1].next = vectors[0]
         
         self.forceCcwDirection()
-        for vector in self.vectors:
-            vector.markUsedNode(self, manager)
+        if not isBldgPart:
+            for vector in self.vectors:
+                vector.markUsedNode(self, manager)
 
     def forceCcwDirection(self):
         """
@@ -118,6 +120,21 @@ class BldgPolygon:
             # Skip only straight angles for the vectors with the value of the attribute <skip>
             # equal to <NoSharedBldg>
             self.skipStraightAngles(manager, NoSharedBldg)
+    
+    def processStraightAnglesBldgPart(self, manager):
+        """
+        Given <verts> constituting a polygon, removes vertices forming a straight angle
+        """
+        
+        vec_ = self.vectors[0 if self.reversed else -1].vector
+        for vector in (reversed(self.vectors) if self.reversed else self.vectors):
+            vec = vector.vector
+            dot = vec_[0]*vec[0] + vec_[1]*vec[1]
+            if dot and abs( (vec_[0]*vec[1]-vec_[1]*vec[0])/dot ) < Polygon.straightAngleTan:
+                # got a straight angle
+                vector.straightAngle = True
+                vector.skip = True
+            vec_ = vec
     
     def processStraightAnglesExtra(self, manager):
         if self.refVector:
@@ -324,7 +341,7 @@ class Building:
     
     __slots__ = ("outline", "parts", "polygon", "auxIndex", "crossedEdges")
     
-    def __init__(self, element, buildingIndex, osm):
+    def __init__(self, element, manager):
         self.outline = element
         self.parts = []
         # a polygon for the outline, used for facade classification only
@@ -334,10 +351,7 @@ class Building:
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
         self.crossedEdges = []
-        self.markUsedNodes(buildingIndex, osm)
-    
-    def initPolygon(self, manager):
-        self.polygon = BldgPolygon(self, manager)
+        self.polygon = BldgPolygon(element, manager, False)
     
     def addPart(self, part):
         self.parts.append(part)
@@ -360,6 +374,13 @@ class Building:
 
     def addCrossedEdge(self, edge, intsectX):
         self.crossedEdges.append( (edge, intsectX) )
+
+
+class BldgPart:
+    
+    def __init__(self, element, manager):
+        self.outline = element
+        self.polygon = BldgPolygon(self, element, manager, True)
 
 
 class VisibilityInfo:
