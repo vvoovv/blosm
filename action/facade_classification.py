@@ -72,7 +72,9 @@ class FacadeClassification:
                     # where there is an angle between their way-segments
                     if visInfo.value and not edge.cl and \
                         vector.prev.edge.cl == FacadeClass.front and \
-                        vector.next.edge.cl == FacadeClass.front:
+                        vector.next.edge.cl == FacadeClass.front and \
+                        vector.next.edge.visInfo.waySegment and \
+                        vector.prev.edge.visInfo.waySegment:
                             uNext = vector.next.edge.visInfo.waySegment.unitVector
                             uPrev = vector.prev.edge.visInfo.waySegment.unitVector
                             # dot product of unit vectors is cosine of angle 
