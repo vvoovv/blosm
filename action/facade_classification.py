@@ -72,9 +72,7 @@ class FacadeClassification:
                     # where there is an angle between their way-segments
                     if visInfo.value and not edge.cl and \
                         vector.prev.edge.cl == FacadeClass.front and \
-                        vector.next.edge.cl == FacadeClass.front and \
-                        vector.next.edge.visInfo.waySegment and \
-                        vector.prev.edge.visInfo.waySegment:
+                        vector.next.edge.cl == FacadeClass.front:
                             uNext = vector.next.edge.visInfo.waySegment.unitVector
                             uPrev = vector.prev.edge.visInfo.waySegment.unitVector
                             # dot product of unit vectors is cosine of angle 
@@ -85,16 +83,16 @@ class FacadeClassification:
 
                 break
 
-            if not accepted_level:
-                # Else: Find the building edge with the maximum visibility satisfying the conditions 
-                #   1) the category of the stored way is equal to a category from the category set AND 
-                #   2) dy < dx: (already checked in facade_visibility.py)
-                # Mark the building edge as front
-                if maxSight:
-                    maxEdge.cl = FacadeClass.front       
-                # If no front building edge was found, mark one as front
-                else:
-                    self.frontOfInvisibleBuilding(building)
+        if not accepted_level:
+            # Else: Find the building edge with the maximum visibility satisfying the conditions 
+            #   1) the category of the stored way is equal to a category from the category set AND 
+            #   2) dy < dx: (already checked in facade_visibility.py)
+            # Mark the building edge as front
+            if maxSight:
+                maxEdge.cl = FacadeClass.front       
+            # If no front building edge was found, mark one as front
+            else:
+                self.frontOfInvisibleBuilding(building)
 
  
     def frontOfInvisibleBuilding(self, building):
