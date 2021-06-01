@@ -143,7 +143,7 @@ class PythonCoder():
     def enterElement(self,txt):
         self.write(self.elementCommaStack[-1])
         self.attribCommaStack.append("\n")  # maybe we have a condition first
-        if 'level' in txt:
+        if 'level' in txt[:15]:
             self.write(self.indent()+'Level(')
             self.indents += 1
 
@@ -479,7 +479,7 @@ class PythonCoder():
     #     : LBRACK spec_condition RBRACK  #SPEC_LEVEL
     #     ;
     # spec_condition
-    #     : 'roof'                    #SPEC_ROOF
+    #     : '@roof'                   #SPEC_ROOF
     #     | 'all'                     #SPEC_ALL
     #     | NUMBER COLON NUMBER       #SPEC_FULL_INDX
     #     | NUMBER COLON              #SPEC_LEFT_INDX

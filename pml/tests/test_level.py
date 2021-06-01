@@ -185,7 +185,7 @@ Level(
 def test_roof():
     makeTest(
 """
-level[roof] {
+level[@roof] {
     class: myclass;
 }
 """,
@@ -219,7 +219,7 @@ Level(
 def test_roof_condition():
     makeTest(
 """
-level[roof](item.front) {
+level[@roof](item.front) {
     class: myclass;
 }
 """,
@@ -255,7 +255,7 @@ Level(
 def test_roof_indices():
     makeTest(
 """
-level[roof][0:1] {
+level[@roof][0:1] {
     class: myclass;
 }
 """,
@@ -291,7 +291,7 @@ Level(
 def test_roof_single_index():
     makeTest(
 """
-level[roof][0] {
+level[@roof][0] {
     class: myclass;
 }
 """,
@@ -327,7 +327,7 @@ Level(
 def test_roof_indices_condition():
     makeTest(
 """
-level[roof][0:1](item.front) {
+level[@roof][0:1](item.front) {
     class: myclass;
 }
 """,
@@ -365,7 +365,7 @@ Level(
 def test_roof_single_index_condition():
     makeTest(
 """
-level[roof][1](item.front) {
+level[@roof][1](item.front) {
     class: myclass;
 }
 """,
