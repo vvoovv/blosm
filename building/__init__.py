@@ -380,7 +380,7 @@ class BldgPart:
     
     def __init__(self, element, manager):
         self.outline = element
-        self.polygon = BldgPolygon(self, element, manager, True)
+        self.polygon = BldgPolygon(element, manager, True)
 
 
 class VisibilityInfo:

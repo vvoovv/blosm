@@ -21,7 +21,7 @@ from manager import Manager
 import parse
 from parse.osm import Osm
 from util import zAxis
-from . import Building, BldgEdge
+from . import Building, BldgEdge, BldgPart
 
 
 class BaseBuildingManager:
@@ -44,6 +44,7 @@ class BaseBuildingManager:
         self.acceptBroken = False
         if buildingParts:
             self.parts = buildingParts.parts
+            buildingParts.bldgManager = self
         self.actions = []
         self.edges = {}
         app.addManager(self)
@@ -102,6 +103,7 @@ class BaseBuildingManager:
             self.edges[key] = edge
         return edge
 
+
 class BuildingManager(BaseBuildingManager, Manager):
     
     def __init__(self, osm, app, buildingParts, layerClass):
@@ -124,9 +126,9 @@ class BuildingManager(BaseBuildingManager, Manager):
         # create a BHV tree on demand only
         bvhTree = None
         for part in self.parts:
-            if part.o:
+            if part.outline.o:
                 # the outline for <part> is set in an OSM relation of the type 'building'
-                osmId, osmType = part.o
+                osmId, osmType = part.outline.o
                 elements = osm.ways if osmType is Osm.way else osm.relations
                 if osmId in elements:
                     building = elements[osmId].b
@@ -218,6 +220,7 @@ class BuildingParts:
     def __init__(self):
         # don't accept broken multipolygons
         self.acceptBroken = False
+        self.bldgManager = None
         self.parts = []
         
     def parseWay(self, element, elementId):
@@ -225,17 +228,17 @@ class BuildingParts:
             element.t = parse.polygon
             # empty outline
             element.o = None
-            self.createBuildingPart(element)
+            self.createBldgPart(element)
         else:
             element.valid = False
     
     def parseRelation(self, element, elementId):
         # empty outline
         element.o = None
-        self.createBuildingPart(element)
+        self.createBldgPart(element)
     
-    def createBuildingPart(self, element):
-        self.parts.append(BuildingPart(element))
+    def createBldgPart(self, element):
+        self.parts.append(BldgPart(element, self.bldgManager))
 
 
 class BuildingRelations:
