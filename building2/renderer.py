@@ -129,16 +129,16 @@ class BuildingRendererNew(Renderer):
         
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
-        building = Building.getItem(itemFactory, outline, data)
+        buildingP.renderData = Building.getItem(itemFactory, data)
         
         # get the style of the building
-        buildingStyle = self.styleStore.get(self.getStyle(building, self.app))
+        buildingStyle = self.styleStore.get(self.getStyle(buildingP.renderData, self.app))
         if not buildingStyle:
             # skip the building
             return
-        building.setStyleMeta(buildingStyle)
+        buildingP.renderData.setStyleMeta(buildingStyle)
         
-        self.preRender(building)
+        self.preRender(buildingP.renderData)
         
         partTag = outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):

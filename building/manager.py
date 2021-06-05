@@ -116,8 +116,6 @@ class BuildingManager(BaseBuildingManager, Manager):
         # create a Python set for each OSM node to store indices of the entries from <self.buildings>,
         # where instances of the wrapper class <building.manager.Building> are stored
         buildings = self.buildings
-        osm = self.osm
-        nodes = osm.nodes
         
         # Iterate through building parts (building:part=*)
         # to find a building from <self.buildings> to which
@@ -129,7 +127,7 @@ class BuildingManager(BaseBuildingManager, Manager):
             if part.outline.o:
                 # the outline for <part> is set in an OSM relation of the type 'building'
                 osmId, osmType = part.outline.o
-                elements = osm.ways if osmType is Osm.way else osm.relations
+                elements = self.osm.ways if osmType is Osm.way else self.osm.relations
                 if osmId in elements:
                     building = elements[osmId].b
                     if building:
@@ -137,78 +135,42 @@ class BuildingManager(BaseBuildingManager, Manager):
                         # we are done
                         continue
             
-            # Find a building from <self.buildings> which OSM nodes <part> uses
-            # the maximum number of times
-            
-            # <shared> is Python dict for OSM nodes shared by <part> and some buildings from <self.buildings>:
-            # key: the index of <self.buildings> of the related building
-            # value: the number of times the nodes of the related building are used by <part>
-            shared = {}
-            # Indices of buildings from <self.buildings>
-            # considered as candidates for building we are looking for
-            candidates = []
-            # how many nodes of <part> are used by buildings from <candidates> 
-            maxNumber = 0
-            # The first encountered free OSM node, i.e, the OSM node not used by any building from <self.buildings>
-            freeNode = None
-            for nodeId in part.nodeIds(osm):
-                if nodes[nodeId].b:
-                    for buildingIndex in nodes[nodeId].b:
-                        if buildingIndex in shared:
-                            shared[buildingIndex] += 1
-                        else:
-                            shared[buildingIndex] = 1
-                        if shared[buildingIndex] > maxNumber:
-                            candidates = [buildingIndex]
-                            maxNumber += 1
-                        elif shared[buildingIndex] == maxNumber:
-                            candidates.append(buildingIndex)
-                elif freeNode is None:
-                    freeNode = nodeId
-            
-            numCandidates = len(candidates)
-            if freeNode:
-                if numCandidates == 1:
-                    # To save time we won't check if all free OSM nodes of <part>
-                    # are located inside the building
-                    buildings[candidates[0]].addPart(part)
-                else:
-                    # Take the first encountered free node <freeNode> and
-                    # calculated if it is located inside any building from <self.buildings>
-                    if not bvhTree:
-                        bvhTree = self.createBvhTree()
-                    coords = nodes[freeNode].getData(osm)
-                    # Cast a ray from the point with horizontal coords equal to <coords> and
-                    # z = -1. in the direction of <zAxis>
-                    buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
-                    if not buildingIndex is None:
-                        # we condider that <part> is located inside <buildings[buildingIndex]>
-                        buildings[buildingIndex].addPart(part)
+            for vector in part.polygon.getVectors():
+                if vector.edge.vectors:
+                    for bldgVector in vector.edge.vectors:
+                        if vector.direct == bldgVector.direct:
+                            bldgVector.polygon.building.addPart(part)
+                            break
+                    else:
+                        # continue with the next vector in <part.polygon>
+                        continue
+                    # we are done: found a <bldgVector> that coinsides with <vector>
+                    break
             else:
-                # all OSM nodes of <part> are used by one or more buildings from <self.buildings>
-                # the case numCandidates > 1 probably means some weird configuration, so skip that <part>
-                if numCandidates == 1:
-                    buildings[candidates[0]].addPart(part)
+                # <part> doesn't have a vector sharing an edge with a building footprint
+                # Take <vector> and calculated if it is located inside any building from <self.buildings>
+                if not bvhTree:
+                    bvhTree = self.createBvhTree()
+                coords = vector.v1
+                # Cast a ray from the point with horizontal coords equal to <coords> and
+                # z = -1. in the direction of <zAxis>
+                buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
+                if not buildingIndex is None:
+                    # we condider that <part> is located inside <buildings[buildingIndex]>
+                    buildings[buildingIndex].addPart(part)
     
     def createBvhTree(self):
         from mathutils.bvhtree import BVHTree
         
-        osm = self.osm
         vertices = []
         polygons = []
         vertexIndex1 = 0
         vertexIndex2 = 0
         
         for building in self.buildings:
-            # OSM element (a OSM way or an OSM relation of the type 'multipolygon')
-            outline = building.outline
             # In the case of a multipolygon we consider the only outer linestring that defines the outline
             # of the polygon
-            polygon = outline.getData(osm) if outline.t is parse.polygon else outline.getOuterData(osm)
-            if not polygon:
-                # no outer linestring, so skip it
-                continue
-            vertices.extend(polygon)
+            vertices.extend(building.polygon.getSequence3d())
             vertexIndex2 = len(vertices)
             polygons.append(tuple(range(vertexIndex1, vertexIndex2)))
             vertexIndex1 = vertexIndex2

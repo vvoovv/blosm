@@ -35,10 +35,11 @@ SharedBldgBothEdges = 2
 
 class BldgPolygon:
     
-    __slots__ = ("vectors", "numEdges", "reversed", "refVector", "isBldgPart")
+    __slots__ = ("vectors", "numEdges", "reversed", "refVector", "building")
     
-    def __init__(self, outline, manager, isBldgPart):
-        self.isBldgPart = isBldgPart
+    def __init__(self, outline, manager, building):
+        # if <building> is None, it's a building part
+        self.building = building
         self.reversed = False
         # If <self.refVector> is not None, it indicates that the polygon has at least one
         # straight angle. In that case is stores a reference vector WITHOUT a straight angle
@@ -58,7 +59,7 @@ class BldgPolygon:
         vectors[-1].next = vectors[0]
         
         self.forceCcwDirection()
-        if not isBldgPart:
+        if building:
             for vector in self.vectors:
                 vector.markUsedNode(self, manager)
 
@@ -176,7 +177,8 @@ class BldgPolygon:
     def createVector(self, nodeId1, nodeId2, manager):
         edge = manager.getEdge(nodeId1, nodeId2)
         vector = BldgVector(edge, edge.id1 == nodeId1, self)
-        edge.addVector(vector)
+        if self.building:
+            edge.addVector(vector)
         return vector
     
     def reverse(self):
@@ -218,6 +220,9 @@ class BldgPolygon:
         edge = next(edges)
         if not (skipShared and edge.hasSharedBldgVectors()):
             yield edge, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
+    
+    def getSequence3d(self):
+        return ( vector.getV1Tuple3d() for vector in self.getVectors() )
 
 
 class BldgEdge:
@@ -327,11 +332,17 @@ class BldgVector:
         nodeId1 = self.id1
         nodeId2 = nextVector.id1
         self.edge = manager.getEdge(nodeId1, nodeId2)
-        self.edge.addVector(self)
+        
+        if self.polygon.building:
+            self.edge.addVector(self)
         self.direct = nodeId1 == self.edge.id1
     
     def markUsedNode(self, building, manager):
         manager.data.nodes[self.id1].bldgs.append(building)
+    
+    def getV1Tuple3d(self):
+        v = self.v1
+        return (v[0], v[1], 0.)
 
 
 class Building:
@@ -351,19 +362,10 @@ class Building:
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
         self.crossedEdges = []
-        self.polygon = BldgPolygon(element, manager, False)
+        self.polygon = BldgPolygon(element, manager, self)
     
     def addPart(self, part):
         self.parts.append(part)
-
-    def markUsedNodes(self, buildingIndex, osm):
-        """
-        For each OSM node of <self.element> (OSM way or OSM relation) add the related
-        <buildingIndex> (i.e. the index of <self> in Python list <buildings> of an instance
-        of <BuildingManager>) to Python set <b> of the node 
-        """
-        for nodeId in self.outline.nodeIds(osm):
-            osm.nodes[nodeId].b[buildingIndex] = 1
     
     def resetVisInfoTmp(self):
         for vector in self.polygon.vectors:
@@ -380,7 +382,7 @@ class BldgPart:
     
     def __init__(self, element, manager):
         self.outline = element
-        self.polygon = BldgPolygon(element, manager, True)
+        self.polygon = BldgPolygon(element, manager, None)
 
 
 class VisibilityInfo:
