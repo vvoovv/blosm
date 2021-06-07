@@ -119,34 +119,33 @@ class BuildingRendererNew(Renderer):
         
         self._cache.clear()
     
-    def render(self, buildingP, data):
-        parts = buildingP.parts
+    def render(self, building, data):
+        parts = building.parts
         itemFactory = self.itemFactory
         itemStore = self.itemStore
         
         # <buildingP> means "building from the parser"
-        outline = buildingP.outline
         
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
-        buildingP.renderData = Building.getItem(itemFactory, data)
+        building.renderInfo = Building.getItem(itemFactory, data)
         
         # get the style of the building
-        buildingStyle = self.styleStore.get(self.getStyle(buildingP.renderData, self.app))
+        buildingStyle = self.styleStore.get(self.getStyle(building, self.app))
         if not buildingStyle:
             # skip the building
             return
-        buildingP.renderData.setStyleMeta(buildingStyle)
+        building.renderInfo.setStyleMeta(buildingStyle)
         
-        self.preRender(buildingP.renderData)
+        self.preRender(building)
         
-        partTag = outline.tags.get("building:part")
+        partTag = building.outline.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
-            footprint = Footprint.getItem(itemFactory, outline, building)
+            footprint = Footprint.getItem(itemFactory, building, building)
             # The attribute <footprint> below may be used in calculation of the area of
             # the building footprint or in <action.terrain.Terrain>
-            building.footprint = footprint
+            #building.footprint = footprint
             itemStore.add(footprint)
         if parts:
             itemStore.add((Footprint.getItem(itemFactory, part, building) for part in parts), Footprint, len(parts))
@@ -163,7 +162,7 @@ class BuildingRendererNew(Renderer):
         if itemStore.skip:
             itemStore.skip = False
         else:
-            self.postRender(outline)
+            self.postRender(building.outline)
     
     def createFace(self, building, indices):
         bm = self.bm

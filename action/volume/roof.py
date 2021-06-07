@@ -150,7 +150,8 @@ class Roof:
             if self.hasRidge and footprint.getStyleBlockAttr("roofOrientation") == "across":
                 # The roof ridge is across the longest side of the building outline,
                 # i.e. the profile direction is along the longest side
-                d = max(polygon.edges).normalized()
+                d = max(polygon.getVectors())
+                d = d/d.length
             else:
                 d = getDefaultDirection(polygon)
         elif d in Roof.directions:

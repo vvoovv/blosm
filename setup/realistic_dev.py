@@ -143,7 +143,7 @@ def getStyle(building, app):
     if building["man_made"] or building["barrier"] or buildingTag=="wall":
         return "man made"
     
-    buildingArea = building.area()
+    buildingArea = building.polygon.area()
     
     if buildingArea < 20.:
         return "small structure"

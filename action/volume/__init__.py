@@ -56,7 +56,7 @@ class Volume(Action):
             footprint = itemStore.getItem(itemClass)
             self.prepareFootprint(footprint, building, buildingStyle)
             
-            element = footprint.element
+            element = footprint.bldgPart.outline
             if element.t is parse.multipolygon:
                 # check if the multipolygon has holes
                 if element.hasInner():

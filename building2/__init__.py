@@ -20,13 +20,9 @@ class Building:
         # <self.outlinePolygon> is used only in the case if the buildings has parts
         self.outlinePolygon = Polygon()
     
-    def init(self, outline):
+    def init(self):
         self.verts.clear()
         self.bmVerts.clear()
-        # <outline> is an instance of the class as defined by the data model (e.g. parse.osm.way.Way) 
-        self.outline = outline
-        if self.outlinePolygon.allVerts:
-            self.outlinePolygon.clear()
         self.offset = None
         # Instance of item.footprint.Footprint, it's only used if the building definition
         # in the data model doesn't contain building parts, i.e. the building is defined completely
@@ -45,20 +41,11 @@ class Building:
     def clone(self):
         building = Building()
         return building
-
-    def attr(self, attr):
-        return self.outline.tags.get(attr)
-
-    def __getitem__(self, attr):
-        """
-        That variant of <self.attr(..) is used in a setup script>
-        """
-        return self.outline.tags.get(attr)
     
     @classmethod
-    def getItem(cls, itemFactory, outline, data):
+    def getItem(cls, itemFactory, data):
         item = itemFactory.getItem(cls)
-        item.init(outline)
+        item.init()
         item.data = data
         return item
     
@@ -66,22 +53,3 @@ class Building:
         if style.meta:
             for attr in style.meta.attrs:
                 setattr(self, attr, style.meta.attrs[attr])
-    
-    def area(self):
-        if not self._area:
-            # remember that <self.footprint> is defined if the building doesn't have parts
-            polygon = self.footprint.polygon if self.footprint else self.outlinePolygon
-            
-            if not polygon.allVerts:
-                outline = self.outline
-                if outline.t is parse.multipolygon:
-                    coords = outline.getOuterData(self.data)
-                else:
-                    coords = outline.getData(self.data)
-                polygon.init( Vector(coord) for coord in coords )
-            if polygon.n < 3:
-                # the building will be skipped later in method <calculated>
-                return 0.
-            
-            self._area = polygon.area()
-        return self._area

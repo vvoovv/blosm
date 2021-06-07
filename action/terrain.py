@@ -40,9 +40,9 @@ class Terrain(Action):
             ),
             key = lambda vert: vert[2]
         )
-        building.offset = offsetZ[2] * zAxis
+        building.renderInfo.offset = offsetZ[2] * zAxis
         # we also need to store the altitude difference for the building footprint
-        building.altitudeDifference = maxZ - offsetZ[2]
+        building.renderInfo.altitudeDifference = maxZ - offsetZ[2]
     
     def projectSingleVertex(self, building):
         outline = building.outline

@@ -619,7 +619,7 @@ class RoofProfile(Roof):
     
     def render(self, footprint, roofItem):
         polygon = footprint.polygon
-        verts = footprint.building.verts
+        verts = footprint.building.renderInfo.verts
         self.vertOffset = len(verts)
         # vertices for the basement of the volume
         verts.extend(v for v in polygon.verts)

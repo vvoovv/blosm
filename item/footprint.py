@@ -1,5 +1,4 @@
 from . import Item
-from util.polygon import Polygon
 from action.volume.level_heights import LevelHeights
 
 
@@ -19,7 +18,6 @@ class Footprint(Item):
         self.building = None
         # all style blocks that define the style for the building
         self.buildingStyle = None
-        self.polygon = Polygon()
         self.projections = []
         self.minProjIndex = 0
         self.maxProjIndex = 0
@@ -34,17 +32,6 @@ class Footprint(Item):
         self.facadeStyle = None
         self.facades = []
         self.levelHeights = LevelHeights(self)
-        
-        if entranceAttr:
-            # indices of original <self.polygon> vertices containg <entranceAttr>
-            self.entranceVertexIndices = []
-            # Element index of <self.entranceAttrVertexMapping> is the index of
-            # a original polygon vertex
-            # Element is None if the related vertex doesn't contain <entranceAttr> OR
-            # the element index if the vertex is preserved after <self.polygon.removeStraightAngle(..)> OR
-            # index of the nearest remaing vertex if the original vertex was skippped
-            # after <self.polygon.removeStraightAngle(..)>
-            self.entranceAttrVertexMapping = []
     
     def init(self):
         super().init()
@@ -65,18 +52,19 @@ class Footprint(Item):
         return item
     
     @classmethod
-    def getItem(cls, itemFactory, element, building, styleBlock=None):
+    def getItem(cls, itemFactory, bldgPart, building, styleBlock=None):
         # <styleBlock> is the style block within the markup definition,
         # if the footprint is generated through the markup definition
         item = itemFactory.getItem(cls)
         item.init()
         item.styleBlock = styleBlock
-        item.element = element
+        item.polygon = bldgPart.polygon
+        item.element = bldgPart.element
         item.building = building
         return item
     
     def attr(self, attr):
-        return self.element.tags.get(attr)
+        return self.bldgPart.outline.tags.get(attr)
     
     def getStyleBlockAttrDeep(self, attr):
         return self.getStyleBlockAttr(attr)
@@ -126,7 +114,6 @@ class Footprint(Item):
         
         # First, we check if facades contains entrances
         facades = self.facades
-        polygon = self.polygon
         indices = polygon.indices
         nodes = tuple( self.element.getNodes(data) )
         numNodes = len(nodes)

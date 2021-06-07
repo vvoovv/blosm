@@ -170,7 +170,7 @@ class BuildingManager(BaseBuildingManager, Manager):
         for building in self.buildings:
             # In the case of a multipolygon we consider the only outer linestring that defines the outline
             # of the polygon
-            vertices.extend(building.polygon.getSequence3d())
+            vertices.extend(building.polygon.getVerts3d())
             vertexIndex2 = len(vertices)
             polygons.append(tuple(range(vertexIndex1, vertexIndex2)))
             vertexIndex1 = vertexIndex2

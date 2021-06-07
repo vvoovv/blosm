@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from numpy import array, zeros, dot
+from numpy import array, zeros, dot, cross
 from numpy.linalg import norm
 import parse
 from mathutils import Vector
@@ -35,7 +35,7 @@ SharedBldgBothEdges = 2
 
 class BldgPolygon:
     
-    __slots__ = ("vectors", "numEdges", "reversed", "refVector", "building")
+    __slots__ = ("vectors", "numEdges", "reversed", "refVector", "building", "_area")
     
     def __init__(self, outline, manager, building):
         # if <building> is None, it's a building part
@@ -62,6 +62,8 @@ class BldgPolygon:
         if building:
             for vector in self.vectors:
                 vector.markUsedNode(self, manager)
+        
+        self._area = 0.
 
     def forceCcwDirection(self):
         """
@@ -189,7 +191,7 @@ class BldgPolygon:
     @property
     def verts(self):
         return (
-            vector.v1 for vector in (reversed(self.vectors) if self.reversed else self.vectors) if not vector.skip
+            vector.v1 for vector in self.getVectors()
         )
     
     def getEdges(self):
@@ -221,8 +223,15 @@ class BldgPolygon:
         if not (skipShared and edge.hasSharedBldgVectors()):
             yield edge, queryBldgVerts[firstVertIndex + n_1], queryBldgVerts[firstVertIndex]
     
-    def getSequence3d(self):
+    def getVerts3d(self):
         return ( vector.getV1Tuple3d() for vector in self.getVectors() )
+    
+    def area(self):
+        if not self._area:
+            
+            # the shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
+            self._area = 0.5 * sum(cross(vector.v1, vector.next.v1) for vector in self.getVectors())
+        return self._area
 
 
 class BldgEdge:
@@ -315,11 +324,15 @@ class BldgVector:
         else:
             v1 = self.edge.v2
             v2 = self.edge.v1
-        return (v2[0] - v1[0], v2[1] - v1[1])
+        return v2-v1
     
     @property
     def unitVector(self):
         return self.vector/self.edge.length
+    
+    @property
+    def length(self):
+        return self.edge.length
     
     def skipNodes(self, nextVector, manager):
         """
@@ -343,6 +356,9 @@ class BldgVector:
     def getV1Tuple3d(self):
         v = self.v1
         return (v[0], v[1], 0.)
+    
+    def __gt__(self, other):
+        return self.edge.length > other.edge.length
 
 
 class Building:
@@ -350,19 +366,18 @@ class Building:
     A wrapper for a OSM building
     """
     
-    __slots__ = ("outline", "parts", "polygon", "auxIndex", "crossedEdges")
+    __slots__ = ("outline", "parts", "polygon", "auxIndex", "crossedEdges", "renderInfo")
     
     def __init__(self, element, manager):
         self.outline = element
         self.parts = []
-        # a polygon for the outline, used for facade classification only
-        self.polygon = None
+        # a polygon for the outline
+        self.polygon = BldgPolygon(element, manager, self)
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
         self.crossedEdges = []
-        self.polygon = BldgPolygon(element, manager, self)
     
     def addPart(self, part):
         self.parts.append(part)
@@ -376,6 +391,15 @@ class Building:
 
     def addCrossedEdge(self, edge, intsectX):
         self.crossedEdges.append( (edge, intsectX) )
+        
+    def attr(self, attr):
+        return self.outline.tags.get(attr)
+
+    def __getitem__(self, attr):
+        """
+        That variant of <self.attr(..) is used in a setup script>
+        """
+        return self.outline.tags.get(attr)
 
 
 class BldgPart:
