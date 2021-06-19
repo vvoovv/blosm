@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from numpy import array, zeros, dot, cross
-from numpy.linalg import norm
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
@@ -98,8 +96,8 @@ class BldgPolygon:
         vec_ = self.vectors[0 if self.reversed else -1].vector
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vec = vector.vector
-            dot = vec_[0]*vec[0] + vec_[1]*vec[1]
-            if dot and abs( (vec_[0]*vec[1]-vec_[1]*vec[0])/dot ) < Polygon.straightAngleTan:
+            dot = vec_.dot(vec)
+            if dot and abs( vec_.cross(vec)/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
                 vector.straightAngle = True
                 if len(manager.data.nodes[vector.id1].bldgs) == 1:
@@ -132,8 +130,8 @@ class BldgPolygon:
         vec_ = self.vectors[0 if self.reversed else -1].vector
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vec = vector.vector
-            dot = vec_[0]*vec[0] + vec_[1]*vec[1]
-            if dot and abs( (vec_[0]*vec[1]-vec_[1]*vec[0])/dot ) < Polygon.straightAngleTan:
+            dot = vec_.dot(vec)
+            if dot and abs( vec_.cross(vec)/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
                 vector.straightAngle = True
                 vector.skip = True
@@ -230,7 +228,7 @@ class BldgPolygon:
         if not self._area:
             
             # the shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
-            self._area = 0.5 * sum(cross(vector.v1, vector.next.v1) for vector in self.getVectors())
+            self._area = 0.5 * sum(vector.v1.cross(vector.next.v1) for vector in self.getVectors())
         return self._area
 
 
@@ -243,9 +241,9 @@ class BldgEdge:
         # Important: always id1 < id2 
         #
         self.id1 = id1
-        self.v1 = array(v1)
+        self.v1 = Vector(v1)
         self.id2 = id2
-        self.v2 = array(v2)
+        self.v2 = Vector(v2)
         self.id = BldgEdge.ID
         BldgEdge.ID += 1
         
@@ -272,7 +270,7 @@ class BldgEdge:
     def length(self):
         # calculation on demand
         if not self._length:
-            self._length = norm(self.v2 - self.v1)
+            self._length = (self.v2 - self.v1).length
         return self._length
 
 
