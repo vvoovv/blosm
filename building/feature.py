@@ -7,9 +7,10 @@ from defs.building import BldgPolygonFeature
 
 class Feature:
     
-    __slots__ = ("active", "proxyVector", "endVector", "startEdge", "startNextVector")
+    __slots__ = ("active", "proxyVector", "endVector", "startEdge", "startNextVector", "parent", "child")
     
-    def __init__(self, startVector, endVector, manager):
+    def __init__(self, featureId, startVector, endVector, manager):
+        self.featureId = featureId
         self.active = True
         # <startVector> will be used as a proxy vector for the feature
         self.proxyVector = startVector
@@ -29,6 +30,15 @@ class Feature:
         
         endVector.next.prev = startVector
         startVector.next = endVector.next
+        
+        # the parent feature
+        if startVector.feature:
+            self.parent = startVector.feature
+            startVector.feature.child = self
+        else:
+            self.parent = None
+        startVector.feature = self
+        self.child = None
 
     def restoreVectors(self):
         """
