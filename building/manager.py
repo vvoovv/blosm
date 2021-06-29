@@ -76,7 +76,17 @@ class BaseBuildingManager:
     
     def process(self):
         for building in self.buildings:
+            # create <building.polygon>
             building.init(self)
+        
+        for building in self.buildings:
+            # remove straight angles for <building.polygon> and calculate the total number of vertices
+            building.polygon.processStraightAngles(self)
+        
+        for building in self.buildings:
+            building.polygon.processStraightAnglesExtra(self)
+            
+            
         for action in self.actions:
             action.do(self)
     
