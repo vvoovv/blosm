@@ -7,29 +7,29 @@ from defs.building import BldgPolygonFeature
 
 class Feature:
     
-    __slots__ = ("active", "proxyVector", "endVector", "startEdge", "startNextVector", "parent", "child")
+    __slots__ = (
+        "featureId", "active", "proxyVector", "endVector", "startEdge",
+        "startNextVector", "parent", "child"
+    )
     
-    def __init__(self, featureId, startVector, endVector, manager):
+    def __init__(self, featureId, startVector, nextVector, manager):
         self.featureId = featureId
         self.active = True
         # <startVector> will be used as a proxy vector for the feature
         self.proxyVector = startVector
-        self.endVector = endVector
+        self.endVector = nextVector.prev
         # instance of <BldgEdge> replaced for <startVector>
         self.startEdge = startVector.edge
         self.startNextVector = startVector.next
         
         # get the new edge for <self.proxyVector> (aka <startVector>)
         nodeId1 = startVector.id1
-        edge = startVector.edge = manager.getEdge(nodeId1, endVector.id2)
+        edge = startVector.edge = manager.getEdge(nodeId1, nextVector.id1)
         # The condition below actually checks if we have the footprint
         # for the whole building or a building part
         if startVector.polygon.building:
             edge.addVector(startVector)
         startVector.direct = nodeId1 == edge.id1
-        
-        endVector.next.prev = startVector
-        startVector.next = endVector.next
         
         # the parent feature
         if startVector.feature:
@@ -37,8 +37,16 @@ class Feature:
             startVector.feature.child = self
         else:
             self.parent = None
-        startVector.feature = self
         self.child = None
+        
+        # <startVector> (aka <self.proxyVector>) is not marked with the attribute <feature>
+        currentVector = startVector.next
+        while not currentVector is nextVector:
+            currentVector.feature = self
+            currentVector = currentVector.next
+        
+        nextVector.prev = startVector
+        startVector.next = nextVector
 
     def restoreVectors(self):
         """
@@ -49,7 +57,7 @@ class Feature:
         proxyVector.next = self.startNextVector
         proxyVector.edge = self.startEdge
         # deactivate the feature
-        self.
+        self.active = False
 
 
 class NoSharedBldg:

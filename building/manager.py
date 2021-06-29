@@ -75,6 +75,8 @@ class BaseBuildingManager:
         self.buildingCounter += 1
     
     def process(self):
+        for building in self.buildings:
+            building.init(self)
         for action in self.actions:
             action.do(self)
     

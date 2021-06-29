@@ -86,7 +86,7 @@ class FacadeVisibility:
                 # store the index of the first vertex of <building> in <self.bldgVerts> 
                 building.auxIndex = index
                 for vert in building.polygon.verts:
-                    bldgVerts[index] = (vert[0], vert[1])
+                    bldgVerts[index] = vert
                     index += 1
         self.bldgVerts = bldgVerts
         

@@ -141,8 +141,7 @@ class BldgPolygon:
             dot = vec_.dot(vec)
             if dot and abs( vec_.cross(vec)/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
-                vector.straightAngle = True
-                vector.skip = True
+                vector.straightAngle = BldgPolygonFeature.StraightAngle
             vec_ = vec
     
     def processStraightAnglesExtra(self, manager):
@@ -171,7 +170,7 @@ class BldgPolygon:
                     Feature(
                         BldgPolygonFeature.StraightAngle,
                         prevNonStraightVector,
-                        vector.prev,
+                        vector,
                         manager
                     )
                     isPrevVectorStraight = False
@@ -184,7 +183,7 @@ class BldgPolygon:
                     Feature(
                         BldgPolygonFeature.StraightAngle,
                         prevNonStraightVector,
-                        vector.prev,
+                        vector,
                         manager
                     )
                 break
@@ -211,14 +210,14 @@ class BldgPolygon:
         )
     
     def getEdges(self):
-        return (vector.edge for vector in reversed(self.vectors) if not vector.skip) \
+        return (vector.edge for vector in reversed(self.vectors) if not vector.feature) \
             if self.reversed else\
-            (vector.edge for vector in self.vectors if not vector.skip)
+            (vector.edge for vector in self.vectors if not vector.feature)
 
     def getVectors(self):
-        return (vector for vector in reversed(self.vectors) if not vector.skip) \
+        return (vector for vector in reversed(self.vectors) if not vector.feature) \
             if self.reversed else\
-            (vector for vector in self.vectors if not vector.skip)
+            (vector for vector in self.vectors if not vector.feature)
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """
@@ -387,13 +386,17 @@ class Building:
     def __init__(self, element, manager):
         self.outline = element
         self.parts = []
-        # a polygon for the outline
-        self.polygon = BldgPolygon(element, manager, self)
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
         self.crossedEdges = []
+    
+    def init(self, manager):
+        # A polygon for the outline.
+        # Projection may not be available when Building.__init__(..) is called. So we have to
+        # create <self.polygon> after the parsing is finished and the projectin is available.
+        self.polygon = BldgPolygon(self.outline, manager, self)
     
     def addPart(self, part):
         self.parts.append(part)
