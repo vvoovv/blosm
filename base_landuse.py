@@ -25,6 +25,7 @@ from renderer.node_renderer import BaseNodeRenderer
 from renderer.curve_renderer import CurveRenderer
 
 from building.manager import BuildingManager, BuildingParts, BuildingRelations
+from building.layer import BuildingLayer
 from building.renderer import BuildingRenderer
 
 from manager.logging import Logger
@@ -86,7 +87,7 @@ def setup(app, osm):
         else: # 3D
             buildingParts = BuildingParts()
             buildingRelations = BuildingRelations()
-            buildings = BuildingManager(osm, buildingParts)
+            buildings = BuildingManager(osm, app, buildingParts, BuildingLayer)
             
             # Important: <buildingRelation> beform <building>,
             # since there may be a tag building=* in an OSM relation of the type 'building'
@@ -108,7 +109,6 @@ def setup(app, osm):
             buildings.setRenderer(
                 BuildingRenderer(app)
             )
-            app.managers.append(buildings)
     
     if app.highways or app.railways:
         osm.addCondition(tunnel)
@@ -227,4 +227,4 @@ def setup(app, osm):
     if numConditions:
         m = BaseManager(osm)
         m.setRenderer(Renderer2d(app))
-        app.managers.append(m)
+        app.addManager(m)
