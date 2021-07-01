@@ -1,7 +1,5 @@
-import numpy as np
-# import matplotlib.pyplot as plt
 import re
-from defs.facade_classification import *
+from defs.building import *
 # from building import BldgEdge, BldgVector
 
 
@@ -63,8 +61,8 @@ class FacadeSimplification:
         sineStart = vectorData[:,1]
         sineEnd = vectorData[:,2]
         lowAngles = ( \
-                        ((abs(sineStart)>sin_lo) & (abs(sineStart)<sin_me)) | \
-                        ((abs(sineEnd)>sin_lo) & (abs(sineEnd)<sin_me)) 
+                        (abs(sineStart)>sin_lo & abs(sineStart)<sin_me) | \
+                        (abs(sineEnd  )>sin_lo & abs(sineEnd  )<sin_me) 
                     )
         if not np.any(lowAngles):
             return None

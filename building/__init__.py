@@ -103,7 +103,8 @@ class BldgPolygon:
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vec = vector.vector
             dot = vec_.dot(vec)
-            if dot and abs( vec_.cross(vec)/dot ) < Polygon.straightAngleTan:
+            sin = vector.sin = vec_.cross(vec)
+            if dot and abs( sin/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
                 if len(manager.data.nodes[vector.id1].bldgs) == 1:
                     vector.straightAngle = NoSharedBldg
@@ -296,7 +297,7 @@ class BldgVector:
     A wrapper for the class BldgEdge
     """
     
-    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "feature")
+    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "feature", "sin")
     
     def __init__(self, edge, direct, polygon):
         self.edge = edge
