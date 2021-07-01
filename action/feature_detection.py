@@ -1,5 +1,5 @@
 import re
-from defs.building import *
+from defs.building import BldgPolygonFeature, curvyLengthFactor
 # from building import BldgEdge, BldgVector
 
 
@@ -32,25 +32,18 @@ class FacadeSimplification:
 
         for building in manager.buildings:
 
-            # prepare numpy matrix with data used for pattern detection
-            nEdges = building.polygon.numEdges
-            vectorData = np.zeros((nEdges,3))    # length, sine start, sine end
-            vectors = [vector for vector in building.polygon.getVectors()]
-            vectorData[:,:2] = [(vector.edge.length, np.cross(vector.prev.unitVector, vector.unitVector)) for vector in vectors]
-            vectorData[:,2] = np.roll(vectorData[:,1],-1)
-
-            # detect curvy features
-            curvyFeatures = self.detectCurvedFeatures(building)
+            # detect curved features
+            curvedFeatures = self.detectCurvedFeatures(building)
 
             # a primitive filter to avoid spiky edge detection for all buildings
-            nLongEdges = np.where( vectorData[:,0]>=lengthThresh  )[0].shape[0]
-            nShortEdges = np.where( vectorData[:,0]<lengthThresh )[0].shape[0]
-            smallFeatures = None
-            if (nLongEdges and nShortEdges > 2) or nShortEdges > 5:
-                smallFeatures = self.detectsmallFeatures(vectorData,vectors)
+            #nLongEdges = np.where( vectorData[:,0]>=lengthThresh  )[0].shape[0]
+            #nShortEdges = np.where( vectorData[:,0]<lengthThresh )[0].shape[0]
+            #smallFeatures = None
+            #if (nLongEdges and nShortEdges > 2) or nShortEdges > 5:
+            #    smallFeatures = self.detectsmallFeatures(vectorData,vectors)
 
-            self.replaceSequences(curvyFeatures, building.polygon)
-            self.replaceSequences(smallFeatures, building.polygon)
+            self.replaceSequences(curvedFeatures, building.polygon)
+            #self.replaceSequences(smallFeatures, building.polygon)
 
     # Detects curvy sequences.
     # Returns:
@@ -64,7 +57,7 @@ class FacadeSimplification:
         if not numLowAngles:
             return None
 
-        # Estimate a length threshold as a mean of the vector lengths among the vectors
+        # Calculate a length threshold as a mean of the vector lengths among the vectors
         # that satisfy the condition <vector.hasAnglesForCurvedFeature()>
         curvyLengthThresh = curvyLengthFactor / numLowAngles *\
             sum(
@@ -72,21 +65,28 @@ class FacadeSimplification:
                 if vector.hasAnglesForCurvedFeature()
             )
 
-        # pattern character sequence. edges with angle between 5° and 30° on either end 
+        # Feature character sequence: edges with angle between 5° and 30° on either end 
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
-        sequence =  "".join( np.where( (vectorData[:,1]<curvyLengthThresh) & lowAngles,'C','0') )
+        sequence = ''.join(
+            'C' if vector.length<curvyLengthThresh and vector.hasAnglesForCurvedFeature() else '0' \
+            for vector in building.polygon.getVectors()
+        )
 
         # a sequence of four or more 'C' matches as curvy sequence
         pattern = re.compile(r"(C){4,}")
-        matches = [c for c in pattern.finditer(sequence+sequence)]  # adjacent sequence for circularity
+        matches = tuple(
+            c for c in pattern.finditer(sequence+sequence) # adjacent sequence for circularity
+        )
         curvyFeatures = []
         if matches:
             N = len(sequence)
             for curvySeg in matches:
                 s = curvySeg.span()
                 if s[0] < N and s[0] >= 0:
-                    curvyFeatures.append( ( vectors[s[0]], vectors[(s[1]-1)%N], FeatureClass.curvy ) )
-
+                    curvyFeatures.append(
+                        ( vectors[s[0]], vectors[(s[1]-1)%N], BldgPolygonFeature.curved )
+                    )
+        
         return curvyFeatures
 
     # Detects small patterns (rectangular and triangular).
