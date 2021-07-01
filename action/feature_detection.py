@@ -40,7 +40,7 @@ class FacadeSimplification:
             vectorData[:,2] = np.roll(vectorData[:,1],-1)
 
             # detect curvy features
-            curvyFeatures = self.detectCurvyFeatures(vectorData,vectors)
+            curvyFeatures = self.detectCurvedFeatures(building)
 
             # a primitive filter to avoid spiky edge detection for all buildings
             nLongEdges = np.where( vectorData[:,0]>=lengthThresh  )[0].shape[0]
@@ -57,18 +57,20 @@ class FacadeSimplification:
     #   (firstEdge,lastEdge,featureClass) : Tuple of first edge of sequence and last edge of sequence and the feature class.
     #                                       If firstEdge is lastEdge, the whole building polygon is a curvy sequence 
     #   None                              : No curvy sequence found 
-    def detectCurvyFeatures (self,vectorData,vectors):
-        sineStart = vectorData[:,1]
-        sineEnd = vectorData[:,2]
-        lowAngles = ( \
-                        (abs(sineStart)>sin_lo & abs(sineStart)<sin_me) | \
-                        (abs(sineEnd  )>sin_lo & abs(sineEnd  )<sin_me) 
-                    )
-        if not np.any(lowAngles):
+    def detectCurvedFeatures (self, building):
+        numLowAngles = sum(
+            1 for vector in building.polygon.getVectors() if vector.hasAnglesForCurvedFeature()
+        )
+        if not numLowAngles:
             return None
 
-        # estimate a length threshold
-        curvyLengthThresh = np.mean(vectorData[lowAngles,1]) * curvyLengthFactor
+        # Estimate a length threshold as a mean of the vector lengths among the vectors
+        # that satisfy the condition <vector.hasAnglesForCurvedFeature()>
+        curvyLengthThresh = curvyLengthFactor / numLowAngles *\
+            sum(
+                vector.length for vector in building.polygon.getVectors()\
+                if vector.hasAnglesForCurvedFeature()
+            )
 
         # pattern character sequence. edges with angle between 5° and 30° on either end 
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
