@@ -12,7 +12,7 @@ class Feature:
         "startNextVector", "parent", "child"
     )
     
-    def __init__(self, featureId, startVector, nextVector, manager):
+    def __init__(self, featureId, startVector, nextVector, skip, manager):
         self.featureId = featureId
         self.active = True
         # <startVector> will be used as a proxy vector for the feature
@@ -40,10 +40,14 @@ class Feature:
         self.child = None
         
         # <startVector> (aka <self.proxyVector>) is not marked with the attribute <feature>
-        currentVector = startVector.next
+        currentVector = startVector
         while not currentVector is nextVector:
             currentVector.feature = self
+            if skip:
+                currentVector.skip = True
             currentVector = currentVector.next
+        if skip:
+            startVector.skip = False
         
         nextVector.prev = startVector
         startVector.next = nextVector

@@ -32,7 +32,7 @@ class BuildingVisibilityRender(Renderer):
             '#f5f5dc'
         )
         for vector in building.polygon.vectors:
-            if vector.feature:
+            if vector.skip:
                 continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
             color = BuildingVisibilityRender.getFootprintEdgeColor(edge)
@@ -123,7 +123,7 @@ class BuildingClassificationRender(Renderer):
             '#f5f5dc'
         )
         for vector in building.polygon.vectors:
-            if vector.feature:
+            if vector.skip:
                 continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
             color = self.getFootprintEdgeColor(edge)

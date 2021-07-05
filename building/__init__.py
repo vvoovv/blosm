@@ -172,6 +172,7 @@ class BldgPolygon:
                         BldgPolygonFeature.StraightAngle,
                         prevNonStraightVector,
                         vector,
+                        True, # skip
                         manager
                     )
                     isPrevVectorStraight = False
@@ -185,6 +186,7 @@ class BldgPolygon:
                         BldgPolygonFeature.StraightAngle,
                         prevNonStraightVector,
                         vector,
+                        True, # skip
                         manager
                     )
                 break
@@ -211,14 +213,14 @@ class BldgPolygon:
         )
     
     def getEdges(self):
-        return (vector.edge for vector in reversed(self.vectors) if not vector.feature) \
+        return (vector.edge for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
-            (vector.edge for vector in self.vectors if not vector.feature)
+            (vector.edge for vector in self.vectors if not vector.skip)
 
     def getVectors(self):
-        return (vector for vector in reversed(self.vectors) if not vector.feature) \
+        return (vector for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
-            (vector for vector in self.vectors if not vector.feature)
+            (vector for vector in self.vectors if not vector.skip)
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """
@@ -297,7 +299,7 @@ class BldgVector:
     A wrapper for the class BldgEdge
     """
     
-    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "feature", "sin")
+    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "feature", "skip", "sin")
     
     def __init__(self, edge, direct, polygon):
         self.edge = edge
@@ -307,6 +309,7 @@ class BldgVector:
         self.polygon = polygon
         self.straightAngle = 0
         self.feature = None
+        self.skip = False
     
     def reverse(self):
         self.direct = not self.direct
