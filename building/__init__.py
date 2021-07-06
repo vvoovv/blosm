@@ -49,11 +49,11 @@ class BldgPolygon:
         # straight angle. In that case is stores a reference vector WITHOUT a straight angle
         self.refVector = None
         # vectors
-        self.vectors = vectors = tuple(
+        self.vectors = vectors = [
             self.createVector(nodeId1, nodeId2, manager) \
                 for nodeId1,nodeId2 in outline.pairNodeIds(manager.data) \
                     if not manager.data.haveSamePosition(nodeId1, nodeId2)
-        )
+        ]
         self.numEdges = len(self.vectors)
         # set the previous and the next vector for each vector from <self.vectors>
         for i in range(self.numEdges-1):
