@@ -142,7 +142,7 @@ class BldgPolygon:
             dot = vec_.dot(vec)
             if dot and abs( vec_.cross(vec)/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
-                vector.straightAngle = BldgPolygonFeature.StraightAngle
+                vector.straightAngle = BldgPolygonFeature.straightAngle
             vec_ = vec
     
     def processStraightAnglesExtra(self, manager):
@@ -169,9 +169,9 @@ class BldgPolygon:
             else:
                 if isPrevVectorStraight:
                     Feature(
-                        BldgPolygonFeature.StraightAngle,
+                        BldgPolygonFeature.straightAngle,
                         prevNonStraightVector,
-                        vector,
+                        vector.prev,
                         True, # skip
                         manager
                     )
@@ -183,9 +183,9 @@ class BldgPolygon:
             if vector is refVector:
                 if isPrevVectorStraight:
                     Feature(
-                        BldgPolygonFeature.StraightAngle,
+                        BldgPolygonFeature.straightAngle,
                         prevNonStraightVector,
-                        vector,
+                        vector.prev,
                         True, # skip
                         manager
                     )
@@ -250,6 +250,16 @@ class BldgPolygon:
             # the shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
             self._area = 0.5 * sum(vector.v1.cross(vector.next.v1) for vector in self.getVectors())
         return self._area
+    
+    def prepareVectorsByIndex(self):
+        index = 0
+        for vector in self.vectors:
+            if not vector.skip:
+                self.vectors[index].vectorByIndex = vector
+                index += 1
+    
+    def getVectorByIndex(self, index):
+        return self.vectors[index].vectorByIndex
 
 
 class BldgEdge:
@@ -299,7 +309,10 @@ class BldgVector:
     A wrapper for the class BldgEdge
     """
     
-    __slots__ = ("edge", "direct", "prev", "next", "polygon", "straightAngle", "feature", "skip", "sin")
+    __slots__ = (
+        "edge", "direct", "prev", "next", "polygon",
+        "straightAngle", "feature", "skip", "sin", "vectorByIndex"
+    )
     
     def __init__(self, edge, direct, polygon):
         self.edge = edge

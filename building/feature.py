@@ -8,21 +8,22 @@ from defs.building import BldgPolygonFeature
 class Feature:
     
     __slots__ = (
-        "featureId", "active", "proxyVector", "endVector", "startEdge",
+        "featureId", "active", "startVector", "endVector", "startEdge",
         "startNextVector", "parent", "child"
     )
     
-    def __init__(self, featureId, startVector, nextVector, skip, manager):
+    def __init__(self, featureId, startVector, endVector, skip, manager):
         self.featureId = featureId
         self.active = True
         # <startVector> will be used as a proxy vector for the feature
-        self.proxyVector = startVector
-        self.endVector = nextVector.prev
+        self.startVector = startVector
+        self.endVector = endVector
+        nextVector = endVector.next
         # instance of <BldgEdge> replaced for <startVector>
         self.startEdge = startVector.edge
         self.startNextVector = startVector.next
         
-        # get the new edge for <self.proxyVector> (aka <startVector>)
+        # get the new edge for <startVector> that is also used as a proxy vector for the feature
         nodeId1 = startVector.id1
         edge = startVector.edge = manager.getEdge(nodeId1, nextVector.id1)
         # The condition below actually checks if we have the footprint
@@ -39,7 +40,6 @@ class Feature:
             self.parent = None
         self.child = None
         
-        # <startVector> (aka <self.proxyVector>) is not marked with the attribute <feature>
         currentVector = startVector
         while not currentVector is nextVector:
             currentVector.feature = self
@@ -47,6 +47,7 @@ class Feature:
                 currentVector.skip = True
             currentVector = currentVector.next
         if skip:
+            # <startVector> is also used as a proxy vector for the feature
             startVector.skip = False
         
         nextVector.prev = startVector

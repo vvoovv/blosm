@@ -1,6 +1,6 @@
 import re
 from defs.building import BldgPolygonFeature, curvyLengthFactor
-# from building import BldgEdge, BldgVector
+from building.feature import Feature
 
 
 class FacadeSimplification:
@@ -31,9 +31,12 @@ class FacadeSimplification:
     def do(self, manager):
 
         for building in manager.buildings:
+            polygon = building.polygon
+            
+            polygon.prepareVectorsByIndex()
 
             # detect curved features
-            curvedFeatures = self.detectCurvedFeatures(building)
+            self.detectCurvedFeatures(polygon, manager)
 
             # a primitive filter to avoid spiky edge detection for all buildings
             #nLongEdges = np.where( vectorData[:,0]>=lengthThresh  )[0].shape[0]
@@ -42,17 +45,17 @@ class FacadeSimplification:
             #if (nLongEdges and nShortEdges > 2) or nShortEdges > 5:
             #    smallFeatures = self.detectsmallFeatures(vectorData,vectors)
 
-            self.replaceSequences(curvedFeatures, building.polygon)
-            #self.replaceSequences(smallFeatures, building.polygon)
+            #self.replaceSequences(curvedFeatures, polygon)
+            #self.replaceSequences(smallFeatures, polygon)
 
     # Detects curvy sequences.
     # Returns:
     #   (firstEdge,lastEdge,featureClass) : Tuple of first edge of sequence and last edge of sequence and the feature class.
     #                                       If firstEdge is lastEdge, the whole building polygon is a curvy sequence 
     #   None                              : No curvy sequence found 
-    def detectCurvedFeatures (self, building):
+    def detectCurvedFeatures (self, polygon, manager):
         numLowAngles = sum(
-            1 for vector in building.polygon.getVectors() if vector.hasAnglesForCurvedFeature()
+            1 for vector in polygon.getVectors() if vector.hasAnglesForCurvedFeature()
         )
         if not numLowAngles:
             return None
@@ -61,7 +64,7 @@ class FacadeSimplification:
         # that satisfy the condition <vector.hasAnglesForCurvedFeature()>
         curvyLengthThresh = curvyLengthFactor / numLowAngles *\
             sum(
-                vector.length for vector in building.polygon.getVectors()\
+                vector.length for vector in polygon.getVectors()\
                 if vector.hasAnglesForCurvedFeature()
             )
 
@@ -69,7 +72,7 @@ class FacadeSimplification:
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
         sequence = ''.join(
             'C' if vector.length<curvyLengthThresh and vector.hasAnglesForCurvedFeature() else '0' \
-            for vector in building.polygon.getVectors()
+            for vector in polygon.getVectors()
         )
 
         # a sequence of four or more 'C' matches as curvy sequence
@@ -77,17 +80,18 @@ class FacadeSimplification:
         matches = tuple(
             c for c in pattern.finditer(sequence+sequence) # adjacent sequence for circularity
         )
-        curvyFeatures = []
         if matches:
             N = len(sequence)
             for curvySeg in matches:
                 s = curvySeg.span()
                 if s[0] < N and s[0] >= 0:
-                    curvyFeatures.append(
-                        ( vectors[s[0]], vectors[(s[1]-1)%N], BldgPolygonFeature.curved )
+                    Feature(
+                        BldgPolygonFeature.curved,
+                        polygon.getVectorByIndex(s[0]), # start vector
+                        polygon.getVectorByIndex( (s[1]-1)%N ), # end vector
+                        False, # skip
+                        manager
                     )
-        
-        return curvyFeatures
 
     # Detects small patterns (rectangular and triangular).
     # Returns:
