@@ -3,6 +3,7 @@ import parse
 from parse.osm import Osm
 from defs.way import facadeVisibilityWayCategoriesSet, Category
 from defs.facade_classification import FacadeClass
+from defs.building import BldgPolygonFeature
 from math import atan2, pi
 
 
@@ -179,6 +180,66 @@ class BuildingClassificationRender(Renderer):
     @staticmethod
     def getLineWidth(edge):
         return 0.5 if edge.cl == FacadeClass.shared else 1.5
+
+
+class BuildingFeatureRender(Renderer):
+    
+    def __init__(self, showIDs):
+        super().__init__()
+        self.showIDs = showIDs
+
+    def render(self, building, data):
+        outline = building.outline
+        # render the outer footprint
+        self.renderBuildingFootprint(building)
+        # render holes for a multipolygon
+        if outline.t is parse.multipolygon:
+            for l in outline.ls:
+                if not l.role is Osm.outer:
+                    self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
+
+    def renderBuildingFootprint(self, building):
+        ax = self.mpl.ax
+        
+        ax.fill(
+            tuple(vector.v1[0] for vector in building.polygon.vectors),
+            tuple(vector.v1[1] for vector in building.polygon.vectors),
+            '#f5f5dc'
+        )
+
+        for vector in building.polygon.getVectors():
+            edge, v1, v2 = vector.edge, vector.v1, vector.v2
+            color = self.getFootprintEdgeColor(vector)
+            linewidth = self.getLineWidth(vector)
+            ax.plot(
+                (v1[0], v2[0]),
+                (v1[1], v2[1]),
+                linewidth = linewidth,
+                color = color
+            )
+            ax.plot(v1[0], v1[1], 'k.', markersize=2.)
+
+            if self.showIDs:
+                self.renderId(v1, v2, edge.id)
+
+    
+    @staticmethod
+    def getFootprintEdgeColor(vector):
+        featureId = vector.feature and vector.feature.featureId
+        return 'red' if featureId==BldgPolygonFeature.curved else ( 
+            'blue' if featureId==BldgPolygonFeature.rectangle else (
+                'green' if featureId==BldgPolygonFeature.triangle else 'black'
+            )
+        )
+   
+    @staticmethod
+    def getLineWidth(vector):
+        featureId = vector.feature and vector.feature.featureId
+        return 2. if featureId==BldgPolygonFeature.curved else ( 
+            2. if featureId==BldgPolygonFeature.rectangle else (
+                2. if featureId==BldgPolygonFeature.triangle else 0.5
+            ) 
+        )
 
 
 class WayVisibilityRenderer(WayRenderer):

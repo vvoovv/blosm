@@ -3,7 +3,7 @@ from defs.building import BldgPolygonFeature, curvyLengthFactor
 from building.feature import Feature
 
 
-class FacadeSimplification:
+class FeatureDetection:
 
     def __init__(self):
         pass

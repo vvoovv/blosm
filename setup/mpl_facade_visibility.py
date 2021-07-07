@@ -1,9 +1,11 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
 from building.manager import BaseBuildingManager
 from way.manager import WayManager
-from mpl.renderer.facade_classification import BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender
+from mpl.renderer.facade_classification import \
+    BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender, BuildingFeatureRender
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
+from action.feature_detection import FeatureDetection
 
 #from manager.logging import Logger
 
@@ -24,11 +26,15 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--sideFacadeColor", help="The color for a side facade", default="yellow")
     app.argParserExtra.add_argument("--showAssoc", action='store_true', help="Show the associations between way-segment and facade", default=False)
     app.argParserExtra.add_argument("--showIDs", action='store_true', help="Show the IDs of facades", default=False)
+    app.argParserExtra.add_argument("--detectFeatures", action='store_true', help="Detect features", default=False)
+    app.argParserExtra.add_argument("--showFeatures", action='store_true', help="Show detected features", default=False)
     # parse the newly added command line arguments
     app.parseArgs()
     classifyFacades = getattr(app, "classification", False)
     showAssoc = getattr(app, "showAssoc", False)
     showIDs = getattr(app, "showIDs", False)
+    detectFeatures = getattr(app, "detectFeatures", False)
+    showFeatures = getattr(app, "showFeatures", False)
     
     # create managers
     
@@ -51,9 +57,13 @@ def setup(app, osm):
         buildings = BaseBuildingManager(osm, app, None, None)
         buildings.setRenderer(
             BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc,showIDs=showIDs)\
-                if classifyFacades else\
-                BuildingVisibilityRender(showAssoc=showAssoc,showIDs=showIDs)
+                if classifyFacades else (\
+                    BuildingFeatureRender(showIDs=showIDs) if detectFeatures and showFeatures else\
+                        BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs)
+                )
         )
+        if detectFeatures:
+            buildings.addAction(FeatureDetection())
         buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())

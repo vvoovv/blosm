@@ -4,9 +4,9 @@ from math import sin, pi
 class BldgPolygonFeature:
     unclassified = 0
     straightAngle = 1
-    curved = 1
-    rectangle = 2
-    triangle = 3
+    curved = 2
+    rectangle = 3
+    triangle = 4
 
 
 sin_lo = abs(sin(pi/180.*5.))

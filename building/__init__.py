@@ -253,7 +253,7 @@ class BldgPolygon:
     
     def prepareVectorsByIndex(self):
         index = 0
-        for vector in self.vectors:
+        for vector in reversed(self.vectors) if self.reversed else self.vectors:
             if not vector.skip:
                 self.vectors[index].vectorByIndex = vector
                 index += 1
@@ -280,7 +280,7 @@ class BldgEdge:
         self.visInfo = VisibilityInfo()
         # a temporary visibility info
         self._visInfo = VisibilityInfo()
-        # instances of the class <BldgVector> shared by the edge are stored in <self.vectorss>
+        # instances of the class <BldgVector> shared by the edge are stored in <self.vectors>
         self.vectors = None
         # edge or facade class (front, side, back, shared)
         self.cl = 0

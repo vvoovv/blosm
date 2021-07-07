@@ -15,6 +15,7 @@ class Feature:
     def __init__(self, featureId, startVector, endVector, skip, manager):
         self.featureId = featureId
         self.active = True
+        
         # <startVector> will be used as a proxy vector for the feature
         self.startVector = startVector
         self.endVector = endVector
@@ -22,15 +23,6 @@ class Feature:
         # instance of <BldgEdge> replaced for <startVector>
         self.startEdge = startVector.edge
         self.startNextVector = startVector.next
-        
-        # get the new edge for <startVector> that is also used as a proxy vector for the feature
-        nodeId1 = startVector.id1
-        edge = startVector.edge = manager.getEdge(nodeId1, nextVector.id1)
-        # The condition below actually checks if we have the footprint
-        # for the whole building or a building part
-        if startVector.polygon.building:
-            edge.addVector(startVector)
-        startVector.direct = nodeId1 == edge.id1
         
         # the parent feature
         if startVector.feature:
@@ -49,9 +41,18 @@ class Feature:
         if skip:
             # <startVector> is also used as a proxy vector for the feature
             startVector.skip = False
+            # get the new edge for <startVector> that is also used as a proxy vector for the feature
+            nodeId1 = startVector.id1
+            edge = startVector.edge = manager.getEdge(nodeId1, nextVector.id1)
+            startVector.direct = nodeId1 == edge.id1
         
         nextVector.prev = startVector
         startVector.next = nextVector
+        
+        # The condition below actually checks if we have the footprint
+        # for the whole building or a building part
+        if startVector.polygon.building:
+            startVector.edge.addVector(startVector)
 
     def restoreVectors(self):
         """
