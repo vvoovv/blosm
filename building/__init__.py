@@ -103,8 +103,9 @@ class BldgPolygon:
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vec = vector.vector
             dot = vec_.dot(vec)
-            sin = vector.sin = vec_.cross(vec)
-            if dot and abs( sin/dot ) < Polygon.straightAngleTan:
+            cross = vec_.cross(vec)
+            vector.sin = cross/vec.length/vec_.length
+            if dot and abs( cross/dot ) < Polygon.straightAngleTan:
                 # got a straight angle
                 if len(manager.data.nodes[vector.id1].bldgs) == 1:
                     vector.straightAngle = NoSharedBldg

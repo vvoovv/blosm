@@ -77,9 +77,9 @@ class FeatureDetection:
 
         # a sequence of four or more 'C' matches as curvy sequence
         pattern = re.compile(r"(C){4,}")
-        matches = tuple(
+        matches = [
             c for c in pattern.finditer(sequence+sequence) # adjacent sequence for circularity
-        )
+        ]
         if matches:
             N = len(sequence)
             for curvySeg in matches:
