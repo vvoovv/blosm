@@ -4,29 +4,12 @@ from building.feature import Feature
 
 
 class FeatureDetection:
+    
+    # a sequence of four or more 'C' matches as curvy sequence
+    curvedFeaturePattern = re.compile(r"(C){4,}")
 
     def __init__(self):
-        pass
-
-    def replaceSequences(self, sequences, polygon):
-        if sequences:
-            for sequence in sequences:
-                vector1 = sequence[0]
-                vector2 = sequence[1]
-                cl = sequence[2]
-                head = vector1
-                head.edge.pattern = cl
-                cur = head.next
-                while cur is not vector2.next:
-                    cur.edge.pattern = cl
-                    cur = cur.next
-                # proxyEdge = BldgEdge(vector1.prev.edge.id1, vector1.prev.edge.v1, vector2.edge.id2, vector2.edge.v2)
-                # proxyVector = BldgVector(proxyEdge,True,polygon)
-                # proxyVector.prev = vector1.prev
-                # proxyVector.next = vector2.next
-                # vector1.prev.next = proxyVector
-                # vector2.next.prev = proxyVector 
-                # proxyEdge.addVector(proxyVector)   
+        pass 
 
     def do(self, manager):
 
@@ -44,15 +27,7 @@ class FeatureDetection:
             #smallFeatures = None
             #if (nLongEdges and nShortEdges > 2) or nShortEdges > 5:
             #    smallFeatures = self.detectsmallFeatures(vectorData,vectors)
-
-            #self.replaceSequences(curvedFeatures, polygon)
-            #self.replaceSequences(smallFeatures, polygon)
-
-    # Detects curvy sequences.
-    # Returns:
-    #   (firstEdge,lastEdge,featureClass) : Tuple of first edge of sequence and last edge of sequence and the feature class.
-    #                                       If firstEdge is lastEdge, the whole building polygon is a curvy sequence 
-    #   None                              : No curvy sequence found 
+    
     def detectCurvedFeatures (self, polygon, manager):
         numLowAngles = sum(
             1 for vector in polygon.getVectors() if vector.hasAnglesForCurvedFeature()
@@ -74,17 +49,17 @@ class FeatureDetection:
             'C' if vector.length<curvyLengthThresh and vector.hasAnglesForCurvedFeature() else '0' \
             for vector in polygon.getVectors()
         )
-
-        # a sequence of four or more 'C' matches as curvy sequence
-        pattern = re.compile(r"(C){4,}")
+        
         matches = [
-            c for c in pattern.finditer(sequence+sequence) # adjacent sequence for circularity
+            c for c in FeatureDetection.curvedFeaturePattern.finditer(
+                sequence+sequence # adjacent sequence for circularity
+            )
         ]
         if matches:
             N = len(sequence)
             for curvySeg in matches:
                 s = curvySeg.span()
-                if s[0] < N and s[0] >= 0:
+                if 0 <= s[0] < N:
                     Feature(
                         BldgPolygonFeature.curved,
                         polygon.getVectorByIndex(s[0]), # start vector

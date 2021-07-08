@@ -20,9 +20,6 @@ class Feature:
         self.startVector = startVector
         self.endVector = endVector
         nextVector = endVector.next
-        # instance of <BldgEdge> replaced for <startVector>
-        self.startEdge = startVector.edge
-        self.startNextVector = startVector.next
         
         # the parent feature
         if startVector.feature:
@@ -33,12 +30,17 @@ class Feature:
         self.child = None
         
         currentVector = startVector
-        while not currentVector is nextVector:
+        while True:
             currentVector.feature = self
             if skip:
                 currentVector.skip = True
             currentVector = currentVector.next
+            if currentVector is nextVector:
+                break
         if skip:
+            # instance of <BldgEdge> replaced for <startVector>
+            self.startEdge = startVector.edge
+            self.startNextVector = startVector.next
             # <startVector> is also used as a proxy vector for the feature
             startVector.skip = False
             # get the new edge for <startVector> that is also used as a proxy vector for the feature
@@ -46,8 +48,8 @@ class Feature:
             edge = startVector.edge = manager.getEdge(nodeId1, nextVector.id1)
             startVector.direct = nodeId1 == edge.id1
         
-        nextVector.prev = startVector
-        startVector.next = nextVector
+            nextVector.prev = startVector
+            startVector.next = nextVector
         
         # The condition below actually checks if we have the footprint
         # for the whole building or a building part
