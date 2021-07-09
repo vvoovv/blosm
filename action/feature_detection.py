@@ -1,13 +1,29 @@
 import re
-from defs.building import BldgPolygonFeature, curvyLengthFactor
+from defs.building import BldgPolygonFeature, curvyLengthFactor, lengthThreshold, \
+    sin_me, sin_hi
 from building.feature import Feature
 
 
 class FeatureDetection:
     
     # a sequence of four or more 'C' matches as curvy sequence
-    curvedFeaturePattern = re.compile(r"(C){4,}")
-
+    curvedPattern = re.compile(r"(C){4,}")
+    
+    # convex rectangular features
+    convexRectPattern = re.compile(r"(>[L|l]<)")
+    
+    # convex triangular features
+    # triangle = r">(>|<|l){1,}"
+    # left_triangle = r"(l<)" # special case for triangular part of rectangle
+    # convexTriPattern = re.compile(triangle + r"|" + left_triangle)
+    convexTriPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
+    
+    # concave rectangular features
+    concaveRectPattern = re.compile(r"([\-|<][R,r][\+|>])")
+    
+    # concave triangular features
+    concaveTriPattern = re.compile(r"<(>|<|r){1,}")
+    
     def __init__(self):
         pass 
 
@@ -20,20 +36,14 @@ class FeatureDetection:
 
             # detect curved features
             self.detectCurvedFeatures(polygon, manager)
-
-            # a primitive filter to avoid spiky edge detection for all buildings
-            #nLongEdges = np.where( vectorData[:,0]>=lengthThresh  )[0].shape[0]
-            #nShortEdges = np.where( vectorData[:,0]<lengthThresh )[0].shape[0]
-            #smallFeatures = None
-            #if (nLongEdges and nShortEdges > 2) or nShortEdges > 5:
-            #    smallFeatures = self.detectsmallFeatures(vectorData,vectors)
+            self.detectSmallFeatures(polygon, manager)
     
-    def detectCurvedFeatures (self, polygon, manager):
+    def detectCurvedFeatures(self, polygon, manager):
         numLowAngles = sum(
             1 for vector in polygon.getVectors() if vector.hasAnglesForCurvedFeature()
         )
         if not numLowAngles:
-            return None
+            return
 
         # Calculate a length threshold as a mean of the vector lengths among the vectors
         # that satisfy the condition <vector.hasAnglesForCurvedFeature()>
@@ -50,30 +60,21 @@ class FeatureDetection:
             for vector in polygon.getVectors()
         )
         
-        matches = [
-            c for c in FeatureDetection.curvedFeaturePattern.finditer(
-                sequence+sequence # adjacent sequence for circularity
-            )
-        ]
-        if matches:
-            N = len(sequence)
-            for curvySeg in matches:
-                s = curvySeg.span()
-                if 0 <= s[0] < N:
-                    Feature(
-                        BldgPolygonFeature.curved,
-                        polygon.getVectorByIndex(s[0]), # start vector
-                        polygon.getVectorByIndex( (s[1]-1)%N ), # end vector
-                        False, # skip
-                        manager
-                    )
-
-    # Detects small patterns (rectangular and triangular).
-    # Returns:
-    #   (firstEdge,lastEdge,patternClass) : Tuple of first edge of sequence and last edge of sequence and the pattern class.
-    #                                       If firstEdge is lastEdge, the whole building polygon is a curvy sequence 
-    #   None                              : No patterns found 
-    def detectsmallFeatures(self,vectorData,vectors):
+        sequenceLength = len(sequence)
+        sequence = sequence+sequence # allow cyclic pattern
+        
+        self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.curvedPattern,
+            BldgPolygonFeature.curved,
+            polygon, manager
+        )
+    
+    def detectSmallFeatures(self, polygon, manager):
+        """
+        Detects small patterns (rectangular and triangular).
+        """
+        
         # Long edges (>=lengthThresh):
         #       'L': sharp left at both ends
         #       'R': sharp right at both ends
@@ -84,68 +85,80 @@ class FeatureDetection:
         #       '>': alternate medium angle, starting to right
         #       '<': alternate medium angle, starting to left
         #       'o': other short edge
-        length = vectorData[:,0]
-        sineStart = vectorData[:,1]
-        sineEnd = vectorData[:,2]
+        
+        # a primitive filter to avoid spiky edge detection for all buildings
+        numLongEdges = sum(
+            1 for vector in polygon.getVectors() if vector.length >= lengthThreshold
+        )
+        numShortEdges = sum(
+            1 for vector in polygon.getVectors() if vector.length < lengthThreshold
+        )
+        if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
+            return
+        
+        sequence = ''.join(
+            (
+                'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
+                    'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else 'O'
+                )
+            ) \
+            if vector.length >= lengthThreshold else (
+                'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
+                    'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
+                        '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                            '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                        )
+                    )
+                )
+            ) \
+            for vector in polygon.getVectors()
+        )
 
-        sequence =  "".join(  np.where( (length>=lengthThresh), \
-                                ( np.where( ((sineStart>sin_hi) & (sineEnd>sin_hi)), 'L', \
-                                  np.where( ((sineStart<-sin_hi) & (sineEnd<-sin_hi)), 'R', 'O') )  \
-                                ), \
-                                ( np.where( ((sineStart>sin_me) & (sineEnd>sin_me)), 'l', \
-                                  np.where( ((sineStart<-sin_me) & (sineEnd<-sin_me)), 'r',  \
-                                  np.where( (sineStart<-sin_me)&(sineEnd>sin_me), '>', \
-                                  np.where( (sineStart>sin_me)&(sineEnd<-sin_me), '<', 'o') ) ) )\
-                                ) )
-                            )
-
-        N = len(sequence)
+        sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
-        smallFeatures = []
+        
+        self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.convexRectPattern,
+            BldgPolygonFeature.rectangle,
+            polygon, manager
+        )
+        sequence = re.sub(FeatureDetection.convexRectPattern, lambda m: '1' * len(m.group()), sequence)
 
-        # convex rectangular features
-        pattern = re.compile(r"(>[L|l]<)")
+        self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.convexTriPattern,
+            BldgPolygonFeature.triangle,
+            polygon, manager
+        )
+        sequence = re.sub(FeatureDetection.convexTriPattern, lambda m: '2' * len(m.group()), sequence)
+        
+        self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.concaveRectPattern,
+            BldgPolygonFeature.rectangle,
+            polygon, manager
+        )
+        sequence = re.sub(FeatureDetection.concaveRectPattern, lambda m: '3' * len(m.group()), sequence)
+        
+        self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.concaveTriPattern,
+            BldgPolygonFeature.triangle,
+            polygon, manager
+        )
+    
+    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
             for featureSeg in matches:
                 s = featureSeg.span()
-                if s[0] < N and s[0] >= 0:
-                    smallFeatures.append( ( vectors[s[0]], vectors[(s[1]-1)%N], FeatureClass.rectangular ) )
-        sequence = re.sub(pattern, lambda m: ('1' * len(m.group())), sequence)
-
-        # convex triangular features
-        triangle = r">(>|<|l){1,}"
-        left_triangle = r"(l<)" # special case for triangular part of rectangle
-        pattern = re.compile(triangle + r"|" + left_triangle)
-        matches = [r for r in pattern.finditer(sequence)]
-        if matches:
-            for featureSeg in matches:
-                s = featureSeg.span()
-                if s[0] < N and s[0] >= 0:
-                    smallFeatures.append( ( vectors[s[0]], vectors[(s[1]-1)%N], FeatureClass.triangular ) )
-        sequence = re.sub(pattern, lambda m: ('2' * len(m.group())), sequence)
-
-        # concave rectangular features
-        pattern = re.compile(r"([\-|<][R,r][\+|>])")
-        matches = [r for r in pattern.finditer(sequence)]
-        if matches:
-            for featureSeg in matches:
-                s = featureSeg.span()
-                if s[0] < N and s[0] >= 0:
-                    smallFeatures.append( ( vectors[s[0]], vectors[(s[1]-1)%N], FeatureClass.rectangular ) )
-        sequence = re.sub(pattern, lambda m: ('3' * len(m.group())), sequence)
-
-        # concave triangular features
-        pattern = re.compile(r"<(>|<|r){1,}")
-        matches = [r for r in pattern.finditer(sequence)]
-        if matches:
-            for featureSeg in matches:
-                s = featureSeg.span()
-                if s[0] < N and s[0] >= 0:
-                    smallFeatures.append( ( vectors[s[0]], vectors[(s[1]-1)%N], FeatureClass.triangular ) )
-        sequence = re.sub(pattern, lambda m: ('4' * len(m.group())), sequence)
-
-        if smallFeatures:
-            return smallFeatures
-        else:
-            return None
+                if 0 <= s[0] < sequenceLength:
+                    Feature(
+                        featureId,
+                        polygon.getVectorByIndex(s[0]), # start vector
+                        polygon.getVectorByIndex( (s[1]-1) % sequenceLength ), # end vector
+                        False, # skip
+                        manager
+                    )
+        
