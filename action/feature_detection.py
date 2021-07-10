@@ -1,6 +1,6 @@
 import re
 from defs.building import BldgPolygonFeature, curvyLengthFactor, lengthThreshold, \
-    sin_lo, sin_me, sin_hi
+    longFeatureFactor, sin_lo, sin_me, sin_hi
 from building.feature import Feature
 
 
@@ -85,7 +85,7 @@ class FeatureDetection:
         Detects small patterns (rectangular and triangular).
         """
         
-        # Long edges (>=lengthThresh):
+        # Long edges (>=lengthThresh and <maxLengthThreshold):
         #       'L': sharp left at both ends
         #       'R': sharp right at both ends
         #       'O': other long edge
@@ -105,12 +105,21 @@ class FeatureDetection:
         )
         if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
             return
-        
+
+        # estimate building dimension from axis parallel bounding box and compute 
+        # length limit <maxLengthThreshold> for long rectangular features
+        vertsX = [ vector.v1[0] for vector in polygon.getVectors() ]
+        vertsY = [ vector.v1[1] for vector in polygon.getVectors() ]
+        buildingDim = max( max(vertsX)-min(vertsX), max(vertsY)-min(vertsY) )
+        maxLengthThreshold = longFeatureFactor * buildingDim
+
         sequence = ''.join(
             (
-                'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
-                    'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else 'O'
-                )
+                (
+                    'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
+                        'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else 'O'
+                    )
+                ) if vector.length < maxLengthThreshold else 'O'
             ) \
             if vector.length >= lengthThreshold else (
                 'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
