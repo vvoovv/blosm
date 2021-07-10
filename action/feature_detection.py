@@ -1,13 +1,15 @@
 import re
 from defs.building import BldgPolygonFeature, curvyLengthFactor, lengthThreshold, \
-    sin_me, sin_hi
+    sin_lo, sin_me, sin_hi
 from building.feature import Feature
 
 
 class FeatureDetection:
     
-    # a sequence of four or more 'C' matches as curvy sequence
-    curvedPattern = re.compile(r"(C){4,}")
+    # a sequence of two or more 'C' matches as curvy sequence.
+    # possibly with ends 'S' (start) or 'E' (end)
+    # r"S?(C){2,}E?" : curvy sequence possibly with ends
+    curvedPattern = re.compile(r"S(C){2,}E")
     
     # convex rectangular features
     convexRectPattern = re.compile(r"(>[L|l]<)")
@@ -56,7 +58,15 @@ class FeatureDetection:
         # Feature character sequence: edges with angle between 5° and 30° on either end 
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
         sequence = ''.join(
-            'C' if vector.length<curvyLengthThresh and vector.hasAnglesForCurvedFeature() else '0' \
+            '0' if vector.length>curvyLengthThresh else ( \
+                'C' if vector.hasAnglesForCurvedFeature() else ( \
+                    'S' if (abs(vector.sin)>sin_me and abs(vector.next.sin)>sin_lo and \
+                            abs(vector.next.sin)<sin_me) else ( \
+                        'E' if abs(vector.sin)>sin_me and abs(vector.next.sin)>sin_lo and \
+                               abs(vector.next.sin)<sin_me else '0'
+                        )
+                    )
+                )
             for vector in polygon.getVectors()
         )
         

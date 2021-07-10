@@ -387,7 +387,7 @@ class BldgVector:
         """
         Checks if <self.edge> has an angle between 5° and 30° on either end of <self.edge>
         """
-        return ( abs(self.sin)>sin_lo and abs(self.sin)<sin_me ) or \
+        return ( abs(self.sin)>sin_lo and abs(self.sin)<sin_me ) and \
             ( abs(self.next.sin)>sin_lo and abs(self.next.sin)<sin_me )
     
     def markUsedNode(self, building, manager):
