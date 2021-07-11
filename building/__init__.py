@@ -21,7 +21,7 @@ import parse
 from mathutils import Vector
 from .feature import Feature
 from util.polygon import Polygon
-from defs.building import BldgPolygonFeature, sin_lo, sin_me
+from defs.building import BldgPolygonFeature
 from defs.facade_classification import WayLevel, VisibilityAngleFactor
 
 #
@@ -382,13 +382,6 @@ class BldgVector:
         if self.polygon.building:
             self.edge.addVector(self)
         self.direct = nodeId1 == self.edge.id1
-    
-    def hasAnglesForCurvedFeature(self):
-        """
-        Checks if <self.edge> has an angle between 5° and 30° on either end of <self.edge>
-        """
-        return ( abs(self.sin)>sin_lo and abs(self.sin)<sin_me ) and \
-            ( abs(self.next.sin)>sin_lo and abs(self.next.sin)<sin_me )
     
     def markUsedNode(self, building, manager):
         manager.data.nodes[self.id1].bldgs.append(building)

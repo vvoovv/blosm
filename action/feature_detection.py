@@ -4,12 +4,18 @@ from defs.building import BldgPolygonFeature, curvyLengthFactor, lengthThreshold
 from building.feature import Feature
 
 
+def hasAnglesForCurvedFeature(vector):
+    """
+    Checks if <vector.edge> has an angle between 5° and 30° on both ends of <vector.edge>
+    """
+    return sin_lo<abs(vector.sin)<sin_me and sin_lo<abs(vector.next.sin)<sin_me
+
+
 class FeatureDetection:
     
     # a sequence of two or more 'C' matches as curvy sequence.
     # possibly with ends 'S' (start) or 'E' (end)
-    # r"S?(C){2,}E?" : curvy sequence possibly with ends
-    curvedPattern = re.compile(r"S(C){2,}E")
+    curvedPattern = re.compile(r"S?(C){2,}E?")
     
     # convex rectangular features
     convexRectPattern = re.compile(r"(>[L|l]<)")
@@ -40,33 +46,31 @@ class FeatureDetection:
             self.detectCurvedFeatures(polygon, manager)
             self.detectSmallFeatures(polygon, manager)
     
-    def detectCurvedFeatures(self, polygon, manager):
+    def detectCurvedFeatures(self, polygon, manager):        
         numLowAngles = sum(
-            1 for vector in polygon.getVectors() if vector.hasAnglesForCurvedFeature()
+            1 for vector in polygon.getVectors() if hasAnglesForCurvedFeature(vector)
         )
         if not numLowAngles:
             return
 
         # Calculate a length threshold as a mean of the vector lengths among the vectors
-        # that satisfy the condition <vector.hasAnglesForCurvedFeature()>
+        # that satisfy the condition <hasAnglesForCurvedFeature(vector)>
         curvyLengthThresh = curvyLengthFactor / numLowAngles *\
             sum(
                 vector.length for vector in polygon.getVectors()\
-                if vector.hasAnglesForCurvedFeature()
+                if hasAnglesForCurvedFeature(vector)
             )
 
         # Feature character sequence: edges with angle between 5° and 30° on either end 
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
         sequence = ''.join(
             '0' if vector.length>curvyLengthThresh else ( \
-                'C' if vector.hasAnglesForCurvedFeature() else ( \
-                    'S' if (abs(vector.sin)>sin_me and abs(vector.next.sin)>sin_lo and \
-                            abs(vector.next.sin)<sin_me) else ( \
-                        'E' if abs(vector.sin)>sin_me and abs(vector.next.sin)>sin_lo and \
-                               abs(vector.next.sin)<sin_me else '0'
-                        )
+                'C' if hasAnglesForCurvedFeature(vector) else ( \
+                    'S' if abs(vector.sin)>sin_me and sin_lo<abs(vector.next.sin)<sin_me else ( \
+                        'E' if sin_lo<abs(vector.sin)<sin_me and abs(vector.next.sin)>sin_me else '0'
                     )
                 )
+            )
             for vector in polygon.getVectors()
         )
         
