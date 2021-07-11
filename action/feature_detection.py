@@ -109,13 +109,9 @@ class FeatureDetection:
         )
         if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
             return
-
-        # estimate building dimension from axis parallel bounding box and compute 
-        # length limit <maxLengthThreshold> for long rectangular features
-        vertsX = [ vector.v1[0] for vector in polygon.getVectors() ]
-        vertsY = [ vector.v1[1] for vector in polygon.getVectors() ]
-        buildingDim = max( max(vertsX)-min(vertsX), max(vertsY)-min(vertsY) )
-        maxLengthThreshold = longFeatureFactor * buildingDim
+        
+        # compute length limit <maxLengthThreshold> for long rectangular features
+        maxLengthThreshold = longFeatureFactor * polygon.dimension
 
         sequence = ''.join(
             (

@@ -261,6 +261,15 @@ class BldgPolygon:
     
     def getVectorByIndex(self, index):
         return self.vectors[index].vectorByIndex
+    
+    @property
+    def dimension(self):
+        """
+        Estimate building dimension from the bounding box parallel to the main axes X and Y
+        """
+        vertsX = [ vector.v1[0] for vector in self.getVectors() ]
+        vertsY = [ vector.v1[1] for vector in self.getVectors() ]
+        return max( max(vertsX)-min(vertsX), max(vertsY)-min(vertsY) )
 
 
 class BldgEdge:
