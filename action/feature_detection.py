@@ -136,38 +136,35 @@ class FeatureDetection:
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
         
-        self.matchPattern(
+        sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.convexRectPattern,
             BldgPolygonFeature.rectangle,
-            polygon, manager
+            polygon, manager, '1'
         )
-        sequence = re.sub(FeatureDetection.convexRectPattern, lambda m: '1' * len(m.group()), sequence)
 
-        self.matchPattern(
+        sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.convexTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager
+            polygon, manager, '2'
         )
-        sequence = re.sub(FeatureDetection.convexTriPattern, lambda m: '2' * len(m.group()), sequence)
         
-        self.matchPattern(
+        sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.concaveRectPattern,
             BldgPolygonFeature.rectangle,
-            polygon, manager
+            polygon, manager, '3'
         )
-        sequence = re.sub(FeatureDetection.concaveRectPattern, lambda m: '3' * len(m.group()), sequence)
         
-        self.matchPattern(
+        sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.concaveTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager
+            polygon, manager, '4'
         )
     
-    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager):
+    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  type_char):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
             for featureSeg in matches:
@@ -180,4 +177,8 @@ class FeatureDetection:
                         False, # skip
                         manager
                     )
+                    if s[1] >= sequenceLength:  # case of cyclic pattern
+                        sequence = "".join( (type_char*(s[1]-sequenceLength),sequence[(s[1]-sequenceLength):]) )
+            sequence = re.sub(pattern, lambda m: type_char * len(m.group()), sequence)
+        return sequence
         
