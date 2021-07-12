@@ -164,7 +164,7 @@ class FeatureDetection:
             polygon, manager, '4'
         )
     
-    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  type_char):
+    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  type_char='X'):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
             for featureSeg in matches:
