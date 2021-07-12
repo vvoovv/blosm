@@ -81,7 +81,7 @@ class FeatureDetection:
             sequence, sequenceLength,
             FeatureDetection.curvedPattern,
             BldgPolygonFeature.curved,
-            polygon, manager
+            polygon, manager, ''
         )
     
     def detectSmallFeatures(self, polygon, manager):
@@ -161,10 +161,10 @@ class FeatureDetection:
             sequence, sequenceLength,
             FeatureDetection.concaveTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager, '4'
+            polygon, manager, ''
         )
     
-    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  type_char='X'):
+    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  subChar):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
             for featureSeg in matches:
@@ -177,8 +177,8 @@ class FeatureDetection:
                         False, # skip
                         manager
                     )
-                    if s[1] >= sequenceLength:  # case of cyclic pattern
-                        sequence = "".join( (type_char*(s[1]-sequenceLength),sequence[(s[1]-sequenceLength):]) )
-            sequence = re.sub(pattern, lambda m: type_char * len(m.group()), sequence)
+                    if subChar and s[1] >= sequenceLength:  # case of cyclic pattern
+                        sequence = subChar*(s[1]-sequenceLength) + sequence[(s[1]-sequenceLength):]
+            if subChar:
+                sequence = re.sub(pattern, lambda m: subChar * len(m.group()), sequence)
         return sequence
-        
