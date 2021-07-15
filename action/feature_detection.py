@@ -66,8 +66,8 @@ class FeatureDetection:
         sequence = ''.join(
             '0' if vector.length>curvyLengthThresh else ( \
                 'C' if hasAnglesForCurvedFeature(vector) else ( \
-                    'S' if abs(vector.sin)>sin_me and sin_lo<abs(vector.next.sin)<sin_me else ( \
-                        'E' if sin_lo<abs(vector.sin)<sin_me and abs(vector.next.sin)>sin_me else '0'
+                    'S' if sin_lo<abs(vector.next.sin)<sin_me else ( \
+                        'E' if sin_lo<abs(vector.sin)<sin_me else '0'
                     )
                 )
             )
