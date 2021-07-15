@@ -15,7 +15,7 @@ class FeatureDetection:
     
     # a sequence of two or more 'C' matches as curvy sequence.
     # possibly with ends 'S' (start) or 'E' (end)
-    curvedPattern = re.compile(r"S?(C){2,}E?")
+    curvedPattern = re.compile(r"S?(C){3,}")
     
     # convex rectangular features
     convexRectPattern = re.compile(r"(>[L|l]<)")
@@ -65,10 +65,8 @@ class FeatureDetection:
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
         sequence = ''.join(
             '0' if vector.length>curvyLengthThresh else ( \
-                'C' if hasAnglesForCurvedFeature(vector) else ( \
-                    'S' if sin_lo<abs(vector.next.sin)<sin_me else ( \
-                        'E' if sin_lo<abs(vector.sin)<sin_me else '0'
-                    )
+                'C' if sin_lo<abs(vector.sin)<sin_me else ( \
+                    'S' if sin_lo<abs(vector.next.sin)<sin_me else '0'
                 )
             )
             for vector in polygon.getVectors()
