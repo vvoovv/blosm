@@ -228,7 +228,9 @@ class BuildingFeatureRender(Renderer):
         featureId = vector.feature and vector.feature.featureId
         return 'red' if featureId==BldgPolygonFeature.curved else ( 
             'blue' if featureId==BldgPolygonFeature.rectangle else (
-                'green' if featureId==BldgPolygonFeature.triangle else 'black'
+                'green' if featureId==BldgPolygonFeature.triangle else (
+                    'magenta' if featureId==BldgPolygonFeature.quadrangle else 'black'
+                )
             )
         )
    
@@ -237,7 +239,9 @@ class BuildingFeatureRender(Renderer):
         featureId = vector.feature and vector.feature.featureId
         return 2. if featureId==BldgPolygonFeature.curved else ( 
             2. if featureId==BldgPolygonFeature.rectangle else (
-                2. if featureId==BldgPolygonFeature.triangle else 0.5
+                2. if featureId==BldgPolygonFeature.triangle else (
+                    2. if featureId==BldgPolygonFeature.quadrangle else 0.5
+                )
             ) 
         )
 

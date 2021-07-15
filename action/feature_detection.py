@@ -20,17 +20,24 @@ class FeatureDetection:
     # convex rectangular features
     convexRectPattern = re.compile(r"(>[L|l]<)")
     
+    # convex quadrangle features
+    convexQuadPattern = re.compile(r"(>[L|l][L|R|O])|([L|R|O][L|l]<)")
+
+    # concave quadrangle features
+    concaveQuadPattern = re.compile(r"((<[R|r][L|R|O])|([L|R|O][R|r]>))")
+
     # convex triangular features
     # triangle = r">(>|<|l){1,}"
     # left_triangle = r"(l<)" # special case for triangular part of rectangle
     # convexTriPattern = re.compile(triangle + r"|" + left_triangle)
     convexTriPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
-    
+      
     # concave rectangular features
     concaveRectPattern = re.compile(r"([\-|<][R,r][\+|>])")
     
     # concave triangular features
     concaveTriPattern = re.compile(r"<(>|<|r){1,}")
+
     
     def __init__(self):
         pass 
@@ -71,7 +78,7 @@ class FeatureDetection:
             )
             for vector in polygon.getVectors()
         )
-        
+
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
         
@@ -143,16 +150,30 @@ class FeatureDetection:
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
+            FeatureDetection.convexQuadPattern,
+            BldgPolygonFeature.quadrangle,
+            polygon, manager, '2'
+        )
+
+        sequence = self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.concaveQuadPattern,
+            BldgPolygonFeature.quadrangle,
+            polygon, manager, '3'
+        )
+
+        sequence = self.matchPattern(
+            sequence, sequenceLength,
             FeatureDetection.convexTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager, '2'
+            polygon, manager, '4'
         )
         
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.concaveRectPattern,
             BldgPolygonFeature.rectangle,
-            polygon, manager, '3'
+            polygon, manager, '5'
         )
         
         sequence = self.matchPattern(
@@ -161,7 +182,7 @@ class FeatureDetection:
             BldgPolygonFeature.triangle,
             polygon, manager, ''
         )
-    
+   
     def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  subChar):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
