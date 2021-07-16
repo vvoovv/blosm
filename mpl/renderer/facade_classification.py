@@ -243,7 +243,7 @@ class BuildingFeatureRender(Renderer):
             2. if featureId==BldgPolygonFeature.rectangle else (
                 2. if featureId==BldgPolygonFeature.triangle else (
                     2. if featureId==BldgPolygonFeature.quadrangle else (
-                        8. if featureId==BldgPolygonFeature.complex else 0.5
+                        2. if featureId==BldgPolygonFeature.complex else 0.5
                     )
                 )
             ) 

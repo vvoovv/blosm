@@ -21,7 +21,7 @@ class FeatureDetection:
     convexRectPattern = re.compile(r"(>[L|l]<)")
 
     # convex complex features
-    convexComplexPattern = re.compile(r"([>|o]LLL[<|o])")
+    convexComplexPattern = re.compile(r"([>|+][L|l]{2,3}[<|=])")
     
     # convex quadrangle features
     convexQuadPattern = re.compile(r"(>[L|l][L|R|O])|([L|R|O][L|l]<)")
@@ -100,6 +100,8 @@ class FeatureDetection:
         # Long edges (>=lengthThresh and <maxLengthThreshold):
         #       'L': sharp left at both ends
         #       'R': sharp right at both ends
+        #       '+': alternate sharp angle, starting to right
+        #       '=': alternate sharp angle, starting to left
         #       'O': other long edge
         # Short edges:
         #       'l': medium left at both ends
@@ -125,7 +127,11 @@ class FeatureDetection:
             (
                 (
                     'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
-                        'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else 'O'
+                        'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else (
+                            '+' if ( vector.sin < -sin_hi and vector.next.sin > sin_hi ) else (
+                                '=' if (vector.sin > sin_hi and vector.next.sin < -sin_hi) else 'o'
+                            )
+                        )
                     )
                 ) if vector.length < maxLengthThreshold else 'O'
             ) \
