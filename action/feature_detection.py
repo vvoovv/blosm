@@ -24,11 +24,10 @@ class FeatureDetection:
     convexComplexPattern = re.compile(r"([>|+][L|l]{2,3}[<|=])")
     
     # convex quadrangle features
-    convexQuadPattern = re.compile(r"(>[L|l][L|R|O])|([L|R|O][L|l]<)")
+    convexQuadPattern = re.compile(r"(>[L|l][L|R|O|+|=])|([L|R|O|+|=][L|l]<)")
 
     # concave quadrangle features
-    concaveQuadPattern = re.compile(r"((<[R|r][L|R|O])|([L|R|O][R|r]>))")
-
+    concaveQuadPattern = re.compile(r"((<[R|r][L|R|O|+|=])|([L|R|O|+|=][R|r]>))")
     # convex triangular features
     # triangle = r">(>|<|l){1,}"
     # left_triangle = r"(l<)" # special case for triangular part of rectangle
@@ -84,7 +83,7 @@ class FeatureDetection:
 
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
-        
+
         self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.curvedPattern,
@@ -96,7 +95,7 @@ class FeatureDetection:
         """
         Detects small patterns (rectangular and triangular).
         """
-        
+
         # Long edges (>=lengthThresh and <maxLengthThreshold):
         #       'L': sharp left at both ends
         #       'R': sharp right at both ends
@@ -111,14 +110,14 @@ class FeatureDetection:
         #       'o': other short edge
         
         # a primitive filter to avoid spiky edge detection for all buildings
-        numLongEdges = sum(
-            1 for vector in polygon.getVectors() if vector.length >= lengthThreshold
-        )
-        numShortEdges = sum(
-            1 for vector in polygon.getVectors() if vector.length < lengthThreshold
-        )
-        if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
-            return
+        # numLongEdges = sum(
+        #     1 for vector in polygon.getVectors() if vector.length >= lengthThreshold
+        # )
+        # numShortEdges = sum(
+        #     1 for vector in polygon.getVectors() if vector.length < lengthThreshold
+        # )
+        # if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
+        #     return
         
         # compute length limit <maxLengthThreshold> for long rectangular features
         maxLengthThreshold = longFeatureFactor * polygon.dimension
@@ -198,7 +197,7 @@ class FeatureDetection:
             BldgPolygonFeature.triangle,
             polygon, manager, ''
         )
-   
+
     def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  subChar):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
