@@ -8,6 +8,7 @@ class BldgPolygonFeature:
     rectangle = 3
     triangle = 4
     quadrangle = 6
+    complex = 7
 
 
 sin_lo = abs(sin(pi/180.*4.5))

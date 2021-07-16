@@ -222,14 +222,16 @@ class BuildingFeatureRender(Renderer):
             if self.showIDs:
                 self.renderId(v1, v2, edge.id)
 
-    
+
     @staticmethod
     def getFootprintEdgeColor(vector):
         featureId = vector.feature and vector.feature.featureId
         return 'red' if featureId==BldgPolygonFeature.curved else ( 
             'blue' if featureId==BldgPolygonFeature.rectangle else (
                 'green' if featureId==BldgPolygonFeature.triangle else (
-                    'magenta' if featureId==BldgPolygonFeature.quadrangle else 'black'
+                    'magenta' if featureId==BldgPolygonFeature.quadrangle else (
+                        'cyan' if featureId==BldgPolygonFeature.complex else 'black'
+                    )
                 )
             )
         )
@@ -240,7 +242,9 @@ class BuildingFeatureRender(Renderer):
         return 2. if featureId==BldgPolygonFeature.curved else ( 
             2. if featureId==BldgPolygonFeature.rectangle else (
                 2. if featureId==BldgPolygonFeature.triangle else (
-                    2. if featureId==BldgPolygonFeature.quadrangle else 0.5
+                    2. if featureId==BldgPolygonFeature.quadrangle else (
+                        8. if featureId==BldgPolygonFeature.complex else 0.5
+                    )
                 )
             ) 
         )
