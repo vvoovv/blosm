@@ -33,7 +33,7 @@ class FeatureDetection:
     convexTriPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
       
     # concave rectangular features
-    concaveRectPattern = re.compile(r"([\-|<][R,r][\+|>])")
+    concaveRectPattern = re.compile(r"(<[R,r]>)")
     
     # concave triangular features
     concaveTriPattern = re.compile(r"<(>|<|r){1,}")
@@ -180,7 +180,7 @@ class FeatureDetection:
             sequence, sequenceLength,
             FeatureDetection.concaveTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager, ''
+            polygon, manager, '6'
         )
    
     def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  subChar):
