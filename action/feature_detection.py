@@ -24,10 +24,10 @@ class FeatureDetection:
     convexComplexPattern = re.compile(r"([>|+][L|l]{2,3}[<|=])")
     
     # convex quadrangle features
-    convexQuadPattern = re.compile(r"(>[L|l][L|R|O|+|=])|([L|R|O|+|=][L|l]<)")
+    convexQuadPattern = re.compile(r"(>[L|l][L|R|O|+|=|o])|([L|R|O|+|=|o][L|l]<)")
 
     # concave quadrangle features
-    concaveQuadPattern = re.compile(r"((<[R|r][L|R|O|+|=])|([L|R|O|+|=][R|r]>))")
+    concaveQuadPattern = re.compile(r"((<[R|r][L|R|O|+|=|o])|([L|R|O|+|=|o][R|r]>))")
     # convex triangular features
     # triangle = r">(>|<|l){1,}"
     # left_triangle = r"(l<)" # special case for triangular part of rectangle
