@@ -5,10 +5,9 @@ class BldgPolygonFeature:
     unclassified = 0
     straightAngle = 1
     curved = 2
-    rectangle = 3
-    triangle = 4
-    quadrangle = 6
-    complex = 7
+    triangle = 3
+    quadrangle = 4
+    complex = 5
 
 
 sin_lo = abs(sin(pi/180.*4.5))

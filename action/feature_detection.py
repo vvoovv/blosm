@@ -17,26 +17,21 @@ class FeatureDetection:
     # possibly with ends 'S' (start) or 'E' (end)
     curvedPattern = re.compile(r"S?(C){3,}")
     
-    # convex rectangular features
-    convexRectPattern = re.compile(r"(>[L|l]<)")
-
     # convex complex features
     convexComplexPattern = re.compile(r"([>|+][L|l]{2,3}[<|=])")
-    
+
     # convex quadrangle features
-    convexQuadPattern = re.compile(r"(>[L|l][L|R|O|+|=|o])|([L|R|O|+|=|o][L|l]<)")
+    convexQuadPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
 
     # concave quadrangle features
-    concaveQuadPattern = re.compile(r"((<[R|r][L|R|O|+|=|o])|([L|R|O|+|=|o][R|r]>))")
+    concaveQuadPattern = re.compile(r"((<[R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r]>))")
+
     # convex triangular features
     # triangle = r">(>|<|l){1,}"
     # left_triangle = r"(l<)" # special case for triangular part of rectangle
     # convexTriPattern = re.compile(triangle + r"|" + left_triangle)
     convexTriPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
       
-    # concave rectangular features
-    concaveRectPattern = re.compile(r"(<[R,r]>)")
-    
     # concave triangular features
     concaveTriPattern = re.compile(r"<(>|<|r){1,}")
 
@@ -158,37 +153,23 @@ class FeatureDetection:
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.convexRectPattern,
-            BldgPolygonFeature.rectangle,
-            polygon, manager, '2'
-        )
-
-        sequence = self.matchPattern(
-            sequence, sequenceLength,
             FeatureDetection.convexQuadPattern,
             BldgPolygonFeature.quadrangle,
-            polygon, manager, '3'
+            polygon, manager, '2'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.concaveQuadPattern,
             BldgPolygonFeature.quadrangle,
-            polygon, manager, '4'
+            polygon, manager, '3'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.convexTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager, '5'
-        )
-        
-        sequence = self.matchPattern(
-            sequence, sequenceLength,
-            FeatureDetection.concaveRectPattern,
-            BldgPolygonFeature.rectangle,
-            polygon, manager, '6'
+            polygon, manager, '4'
         )
         
         sequence = self.matchPattern(
