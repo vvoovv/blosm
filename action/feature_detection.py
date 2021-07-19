@@ -18,17 +18,17 @@ class FeatureDetection:
     curvedPattern = re.compile(r"S?(C){3,}")
     
     # convex complex features
-    convexComplexPattern = re.compile(r"([>|+][L|l]{2,3}[<|=])")
+    convexComplexPattern = re.compile(r"(>[L|l]{2,3}<)")
 
     # concave complex features
-    concaveComplexPattern = re.compile(r"([<|=][R|r]{2,3}[>|+])")
+    concaveComplexPattern = re.compile(r"(<[R|r]{2,3}>)")
 
     # convex quadrangle features
-    convexQuadPattern = re.compile(r"([>|+][L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l][<|=])")
+    convexQuadPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
     #convexQuadPattern = re.compile(r"([>|+][L|l][<|L|R|+|=|o])|([>|L|R|+|=|o][L|l][<|=])")  # exclude long ends
 
     # concave quadrangle features
-    concaveQuadPattern = re.compile(r"(([<|=][R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r][>|+]))")
+    concaveQuadPattern = re.compile(r"((<[R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r]>))")
     #concaveQuadPattern = re.compile(r"(([<|=][R|r][>|L|R|+|=|o])|([>|L|R|+|=|o][R|r][>|+]))")  # exclude long ends
 
     # convex triangular features
@@ -121,6 +121,7 @@ class FeatureDetection:
         
         longEdgeThreshold = longEdgeFactor * polygon.dimension
         midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 5.)
+        #print(midEdgeThreshold)
 
         sequence = ''.join(
             (

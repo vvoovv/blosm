@@ -15,4 +15,4 @@ sin_me = abs(sin(pi/180.*30))
 sin_hi = abs(sin(pi/180.*80))
 curvedLengthFactor = 2.
 longEdgeFactor = 0.3
-midEdgeFactor = 0.08
+midEdgeFactor = 0.1
