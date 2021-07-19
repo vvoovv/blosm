@@ -376,6 +376,10 @@ class BldgVector:
     def length(self):
         return self.edge.length
     
+    @property
+    def featureId(self):
+        return self.feature and self.feature.featureId
+    
     def skipNodes(self, nextVector, manager):
         """
         Skip nodes between <self> and <nextVector>

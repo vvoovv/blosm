@@ -52,8 +52,8 @@ class FeatureDetection:
             polygon.prepareVectorsByIndex()
 
             # detect curved features
-            curvySeq = self.detectCurvedFeatures(polygon, manager)
-            self.detectSmallFeatures(polygon, manager, curvySeq)
+            self.detectCurvedFeatures(polygon, manager)
+            self.detectSmallFeatures(polygon, manager)
     
     def detectCurvedFeatures(self, polygon, manager):        
         numLowAngles = sum(
@@ -88,12 +88,10 @@ class FeatureDetection:
             sequence, sequenceLength,
             FeatureDetection.curvedPattern,
             BldgPolygonFeature.curved,
-            polygon, manager, 'C'
+            polygon, manager, ''
         )
-
-        return sequence
     
-    def detectSmallFeatures(self, polygon, manager, curvySeq):
+    def detectSmallFeatures(self, polygon, manager):
         """
         Detects small patterns (rectangular and triangular).
         """
@@ -124,12 +122,10 @@ class FeatureDetection:
         # compute length limit <maxLengthThreshold> for long rectangular features
         maxLengthThreshold = longFeatureFactor * polygon.dimension
 
-        if not curvySeq:
-            curvySeq = ''.join( 'X' for i in range(polygon.numEdges) )
-
         sequence = ''.join(
             (
-                'X' if curvy=='C' else
+                # prevent interference of the detected curved segments with the small features
+                'X' if vector.featureId==BldgPolygonFeature.curved else
                 (
                     (
                         'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
@@ -151,7 +147,7 @@ class FeatureDetection:
                     )
                 )
             ) \
-            for curvy,vector in zip(curvySeq, polygon.getVectors())
+            for vector in polygon.getVectors()
         )
 
         sequenceLength = len(sequence)
