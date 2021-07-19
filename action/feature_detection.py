@@ -20,11 +20,16 @@ class FeatureDetection:
     # convex complex features
     convexComplexPattern = re.compile(r"([>|+][L|l]{2,3}[<|=])")
 
+    # concave complex features
+    concaveComplexPattern = re.compile(r"([<|=][R|r]{2,3}[>|+])")
+
     # convex quadrangle features
-    convexQuadPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
+    # convexQuadPattern = re.compile(r"([>|+][L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l][<|=])")
+    convexQuadPattern = re.compile(r"([>|+][L|l][<|L|R|+|=|o])|([>|L|R|+|=|o][L|l][<|=])")  # exclude long ends
 
     # concave quadrangle features
-    concaveQuadPattern = re.compile(r"((<[R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r]>))")
+    # concaveQuadPattern = re.compile(r"(([<|=][R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r][>|+]))")
+    concaveQuadPattern = re.compile(r"(([<|=][R|r][>|L|R|+|=|o])|([>|L|R|+|=|o][R|r][>|+]))")  # exclude long ends
 
     # convex triangular features
     # triangle = r">(>|<|l){1,}"
@@ -47,8 +52,8 @@ class FeatureDetection:
             polygon.prepareVectorsByIndex()
 
             # detect curved features
-            self.detectCurvedFeatures(polygon, manager)
-            self.detectSmallFeatures(polygon, manager)
+            curvySeq = self.detectCurvedFeatures(polygon, manager)
+            self.detectSmallFeatures(polygon, manager, curvySeq)
     
     def detectCurvedFeatures(self, polygon, manager):        
         numLowAngles = sum(
@@ -79,14 +84,16 @@ class FeatureDetection:
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
 
-        self.matchPattern(
+        sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.curvedPattern,
             BldgPolygonFeature.curved,
-            polygon, manager, ''
+            polygon, manager, 'C'
         )
+
+        return sequence
     
-    def detectSmallFeatures(self, polygon, manager):
+    def detectSmallFeatures(self, polygon, manager, curvySeq):
         """
         Detects small patterns (rectangular and triangular).
         """
@@ -117,28 +124,34 @@ class FeatureDetection:
         # compute length limit <maxLengthThreshold> for long rectangular features
         maxLengthThreshold = longFeatureFactor * polygon.dimension
 
+        if not curvySeq:
+            curvySeq = ''.join( 'X' for i in range(polygon.numEdges) )
+
         sequence = ''.join(
             (
+                'X' if curvy=='C' else
                 (
-                    'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
-                        'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else (
-                            '+' if ( vector.sin < -sin_hi and vector.next.sin > sin_hi ) else (
-                                '=' if (vector.sin > sin_hi and vector.next.sin < -sin_hi) else 'o'
+                    (
+                        'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
+                            'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else (
+                                '+' if ( vector.sin < -sin_hi and vector.next.sin > sin_hi ) else (
+                                    '=' if (vector.sin > sin_hi and vector.next.sin < -sin_hi) else 'o'
+                                )
                             )
                         )
-                    )
-                ) if vector.length < maxLengthThreshold else 'O'
-            ) \
-            if vector.length >= lengthThreshold else (
-                'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
-                    'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
-                        '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
-                            '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                    ) if vector.length < maxLengthThreshold else 'O'
+                ) \
+                if vector.length >= lengthThreshold else (
+                    'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
+                        'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
+                            '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                                '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                            )
                         )
                     )
                 )
             ) \
-            for vector in polygon.getVectors()
+            for curvy,vector in zip(curvySeq, polygon.getVectors())
         )
 
         sequenceLength = len(sequence)
@@ -160,16 +173,23 @@ class FeatureDetection:
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
+            FeatureDetection.concaveComplexPattern,
+            BldgPolygonFeature.complex,
+            polygon, manager, '3'
+        )
+
+        sequence = self.matchPattern(
+            sequence, sequenceLength,
             FeatureDetection.concaveQuadPattern,
             BldgPolygonFeature.quadrangle,
-            polygon, manager, '3'
+            polygon, manager, '4'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.convexTriPattern,
             BldgPolygonFeature.triangle,
-            polygon, manager, '4'
+            polygon, manager, '5'
         )
         
         sequence = self.matchPattern(
