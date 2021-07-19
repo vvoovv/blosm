@@ -47,7 +47,7 @@ class BuildingVisibilityRender(Renderer):
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
 
             if self.showIDs:
-                self.renderId(v1, v2, edge.id)
+                self.renderString(v1, v2, edge.id)
 
             if self.showAssoc:
                 # visalization of association between way-segment and edge
@@ -184,9 +184,10 @@ class BuildingClassificationRender(Renderer):
 
 class BuildingFeatureRender(Renderer):
     
-    def __init__(self, showIDs):
+    def __init__(self, showFeatureSymbols, showIDs):
         super().__init__()
         self.showIDs = showIDs
+        self.showFeatureSymbols = showFeatureSymbols
 
     def render(self, building, data):
         outline = building.outline
@@ -218,10 +219,11 @@ class BuildingFeatureRender(Renderer):
                 color = color
             )
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
-
-            if self.showIDs:
-                self.renderId(v1, v2, edge.id)
-
+            
+            if self.showFeatureSymbols:
+                self.renderString(v1, v2, getattr(vector, "featureSymbol"))
+            elif self.showIDs:
+                self.renderString(v1, v2, edge.id)
 
     @staticmethod
     def getFootprintEdgeColor(vector):
@@ -259,7 +261,7 @@ class WayVisibilityRenderer(WayRenderer):
     def renderWaySegment(self, segment):
         super().renderWaySegment(segment)
         if self.showIDs:
-            self.renderId(segment.v1, segment.v2, segment.id)
+            self.renderString(segment.v1, segment.v2, segment.id)
     
     def getLineWidth(self, waySegment):
         return 0.5 if waySegment.way.category == Category.service else super().getLineWidth(waySegment)

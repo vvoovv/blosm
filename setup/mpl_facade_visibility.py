@@ -28,6 +28,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--showIDs", action='store_true', help="Show the IDs of facades", default=False)
     app.argParserExtra.add_argument("--detectFeatures", action='store_true', help="Detect features", default=False)
     app.argParserExtra.add_argument("--showFeatures", action='store_true', help="Show detected features", default=False)
+    app.argParserExtra.add_argument("--showFeatureSymbols", action='store_true', help="Show a symbol for each unskipped polygon vector. The symbol is used for pattern matching", default=False)
     # parse the newly added command line arguments
     app.parseArgs()
     classifyFacades = getattr(app, "classification", False)
@@ -35,6 +36,7 @@ def setup(app, osm):
     showIDs = getattr(app, "showIDs", False)
     detectFeatures = getattr(app, "detectFeatures", False)
     showFeatures = getattr(app, "showFeatures", False)
+    showFeatureSymbols = getattr(app, "showFeatureSymbols", False)
     
     # create managers
     
@@ -58,7 +60,7 @@ def setup(app, osm):
         buildings.setRenderer(
             BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc,showIDs=showIDs)\
                 if classifyFacades else (\
-                    BuildingFeatureRender(showIDs=showIDs) if detectFeatures and showFeatures else\
+                    BuildingFeatureRender(showFeatureSymbols=showFeatureSymbols, showIDs=showIDs) if detectFeatures and showFeatures else\
                         BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs)
                 )
         )

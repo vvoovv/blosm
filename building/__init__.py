@@ -321,7 +321,8 @@ class BldgVector:
     
     __slots__ = (
         "edge", "direct", "prev", "next", "polygon",
-        "straightAngle", "feature", "skip", "sin", "vectorByIndex"
+        "straightAngle", "feature", "skip", "sin", "vectorByIndex",
+        "featureSymbol" # debug
     )
     
     def __init__(self, edge, direct, polygon):

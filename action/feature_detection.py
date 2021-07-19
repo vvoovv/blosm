@@ -149,6 +149,9 @@ class FeatureDetection:
             ) \
             for vector in polygon.getVectors()
         )
+        
+        # debug
+        self.debugSetFeatureSymbols(polygon, sequence)
 
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
@@ -213,3 +216,7 @@ class FeatureDetection:
             if subChar:
                 sequence = re.sub(pattern, lambda m: subChar * len(m.group()), sequence)
         return sequence
+    
+    def debugSetFeatureSymbols(self, polygon, sequence):
+        for vector,symbol in zip(polygon.getVectors(), sequence):
+            vector.featureSymbol = symbol

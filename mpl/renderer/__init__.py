@@ -7,8 +7,13 @@ class Renderer:
     def __init__(self):
         self.mpl = Mpl.getMpl()
     
-    def renderId(self, v1, v2, id):
-        self.mpl.ax.text((v1[0]+v2[0])/2., (v1[1]+v2[1])/2., ' '+str(id) )
+    def renderString(self, v1, v2, string):
+        if string:
+            self.mpl.ax.text(
+                (v1[0]+v2[0])/2.,
+                (v1[1]+v2[1])/2.,
+                ' '+str(string)
+            )
     
     def renderLineString(self, coords, closed, **style):
         prevCoord = coord0 = None
