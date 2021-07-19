@@ -221,7 +221,7 @@ class BuildingFeatureRender(Renderer):
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
             
             if self.showFeatureSymbols:
-                self.renderString(v1, v2, getattr(vector, "featureSymbol"))
+                self.renderString(v1, v2, str(getattr(vector, "featureSymbol")) + ' ' + str(round(vector.length, 2)))
             elif self.showIDs:
                 self.renderString(v1, v2, edge.id)
 

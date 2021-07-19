@@ -1,6 +1,6 @@
 import re
-from defs.building import BldgPolygonFeature, curvyLengthFactor, lengthThreshold, \
-    longFeatureFactor, sin_lo, sin_me, sin_hi
+from defs.building import BldgPolygonFeature, curvedLengthFactor, \
+    longEdgeFactor, midEdgeFactor, sin_lo, sin_me, sin_hi
 from building.feature import Feature
 
 
@@ -64,7 +64,7 @@ class FeatureDetection:
 
         # Calculate a length threshold as a mean of the vector lengths among the vectors
         # that satisfy the condition <hasAnglesForCurvedFeature(vector)>
-        curvyLengthThresh = curvyLengthFactor / numLowAngles *\
+        curvedLengthThreshold = curvedLengthFactor / numLowAngles *\
             sum(
                 vector.length for vector in polygon.getVectors()\
                 if hasAnglesForCurvedFeature(vector)
@@ -73,7 +73,7 @@ class FeatureDetection:
         # Feature character sequence: edges with angle between 5° and 30° on either end 
         # and a length below <curvyLengthThresh> get a 'C', else a '0'
         sequence = ''.join(
-            '0' if vector.length>curvyLengthThresh else ( \
+            '0' if vector.length>curvedLengthThreshold else ( \
                 'C' if sin_lo<abs(vector.sin)<sin_me else ( \
                     'S' if sin_lo<abs(vector.next.sin)<sin_me else '0'
                 )
@@ -119,8 +119,8 @@ class FeatureDetection:
         # if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
         #     return
         
-        # compute length limit <maxLengthThreshold> for long rectangular features
-        maxLengthThreshold = longFeatureFactor * polygon.dimension
+        longEdgeThreshold = longEdgeFactor * polygon.dimension
+        midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 5.)
 
         sequence = ''.join(
             (
@@ -135,9 +135,9 @@ class FeatureDetection:
                                 )
                             )
                         )
-                    ) if vector.length < maxLengthThreshold else 'O'
+                    ) if vector.length < longEdgeThreshold else 'O'
                 ) \
-                if vector.length >= lengthThreshold else (
+                if vector.length >= midEdgeThreshold else (
                     'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
                         'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
                             '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (

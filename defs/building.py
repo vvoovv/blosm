@@ -13,6 +13,6 @@ class BldgPolygonFeature:
 sin_lo = abs(sin(pi/180.*4.5))
 sin_me = abs(sin(pi/180.*30))
 sin_hi = abs(sin(pi/180.*80))
-curvyLengthFactor = 2.
-lengthThreshold = 5.
-longFeatureFactor = 0.3
+curvedLengthFactor = 2.
+longEdgeFactor = 0.3
+midEdgeFactor = 0.08
