@@ -120,8 +120,9 @@ class FeatureDetection:
         #     return
         
         longEdgeThreshold = longEdgeFactor * polygon.dimension
-        midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 5.)
-        #print(midEdgeThreshold)
+        midEdgeThreshold = midEdgeFactor * polygon.dimension
+        #print(midEdgeThreshold, longEdgeThreshold)
+        sin_hi = sin_me
 
         sequence = ''.join(
             (
