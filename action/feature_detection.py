@@ -1,6 +1,6 @@
 import re
 from defs.building import BldgPolygonFeature, curvedLengthFactor, \
-    longEdgeFactor, midEdgeFactor, sin_lo, sin_me, sin_hi
+    longEdgeFactor, midEdgeFactor, sin_lo, sin_me
 from building.feature import Feature
 
 
@@ -122,7 +122,6 @@ class FeatureDetection:
         longEdgeThreshold = longEdgeFactor * polygon.dimension
         midEdgeThreshold = midEdgeFactor * polygon.dimension
         #print(midEdgeThreshold, longEdgeThreshold)
-        sin_hi = sin_me
 
         sequence = ''.join(
             (
@@ -130,10 +129,10 @@ class FeatureDetection:
                 'X' if vector.featureId==BldgPolygonFeature.curved else
                 (
                     (
-                        'L' if ( vector.sin > sin_hi and vector.next.sin > sin_hi ) else (
-                            'R' if ( vector.sin < -sin_hi and vector.next.sin < -sin_hi ) else (
-                                '+' if ( vector.sin < -sin_hi and vector.next.sin > sin_hi ) else (
-                                    '=' if (vector.sin > sin_hi and vector.next.sin < -sin_hi) else 'o'
+                        'L' if ( vector.sin > sin_me and vector.next.sin > sin_me ) else (
+                            'R' if ( vector.sin < -sin_me and vector.next.sin < -sin_me ) else (
+                                '+' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                                    '=' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
                                 )
                             )
                         )
