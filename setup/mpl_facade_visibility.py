@@ -6,6 +6,7 @@ from mpl.renderer.facade_classification import \
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
+from action.polygon_simplification import PolygonSimplification
 
 #from manager.logging import Logger
 
@@ -29,14 +30,21 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--detectFeatures", action='store_true', help="Detect features", default=False)
     app.argParserExtra.add_argument("--showFeatures", action='store_true', help="Show detected features", default=False)
     app.argParserExtra.add_argument("--showFeatureSymbols", action='store_true', help="Show a symbol for each unskipped polygon vector. The symbol is used for pattern matching", default=False)
+    app.argParserExtra.add_argument("--simplifyPolygons", action='store_true', help="Simplify polygons with the detected features", default=False)
+    app.argParserExtra.add_argument("--showSimplifiedPolygons", action='store_true', help="Show simplified polygons", default=False)
+    
     # parse the newly added command line arguments
     app.parseArgs()
     classifyFacades = getattr(app, "classification", False)
     showAssoc = getattr(app, "showAssoc", False)
     showIDs = getattr(app, "showIDs", False)
-    detectFeatures = getattr(app, "detectFeatures", False)
+    
     showFeatures = getattr(app, "showFeatures", False)
+    detectFeatures = True if showFeatures else getattr(app, "detectFeatures", False)
     showFeatureSymbols = getattr(app, "showFeatureSymbols", False)
+    
+    showSimplifiedPolygons = getattr(app, "showSimplifiedPolygons", False)
+    simplifyPolygons = True if showSimplifiedPolygons else getattr(app, "simplifyPolygons", False)
     
     # create managers
     
@@ -60,12 +68,18 @@ def setup(app, osm):
         buildings.setRenderer(
             BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc,showIDs=showIDs)\
                 if classifyFacades else (\
-                    BuildingFeatureRender(showFeatureSymbols=showFeatureSymbols, showIDs=showIDs) if detectFeatures and showFeatures else\
+                    BuildingFeatureRender(
+                        showSimplifiedPolygons=showSimplifiedPolygons,
+                        showFeatureSymbols=showFeatureSymbols,
+                        showIDs=showIDs
+                    ) if detectFeatures and showFeatures else\
                         BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs)
                 )
         )
         if detectFeatures:
             buildings.addAction(FeatureDetection())
+            if simplifyPolygons:
+                buildings.addAction(PolygonSimplification())
         buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())

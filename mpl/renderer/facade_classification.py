@@ -184,10 +184,11 @@ class BuildingClassificationRender(Renderer):
 
 class BuildingFeatureRender(Renderer):
     
-    def __init__(self, showFeatureSymbols, showIDs):
+    def __init__(self, showSimplifiedPolygons, showFeatureSymbols, showIDs):
         super().__init__()
-        self.showIDs = showIDs
+        self.showSimplifiedPolygons = showSimplifiedPolygons
         self.showFeatureSymbols = showFeatureSymbols
+        self.showIDs = showIDs
 
     def render(self, building, data):
         outline = building.outline

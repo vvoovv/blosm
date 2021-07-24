@@ -1,7 +1,8 @@
 import re
 from defs.building import BldgPolygonFeature, curvedLengthFactor, \
     longEdgeFactor, midEdgeFactor, sin_lo, sin_me
-from building.feature import Feature
+from building.feature import Curved, ComplexConvex, QuadConvex, \
+    ComplexConcave, QuadConcave, TriConvex, TriConcave
 
 
 def hasAnglesForCurvedFeature(vector):
@@ -11,6 +12,16 @@ def hasAnglesForCurvedFeature(vector):
     return sin_lo<abs(vector.sin)<sin_me and sin_lo<abs(vector.next.sin)<sin_me
 
 
+def processCurvedFeature(feature, polygon):
+    if not polygon.curvedFeature:
+        polygon.curvedFeature = feature
+
+
+def processSmallFeature(feature, polygon):
+    if not polygon.smallFeature:
+        polygon.smallFeature = feature
+
+
 class FeatureDetection:
     
     # a sequence of two or more 'C' matches as curvy sequence.
@@ -18,27 +29,27 @@ class FeatureDetection:
     curvedPattern = re.compile(r"S?(C){3,}")
     
     # convex complex features
-    convexComplexPattern = re.compile(r"(>[L|l]{2,3}<)")
+    complexConvexPattern = re.compile(r"(>[L|l]{2,3}<)")
 
     # concave complex features
-    concaveComplexPattern = re.compile(r"(<[R|r]{2,3}>)")
+    complexConcavePattern = re.compile(r"(<[R|r]{2,3}>)")
 
     # convex quadrangle features
-    convexQuadPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
-    #convexQuadPattern = re.compile(r"([>|+][L|l][<|L|R|+|=|o])|([>|L|R|+|=|o][L|l][<|=])")  # exclude long ends
+    quadConvexPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
+    #quadConvexPattern = re.compile(r"([>|+][L|l][<|L|R|+|=|o])|([>|L|R|+|=|o][L|l][<|=])")  # exclude long ends
 
     # concave quadrangle features
-    concaveQuadPattern = re.compile(r"((<[R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r]>))")
-    #concaveQuadPattern = re.compile(r"(([<|=][R|r][>|L|R|+|=|o])|([>|L|R|+|=|o][R|r][>|+]))")  # exclude long ends
+    quadConcavePattern = re.compile(r"((<[R|r][>|L|R|O|+|=|o])|([>|L|R|O|+|=|o][R|r]>))")
+    #quadConcavePattern = re.compile(r"(([<|=][R|r][>|L|R|+|=|o])|([>|L|R|+|=|o][R|r][>|+]))")  # exclude long ends
 
     # convex triangular features
     # triangle = r">(>|<|l){1,}"
     # left_triangle = r"(l<)" # special case for triangular part of rectangle
-    # convexTriPattern = re.compile(triangle + r"|" + left_triangle)
-    convexTriPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
+    # triConvexPattern = re.compile(triangle + r"|" + left_triangle)
+    triConvexPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
       
     # concave triangular features
-    concaveTriPattern = re.compile(r"<(>|<|r){1,}")
+    triConcavePattern = re.compile(r"<(>|<|r){1,}")
 
     
     def __init__(self):
@@ -52,10 +63,10 @@ class FeatureDetection:
             polygon.prepareVectorsByIndex()
 
             # detect curved features
-            self.detectCurvedFeatures(polygon, manager)
-            self.detectSmallFeatures(polygon, manager)
+            self.detectCurvedFeatures(polygon)
+            self.detectSmallFeatures(polygon)
     
-    def detectCurvedFeatures(self, polygon, manager):        
+    def detectCurvedFeatures(self, polygon):        
         numLowAngles = sum(
             1 for vector in polygon.getVectors() if hasAnglesForCurvedFeature(vector)
         )
@@ -84,14 +95,14 @@ class FeatureDetection:
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
 
-        sequence = self.matchPattern(
+        self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.curvedPattern,
-            BldgPolygonFeature.curved,
-            polygon, manager, ''
+            Curved, processCurvedFeature,
+            polygon, ''
         )
     
-    def detectSmallFeatures(self, polygon, manager):
+    def detectSmallFeatures(self, polygon):
         """
         Detects small patterns (rectangular and triangular).
         """
@@ -159,59 +170,57 @@ class FeatureDetection:
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.convexComplexPattern,
-            BldgPolygonFeature.complex,
-            polygon, manager, '1'
+            FeatureDetection.complexConvexPattern,
+            ComplexConvex, processSmallFeature,
+            polygon, '1'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.convexQuadPattern,
-            BldgPolygonFeature.quadrangle,
-            polygon, manager, '2'
+            FeatureDetection.quadConvexPattern,
+            QuadConvex, processSmallFeature,
+            polygon, '2'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.concaveComplexPattern,
-            BldgPolygonFeature.complex,
-            polygon, manager, '3'
+            FeatureDetection.complexConcavePattern,
+            ComplexConcave, processSmallFeature,
+            polygon, '3'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.concaveQuadPattern,
-            BldgPolygonFeature.quadrangle,
-            polygon, manager, '4'
+            FeatureDetection.quadConcavePattern,
+            QuadConcave, processSmallFeature,
+            polygon, '4'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.convexTriPattern,
-            BldgPolygonFeature.triangle,
-            polygon, manager, '5'
+            FeatureDetection.triConvexPattern,
+            TriConvex, processSmallFeature,
+            polygon, '5'
         )
         
-        sequence = self.matchPattern(
+        self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.concaveTriPattern,
-            BldgPolygonFeature.triangle,
-            polygon, manager, ''
+            FeatureDetection.triConcavePattern,
+            TriConcave, processSmallFeature,
+            polygon, ''
         )
 
-    def matchPattern(self, sequence, sequenceLength, pattern, featureId, polygon, manager,  subChar):
+    def matchPattern(self, sequence, sequenceLength, pattern, featureConstructor, featureFunc, polygon, subChar):
         matches = [r for r in pattern.finditer(sequence)]
         if matches:
             for featureSeg in matches:
                 s = featureSeg.span()
                 if 0 <= s[0] < sequenceLength:
-                    Feature(
-                        featureId,
+                    feature = featureConstructor(
                         polygon.getVectorByIndex(s[0]), # start vector
-                        polygon.getVectorByIndex( (s[1]-1) % sequenceLength ), # end vector
-                        False, # skip
-                        manager
+                        polygon.getVectorByIndex( (s[1]-1) % sequenceLength ) # end vector
                     )
+                    featureFunc(feature, polygon)
                     if subChar and s[1] >= sequenceLength:  # case of cyclic pattern
                         sequence = subChar*(s[1]-sequenceLength) + sequence[(s[1]-sequenceLength):]
             if subChar:
