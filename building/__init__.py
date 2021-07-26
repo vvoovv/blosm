@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import parse
 from mathutils import Vector
-from .feature import StraightAngle
 from util.polygon import Polygon
 from defs.building import BldgPolygonFeature
 from defs.facade_classification import WayLevel, VisibilityAngleFactor
@@ -511,3 +510,6 @@ class VisibilityInfo:
         Currently unused.
         """
         return VisibilityAngleFactor*self.dx > self.dy
+
+
+from .feature import StraightAngle

@@ -2,6 +2,8 @@
 A module to define features for a instance of the class <BldgPolygon>
 """
 
+from mathutils import Vector
+from building import BldgEdge
 from defs.building import BldgPolygonFeature
 
 
@@ -129,23 +131,81 @@ class ComplexConvex(Feature):
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex, startVector, endVector)
 
+    def skipVectors(self, manager):
+        # don't skip it for now
+        pass
+
 
 class ComplexConcave(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex, startVector, endVector)
 
+    def skipVectors(self, manager):
+        # don't skip it for now
+        pass
+
 
 class QuadConvex(Feature):
     
+    __slots__ = ("middleVector", "endEdge")
+        
     def __init__(self, startVector, endVector):
+        self.middleVector = startVector.next
         super().__init__(BldgPolygonFeature.quadrangle, startVector, endVector)
+    
+    def markVectors(self):
+        self.startVector.feature = self.middleVector.feature = self.endVector.feature = self
+    
+    def skipVectors(self, manager):
+        # calculate the distance from <self.startVector.v1> and <self.endVector.v2> to <self.middleVector>
+        unitMiddleVector = self.middleVector.unitVector
+        startVector = self.startVector.vector
+        endVector = self.endVector.vector
+        normalToMiddle = Vector((unitMiddleVector[1], -unitMiddleVector[0]))
+        startDistance = abs(startVector.dot(normalToMiddle))
+        endDistance = abs(endVector.dot(normalToMiddle))
+        
+        self.middleVector.skip = True
+        if (endDistance - startDistance)/startDistance < 0.09:
+            self.endVector.skip = True
+            self._skipVectors(manager)
+        elif startDistance < endDistance:
+            newVert = self.endVector.v1 - endVector *\
+                startVector.cross(unitMiddleVector)/endVector.cross(unitMiddleVector)
+            
+            startVector = self.startVector
+            # instance of <BldgEdge> replaced for <startVector>
+            self.startEdge = startVector.edge
+            # replace the edge for <startVector>
+            startVector.edge = BldgEdge(startVector.id1, startVector.v1, '', newVert)
+            startVector.direct = True
+            
+            endVector = self.endVector
+            # instance of <BldgEdge> replaced for <endVector>
+            self.endEdge = endVector.edge
+            # replace the edge for <endVector>
+            endVector.edge = BldgEdge('', newVert, endVector.id2, endVector.v2)
+            startVector.direct = True
+            
+            startVector.next = endVector
+            endVector.prev = startVector
+            endVector.feature = None
+        else: # endDistance < startDistance
+            newVert = startVector.v2 + startVector *\
+                endVector.cross(unitMiddleVector)/startVector.cross(unitMiddleVector)
+            
+        
 
 
 class QuadConcave(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.quadrangle, startVector, endVector)
+    
+    def skipVectors(self, manager):
+        # don't skip it for now
+        pass
         
         
 class TriConvex(Feature):
@@ -158,3 +218,7 @@ class TriConcave(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.triangle, startVector, endVector)
+
+    def skipVectors(self, manager):
+        # don't skip it for now
+        pass
