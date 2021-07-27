@@ -10,8 +10,11 @@ class PolygonSimplification:
             if polygon.smallFeature:
                 currentVector = startVector = polygon.smallFeature.startVector
                 while True:
-                    if currentVector.feature and currentVector.feature.featureId != BldgPolygonFeature.curved:
-                        currentVector.feature.skipVectors(manager)
-                    currentVector = currentVector.next
+                    feature = currentVector.feature
+                    if feature and feature.featureId != BldgPolygonFeature.curved:
+                        feature.skipVectors(manager)
+                        currentVector = feature.endVector.next
+                    else:
+                        currentVector = currentVector.next
                     if currentVector is startVector:
                         break

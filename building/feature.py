@@ -166,13 +166,22 @@ class QuadConvex(Feature):
         startDistance = abs(startVector.dot(normalToMiddle))
         endDistance = abs(endVector.dot(normalToMiddle))
         
+        # the middle vector is skipped in any case
         self.middleVector.skip = True
-        if (endDistance - startDistance)/startDistance < 0.09:
+        if abs(endDistance - startDistance)/startDistance < 0.09:
             self.endVector.skip = True
             self._skipVectors(manager)
-        elif startDistance < endDistance:
-            newVert = self.endVector.v1 - endVector *\
-                startVector.cross(unitMiddleVector)/endVector.cross(unitMiddleVector)
+        else:
+            if startDistance < endDistance:
+                newVert = self.endVector.v1 - endVector *\
+                    startVector.cross(unitMiddleVector)/endVector.cross(unitMiddleVector)
+                
+                self.endVector.feature = None
+            else: # endDistance < startDistance
+                newVert = self.startVector.v2 + startVector *\
+                    endVector.cross(unitMiddleVector)/startVector.cross(unitMiddleVector)
+                
+                self.startVector.feature = None
             
             startVector = self.startVector
             # instance of <BldgEdge> replaced for <startVector>
@@ -190,12 +199,6 @@ class QuadConvex(Feature):
             
             startVector.next = endVector
             endVector.prev = startVector
-            endVector.feature = None
-        else: # endDistance < startDistance
-            newVert = startVector.v2 + startVector *\
-                endVector.cross(unitMiddleVector)/startVector.cross(unitMiddleVector)
-            
-        
 
 
 class QuadConcave(Feature):
