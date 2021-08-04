@@ -261,7 +261,7 @@ class FeatureDetection:
                 currentVector = currentVector.prev
             currentVector = startVector
         else:
-            prevNonStraightVector = currentVector.next
+            prevNonStraightVector = currentVector = currentVector.next
         startVector = prevNonStraightVector
         isPrevVectorStraight = False
         while True:
