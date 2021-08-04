@@ -20,20 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import parse
 from mathutils import Vector
 from util.polygon import Polygon
-from defs.building import BldgPolygonFeature
+from defs.building import BldgPolygonFeature, StraightAngleType
 from defs.facade_classification import WayLevel, VisibilityAngleFactor
-
-#
-# values for <BldgVector.straightAngle>
-#
-# A general case of the straight angle
-_StraightAngle = 1
-# A more specific case of the straight angle: both edges attached to a node in question
-# do not have a shared building
-_NoSharedBldg = 2
-# A more specific case of the straight angle: both edges attached to a node in question
-# do have a shared building and only one
-_SharedBldgBothEdges = 3
 
 
 class BldgPolygon:
@@ -107,38 +95,33 @@ class BldgPolygon:
         # <refVector> is used if <hasStraightAngle> to mark a vector without the straight angle
         refVector = None
         
-        vec_ = self.vectors[0 if self.reversed else -1].vector
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
-            vec = vector.vector
-            dot = vec_.dot(vec)
-            cross = vec_.cross(vec)
-            vector.sin = cross/vec.length/vec_.length
-            if dot and abs( cross/dot ) < Polygon.straightAngleTan:
+            vector.calculateSin()
+            if vector.hasStraightAngle:
                 # got a straight angle
                 if len(manager.data.nodes[vector.id1].bldgs) == 1:
-                    vector.straightAngle = _NoSharedBldg
-                    if hasStraightAngle != _NoSharedBldg:
-                        # The value <_NoSharedBldg> for <hasStraightAngle>
-                        # takes precedence over <_SharedBldgBothEdges>
-                        hasStraightAngle = _NoSharedBldg
+                    vector.straightAngle = StraightAngleType.noSharedBldg
+                    if hasStraightAngle != StraightAngleType.noSharedBldg:
+                        # The value <StraightAngleType.noSharedBldg> for <hasStraightAngle>
+                        # takes precedence over <StraightAngleType.sharedBldgBothEdges>
+                        hasStraightAngle = StraightAngleType.noSharedBldg
                 elif not hasStraightAngle:
-                    vector.straightAngle = _StraightAngle
-                    hasStraightAngle = _SharedBldgBothEdges
+                    vector.straightAngle = StraightAngleType.other
+                    hasStraightAngle = StraightAngleType.sharedBldgBothEdges
                 else:
-                    vector.straightAngle = _StraightAngle
+                    vector.straightAngle = StraightAngleType.other
             elif not refVector:
                 refVector = vector
-            vec_ = vec
         
         if hasStraightAngle:
             # Set a reference vector without the straight angle.
             # It also indicates that the polygon has at least one straight angle
             self.refVector = refVector
         
-        if hasStraightAngle == _NoSharedBldg:
+        if hasStraightAngle == StraightAngleType.noSharedBldg:
             # Skip only straight angles for the vectors with the value of the attribute <straightAngle>
-            # equal to <_NoSharedBldg>
-            self.skipStraightAngles(manager, _NoSharedBldg)
+            # equal to <StraightAngleType.noSharedBldg>
+            self.skipStraightAngles(manager, StraightAngleType.noSharedBldg)
     
     def processStraightAnglesBldgPart(self, manager):
         """
@@ -157,15 +140,15 @@ class BldgPolygon:
     def processStraightAnglesExtra(self, manager):
         if self.refVector:
             for vector in (reversed(self.vectors) if self.reversed else self.vectors):
-                if vector.straightAngle == _StraightAngle:
+                if vector.straightAngle == StraightAngleType.other:
                     # The condition <vector.neighbor.polygon is vector.prev.neighbor.polygon> means:
                     # check if the <vector> and its previous vector (<vector.prev>) share
                     # the same building polygon (BldgPolygon)
                     if vector.edge.hasSharedBldgVectors() and\
                             vector.prev.edge.hasSharedBldgVectors() and\
                             vector.neighbor.polygon is vector.prev.neighbor.polygon:
-                        vector.straightAngle = _SharedBldgBothEdges
-            self.skipStraightAngles(manager, _SharedBldgBothEdges)
+                        vector.straightAngle = StraightAngleType.sharedBldgBothEdges
+            self.skipStraightAngles(manager, StraightAngleType.sharedBldgBothEdges)
     
     def skipStraightAngles(self, manager, straightAngleValue):
         refVector = self.refVector
@@ -180,6 +163,7 @@ class BldgPolygon:
                     StraightAngle(
                         prevNonStraightVector,
                         vector.prev,
+                        straightAngleValue
                     ).skipVectors(manager)
                     isPrevVectorStraight = False
                 # remember the last vector with a non straight angle
@@ -190,7 +174,8 @@ class BldgPolygon:
                 if isPrevVectorStraight:
                     StraightAngle(
                         prevNonStraightVector,
-                        vector.prev
+                        vector.prev,
+                        straightAngleValue
                     ).skipVectors(manager)
                 break
     
@@ -383,6 +368,10 @@ class BldgVector:
     def featureId(self):
         return self.feature and self.feature.featureId
     
+    @property
+    def hasStraightAngle(self):
+        return abs(self.sin) < Polygon.straightAngleSin
+    
     def markUsedNode(self, building, manager):
         manager.data.nodes[self.id1].bldgs.append(building)
     
@@ -392,6 +381,9 @@ class BldgVector:
     
     def __gt__(self, other):
         return self.edge.length > other.edge.length
+    
+    def calculateSin(self):
+        self.sin = self.prev.unitVector.cross(self.unitVector)
 
 
 class Building:

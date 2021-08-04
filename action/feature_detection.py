@@ -1,8 +1,9 @@
 import re
 from defs.building import BldgPolygonFeature, curvedLengthFactor, \
     longEdgeFactor, midEdgeFactor, sin_lo, sin_me
-from building.feature import Curved, ComplexConvex, QuadConvex, \
+from building.feature import StraightAngle, Curved, ComplexConvex, QuadConvex, \
     ComplexConcave, QuadConcave, TriConvex, TriConcave
+from defs.building import StraightAngleType
 
 
 def hasAnglesForCurvedFeature(vector):
@@ -20,6 +21,22 @@ def processCurvedFeature(feature, polygon):
 def processSmallFeature(feature, polygon):
     if not polygon.smallFeature:
         polygon.smallFeature = feature
+
+
+def vectorHasStraightAngle(vector):
+    return \
+    (
+        vector.featureId==BldgPolygonFeature.quadrangle_convex and \
+        vector.feature.startSin and \
+        vector.hasStraightAngle
+    ) \
+    or \
+    (
+        vector.featureId!=BldgPolygonFeature.quadrangle_convex and \
+        vector.prev.featureId==BldgPolygonFeature.quadrangle_convex and \
+        vector.prev.feature.nextSin and \
+        vector.hasStraightAngle
+    )
 
 
 class FeatureDetection:
@@ -52,8 +69,8 @@ class FeatureDetection:
     triConcavePattern = re.compile(r"<(>|<|r){1,}")
 
     
-    def __init__(self):
-        pass 
+    def __init__(self, simplifyPolygons=True):
+        self.simplifyPolygons = simplifyPolygons
 
     def do(self, manager):
 
@@ -64,7 +81,14 @@ class FeatureDetection:
 
             # detect curved features
             self.detectCurvedFeatures(polygon)
-            self.detectSmallFeatures(polygon)
+            
+            midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 2.)
+            longEdgeThreshold = longEdgeFactor * polygon.dimension
+            sequence = self.getSequence(polygon, midEdgeThreshold, longEdgeThreshold)
+            
+            self.detectQuadrangularFeatures(polygon, sequence)
+            if self.simplifyPolygons and polygon.smallFeature:
+                self.skipQuadrangularFeatures(polygon, manager)
     
     def detectCurvedFeatures(self, polygon):        
         numLowAngles = sum(
@@ -102,65 +126,10 @@ class FeatureDetection:
             polygon, ''
         )
     
-    def detectSmallFeatures(self, polygon):
+    def detectQuadrangularFeatures(self, polygon, sequence):
         """
-        Detects small patterns (rectangular and triangular).
+        Detects quadrangular patterns (simple and complex ones).
         """
-
-        # Long edges (>=lengthThresh and <maxLengthThreshold):
-        #       'L': sharp left at both ends
-        #       'R': sharp right at both ends
-        #       '+': alternate sharp angle, starting to right
-        #       '=': alternate sharp angle, starting to left
-        #       'O': other long edge
-        # Short edges:
-        #       'l': medium left at both ends
-        #       'r': medium right at both ends
-        #       '>': alternate medium angle, starting to right
-        #       '<': alternate medium angle, starting to left
-        #       'o': other short edge
-        
-        # a primitive filter to avoid spiky edge detection for all buildings
-        # numLongEdges = sum(
-        #     1 for vector in polygon.getVectors() if vector.length >= lengthThreshold
-        # )
-        # numShortEdges = sum(
-        #     1 for vector in polygon.getVectors() if vector.length < lengthThreshold
-        # )
-        # if not ( (numLongEdges and numShortEdges > 2) or numShortEdges > 5 ):
-        #     return
-        
-        longEdgeThreshold = longEdgeFactor * polygon.dimension
-        midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 2.)
-        #print(midEdgeThreshold, longEdgeThreshold)
-
-        sequence = ''.join(
-            (
-                # prevent interference of the detected curved segments with the small features
-                'X' if vector.featureId==BldgPolygonFeature.curved else
-                (
-                    (
-                        'L' if ( vector.sin > sin_me and vector.next.sin > sin_me ) else (
-                            'R' if ( vector.sin < -sin_me and vector.next.sin < -sin_me ) else (
-                                '+' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
-                                    '=' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
-                                )
-                            )
-                        )
-                    ) if vector.length < longEdgeThreshold else 'O'
-                ) \
-                if vector.length >= midEdgeThreshold else (
-                    'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
-                        'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
-                            '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
-                                '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
-                            )
-                        )
-                    )
-                )
-            ) \
-            for vector in polygon.getVectors()
-        )
         
         # debug
         self.debugSetFeatureSymbols(polygon, sequence)
@@ -194,7 +163,7 @@ class FeatureDetection:
             FeatureDetection.quadConcavePattern,
             QuadConcave, processSmallFeature,
             polygon, '4'
-        )
+        )   
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
@@ -226,6 +195,101 @@ class FeatureDetection:
             if subChar:
                 sequence = re.sub(pattern, lambda m: subChar * len(m.group()), sequence)
         return sequence
+    
+    def getSequence(self, polygon, midEdgeThreshold, longEdgeThreshold):
+        # Long edges (>=lengthThresh and <maxLengthThreshold):
+        #       'L': sharp left at both ends
+        #       'R': sharp right at both ends
+        #       '+': alternate sharp angle, starting to right
+        #       '=': alternate sharp angle, starting to left
+        #       'O': other long edge
+        # Short edges:
+        #       'l': medium left at both ends
+        #       'r': medium right at both ends
+        #       '>': alternate medium angle, starting to right
+        #       '<': alternate medium angle, starting to left
+        #       'o': other short edge
+        return ''.join(
+            (
+                # prevent interference of the detected curved segments with the small features
+                'X' if vector.featureId==BldgPolygonFeature.curved else
+                (
+                    (
+                        'L' if ( vector.sin > sin_me and vector.next.sin > sin_me ) else (
+                            'R' if ( vector.sin < -sin_me and vector.next.sin < -sin_me ) else (
+                                '+' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                                    '=' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                                )
+                            )
+                        )
+                    ) if vector.length < longEdgeThreshold else 'O'
+                ) \
+                if vector.length >= midEdgeThreshold else (
+                    'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
+                        'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
+                            '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                                '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                            )
+                        )
+                    )
+                )
+            ) \
+            for vector in polygon.getVectors()
+        )
+    
+    def skipQuadrangularFeatures(self, polygon, manager):
+        currentVector = startVector = polygon.smallFeature.startVector
+        while True:
+            feature = currentVector.feature
+            if feature and feature.featureId == BldgPolygonFeature.quadrangle_convex:
+                feature.skipVectors(manager) 
+                currentVector = feature.endVector.next
+            else:
+                currentVector = currentVector.next
+            if currentVector is startVector:
+                break
+        
+        # find <prevNonStraightVector>
+        if currentVector.featureId == BldgPolygonFeature.quadrangle_convex:
+            startVector = currentVector
+            while True:
+                feature = currentVector.feature
+                if not vectorHasStraightAngle(currentVector):
+                    prevNonStraightVector = currentVector
+                    break
+                polygon.numEdges -= 1
+                currentVector = currentVector.prev
+            currentVector = startVector
+        else:
+            prevNonStraightVector = currentVector.next
+        startVector = prevNonStraightVector
+        isPrevVectorStraight = False
+        while True:
+            # conditions for a straight angle
+            if vectorHasStraightAngle(currentVector):
+                    polygon.numEdges -= 1
+                    isPrevVectorStraight = True
+            else:
+                if isPrevVectorStraight:
+                    StraightAngle(
+                        prevNonStraightVector,
+                        currentVector.prev,
+                        StraightAngleType.smallFeatureSkipped
+                    ).skipVectors(manager)
+                    isPrevVectorStraight = False
+                # remember the last vector with a non straight angle
+                prevNonStraightVector = currentVector
+                
+            currentVector = currentVector.next
+            if currentVector is startVector:
+                if isPrevVectorStraight:
+                    StraightAngle(
+                        prevNonStraightVector,
+                        currentVector.prev,
+                        StraightAngleType.smallFeatureSkipped
+                    ).skipVectors(manager)
+                break
+        
     
     def debugSetFeatureSymbols(self, polygon, sequence):
         for vector,symbol in zip(polygon.getVectors(), sequence):

@@ -49,7 +49,7 @@ class BaseApp:
         self.layerKwargs = {}
         
         # tangent to check if an angle of the polygon is straight
-        Polygon.straightAngleTan = math.tan(math.radians( abs(180.-self.straightAngleThreshold) ))
+        Polygon.straightAngleSin = math.sin(math.radians( abs(180.-self.straightAngleThreshold) ))
     
     def download(self, url, filepath, data=None):
         print("Downloading the file from %s..." % url)

@@ -6,7 +6,6 @@ from mpl.renderer.facade_classification import \
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
-from action.polygon_simplification import PolygonSimplification
 
 #from manager.logging import Logger
 
@@ -77,9 +76,7 @@ def setup(app, osm):
                 )
         )
         if detectFeatures:
-            buildings.addAction(FeatureDetection())
-            if simplifyPolygons:
-                buildings.addAction(PolygonSimplification())
+            buildings.addAction(FeatureDetection(simplifyPolygons))
         buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())

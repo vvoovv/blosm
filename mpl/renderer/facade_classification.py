@@ -235,9 +235,9 @@ class BuildingFeatureRender(Renderer):
     def getFootprintEdgeColor(vector):
         featureId = vector.featureId
         return 'red' if featureId==BldgPolygonFeature.curved else ( 
-            'blue' if featureId==BldgPolygonFeature.quadrangle else (
-                'green' if featureId==BldgPolygonFeature.triangle else (
-                    'cyan' if featureId==BldgPolygonFeature.complex else 'black'
+            'blue' if featureId in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
+                'green' if featureId in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
+                    'cyan' if featureId in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 'black'
                 )
             )
         )
@@ -246,9 +246,9 @@ class BuildingFeatureRender(Renderer):
     def getLineWidth(vector):
         featureId = vector.featureId
         return 2. if featureId==BldgPolygonFeature.curved else ( 
-            2. if featureId==BldgPolygonFeature.quadrangle else (
-                2. if featureId==BldgPolygonFeature.triangle else (
-                    2. if featureId==BldgPolygonFeature.complex else 0.5
+            2. if featureId in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
+                2. if featureId in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
+                    2. if featureId in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 0.5
                 )
             ) 
         )
