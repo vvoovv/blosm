@@ -193,12 +193,16 @@ class BuildingFeatureRender(Renderer):
     def render(self, building, data):
         outline = building.outline
         # render the outer footprint
-        self.renderBuildingFootprint(building)
+        #self.renderBuildingFootprint(building)
         # render holes for a multipolygon
         if outline.t is parse.multipolygon:
             for l in outline.ls:
                 if not l.role is Osm.outer:
                     self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
+        
+        building.polygon.unskipFeatures()
+        # render the polygon with the restored features
+        self.renderBuildingFootprint(building)
 
     def renderBuildingFootprint(self, building):
         ax = self.mpl.ax

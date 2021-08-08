@@ -257,6 +257,23 @@ class BldgPolygon:
         vertsX = [ vector.v1[0] for vector in self.getVectors() ]
         vertsY = [ vector.v1[1] for vector in self.getVectors() ]
         return max( max(vertsX)-min(vertsX), max(vertsY)-min(vertsY) )
+    
+    def unskipFeatures(self):
+        # straight angle (type is <smallFeatureSkipped>)
+        self._unskipFeatures()
+        # quadrangular features
+        self._unskipFeatures()
+    
+    def _unskipFeatures(self):
+        nextVector = None
+        for vector in self.getVectors():
+            if nextVector and not vector is nextVector:
+                continue
+            if vector.feature and vector.feature.isUnskippable():
+                nextVector = vector.next
+                vector.feature.unskipVectors()
+            elif nextVector:
+                nextVector = None
 
 
 class BldgEdge:
@@ -384,6 +401,9 @@ class BldgVector:
     
     def calculateSin(self):
         self.sin = self.prev.unitVector.cross(self.unitVector)
+    
+    def setDirect(self):
+        self.direct = self.id1==self.edge.id1
 
 
 class Building:

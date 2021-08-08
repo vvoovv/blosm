@@ -11,7 +11,7 @@ class Feature:
     
     __slots__ = (
         "featureId", "active", "startVector", "endVector", "startEdge",
-        "startNextVector", "parent", "child", "numVectors",
+        "startNextVector", "parent", "numVectors",
         "startSin", "nextSin"
     )
     
@@ -23,19 +23,18 @@ class Feature:
         self.startVector = startVector
         self.endVector = endVector
         
-        # the parent feature
-        if startVector.feature:
-            self.parent = startVector.feature
-            startVector.feature.child = self
-        else:
-            self.parent = None
-        self.child = None
-        
         self.startSin = self.nextSin = None
         
+        self.setParentFeature()
         self.markVectors()
-        
+    
+    def setParentFeature(self):
+        self.parent = self.startVector.feature
+    
     def markVectors(self):
+        self.startVector.feature = self
+    
+    def markVectorsAll(self):
         currentVector = self.startVector
         while True:
             currentVector.feature = self
@@ -78,16 +77,32 @@ class Feature:
             # we have just created a new edge, so we have to add the related vector to the edge
             startVector.edge.addVector(startVector)
     
-    def restoreVectors(self):
+    def isUnskippable(self):
+        return True
+    
+    def unskipVectors(self):
+        self._unskipVectors()
+        
+        currentVector = self.startVector
+        currentVector.feature = self.parent
+        
+        while True:
+            currentVector.skip = False
+            if currentVector is self.endVector:
+                break
+            currentVector = currentVector.next
+    
+    def _unskipVectors(self):
         """
         Restore the vectors that form the feature
         """
-        proxyVector = self.proxyVector
-        proxyVector.next.prev = self.endVector
-        proxyVector.next = self.startNextVector
-        proxyVector.edge = self.startEdge
+        startVector = self.startVector
+        startVector.next.prev = self.endVector
+        startVector.next = self.startNextVector
+        startVector.edge = self.startEdge
         # deactivate the feature
         self.active = False
+
 
 
 class StraightAngle(Feature):
@@ -97,11 +112,11 @@ class StraightAngle(Feature):
         self.twoVectors = startVector is endVector
         super().__init__(BldgPolygonFeature.straightAngle, startVector, endVector)
 
-    def markVectors(self):
+    def markVectorsAll(self):
         if self.twoVectors:
             self.startVector.feature = self.endVector.feature = self
         else:
-            super().markVectors()
+            super().markVectorsAll()
     
     def skipVectors(self, manager):
         if self.twoVectors:
@@ -122,6 +137,10 @@ class StraightAngle(Feature):
         nextVector = endVector.next
         nextVector.prev = self.startVector
         self.startVector.next = nextVector
+    
+    def isUnskippable(self):
+        return self.type == StraightAngleType.smallFeatureSkipped
+
 
 class NoSharedBldg:
     """
@@ -169,11 +188,32 @@ class ComplexConcave(Feature):
 
 class QuadConvex(Feature):
     
-    __slots__ = ("middleVector", "endEdge")
+    __slots__ = ("middleVector", "endEdge", "corner", "leftCorner", "newVert", "endSin")
         
     def __init__(self, startVector, endVector):
         self.middleVector = startVector.next
+        
+        # check if we have a corner feature
+        unitMiddleVector = self.middleVector.unitVector
+        _startVector = startVector.vector
+        _endVector = endVector.vector
+        normalToMiddle = Vector((unitMiddleVector[1], -unitMiddleVector[0]))
+        startDistance = abs(_startVector.dot(normalToMiddle))
+        endDistance = abs(_endVector.dot(normalToMiddle))
+        
+        self.corner = abs(endDistance - startDistance)/startDistance >= 0.09
+        if self.corner:
+            # Is the quandrangle located on the left corner of the polygon edge?
+            self.leftCorner = startDistance < endDistance
+            self.newVert = endVector.v1 - _endVector * _startVector.cross(unitMiddleVector)/_endVector.cross(unitMiddleVector) \
+                if self.leftCorner else \
+                startVector.v2 + _startVector * _endVector.cross(unitMiddleVector)/_startVector.cross(unitMiddleVector)
+        
         super().__init__(BldgPolygonFeature.quadrangle_convex, startVector, endVector)
+    
+    def setParentFeature(self):
+        if self.corner and not self.leftCorner:
+            self.parent = self.endVector.feature
     
     def markVectors(self):
         self.startVector.feature = self.middleVector.feature = self.endVector.feature = self
@@ -182,17 +222,41 @@ class QuadConvex(Feature):
         # calculate the distance from <self.startVector.v1> and <self.endVector.v2> to <self.middleVector>
         startVector = self.startVector
         endVector = self.endVector
-        unitMiddleVector = self.middleVector.unitVector
-        _startVector = startVector.vector
-        _endVector = endVector.vector
-        normalToMiddle = Vector((unitMiddleVector[1], -unitMiddleVector[0]))
-        startDistance = abs(_startVector.dot(normalToMiddle))
-        endDistance = abs(_endVector.dot(normalToMiddle))
         
         # the middle vector is skipped in any case
         self.middleVector.skip = True
         
-        if abs(endDistance - startDistance)/startDistance < 0.09:
+        if self.corner:
+            if self.leftCorner:
+                self.startSin = startVector.sin
+                endVector.feature = None
+            else: # endDistance < startDistance # the right corner of the polygon edge
+                nextVector = endVector.next
+                self.nextSin = nextVector.sin
+                
+                startVector.feature = None
+                self.endSin = endVector.sin
+                endVector.sin = self.middleVector.sin
+            # instance of <BldgEdge> replaced for <startVector>
+            self.startEdge = startVector.edge
+            # replace the edge for <startVector>
+            startVector.edge = BldgEdge(startVector.id1, startVector.v1, '', self.newVert)
+            startVector.direct = True
+            
+            # instance of <BldgEdge> replaced for <endVector>
+            self.endEdge = endVector.edge
+            # replace the edge for <endVector>
+            endVector.edge = BldgEdge('', self.newVert, endVector.id2, endVector.v2)
+            endVector.direct = True
+            
+            startVector.next = endVector
+            endVector.prev = startVector
+            
+            if self.leftCorner:
+                startVector.calculateSin()
+            else:
+                nextVector.calculateSin()
+        else:
             nextVector = endVector.next
             self.startSin = startVector.sin
             self.nextSin = nextVector.sin
@@ -202,44 +266,35 @@ class QuadConvex(Feature):
             
             startVector.calculateSin()
             nextVector.calculateSin()
-        else:
-            # Is the quandrangle located on the left corner of the polygon edge?
-            leftCorner = startDistance < endDistance
-            if leftCorner:
-                self.startSin = startVector.sin
-                
-                newVert = endVector.v1 - _endVector *\
-                    _startVector.cross(unitMiddleVector)/_endVector.cross(unitMiddleVector)
-                
-                endVector.feature = None
+    
+    def unskipVectors(self):
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        self.middleVector.skip = False
+        if self.corner:
+            if self.leftCorner:
+                startVector.sin = self.startSin
+                endVector.feature = self
             else: # endDistance < startDistance # the right corner of the polygon edge
-                nextVector = endVector.next
-                self.nextSin = nextVector.sin
+                endVector.next.sin = self.nextSin
                 
-                newVert = startVector.v2 + _startVector *\
-                    _endVector.cross(unitMiddleVector)/_startVector.cross(unitMiddleVector)
-                
-                startVector.feature = None
-                endVector.sin = self.middleVector.sin
-            # instance of <BldgEdge> replaced for <startVector>
-            self.startEdge = startVector.edge
-            # replace the edge for <startVector>
-            startVector.edge = BldgEdge(startVector.id1, startVector.v1, '', newVert)
-            startVector.direct = True
+                startVector.feature = self
+                endVector.sin = self.endSin
+            startVector.edge = self.startEdge
+            startVector.setDirect()
             
-            # instance of <BldgEdge> replaced for <endVector>
-            self.endEdge = endVector.edge
-            # replace the edge for <endVector>
-            endVector.edge = BldgEdge('', newVert, endVector.id2, endVector.v2)
-            endVector.direct = True
+            endVector.edge = self.endEdge
+            endVector.setDirect()
             
-            startVector.next = endVector
-            endVector.prev = startVector
+            startVector.next = self.middleVector
+            endVector.prev = self.middleVector
+        else:
+            startVector.sin = self.startSin
+            endVector.next.sin = self.nextSin
             
-            if leftCorner:
-                startVector.calculateSin()
-            else:
-                nextVector.calculateSin()
+            endVector.skip = False
+            self._unskipVectors()
 
 
 class QuadConcave(Feature):
