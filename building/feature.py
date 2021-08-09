@@ -184,6 +184,10 @@ class ComplexConcave(Feature):
     def skipVectors(self, manager):
         # don't skip it for now
         pass
+    
+    def unskipVectors(self):
+        # do nothing for now
+        pass
 
 
 class QuadConvex(Feature):
@@ -303,12 +307,24 @@ class QuadConcave(Feature):
     def skipVectors(self, manager):
         # don't skip it for now
         pass
+    
+    def unskipVectors(self):
+        # do nothing for now
+        pass
         
         
 class TriConvex(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.triangle_convex, startVector, endVector)
+
+    def skipVectors(self, manager):
+        # don't skip it for now
+        pass
+    
+    def unskipVectors(self):
+        # do nothing for now
+        pass
 
 
 class TriConcave(Feature):
@@ -318,4 +334,8 @@ class TriConcave(Feature):
 
     def skipVectors(self, manager):
         # don't skip it for now
+        pass
+    
+    def unskipVectors(self):
+        # do nothing for now
         pass
