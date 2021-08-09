@@ -401,9 +401,6 @@ class BldgVector:
     
     def calculateSin(self):
         self.sin = self.prev.unitVector.cross(self.unitVector)
-    
-    def setDirect(self):
-        self.direct = self.id1==self.edge.id1
 
 
 class Building:

@@ -56,7 +56,7 @@ class Feature:
         nextVector = self.endVector.next
         
         # instance of <BldgEdge> replaced for <startVector>
-        self.startEdge = startVector.edge
+        self.startEdge = (startVector.edge, startVector.direct)
         self.startNextVector = startVector.next
         # get the new edge for <startVector> that is also used as a proxy vector for the feature
         nodeId1 = startVector.id1
@@ -99,7 +99,7 @@ class Feature:
         startVector = self.startVector
         startVector.next.prev = self.endVector
         startVector.next = self.startNextVector
-        startVector.edge = self.startEdge
+        startVector.edge, startVector.direct = self.startEdge
         # deactivate the feature
         self.active = False
 
@@ -238,13 +238,13 @@ class QuadConvex(Feature):
                 self.endSin = endVector.sin
                 endVector.sin = self.middleVector.sin
             # instance of <BldgEdge> replaced for <startVector>
-            self.startEdge = startVector.edge
+            self.startEdge = (startVector.edge, startVector.direct)
             # replace the edge for <startVector>
             startVector.edge = BldgEdge(startVector.id1, startVector.v1, '', self.newVert)
             startVector.direct = True
             
             # instance of <BldgEdge> replaced for <endVector>
-            self.endEdge = endVector.edge
+            self.endEdge = (endVector.edge, endVector.direct)
             # replace the edge for <endVector>
             endVector.edge = BldgEdge('', self.newVert, endVector.id2, endVector.v2)
             endVector.direct = True
@@ -281,11 +281,9 @@ class QuadConvex(Feature):
                 
                 startVector.feature = self
                 endVector.sin = self.endSin
-            startVector.edge = self.startEdge
-            startVector.setDirect()
+            startVector.edge, startVector.direct = self.startEdge
             
-            endVector.edge = self.endEdge
-            endVector.setDirect()
+            endVector.edge, endVector.direct = self.endEdge
             
             startVector.next = self.middleVector
             endVector.prev = self.middleVector
