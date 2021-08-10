@@ -271,11 +271,7 @@ class FeatureDetection:
                     isPrevVectorStraight = True
             else:
                 if isPrevVectorStraight:
-                    StraightAngle(
-                        prevNonStraightVector,
-                        currentVector.prev,
-                        StraightAngleType.smallFeatureSkipped
-                    ).skipVectors(manager)
+                    self.createStraightAngleFeature(prevNonStraightVector, currentVector.prev, manager)
                     isPrevVectorStraight = False
                 # remember the last vector with a non straight angle
                 prevNonStraightVector = currentVector
@@ -283,12 +279,19 @@ class FeatureDetection:
             currentVector = currentVector.next
             if currentVector is startVector:
                 if isPrevVectorStraight:
-                    StraightAngle(
-                        prevNonStraightVector,
-                        currentVector.prev,
-                        StraightAngleType.smallFeatureSkipped
-                    ).skipVectors(manager)
+                    self.createStraightAngleFeature(prevNonStraightVector, currentVector.prev, manager)
                 break
+    
+    def createStraightAngleFeature(self, startVector, endVector, manager):
+        if startVector.featureId == BldgPolygonFeature.triangle_convex:
+            startVector.feature.invalidate()
+        if endVector.featureId == BldgPolygonFeature.triangle_convex:
+            endVector.feature.invalidate()
+        StraightAngle(
+            startVector,
+            endVector,
+            StraightAngleType.smallFeatureSkipped
+        ).skipVectors(manager)
         
     
     def debugSetFeatureSymbols(self, polygon, sequence):

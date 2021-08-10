@@ -325,6 +325,9 @@ class TriConvex(Feature):
     def unskipVectors(self):
         # do nothing for now
         pass
+    
+    def invalidate(self):
+        self.startVector.feature = self.endVector = None
 
 
 class TriConcave(Feature):
