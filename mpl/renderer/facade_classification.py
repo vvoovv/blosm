@@ -184,9 +184,9 @@ class BuildingClassificationRender(Renderer):
 
 class BuildingFeatureRender(Renderer):
     
-    def __init__(self, showSimplifiedPolygons, showFeatureSymbols, showIDs):
+    def __init__(self, restoreFeatures, showFeatureSymbols, showIDs):
         super().__init__()
-        self.showSimplifiedPolygons = showSimplifiedPolygons
+        self.restoreFeatures = restoreFeatures
         self.showFeatureSymbols = showFeatureSymbols
         self.showIDs = showIDs
 
@@ -200,7 +200,8 @@ class BuildingFeatureRender(Renderer):
                 if not l.role is Osm.outer:
                     self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
         
-        building.polygon.unskipFeatures()
+        if self.restoreFeatures:
+            building.polygon.unskipFeatures()
         # render the polygon with the restored features
         self.renderBuildingFootprint(building)
 
@@ -237,22 +238,22 @@ class BuildingFeatureRender(Renderer):
 
     @staticmethod
     def getFootprintEdgeColor(vector):
-        featureId = vector.featureId
-        return 'red' if featureId==BldgPolygonFeature.curved else ( 
-            'blue' if featureId in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
-                'green' if featureId in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
-                    'cyan' if featureId in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 'black'
+        featureType = vector.featureType
+        return 'red' if featureType==BldgPolygonFeature.curved else ( 
+            'blue' if featureType in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
+                'green' if featureType in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
+                    'cyan' if featureType in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 'black'
                 )
             )
         )
    
     @staticmethod
     def getLineWidth(vector):
-        featureId = vector.featureId
-        return 2. if featureId==BldgPolygonFeature.curved else ( 
-            2. if featureId in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
-                2. if featureId in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
-                    2. if featureId in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 0.5
+        featureType = vector.featureType
+        return 2. if featureType==BldgPolygonFeature.curved else ( 
+            2. if featureType in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
+                2. if featureType in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
+                    2. if featureType in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 0.5
                 )
             ) 
         )

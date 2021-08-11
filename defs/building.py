@@ -11,6 +11,8 @@ class BldgPolygonFeature:
     quadrangle_concave = 6
     complex_convex = 7
     complex_concave = 8
+    # <Sfs> means "small feature skipped"
+    straightAngleSfs = 9
     
 
 #

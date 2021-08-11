@@ -28,7 +28,8 @@ class BldgPolygon:
     
     __slots__ = (
         "vectors", "numEdges", "reversed", "refVector", "building", "_area",
-        "curvedFeature", "smallFeature"
+        "curvedFeature", "convexQuadFeature",
+        "saSfsFeature"
     )
     
     def __init__(self, outline, manager, building):
@@ -61,9 +62,9 @@ class BldgPolygon:
         
         # <self.curvedFeature> holds the reference to the first encountered curved feature.
         # It also indicates if the polygon has at least one curved feature.
-        # <self.smallFeature> holds the reference to the first encountered small feature.
-        # It also indicates if the polygon has at least one small feature.
-        self.curvedFeature = self.smallFeature = None
+        # <self.convexQuadFeature> holds the reference to the first encountered convex quadrangular feature.
+        # It also indicates if the polygon has at least one convex quadrangular feature.
+        self.curvedFeature = self.convexQuadFeature = self.saSfsFeature = None
 
     def forceCcwDirection(self):
         """
@@ -163,7 +164,7 @@ class BldgPolygon:
                     StraightAngle(
                         prevNonStraightVector,
                         vector.prev,
-                        straightAngleValue
+                        BldgPolygonFeature.straightAngle
                     ).skipVectors(manager)
                     isPrevVectorStraight = False
                 # remember the last vector with a non straight angle
@@ -175,7 +176,7 @@ class BldgPolygon:
                     StraightAngle(
                         prevNonStraightVector,
                         vector.prev,
-                        straightAngleValue
+                        BldgPolygonFeature.straightAngle
                     ).skipVectors(manager)
                 break
     
@@ -259,21 +260,26 @@ class BldgPolygon:
         return max( max(vertsX)-min(vertsX), max(vertsY)-min(vertsY) )
     
     def unskipFeatures(self):
-        # straight angle (type is <smallFeatureSkipped>)
-        self._unskipFeatures()
+        # straight angle
+        if self.saSfsFeature:
+            self._unskipFeatures(self.saSfsFeature)
         # quadrangular features
-        self._unskipFeatures()
+        if self.convexQuadFeature:
+            self._unskipFeatures(self.convexQuadFeature)
     
-    def _unskipFeatures(self):
-        nextVector = None
-        for vector in self.getVectors():
-            if nextVector and not vector is nextVector:
-                continue
-            if vector.feature and vector.feature.isUnskippable():
-                nextVector = vector.next
-                vector.feature.unskipVectors()
-            elif nextVector:
-                nextVector = None
+    def _unskipFeatures(self, exampleFeature):
+        featureType = exampleFeature.type
+        startVector = exampleFeature.startVector
+        currentVector = exampleFeature.getProxyVector()
+        while True:
+            feature = currentVector.feature
+            if feature:
+                if feature.type == featureType:
+                    feature.unskipVectors()
+                currentVector = feature.endVector
+            currentVector = currentVector.next
+            if currentVector is startVector:
+                break
 
 
 class BldgEdge:
@@ -382,8 +388,8 @@ class BldgVector:
         return self.edge.length
     
     @property
-    def featureId(self):
-        return self.feature and self.feature.featureId
+    def featureType(self):
+        return self.feature and self.feature.type
     
     @property
     def hasStraightAngle(self):

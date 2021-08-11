@@ -30,7 +30,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--showFeatures", action='store_true', help="Show detected features", default=False)
     app.argParserExtra.add_argument("--showFeatureSymbols", action='store_true', help="Show a symbol for each unskipped polygon vector. The symbol is used for pattern matching", default=False)
     app.argParserExtra.add_argument("--simplifyPolygons", action='store_true', help="Simplify polygons with the detected features", default=False)
-    app.argParserExtra.add_argument("--showSimplifiedPolygons", action='store_true', help="Show simplified polygons", default=False)
+    app.argParserExtra.add_argument("--restoreFeatures", action='store_true', help="Restore simplified features", default=False)
     
     # parse the newly added command line arguments
     app.parseArgs()
@@ -42,8 +42,8 @@ def setup(app, osm):
     detectFeatures = True if showFeatures else getattr(app, "detectFeatures", False)
     showFeatureSymbols = getattr(app, "showFeatureSymbols", False)
     
-    showSimplifiedPolygons = getattr(app, "showSimplifiedPolygons", False)
-    simplifyPolygons = True if showSimplifiedPolygons else getattr(app, "simplifyPolygons", False)
+    simplifyPolygons = getattr(app, "simplifyPolygons", False)
+    restoreFeatures = getattr(app, "restoreFeatures", False)
     
     # create managers
     
@@ -68,7 +68,7 @@ def setup(app, osm):
             BuildingClassificationRender(sideFacadeColor=app.sideFacadeColor, showAssoc=showAssoc,showIDs=showIDs)\
                 if classifyFacades else (\
                     BuildingFeatureRender(
-                        showSimplifiedPolygons=showSimplifiedPolygons,
+                        restoreFeatures=restoreFeatures,
                         showFeatureSymbols=showFeatureSymbols,
                         showIDs=showIDs
                     ) if detectFeatures and showFeatures else\

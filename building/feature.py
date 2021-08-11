@@ -4,19 +4,19 @@ A module to define features for a instance of the class <BldgPolygon>
 
 from mathutils import Vector
 from building import BldgEdge
-from defs.building import BldgPolygonFeature, StraightAngleType
+from defs.building import BldgPolygonFeature
 
 
 class Feature:
     
     __slots__ = (
-        "featureId", "active", "startVector", "endVector", "startEdge",
+        "type", "active", "startVector", "endVector", "startEdge",
         "startNextVector", "parent", "numVectors",
         "startSin", "nextSin"
     )
     
-    def __init__(self, featureId, startVector, endVector):
-        self.featureId = featureId
+    def __init__(self, _type, startVector, endVector):
+        self.type = _type
         self.active = True
         
         # <startVector> will be used as a proxy vector for the feature
@@ -77,9 +77,6 @@ class Feature:
             # we have just created a new edge, so we have to add the related vector to the edge
             startVector.edge.addVector(startVector)
     
-    def isUnskippable(self):
-        return True
-    
     def unskipVectors(self):
         self._unskipVectors()
         
@@ -102,15 +99,19 @@ class Feature:
         startVector.edge, startVector.direct = self.startEdge
         # deactivate the feature
         self.active = False
-
+    
+    def getProxyVector(self):
+        """
+        Get a proxy vector for the skipped feature
+        """
+        return self.startVector
 
 
 class StraightAngle(Feature):
     
     def __init__(self, startVector, endVector, _type):
-        self.type = _type
         self.twoVectors = startVector is endVector
-        super().__init__(BldgPolygonFeature.straightAngle, startVector, endVector)
+        super().__init__(_type, startVector, endVector)
 
     def markVectorsAll(self):
         if self.twoVectors:
@@ -126,6 +127,9 @@ class StraightAngle(Feature):
             super().skipVectors(manager)
     
     def extendToLeft(self):
+        """
+        Currently unused
+        """
         if self.twoVectors:
             self.twoVectors = False
         
@@ -137,9 +141,16 @@ class StraightAngle(Feature):
         nextVector = endVector.next
         nextVector.prev = self.startVector
         self.startVector.next = nextVector
+
+
+class StraightAngleSfs(StraightAngle):
+    # <sfs> stands for "small feature skipped"
     
-    def isUnskippable(self):
-        return self.type == StraightAngleType.smallFeatureSkipped
+    def __init__(self, startVector, endVector):
+        super().__init__(startVector, endVector, BldgPolygonFeature.straightAngleSfs)
+        polygon = startVector.polygon
+        if not polygon.saSfsFeature:
+            polygon.saSfsFeature = self
 
 
 class NoSharedBldg:
@@ -164,6 +175,9 @@ class Curved(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.curved, startVector, endVector)
+        polygon = startVector.polygon
+        if not polygon.curvedFeature:
+            polygon.curvedFeature = self
         
 
 class ComplexConvex(Feature):
@@ -214,6 +228,10 @@ class QuadConvex(Feature):
                 startVector.v2 + _startVector * _endVector.cross(unitMiddleVector)/_startVector.cross(unitMiddleVector)
         
         super().__init__(BldgPolygonFeature.quadrangle_convex, startVector, endVector)
+        
+        polygon = startVector.polygon
+        if not polygon.convexQuadFeature:
+            polygon.convexQuadFeature = self
     
     def setParentFeature(self):
         if self.corner and not self.leftCorner:
@@ -297,6 +315,9 @@ class QuadConvex(Feature):
             
             endVector.skip = False
             self._unskipVectors()
+    
+    def getProxyVector(self):
+        return self.startVector if not self.corner or self.leftCorner else self.endVector
 
 
 class QuadConcave(Feature):
