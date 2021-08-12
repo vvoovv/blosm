@@ -278,6 +278,7 @@ class QuadConvex(Feature):
                 startVector.calculateSin()
             else:
                 nextVector.calculateSin()
+            startVector.polygon.numEdges -= 1
         else:
             nextVector = endVector.next
             self.startSin = startVector.sin
@@ -288,6 +289,8 @@ class QuadConvex(Feature):
             
             startVector.calculateSin()
             nextVector.calculateSin()
+            
+            startVector.polygon.numEdges -= 2
     
     def unskipVectors(self):
         startVector = self.startVector

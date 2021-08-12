@@ -75,11 +75,13 @@ def setup(app, osm):
                         BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs)
                 )
         )
+        
         if detectFeatures:
             buildings.addAction(FeatureDetection(simplifyPolygons))
         buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())
+        
         osm.addCondition(
             lambda tags, e: "building" in tags,
             "buildings", 

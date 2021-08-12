@@ -314,7 +314,7 @@ class BldgEdge:
             self.vectors = (vector,)
     
     def hasSharedBldgVectors(self):
-        return len(self.vectors) == 2
+        return self.vectors and len(self.vectors) == 2
     
     @property
     def length(self):

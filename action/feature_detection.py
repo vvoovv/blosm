@@ -238,20 +238,20 @@ class FeatureDetection:
                 break
         
         # find <prevNonStraightVector>
+        isPrevVectorStraight = False
         if currentVector.featureType == BldgPolygonFeature.quadrangle_convex:
-            startVector = currentVector
             while True:
                 feature = currentVector.feature
                 if not vectorHasStraightAngle(currentVector):
                     prevNonStraightVector = currentVector
                     break
                 polygon.numEdges -= 1
+                isPrevVectorStraight = True
                 currentVector = currentVector.prev
-            currentVector = startVector
+            currentVector = startVector.next
         else:
-            prevNonStraightVector = currentVector = currentVector.next
+            prevNonStraightVector = currentVector = startVector.next
         startVector = prevNonStraightVector
-        isPrevVectorStraight = False
         while True:
             # conditions for a straight angle
             if vectorHasStraightAngle(currentVector):
