@@ -276,7 +276,9 @@ class BldgPolygon:
             if feature:
                 if feature.type == featureType:
                     feature.unskipVectors()
-                currentVector = feature.endVector
+                    currentVector = feature.endVector
+                elif not feature.skipped:
+                    currentVector = feature.endVector
             currentVector = currentVector.next
             if currentVector is startVector:
                 break

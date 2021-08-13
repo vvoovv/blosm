@@ -10,14 +10,14 @@ from defs.building import BldgPolygonFeature
 class Feature:
     
     __slots__ = (
-        "type", "active", "startVector", "endVector", "startEdge",
+        "type", "skipped", "startVector", "endVector", "startEdge",
         "startNextVector", "parent", "numVectors",
         "startSin", "nextSin"
     )
     
     def __init__(self, _type, startVector, endVector):
         self.type = _type
-        self.active = True
+        self.skipped = False
         
         # <startVector> will be used as a proxy vector for the feature
         self.startVector = startVector
@@ -71,6 +71,8 @@ class Feature:
         nextVector.prev = startVector
         startVector.next = nextVector
         
+        self.skipped = True
+        
         # The condition below actually checks if we have the footprint
         # for the whole building or a building part
         if startVector.polygon.building:
@@ -97,8 +99,7 @@ class Feature:
         startVector.next.prev = self.endVector
         startVector.next = self.startNextVector
         startVector.edge, startVector.direct = self.startEdge
-        # deactivate the feature
-        self.active = False
+        self.skipped = False
     
     def getProxyVector(self):
         """
@@ -279,6 +280,8 @@ class QuadConvex(Feature):
             else:
                 nextVector.calculateSin()
             startVector.polygon.numEdges -= 1
+            
+            self.skipped = True
         else:
             nextVector = endVector.next
             self.startSin = startVector.sin
@@ -312,6 +315,8 @@ class QuadConvex(Feature):
             
             startVector.next = self.middleVector
             endVector.prev = self.middleVector
+            
+            self.skipped = False
         else:
             startVector.sin = self.startSin
             endVector.next.sin = self.nextSin
