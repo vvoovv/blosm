@@ -17,16 +17,16 @@ class FacadeClassification:
                     edge.cl = FacadeClass.shared
 
             # Find front facades
-            self.classifyFrontFacades(building)
+            accepted_level = self.classifyFrontFacades(building)
             
-            # make crossed facades to front facades
+            # process crossed facades
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 if edge.cl in CrossedFacades:
-                    # deadend becomes front, while passage remains
-                    # accepted_level = way_level
-                    # if edge.cl == FacadeClass.deadend:
-                    edge.cl = FacadeClass.front
+                    if WayLevel[edge.visInfo.waySegment.way.category] <= accepted_level:
+                        edge.cl = FacadeClass.front
+                    else:
+                        edge.cl = FacadeClass.unknown
 
             # Find side facades
             self.classifySideFacades(building)
@@ -45,7 +45,7 @@ class FacadeClassification:
             for vector in building.polygon.getVectors():
                 edge = vector.edge
                 visInfo = edge.visInfo
-                if visInfo.value and not edge.cl and \
+                if visInfo.value and not edge.cl == FacadeClass.shared and \
                         WayLevel[visInfo.waySegment.way.category] == way_level:
                     edgeSight = visInfo.value * visInfo.dx/(visInfo.dx+visInfo.dy) * visInfo.waySegment.avgDist/visInfo.distance
                     # compute maximum sight for later use
@@ -70,7 +70,7 @@ class FacadeClassification:
                     visInfo = edge.visInfo
                     # done only for unclassified facades between two front facades
                     # where there is an angle between their way-segments
-                    if visInfo.value and not edge.cl and \
+                    if visInfo.value and not edge.cl == FacadeClass.shared and \
                         vector.prev.edge.cl == FacadeClass.front and \
                         vector.next.edge.cl == FacadeClass.front:
                             uNext = vector.next.edge.visInfo.waySegment.unitVector
@@ -94,8 +94,10 @@ class FacadeClassification:
             else:
                 self.frontOfInvisibleBuilding(building)
 
+        return accepted_level if accepted_level else MaxWayLevel+1
+
  
-    def frontOfInvisibleBuilding(self, building):
+    def frontOfInvisibleBuilding(self, building): 
         # If no front building edge was found, mark one as front (e.g. the longest one)
         longest = 0.
         longestEdge = None
