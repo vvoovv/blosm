@@ -346,7 +346,7 @@ class BldgVector:
     ID = 0 # debug
     
     def __init__(self, edge, direct, polygon):
-        BldgEdge.ID += 1 # debug
+        BldgVector.ID += 1 # debug
         self.id = BldgEdge.ID # debug
         
         self.edge = edge
