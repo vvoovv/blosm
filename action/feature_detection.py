@@ -230,8 +230,9 @@ class FeatureDetection:
         currentVector = startVector = polygon.convexQuadFeature.startVector
         while True:
             feature = currentVector.feature
-            if feature and feature.type == BldgPolygonFeature.quadrangle_convex:
-                feature.skipVectors(manager) 
+            if feature:
+                if feature.type == BldgPolygonFeature.quadrangle_convex:
+                    feature.skipVectors(manager) 
                 currentVector = feature.endVector.next
             else:
                 currentVector = currentVector.next
