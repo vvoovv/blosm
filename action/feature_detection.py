@@ -35,7 +35,7 @@ class FeatureDetection:
     curvedPattern = re.compile(r"S?(C){3,}")
     
     # convex complex features
-    complexConvexPattern = re.compile(r"(>[L|l]{2,3}<)")
+    complexConvexPattern = re.compile(r"(>[L|l|O]{2,3}<)")
 
     # concave complex features
     complexConcavePattern = re.compile(r"(<[R|r]{2,3}>)")
