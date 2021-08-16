@@ -76,6 +76,7 @@ class FeatureDetection:
             sequence = self.getSequence(polygon, midEdgeThreshold, longEdgeThreshold)
             
             self.detectQuadrangularFeatures(polygon, sequence)
+            
             if self.simplifyPolygons and polygon.convexQuadFeature:
                 self.skipQuadrangularFeatures(polygon, manager)
     
@@ -271,8 +272,13 @@ class FeatureDetection:
                 break
     
     def createStraightAngleFeature(self, startVector, endVector, manager):
-        if startVector.featureType == BldgPolygonFeature.triangle_convex:
-            startVector.feature.invalidate()
+        # Invalidate triangular feature(s) in the corner.
+        # A triangular feature that includes <startVector> is formed by
+        # <startVector.prev> and <startVector>. Only <startVector.prev> is marked
+        # that it belongs to the triangular feature. That's why
+        # <startVector.prev.featureType> is checked
+        if startVector.prev.featureType == BldgPolygonFeature.triangle_convex:
+            startVector.prev.feature.invalidate()
         if endVector.featureType == BldgPolygonFeature.triangle_convex:
             endVector.feature.invalidate()
         StraightAngleSfs(startVector, endVector).skipVectors(manager)
