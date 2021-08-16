@@ -47,7 +47,7 @@ class BuildingVisibilityRender(Renderer):
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
 
             if self.showIDs:
-                self.renderString(v1, v2, edge.id)
+                self.renderString(v1, v2, vector.id)
 
             if self.showAssoc:
                 # visalization of association between way-segment and edge
@@ -138,8 +138,8 @@ class BuildingClassificationRender(Renderer):
             ax.plot(v1[0], v1[1], 'k.', markersize=2.)
 
             if self.showIDs:
-                ax.text((v1[0]+v2[0])/2., (v1[1]+v2[1])/2., ' '+str(edge.id) )
-
+                self.renderString(v1, v2, vector.id)
+            
             if self.showAssoc:
                 # visalization of association between way-segment and edge
                 visInfo = edge.visInfo
@@ -237,7 +237,7 @@ class BuildingFeatureRender(Renderer):
                     ' ' + str(round(vector.sin, 2))
                 )
             elif self.showIDs:
-                self.renderString(v1, v2, edge.id)
+                self.renderString(v1, v2, vector.id)
 
     @staticmethod
     def getFootprintEdgeColor(vector):

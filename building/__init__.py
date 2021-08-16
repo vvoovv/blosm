@@ -286,9 +286,16 @@ class BldgPolygon:
 
 class BldgEdge:
     
-    __slots__ = ("id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "id", "_length")
-    ID = 0
+    __slots__ = (
+        "id", # debug
+        "id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "_length"
+    )
+    
+    ID = 0 # debug
+    
     def __init__(self, id1, v1, id2, v2):
+        BldgEdge.ID += 1 # debug
+        self.id = BldgEdge.ID # debug
         #
         # Important: always id1 < id2 
         #
@@ -296,8 +303,6 @@ class BldgEdge:
         self.v1 = Vector(v1)
         self.id2 = id2
         self.v2 = Vector(v2)
-        self.id = BldgEdge.ID
-        BldgEdge.ID += 1
         
         self.visInfo = VisibilityInfo()
         # a temporary visibility info
@@ -332,12 +337,18 @@ class BldgVector:
     """
     
     __slots__ = (
+        "id", # debug
         "edge", "direct", "prev", "next", "polygon",
         "straightAngle", "feature", "skip", "sin", "vectorByIndex",
         "featureSymbol" # debug
     )
     
+    ID = 0 # debug
+    
     def __init__(self, edge, direct, polygon):
+        BldgEdge.ID += 1 # debug
+        self.id = BldgEdge.ID # debug
+        
         self.edge = edge
         # <self.direct> defines the direction given the <edge> defined by node1 and node2
         # True: the direction of the vector is from node1 to node2
