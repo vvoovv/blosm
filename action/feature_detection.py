@@ -34,11 +34,14 @@ class FeatureDetection:
     # possibly with ends 'S' (start) or 'E' (end)
     curvedPattern = re.compile(r"S?(C){3,}")
     
-    # convex complex features
-    complexConvexPattern = re.compile(r"(>[L|l|O]{2,3}<)")
+    # convex complex features (exactly 5 eddges)
+    complexConvexPattern5 = re.compile(r"(>[L|l][L|l|O][L|l]<)")
+    
+    # convex complex features (exactly 4 edges)
+    complexConvexPattern4 = re.compile(r"(>[L|l][L|l]<)")
 
     # concave complex features
-    complexConcavePattern = re.compile(r"(<[R|r]{2,3}>)")
+    complexConcavePattern = re.compile(r"(<[R|r][R|r]>)")
 
     # convex quadrangle features
     quadConvexPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
@@ -129,37 +132,44 @@ class FeatureDetection:
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
-            FeatureDetection.complexConvexPattern,
+            FeatureDetection.complexConvexPattern5,
             ComplexConvex,
             polygon, '1'
+        )
+        
+        sequence = self.matchPattern(
+            sequence, sequenceLength,
+            FeatureDetection.complexConvexPattern4,
+            ComplexConvex,
+            polygon, '2'
         )
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.quadConvexPattern,
             QuadConvex,
-            polygon, '2'
-        )
-
-        sequence = self.matchPattern(
-            sequence, sequenceLength,
-            FeatureDetection.complexConcavePattern,
-            ComplexConcave,
             polygon, '3'
         )
+
+        #sequence = self.matchPattern(
+        #    sequence, sequenceLength,
+        #    FeatureDetection.complexConcavePattern,
+        #    ComplexConcave,
+        #    polygon, '4'
+        #)
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.quadConcavePattern,
             QuadConcave,
-            polygon, '4'
+            polygon, '5'
         )   
 
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.triConvexPattern,
             TriConvex,
-            polygon, '5'
+            polygon, '6'
         )
         
         self.matchPattern(
