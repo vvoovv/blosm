@@ -217,8 +217,9 @@ class BuildingFeatureRender(Renderer):
         for vector in building.polygon.getVectors():
             if vector.feature and vector.featureType != BldgPolygonFeature.quadrangle_convex and vector is vector.feature.startVector:
                 vector.feature.markVectorsAll()
-                
-            edge, v1, v2 = vector.edge, vector.v1, vector.v2
+        
+        for vector in building.polygon.getVectors():
+            v1, v2 = vector.v1, vector.v2
             color = self.getFootprintEdgeColor(vector)
             linewidth = self.getLineWidth(vector)
             ax.plot(
