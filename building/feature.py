@@ -210,6 +210,9 @@ class QuadConvex(Feature):
     __slots__ = ("middleVector", "endEdge", "equalSideEdges", "leftEdgeShorter", "newVert", "endSin")
         
     def __init__(self, startVector, endVector):
+        self.init(BldgPolygonFeature.quadrangle_convex, startVector, endVector)
+    
+    def init(self, _type, startVector, endVector):
         self.middleVector = startVector.next
         
         # check if we have a corner feature
@@ -330,18 +333,10 @@ class QuadConvex(Feature):
         return self.endVector if self.leftEdgeShorter else self.startVector
 
 
-class QuadConcave(Feature):
+class QuadConcave(QuadConvex):
     
     def __init__(self, startVector, endVector):
-        super().__init__(BldgPolygonFeature.quadrangle_concave, startVector, endVector)
-    
-    def skipVectors(self, manager):
-        # don't skip it for now
-        pass
-    
-    def unskipVectors(self):
-        # do nothing for now
-        pass
+        self.init(BldgPolygonFeature.quadrangle_concave, startVector, endVector)
         
         
 class TriConvex(Feature):
