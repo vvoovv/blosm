@@ -181,7 +181,23 @@ class Curved(Feature):
             polygon.curvedFeature = self
         
 
-class ComplexConvex(Feature):
+class ComplexConvex5(Feature):
+    """
+    A class for complex convex features with exactly 5 edged
+    """
+    
+    def __init__(self, startVector, endVector):
+        super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
+
+    def skipVectors(self, manager):
+        # don't skip it for now
+        pass
+
+
+class ComplexConvex4(Feature):
+    """
+    A class for complex convex features with exactly 4 edged
+    """
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
@@ -233,7 +249,7 @@ class QuadConvex(Feature):
                 if self.leftEdgeShorter else \
                 endVector.v1 - _endVector * _startVector.cross(unitMiddleVector)/_endVector.cross(unitMiddleVector)
         
-        super().__init__(BldgPolygonFeature.quadrangle_convex, startVector, endVector)
+        super().__init__(_type, startVector, endVector)
         
         polygon = startVector.polygon
         if not polygon.convexQuadFeature:

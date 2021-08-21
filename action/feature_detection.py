@@ -1,7 +1,7 @@
 import re
 from defs.building import BldgPolygonFeature, curvedLengthFactor, \
     longEdgeFactor, midEdgeFactor, sin_lo, sin_me
-from building.feature import StraightAngleSfs, Curved, ComplexConvex, QuadConvex, \
+from building.feature import StraightAngleSfs, Curved, ComplexConvex5, ComplexConvex4, QuadConvex, \
     ComplexConcave, QuadConcave, TriConvex, TriConcave
 
 
@@ -15,14 +15,16 @@ def hasAnglesForCurvedFeature(vector):
 def vectorHasStraightAngle(vector):
     return \
     (
-        vector.featureType==BldgPolygonFeature.quadrangle_convex and \
+        #vector.featureType==BldgPolygonFeature.quadrangle_convex and \
+        vector.feature and \
         vector.feature.startSin and \
         vector.hasStraightAngle
     ) \
     or \
     (
-        vector.featureType!=BldgPolygonFeature.quadrangle_convex and \
-        vector.prev.featureType==BldgPolygonFeature.quadrangle_convex and \
+        #vector.featureType!=BldgPolygonFeature.quadrangle_convex and \
+        #vector.prev.featureType==BldgPolygonFeature.quadrangle_convex and \
+        vector.prev.feature and \
         vector.prev.feature.nextSin and \
         vector.hasStraightAngle
     )
@@ -78,7 +80,7 @@ class FeatureDetection:
             longEdgeThreshold = longEdgeFactor * polygon.dimension
             sequence = self.getSequence(polygon, midEdgeThreshold, longEdgeThreshold)
             
-            self.detectQuadrangularFeatures(polygon, sequence)
+            self.detectSmallFeatures(polygon, sequence)
             
             if self.simplifyPolygons and polygon.convexQuadFeature:
                 self.skipQuadrangularFeatures(polygon, manager)
@@ -119,9 +121,9 @@ class FeatureDetection:
             polygon, ''
         )
     
-    def detectQuadrangularFeatures(self, polygon, sequence):
+    def detectSmallFeatures(self, polygon, sequence):
         """
-        Detects quadrangular patterns (simple and complex ones).
+        Detects patterns for small features
         """
         
         # debug
@@ -133,14 +135,14 @@ class FeatureDetection:
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.complexConvexPattern5,
-            ComplexConvex,
+            ComplexConvex5,
             polygon, '1'
         )
         
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.complexConvexPattern4,
-            ComplexConvex,
+            ComplexConvex4,
             polygon, '2'
         )
 
@@ -241,7 +243,7 @@ class FeatureDetection:
         while True:
             feature = currentVector.feature
             if feature:
-                if feature.type == BldgPolygonFeature.quadrangle_convex:
+                if feature.type in (BldgPolygonFeature.quadrangle_convex, BldgPolygonFeature.quadrangle_concave):
                     feature.skipVectors(manager) 
                 currentVector = feature.endVector.next
             else:
@@ -251,7 +253,7 @@ class FeatureDetection:
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False
-        if currentVector.featureType == BldgPolygonFeature.quadrangle_convex:
+        if currentVector.featureType in (BldgPolygonFeature.quadrangle_convex, BldgPolygonFeature.quadrangle_concave):
             while True:
                 feature = currentVector.feature
                 if not vectorHasStraightAngle(currentVector):

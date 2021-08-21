@@ -215,7 +215,9 @@ class BuildingFeatureRender(Renderer):
         )
 
         for vector in building.polygon.getVectors():
-            if vector.feature and vector.featureType != BldgPolygonFeature.quadrangle_convex and vector is vector.feature.startVector:
+            if vector.feature and \
+                not vector.featureType in (BldgPolygonFeature.quadrangle_convex, BldgPolygonFeature.quadrangle_concave) and \
+                vector is vector.feature.startVector:
                 vector.feature.markVectorsAll()
         
         for vector in building.polygon.getVectors():
