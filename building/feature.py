@@ -106,6 +106,16 @@ class Feature:
         Get a proxy vector for the skipped feature
         """
         return self.startVector
+    
+    def _skipVectorsKeepStartVector(self, manager):
+        nextVector = self.endVector.next
+        self.startSin = self.startVector.sin
+        self.nextSin = nextVector.sin
+        
+        self._skipVectors(manager)
+        
+        self.startVector.calculateSin()
+        nextVector.calculateSin()
 
 
 class StraightAngle(Feature):
@@ -188,10 +198,21 @@ class ComplexConvex5(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
+        polygon = startVector.polygon
+        if not polygon.smallFeature:
+            polygon.smallFeature = self
 
     def skipVectors(self, manager):
-        # don't skip it for now
-        pass
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        if self.startVector.vector.dot(self.endVector.vector) <= 0:
+            startVector.next.skip = endVector.prev.prev.skip = \
+                endVector.prev.skip = endVector.skip = True
+            
+            self._skipVectorsKeepStartVector(manager)
+            
+            startVector.polygon.numEdges -= 4
 
 
 class ComplexConvex4(Feature):
@@ -252,8 +273,8 @@ class QuadConvex(Feature):
         super().__init__(_type, startVector, endVector)
         
         polygon = startVector.polygon
-        if not polygon.convexQuadFeature:
-            polygon.convexQuadFeature = self
+        if not polygon.smallFeature:
+            polygon.smallFeature = self
     
     def setParentFeature(self):
         if self.leftEdgeShorter:
@@ -271,15 +292,9 @@ class QuadConvex(Feature):
         self.middleVector.skip = True
         
         if self.equalSideEdges:
-            nextVector = endVector.next
-            self.startSin = startVector.sin
-            self.nextSin = nextVector.sin
-            
             endVector.skip = True
-            self._skipVectors(manager)
             
-            startVector.calculateSin()
-            nextVector.calculateSin()
+            self._skipVectorsKeepStartVector(manager)
             
             startVector.polygon.numEdges -= 2
         else:

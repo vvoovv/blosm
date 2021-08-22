@@ -82,7 +82,7 @@ class FeatureDetection:
             
             self.detectSmallFeatures(polygon, sequence)
             
-            if self.simplifyPolygons and polygon.convexQuadFeature:
+            if self.simplifyPolygons and polygon.smallFeature:
                 self.skipQuadrangularFeatures(polygon, manager)
     
     def detectCurvedFeatures(self, polygon):        
@@ -239,11 +239,11 @@ class FeatureDetection:
         )
     
     def skipQuadrangularFeatures(self, polygon, manager):
-        currentVector = startVector = polygon.convexQuadFeature.startVector
+        currentVector = startVector = polygon.smallFeature.startVector
         while True:
             feature = currentVector.feature
             if feature:
-                if feature.type in (BldgPolygonFeature.quadrangle_convex, BldgPolygonFeature.quadrangle_concave):
+                if not feature.type in (BldgPolygonFeature.curved, BldgPolygonFeature.triangle_convex, BldgPolygonFeature.triangle_concave):
                     feature.skipVectors(manager) 
                 currentVector = feature.endVector.next
             else:
@@ -253,7 +253,7 @@ class FeatureDetection:
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False
-        if currentVector.featureType in (BldgPolygonFeature.quadrangle_convex, BldgPolygonFeature.quadrangle_concave):
+        if not currentVector.featureType in (BldgPolygonFeature.curved, BldgPolygonFeature.triangle_convex, BldgPolygonFeature.triangle_concave):
             while True:
                 feature = currentVector.feature
                 if not vectorHasStraightAngle(currentVector):
