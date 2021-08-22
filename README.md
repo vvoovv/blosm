@@ -15,7 +15,7 @@ In addition to the features of the base version, the premium one provides:
 * Options to use custom tileable building textures (e.g. from textures.com)
 * Satellite imagery and web maps projected on a terrain
 
-Buy the addon at [gumroad.com](https://gumroad.com/l/blosm)! By [purchasing](https://gumroad.com/l/blosm) the addon you support the addon development. All customers will get the addon source code under GPL license! All default textures and materials supplied with addon are released under the CC0 (public license)!
+Buy the addon at [gumroad.com](https://gumroad.com/l/blosm)! By [purchasing](https://gumroad.com/l/blosm) the addon you support the addon development. All customers will get the addon source code under GPL license!
 
 The detailed documentation is available [here](https://github.com/vvoovv/blender-osm/wiki/Premium-Version).
 
