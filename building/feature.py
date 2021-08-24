@@ -196,7 +196,7 @@ class ComplexConvex5(Feature):
     A class for complex convex features with exactly 5 edged
     """
     
-    __slots__ = ("middleEdge", "endEdge", "endSin")
+    __slots__ = ("endPrevVector", "middleEdge", "endEdge", "endSin")
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
@@ -247,6 +247,7 @@ class ComplexConvex5(Feature):
                     startVector.edge = BldgEdge(startVector.id1, startVector.v1, '', newVert1)
                     startVector.direct = True
                     
+                    self.startNextVector = startVector.next
                     startVector.next.skip = True
                     
                     # modify <middleVector>
@@ -256,6 +257,7 @@ class ComplexConvex5(Feature):
                     middleVector.edge = BldgEdge('', newVert1, '', newVert2)
                     middleVector.direct = True
                     
+                    self.endPrevVector = endVector.prev
                     endVector.prev.skip = True
                     
                     # modify <endVector>
@@ -289,6 +291,36 @@ class ComplexConvex5(Feature):
             self._skipVectorsKeepStartVector(manager)
             
             startVector.polygon.numEdges -= 4
+    
+    def unskipVectors(self):
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        if self.endEdge:
+            middleVector = startVector.next
+            
+            startVector.edge, startVector.direct = self.startEdge
+            startVector.next = self.startNextVector
+            startVector.sin = self.startSin
+            
+            self.startNextVector.skip = False
+            
+            middleVector.prev = self.startNextVector
+            middleVector.edge, middleVector.direct = self.middleEdge
+            middleVector.next = self.endPrevVector
+            
+            self.endPrevVector.skip = False
+            
+            endVector.prev = self.endPrevVector
+            endVector.edge, endVector.direct = self.endEdge
+            endVector.next.sin = self.nextSin
+            endVector.sin = self.endSin
+            
+            startVector.polygon.numEdges += 2
+            
+        else:
+            
+            startVector.polygon.numEdges += 4
 
 
 class ComplexConvex4(Feature):
