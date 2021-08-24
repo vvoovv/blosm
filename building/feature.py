@@ -420,12 +420,11 @@ class QuadConvex(Feature):
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
                 endVector.next.sin = self.nextSin
+                startVector.feature = self
+                endVector.sin = self.endSin
             else:
                 startVector.sin = self.startSin
                 endVector.feature = self
-                
-                startVector.feature = self
-                endVector.sin = self.endSin
             startVector.edge, startVector.direct = self.startEdge
             
             endVector.edge, endVector.direct = self.endEdge
