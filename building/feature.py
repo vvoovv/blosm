@@ -116,6 +116,11 @@ class Feature:
         
         self.startVector.calculateSin()
         nextVector.calculateSin()
+    
+    def _unskipVectorsKeepStartVector(self):
+        self.startVector.sin = self.startSin
+        self.endVector.next.sin = self.nextSin
+        self._unskipVectors()
 
 
 class StraightAngle(Feature):
@@ -201,6 +206,10 @@ class ComplexConvex5(Feature):
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
         polygon = startVector.polygon
+        # <self.endEdge> also serves as an indicator how the feature vectors were skipped.
+        # If <self.endEdge> is equal to None, then only <self.startVector> was kept.
+        # Otherwise <self.startVector>, the middle vector and <self.endVector> were kept
+        self.endEdge = None
         if not polygon.smallFeature:
             polygon.smallFeature = self
 
@@ -287,10 +296,9 @@ class ComplexConvex5(Feature):
         if keepOnlyStartVector:
             startVector.next.skip = endVector.prev.prev.skip = \
                 endVector.prev.skip = endVector.skip = True
+            startVector.polygon.numEdges -= 4
             
             self._skipVectorsKeepStartVector(manager)
-            
-            startVector.polygon.numEdges -= 4
     
     def unskipVectors(self):
         startVector = self.startVector
@@ -319,7 +327,10 @@ class ComplexConvex5(Feature):
             startVector.polygon.numEdges += 2
             
         else:
+            self._unskipVectorsKeepStartVector()
             
+            startVector.next.skip = endVector.prev.prev.skip = \
+                endVector.prev.skip = endVector.skip = False
             startVector.polygon.numEdges += 4
 
 
@@ -332,6 +343,10 @@ class ComplexConvex4(Feature):
         super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
 
     def skipVectors(self, manager):
+        # don't skip it for now
+        pass
+
+    def unskipVectors(self):
         # don't skip it for now
         pass
 
@@ -400,10 +415,9 @@ class QuadConvex(Feature):
         
         if self.equalSideEdges:
             endVector.skip = True
+            startVector.polygon.numEdges -= 2
             
             self._skipVectorsKeepStartVector(manager)
-            
-            startVector.polygon.numEdges -= 2
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
                 nextVector = endVector.next
@@ -444,11 +458,10 @@ class QuadConvex(Feature):
         
         self.middleVector.skip = False
         if self.equalSideEdges:
-            startVector.sin = self.startSin
-            endVector.next.sin = self.nextSin
+            self._unskipVectorsKeepStartVector()
             
             endVector.skip = False
-            self._unskipVectors()
+            startVector.polygon.numEdges += 2
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
                 endVector.next.sin = self.nextSin

@@ -263,19 +263,22 @@ class BldgPolygon:
     def unskipFeatures(self):
         # straight angle
         if self.saSfsFeature:
-            self._unskipFeatures(self.saSfsFeature)
+            self._unskipFeatures(self.saSfsFeature, BldgPolygonFeature.straightAngleSfs)
         # small features
         if self.smallFeature:
-            self._unskipFeatures(self.smallFeature)
+            self._unskipFeatures(self.smallFeature, None)
     
-    def _unskipFeatures(self, exampleFeature):
-        featureType = exampleFeature.type
-        startVector = exampleFeature.startVector
-        currentVector = exampleFeature.getProxyVector()
+    def _unskipFeatures(self, feature, featureType):
+        startVector = feature.startVector
+        currentVector = feature.getProxyVector()
         while True:
             feature = currentVector.feature
             if feature:
-                if feature.type == featureType:
+                if (featureType and feature.type == featureType) or\
+                        (
+                            not featureType and\
+                            not feature.type in (BldgPolygonFeature.straightAngle, BldgPolygonFeature.curved)
+                        ):
                     feature.unskipVectors()
                     currentVector = feature.endVector
                 elif not feature.skipped:
