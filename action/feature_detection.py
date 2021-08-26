@@ -82,8 +82,8 @@ class FeatureDetection:
             
             self.detectSmallFeatures(polygon, sequence)
             
-            if self.simplifyPolygons and polygon.smallFeature:
-                self.skipQuadrangularFeatures(polygon, manager)
+            if self.simplifyPolygons and (polygon.smallFeature or polygon.complex4Feature):
+                self.skipFeatures(polygon, manager)
     
     def detectCurvedFeatures(self, polygon):        
         numLowAngles = sum(
@@ -238,18 +238,39 @@ class FeatureDetection:
             for vector in polygon.getVectors()
         )
     
-    def skipQuadrangularFeatures(self, polygon, manager):
-        currentVector = startVector = polygon.smallFeature.startVector
-        while True:
-            feature = currentVector.feature
-            if feature:
-                if not feature.type in (BldgPolygonFeature.curved, BldgPolygonFeature.triangle_convex, BldgPolygonFeature.triangle_concave):
-                    feature.skipVectors(manager) 
-                currentVector = feature.endVector.next
-            else:
-                currentVector = currentVector.next
-            if currentVector is startVector:
-                break
+    def skipFeatures(self, polygon, manager):
+        if polygon.smallFeature:
+            currentVector = startVector = polygon.smallFeature.startVector
+            while True:
+                feature = currentVector.feature
+                if feature:
+                    if not feature.type in (
+                            BldgPolygonFeature.curved,
+                            BldgPolygonFeature.complex4_convex,
+                            #BldgPolygonFeature.complex4_concave,
+                            BldgPolygonFeature.triangle_convex,
+                            BldgPolygonFeature.triangle_concave
+                        ):
+                        feature.skipVectors(manager) 
+                    currentVector = feature.endVector.next
+                else:
+                    currentVector = currentVector.next
+                if currentVector is startVector:
+                    break
+        
+        # complex features with 4 edges are treated separately
+        if polygon.complex4Feature:
+            currentVector = startVector = polygon.complex4Feature.startVector
+            while True:
+                feature = currentVector.feature
+                if feature:
+                    if feature.type == BldgPolygonFeature.complex4_convex:
+                        feature.skipVectors(manager) 
+                    currentVector = feature.endVector.next
+                else:
+                    currentVector = currentVector.next
+                if currentVector is startVector:
+                    break
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False

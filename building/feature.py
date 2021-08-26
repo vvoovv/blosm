@@ -204,7 +204,7 @@ class ComplexConvex5(Feature):
     __slots__ = ("endPrevVector", "middleEdge", "endEdge", "endSin")
     
     def __init__(self, startVector, endVector):
-        super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
+        super().__init__(BldgPolygonFeature.complex5_convex, startVector, endVector)
         polygon = startVector.polygon
         # <self.endEdge> also serves as an indicator how the feature vectors were skipped.
         # If <self.endEdge> is equal to None, then only <self.startVector> was kept.
@@ -290,6 +290,9 @@ class ComplexConvex5(Feature):
                     endVector.feature = self
                     
                     self.skipped = True
+                    
+                else:
+                    keepOnlyStartVector = True
             else:
                 keepOnlyStartVector = True
             
@@ -339,12 +342,83 @@ class ComplexConvex4(Feature):
     A class for complex convex features with exactly 4 edged
     """
     
+    __slots__ = ("endPrevVector", "endEdge", "endSin")
+    
     def __init__(self, startVector, endVector):
-        super().__init__(BldgPolygonFeature.complex_convex, startVector, endVector)
-
+        super().__init__(BldgPolygonFeature.complex4_convex, startVector, endVector)
+        
+        polygon = startVector.polygon
+        if not polygon.complex4Feature:
+            polygon.complex4Feature = self
+    
     def skipVectors(self, manager):
-        # don't skip it for now
-        pass
+        startVector = self.startVector
+        endVector = self.endVector
+        # the neighbor to the left
+        left = startVector.prev
+        # the neighbor to the right
+        right = endVector.next
+        
+        keepOnlyStartVector = False
+        
+        # Check if <left> isn't a part of a curved feature and
+        # <right> isn't a part of a curved feature or another complex feature with 4 edges
+        if left.featureType == BldgPolygonFeature.curved or\
+            right.featureType in (BldgPolygonFeature.curved, BldgPolygonFeature.complex4_convex):
+            keepOnlyStartVector = True
+        else:
+            unitL = left.unitVector
+            unitR = -right.unitVector
+            cross = unitL.cross(unitR)
+            if abs(cross) < 0.2:
+                # <unitL> and <unitR> are nearly parallel
+                keepOnlyStartVector = True
+            else:
+                vec = endVector.v2 - startVector.v1
+                k1 = vec.cross(unitR)/cross
+                k2 = vec.cross(unitL)/cross
+                if k1>0. and k2>0.:
+                    newVert = startVector.v1 + k1*unitL
+                    
+                    # modify <startVector>
+                    # instance of <BldgEdge> replaced for <startVector>
+                    self.startEdge = (startVector.edge, startVector.direct)
+                    # replace the edge for <startVector>
+                    startVector.edge = BldgEdge(startVector.id1, startVector.v1, '', newVert)
+                    startVector.direct = True
+                    
+                    self.startNextVector = startVector.next
+                    startVector.next.skip = True
+                    startVector.next = endVector
+                    
+                    self.endPrevVector = endVector.prev
+                    endVector.prev.skip = True
+                    endVector.prev = startVector
+                    
+                    # modify <endVector>
+                    # instance of <BldgEdge> replaced for <endVector>
+                    self.endEdge = (endVector.edge, endVector.direct)
+                    # replace the edge for <endVector>
+                    endVector.edge = BldgEdge('', newVert, endVector.id2, endVector.v2)
+                    endVector.direct = True
+                    
+                    self.startSin = startVector.sin
+                    self.nextSin = endVector.next.sin
+                    self.endSin = endVector.sin
+                    startVector.calculateSin()
+                    endVector.calculateSin()
+                    endVector.next.calculateSin()
+                    startVector.polygon.numEdges -= 2
+                    # the following line is needed to remove straight angles
+                    endVector.feature = self
+                else:
+                    keepOnlyStartVector = True
+        
+        if keepOnlyStartVector:
+            startVector.next.skip = endVector.prev.skip = endVector.skip = True
+            startVector.polygon.numEdges -= 3
+            
+            self._skipVectorsKeepStartVector(manager)
 
     def unskipVectors(self):
         # don't skip it for now

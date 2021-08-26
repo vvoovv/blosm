@@ -28,7 +28,7 @@ class BldgPolygon:
     
     __slots__ = (
         "vectors", "numEdges", "reversed", "refVector", "building", "_area",
-        "curvedFeature", "smallFeature",
+        "curvedFeature", "smallFeature", "complex4Feature",
         "saSfsFeature"
     )
     
@@ -63,9 +63,12 @@ class BldgPolygon:
         # <self.curvedFeature> holds the reference to the first encountered curved feature.
         # It also indicates if the polygon has at least one curved feature.
         # <self.smallFeature> holds the reference to the first encountered small quadrangular or
-        # complex feature, but not triangular one. It also indicates if the polygon has at least one
-        # small quadrangular or complex feature.
-        self.curvedFeature = self.smallFeature = self.saSfsFeature = None
+        # complex feature with 5 edges, but not triangular one. It also indicates if the polygon
+        # has at least one small quadrangular or complex feature with 5 edges.
+        # <self.complex4Feature> holds the reference to the first encountered complex feature
+        # with 4 edges. It also indicates if the polygon has at least one complex feature
+        # with 4 edges.
+        self.curvedFeature = self.smallFeature = self.saSfsFeature = self.complex4Feature = None
 
     def forceCcwDirection(self):
         """

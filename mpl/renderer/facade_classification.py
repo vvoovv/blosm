@@ -248,7 +248,7 @@ class BuildingFeatureRender(Renderer):
         return 'red' if featureType==BldgPolygonFeature.curved else ( 
             'blue' if featureType in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
                 'green' if featureType in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
-                    'cyan' if featureType in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 'black'
+                    'cyan' if featureType in (BldgPolygonFeature.complex4_convex,BldgPolygonFeature.complex5_convex,BldgPolygonFeature.complex_concave) else 'black'
                 )
             )
         )
@@ -259,7 +259,7 @@ class BuildingFeatureRender(Renderer):
         return 2. if featureType==BldgPolygonFeature.curved else ( 
             2. if featureType in (BldgPolygonFeature.quadrangle_convex,BldgPolygonFeature.quadrangle_concave) else (
                 2. if featureType in (BldgPolygonFeature.triangle_convex,BldgPolygonFeature.triangle_concave) else (
-                    2. if featureType in (BldgPolygonFeature.complex_convex,BldgPolygonFeature.complex_concave) else 0.5
+                    2. if featureType in (BldgPolygonFeature.complex4_convex,BldgPolygonFeature.complex5_convex,BldgPolygonFeature.complex_concave) else 0.5
                 )
             ) 
         )
