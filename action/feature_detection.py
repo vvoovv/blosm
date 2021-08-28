@@ -305,7 +305,7 @@ class FeatureDetection:
                     isPrevVectorStraight = True
             else:
                 if isPrevVectorStraight:
-                    self.createStraightAngleFeature(prevNonStraightVector, currentVector.prev, manager)
+                    StraightAngleSfs(prevNonStraightVector, currentVector.prev).skipVectors(manager)
                     isPrevVectorStraight = False
                 # remember the last vector with a non straight angle
                 prevNonStraightVector = currentVector
@@ -313,21 +313,8 @@ class FeatureDetection:
             currentVector = currentVector.next
             if currentVector is startVector:
                 if isPrevVectorStraight:
-                    self.createStraightAngleFeature(prevNonStraightVector, currentVector.prev, manager)
+                    StraightAngleSfs(prevNonStraightVector, currentVector.prev).skipVectors(manager)
                 break
-    
-    def createStraightAngleFeature(self, startVector, endVector, manager):
-        # Invalidate triangular feature(s) in the corner.
-        # A triangular feature that includes <startVector> is formed by
-        # <startVector.prev> and <startVector>. Only <startVector.prev> is marked
-        # that it belongs to the triangular feature. That's why
-        # <startVector.prev.featureType> is checked
-        if startVector.prev.featureType == BldgPolygonFeature.triangle_convex:
-            startVector.prev.feature.invalidate()
-        if endVector.featureType == BldgPolygonFeature.triangle_convex:
-            endVector.feature.invalidate()
-        StraightAngleSfs(startVector, endVector).skipVectors(manager)
-        
     
     def debugSetFeatureSymbols(self, polygon, sequence):
         for vector,symbol in zip(polygon.getVectors(), sequence):
