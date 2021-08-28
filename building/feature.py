@@ -599,8 +599,21 @@ class TriConvex(Feature):
             polygon.triangleFeature = self
 
     def skipVectors(self, manager):
-        self.endVector.skip = True
-        self.startVector.polygon.numEdges -= 1
+        startVector = self.startVector
+        endVector = self.endVector
+        # Check if the triangular feature is located in a corner and
+        # <self.startVector> or/and <self.endVector> form a straight angle with
+        # the neighbor edge
+        if startVector.prev.featureType != BldgPolygonFeature.curved and \
+                startVector.hasStraightAngle:
+            self.invalidate()
+            return
+        if endVector.next.featureType != BldgPolygonFeature.curved and \
+            endVector.next.hasStraightAngle:
+            self.invalidate()
+            return
+        endVector.skip = True
+        startVector.polygon.numEdges -= 1
         self._skipVectorsKeepStartVector(manager)
     
     def unskipVectors(self):
@@ -609,7 +622,7 @@ class TriConvex(Feature):
         self.startVector.polygon.numEdges += 1
     
     def invalidate(self):
-        self.startVector.feature = self.endVector = None
+        self.startVector.feature = None
 
 
 class TriConcave(Feature):
