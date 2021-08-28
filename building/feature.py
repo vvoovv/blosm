@@ -208,7 +208,7 @@ class ComplexConvex5(Feature):
         polygon = startVector.polygon
         # <self.endEdge> also serves as an indicator how the feature vectors were skipped.
         # If <self.endEdge> is equal to None, then only <self.startVector> was kept.
-        # Otherwise <self.startVector>, the middle vector and <self.endVector> were kept
+        # Otherwise <self.startVector>, the middle vector and <self.endVector> were kept.
         self.endEdge = None
         if not polygon.smallFeature:
             polygon.smallFeature = self
@@ -348,6 +348,10 @@ class ComplexConvex4(Feature):
         super().__init__(BldgPolygonFeature.complex4_convex, startVector, endVector)
         
         polygon = startVector.polygon
+        # <self.endEdge> also serves as an indicator how the feature vectors were skipped.
+        # If <self.endEdge> is equal to None, then only <self.startVector> was kept.
+        # Otherwise <self.startVector>, the middle vector and <self.endVector> were kept.
+        self.endEdge = None
         if not polygon.complex4Feature:
             polygon.complex4Feature = self
     
@@ -421,8 +425,28 @@ class ComplexConvex4(Feature):
             self._skipVectorsKeepStartVector(manager)
 
     def unskipVectors(self):
-        # don't skip it for now
-        pass
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        if self.endEdge:
+            startVector.edge, startVector.direct = self.startEdge
+            startVector.next = self.startNextVector
+            startVector.sin = self.startSin
+            
+            startVector.next.skip = False
+            
+            self.endPrevVector.skip = False
+            
+            endVector.prev = self.endPrevVector
+            endVector.edge, endVector.direct = self.endEdge
+            endVector.next.sin = self.nextSin
+            endVector.sin = self.endSin
+            
+            startVector.polygon.numEdges += 2
+        else:
+            startVector.next.skip = endVector.prev.skip = endVector.skip = False
+            startVector.polygon.numEdges += 3
+            self._unskipVectorsKeepStartVector()
 
 
 class ComplexConcave(Feature):

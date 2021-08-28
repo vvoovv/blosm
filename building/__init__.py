@@ -268,8 +268,8 @@ class BldgPolygon:
         if self.saSfsFeature:
             self._unskipFeatures(self.saSfsFeature, BldgPolygonFeature.straightAngleSfs)
         # small features
-        if self.smallFeature:
-            self._unskipFeatures(self.smallFeature, None)
+        if self.smallFeature or self.complex4Feature:
+            self._unskipFeatures(self.smallFeature or self.complex4Feature, None)
     
     def _unskipFeatures(self, feature, featureType):
         startVector = feature.startVector
