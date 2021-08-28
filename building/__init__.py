@@ -28,7 +28,7 @@ class BldgPolygon:
     
     __slots__ = (
         "vectors", "numEdges", "reversed", "refVector", "building", "_area",
-        "curvedFeature", "smallFeature", "complex4Feature",
+        "curvedFeature", "smallFeature", "complex4Feature", "triangleFeature",
         "saSfsFeature"
     )
     
@@ -68,7 +68,10 @@ class BldgPolygon:
         # <self.complex4Feature> holds the reference to the first encountered complex feature
         # with 4 edges. It also indicates if the polygon has at least one complex feature
         # with 4 edges.
-        self.curvedFeature = self.smallFeature = self.saSfsFeature = self.complex4Feature = None
+        # <self.triangleFeature> holds the reference to the first encountered triangular feature.
+        # It also indicates if the polygon has at least one triangular feature.
+        self.curvedFeature = self.smallFeature = self.saSfsFeature = \
+            self.triangleFeature = self.complex4Feature = None
 
     def forceCcwDirection(self):
         """
@@ -268,12 +271,13 @@ class BldgPolygon:
         if self.saSfsFeature:
             self._unskipFeatures(self.saSfsFeature, BldgPolygonFeature.straightAngleSfs)
         # small features
-        if self.smallFeature or self.complex4Feature:
-            self._unskipFeatures(self.smallFeature or self.complex4Feature, None)
+        initialFeature = self.smallFeature or self.complex4Feature or self.triangleFeature
+        if initialFeature:
+            self._unskipFeatures(initialFeature, None)
     
-    def _unskipFeatures(self, feature, featureType):
-        startVector = feature.startVector
-        currentVector = feature.getProxyVector()
+    def _unskipFeatures(self, initialFeature, featureType):
+        startVector = initialFeature.startVector
+        currentVector = initialFeature.getProxyVector()
         while True:
             feature = currentVector.feature
             if feature:

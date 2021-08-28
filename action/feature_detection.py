@@ -82,7 +82,7 @@ class FeatureDetection:
             
             self.detectSmallFeatures(polygon, sequence)
             
-            if self.simplifyPolygons and (polygon.smallFeature or polygon.complex4Feature):
+            if self.simplifyPolygons and (polygon.smallFeature or polygon.complex4Feature or polygon.triangleFeature):
                 self.skipFeatures(polygon, manager)
     
     def detectCurvedFeatures(self, polygon):        
@@ -265,7 +265,21 @@ class FeatureDetection:
                 feature = currentVector.feature
                 if feature:
                     if feature.type == BldgPolygonFeature.complex4_convex:
-                        feature.skipVectors(manager) 
+                        feature.skipVectors(manager)
+                    currentVector = feature.endVector.next
+                else:
+                    currentVector = currentVector.next
+                if currentVector is startVector:
+                    break
+        
+        # triangular features are treated separetely
+        if polygon.triangleFeature:
+            currentVector = startVector = polygon.triangleFeature.startVector
+            while True:
+                feature = currentVector.feature
+                if feature:
+                    if feature.type == BldgPolygonFeature.triangle_convex:
+                        feature.skipVectors(manager)
                     currentVector = feature.endVector.next
                 else:
                     currentVector = currentVector.next
@@ -274,18 +288,15 @@ class FeatureDetection:
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False
-        if not currentVector.featureType in (BldgPolygonFeature.curved, BldgPolygonFeature.triangle_convex, BldgPolygonFeature.triangle_concave):
-            while True:
-                feature = currentVector.feature
-                if not vectorHasStraightAngle(currentVector):
-                    prevNonStraightVector = currentVector
-                    break
-                polygon.numEdges -= 1
-                isPrevVectorStraight = True
-                currentVector = currentVector.prev
-            currentVector = startVector.next
-        else:
-            prevNonStraightVector = currentVector = startVector.next
+        while True:
+            feature = currentVector.feature
+            if not vectorHasStraightAngle(currentVector):
+                prevNonStraightVector = currentVector
+                break
+            polygon.numEdges -= 1
+            isPrevVectorStraight = True
+            currentVector = currentVector.prev
+        currentVector = startVector.next
         startVector = prevNonStraightVector
         while True:
             # conditions for a straight angle

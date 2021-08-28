@@ -205,11 +205,12 @@ class ComplexConvex5(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex5_convex, startVector, endVector)
-        polygon = startVector.polygon
         # <self.endEdge> also serves as an indicator how the feature vectors were skipped.
         # If <self.endEdge> is equal to None, then only <self.startVector> was kept.
         # Otherwise <self.startVector>, the middle vector and <self.endVector> were kept.
         self.endEdge = None
+        
+        polygon = startVector.polygon
         if not polygon.smallFeature:
             polygon.smallFeature = self
 
@@ -347,11 +348,12 @@ class ComplexConvex4(Feature):
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex4_convex, startVector, endVector)
         
-        polygon = startVector.polygon
         # <self.endEdge> also serves as an indicator how the feature vectors were skipped.
         # If <self.endEdge> is equal to None, then only <self.startVector> was kept.
         # Otherwise <self.startVector>, the middle vector and <self.endVector> were kept.
         self.endEdge = None
+        
+        polygon = startVector.polygon
         if not polygon.complex4Feature:
             polygon.complex4Feature = self
     
@@ -444,9 +446,9 @@ class ComplexConvex4(Feature):
             
             startVector.polygon.numEdges += 2
         else:
+            self._unskipVectorsKeepStartVector()
             startVector.next.skip = endVector.prev.skip = endVector.skip = False
             startVector.polygon.numEdges += 3
-            self._unskipVectorsKeepStartVector()
 
 
 class ComplexConcave(Feature):
@@ -591,14 +593,20 @@ class TriConvex(Feature):
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.triangle_convex, startVector, endVector)
+        
+        polygon = startVector.polygon
+        if not polygon.triangleFeature:
+            polygon.triangleFeature = self
 
     def skipVectors(self, manager):
-        # don't skip it for now
-        pass
+        self.endVector.skip = True
+        self.startVector.polygon.numEdges -= 1
+        self._skipVectorsKeepStartVector(manager)
     
     def unskipVectors(self):
-        # do nothing for now
-        pass
+        self._unskipVectorsKeepStartVector()
+        self.endVector.skip = False
+        self.startVector.polygon.numEdges += 1
     
     def invalidate(self):
         self.startVector.feature = self.endVector = None
