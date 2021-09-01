@@ -54,13 +54,10 @@ class FeatureDetection:
     #quadConcavePattern = re.compile(r"(([<|=][R|r][>|L|R|+|=|o])|([>|L|R|+|=|o][R|r][>|+]))")  # exclude long ends
 
     # convex triangular features
-    # triangle = r">(>|<|l){1,}"
-    # left_triangle = r"(l<)" # special case for triangular part of rectangle
-    # triConvexPattern = re.compile(triangle + r"|" + left_triangle)
-    triConvexPattern = re.compile(r">(>|<|l){1,}" + r"|" + r"(l<)")
+    triConvexPattern = re.compile(r"[+|>][=|<]")
       
     # concave triangular features
-    triConcavePattern = re.compile(r"<(>|<|r){1,}")
+    triConcavePattern = re.compile(r"[=|<][+|>]")
 
     
     def __init__(self, simplifyPolygons=True):
@@ -113,7 +110,7 @@ class FeatureDetection:
 
         sequenceLength = len(sequence)
         sequence = sequence+sequence # allow cyclic pattern
-
+        
         self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.curvedPattern,

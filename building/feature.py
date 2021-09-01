@@ -194,6 +194,11 @@ class Curved(Feature):
         polygon = startVector.polygon
         if not polygon.curvedFeature:
             polygon.curvedFeature = self
+    
+    def markVectors(self):
+        # We need to mark all vectors belonging to the curved feature
+        # to avoid side effect when detecting small features
+        super().markVectorsAll()
         
 
 class ComplexConvex5(Feature):
