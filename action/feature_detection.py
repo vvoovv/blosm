@@ -164,19 +164,19 @@ class FeatureDetection:
             polygon, '5'
         )   
 
-        sequence = self.matchPattern(
+        self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.triConvexPattern,
             TriConvex,
-            polygon, '6'
-        )
-        
-        self.matchPattern(
-            sequence, sequenceLength,
-            FeatureDetection.triConcavePattern,
-            TriConcave,
             polygon, ''
         )
+        
+        #self.matchPattern(
+        #    sequence, sequenceLength,
+        #    FeatureDetection.triConcavePattern,
+        #    TriConcave,
+        #    polygon, ''
+        #)
 
     def matchPattern(self, sequence, sequenceLength, pattern, featureConstructor, polygon, subChar):
         matches = [r for r in pattern.finditer(sequence)]
