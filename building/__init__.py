@@ -106,6 +106,7 @@ class BldgPolygon:
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vector.calculateSin()
             if vector.hasStraightAngle:
+                self.calculateCurvatureRadius(vector)
                 # got a straight angle
                 if len(manager.data.nodes[vector.id1].bldgs) == 1:
                     vector.straightAngle = StraightAngleType.noSharedBldg
@@ -130,6 +131,26 @@ class BldgPolygon:
             # Skip only straight angles for the vectors with the value of the attribute <straightAngle>
             # equal to <StraightAngleType.noSharedBldg>
             self.skipStraightAngles(manager, StraightAngleType.noSharedBldg)
+    
+    def calculateCurvatureRadius(self, vector):
+        """
+        Currently unused
+        """
+        import math
+        
+        if vector.sin:
+            prev = vector.prev
+            unitVector = vector.unitVector
+            n = Vector((unitVector[1], -unitVector[0]))
+            k_2 = 0.25*(
+                prev.length*prev.length + \
+                vector.length*vector.length - \
+                2.*prev.vector.cross(n)*vector.length
+            )/vector.sin/vector.sin
+            radius_2 = k_2 + 0.25*vector.length*vector.length
+            print(vector.id, math.sqrt(radius_2), vector.polygon.dimension)
+        else:
+            print(vector.id, "inf", vector.polygon.dimension)
     
     def processStraightAnglesBldgPart(self, manager):
         """
@@ -172,7 +193,7 @@ class BldgPolygon:
                         prevNonStraightVector,
                         vector.prev,
                         BldgPolygonFeature.straightAngle
-                    ).skipVectors(manager)
+                    )#.skipVectors(manager)
                     isPrevVectorStraight = False
                 # remember the last vector with a non straight angle
                 prevNonStraightVector = vector
@@ -184,7 +205,7 @@ class BldgPolygon:
                         prevNonStraightVector,
                         vector.prev,
                         BldgPolygonFeature.straightAngle
-                    ).skipVectors(manager)
+                    )#.skipVectors(manager)
                 break
     
     def directionCondition(self, vectorIn, vectorOut):
@@ -217,6 +238,11 @@ class BldgPolygon:
         return (vector for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector for vector in self.vectors if not vector.skip)
+
+    def getVectorsExceptCurved(self):
+        return (vector for vector in reversed(self.vectors) if vector.featureType != BldgPolygonFeature.curved) \
+            if self.reversed else\
+            (vector for vector in self.vectors if vector.featureType != BldgPolygonFeature.curved)
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """

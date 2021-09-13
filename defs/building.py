@@ -34,8 +34,8 @@ class StraightAngleType:
 
 
 sin_lo = abs(sin(pi/180.*4.5))
-sin_me = abs(sin(pi/180.*30))
-sin_hi = abs(sin(pi/180.*80))
+sin_me = abs(sin(pi/180.*30.))
+sin_hi = abs(sin(pi/180.*80.))
 curvedLengthFactor = 2.
 longEdgeFactor = 0.3
 midEdgeFactor = 0.1

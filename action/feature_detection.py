@@ -69,59 +69,59 @@ class FeatureDetection:
             polygon = building.polygon
             
             polygon.prepareVectorsByIndex()
-
-            # detect curved features
-            self.detectCurvedFeatures(polygon)
             
-            midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 2.)
-            longEdgeThreshold = longEdgeFactor * polygon.dimension
-            sequence = self.getSequence(polygon, midEdgeThreshold, longEdgeThreshold)
-            
-            self.detectSmallFeatures(polygon, sequence)
+            self.detectFeatures(polygon)
             
             if self.simplifyPolygons and (polygon.smallFeature or polygon.complex4Feature or polygon.triangleFeature):
                 self.skipFeatures(polygon, manager)
     
-    def detectCurvedFeatures(self, polygon):        
-        numLowAngles = sum(
-            1 for vector in polygon.getVectors() if hasAnglesForCurvedFeature(vector)
-        )
-        if not numLowAngles:
-            return
-
-        # Calculate a length threshold as a mean of the vector lengths among the vectors
-        # that satisfy the condition <hasAnglesForCurvedFeature(vector)>
-        curvedLengthThreshold = curvedLengthFactor / numLowAngles *\
-            sum(
-                vector.length for vector in polygon.getVectors()\
-                if hasAnglesForCurvedFeature(vector)
-            )
-
-        # Feature character sequence: edges with angle between 5° and 30° on either end 
-        # and a length below <curvyLengthThresh> get a 'C', else a '0'
-        sequence = ''.join(
-            '0' if vector.length>curvedLengthThreshold else ( \
-                'C' if sin_lo<abs(vector.sin)<sin_me else ( \
-                    'S' if sin_lo<abs(vector.next.sin)<sin_me else '0'
-                )
-            )
-            for vector in polygon.getVectors()
-        )
-
-        sequenceLength = len(sequence)
-        sequence = sequence+sequence # allow cyclic pattern
-        
-        self.matchPattern(
-            sequence, sequenceLength,
-            FeatureDetection.curvedPattern,
-            Curved,
-            polygon, ''
-        )
-    
-    def detectSmallFeatures(self, polygon, sequence):
+    def detectFeatures(self, polygon):
         """
         Detects patterns for small features
         """
+
+        midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 2.)
+        longEdgeThreshold = longEdgeFactor * polygon.dimension
+        
+        # Long edges (>=lengthThresh and <maxLengthThreshold):
+        #       'L': sharp left at both ends
+        #       'R': sharp right at both ends
+        #       '+': alternate sharp angle, starting to right
+        #       '=': alternate sharp angle, starting to left
+        #       'O': other long edge
+        # Short edges:
+        #       'l': medium left at both ends
+        #       'r': medium right at both ends
+        #       '>': alternate medium angle, starting to right
+        #       '<': alternate medium angle, starting to left
+        #       'o': other short edge
+        sequence = ''.join(
+            (
+                # prevent interference of the detected curved segments with the small features
+                'X' if vector.featureType==BldgPolygonFeature.curved else
+                (
+                    (
+                        'L' if ( vector.sin > sin_me and vector.next.sin > sin_me ) else (
+                            'R' if ( vector.sin < -sin_me and vector.next.sin < -sin_me ) else (
+                                '+' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                                    '=' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                                )
+                            )
+                        )
+                    ) if vector.length < longEdgeThreshold else 'O'
+                ) \
+                if vector.length >= midEdgeThreshold else (
+                    'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
+                        'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
+                            '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
+                                '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
+                            )
+                        )
+                    )
+                )
+            ) \
+            for vector in polygon.getVectors()
+        )
         
         # debug
         self.debugSetFeatureSymbols(polygon, sequence)
@@ -193,47 +193,6 @@ class FeatureDetection:
             if subChar:
                 sequence = re.sub(pattern, lambda m: subChar * len(m.group()), sequence)
         return sequence
-    
-    def getSequence(self, polygon, midEdgeThreshold, longEdgeThreshold):
-        # Long edges (>=lengthThresh and <maxLengthThreshold):
-        #       'L': sharp left at both ends
-        #       'R': sharp right at both ends
-        #       '+': alternate sharp angle, starting to right
-        #       '=': alternate sharp angle, starting to left
-        #       'O': other long edge
-        # Short edges:
-        #       'l': medium left at both ends
-        #       'r': medium right at both ends
-        #       '>': alternate medium angle, starting to right
-        #       '<': alternate medium angle, starting to left
-        #       'o': other short edge
-        return ''.join(
-            (
-                # prevent interference of the detected curved segments with the small features
-                'X' if vector.featureType==BldgPolygonFeature.curved else
-                (
-                    (
-                        'L' if ( vector.sin > sin_me and vector.next.sin > sin_me ) else (
-                            'R' if ( vector.sin < -sin_me and vector.next.sin < -sin_me ) else (
-                                '+' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
-                                    '=' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
-                                )
-                            )
-                        )
-                    ) if vector.length < longEdgeThreshold else 'O'
-                ) \
-                if vector.length >= midEdgeThreshold else (
-                    'l' if (vector.sin > sin_me and vector.next.sin > sin_me) else (
-                        'r' if (vector.sin < -sin_me and vector.next.sin < -sin_me) else (
-                            '>' if ( vector.sin < -sin_me and vector.next.sin > sin_me ) else (
-                                '<' if (vector.sin > sin_me and vector.next.sin < -sin_me) else 'o'
-                            )
-                        )
-                    )
-                )
-            ) \
-            for vector in polygon.getVectors()
-        )
     
     def skipFeatures(self, polygon, manager):
         if polygon.smallFeature:

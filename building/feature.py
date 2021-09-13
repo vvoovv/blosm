@@ -126,7 +126,7 @@ class Feature:
 class StraightAngle(Feature):
     
     def __init__(self, startVector, endVector, _type):
-        self.twoVectors = startVector is endVector
+        self.twoVectors = startVector.next is endVector
         super().__init__(_type, startVector, endVector)
 
     def markVectorsAll(self):
@@ -135,12 +135,31 @@ class StraightAngle(Feature):
         else:
             super().markVectorsAll()
     
+    def setStartVector(self, startVector):
+        self.startVector = startVector
+        if self.twoVectors:
+            self.twoVectors = False
+        self.setParentFeature()
+        self.markVectors()
+    
     def skipVectors(self, manager):
         if self.twoVectors:
             self.endVector.skip = True
             self._skipVectors(manager)
         else:
             super().skipVectors(manager)
+    
+    def isCurved(self):
+        """
+        Is it actually a curved feature?
+        """
+        from util.polygon import Polygon
+        # Calcualte the sine of the angle between <self.startVector> and the vector
+        # from <self.startVector.v1> and <self.endVector.v2>
+        # sin = vector.cross(self.startVector.unitVector)
+        return not self.twoVectors and \
+            (self.endVector.v2 - self.startVector.v1).normalized().cross(self.startVector.unitVector) \
+                > Polygon.straightAngleSin
     
     def extendToLeft(self):
         """

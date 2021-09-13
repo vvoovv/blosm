@@ -6,6 +6,8 @@ from mpl.renderer.facade_classification import \
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
+from action.curved_features import CurvedFeatures
+from action.straight_angles import StraightAngles
 
 #from manager.logging import Logger
 
@@ -77,8 +79,10 @@ def setup(app, osm):
         )
         
         if detectFeatures:
-            buildings.addAction(FeatureDetection(simplifyPolygons))
-        buildings.addAction(FacadeVisibilityOther())
+            buildings.addAction(CurvedFeatures())
+            buildings.addAction(StraightAngles())
+            #buildings.addAction(FeatureDetection(simplifyPolygons))
+        #buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())
         
