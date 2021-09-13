@@ -3,7 +3,7 @@ A module to define features for a instance of the class <BldgPolygon>
 """
 
 from mathutils import Vector
-from building import BldgEdge
+from building import BldgEdge, BldgPolygon
 from defs.building import BldgPolygonFeature
 
 
@@ -153,13 +153,12 @@ class StraightAngle(Feature):
         """
         Is it actually a curved feature?
         """
-        from util.polygon import Polygon
         # Calcualte the sine of the angle between <self.startVector> and the vector
         # from <self.startVector.v1> and <self.endVector.v2>
         # sin = vector.cross(self.startVector.unitVector)
         return not self.twoVectors and \
             (self.endVector.v2 - self.startVector.v1).normalized().cross(self.startVector.unitVector) \
-                > Polygon.straightAngleSin
+                > BldgPolygon.straightAngleSin
     
     def extendToLeft(self):
         """

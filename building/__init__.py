@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import parse
 from mathutils import Vector
-from util.polygon import Polygon
 from defs.building import BldgPolygonFeature, StraightAngleType
 from defs.facade_classification import WayLevel, VisibilityAngleFactor
 
@@ -31,6 +30,8 @@ class BldgPolygon:
         "curvedFeature", "smallFeature", "complex4Feature", "triangleFeature",
         "saSfsFeature"
     )
+    
+    straightAngleSin = 0.
     
     def __init__(self, outline, manager, building):
         # if <building> is None, it's a building part
@@ -161,7 +162,7 @@ class BldgPolygon:
         for vector in (reversed(self.vectors) if self.reversed else self.vectors):
             vec = vector.vector
             dot = vec_.dot(vec)
-            if dot and abs( vec_.cross(vec)/dot ) < Polygon.straightAngleTan:
+            if dot and abs( vec_.cross(vec)/dot ) < BldgPolygon.straightAngleSin:
                 # got a straight angle
                 vector.straightAngle = BldgPolygonFeature.straightAngle
             vec_ = vec
@@ -443,7 +444,7 @@ class BldgVector:
     
     @property
     def hasStraightAngle(self):
-        return abs(self.sin) < Polygon.straightAngleSin
+        return abs(self.sin) < BldgPolygon.straightAngleSin
     
     def markUsedNode(self, building, manager):
         manager.data.nodes[self.id1].bldgs.append(building)

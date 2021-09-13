@@ -1,7 +1,7 @@
 import os, math
 from urllib import request
 
-from util.polygon import Polygon
+from building import BldgPolygon
 
 
 class BaseApp:
@@ -49,7 +49,7 @@ class BaseApp:
         self.layerKwargs = {}
         
         # tangent to check if an angle of the polygon is straight
-        Polygon.straightAngleSin = math.sin(math.radians( abs(180.-self.straightAngleThreshold) ))
+        BldgPolygon.straightAngleSin = math.sin(math.radians( abs(180.-self.straightAngleThreshold) ))
     
     def download(self, url, filepath, data=None):
         print("Downloading the file from %s..." % url)
