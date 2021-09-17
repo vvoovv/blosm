@@ -123,7 +123,7 @@ class Feature:
         self._unskipVectors()
 
 
-class StraightAngle(Feature):
+class StraightAngleBase(Feature):
     
     def __init__(self, startVector, endVector, _type):
         self.twoVectors = startVector.next is endVector
@@ -148,6 +148,23 @@ class StraightAngle(Feature):
             self._skipVectors(manager)
         else:
             super().skipVectors(manager)
+
+
+class StraightAngle(StraightAngleBase):
+    
+    __slots__ = ("prev", "next", "hasSharedEdge", "hasFreeEdge")
+    
+    def __init__(self, startVector, endVector, _type):
+        super().__init__(startVector, endVector, _type)
+        
+        polygon = startVector.polygon
+        self.prev = polygon.saFeature
+        self.next = None
+        if polygon.saFeature:
+            polygon.saFeature.next = self
+        polygon.saFeature = self
+        
+        self.hasSharedEdge = self.hasFreeEdge = False
     
     def isCurved(self):
         """
@@ -160,21 +177,8 @@ class StraightAngle(Feature):
             (self.endVector.v2 - self.startVector.v1).normalized().cross(self.startVector.unitVector) \
                 > BldgPolygon.straightAngleSin
     
-    def extendToLeft(self):
-        """
-        Currently unused
-        """
-        if self.twoVectors:
-            self.twoVectors = False
-        
-        endVector = self.endVector = self.endVector.next
-        endVector.feature = self
-        endVector.skip = True
-        
-        # soft skip
-        nextVector = endVector.next
-        nextVector.prev = self.startVector
-        self.startVector.next = nextVector
+    def getNextVector(self, vector):
+        return self.startNextVector if vector is self.startVector else vector.next
 
 
 class StraightAngleSfs(StraightAngle):

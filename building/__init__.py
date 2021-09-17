@@ -27,7 +27,7 @@ class BldgPolygon:
     
     __slots__ = (
         "vectors", "numEdges", "reversed", "refVector", "building", "_area",
-        "curvedFeature", "smallFeature", "complex4Feature", "triangleFeature",
+        "curvedFeature", "saFeature", "smallFeature", "complex4Feature", "triangleFeature",
         "saSfsFeature"
     )
     
@@ -57,12 +57,15 @@ class BldgPolygon:
         self.forceCcwDirection()
         if building:
             for vector in self.vectors:
-                vector.markUsedNode(self, manager)
+                # mark that the start node <vector.id1> of <vector> is used by <vector>
+                manager.data.nodes[vector.id1].bldgVectors.append(vector)
         
         self._area = 0.
         
         # <self.curvedFeature> holds the reference to the first encountered curved feature.
         # It also indicates if the polygon has at least one curved feature.
+        # <self.saFeature> holds the reference to the first encountered straight angle feature.
+        # It also indicates if the polygon has at least one straight angle feature.
         # <self.smallFeature> holds the reference to the first encountered small quadrangular or
         # complex feature with 5 edges, but not triangular one. It also indicates if the polygon
         # has at least one small quadrangular or complex feature with 5 edges.
@@ -71,7 +74,7 @@ class BldgPolygon:
         # with 4 edges.
         # <self.triangleFeature> holds the reference to the first encountered triangular feature.
         # It also indicates if the polygon has at least one triangular feature.
-        self.curvedFeature = self.smallFeature = self.saSfsFeature = \
+        self.curvedFeature = self.saFeature = self.smallFeature = self.saSfsFeature = \
             self.triangleFeature = self.complex4Feature = None
 
     def forceCcwDirection(self):
@@ -239,11 +242,6 @@ class BldgPolygon:
         return (vector for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector for vector in self.vectors if not vector.skip)
-
-    def getVectorsExceptCurved(self):
-        return (vector for vector in reversed(self.vectors) if vector.featureType != BldgPolygonFeature.curved) \
-            if self.reversed else\
-            (vector for vector in self.vectors if vector.featureType != BldgPolygonFeature.curved)
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """
@@ -385,7 +383,7 @@ class BldgVector:
     
     def __init__(self, edge, direct, polygon):
         BldgVector.ID += 1 # debug
-        self.id = BldgEdge.ID # debug
+        self.id = BldgVector.ID # debug
         
         self.edge = edge
         # <self.direct> defines the direction given the <edge> defined by node1 and node2
@@ -445,9 +443,6 @@ class BldgVector:
     @property
     def hasStraightAngle(self):
         return abs(self.sin) < BldgPolygon.straightAngleSin
-    
-    def markUsedNode(self, building, manager):
-        manager.data.nodes[self.id1].bldgs.append(building)
     
     def getV1Tuple3d(self):
         v = self.v1
