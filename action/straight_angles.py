@@ -159,6 +159,8 @@ class StraightAngles:
                 if vector.edge.hasSharedBldgVectors():
                     if not saFeature.hasSharedEdge:
                         saFeature.hasSharedEdge = True
+                    if not numSharedEdges:
+                        startVector = vector
                     numSharedEdges += 1
                 else:
                     if not saFeature.hasFreeEdge:
