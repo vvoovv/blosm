@@ -84,7 +84,7 @@ class StraightAngles:
                     firstVector = False
             if startVector:
                 if firstVectorSaFeature:
-                    self.createStraightAngle(startVector.prev, firstVectorSaFeature[1])
+                    self.createStraightAngle(startVector, firstVectorSaFeature[1])
                 else:
                     # a sequence of straight angles at the end of the for-cycle
                     self.createStraightAngle(startVector, vector)
