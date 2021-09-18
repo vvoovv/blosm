@@ -41,7 +41,7 @@ class StraightAngles:
             while True:
                 if vector.featureType == BldgPolygonFeature.curved:
                     if startVector:
-                        self.createStraightAngle(startVector, vector.prev, manager, True)
+                        self.createStraightAngle(startVector, vector.prev)
                         startVector = None
                     # Skip the curved features
                     # A straight angle formed by <endVector> of a curved feature and its next vector is ignored
@@ -54,10 +54,12 @@ class StraightAngles:
                         if not startVector:
                             startVector = vector
                     elif startVector:
-                        self.createStraightAngle(startVector, vector.prev, manager, True)
+                        self.createStraightAngle(startVector, vector.prev)
                         startVector = None
                 vector = vector.next
                 if vector is endVector:
+                    if startVector:
+                        self.createStraightAngle(startVector, vector.prev)
                     break
         else:
             firstVector = True
@@ -76,20 +78,20 @@ class StraightAngles:
                         firstVectorSaFeature = (startVector, vector.prev)
                         saAtFirstVector = False
                     else:
-                        self.createStraightAngle(startVector, vector.prev, manager, True)
+                        self.createStraightAngle(startVector, vector.prev)
                     startVector = None
                 if firstVector:
                     firstVector = False
             if startVector:
                 if firstVectorSaFeature:
-                    self.createStraightAngle(startVector.prev, firstVectorSaFeature[1], manager, True)
+                    self.createStraightAngle(startVector.prev, firstVectorSaFeature[1])
                 else:
                     # a sequence of straight angles at the end of the for-cycle
-                    self.createStraightAngle(startVector, vector, manager, True)
+                    self.createStraightAngle(startVector, vector)
             elif firstVectorSaFeature:
-                self.createStraightAngle(firstVectorSaFeature[0], firstVectorSaFeature[1], manager, True)
+                self.createStraightAngle(firstVectorSaFeature[0], firstVectorSaFeature[1])
     
-    def createStraightAngle(self, startVectorNext, endVector, manager, skipVectors):
+    def createStraightAngle(self, startVectorNext, endVector):
         """
         Create a feature for a sequence of straight angles
         """
