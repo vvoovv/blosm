@@ -114,17 +114,17 @@ class StraightAngles:
     
     def processStraightAnglesFreeEdges(self, polygon, manager):
         saFeature = polygon.saFeature
+        startVector = None
         while True:
             
             numFreeEdges = 0
-            vector = startVector = saFeature.startVector
+            vector = saFeature.startVector
             while True:
                 # <vector>'s edge is shared with another building's polygon
                 if vector.edge.hasSharedBldgVectors():
                     if numFreeEdges:
                         if numFreeEdges > 1:
                             StraightAngleBase(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        startVector = vector
                         numFreeEdges = 0
                 else:
                     if len(manager.data.nodes[vector.id1].bldgVectors) > 1:
@@ -133,6 +133,8 @@ class StraightAngles:
                         numFreeEdges = 1
                         startVector = vector
                     else:
+                        if not numFreeEdges:
+                            startVector = vector
                         numFreeEdges += 1
                     
                 if vector is saFeature.endVector:
@@ -150,25 +152,31 @@ class StraightAngles:
     
     def processStraightAnglesSharedEdges(self, polygon, manager):
         saFeature = polygon.saFeature
+        startVector = neighborPolygon = None
         while True:
             
             numSharedEdges = 0
-            vector = startVector = saFeature.startVector
+            vector = saFeature.startVector
+            sharesOnePolygon = True
             while True:
                 # <vector>'s edge is shared with another building's polygon
                 if vector.edge.hasSharedBldgVectors():
                     if not saFeature.hasSharedEdge:
                         saFeature.hasSharedEdge = True
-                    if not numSharedEdges:
+                    if numSharedEdges and neighborPolygon is vector.neighbor.polygon:
+                        numSharedEdges += 1
+                    else:
+                        if numSharedEdges and sharesOnePolygon:
+                            sharesOnePolygon = False
                         startVector = vector
-                    numSharedEdges += 1
+                        neighborPolygon = vector.neighbor.polygon
+                        numSharedEdges = 1
                 else:
                     if not saFeature.hasFreeEdge:
                         saFeature.hasFreeEdge = True
                     if numSharedEdges:
                         if numSharedEdges > 1:
                             StraightAngleBase(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        startVector = vector
                         numSharedEdges = 0
                     
                 if vector is saFeature.endVector:
@@ -179,7 +187,8 @@ class StraightAngles:
             
             saFeature.setParentFeature()
             saFeature.markVectors()
-            if (saFeature.hasFreeEdge and not saFeature.hasSharedEdge) or (not saFeature.hasFreeEdge and saFeature.hasSharedEdge):
+            if (saFeature.hasFreeEdge and not saFeature.hasSharedEdge) or \
+                    (not saFeature.hasFreeEdge and saFeature.hasSharedEdge and sharesOnePolygon):
                 saFeature.skipVectors(manager)
             if saFeature.prev:
                 saFeature = saFeature.prev
