@@ -175,7 +175,8 @@ class StraightAngles:
             
             saFeature.setParentFeature()
             saFeature.markVectors()
-            saFeature.skipVectors(manager)
+            if (saFeature.hasFreeEdge and not saFeature.hasSharedEdge) or (not saFeature.hasFreeEdge and saFeature.hasSharedEdge):
+                saFeature.skipVectors(manager)
             if saFeature.prev:
                 saFeature = saFeature.prev
             else:
