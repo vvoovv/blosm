@@ -39,5 +39,6 @@ sin_hi = abs(sin(pi/180.*80.))
 curvedLengthFactor = 2.
 longEdgeFactor = 0.3
 midEdgeFactor = 0.1
+chordRatioThreshold = 0.03
 
 

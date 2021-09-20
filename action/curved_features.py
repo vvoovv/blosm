@@ -2,7 +2,7 @@ import re
 
 from .feature_detection import FeatureDetection
 
-from defs.building import curvedLengthFactor, sin_lo, sin_me
+from defs.building import curvedLengthFactor, sin_lo, sin_me, chordRatioThreshold
 
 from building.feature import Curved
 
@@ -76,12 +76,29 @@ class CurvedFeatures(FeatureDetection):
                 matchSpanIndices = matches[matchIndex].span()
                 if 0 <= matchSpanIndices[0] < sequenceLength:
                     startIndex = matchSpanIndices[0]
+                    startVector = polygon.vectors[
+                        polygon.numEdges - 1 - startIndex if polygon.reversed else startIndex
+                    ]
                     endIndex = (matchSpanIndices[1]-1) % sequenceLength
-                    Curved(
-                        polygon.vectors[
-                            polygon.numEdges - 1 - startIndex if polygon.reversed else startIndex
-                        ], # start vector
-                        polygon.vectors[
-                            polygon.numEdges - 1 - endIndex if polygon.reversed else endIndex
-                        ] # end vector
-                    )
+                    endVector = polygon.vectors[
+                        polygon.numEdges - 1 - endIndex if polygon.reversed else endIndex
+                    ]
+                    if endVector.next is startVector or endVector.next.next is startVector:
+                        # the whole polygon is curved or it has only one non-curved edge
+                        Curved(startVector, endVector)
+                    else:
+                        # validity check
+                        chordVector = endVector.v2 - startVector.v1
+                        unitChordVector = chordVector.normalized()
+                        
+                        # compute the sum of distances of the vertices of the curved feature to <chordVector>
+                        _sum = 0.
+                        vector = startVector
+                        while not vector is endVector:
+                            v = vector.v2 - startVector.v1
+                            _sum += ( v - v.dot(unitChordVector)*unitChordVector ).length
+                            vector = vector.next
+                        
+                        # divide the sum by <chordVector.length>
+                        if _sum/chordVector.length > chordRatioThreshold:
+                            Curved(startVector, endVector)
