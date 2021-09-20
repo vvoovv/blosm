@@ -22,23 +22,16 @@ class CurvedFeatures(FeatureDetection):
     
     def do(self, manager):
         for building in manager.buildings:
-            polygon = building.polygon
-            
-            for vector in polygon.getVectors():
-                vector.calculateSin()
-            
-            polygon.prepareVectorsByIndex()
-
             # detect curved features
-            self.detectCurvedFeatures(polygon)
+            self.detectCurvedFeatures(building.polygon)
     
     def detectCurvedFeatures(self, polygon):
         numLowAngles = sum(
-            1 for vector in polygon.getVectors() if hasAnglesForCurvedFeature(vector)
+            1 for vector in polygon.getVectorsAll() if hasAnglesForCurvedFeature(vector)
         )
         if not numLowAngles:
             # debug
-            for vector in polygon.getVectors():
+            for vector in polygon.getVectorsAll():
                 vector.featureSymbol = '0'
             return
 
@@ -46,7 +39,7 @@ class CurvedFeatures(FeatureDetection):
         # that satisfy the condition <hasAnglesForCurvedFeature(vector)>
         curvedLengthThreshold = curvedLengthFactor / numLowAngles *\
             sum(
-                vector.length for vector in polygon.getVectors()\
+                vector.length for vector in polygon.getVectorsAll()\
                 if hasAnglesForCurvedFeature(vector)
             )
 
@@ -61,7 +54,7 @@ class CurvedFeatures(FeatureDetection):
                     'S' if 0.<abs(vector.next.sin)<sin_me else 'K'
                 )
             )
-            for vector in polygon.getVectors()
+            for vector in polygon.getVectorsAll()
         )
         
         # debug
@@ -82,7 +75,13 @@ class CurvedFeatures(FeatureDetection):
             for matchIndex in range(firstMatchIndex, numMatches):
                 matchSpanIndices = matches[matchIndex].span()
                 if 0 <= matchSpanIndices[0] < sequenceLength:
+                    startIndex = matchSpanIndices[0]
+                    endIndex = (matchSpanIndices[1]-1) % sequenceLength
                     Curved(
-                        polygon.getVectorByIndex(matchSpanIndices[0]), # start vector
-                        polygon.getVectorByIndex( (matchSpanIndices[1]-1) % sequenceLength ) # end vector
+                        polygon.vectors[
+                            polygon.numEdges - 1 - startIndex if polygon.reversed else startIndex
+                        ], # start vector
+                        polygon.vectors[
+                            polygon.numEdges - 1 - endIndex if polygon.reversed else endIndex
+                        ] # end vector
                     )

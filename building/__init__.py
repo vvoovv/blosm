@@ -55,6 +55,7 @@ class BldgPolygon:
         if building:
             for vector in self.vectors:
                 # mark that the start node <vector.id1> of <vector> is used by <vector>
+                vector.calculateSin()
                 manager.data.nodes[vector.id1].bldgVectors.append(vector)
         
         self._area = 0.
@@ -160,6 +161,11 @@ class BldgPolygon:
         return (vector for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector for vector in self.vectors if not vector.skip)
+
+    def getVectorsAll(self):
+        return (vector for vector in reversed(self.vectors)) \
+            if self.reversed else\
+            (vector for vector in self.vectors)
     
     def edgeInfo(self, queryBldgVerts, firstVertIndex, skipShared):
         """
