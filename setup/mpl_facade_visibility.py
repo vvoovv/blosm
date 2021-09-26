@@ -8,6 +8,7 @@ from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
 from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
+from action.road_clustering import RoadClustering
 
 #from manager.logging import Logger
 
@@ -33,6 +34,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--showFeatureSymbols", action='store_true', help="Show a symbol for each unskipped polygon vector. The symbol is used for pattern matching", default=False)
     app.argParserExtra.add_argument("--simplifyPolygons", action='store_true', help="Simplify polygons with the detected features", default=False)
     app.argParserExtra.add_argument("--restoreFeatures", action='store_true', help="Restore simplified features", default=False)
+    app.argParserExtra.add_argument("--roadClustering", action='store_true', help="Create road clusters", default=False)
     
     # parse the newly added command line arguments
     app.parseArgs()
@@ -46,7 +48,8 @@ def setup(app, osm):
     
     simplifyPolygons = getattr(app, "simplifyPolygons", False)
     restoreFeatures = getattr(app, "restoreFeatures", False)
-    
+
+    roadClustering = getattr(app, "roadClustering", False)
     # create managers
     
     wayManager = WayManager(osm, app)
@@ -85,6 +88,9 @@ def setup(app, osm):
         #buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())
+
+        if roadClustering:
+            buildings.addAction(RoadClustering())
         
         osm.addCondition(
             lambda tags, e: "building" in tags,
