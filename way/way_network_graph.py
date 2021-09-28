@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from collections import deque, defaultdict
+import numpy as np
 
 class OSMWay():
     def __init__(self, id, name, category, nodes, length, forward=True, backward=True):
@@ -34,18 +35,20 @@ class OSMWay():
 
 class Vertex():
     ID = 0
-    def __init__(self, id, data):
+    def __init__(self, id, osm_id, data):
         self.id = id
+        self.osm_id = osm_id
         self.data = data
         self.iID = Vertex.ID
         Vertex.ID += 1
 
 class Edge:
     ID = 0
-    def __init__(self, s, t, length, category, name, forward, backward):
+    def __init__(self, s, t, length, geom_dist, category, name, forward, backward):
         self.s = s
         self.t = t
         self.length = length
+        self.geom_dist = geom_dist
         self.category = category
         self.name = name
         self.forward = forward
@@ -66,7 +69,7 @@ class WayNetworkGraph():
         if type(ways[0]) is OSMWay:
             # input comes from OSM ways
             self.add_nodes(id_mapper, nodes)
-            self.add_edges(id_mapper, ways)
+            self.add_osm_edges(id_mapper, ways)
         else:
             # input comes from SectionGraphCreator
             for ID, vertex in nodes.items():
@@ -81,8 +84,8 @@ class WayNetworkGraph():
 
 
     def add_nodes(self, id_mapper, nodes):
-        for ID, n in nodes.items():
-            self.add_node(Vertex(id_mapper[ID], n))
+        for osm_id, n in nodes.items():
+            self.add_node(Vertex(id_mapper[osm_id],osm_id, n))
         test = 1
 
     def add_node(self, vertex):
@@ -91,12 +94,13 @@ class WayNetworkGraph():
         self.in_ways.append([])
         self.way_categories.append([])
 
-    def add_edges(self, id_mapper, ways):
+    def add_osm_edges(self, id_mapper, ways):
         bidirectional_ways = {}
         for w in ways:
             for i in range(len(w.nodes) - 1):
                 s_id, t_id = id_mapper[w.nodes[i]], id_mapper[w.nodes[i + 1]]
-                edge = Edge(s_id, t_id, w.length, w.category, w.name, w.forward, w.backward)
+                segment_length = np.linalg.norm(self.vertices[s_id].data - self.vertices[t_id].data)
+                edge = Edge(s_id, t_id, segment_length, segment_length, w.category, w.name, w.forward, w.backward)
                 if w.forward and w.backward:
                     smaller, bigger = min(s_id, t_id), max(s_id, t_id)
                     if (smaller, bigger) in bidirectional_ways:
@@ -122,8 +126,29 @@ class WayNetworkGraph():
             set(self.out_ways[node_id]).union(set(self.in_ways[node_id]))
         )
 
+    def get_out_edges(self):
+        result = defaultdict(list)
+        for e in self.edges:
+            if e.forward:
+                result[e.s].append(e)
+            if e.backward:
+                result[e.t].append(e)
+        return result
+
     def get_node(self, node_id):
         return self.vertices[node_id]
+
+    def get_crossings_that_contain(self, categories):
+        found = []
+        categories_set = set(categories)
+        for indx, v in enumerate(self.vertices):
+            v_cats = self.way_categories[indx]
+            cats_set = set(v_cats)
+            degree = len(v_cats)
+            if degree != 2 or (degree==2 and len(cats_set) > 1):
+                if categories_set & cats_set:
+                    found.append(indx)
+        return found
 
 
 
@@ -164,8 +189,9 @@ class SectionGraphCreator:
                 e_merge, end_node_id = self.find_edges_to_merge( start_node_id, out_edge)
                 if len(e_merge) == 0:
                     continue
-                sum_edge_lengths = sum([e.length for e in e_merge])
-                e_merge[0].length = sum_edge_lengths
+
+                e_merge[0].length = sum([e.length for e in e_merge])
+                e_merge[0].geom_dist = np.linalg.norm(self.graph.vertices[end_node_id].data-self.graph.vertices[start_node_id].data)
                 if e_merge[0].backward:
                     #  deduplication measure; if not for this for bidirectional edges, that are
                     #  removed between intersections, 2 new edges would be created
@@ -174,22 +200,16 @@ class SectionGraphCreator:
                         # already added this edge skip it
                         continue
                     bidirectional_ways.add((lo_node_id, hi_node_id))
-                    merged_edge = Edge(lo_node_id, hi_node_id, e_merge[0].length, e_merge[0].category,
-                                       e_merge[0].name, True, e_merge[0].backward)
+                    merged_edge = Edge(lo_node_id, hi_node_id, e_merge[0].length, e_merge[0].geom_dist,
+                                        e_merge[0].category, e_merge[0].name, True, e_merge[0].backward)
                 else:
-                    merged_edge = Edge(start_node_id, end_node_id, e_merge[0].length, e_merge[0].category,
-                                       e_merge[0].name, True, e_merge[0].backward)
+                    merged_edge = Edge(start_node_id, end_node_id, e_merge[0].length, e_merge[0].geom_dist,
+                                       e_merge[0].category, e_merge[0].name, True, e_merge[0].backward)
                 way_sections.append(merged_edge)
         return way_sections
 
     def get_out_ways(self):
-        result = defaultdict(list)
-        for e in self.graph.edges:
-            if e.forward:
-                result[e.s].append(e)
-            if e.backward:
-                result[e.t].append(e)
-        return result
+        return self.graph.get_out_edges()
 
     def find_all_intersections(self):
         node_ids = range(0, len(self.graph.vertices))
