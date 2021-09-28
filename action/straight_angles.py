@@ -157,7 +157,6 @@ class StraightAngles:
             
             numSharedEdges = 0
             vector = saFeature.startVector
-            sharesOnePolygon = True
             while True:
                 # <vector>'s edge is shared with another building's polygon
                 if vector.edge.hasSharedBldgVectors():
@@ -166,8 +165,8 @@ class StraightAngles:
                     if numSharedEdges and neighborPolygon is vector.neighbor.polygon:
                         numSharedEdges += 1
                     else:
-                        if numSharedEdges and sharesOnePolygon:
-                            sharesOnePolygon = False
+                        if numSharedEdges and saFeature.sharesOnePolygon:
+                            saFeature.sharesOnePolygon = False
                         startVector = vector
                         neighborPolygon = vector.neighbor.polygon
                         numSharedEdges = 1
@@ -187,9 +186,8 @@ class StraightAngles:
             
             saFeature.setParentFeature()
             saFeature.markVectors()
-            if (saFeature.hasFreeEdge and not saFeature.hasSharedEdge) or \
-                    (not saFeature.hasFreeEdge and saFeature.hasSharedEdge and sharesOnePolygon):
-                saFeature.skipVectors(manager)
+            saFeature.skipVectors(manager)
+            
             if saFeature.prev:
                 saFeature = saFeature.prev
             else:

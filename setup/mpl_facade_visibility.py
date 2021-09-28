@@ -81,7 +81,7 @@ def setup(app, osm):
         if detectFeatures:
             buildings.addAction(CurvedFeatures())
             buildings.addAction(StraightAngles())
-            #buildings.addAction(FeatureDetection(simplifyPolygons))
+            buildings.addAction(FeatureDetection(simplifyPolygons))
         #buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())

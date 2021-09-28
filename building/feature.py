@@ -152,7 +152,7 @@ class StraightAngleBase(Feature):
 
 class StraightAngle(StraightAngleBase):
     
-    __slots__ = ("prev", "next", "hasSharedEdge", "hasFreeEdge")
+    __slots__ = ("prev", "next", "hasSharedEdge", "hasFreeEdge", "sharesOnePolygon")
     
     def __init__(self, startVector, endVector, _type):
         super().__init__(startVector, endVector, _type)
@@ -165,6 +165,7 @@ class StraightAngle(StraightAngleBase):
         polygon.saFeature = self
         
         self.hasSharedEdge = self.hasFreeEdge = False
+        self.sharesOnePolygon = True
     
     def isCurved(self):
         """
@@ -608,6 +609,13 @@ class QuadConvex(Feature):
     
     def getProxyVector(self):
         return self.endVector if self.leftEdgeShorter else self.startVector
+    
+    def isSkippable(self, unskipStraightAngles):
+        """
+        Check if the feature can be skipped:
+            * It doesn't have edges shared with the other polygons
+            
+        """
 
 
 class QuadConcave(QuadConvex):

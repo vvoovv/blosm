@@ -200,14 +200,22 @@ class FeatureDetection:
             while True:
                 feature = currentVector.feature
                 if feature:
-                    if not feature.type in (
-                            BldgPolygonFeature.curved,
-                            BldgPolygonFeature.complex4_convex,
-                            #BldgPolygonFeature.complex4_concave,
-                            BldgPolygonFeature.triangle_convex,
-                            BldgPolygonFeature.triangle_concave
-                        ):
-                        feature.skipVectors(manager) 
+                    # * Curved features aren't skipped.
+                    # * Complex features with 4 edges are processed separately since "free" neighbor vectors
+                    # are needed to skip the vectors of a complex feature. For example, the neighbor vectors
+                    # may be a part of a quadrangle feature and we need to skip the quadrangle feature first
+                    # to get the "free" neighbor edges.
+                    # * The triangle convex features are processed separately since they may be located at a corner
+                    # and have quadrangle features as neighbors. After skipping the quadrangle features, a sequence of
+                    # straight angle can be formed. It means that those triangle convex features at a corner
+                    # should be invalidated.
+                    if feature.type in (
+                                BldgPolygonFeature.quadrangle_convex,
+                                BldgPolygonFeature.quadrangle_concave,
+                                BldgPolygonFeature.complex5_convex
+                            ):
+                        if feature.isSkippable(unskipStraightAngles=True):
+                            feature.skipVectors(manager) 
                     currentVector = feature.endVector.next
                 else:
                     currentVector = currentVector.next
