@@ -1,7 +1,5 @@
-import numpy as np
 from collections import deque
 from way.way_network_graph import OSMWay, WayNetworkGraph, SectionGraphCreator
-import  matplotlib.pyplot as plt
 
 main_roads =   (  
     "primary",

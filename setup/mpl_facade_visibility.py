@@ -9,7 +9,7 @@ from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
 from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
-from action.road_clustering import WayClustering
+from action.way_clustering import WayClustering
 
 #from manager.logging import Logger
 
