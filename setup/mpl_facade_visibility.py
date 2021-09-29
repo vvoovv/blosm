@@ -88,9 +88,6 @@ def setup(app, osm):
         #buildings.addAction(FacadeVisibilityOther())
         if classifyFacades:
             buildings.addAction(FacadeClassification())
-
-        if roadClustering:
-            buildings.addAction(RoadClustering())
         
         osm.addCondition(
             lambda tags, e: "building" in tags,
@@ -100,6 +97,9 @@ def setup(app, osm):
     
     if app.highways or app.railways:
         osm.addCondition(tunnel)
+        
+        if roadClustering:
+            wayManager.addAction(RoadClustering())
     
     if app.highways:
         osm.addCondition(
