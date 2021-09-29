@@ -3,12 +3,13 @@ from building.manager import BaseBuildingManager
 from way.manager import WayManager
 from mpl.renderer.facade_classification import \
     BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender, BuildingFeatureRender
+from mpl.renderer.way_cluster import WayClusterRenderer
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
 from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
-from action.road_clustering import RoadClustering
+from action.road_clustering import WayClustering
 
 #from manager.logging import Logger
 
@@ -53,7 +54,6 @@ def setup(app, osm):
     # create managers
     
     wayManager = WayManager(osm, app)
-    wayManager.setRenderer(WayVisibilityRenderer(showIDs=showIDs), app)
     
     #linestring = Linestring(osm)
     #polygon = Polygon(osm)
@@ -99,7 +99,10 @@ def setup(app, osm):
         osm.addCondition(tunnel)
         
         if roadClustering:
-            wayManager.addAction(RoadClustering())
+            wayManager.addRenderer(WayClusterRenderer())
+            wayManager.addAction(WayClustering())
+        else:
+            wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))
     
     if app.highways:
         osm.addCondition(

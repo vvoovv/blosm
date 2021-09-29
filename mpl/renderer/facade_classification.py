@@ -271,9 +271,10 @@ class WayVisibilityRenderer(WayRenderer):
         super().__init__()
         self.showIDs = showIDs
     
-    def render(self, way, data):
-        if way.category in facadeVisibilityWayCategoriesSet:
-            super().render(way, data)
+    def render(self, wayManager, data):
+        for way in wayManager.getAllWays():
+            if way.category in facadeVisibilityWayCategoriesSet:
+                super().render(way, data)
     
     def renderWaySegment(self, segment):
         super().renderWaySegment(segment)

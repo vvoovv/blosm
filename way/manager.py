@@ -17,7 +17,13 @@ class WayManager:
         
         self.layers = dict((category, []) for category in allWayCategories)
         
+        self.renderers = []
+        
         self.actions = []
+        
+        # <self.networkGraph> and <self.waySectionGraph> are set in an action,
+        # for example action.way_clustering.Way
+        self.networkGraph = self.waySectionGraph = None
         
         app.addManager(self)
 
@@ -52,13 +58,13 @@ class WayManager:
         for action in self.actions:
             action.do(self)
     
-    def setRenderer(self, renderer, app):
-        self.renderer = renderer
-        app.addRenderer(renderer)
+    def addRenderer(self, renderer):
+        self.renderers.append(renderer)
+        self.app.addRenderer(renderer)
     
     def render(self):
-        for way in self.getAllWays():
-            self.renderer.render(way, self.data)
+        for renderer in self.renderers:
+            renderer.render(self, self.data)
     
     def addAction(self, action):
         action.app = self.app

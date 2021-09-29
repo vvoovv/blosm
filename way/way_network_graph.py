@@ -289,5 +289,3 @@ class SectionGraphCreator:
             # or e1.name != e2.name
             or e1.backward != e2.backward
         )
-
-
