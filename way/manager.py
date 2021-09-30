@@ -21,9 +21,9 @@ class WayManager:
         
         self.actions = []
         
-        # <self.networkGraph> and <self.waySectionGraph> are set in an action,
-        # for example action.way_clustering.Way
-        self.networkGraph = self.waySectionGraph = None
+        # <self.networkGraph>, <self.waySectionGraph> and <self.junctions> are set in an action,
+        # for example <action.way_clustering.Way>
+        self.networkGraph = self.waySectionGraph = self.junctions = None
         
         app.addManager(self)
 
