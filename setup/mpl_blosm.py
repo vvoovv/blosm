@@ -35,7 +35,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--showFeatureSymbols", action='store_true', help="Show a symbol for each unskipped polygon vector. The symbol is used for pattern matching", default=False)
     app.argParserExtra.add_argument("--simplifyPolygons", action='store_true', help="Simplify polygons with the detected features", default=False)
     app.argParserExtra.add_argument("--restoreFeatures", action='store_true', help="Restore simplified features", default=False)
-    app.argParserExtra.add_argument("--roadClustering", action='store_true', help="Create road clusters", default=False)
+    app.argParserExtra.add_argument("--wayClustering", action='store_true', help="Create way clusters", default=False)
     
     # parse the newly added command line arguments
     app.parseArgs()
@@ -50,7 +50,7 @@ def setup(app, osm):
     simplifyPolygons = getattr(app, "simplifyPolygons", False)
     restoreFeatures = getattr(app, "restoreFeatures", False)
 
-    roadClustering = getattr(app, "roadClustering", False)
+    wayClustering = getattr(app, "wayClustering", False)
     # create managers
     
     wayManager = WayManager(osm, app)
@@ -98,7 +98,7 @@ def setup(app, osm):
     if app.highways or app.railways:
         osm.addCondition(tunnel)
         
-        if roadClustering:
+        if wayClustering:
             wayManager.addRenderer(WayClusterRenderer())
             wayManager.addAction(WayClustering())
         else:
