@@ -7,10 +7,11 @@ main_roads =   (
     "secondary",
     # "secondary_link",
     "tertiary",
+    "residential"
 )
 
 small_roads = (
-    "residential",
+    #"residential",
     "service",
     # "pedestrian",
     # "track",
@@ -60,7 +61,7 @@ class WayClustering:
         # prepare data structures required for WayNetworkGraph
         nodes = {}
         ways = []
-        for ID, way in enumerate( self.app.managersById["ways"].getAllWays() ):
+        for ID, way in enumerate( wayManager.getAllWays() ):
             length = 0.
             for segment in way.segments:
                 nodes[segment.id1] = segment.v1
