@@ -1,7 +1,6 @@
 
 
 allWayCategories = (
-    "other",
     "motorway",
     "motorway_link",
     "trunk",
@@ -20,12 +19,13 @@ allWayCategories = (
     "track",
     "escape",
     "raceway",
+    "other",
     # "road", # other
-    "footway",
-    "bridleway",
     "steps",
+    "footway",
     "path",
-    "cycleway"
+    "cycleway",
+    "bridleway"
 )
 allWayCategoriesSet = set(allWayCategories)
 
