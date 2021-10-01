@@ -16,7 +16,7 @@ small_roads = (
     # "pedestrian",
     # "track",
     # "escape",
-    # "footway",
+    "footway",
     # "bridleway",
     # "steps",
     # "path",
