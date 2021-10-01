@@ -1,5 +1,6 @@
 from collections import deque
-from way.way_network_graph import OSMWay, WayNetworkGraph, SectionGraphCreator
+from way.way_network import WayNetwork
+from way.way_algorithms import createSectionNetwork
 
 main_roads =   (  
     "primary",
@@ -58,25 +59,17 @@ class WayClustering:
         self.networkGraph = None
     
     def do(self, wayManager):
-        # prepare data structures required for WayNetworkGraph
-        nodes = {}
-        ways = []
-        for ID, way in enumerate( wayManager.getAllWays() ):
-            length = 0.
+        # create full way network
+        wayManager.networkGraph = WayNetwork()
+        for way in wayManager.getAllWays():
             for segment in way.segments:
-                nodes[segment.id1] = segment.v1
-                nodes[segment.id2] = segment.v2
-                length += segment.length
-            name = way.element.tags['name'] if 'name' in way.element.tags else ''
-            ways.append(OSMWay(ID, name, way.category, way.element.nodes, length ))
+                wayManager.networkGraph.addSegment(tuple(segment.v1),tuple(segment.v2),segment.length,way.category)
 
-        wayManager.networkGraph = WayNetworkGraph(nodes, ways)
-        # debugPlot(self.networkGraph, 'Full Network')
-        graph = wayManager.waySectionGraph = SectionGraphCreator(wayManager.networkGraph).createSectionNetwork()
-        # debugPlot(self.waySectionGraph, 'Section Network')
+        # create way-section network
+        graph = wayManager.waySectionGraph = createSectionNetwork(wayManager.networkGraph)
 
         # find way-junctions for principal roads
-        allCrossings = graph.get_crossings_that_contain(allWayCategories)
+        allCrossings = graph.getCrossingsThatContain(allWayCategories)
         mainJunctions = self.findWayJunctionsFor(graph, allCrossings, main_roads, 20.)
 
         # expand them with near crossings of small roads
@@ -90,6 +83,7 @@ class WayClustering:
 
         # find way-junctions for small roads in <remainingCrossings>
         smallJunctions = self.findWayJunctionsFor(graph, remainingCrossings, small_roads, 15.)
+        test=1
         
         wayManager.junctions = (
             mainJunctions,
@@ -101,18 +95,19 @@ class WayClustering:
 
     def findWayJunctionsFor(self, graph, seed_crossings, categories, distance):
             # seed_crossings = graph.get_crossings_that_contain(categories)
-            outWays = graph.get_out_edges()
+            # outWays = [segment[0] for segment in graph.iterAllSegments()]
             processed = set()
             wayJunctions = []
-            for indx in seed_crossings:
-                if indx not in processed:
-                    to_process = deque([indx])
-                    seen = {indx}
+            for node in seed_crossings:
+                if node not in processed:
+                    to_process = deque([node])
+                    seen = {node}
                     while to_process:
                         i = to_process.popleft()
+                        outWays = [segment[0] for segment in graph.iterOutSegments(i)]
                         neighbors = {
-                            (e.s if e.t==i else e.t) for e in outWays[i] \
-                                if e.length < distance and e.category in categories
+                            (w.source if w.target==i else w.target) for w in outWays \
+                                if w.length < distance and w.category in categories
                         }
                         to_process.extend(list(neighbors-seen))
                         seen.add(i)

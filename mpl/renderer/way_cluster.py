@@ -66,17 +66,17 @@ class WayClusterRenderer(Renderer):
         self.plotJunctions(wayManager.waySectionGraph, wayManager.junctions[1], 'limegreen')
 
     def plotWay(self, graph):
-        edges = graph.edges
-        v = graph.vertices
-        n = graph.out_ways
-        c = graph.way_categories
-        for e in edges:
-            v1 = v[e.s].data
-            v2 = v[e.t].data
+        segments = [segment[0] for segment in graph.iterAllSegments()]
+        # v = graph.vertices
+        # n = graph.out_ways
+        # c = graph.way_categories
+        for s in segments:
+            v1 = s.source
+            v2 = s.target
             self.mpl.ax.plot(
                 (v1[0], v2[0]),
                 (v1[1], v2[1]),
-                **WayClusterRenderer.styles[e.category]
+                **WayClusterRenderer.styles[s.category]
             )
             # x = (v1[0]+v2[0])/2.
             # y = (v1[1]+v2[1])/2.
@@ -88,14 +88,14 @@ class WayClusterRenderer(Renderer):
     def plotJunctions(self, graph, crossings, color):
         ax = self.mpl.ax
         
-        edges = graph.edges
-        v = graph.vertices
-        n = graph.out_ways
-        c = graph.way_categories
+        # edges = graph.edges
+        # v = graph.vertices
+        # n = graph.out_ways
+        # c = graph.way_categories
         
         for crossing in crossings:
-            x = [ v[indx].data[0] for indx in crossing ]
-            y = [ v[indx].data[1] for indx in crossing ]
+            x = [ v[0] for v in crossing ]
+            y = [ v[1] for v in crossing ]
             dx = (max(x)-min(x))/2.
             dy = (max(y)-min(y))/2.
             r = 1.2*sqrt(dx*dx+dy*dy)
@@ -108,8 +108,8 @@ class WayClusterRenderer(Renderer):
                 zorder=100
             )) 
             # plt.plot(min(x)+dx,min(y)+dy, 'o', ms=15, markerfacecolor=color, alpha=0.3)#, markeredgecolor='red', markeredgewidth=5)
-            for indx in crossing:
-                x,y = v[indx].data[0], v[indx].data[1]
+            for v in crossing:
+                x,y = v[0], v[1]
                 ax.scatter(x, y, 30, color=color, zorder=100)
         
         
