@@ -3,6 +3,7 @@ from building.manager import BaseBuildingManager
 from way.manager import WayManager
 from mpl.renderer.facade_classification import \
     BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender, BuildingFeatureRender
+from mpl.renderer import BuildingBaseRenderer
 from mpl.renderer.way_cluster import WayClusterRenderer
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
@@ -26,7 +27,8 @@ def setup(app, osm):
     #Logger(app, osm)
     
     # add the definition of the custom command line arguments
-    app.argParserExtra.add_argument("--classification", action='store_true', help="Display facade classification", default=False)
+    app.argParserExtra.add_argument("--classifyFacades", action='store_true', help="Display facade classification", default=False)
+    app.argParserExtra.add_argument("--facadeVisibility", action='store_true', help="Display facade visibility", default=False)
     app.argParserExtra.add_argument("--sideFacadeColor", help="The color for a side facade", default="yellow")
     app.argParserExtra.add_argument("--showAssoc", action='store_true', help="Show the associations between way-segment and facade", default=False)
     app.argParserExtra.add_argument("--showIDs", action='store_true', help="Show the IDs of facades", default=False)
@@ -39,7 +41,8 @@ def setup(app, osm):
     
     # parse the newly added command line arguments
     app.parseArgs()
-    classifyFacades = getattr(app, "classification", False)
+    classifyFacades = getattr(app, "classifyFacades", False)
+    facadeVisibility = getattr(app, "classification", False)
     showAssoc = getattr(app, "showAssoc", False)
     showIDs = getattr(app, "showIDs", False)
     
@@ -76,8 +79,11 @@ def setup(app, osm):
                         restoreFeatures=restoreFeatures,
                         showFeatureSymbols=showFeatureSymbols,
                         showIDs=showIDs
-                    ) if detectFeatures and showFeatures else\
-                        BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs)
+                    ) if detectFeatures and showFeatures else (\
+                        BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs) \
+                            if facadeVisibility else \
+                            BuildingBaseRenderer()
+                    )
                 )
         )
         
@@ -85,7 +91,10 @@ def setup(app, osm):
             buildings.addAction(CurvedFeatures())
             buildings.addAction(StraightAngles())
             #buildings.addAction(FeatureDetection(simplifyPolygons))
-        #buildings.addAction(FacadeVisibilityOther())
+        
+        if facadeVisibility or classifyFacades:
+            buildings.addAction(FacadeVisibilityOther())
+        
         if classifyFacades:
             buildings.addAction(FacadeClassification())
         

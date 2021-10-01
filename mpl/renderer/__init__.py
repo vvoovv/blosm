@@ -1,4 +1,5 @@
 import parse
+from parse.osm import Osm
 from .. import Mpl
 
 
@@ -43,6 +44,38 @@ class Renderer:
     def cleanup(self):
         self.mpl = None
         Mpl.cleanup()
+
+
+class BuildingBaseRenderer(Renderer):
+
+    def render(self, building, data):
+        outline = building.outline
+        # render the outer footprint
+        self.renderBuildingFootprint(building)
+        # render holes for a multipolygon
+        if outline.t is parse.multipolygon:
+            for l in outline.ls:
+                if not l.role is Osm.outer:
+                    self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
+
+    def renderBuildingFootprint(self, building):
+        ax = self.mpl.ax
+        
+        ax.fill(
+            tuple(vector.v1[0] for vector in building.polygon.vectors),
+            tuple(vector.v1[1] for vector in building.polygon.vectors),
+            '#d9d0c9'
+        )
+        for vector in building.polygon.vectors:
+            if vector.skip:
+                continue
+            v1, v2 = vector.v1, vector.v2
+            ax.plot(
+                (v1[0], v2[0]),
+                (v1[1], v2[1]),
+                linewidth = 1.,
+                color = '#c2b5aa'
+            )
 
 
 class WayRenderer(Renderer):
