@@ -1,6 +1,6 @@
 
 
-allHighwayCategories = (
+allRoadwayCategories = (
     "motorway",
     "motorway_link",
     "trunk",
@@ -27,7 +27,7 @@ allHighwayCategories = (
     "cycleway",
     "bridleway"
 )
-allHighwayCategoriesSet = set(allHighwayCategories)
+allRoadwayCategoriesSet = set(allRoadwayCategories)
 
 
 allRailwayCategories = (
@@ -42,7 +42,7 @@ allRailwayCategories = (
 allRailwayCategoriesSet = set(allRailwayCategories)
 
 
-allWayCategories = allHighwayCategories + allRailwayCategories
+allWayCategories = allRoadwayCategories + allRailwayCategories
 
 
 facadeVisibilityWayCategories = (
@@ -60,6 +60,29 @@ facadeVisibilityWayCategories = (
     #"cycleway"
 )
 facadeVisibilityWayCategoriesSet = set(facadeVisibilityWayCategories)
+
+
+mainRoads =   (  
+    "primary",
+    # "primary_link",
+    "secondary",
+    # "secondary_link",
+    "tertiary",
+    "residential"
+)
+
+smallRoads = (
+    #"residential",
+    "service",
+    # "pedestrian",
+    # "track",
+    # "escape",
+    "footway",
+    # "bridleway",
+    # "steps",
+    # "path",
+    "cycleway"
+)
 
 
 class Category:

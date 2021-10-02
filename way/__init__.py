@@ -1,5 +1,5 @@
 import numpy
-from defs.way import allWayCategoriesSet
+from defs.way import allRoadwayCategoriesSet
 
 
 class WaySegment:
@@ -39,7 +39,7 @@ class Way:
         self.element = element
         
         highwayTag = element.tags.get("highway")
-        self.category = highwayTag if highwayTag in allWayCategoriesSet else "other"
+        self.category = highwayTag if highwayTag in allRoadwayCategoriesSet else "other"
         self.tunnel = "tunnel" in element.tags
         self.bridge = "bridge" in element.tags
     
