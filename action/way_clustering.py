@@ -1,6 +1,6 @@
 from collections import deque
 from way.way_network import WayNetwork
-from way.way_algorithms import createSectionNetwork, findWayJunctionsFor
+from way.way_algorithms import createSectionNetwork, findWayJunctionsFor, findRoadClusters
 from defs.way import allRoadwayCategories, mainRoads, smallRoads
 
 
@@ -34,6 +34,9 @@ class WayClustering:
 
         # find way-junctions for small roads in <remainingCrossings>
         smallJunctions = findWayJunctionsFor(graph, remainingCrossings, smallRoads, 15.)
+
+        # does not yet work
+        # findRoadClusters(graph, mainJunctions)
 
         wayManager.junctions = (
             mainJunctions,
