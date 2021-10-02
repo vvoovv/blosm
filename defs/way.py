@@ -1,6 +1,6 @@
 
 
-allWayCategories = (
+allHighwayCategories = (
     "motorway",
     "motorway_link",
     "trunk",
@@ -27,7 +27,22 @@ allWayCategories = (
     "cycleway",
     "bridleway"
 )
-allWayCategoriesSet = set(allWayCategories)
+allHighwayCategoriesSet = set(allHighwayCategories)
+
+
+allRailwayCategories = (
+    "rail",
+    "subway",
+    "light_rail",
+    "tram",
+    "funicular",
+    "monorail"
+    
+)
+allRailwayCategoriesSet = set(allRailwayCategories)
+
+
+allWayCategories = allHighwayCategories + allRailwayCategories
 
 
 facadeVisibilityWayCategories = (
