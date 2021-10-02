@@ -1,20 +1,25 @@
+from defs.way import allWayCategories
+
+# hierarchy of way categories
+WayCategoryRanks = dict(zip(allWayCategories, range(len(allWayCategories))))
 
 class Segment():
     ID = 0  # just used during debugging
-    def __init__(self, source, target, length, category):
+    def __init__(self, source, target, length, category, path=[]):
         self.source = source
         self.target = target
         self.length = length
         self.category = category
-        self.ID = Segment.ID
-        Segment.ID += 1   # just used during debugging
-    def __invert__(self): # just used during debugging
+        self.path = path
+        self.ID = Segment.ID # just used during debugging
+        Segment.ID += 1      # just used during debugging
+    def __invert__(self):
         # segment with the opposite direction
         return self.__class__(self.target, self.source, self.length, self.category)
-    # def __eq__(self, other):
-    #     # comparison of segments (no duplicates allowed)
-    #     selfNodes = {self.source, self.target}
-    #     return other.source in selfNodes and other.target in selfNodes
+    def __eq__(self, other):
+        # comparison of segments (no duplicates allowed)
+        selfNodes = {self.source, self.target}
+        return other.source in selfNodes and other.target in selfNodes and self.path == other,path
 
 
 
@@ -37,12 +42,21 @@ class WayNetwork(dict):
         # test if an node exists
         return node in self
 
-    def addSegment(self, source, target, length, category):
+    def addSegment(self, source, target, length, category, path=[], noIdenticalSegments=True):
         # add a segment to the graph (missing nodes are created)
-        segment = Segment(source,target,length,category)
-        if source in self and target in self[source]:
-            if segment in self[segment.source][segment.target]:
-                return # segment already in network
+        segment = Segment(source,target,length,category,path)
+
+        # check if two ways share the same segment, if yes, keep the one with the highest category 
+        if noIdenticalSegments:
+            if source in self and target in self[source]:
+                segmentList = self[segment.source][segment.target]
+                if segment in segmentList:                  
+                    thisIndex = segmentList.index(segment)
+                    oldSegment = segmentList[thisIndex]
+                    if WayCategoryRanks[category] < WayCategoryRanks[oldSegment.category]:
+                        segmentList[thisIndex] = segment
+                        return
+
         self.addNode(source)
         self.addNode(target)
         if target not in self[source]:
@@ -73,17 +87,17 @@ class WayNetwork(dict):
         else:
             return None
 
-    def hasSegment(self, segment):
-        # test if a segment exists
-        return segment.source in self and segment.target in self[segment.source]
+    # def hasSegment(self, segment):
+    #     # test if a segment exists
+    #     return segment.source in self and segment.target in self[segment.source]
 
-    def lengthOfSegment(self, segment):
-        # return the segment length or zero
-        source, target = segment.source, segment.target
-        if source in self and target in self[source]:
-            return self[source][target].length
-        else:
-            return 0
+    # def lengthOfSegment(self, segment):
+    #     # return the segment length or zero
+    #     source, target = segment.source, segment.target
+    #     if source in self and target in self[source]:
+    #         return self[source][target].length
+    #     else:
+    #         return 0
 
     def iterNodes(self):
         # generate all nodes from the graph on demand
@@ -92,21 +106,24 @@ class WayNetwork(dict):
     def iterInSegments(self, source):
         # generate the in-segments from the graph on demand
         for target in self[source]:
-            yield self[target][source]
+            for segment in self[target][source]:
+                yield segment
 
     def iterOutSegments(self, source):
         # generate the out-segments from the graph on demand
         for target in self[source]:
-            yield self[source][target]
+            for segment in self[source][target]:
+                yield segment
 
     def iterAdjacentNodes(self, source):
         # generate the adjacent nodes from the graph on demand
         return iter(self[source])
 
-    def iterAdjacentSegments(self, source):
-        # generate the adjacent segments from the graph on demand
-        for segment in iter(self[source]):
-                yield segment
+    # def iterAdjacentSegments(self, source):
+    #     # generate the adjacent segments from the graph on demand
+    #     for segments in iter(self[source]):
+    #         for segment in segments:
+    #             yield segment
 
     def iterAllSegments(self):
         # generate all segments from the graph on demand
@@ -120,20 +137,19 @@ class WayNetwork(dict):
             if len(self[source]) != 2:
                 yield source
 
-    def isIntersection(self,node):
-        # includes end nodes
-        return len(self[node]) != 2
+    # def isIntersection(self,node):
+    #     # includes end nodes
+    #     return len(self[node]) != 2
 
     def iterAlongWay(self,segment):
-        # follow way in the direction of the first segment until crossing occurs
+        # follow way in the direction of the first segment until a crossing occurs
         current = segment
         while True:
             if len(self[current.target]) != 2:
                 break
-            current = [self[current.target][source] for source in self[current.target] if source != current.source][0]
-            current = current[0] if isinstance(current,list) else current
+            current = [self[current.target][source] for source in self[current.target] if source != current.source][0][0]
             yield current
-            
+
     def getCrossingsThatContain(self, categories):
         found = []
         categories_set = set(categories)
@@ -144,48 +160,4 @@ class WayNetwork(dict):
             if degree or (degree==2 and len(cats_set) > 1):
                 if categories_set & cats_set:
                     found.append(source)
-        # for indx, v in enumerate(self.vertices):
-        #     v_cats = self.way_categories[indx]
-        #     cats_set = set(v_cats)
-        #     degree = len(v_cats)
-        #     if degree != 2 or (degree==2 and len(cats_set) > 1):
-        #         if categories_set & cats_set:
-        #             found.append(indx)
         return found
-
-# e = Edge('A','B',1.,'C1')
-# ee = ~e
-# graph = WayNetwork()
-# graph.addEdge( 'A','B',1.,'C1')
-# graph.addEdge( 'B','C',2.,'C2')
-# graph.addEdge( 'C','D',10.,'C1')
-
-# graph.addEdge( 'B','E',3.,'C2')
-# graph.addEdge( 'E','F',4.,'C2')
-# graph.addEdge( 'F','G',5.,'C2')
-# graph.addEdge( 'G','H',6.,'C1')
-# graph.addEdge( 'H','I',7.,'C2')
-
-# graph.addEdge( 'I','J',8.,'C2')
-# graph.addEdge( 'I','K',9.,'C2')
-
-# from way_algorithms import createSectionNetwork
-
-# sectionGraph = createSectionNetwork(graph)
-
-# segment = graph.getEdge('B','E')
-# for e in graph.iterAlongPath(segment):
-#     if e.category != segment.category:
-#         break
-#     print(e.source,e.target,e.length,e.category)
-
-
-# test = 1
-# ways = graph.getNodesForCategories(['primary'])
-# neighbors = graph.getNeighbors((1.54,5.12))
-# degree = graph.getDegree((7.82,1.11))
-# crossings = graph.getAllCrossings()
-
-# from way_algorithms import createSectionNetwork
-
-# sectionNetwork = createSectionNetwork(graph)

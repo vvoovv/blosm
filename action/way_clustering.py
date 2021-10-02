@@ -1,6 +1,6 @@
 from collections import deque
 from way.way_network import WayNetwork
-from way.way_algorithms import createSectionNetwork
+from way.way_algorithms import createSectionNetwork, findWayJunctionsFor
 
 main_roads =   (  
     "primary",
@@ -70,11 +70,11 @@ class WayClustering:
 
         # find way-junctions for principal roads
         allCrossings = graph.getCrossingsThatContain(allWayCategories)
-        mainJunctions = self.findWayJunctionsFor(graph, allCrossings, main_roads, 20.)
+        mainJunctions = findWayJunctionsFor(graph, allCrossings, main_roads, 20.)
 
         # expand them with near crossings of small roads
         for cluster in mainJunctions:
-            for side_cluster in self.findWayJunctionsFor(graph, cluster, small_roads, 15.):
+            for side_cluster in findWayJunctionsFor(graph, cluster, small_roads, 15.):
                 cluster |= side_cluster
 
         # remove these crossings from <allCrossings>
@@ -82,9 +82,8 @@ class WayClustering:
                         {crossing for cluster in mainJunctions for crossing in cluster })
 
         # find way-junctions for small roads in <remainingCrossings>
-        smallJunctions = self.findWayJunctionsFor(graph, remainingCrossings, small_roads, 15.)
-        test=1
-        
+        smallJunctions = findWayJunctionsFor(graph, remainingCrossings, small_roads, 15.)
+
         wayManager.junctions = (
             mainJunctions,
             smallJunctions
@@ -93,39 +92,3 @@ class WayClustering:
     def cleanup(self):
         pass
 
-    def findWayJunctionsFor(self, graph, seed_crossings, categories, distance):
-            # seed_crossings = graph.get_crossings_that_contain(categories)
-            # outWays = [segment[0] for segment in graph.iterAllSegments()]
-            processed = set()
-            wayJunctions = []
-            for node in seed_crossings:
-                if node not in processed:
-                    to_process = deque([node])
-                    seen = {node}
-                    while to_process:
-                        i = to_process.popleft()
-                        outWays = [segment[0] for segment in graph.iterOutSegments(i)]
-                        neighbors = {
-                            (w.source if w.target==i else w.target) for w in outWays \
-                                if w.length < distance and w.category in categories
-                        }
-                        to_process.extend(list(neighbors-seen))
-                        seen.add(i)
-                    if len(seen) > 1:
-                        processed |= seen
-                        wayJunctions.append(seen)
-            return wayJunctions
-
-
-# from collections import deque
-# def findCrossingsFor(graph, indx, outways, categories, processed, distance):
-#         to_process = deque([indx])
-#         seen = {indx}
-#         while to_process:
-#             i = to_process.popleft()
-#             neighbors = { (e.s if e.t==i else e.t) for e in outways[i] if e.length<distance and e.category in categories }
-#             to_process.extend(list(neighbors-seen))
-#             seen.add(i)
-#         if len(seen)>1:
-#             processed |= seen
-#         return seen if len(seen)>1 else set()
