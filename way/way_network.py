@@ -15,11 +15,13 @@ class Segment():
         Segment.ID += 1      # just used during debugging
     def __invert__(self):
         # segment with the opposite direction
-        return self.__class__(self.target, self.source, self.length, self.category)
+        return self.__class__(self.target, self.source, self.length, self.category, self.path[::-1])
     def __eq__(self, other):
         # comparison of segments (no duplicates allowed)
         selfNodes = {self.source, self.target}
-        return other.source in selfNodes and other.target in selfNodes and self.path == other,path
+        return other.source in selfNodes and other.target in selfNodes and self.path == other.path
+    def __hash__(self):
+        return hash((self.source, self.target, self.length))
 
 
 

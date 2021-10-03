@@ -1,5 +1,6 @@
 from collections import deque
 import heapq
+from itertools import combinations
 from way.way_network import Segment, WayNetwork
 import matplotlib.pyplot as plt
 
@@ -15,6 +16,23 @@ class PriorityQueue:
     
     def get(self):
         return heapq.heappop(self.elements)[1]
+
+class Junction():
+    def __init__(self,junction):
+        self.junction = junction
+        x,y = self.getXY()
+        self.center = ( sum(x)/len(junction),sum(y)/len(junction))
+
+    def getXY(self):
+        x = [v[0] for v in self.junction]
+        y = [v[1] for v in self.junction]
+        return x,y
+
+    def iterNodes(self):
+        for node in self.junction:
+            yield node
+
+
 
 
 def createSectionNetwork(network):
@@ -88,27 +106,26 @@ def findWayJunctionsFor(graph, seed_crossings, categories, distance):
                     wayJunctions.append(seen)
         return wayJunctions
 
-from itertools import combinations
-def findRoadClusters(graph, junctions):
+def findRoadClusters(graph, _junctions):
+    junctions = []
+    for junction in _junctions:
+        junctions.append(Junction(junction))
+
     from math import sqrt
     for junction in junctions:
-            x = [ v[0] for v in junction ]
-            y = [ v[1] for v in junction ]
-            dx = (max(x)-min(x))/2.
-            dy = (max(y)-min(y))/2.
-            r = 1.2*sqrt(dx*dx+dy*dy)
-            plt.gca().set_aspect(1) 
-            plt.gca().add_artist(plt.Circle(
-                ( min(x)+dx, min(y)+dy ),
-                r,
-                alpha=0.3,
-                color='red',
-                zorder=100
-            )) 
-            # plt.plot(min(x)+dx,min(y)+dy, 'o', ms=15, markerfacecolor=color, alpha=0.3)#, markeredgecolor='red', markeredgewidth=5)
-            for v in junction:
-                x,y = v[0], v[1]
-                plt.scatter(x, y, 30, color='red', zorder=100)
+        x, y = junction.getXY()
+        dx = (max(x)-min(x))/2.
+        dy = (max(y)-min(y))/2.
+        r = 1.2*sqrt(dx*dx+dy*dy)
+        plt.gca().set_aspect(1) 
+        plt.gca().add_artist(plt.Circle(
+            ( min(x)+dx, min(y)+dy ),
+            r,
+            alpha=0.3,
+            color='red',
+            zorder=100
+        )) 
+        plt.scatter(x, y, 30, color='red', zorder=100)
 
     comb = combinations(junctions,2)
     from itertools import cycle
@@ -123,10 +140,10 @@ def findRoadClusters(graph, junctions):
         if startJunction != goalJunction:
             # outOfJunction = {segment.target for source in startJunction for segment in graph.iterOutSegments(source)}
             # outOfJunction -= startJunction
-            for start in startJunction:
+            for start in startJunction.iterNodes():
                 path, cost = AstarSearchToJunction(graph,start,goalJunction)
                 if path and cost:
-                     if cost < 250:
+                    #  if cost < 250:
                         p0 = path[0]
                         for i,node in enumerate(path):
                             if i>0:
@@ -141,51 +158,10 @@ def findRoadClusters(graph, junctions):
 def heuristic(goal,target):
     return abs(goal[0]-target[0]) + abs(goal[1]-target[1])
 
-def GreedyBestFirstSearchToJunction(graph,start,goalJunction):
-    # plt.plot(start[0],start[1],'ro')
-    # for n in goalJunction:
-    #     plt.plot(n[0],n[1],'k.')
-    x0 = [node[0] for node in goalJunction]
-    y0 = [node[1] for node in goalJunction]
-    junctionCenter = ( sum(x0)/len(goalJunction),sum(y0)/len(goalJunction))
-    # plt.plot(junctionCenter[0],junctionCenter[1],'bo')
-
-    frontier = PriorityQueue()
-    frontier.put(start, 0)
-    came_from = dict()
-    came_from[start] = None
-    segments = []
-
-    while not frontier.empty():
-        current = frontier.get()
-
-        if current in goalJunction or len(came_from)>20:
-            if current in goalJunction:
-                path = []
-                while current != start: 
-                    path.append(current)
-                    current = came_from[current]
-                path.append(start) # optional
-                path.reverse()
-                return path
-                #     plt.text((seg.source[0]+seg.target[0])/2,(seg.source[1]+seg.target[1])/2,str(i))
-                # plt.plot([seg.target[0],current[0]],[seg.target[1],current[1]],'k')
-            break
-        
-        for nextSeg in graph.iterOutSegments(current):
-            nextNode = nextSeg.target
-            if nextNode not in came_from:
-                priority = heuristic(junctionCenter, nextNode)
-                frontier.put(nextNode, priority)
-                came_from[nextNode] = current
-                segments.append(nextSeg)
 
 def AstarSearchToJunction(graph,start,goalJunction):
-    from math import sqrt, inf
-    x0 = [node[0] for node in goalJunction]
-    y0 = [node[1] for node in goalJunction]
-    junctionCenter = ( sum(x0)/len(goalJunction),sum(y0)/len(goalJunction))
-    costThresh = 1.1*sqrt( (start[0]-junctionCenter[0])*(start[0]-junctionCenter[0])+(start[1]-junctionCenter[1])*(start[1]-junctionCenter[1]) )
+    junctionCenter = goalJunction.center
+    costThresh = 1.1 * heuristic(junctionCenter, start)
 
     frontier = PriorityQueue()
     frontier.put(start, 0)
@@ -199,25 +175,24 @@ def AstarSearchToJunction(graph,start,goalJunction):
     while not frontier.empty():
         current = frontier.get()
 
-        if current in goalJunction:
+        if current in goalJunction.iterNodes():
             path = []
-            cost = 0
+            pathLength = 0
             while current != start: 
                 path.append(current)
                 current = came_from[current]
-                cost += segment[current].length if segment[current] else 0
-                test=1
-            path.append(start) # optional
+                pathLength += segment[current].length if segment[current] else 0
+            path.append(start)
             path.reverse()
             test = cost_so_far
-            return path, cost
+            return path, pathLength
        
         for nextSeg in graph.iterOutSegments(current):
             nextNode = nextSeg.target
             new_cost = cost_so_far[current] + nextSeg.length
             if nextNode not in cost_so_far or new_cost < cost_so_far[nextNode]:
                 if new_cost > costThresh:
-                    return [], inf
+                    return [], 0.
                 cost_so_far[nextNode] = new_cost
                 priority = new_cost + heuristic(junctionCenter, nextNode)
                 frontier.put(nextNode, priority)
