@@ -1,6 +1,6 @@
 from collections import deque
 from way.way_network import WayNetwork
-from way.way_algorithms import createSectionNetwork, findWayJunctionsFor, findRoadClusters
+from way.way_algorithms import createSectionNetwork, findWayJunctionsFor
 from defs.way import allRoadwayCategories, mainRoads, smallRoads
 
 
@@ -37,6 +37,10 @@ class WayClustering:
 
         # does not yet work
         # findRoadClusters(graph, mainJunctions)
+
+        from way.way_algorithms import findWayClusters
+        clusterNet = findWayClusters(graph, mainJunctions)
+
 
         wayManager.junctions = (
             mainJunctions,

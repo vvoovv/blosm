@@ -66,7 +66,7 @@ class WayClusterRenderer(Renderer):
         self.plotJunctions(wayManager.waySectionGraph, wayManager.junctions[1], 'limegreen')
 
     def plotWay(self, graph):
-        segments = [segment[0] for segment in graph.iterAllSegments()]
+        segments = [segment for segment in graph.iterAllSegments()]
         # v = graph.vertices
         # n = graph.out_ways
         # c = graph.way_categories
@@ -141,3 +141,24 @@ def debugPlot( graph, title):
             elif degree > 3:
                 plt.scatter(x,y,30,color='red')
                 # plt.text(x,y,'  '+str(vert.iID))
+
+# def findWayJunctionsFor(graph, seed_crossings, categories, distance):
+#         processed = set()
+#         wayJunctions = []
+#         for node in seed_crossings:
+#             if node not in processed:
+#                 to_process = deque([node])
+#                 seen = {node}
+#                 while to_process:
+#                     i = to_process.popleft()
+#                     outWays = [segment for segment in graph.iterOutSegments(i)]
+#                     neighbors = {
+#                         (w.source if w.target==i else w.target) for w in outWays \
+#                             if w.length < distance and w.category in categories
+#                     }
+#                     to_process.extend(list(neighbors-seen))
+#                     seen.add(i)
+#                 if len(seen) > 1:
+#                     processed |= seen
+#                     wayJunctions.append(seen)
+#         return wayJunctions

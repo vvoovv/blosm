@@ -131,8 +131,8 @@ class WayNetwork(dict):
         # generate all segments from the graph on demand
         for source in self.iterNodes():
             for target in self[source]:
-                if source < target:
-                    yield self[source][target]
+                for segment in self[source][target]:
+                    yield segment
 
     def iterAllIntersectionNodes(self):
         for source in self.iterNodes():
