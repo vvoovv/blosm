@@ -75,8 +75,8 @@ class WayClusterRenderer(Renderer):
         # n = graph.out_ways
         # c = graph.way_categories
         for s in segments:
-            v1 = s.source
-            v2 = s.target
+            v1 = s.s
+            v2 = s.t
             self.mpl.ax.plot(
                 (v1[0], v2[0]),
                 (v1[1], v2[1]),

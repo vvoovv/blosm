@@ -29,6 +29,8 @@ allRoadwayCategories = (
 )
 allRoadwayCategoriesSet = set(allRoadwayCategories)
 
+# hierarchy of way categories
+allRoadwayCategoriesRank = dict(zip(allRoadwayCategories, range(len(allRoadwayCategories))))
 
 allRailwayCategories = (
     "rail",

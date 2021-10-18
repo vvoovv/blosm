@@ -1,7 +1,9 @@
 from collections import deque
-from way.way_network import WayNetwork
+from way.way_network import WayNetwork, NetSegment
 from way.way_algorithms import createSectionNetwork, findWayJunctionsFor
 from defs.way import allRoadwayCategories, mainRoads, smallRoads
+
+# from action.tests import createHoughTransform
 
 
 class WayClustering:
@@ -14,7 +16,8 @@ class WayClustering:
         wayManager.networkGraph = WayNetwork()
         for way in wayManager.getAllWays():
             for segment in way.segments:
-                wayManager.networkGraph.addSegment(tuple(segment.v1),tuple(segment.v2),segment.length,way.category)
+                netSeg = NetSegment(segment.v1,segment.v2,way.category,segment.length)
+                wayManager.networkGraph.addSegment(netSeg)
 
         # create way-section network
         graph = wayManager.waySectionGraph = createSectionNetwork(wayManager.networkGraph)
@@ -34,13 +37,6 @@ class WayClustering:
 
         # find way-junctions for small roads in <remainingCrossings>
         smallJunctions = findWayJunctionsFor(graph, remainingCrossings, smallRoads, 15.)
-
-        # does not yet work
-        # findRoadClusters(graph, mainJunctions)
-
-        from way.way_algorithms import findWayClusters
-        clusterNet = findWayClusters(graph, mainJunctions)
-
 
         wayManager.junctions = (
             mainJunctions,

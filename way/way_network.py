@@ -1,155 +1,170 @@
-from defs.way import allWayCategories
+from mathutils import Vector
+from defs.way import allRoadwayCategoriesRank
 
-# hierarchy of way categories
-WayCategoryRanks = dict(zip(allWayCategories, range(len(allWayCategories))))
-
-class Segment():
+class NetSegment():
     ID = 0  # just used during debugging
-    def __init__(self, source, target, length, category, path=[]):
-        self.source = source
-        self.target = target
-        self.length = length
+
+    def __init__(self, *args):
+        self.ID = NetSegment.ID # just used during debugging
+        NetSegment.ID += 1      # just used during debugging
+        if len(args) > 1:
+            self.initFromDetails(*args)
+        else:
+            self.initFromOther(*args)
+
+    def initFromDetails(self, source, target, category, length=None, path=None):
+        self.s = Vector(source).freeze()    # source node
+        self.t = Vector(target).freeze()    # target node
         self.category = category
-        self.path = path
-        self.ID = Segment.ID # just used during debugging
-        Segment.ID += 1      # just used during debugging
+        self.geomLength = (self.t-self.s).length
+        if length:
+            self.length = length
+        else:
+            self.length = self.geomLength
+        if path:
+            self.path = path        # includes source and target
+        else:
+            self.path = [self.s,self.t]
+
+    def initFromOther(self, other):
+        self.s = other.s    # source node
+        self.t = other.t    # target node
+        self.category = other.category
+        self.geomLength = other.geomLength
+        self.length = other.length
+        self.path = other.path        # includes source and target
+
+    def join(self, segment):
+        assert self.category == segment.category, "segment to join must have same category"
+        if self.t == segment.s:
+            self.length += segment.length
+            self.path += segment.path[1:]
+        else:
+            self.length += segment.length + (segment.s-self.t).length
+            self.path += segment.path[1:]
+        self.t = segment.t
+        self.geomLength = (self.t-self.s).length
+
     def __invert__(self):
-        # segment with the opposite direction
-        return self.__class__(self.target, self.source, self.length, self.category, self.path[::-1])
+        # create segment with the reversed direction
+        return self.__class__(self.t, self.s, self.category, self.length, self.path[::-1])
     def __eq__(self, other):
         # comparison of segments (no duplicates allowed)
-        selfNodes = {self.source, self.target}
-        return other.source in selfNodes and other.target in selfNodes and self.path == other.path
-    def __hash__(self):
-        return hash((self.source, self.target, self.length))
+        selfNodes = {self.s, self.t}
+        selfPaths = [self.path, self.path.reverse()]
+        return other.s in selfNodes and other.t in selfNodes and other.path in selfPaths
+    # def __hash__(self):
+    #     return hash((self.source, self.target, self.length))
 
 
 
 class WayNetwork(dict):
-    def __init__(self):
-        pass
+    # undirected multigraph
 
     def addNode(self,node):
-        # add a node to the graph
-        if node not in self:
-            self[node] = dict()
+        # add a <node> to the network, node must be a frozen Vector!!
+        self.setdefault( node, dict() )
 
     def delNode(self, node):
-        # remove a node from the graph
+        # remove a <node> from the graph
+        node = Vector(node).freeze()
         for segment in list(self.iterInSegments(node)):
             self.delSegment(segment)
-        del self[node]
+        self.pop(node, None)
+        # del self[node]
 
     def hasNode(self, node):
-        # test if an node exists
+        # test if an <node> exists
+        node = Vector(node).freeze()
         return node in self
 
-    def addSegment(self, source, target, length, category, path=[], noIdenticalSegments=True):
-        # add a segment to the graph (missing nodes are created)
-        segment = Segment(source,target,length,category,path)
+    def addSegment(self, segment, allowIdenticalSegments=True):
+        # add a <segment> to the network
+        s, t = segment.s, segment.t
 
-        # check if two ways share the same segment, if yes, keep the one with the highest category 
-        if noIdenticalSegments:
-            if source in self and target in self[source]:
-                segmentList = self[segment.source][segment.target]
+        if not allowIdenticalSegments:
+            # check if two ways share the same segment,
+            # if yes, keep the one with the lowest category rank 
+            if s in self and t in self[s]:
+                segmentList = self[s][t]
                 if segment in segmentList:                  
                     thisIndex = segmentList.index(segment)
                     oldSegment = segmentList[thisIndex]
-                    if WayCategoryRanks[category] < WayCategoryRanks[oldSegment.category]:
+                    if allRoadwayCategoriesRank[segment.category] < allRoadwayCategoriesRank[oldSegment.category]:
                         segmentList[thisIndex] = segment
                         return
 
-        self.addNode(source)
-        self.addNode(target)
-        if target not in self[source]:
-            self[source][target] = list()
-        if source not in self[target]:
-            self[target][source] = list()
-        # Increase the number of parallel edges.
-        self[source][target].append(segment)
-        # A loop is added only once.
-        if source != target:
-            self[target][source].append(~segment)
+        self.addNode(s)
+        self.addNode(t)
+        self[s].setdefault(t, list() ).append(segment)
+        if s != t:  # a loop is added only once
+            self[t].setdefault(s, list() ).append(~segment)
 
     def delSegment(self,segment):
-        # remove an edge from the graph
-        self[segment.source][segment.target].remove(segment)
-        if len(self[segment.source][segment.target]) == 0:
-            del self[segment.source][segment.target]
-        # A loop is deleted only once.
-        if segment.source != segment.target:
-            self[segment.target][segment.source].remove(~segment)
-            if len(self[segment.target][segment.source]) == 0:
-                del self[segment.target][segment.source]
-       
+        # remove a <segment> from the network
+        if segment.s in self and segment.t in self[segment.s]:
+            self[segment.s][segment.t].remove(segment)
+            if len(self[segment.s][segment.t]) == 0:
+                del self[segment.s][segment.t]
+            # a loop is deleted only once
+            if segment.s != segment.s:
+                self[segment.t][segment.s].remove(~segment)
+                if len(self[segment.t][segment.s]) == 0:
+                    del self[segment.t][segment.s]
+
     def getSegment(self, source, target):
         if source in self and target in self[source]:
             segment = self[source][target]
             return segment[0] if isinstance(segment,list) else segment
         else:
-            return None
-
-    # def hasSegment(self, segment):
-    #     # test if a segment exists
-    #     return segment.source in self and segment.target in self[segment.source]
-
-    # def lengthOfSegment(self, segment):
-    #     # return the segment length or zero
-    #     source, target = segment.source, segment.target
-    #     if source in self and target in self[source]:
-    #         return self[source][target].length
-    #     else:
-    #         return 0
-
+            return None        
+       
     def iterNodes(self):
-        # generate all nodes from the graph on demand
+        # generator for all nodes from the network
         return iter(self)
 
     def iterInSegments(self, source):
-        # generate the in-segments from the graph on demand
+        # generator for all in-segments from the network
+        source = Vector(source).freeze()
         for target in self[source]:
             for segment in self[target][source]:
                 yield segment
 
     def iterOutSegments(self, source):
-        # generate the out-segments from the graph on demand
+        # generator for all out-segments from the network
+        source = Vector(source).freeze()
         for target in self[source]:
             for segment in self[source][target]:
                 yield segment
 
     def iterAdjacentNodes(self, source):
-        # generate the adjacent nodes from the graph on demand
+        # generator for the nodes adjacent to <source>  nodefrom the network
+        source = Vector(source).freeze()
         return iter(self[source])
 
-    # def iterAdjacentSegments(self, source):
-    #     # generate the adjacent segments from the graph on demand
-    #     for segments in iter(self[source]):
-    #         for segment in segments:
-    #             yield segment
-
     def iterAllSegments(self):
-        # generate all segments from the graph on demand
+        # generator for all segments from the network
         for source in self.iterNodes():
             for target in self[source]:
-                for segment in self[source][target]:
-                    yield segment
+                # if source > target: ??
+                    for segment in self[source][target]:
+                        yield segment
 
     def iterAllIntersectionNodes(self):
+        # iterator for all nodes that form an intersection
+        # includes also end-nodes!
         for source in self.iterNodes():
-            if len(self[source]) != 2:
+            if len(self[source]) != 2: # order of node != 2
                 yield source
 
-    # def isIntersection(self,node):
-    #     # includes end nodes
-    #     return len(self[node]) != 2
-
     def iterAlongWay(self,segment):
-        # follow way in the direction of the first segment until a crossing occurs
+        # generator for nodes that follow the way in the direction given
+        # by the first <segment>, until a crossing occurs
         current = segment
         while True:
-            if len(self[current.target]) != 2:
+            if len(self[current.t]) != 2: # order of node != 2
                 break
-            current = [self[current.target][source] for source in self[current.target] if source != current.source][0][0]
+            current = [self[current.t][source] for source in self[current.t] if source != current.s][0][0]
             yield current
 
     def getCrossingsThatContain(self, categories):
@@ -163,3 +178,4 @@ class WayNetwork(dict):
                 if categories_set & cats_set:
                     found.append(source)
         return found
+
