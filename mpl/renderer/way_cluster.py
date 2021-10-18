@@ -7,6 +7,10 @@ import matplotlib.patheffects as pe
 class WayClusterRenderer(Renderer):
     
     styles = dict(
+        motorway = dict(
+            color="#e892a2", linewidth=7.,
+            path_effects=[pe.Stroke(linewidth=7.4, foreground="#e15681"), pe.Normal()]
+        ),
         primary = dict(
             color="#fcd6a4", linewidth=5.,
             path_effects=[pe.Stroke(linewidth=5.4, foreground="black"), pe.Normal()]
