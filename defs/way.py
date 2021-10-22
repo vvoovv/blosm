@@ -65,10 +65,12 @@ facadeVisibilityWayCategoriesSet = set(facadeVisibilityWayCategories)
 
 
 mainRoads =   (  
+    "motorway",
+    "motorway_link",
     "primary",
-    # "primary_link",
+    "primary_link",
     "secondary",
-    # "secondary_link",
+    "secondary_link",
     "tertiary",
     "residential"
 )

@@ -74,9 +74,7 @@ def createSectionNetwork(network):
                 mergedSegment.join(nextSegment)
                 sectionEnd = nextSegment.t
 
-            # totalLength = sum([e.length for e in edgesToMerge])
-            # path.append(sectionEnd)
-            if (sectionStart, sectionEnd) not in foundEdges:
+            if (sectionStart, sectionEnd) not in foundEdges and mergedSegment is not None:
                 foundEdges.extend([(sectionStart, sectionEnd), (sectionEnd, sectionStart)])
                 sectionNetwork.addSegment(mergedSegment, True)
     
@@ -97,7 +95,7 @@ def findWayJunctionsFor(graph, seed_crossings, categories, distance):
                     (w.source if w.t==i else w.t) for w in outWays \
                         if w.length < distance and w.category in categories
                 }
-                if len(neighbors) > 2:
+                if len(neighbors) > 1:
                     to_process.extend(list(neighbors-seen))
                     seen.add(i)
             if len(seen) > 1:

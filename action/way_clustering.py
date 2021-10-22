@@ -3,9 +3,6 @@ from way.way_network import WayNetwork, NetSegment
 from way.way_algorithms import createSectionNetwork, findWayJunctionsFor
 from defs.way import allRoadwayCategories, mainRoads, smallRoads
 
-# from action.tests import createHoughTransform
-
-
 class WayClustering:
     
     def __init__(self):
@@ -21,6 +18,9 @@ class WayClustering:
 
         # create way-section network
         graph = wayManager.waySectionGraph = createSectionNetwork(wayManager.networkGraph)
+
+        # uncomment to display cycles
+        # cycles = graph.iterCycles()
 
         # find way-junctions for principal roads
         allCrossings = graph.getCrossingsThatContain(allRoadwayCategories)

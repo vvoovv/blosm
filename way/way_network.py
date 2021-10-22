@@ -1,5 +1,9 @@
 from mathutils import Vector
+from functools import cmp_to_key
+from math import atan2, pi
 from defs.way import allRoadwayCategoriesRank
+
+PI2 = 2.*pi
 
 class NetSegment():
     ID = 0  # just used during debugging
@@ -25,6 +29,7 @@ class NetSegment():
             self.path = path        # includes source and target
         else:
             self.path = [self.s,self.t]
+        self.firstV = self.path[1]-self.path[0]  # vector of first way-segment in path
 
     def initFromOther(self, other):
         self.s = other.s    # source node
@@ -33,6 +38,7 @@ class NetSegment():
         self.geomLength = other.geomLength
         self.length = other.length
         self.path = other.path        # includes source and target
+        self.firstV = other.firstV
 
     def join(self, segment):
         assert self.category == segment.category, "segment to join must have same category"
@@ -45,21 +51,27 @@ class NetSegment():
         self.t = segment.t
         self.geomLength = (self.t-self.s).length
 
+    def iterPathPair(self):
+        path = self.path
+        for i in range(len(path)-1):
+            yield path[i], path[i+1]
+
     def __invert__(self):
         # create segment with the reversed direction
         return self.__class__(self.t, self.s, self.category, self.length, self.path[::-1])
     def __eq__(self, other):
         # comparison of segments (no duplicates allowed)
-        selfNodes = {self.s, self.t}
-        selfPaths = [self.path, self.path.reverse()]
-        return other.s in selfNodes and other.t in selfNodes and other.path in selfPaths
-    # def __hash__(self):
-    #     return hash((self.source, self.target, self.length))
+        return self.category == other.category and self.path == other.path
+    def __hash__(self):
+        return hash((self.s, self.t, self.length))
 
 
 
 class WayNetwork(dict):
     # undirected multigraph
+    def __init__(self):
+        # only used in search for cycles
+        self.counterClockEmbedding = None
 
     def addNode(self,node):
         # add a <node> to the network, node must be a frozen Vector!!
@@ -178,4 +190,92 @@ class WayNetwork(dict):
                 if categories_set & cats_set:
                     found.append(source)
         return found
+
+    def compare_angles(self, v1, v2):
+        return 1 if atan2(v1[1],v1[0])+(v1[1]<0)*PI2 < atan2(v2[1],v2[0])+(v2[1]<0)*PI2 else -1
+
+    def createCircularEmbedding(self):
+        self.counterClockEmbedding = dict(list())
+        for node in self:
+            neighbors = (seg for seg in self.iterOutSegments(node))
+            ordering = sorted(neighbors, key = cmp_to_key( lambda a,b: self.compare_angles(a.firstV,b.firstV)) )
+            self.counterClockEmbedding[node] = ordering
+
+    def plotSegment(self,s,color):
+        import matplotlib.pyplot as plt
+        v1 = s.s
+        v2 = s.t
+        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),color)
+
+
+    def iterCycles(self):
+        if not self.counterClockEmbedding:
+            self.createCircularEmbedding()
+
+        # create set of all segments 
+        segmentSet = set( s for s in self.iterAllSegments() )
+
+        path = []
+        cycles = []
+
+        # start with a first segment
+        s = next(iter(segmentSet))
+        path.append(s)
+        segmentSet -= set([s])
+
+        while (len(segmentSet) > 0):
+            neighbors = self.counterClockEmbedding[path[-1].t]
+            nextSeg = neighbors[(neighbors.index(~path[-1])+1)%(len(neighbors))]
+            if nextSeg == path[0]:
+                cycles.append(path)
+                path = []
+                s = next(iter(segmentSet))
+                path.append(s)
+                segmentSet -= set([s])
+            else:
+                path.append(nextSeg)
+                segmentSet -= set([nextSeg])
+
+        for cycle in cycles:
+            plotCycle(cycle)
+
+        return cycles
+
+
+# ------------------------------------------------------------------
+# this part is only used to temporary visualize the cycles
+from itertools import *
+import matplotlib.pyplot as plt
+def _iterCircularPrevNext(lst):
+    prevs, nexts = tee(lst)
+    prevs = islice(cycle(prevs), len(lst) - 1, None)
+    return zip(prevs,nexts)
+
+def _iterCircularPrevThisNext(lst):
+    prevs, this, nexts = tee(lst, 3)
+    prevs = islice(cycle(prevs), len(lst) - 1, None)
+    nexts = islice(cycle(nexts), 1, None)
+    return zip(prevs, this, nexts)
+
+def plotCycle(cycle):
+    nodes = [n for s in cycle for n in s.path[:-1]]
+
+    scaledNodes = []
+    for n0,n1,n2 in _iterCircularPrevThisNext(nodes):
+        v0 = (n0-n1).normalized()
+        v1 = (n2-n1).normalized()
+        is_reflex = v0.cross(v1) > 0
+        bisector = ( (v0+v1)*(-1 if is_reflex else 1) ).normalized()
+        c = abs(v0.cross(bisector))
+        # cc = 1.0#(1/c if c>0.1 else 10.) 
+        bisector *= 3
+        scaledNodes.append(n1+bisector)
+
+    x = [n[0] for n in scaledNodes]
+    y = [n[1] for n in scaledNodes]
+    plt.fill(x,y,'#0000ff',alpha = 0.1,zorder = 50)
+    for v1,v2 in _iterCircularPrevNext(scaledNodes):
+        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),'b:',alpha = 1.0,zorder = 50,linewidth=0.5)
+
+
 
