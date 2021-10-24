@@ -45,38 +45,35 @@ def createSectionNetwork(network):
     #             The edges from <sectionStart> to <sectionEnd> get merged to a new
     #             way-segment and added to the new graph
     startNodes = deque( [node for node in network.iterAllIntersectionNodes()])
-    seenStartNodes = set(startNodes)
-    foundEdges = []
+    forbiddenStarts = []
 
     while len(startNodes) > 0:
-        sectionStart = startNodes.popleft()
-        for firstNeighbor in network.iterAdjacentNodes(sectionStart):
+        startNode = startNodes.popleft()
+        # iterate over all out-segments of this start node
+        for outSegment in network.iterOutSegments(startNode):
+            # do not use return segment of undirected graph
+            if (outSegment.s, outSegment.t) not in forbiddenStarts:
+                segmentsToMerge = []
+                # iterate until intersection or different category found
+                for nextSegment in network.iterAlongWay(outSegment):
+                    if nextSegment.t == startNode:
+                        # we are back to the start node => loop (remove completely)
+                        segmentsToMerge = []
+                        break
+                    else:
+                        segmentsToMerge.append(nextSegment)
 
-            # merge edges along path
-            firstSegment = network.getSegment(sectionStart,firstNeighbor)
-            sectionEnd = firstSegment.t
-            mergedSegment = NetSegment(firstSegment)
-            path = [sectionStart]
-            for nextSegment in network.iterAlongWay(firstSegment):
-                # 1) iteration ends if another intersection node or an end-node is found
-                if nextSegment.t == sectionStart:
-                    # 3) the start_node is found => loop (remove completely)
-                    mergedSegment = None
-                    break
-                path.append(nextSegment.t)
-                if nextSegment.category != firstSegment.category:
-                    # 2) an inter-category node is found
-                    if nextSegment.s not in seenStartNodes:
-                        # found a new possible start node
-                        seenStartNodes.add(nextSegment.s)
-                        startNodes.append(nextSegment.s)
-                    break
-                mergedSegment.join(nextSegment)
-                sectionEnd = nextSegment.t
+                if segmentsToMerge:
+                    forbiddenStarts.append( (nextSegment.t, nextSegment.s))
+                    mergedSegment = NetSegment(segmentsToMerge[0])
+                    for seg in segmentsToMerge[1:]:
+                        mergedSegment.join(seg)
+                    sectionNetwork.addSegment(mergedSegment)
+    
+    return sectionNetwork
 
-            if (sectionStart, sectionEnd) not in foundEdges and mergedSegment is not None:
-                foundEdges.extend([(sectionStart, sectionEnd), (sectionEnd, sectionStart)])
-                sectionNetwork.addSegment(mergedSegment, True)
+
+                
     
     return sectionNetwork
 

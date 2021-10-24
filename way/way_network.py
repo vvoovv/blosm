@@ -127,7 +127,7 @@ class WayNetwork(dict):
     def getSegment(self, source, target):
         if source in self and target in self[source]:
             segment = self[source][target]
-            return segment[0] if isinstance(segment,list) else segment
+            return segment if isinstance(segment,list) else segment
         else:
             return None        
        
@@ -170,13 +170,16 @@ class WayNetwork(dict):
                 yield source
 
     def iterAlongWay(self,segment):
-        # generator for nodes that follow the way in the direction given
-        # by the first <segment>, until a crossing occurs
+        # Generator for nodes that follow the way in the direction given by the
+        # <segment>, until a crossing occurs, an end-point is reached or the 
+        # way-category changes. The first return is <segment>.
+        firstCategory = segment.category
         current = segment
-        while True:
-            if len(self[current.t]) != 2: # order of node != 2
-                break
+        yield current
+        while len(self[current.t]) == 2: # order of node == 2 -> no crossing or end-point
             current = [self[current.t][source] for source in self[current.t] if source != current.s][0][0]
+            if current.category != firstCategory:
+                break
             yield current
 
     def getCrossingsThatContain(self, categories):
@@ -197,16 +200,12 @@ class WayNetwork(dict):
     def createCircularEmbedding(self):
         self.counterClockEmbedding = dict(list())
         for node in self:
-            neighbors = (seg for seg in self.iterOutSegments(node))
-            ordering = sorted(neighbors, key = cmp_to_key( lambda a,b: self.compare_angles(a.firstV,b.firstV)) )
+            neighbors = [seg for seg in self.iterOutSegments(node)]
+            if len(neighbors)>1:
+                ordering = sorted(neighbors, key = cmp_to_key( lambda a,b: self.compare_angles(a.firstV,b.firstV)) )
+            else:
+                ordering = neighbors
             self.counterClockEmbedding[node] = ordering
-
-    def plotSegment(self,s,color):
-        import matplotlib.pyplot as plt
-        v1 = s.s
-        v2 = s.t
-        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),color)
-
 
     def iterCycles(self):
         if not self.counterClockEmbedding:
@@ -215,32 +214,26 @@ class WayNetwork(dict):
         # create set of all segments 
         segmentSet = set( s for s in self.iterAllSegments() )
 
-        path = []
         cycles = []
-
-        # start with a first segment
-        s = next(iter(segmentSet))
-        path.append(s)
-        segmentSet -= set([s])
-
         while (len(segmentSet) > 0):
-            neighbors = self.counterClockEmbedding[path[-1].t]
-            nextSeg = neighbors[(neighbors.index(~path[-1])+1)%(len(neighbors))]
-            if nextSeg == path[0]:
-                cycles.append(path)
-                path = []
-                s = next(iter(segmentSet))
-                path.append(s)
-                segmentSet -= set([s])
-            else:
-                path.append(nextSeg)
-                segmentSet -= set([nextSeg])
+            # start with a first segment
+            s = next(iter(segmentSet))
+            path = [s]
+            segmentSet -= set([s])
+            while True:
+                neighbors = self.counterClockEmbedding[path[-1].t]
+                nextSeg = neighbors[(neighbors.index(~path[-1])+1)%(len(neighbors))]
+                if nextSeg == path[0]:
+                    cycles.append(path)
+                    break
+                else:
+                    path.append(nextSeg)
+                    segmentSet -= set([nextSeg])
 
         for cycle in cycles:
             plotCycle(cycle)
 
         return cycles
-
 
 # ------------------------------------------------------------------
 # this part is only used to temporary visualize the cycles
