@@ -17,7 +17,13 @@ class WayManager:
         
         self.layers = dict((category, []) for category in allWayCategories)
         
+        self.renderers = []
+        
         self.actions = []
+        
+        # <self.networkGraph>, <self.waySectionGraph> and <self.junctions> are set in an action,
+        # for example <action.way_clustering.Way>
+        self.networkGraph = self.waySectionGraph = self.junctions = None
         
         app.addManager(self)
 
@@ -40,6 +46,9 @@ class WayManager:
             way for category in facadeVisibilityWayCategories for way in self.layers[category] \
             if not way.bridge and not way.tunnel
         )
+
+    def getSelectedWays(self, categories):
+        return ( way for category in categories for way in self.layers[category] )
     
     def process(self):
         for way in self.getAllWays():
@@ -49,13 +58,13 @@ class WayManager:
         for action in self.actions:
             action.do(self)
     
-    def setRenderer(self, renderer, app):
-        self.renderer = renderer
-        app.addRenderer(renderer)
+    def addRenderer(self, renderer):
+        self.renderers.append(renderer)
+        self.app.addRenderer(renderer)
     
     def render(self):
-        for way in self.getAllWays():
-            self.renderer.render(way, self.data)
+        for renderer in self.renderers:
+            renderer.render(self, self.data)
     
     def addAction(self, action):
         action.app = self.app

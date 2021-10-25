@@ -1,4 +1,4 @@
-from . import Renderer, BuildingRenderer, WayRenderer
+from . import Renderer, BuildingBaseRenderer, BuildingRenderer, WayRenderer
 import parse
 from parse.osm import Osm
 from defs.way import facadeVisibilityWayCategoriesSet, Category
@@ -7,22 +7,12 @@ from defs.building import BldgPolygonFeature
 from math import atan2, pi
 
 
-class BuildingVisibilityRender(Renderer):
+class BuildingVisibilityRender(BuildingBaseRenderer):
     
     def __init__(self, showAssoc, showIDs):
         super().__init__()
         self.showAssoc = showAssoc
         self.showIDs = showIDs
-
-    def render(self, building, data):
-        outline = building.outline
-        # render the outer footprint
-        self.renderBuildingFootprint(building)
-        # render holes for a multipolygon
-        if outline.t is parse.multipolygon:
-            for l in outline.ls:
-                if not l.role is Osm.outer:
-                    self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
 
     def renderBuildingFootprint(self, building):
         ax = self.mpl.ax
@@ -97,23 +87,13 @@ class BuildingVisibilityRender(Renderer):
         return 0.5 if edge.hasSharedBldgVectors() else 1.5
 
 
-class BuildingClassificationRender(Renderer):
+class BuildingClassificationRender(BuildingBaseRenderer):
     
     def __init__(self, sideFacadeColor, showAssoc, showIDs):
         super().__init__()
         self.sideFacadeColor = sideFacadeColor
         self.showAssoc = showAssoc
         self.showIDs = showIDs
-    
-    def render(self, building, data):
-        outline = building.outline
-        # render the outer footprint
-        self.renderBuildingFootprint(building)
-        # render holes for a multipolygon
-        if outline.t is parse.multipolygon:
-            for l in outline.ls:
-                if not l.role is Osm.outer:
-                    self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
 
     def renderBuildingFootprint(self, building):
         ax = self.mpl.ax
@@ -271,9 +251,10 @@ class WayVisibilityRenderer(WayRenderer):
         super().__init__()
         self.showIDs = showIDs
     
-    def render(self, way, data):
-        if way.category in facadeVisibilityWayCategoriesSet:
-            super().render(way, data)
+    def render(self, wayManager, data):
+        for way in wayManager.getAllWays():
+            if way.category in facadeVisibilityWayCategoriesSet:
+                super().render(way, data)
     
     def renderWaySegment(self, segment):
         super().renderWaySegment(segment)

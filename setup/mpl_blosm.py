@@ -3,11 +3,14 @@ from building.manager import BaseBuildingManager
 from way.manager import WayManager
 from mpl.renderer.facade_classification import \
     BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender, BuildingFeatureRender
+from mpl.renderer import BuildingBaseRenderer
+from mpl.renderer.way_cluster import WayClusterRenderer
 from action.facade_visibility import FacadeVisibilityOther
 from action.facade_classification import FacadeClassification
 from action.feature_detection import FeatureDetection
 from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
+from action.way_clustering import WayClustering
 
 #from manager.logging import Logger
 
@@ -24,7 +27,8 @@ def setup(app, osm):
     #Logger(app, osm)
     
     # add the definition of the custom command line arguments
-    app.argParserExtra.add_argument("--classification", action='store_true', help="Display facade classification", default=False)
+    app.argParserExtra.add_argument("--classifyFacades", action='store_true', help="Display facade classification", default=False)
+    app.argParserExtra.add_argument("--facadeVisibility", action='store_true', help="Display facade visibility", default=False)
     app.argParserExtra.add_argument("--sideFacadeColor", help="The color for a side facade", default="yellow")
     app.argParserExtra.add_argument("--showAssoc", action='store_true', help="Show the associations between way-segment and facade", default=False)
     app.argParserExtra.add_argument("--showIDs", action='store_true', help="Show the IDs of facades", default=False)
@@ -33,10 +37,12 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--showFeatureSymbols", action='store_true', help="Show a symbol for each unskipped polygon vector. The symbol is used for pattern matching", default=False)
     app.argParserExtra.add_argument("--simplifyPolygons", action='store_true', help="Simplify polygons with the detected features", default=False)
     app.argParserExtra.add_argument("--restoreFeatures", action='store_true', help="Restore simplified features", default=False)
+    app.argParserExtra.add_argument("--wayClustering", action='store_true', help="Create way clusters", default=False)
     
     # parse the newly added command line arguments
     app.parseArgs()
-    classifyFacades = getattr(app, "classification", False)
+    classifyFacades = getattr(app, "classifyFacades", False)
+    facadeVisibility = getattr(app, "classification", False)
     showAssoc = getattr(app, "showAssoc", False)
     showIDs = getattr(app, "showIDs", False)
     
@@ -46,11 +52,11 @@ def setup(app, osm):
     
     simplifyPolygons = getattr(app, "simplifyPolygons", False)
     restoreFeatures = getattr(app, "restoreFeatures", False)
-    
+
+    wayClustering = getattr(app, "wayClustering", False)
     # create managers
     
     wayManager = WayManager(osm, app)
-    wayManager.setRenderer(WayVisibilityRenderer(showIDs=showIDs), app)
     
     #linestring = Linestring(osm)
     #polygon = Polygon(osm)
@@ -73,8 +79,11 @@ def setup(app, osm):
                         restoreFeatures=restoreFeatures,
                         showFeatureSymbols=showFeatureSymbols,
                         showIDs=showIDs
-                    ) if detectFeatures and showFeatures else\
-                        BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs)
+                    ) if detectFeatures and showFeatures else (\
+                        BuildingVisibilityRender(showAssoc=showAssoc, showIDs=showIDs) \
+                            if facadeVisibility else \
+                            BuildingBaseRenderer()
+                    )
                 )
         )
         
@@ -82,7 +91,10 @@ def setup(app, osm):
             buildings.addAction(CurvedFeatures())
             buildings.addAction(StraightAngles())
             buildings.addAction(FeatureDetection(simplifyPolygons))
-        #buildings.addAction(FacadeVisibilityOther())
+        
+        if facadeVisibility or classifyFacades:
+            buildings.addAction(FacadeVisibilityOther())
+        
         if classifyFacades:
             buildings.addAction(FacadeClassification())
         
@@ -94,6 +106,12 @@ def setup(app, osm):
     
     if app.highways or app.railways:
         osm.addCondition(tunnel)
+        
+        if wayClustering:
+            wayManager.addRenderer(WayClusterRenderer())
+            wayManager.addAction(WayClustering())
+        else:
+            wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))
     
     if app.highways:
         osm.addCondition(

@@ -1,7 +1,6 @@
 
 
-allWayCategories = (
-    "other",
+allRoadwayCategories = (
     "motorway",
     "motorway_link",
     "trunk",
@@ -20,14 +19,32 @@ allWayCategories = (
     "track",
     "escape",
     "raceway",
+    "other",
     # "road", # other
-    "footway",
-    "bridleway",
     "steps",
+    "footway",
     "path",
-    "cycleway"
+    "cycleway",
+    "bridleway"
 )
-allWayCategoriesSet = set(allWayCategories)
+allRoadwayCategoriesSet = set(allRoadwayCategories)
+
+# hierarchy of way categories
+allRoadwayCategoriesRank = dict(zip(allRoadwayCategories, range(len(allRoadwayCategories))))
+
+allRailwayCategories = (
+    "rail",
+    "subway",
+    "light_rail",
+    "tram",
+    "funicular",
+    "monorail"
+    
+)
+allRailwayCategoriesSet = set(allRailwayCategories)
+
+
+allWayCategories = allRoadwayCategories + allRailwayCategories
 
 
 facadeVisibilityWayCategories = (
@@ -45,6 +62,31 @@ facadeVisibilityWayCategories = (
     #"cycleway"
 )
 facadeVisibilityWayCategoriesSet = set(facadeVisibilityWayCategories)
+
+
+mainRoads =   (  
+    "motorway",
+    "motorway_link",
+    "primary",
+    "primary_link",
+    "secondary",
+    "secondary_link",
+    "tertiary",
+    "residential"
+)
+
+smallRoads = (
+    #"residential",
+    "service",
+    # "pedestrian",
+    # "track",
+    # "escape",
+    "footway",
+    # "bridleway",
+    # "steps",
+    # "path",
+    "cycleway"
+)
 
 
 class Category:
