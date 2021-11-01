@@ -123,7 +123,11 @@ class Feature:
         self._unskipVectors()
 
 
-class StraightAngleBase(Feature):
+class StraightAnglePart(Feature):
+    """
+    A part of <StraightAngle> feature formed by at least 2 edges not shared with another building OR
+    at least 2 edges shared with a single another building. It can't share a curved feature in the former case.
+    """
     
     def __init__(self, startVector, endVector, _type):
         self.twoVectors = startVector.next is endVector
@@ -150,9 +154,9 @@ class StraightAngleBase(Feature):
             super().skipVectors(manager)
 
 
-class StraightAngle(StraightAngleBase):
+class StraightAngle(StraightAnglePart):
     
-    __slots__ = ("prev", "next", "hasSharedEdge", "hasFreeEdge", "sharesOnePolygon")
+    __slots__ = ("prev", "next", "hasSharedEdge", "hasFreeEdge", "sharesOnePolygon", "sharesCurve")
     
     def __init__(self, startVector, endVector, _type):
         super().__init__(startVector, endVector, _type)
@@ -164,7 +168,7 @@ class StraightAngle(StraightAngleBase):
             polygon.saFeature.next = self
         polygon.saFeature = self
         
-        self.hasSharedEdge = self.hasFreeEdge = False
+        self.hasSharedEdge = self.hasFreeEdge = self.sharesCurve = False
         self.sharesOnePolygon = True
     
     def isCurved(self):

@@ -1,5 +1,5 @@
 from building import BldgPolygon
-from building.feature import StraightAngleBase, StraightAngle, Curved
+from building.feature import StraightAnglePart, StraightAngle, Curved
 from defs.building import BldgPolygonFeature
 
 
@@ -124,12 +124,12 @@ class StraightAngles:
                 if vector.edge.hasSharedBldgVectors():
                     if numFreeEdges:
                         if numFreeEdges > 1:
-                            StraightAngleBase(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
                         numFreeEdges = 0
                 else:
                     if len(manager.data.nodes[vector.id1].bldgVectors) > 1:
                         if numFreeEdges > 1:
-                            StraightAngleBase(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
                         numFreeEdges = 1
                         startVector = vector
                     else:
@@ -139,7 +139,7 @@ class StraightAngles:
                     
                 if vector is saFeature.endVector:
                     if numFreeEdges > 1 and not startVector is saFeature.startVector:
-                        StraightAngleBase(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                        StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
                         # change <saFeature.endVector>
                         saFeature.endVector = startVector
                     break
@@ -162,11 +162,20 @@ class StraightAngles:
                 if vector.edge.hasSharedBldgVectors():
                     if not saFeature.hasSharedEdge:
                         saFeature.hasSharedEdge = True
-                    if numSharedEdges and neighborPolygon is vector.neighbor.polygon:
+                    
+                    if vector.neighbor.featureType == BldgPolygonFeature.curved:
+                        if not saFeature.sharesCurve:
+                            saFeature.sharesCurve = True
+                        if numSharedEdges > 1:
+                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                        numSharedEdges = 0
+                    elif numSharedEdges and neighborPolygon is vector.neighbor.polygon:
                         numSharedEdges += 1
                     else:
                         if numSharedEdges and saFeature.sharesOnePolygon:
                             saFeature.sharesOnePolygon = False
+                        if numSharedEdges > 1:
+                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
                         startVector = vector
                         neighborPolygon = vector.neighbor.polygon
                         numSharedEdges = 1
@@ -175,18 +184,18 @@ class StraightAngles:
                         saFeature.hasFreeEdge = True
                     if numSharedEdges:
                         if numSharedEdges > 1:
-                            StraightAngleBase(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
                         numSharedEdges = 0
                     
                 if vector is saFeature.endVector:
                     if numSharedEdges > 1 and not startVector is saFeature.startVector:
-                        StraightAngleBase(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                        StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
                     break
                 vector = vector.next
             
             saFeature.setParentFeature()
             saFeature.markVectors()
-            if not saFeature.hasSharedEdge or not saFeature.hasFreeEdge:
+            if not saFeature.hasSharedEdge or (not saFeature.hasFreeEdge and not saFeature.sharesCurve and saFeature.sharesOnePolygon):
                 saFeature.skipVectors(manager)
             
             if saFeature.prev:
