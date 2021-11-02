@@ -156,12 +156,12 @@ class BldgPolygon:
         return (vector.edge for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector.edge for vector in self.vectors if not vector.skip)
-
+    
     def getVectors(self):
         return (vector for vector in reversed(self.vectors) if not vector.skip) \
             if self.reversed else\
             (vector for vector in self.vectors if not vector.skip)
-
+    
     def getVectorsAll(self):
         return (vector for vector in reversed(self.vectors)) \
             if self.reversed else\

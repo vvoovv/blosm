@@ -368,6 +368,16 @@ class ComplexConvex5(Feature):
             startVector.next.skip = endVector.prev.prev.skip = \
                 endVector.prev.skip = endVector.skip = False
             startVector.polygon.numEdges += 4
+    
+    def isSkippable(self):
+        """
+        See the details in QuadConvex.isSkippable()
+        """
+        return not self.startVector.edge.hasSharedBldgVectors() and \
+            not self.startVector.next.edge.hasSharedBldgVectors() and \
+            not self.endVector.prev.prev.edge.hasSharedBldgVectors() and \
+            not self.endVector.prev.edge.hasSharedBldgVectors() and \
+            not self.endVector.edge.hasSharedBldgVectors()
 
 
 class ComplexConvex4(Feature):
@@ -481,20 +491,15 @@ class ComplexConvex4(Feature):
             self._unskipVectorsKeepStartVector()
             startVector.next.skip = endVector.prev.skip = endVector.skip = False
             startVector.polygon.numEdges += 3
-
-
-class ComplexConcave(Feature):
     
-    def __init__(self, startVector, endVector):
-        super().__init__(BldgPolygonFeature.complex_concave, startVector, endVector)
-
-    def skipVectors(self, manager):
-        # don't skip it for now
-        pass
-    
-    def unskipVectors(self):
-        # do nothing for now
-        pass
+    def isSkippable(self):
+        """
+        See the details in QuadConvex.isSkippable()
+        """
+        return not self.startVector.edge.hasSharedBldgVectors() and \
+            not self.startVector.next.edge.hasSharedBldgVectors() and \
+            not self.endVector.prev.edge.hasSharedBldgVectors() and \
+            not self.endVector.edge.hasSharedBldgVectors()
 
 
 class QuadConvex(Feature):
@@ -614,12 +619,14 @@ class QuadConvex(Feature):
     def getProxyVector(self):
         return self.endVector if self.leftEdgeShorter else self.startVector
     
-    def isSkippable(self, unskipStraightAngles):
+    def isSkippable(self):
         """
         Check if the feature can be skipped:
             * It doesn't have edges shared with the other polygons
-            
         """
+        return not self.startVector.edge.hasSharedBldgVectors() and \
+            not self.startVector.next.edge.hasSharedBldgVectors() and \
+            not self.endVector.edge.hasSharedBldgVectors()
 
 
 class QuadConcave(QuadConvex):
@@ -662,6 +669,14 @@ class TriConvex(Feature):
     
     def invalidate(self):
         self.startVector.feature = None
+    
+    def isSkippable(self):
+        """
+        Check if the feature can be skipped:
+            * It doesn't have edges shared with the other polygons
+        """
+        return not self.startVector.edge.hasSharedBldgVectors() and \
+            not self.endVector.edge.hasSharedBldgVectors()
 
 
 class TriConcave(Feature):

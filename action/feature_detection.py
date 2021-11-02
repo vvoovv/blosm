@@ -1,8 +1,8 @@
 import re
-from defs.building import BldgPolygonFeature, curvedLengthFactor, \
+from defs.building import BldgPolygonFeature, \
     longEdgeFactor, midEdgeFactor, sin_lo, sin_me
-from building.feature import StraightAngleSfs, Curved, ComplexConvex5, ComplexConvex4, QuadConvex, \
-    ComplexConcave, QuadConcave, TriConvex, TriConcave
+from building.feature import StraightAngleSfs, ComplexConvex5, ComplexConvex4, QuadConvex, \
+    QuadConcave, TriConvex, TriConcave
 
 
 def hasAnglesForCurvedFeature(vector):
@@ -43,7 +43,7 @@ class FeatureDetection:
     complexConvexPattern4 = re.compile(r"(>[L|l][L|l]<)")
 
     # concave complex features
-    complexConcavePattern = re.compile(r"(<[R|r][R|r]>)")
+    #complexConcavePattern = re.compile(r"(<[R|r][R|r]>)")
 
     # convex quadrangle features
     quadConvexPattern = re.compile(r"(>[L|l][<|L|R|O|+|=|o])|([>|L|R|O|+|=|o][L|l]<)")
@@ -150,18 +150,11 @@ class FeatureDetection:
             polygon, '3'
         )
 
-        #sequence = self.matchPattern(
-        #    sequence, sequenceLength,
-        #    FeatureDetection.complexConcavePattern,
-        #    ComplexConcave,
-        #    polygon, '4'
-        #)
-
         sequence = self.matchPattern(
             sequence, sequenceLength,
             FeatureDetection.quadConcavePattern,
             QuadConcave,
-            polygon, '5'
+            polygon, '4'
         )   
 
         self.matchPattern(
@@ -213,9 +206,9 @@ class FeatureDetection:
                                 BldgPolygonFeature.quadrangle_convex,
                                 BldgPolygonFeature.quadrangle_concave,
                                 BldgPolygonFeature.complex5_convex
-                            ):
-                        if feature.isSkippable(unskipStraightAngles=True):
-                            feature.skipVectors(manager) 
+                            ) and \
+                            feature.isSkippable():
+                        feature.skipVectors(manager) 
                     currentVector = feature.endVector.next
                 else:
                     currentVector = currentVector.next
@@ -228,7 +221,8 @@ class FeatureDetection:
             while True:
                 feature = currentVector.feature
                 if feature:
-                    if feature.type == BldgPolygonFeature.complex4_convex:
+                    if feature.type == BldgPolygonFeature.complex4_convex and \
+                            feature.isSkippable():
                         feature.skipVectors(manager)
                     currentVector = feature.endVector.next
                 else:
@@ -242,7 +236,8 @@ class FeatureDetection:
             while True:
                 feature = currentVector.feature
                 if feature:
-                    if feature.type == BldgPolygonFeature.triangle_convex:
+                    if feature.type == BldgPolygonFeature.triangle_convex and \
+                            feature.isSkippable():
                         feature.skipVectors(manager)
                     currentVector = feature.endVector.next
                 else:
