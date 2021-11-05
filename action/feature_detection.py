@@ -252,7 +252,6 @@ class FeatureDetection:
             if not vectorHasStraightAngle(currentVector):
                 prevNonStraightVector = currentVector
                 break
-            polygon.numEdges -= 1
             isPrevVectorStraight = True
             currentVector = currentVector.prev
         currentVector = startVector.next
@@ -260,7 +259,6 @@ class FeatureDetection:
         while True:
             # conditions for a straight angle
             if vectorHasStraightAngle(currentVector):
-                    polygon.numEdges -= 1
                     isPrevVectorStraight = True
             else:
                 if isPrevVectorStraight:

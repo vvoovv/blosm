@@ -47,6 +47,7 @@ class Feature:
         
         while not currentVector is self.endVector.next:
             currentVector.skip = True
+            currentVector.polygon.numEdges -= 1
             currentVector = currentVector.next
         
         self._skipVectors(manager)
@@ -149,6 +150,7 @@ class StraightAnglePart(Feature):
     def skipVectors(self, manager):
         if self.twoVectors:
             self.endVector.skip = True
+            self.endVector.polygon.numEdges -= 1
             self._skipVectors(manager)
         else:
             super().skipVectors(manager)
