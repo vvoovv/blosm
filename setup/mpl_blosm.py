@@ -11,6 +11,7 @@ from action.feature_detection import FeatureDetection
 from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
 from action.way_clustering import WayClustering
+from action.unskip_features import UnskipFeatures
 
 #from manager.logging import Logger
 
@@ -42,7 +43,7 @@ def setup(app, osm):
     # parse the newly added command line arguments
     app.parseArgs()
     classifyFacades = getattr(app, "classifyFacades", False)
-    facadeVisibility = getattr(app, "classification", False)
+    facadeVisibility = getattr(app, "facadeVisibility", False)
     showAssoc = getattr(app, "showAssoc", False)
     showIDs = getattr(app, "showIDs", False)
     
@@ -96,7 +97,9 @@ def setup(app, osm):
             buildings.addAction(FacadeVisibilityOther())
         
         if classifyFacades:
-            buildings.addAction(FacadeClassification())
+            buildings.addAction(
+                FacadeClassification()#UnskipFeatures())
+            )
         
         osm.addCondition(
             lambda tags, e: "building" in tags,

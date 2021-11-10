@@ -107,6 +107,7 @@ class BuildingClassificationRender(BuildingBaseRenderer):
             if vector.skip:
                 continue
             edge, v1, v2 = vector.edge, vector.v1, vector.v2
+            
             color = self.getFootprintEdgeColor(edge)
             linewidth = BuildingClassificationRender.getLineWidth(edge)
             ax.plot(

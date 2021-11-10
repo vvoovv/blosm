@@ -196,6 +196,24 @@ class StraightAngleSfs(StraightAngle):
         polygon = startVector.polygon
         if not polygon.saSfsFeature:
             polygon.saSfsFeature = self
+    
+    def inheritFacadeClass(self):
+        """
+        Inherit the facade class from <self.startVector.edge>
+        """
+        startVector = self.startVector
+        
+        self.startEdge[0].cl = startVector.edge.cl
+        
+        if self.twoVectors:
+            self.endVector.edge.cl = startVector.edge.cl
+        else:
+            currentVector = self.startNextVector
+            while True:
+                currentVector.edge.cl = startVector.edge.cl
+                if currentVector is self.endVector:
+                    break
+                currentVector = currentVector.next
 
 
 class NoSharedBldg:
@@ -380,6 +398,17 @@ class ComplexConvex5(Feature):
             not self.endVector.prev.prev.edge.hasSharedBldgVectors() and \
             not self.endVector.prev.edge.hasSharedBldgVectors() and \
             not self.endVector.edge.hasSharedBldgVectors()
+    
+    def inheritFacadeClass(self):
+        """
+        Inherit the facade class from <self.startVector.edge>
+        """
+        self.startEdge[0].cl = \
+        self.startNextVector.edge.cl = \
+        self.startNextVector.next.edge.cl = \
+        self.endVector.prev.edge.cl = \
+        self.endVector.edge.cl = \
+        self.startVector.edge.cl
 
 
 class ComplexConvex4(Feature):
@@ -502,6 +531,16 @@ class ComplexConvex4(Feature):
             not self.startVector.next.edge.hasSharedBldgVectors() and \
             not self.endVector.prev.edge.hasSharedBldgVectors() and \
             not self.endVector.edge.hasSharedBldgVectors()
+    
+    def inheritFacadeClass(self):
+        """
+        Inherit the facade class from <self.startVector.edge>
+        """
+        self.startEdge[0].cl = \
+        self.startNextVector.edge.cl = \
+        self.endVector.prev.edge.cl = \
+        self.endVector.edge.cl = \
+        self.startVector.edge.cl
 
 
 class QuadConvex(Feature):
@@ -629,6 +668,26 @@ class QuadConvex(Feature):
         return not self.startVector.edge.hasSharedBldgVectors() and \
             not self.startVector.next.edge.hasSharedBldgVectors() and \
             not self.endVector.edge.hasSharedBldgVectors()
+    
+    def inheritFacadeClass(self):
+        """
+        Inherit the facade class from <self.startVector.edge>
+        """
+        if self.equalSideEdges:
+            self.startEdge[0].cl = \
+            self.middleVector.edge.cl = \
+            self.endVector.edge.cl = \
+            self.startVector.edge.cl
+        elif self.leftEdgeShorter:
+            self.startEdge[0].cl = self.startVector.edge.cl
+            self.middleVector.edge.cl = \
+            self.endEdge[0].cl = \
+            self.endVector.edge.cl
+        else:
+            self.startEdge[0].cl = \
+            self.middleVector.edge.cl = \
+            self.startVector.edge.cl
+            self.endEdge[0].cl = self.endVector.edge.cl
 
 
 class QuadConcave(QuadConvex):
@@ -679,6 +738,12 @@ class TriConvex(Feature):
         """
         return not self.startVector.edge.hasSharedBldgVectors() and \
             not self.endVector.edge.hasSharedBldgVectors()
+    
+    def inheritFacadeClass(self):
+        """
+        Inherit the facade class from <self.startVector.edge>
+        """
+        self.startEdge[0].cl = self.endVector.edge.cl = self.startVector.edge.cl
 
 
 class TriConcave(Feature):
