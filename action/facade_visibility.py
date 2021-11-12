@@ -2,7 +2,8 @@ from math import sqrt
 import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
-from defs.facade_classification import searchRange, FacadeClass
+from defs.facade_classification import searchRange, FacadeClass, WayLevel, CrossedFacades
+
 
 
 class PriorityQueue():
@@ -251,17 +252,31 @@ class FacadeVisibility:
                                 axisLeftEdge, isec = max( (isec for isec in edgeIntersections if isec[1]<=0), key=itemgetter(1), default=(None,None))
                                 if axisLeftEdge:
                                     if isec > -2.*searchWidth/segmentLength and not axisLeftEdge.hasSharedBldgVectors():
-                                        axisLeftEdge.cl = FacadeClass.deadend # dead-end at a building 
-                                        axisLeftEdge._visInfo.value = 1.
-                                        axisLeftEdge.visInfo.update(axisLeftEdge._visInfo)
+                                        # can only get dead-end, if way-level higher than already detected
+                                        if axisLeftEdge.visInfo.waySegment:
+                                            if WayLevel[way.category] < WayLevel[axisLeftEdge.visInfo.waySegment.way.category]:
+                                                axisLeftEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                                axisLeftEdge._visInfo.value = 0.
+                                                axisLeftEdge.visInfo.update(axisLeftEdge._visInfo)
+                                        else:
+                                            axisLeftEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                            axisLeftEdge._visInfo.value = 0.
+                                            axisLeftEdge.visInfo.update(axisLeftEdge._visInfo)
                                 else:
                                     # smallest index on positive (right) side
                                     axisRightEdge, isec = min( (isec for isec in edgeIntersections if isec[1]>=0.), key=itemgetter(1), default=(None,None))
                                     if axisRightEdge:
                                         if isec < 2.*searchWidth/segmentLength and not axisRightEdge.hasSharedBldgVectors():
-                                            axisRightEdge.cl = FacadeClass.deadend # dead-end at a building 
-                                            axisRightEdge._visInfo.value = 1.
-                                            axisRightEdge.visInfo.update(axisRightEdge._visInfo)
+                                            # can only get dead-end, if way-level higher than already detected
+                                            if axisRightEdge.visInfo.waySegment:
+                                                if WayLevel[way.category] < WayLevel[axisRightEdge.visInfo.waySegment.way.category]:
+                                                    axisRightEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                                    axisRightEdge._visInfo.value = 0.
+                                                    axisRightEdge.visInfo.update(axisRightEdge._visInfo)
+                                            else:
+                                                axisRightEdge.cl = FacadeClass.deadend # dead-end at a building 
+                                                axisRightEdge._visInfo.value = 0.
+                                                axisRightEdge.visInfo.update(axisRightEdge._visInfo)
 
                     # check for range and angles
                     for edge, edgeVert1, edgeVert2 in building.polygon.edgeInfo(queryBldgVerts, firstVertIndex, skipShared=True):
@@ -269,8 +284,13 @@ class FacadeVisibility:
                         if not self.insideRange(edgeVert1, edgeVert2, halfSegmentWidth, self.searchHeight):
                             edge._visInfo.value = 0.
                         
-                        if not edge.cl and edge._visInfo > edge.visInfo:
-                            edge.visInfo.update(edge._visInfo)
+                        if edge._visInfo > edge.visInfo or edge.cl in CrossedFacades:
+                            if edge.cl in CrossedFacades:
+                                if WayLevel[way.category] < WayLevel[edge.visInfo.waySegment.way.category]:
+                                    edge.cl = FacadeClass.unknown
+                                    edge.visInfo.update(edge._visInfo)
+                            else: 
+                                edge.visInfo.update(edge._visInfo)
 
                     firstVertIndex += building.polygon.numEdges
 
