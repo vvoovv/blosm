@@ -2,7 +2,7 @@ from math import sqrt
 import numpy as np
 from bisect import bisect_left
 from operator import itemgetter
-from defs.facade_classification import searchRange, FacadeClass, WayLevel, CrossedFacades
+from defs.facade_classification import searchRange, FacadeClass, WayLevel, CrossedFacades, FrontFacadeSight
 
 
 
@@ -286,9 +286,10 @@ class FacadeVisibility:
                         
                         if edge._visInfo > edge.visInfo or edge.cl in CrossedFacades:
                             if edge.cl in CrossedFacades:
-                                if WayLevel[way.category] < WayLevel[edge.visInfo.waySegment.way.category]:
-                                    edge.cl = FacadeClass.unknown
-                                    edge.visInfo.update(edge._visInfo)
+                                if WayLevel[way.category] <= WayLevel[edge.visInfo.waySegment.way.category]:
+                                    if edge._visInfo.value > FrontFacadeSight:
+                                        edge.cl = FacadeClass.unknown
+                                        edge.visInfo.update(edge._visInfo)
                             else: 
                                 edge.visInfo.update(edge._visInfo)
 
