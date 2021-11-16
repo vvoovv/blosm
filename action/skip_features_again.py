@@ -17,9 +17,9 @@ class SkipFeaturesAgain:
                 self.unskipFeaturesAction.unskipFeatures(polygon)
                 
             if polygon.saFeature and _neededFeatureDetectionAgain(polygon):
-                print(polygon.building.outline.tags["id"])
+                pass
             else:
-                print(False)
+                pass
 
 
 def _neededFeatureDetectionAgain(polygon):

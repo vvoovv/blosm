@@ -11,6 +11,7 @@ from action.feature_detection import FeatureDetection
 from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
 from action.way_clustering import WayClustering
+from action.skip_features import SkipFeatures
 from action.unskip_features import UnskipFeatures
 from action.skip_features_again import SkipFeaturesAgain
 
@@ -92,7 +93,7 @@ def setup(app, osm):
         if detectFeatures:
             buildings.addAction(CurvedFeatures())
             buildings.addAction(StraightAngles())
-            buildings.addAction(FeatureDetection(simplifyPolygons))
+            buildings.addAction(FeatureDetection(SkipFeatures() if simplifyPolygons else None))
         
         if facadeVisibility or classifyFacades:
             buildings.addAction(FacadeVisibilityOther())
