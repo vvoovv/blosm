@@ -188,7 +188,7 @@ class StraightAngle(StraightAnglePart):
         return self.startNextVector if vector is self.startVector else vector.next
 
 
-class StraightAngleSfs(StraightAngle):
+class StraightAngleSfs(StraightAnglePart):
     # <sfs> stands for "small feature skipped"
     
     def __init__(self, startVector, endVector):

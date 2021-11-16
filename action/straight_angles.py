@@ -109,8 +109,6 @@ class StraightAngles:
             StraightAngle(startVector, endVector, BldgPolygonFeature.straightAngle)
             # temporily set attribute <startVector.feature> to None
             startVector.feature = None
-            #if skipVectors:
-            #    feature.skipVectors(manager)
     
     def processStraightAnglesFreeEdges(self, polygon, manager):
         saFeature = polygon.saFeature

@@ -12,6 +12,7 @@ from action.curved_features import CurvedFeatures
 from action.straight_angles import StraightAngles
 from action.way_clustering import WayClustering
 from action.unskip_features import UnskipFeatures
+from action.skip_features_again import SkipFeaturesAgain
 
 #from manager.logging import Logger
 
@@ -98,8 +99,11 @@ def setup(app, osm):
         
         if classifyFacades:
             buildings.addAction(
-                FacadeClassification()#UnskipFeatures())
+                FacadeClassification(UnskipFeatures())
             )
+        
+        # the code below is for a test
+        buildings.addAction(SkipFeaturesAgain(UnskipFeatures()))
         
         osm.addCondition(
             lambda tags, e: "building" in tags,
