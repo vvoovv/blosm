@@ -12,7 +12,8 @@ class Feature:
     __slots__ = (
         "type", "skipped", "startVector", "endVector", "startEdge",
         "startNextVector", "parent", "numVectors",
-        "startSin", "nextSin"
+        "startSin", "nextSin",
+        "prev"
     )
     
     def __init__(self, _type, startVector, endVector):
@@ -158,16 +159,13 @@ class StraightAnglePart(Feature):
 
 class StraightAngle(StraightAnglePart):
     
-    __slots__ = ("prev", "next", "hasSharedEdge", "hasFreeEdge", "sharesOnePolygon", "sharesCurve")
+    __slots__ = ("hasSharedEdge", "hasFreeEdge", "sharesOnePolygon", "sharesCurve")
     
     def __init__(self, startVector, endVector, _type):
         super().__init__(startVector, endVector, _type)
         
         polygon = startVector.polygon
         self.prev = polygon.saFeature
-        self.next = None
-        if polygon.saFeature:
-            polygon.saFeature.next = self
         polygon.saFeature = self
         
         self.hasSharedEdge = self.hasFreeEdge = self.sharesCurve = False
@@ -263,9 +261,9 @@ class ComplexConvex5(Feature):
         self.endEdge = None
         
         polygon = startVector.polygon
-        if not polygon.smallFeature:
-            polygon.smallFeature = self
-
+        self.prev = polygon.smallFeature
+        polygon.smallFeature = self
+    
     def skipVectors(self, manager):
         startVector = self.startVector
         endVector = self.endVector
@@ -427,8 +425,8 @@ class ComplexConvex4(Feature):
         self.endEdge = None
         
         polygon = startVector.polygon
-        if not polygon.complex4Feature:
-            polygon.complex4Feature = self
+        self.prev = polygon.complex4Feature
+        polygon.complex4Feature = self
     
     def skipVectors(self, manager):
         startVector = self.startVector
@@ -573,8 +571,8 @@ class QuadConvex(Feature):
         super().__init__(_type, startVector, endVector)
         
         polygon = startVector.polygon
-        if not polygon.smallFeature:
-            polygon.smallFeature = self
+        self.prev = polygon.smallFeature
+        polygon.smallFeature = self
     
     def setParentFeature(self):
         if self.leftEdgeShorter:
@@ -702,9 +700,9 @@ class TriConvex(Feature):
         super().__init__(BldgPolygonFeature.triangle_convex, startVector, endVector)
         
         polygon = startVector.polygon
-        if not polygon.triangleFeature:
-            polygon.triangleFeature = self
-
+        self.prev = polygon.triangleFeature
+        polygon.triangleFeature = self
+    
     def skipVectors(self, manager):
         startVector = self.startVector
         endVector = self.endVector

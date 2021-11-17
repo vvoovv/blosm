@@ -5,62 +5,32 @@ from building.feature import StraightAngleSfs
 class SkipFeatures:
     
     def skipFeatures(self, polygon, manager):
-        if polygon.smallFeature:
-            currentVector = startVector = polygon.smallFeature.startVector
-            while True:
-                feature = currentVector.feature
-                if feature:
-                    # * Curved features aren't skipped.
-                    # * Complex features with 4 edges are processed separately since "free" neighbor vectors
-                    # are needed to skip the vectors of a complex feature. For example, the neighbor vectors
-                    # may be a part of a quadrangle feature and we need to skip the quadrangle feature first
-                    # to get the "free" neighbor edges.
-                    # * The triangle convex features are processed separately since they may be located at a corner
-                    # and have quadrangle features as neighbors. After skipping the quadrangle features, a sequence of
-                    # straight angle can be formed. It means that those triangle convex features at a corner
-                    # should be invalidated.
-                    if feature.type in (
-                                BldgPolygonFeature.quadrangle_convex,
-                                BldgPolygonFeature.quadrangle_concave,
-                                BldgPolygonFeature.complex5_convex
-                            ) and \
-                            feature.isSkippable():
-                        feature.skipVectors(manager) 
-                    currentVector = feature.endVector.next
-                else:
-                    currentVector = currentVector.next
-                if currentVector is startVector:
-                    break
+        # * Curved features aren't skipped.
+        # * Complex features with 4 edges are processed separately since "free" neighbor vectors
+        # are needed to skip the vectors of a complex feature. For example, the neighbor vectors
+        # may be a part of a quadrangle feature and we need to skip the quadrangle feature first
+        # to get the "free" neighbor edges.
+        # * The triangle convex features are processed separately since they may be located at a corner
+        # and have quadrangle features as neighbors. After skipping the quadrangle features, a sequence of
+        # straight angle can be formed. It means that those triangle convex features at a corner
+        # should be invalidated.
+        
+        feature = polygon.smallFeature
+        if feature:
+            self.skipFeature(feature, manager)
+            currentVector = startVector = feature.startVector
         
         # complex features with 4 edges are treated separately
-        if polygon.complex4Feature:
-            currentVector = startVector = polygon.complex4Feature.startVector
-            while True:
-                feature = currentVector.feature
-                if feature:
-                    if feature.type == BldgPolygonFeature.complex4_convex and \
-                            feature.isSkippable():
-                        feature.skipVectors(manager)
-                    currentVector = feature.endVector.next
-                else:
-                    currentVector = currentVector.next
-                if currentVector is startVector:
-                    break
+        feature = polygon.complex4Feature
+        if feature:
+            self.skipFeature(feature, manager)
+            currentVector = startVector = feature.startVector
         
         # triangular features are treated separetely
-        if polygon.triangleFeature:
-            currentVector = startVector = polygon.triangleFeature.startVector
-            while True:
-                feature = currentVector.feature
-                if feature:
-                    if feature.type == BldgPolygonFeature.triangle_convex and \
-                            feature.isSkippable():
-                        feature.skipVectors(manager)
-                    currentVector = feature.endVector.next
-                else:
-                    currentVector = currentVector.next
-                if currentVector is startVector:
-                    break
+        feature = polygon.triangleFeature
+        if feature:
+            self.skipFeature(feature, manager)
+            currentVector = startVector = feature.startVector
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False
@@ -89,7 +59,16 @@ class SkipFeatures:
                 if isPrevVectorStraight:
                     StraightAngleSfs(prevNonStraightVector, currentVector.prev).skipVectors(manager)
                 break
-
+    
+    def skipFeature(self, feature, manager):
+        while True:
+            if feature.isSkippable():
+                feature.skipVectors(manager)
+            if feature.prev:
+                feature = feature.prev
+            else:
+                break
+        
 
 def _vectorHasStraightAngle(vector):
     return \
