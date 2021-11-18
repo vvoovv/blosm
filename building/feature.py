@@ -191,9 +191,10 @@ class StraightAngleSfs(StraightAnglePart):
     
     def __init__(self, startVector, endVector):
         super().__init__(startVector, endVector, BldgPolygonFeature.straightAngleSfs)
+        
         polygon = startVector.polygon
-        if not polygon.saSfsFeature:
-            polygon.saSfsFeature = self
+        self.prev = polygon.saSfsFeature
+        polygon.saSfsFeature = self
     
     def inheritFacadeClass(self):
         """

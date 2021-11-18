@@ -1,4 +1,3 @@
-from defs.building import BldgPolygonFeature
 from building.feature import StraightAngleSfs
 
 
@@ -15,22 +14,26 @@ class SkipFeatures:
         # straight angle can be formed. It means that those triangle convex features at a corner
         # should be invalidated.
         
+        currentVector = startVector = None
+        
         feature = polygon.smallFeature
         if feature:
-            self.skipFeature(feature, manager)
             currentVector = startVector = feature.startVector
+            self._skipFeatures(feature, manager)
         
         # complex features with 4 edges are treated separately
         feature = polygon.complex4Feature
         if feature:
-            self.skipFeature(feature, manager)
-            currentVector = startVector = feature.startVector
+            if not currentVector:
+                currentVector = startVector = feature.startVector
+            self._skipFeatures(feature, manager)
         
         # triangular features are treated separetely
         feature = polygon.triangleFeature
         if feature:
-            self.skipFeature(feature, manager)
-            currentVector = startVector = feature.startVector
+            if not currentVector:
+                currentVector = startVector = feature.startVector
+            self._skipFeatures(feature, manager)
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False
@@ -60,7 +63,7 @@ class SkipFeatures:
                     StraightAngleSfs(prevNonStraightVector, currentVector.prev).skipVectors(manager)
                 break
     
-    def skipFeature(self, feature, manager):
+    def _skipFeatures(self, feature, manager):
         while True:
             if feature.isSkippable():
                 feature.skipVectors(manager)
