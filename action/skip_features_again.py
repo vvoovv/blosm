@@ -19,7 +19,56 @@ class SkipFeaturesAgain:
             if polygon.saFeature and _neededFeatureDetectionAgain(polygon):
                 pass
             else:
-                pass
+                self.skipFeatures(polygon, manager)
+    
+    def skipFeatures(self, polygon, manager):
+        
+        detectSaSfsAgain = False
+        
+        # quadrangular features and features with 5 edges
+        feature = polygon.smallFeature
+        if feature:
+            detectSaSfsAgain = detectSaSfsAgain or self._skipFeatures(feature, manager) 
+        
+        # complex features with 4 edges
+        feature = polygon.complex4Feature
+        if feature:
+            detectSaSfsAgain = detectSaSfsAgain or self._skipFeatures(feature, manager)
+        
+        # triangular features
+        feature = polygon.triangleFeature
+        if feature:
+            detectSaSfsAgain = detectSaSfsAgain or self._skipFeatures(feature, manager)
+        
+        # straight angle features (<sfs> stands for "small feature skipped")
+        if detectSaSfsAgain:
+            pass
+        else:
+            feature = polygon.saSfsFeature
+            if feature:
+                while True:
+                    feature.skipVectors(manager)
+                    
+                    if feature.prev:
+                        feature = feature.prev
+                    else:
+                        break
+    
+    def _skipFeatures(self, feature, manager):
+        detectSaSfsAgain = False
+        while True:
+            # <feature.skipped> was set to <None> if <feature.isSkippable()> returned <False> 
+            if feature.skipped is None:
+                feature.skipVectors(manager)
+                if not detectSaSfsAgain:
+                    detectSaSfsAgain = True
+            else:
+                feature.skipVectorsCached()
+            if feature.prev:
+                feature = feature.prev
+            else:
+                break
+        return detectSaSfsAgain
 
 
 def _neededFeatureDetectionAgain(polygon):

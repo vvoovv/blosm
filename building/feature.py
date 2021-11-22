@@ -81,6 +81,19 @@ class Feature:
             # we have just created a new edge, so we have to add the related vector to the edge
             startVector.edge.addVector(startVector)
     
+    def _skipVectorsCached(self):
+        startVector = self.startVector
+        nextVector = self.endVector.next
+        
+        #self.startNextVector = startVector.next
+        
+        startVector.edge, startVector.direct = self.startEdge
+    
+        nextVector.prev = startVector
+        startVector.next = nextVector
+        
+        self.skipped = True
+    
     def unskipVectors(self):
         self._unskipVectors()
         
@@ -100,7 +113,8 @@ class Feature:
         startVector = self.startVector
         startVector.next.prev = self.endVector
         startVector.next = self.startNextVector
-        startVector.edge, startVector.direct = self.startEdge
+        # remember <startVector.edge> and <startVector.direct> for the future use
+        (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
         self.skipped = False
     
     def getProxyVector(self):
@@ -119,9 +133,16 @@ class Feature:
         self.startVector.calculateSin()
         nextVector.calculateSin()
     
-    def _unskipVectorsKeepStartVector(self):
+    def _skipVectorsKeepStartVectorCached(self):
+        self._skipVectorsCached()
+        
         self.startVector.sin = self.startSin
         self.endVector.next.sin = self.nextSin
+    
+    def _unskipVectorsKeepStartVector(self):
+        # remember <self.startVector.sin> and <self.endVector.next.sin> for the future use
+        self.startVector.sin, self.startSin = self.startSin, self.startVector.sin
+        self.endVector.next.sin, self.nextSin = self.nextSin, self.endVector.next.sin
         self._unskipVectors()
 
 
@@ -333,10 +354,12 @@ class ComplexConvex5(Feature):
                     middleVector.next = endVector
                     
                     self.startSin = startVector.sin
-                    self.nextSin = endVector.next.sin
                     self.endSin = endVector.sin
+                    self.nextSin = endVector.next.sin
                     startVector.calculateSin()
+                    endVector.calculateSin()
                     endVector.next.calculateSin()
+                    
                     startVector.polygon.numEdges -= 2
                     # the following line is needed to remove straight angles
                     endVector.feature = self
@@ -355,6 +378,52 @@ class ComplexConvex5(Feature):
             
             self._skipVectorsKeepStartVector(manager)
     
+    def skipVectorsCached(self):
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        if self.endEdge:
+            middleVector = endVector.prev.prev
+            
+            # modify <startVector>
+            startVector.edge, startVector.direct = self.startEdge
+            
+            #self.startNextVector = startVector.next
+            startVector.next.skip = True
+            
+            # modify <middleVector>
+            middleVector.edge, middleVector.direct = self.middleEdge
+            
+            #self.endPrevVector = endVector.prev
+            endVector.prev.skip = True
+            
+            # modify <endVector>
+            endVector.edge, endVector.direct = self.endEdge
+            
+            startVector.next = endVector.prev = middleVector
+            middleVector.prev = startVector
+            middleVector.next = endVector
+            
+            self.startSin = startVector.sin
+            self.nextSin = endVector.next.sin
+            self.endSin = endVector.sin
+            
+            startVector.sin = self.startSin
+            endVector.sin = self.endSin
+            endVector.next.sin = self.nextSin
+            
+            startVector.polygon.numEdges -= 2
+            # the following line is needed to remove straight angles
+            endVector.feature = self
+            
+            self.skipped = True
+        else:
+            startVector.next.skip = endVector.prev.prev.skip = \
+                endVector.prev.skip = endVector.skip = True
+            startVector.polygon.numEdges -= 4
+            
+            self._skipVectorsKeepStartVectorCached()
+    
     def unskipVectors(self):
         startVector = self.startVector
         endVector = self.endVector
@@ -362,21 +431,24 @@ class ComplexConvex5(Feature):
         if self.endEdge:
             middleVector = startVector.next
             
-            startVector.edge, startVector.direct = self.startEdge
+            # remember <startVector.edge> and <startVector.direct> for the future use
+            (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
             startVector.next = self.startNextVector
-            startVector.sin = self.startSin
+            startVector.sin, self.startSin = self.startSin, startVector.sin
             
             self.startNextVector.skip = False
             
             middleVector.prev = self.startNextVector
-            middleVector.edge, middleVector.direct = self.middleEdge
+            # remember <middleVector.edge> and <middleVector.direct> for the future use
+            (middleVector.edge, middleVector.direct), self.middleEdge = self.middleEdge, (middleVector.edge, middleVector.direct)
             middleVector.next = self.endPrevVector
             
             self.endPrevVector.skip = False
             
             endVector.prev = self.endPrevVector
-            endVector.edge, endVector.direct = self.endEdge
-            endVector.next.sin = self.nextSin
+            # remember <endVector.edge> and <endVector.direct> for the future use
+            (endVector.edge, endVector.direct), self.endEdge = self.endEdge, (endVector.edge, endVector.direct)
+            endVector.next.sin, self.nextSin = self.nextSin, endVector.next.sin
             endVector.sin = self.endSin
             
             startVector.polygon.numEdges += 2
@@ -481,11 +553,12 @@ class ComplexConvex4(Feature):
                     endVector.direct = True
                     
                     self.startSin = startVector.sin
-                    self.nextSin = endVector.next.sin
                     self.endSin = endVector.sin
+                    self.nextSin = endVector.next.sin
                     startVector.calculateSin()
                     endVector.calculateSin()
                     endVector.next.calculateSin()
+                    
                     startVector.polygon.numEdges -= 2
                     # the following line is needed to remove straight angles
                     endVector.feature = self
@@ -497,24 +570,58 @@ class ComplexConvex4(Feature):
             startVector.polygon.numEdges -= 3
             
             self._skipVectorsKeepStartVector(manager)
+    
+    def skipVectorsCached(self):
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        if self.endEdge:
+            # modify <startVector>
+            startVector.edge, startVector.direct = self.startEdge
+            
+            #self.startNextVector = startVector.next
+            startVector.next.skip = True
+            startVector.next = endVector
+            
+            #self.endPrevVector = endVector.prev
+            endVector.prev.skip = True
+            endVector.prev = startVector
+            
+            # modify <endVector>
+            endVector.edge, endVector.direct = self.endEdge
+            
+            startVector.sin = self.startSin
+            endVector.sin = self.endSin
+            endVector.next.sin = self.nextSin
+            
+            startVector.polygon.numEdges -= 2
+            # the following line is needed to remove straight angles
+            endVector.feature = self
+        else:
+            startVector.next.skip = endVector.prev.skip = endVector.skip = True
+            startVector.polygon.numEdges -= 3
+            
+            self._skipVectorsKeepStartVectorCached()
 
     def unskipVectors(self):
         startVector = self.startVector
         endVector = self.endVector
         
         if self.endEdge:
-            startVector.edge, startVector.direct = self.startEdge
+            # remember <startVector.edge> and <startVector.direct> for the future use
+            (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
             startVector.next = self.startNextVector
-            startVector.sin = self.startSin
+            startVector.sin, self.startSin = self.startSin, startVector.sin
             
             startVector.next.skip = False
             
             self.endPrevVector.skip = False
             
             endVector.prev = self.endPrevVector
-            endVector.edge, endVector.direct = self.endEdge
-            endVector.next.sin = self.nextSin
-            endVector.sin = self.endSin
+            # remember <endVector.edge> and <endVector.direct> for the future use
+            (endVector.edge, endVector.direct), self.endEdge = self.endEdge, (endVector.edge, endVector.direct)
+            endVector.next.sin, self.nextSin = self.nextSin, endVector.next.sin
+            endVector.sin, self.endSin = self.endSin, endVector.sin
             
             startVector.polygon.numEdges += 2
         else:
@@ -583,7 +690,6 @@ class QuadConvex(Feature):
         self.startVector.feature = self.middleVector.feature = self.endVector.feature = self
     
     def skipVectors(self, manager):
-        # calculate the distance from <self.startVector.v1> and <self.endVector.v2> to <self.middleVector>
         startVector = self.startVector
         endVector = self.endVector
         
@@ -628,6 +734,39 @@ class QuadConvex(Feature):
             startVector.polygon.numEdges -= 1
             
             self.skipped = True
+
+    def skipVectorsCached(self):
+        startVector = self.startVector
+        endVector = self.endVector
+        
+        # the middle vector is skipped in any case
+        self.middleVector.skip = True
+        
+        if self.equalSideEdges:
+            endVector.skip = True
+            startVector.polygon.numEdges -= 2
+            
+            self._skipVectorsKeepStartVectorCached()
+        else:
+            if self.leftEdgeShorter: # endDistance < startDistance
+                startVector.feature = None
+                endVector.sin = self.middleVector.sin
+                
+                endVector.next.sin = self.nextSin
+            else:
+                endVector.feature = None
+                
+                startVector.sin = self.startSin
+            
+            startVector.edge, startVector.direct = self.startEdge
+            endVector.edge, endVector.direct = self.endEdge
+            
+            startVector.next = endVector
+            endVector.prev = startVector
+            
+            startVector.polygon.numEdges -= 1
+            
+            self.skipped = True
     
     def unskipVectors(self):
         startVector = self.startVector
@@ -641,15 +780,20 @@ class QuadConvex(Feature):
             startVector.polygon.numEdges += 2
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
-                endVector.next.sin = self.nextSin
+                # remember <endVector.next.sin> for the future use
+                endVector.next.sin, self.nextSin = self.nextSin, endVector.next.sin
                 startVector.feature = self
-                endVector.sin = self.endSin
+                # remember <endVector.sin> for the future use
+                endVector.sin, self.endSin = self.endSin, endVector.sin
             else:
-                startVector.sin = self.startSin
+                # remember <startVector.sin> for the future use
+                startVector.sin, self.startSin = self.startSin, startVector.sin
                 endVector.feature = self
-            startVector.edge, startVector.direct = self.startEdge
+            # remember <startVector.edge> and <startVector.direct> for the future use
+            (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
             
-            endVector.edge, endVector.direct = self.endEdge
+            # remember <endVector.edge> and <endVector.direct> for the future use
+            (endVector.edge, endVector.direct), self.endEdge = self.endEdge, (endVector.edge, endVector.direct)
             
             startVector.next = self.middleVector
             endVector.prev = self.middleVector
@@ -721,6 +865,12 @@ class TriConvex(Feature):
         endVector.skip = True
         startVector.polygon.numEdges -= 1
         self._skipVectorsKeepStartVector(manager)
+    
+    def skipVectorsCached(self):
+        if self.startVector.feature:
+            self.endVector.skip = True
+            self.startVector.polygon.numEdges -= 1
+            self._skipVectorsKeepStartVectorCached()
     
     def unskipVectors(self):
         self._unskipVectorsKeepStartVector()

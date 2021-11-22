@@ -67,6 +67,10 @@ class SkipFeatures:
         while True:
             if feature.isSkippable():
                 feature.skipVectors(manager)
+            else:
+                # mark as <None> to distinguish the feature from "normal" unskipped features
+                feature.skipped = None
+            
             if feature.prev:
                 feature = feature.prev
             else:
