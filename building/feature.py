@@ -88,7 +88,7 @@ class Feature:
         #self.startNextVector = startVector.next
         
         startVector.edge, startVector.direct = self.startEdge
-    
+        
         nextVector.prev = startVector
         startVector.next = nextVector
         
@@ -98,7 +98,6 @@ class Feature:
         self._unskipVectors()
         
         currentVector = self.startVector
-        currentVector.feature = self.parent
         
         while True:
             currentVector.skip = False
@@ -184,6 +183,8 @@ class StraightAnglePart(Feature):
             self._unskipVectors()
         else:
             super().unskipVectors()
+        
+        self.startVector.feature = self.parent
 
 
 class StraightAngle(StraightAnglePart):
