@@ -15,30 +15,29 @@ class SkipFeaturesAgain:
             
             if self.unskipFeaturesAction:
                 self.unskipFeaturesAction.unskipFeatures(polygon)
-                
+            
             if polygon.saFeature and _neededFeatureDetectionAgain(polygon):
                 pass
             else:
                 self.skipFeatures(polygon, manager)
     
     def skipFeatures(self, polygon, manager):
-        
         detectSaSfsAgain = False
         
         # quadrangular features and features with 5 edges
         feature = polygon.smallFeature
         if feature:
-            detectSaSfsAgain = detectSaSfsAgain or self._skipFeatures(feature, manager) 
+            detectSaSfsAgain = self._skipFeatures(feature, manager) or detectSaSfsAgain
         
         # complex features with 4 edges
         feature = polygon.complex4Feature
         if feature:
-            detectSaSfsAgain = detectSaSfsAgain or self._skipFeatures(feature, manager)
+            detectSaSfsAgain = self._skipFeatures(feature, manager) or detectSaSfsAgain
         
         # triangular features
         feature = polygon.triangleFeature
         if feature:
-            detectSaSfsAgain = detectSaSfsAgain or self._skipFeatures(feature, manager)
+            detectSaSfsAgain = self._skipFeatures(feature, manager) or detectSaSfsAgain
         
         # straight angle features (<sfs> stands for "small feature skipped")
         if detectSaSfsAgain:

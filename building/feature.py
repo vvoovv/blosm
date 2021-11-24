@@ -172,10 +172,18 @@ class StraightAnglePart(Feature):
     def skipVectors(self, manager):
         if self.twoVectors:
             self.endVector.skip = True
-            self.endVector.polygon.numEdges -= 1
+            self.endVector.polygon.numEdges =- 1
             self._skipVectors(manager)
         else:
             super().skipVectors(manager)
+    
+    def unskipVectors(self):
+        if self.twoVectors:
+            self.endVector.skip = False
+            self.endVector.polygon.numEdges =+ 1
+            self._unskipVectors()
+        else:
+            super().unskipVectors()
 
 
 class StraightAngle(StraightAnglePart):
@@ -562,6 +570,8 @@ class ComplexConvex4(Feature):
                     startVector.polygon.numEdges -= 2
                     # the following line is needed to remove straight angles
                     endVector.feature = self
+                    
+                    self.skipped = True
                 else:
                     keepOnlyStartVector = True
         

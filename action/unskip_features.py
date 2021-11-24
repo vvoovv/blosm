@@ -1,4 +1,3 @@
-from defs.building import BldgPolygonFeature
 
 
 class UnskipFeatures:
