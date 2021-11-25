@@ -14,31 +14,37 @@ class SkipFeatures:
         # straight angle can be formed. It means that those triangle convex features at a corner
         # should be invalidated.
         
-        currentVector = startVector = None
+        startVector = None
         
         feature = polygon.smallFeature
         if feature:
-            currentVector = startVector = feature.startVector
+            startVector = feature.startVector
             self._skipFeatures(feature, manager)
         
         # complex features with 4 edges are treated separately
         feature = polygon.complex4Feature
         if feature:
-            if not currentVector:
-                currentVector = startVector = feature.startVector
+            if not startVector:
+                startVector = feature.startVector
             self._skipFeatures(feature, manager)
         
         # triangular features are treated separetely
         feature = polygon.triangleFeature
         if feature:
-            if not currentVector:
-                currentVector = startVector = feature.startVector
+            if not startVector:
+                startVector = feature.startVector
             self._skipFeatures(feature, manager)
+        
+        if startVector:
+            self.skipStraightAngles(startVector, manager)
+    
+    def skipStraightAngles(self, startVector, manager):
+        
+        currentVector = startVector
         
         # find <prevNonStraightVector>
         isPrevVectorStraight = False
         while True:
-            feature = currentVector.feature
             if not _vectorHasStraightAngle(currentVector):
                 prevNonStraightVector = currentVector
                 break

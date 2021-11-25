@@ -41,7 +41,7 @@ class SkipFeaturesAgain:
         
         # straight angle features (<sfs> stands for "small feature skipped")
         if detectSaSfsAgain:
-            pass
+            self.skipFeaturesAction.skipStraightAngles(startVector, manager)
         else:
             feature = polygon.saSfsFeature
             if feature:
