@@ -47,6 +47,7 @@ class SkipFeaturesAgain:
             if feature:
                 while True:
                     feature.skipVectors(manager)
+                    feature.markVectors()
                     
                     if feature.prev:
                         feature = feature.prev
