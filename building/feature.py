@@ -12,7 +12,7 @@ class Feature:
     __slots__ = (
         "type", "skipped", "startVector", "endVector", "startEdge",
         "startNextVector", "parent", "numVectors",
-        "startSin", "nextSin",
+        "startSin", "endSin", "nextSin",
         "prev"
     )
     
@@ -24,7 +24,7 @@ class Feature:
         self.startVector = startVector
         self.endVector = endVector
         
-        self.startSin = self.nextSin = None
+        self.startSin = self.endSin = self.nextSin = None
         
         self.setParentFeature()
         self.markVectors()
@@ -122,27 +122,40 @@ class Feature:
         """
         return self.startVector
     
-    def _skipVectorsKeepStartVector(self, manager):
-        nextVector = self.endVector.next
+    def calculateSinsSkipped(self):
         self.startSin = self.startVector.sin
-        self.nextSin = nextVector.sin
-        
-        self._skipVectors(manager)
-        
         self.startVector.calculateSin()
-        nextVector.calculateSin()
+        self._calculateSinNextVector()
+    
+    def _calculateSinNextVector(self):
+        nextVector = self.endVector.next
+        feature = nextVector.feature
+        if not (feature and feature.skipped):
+            self.nextSin = nextVector.sin
+            nextVector.calculateSin()
     
     def _skipVectorsKeepStartVectorCached(self):
         self._skipVectorsCached()
         
         self.startVector.sin = self.startSin
-        self.endVector.next.sin = self.nextSin
+        self._setSinNextVector()
     
-    def _unskipVectorsKeepStartVector(self):
+    def _setSinNextVector(self):
+        nextVector = self.endVector.next
+        feature = nextVector.feature
+        if not (feature and feature.skipped):
+            nextVector.sin = self.nextSin
+    
+    def restoreSins(self):
         # remember <self.startVector.sin> and <self.endVector.next.sin> for the future use
         self.startVector.sin, self.startSin = self.startSin, self.startVector.sin
-        self.endVector.next.sin, self.nextSin = self.nextSin, self.endVector.next.sin
-        self._unskipVectors()
+        self._restoreSinNextVector()
+    
+    def _restoreSinNextVector(self):
+        nextVector = self.endVector.next
+        feature = nextVector.feature
+        if not (feature and feature.skipped):
+            self.endVector.next.sin, self.nextSin = self.nextSin, self.endVector.next.sin
 
 
 class StraightAnglePart(Feature):
@@ -282,7 +295,7 @@ class ComplexConvex5(Feature):
     A class for complex convex features with exactly 5 edged
     """
     
-    __slots__ = ("endPrevVector", "middleEdge", "endEdge", "endSin")
+    __slots__ = ("endPrevVector", "middleEdge", "endEdge")
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex5_convex, startVector, endVector)
@@ -362,13 +375,6 @@ class ComplexConvex5(Feature):
                     middleVector.prev = startVector
                     middleVector.next = endVector
                     
-                    self.startSin = startVector.sin
-                    self.endSin = endVector.sin
-                    self.nextSin = endVector.next.sin
-                    startVector.calculateSin()
-                    endVector.calculateSin()
-                    endVector.next.calculateSin()
-                    
                     startVector.polygon.numEdges -= 2
                     # the following line is needed to remove straight angles
                     endVector.feature = self
@@ -385,7 +391,17 @@ class ComplexConvex5(Feature):
                 endVector.prev.skip = endVector.skip = True
             startVector.polygon.numEdges -= 4
             
-            self._skipVectorsKeepStartVector(manager)
+            self._skipVectors(manager)
+    
+    def calculateSinsSkipped(self):
+        if self.endEdge:
+            self.startSin = self.startVector.sin
+            self.endSin = self.endVector.sin
+            self.startVector.calculateSin()
+            self.endVector.calculateSin()
+            self._calculateSinNextVector()
+        else:
+            super().calculateSinsSkipped()
     
     def skipVectorsCached(self):
         startVector = self.startVector
@@ -413,13 +429,9 @@ class ComplexConvex5(Feature):
             middleVector.prev = startVector
             middleVector.next = endVector
             
-            self.startSin = startVector.sin
-            self.nextSin = endVector.next.sin
-            self.endSin = endVector.sin
-            
             startVector.sin = self.startSin
             endVector.sin = self.endSin
-            endVector.next.sin = self.nextSin
+            self._calculateSinNextVector()
             
             startVector.polygon.numEdges -= 2
             # the following line is needed to remove straight angles
@@ -443,7 +455,6 @@ class ComplexConvex5(Feature):
             # remember <startVector.edge> and <startVector.direct> for the future use
             (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
             startVector.next = self.startNextVector
-            startVector.sin, self.startSin = self.startSin, startVector.sin
             
             self.startNextVector.skip = False
             
@@ -457,17 +468,24 @@ class ComplexConvex5(Feature):
             endVector.prev = self.endPrevVector
             # remember <endVector.edge> and <endVector.direct> for the future use
             (endVector.edge, endVector.direct), self.endEdge = self.endEdge, (endVector.edge, endVector.direct)
-            endVector.next.sin, self.nextSin = self.nextSin, endVector.next.sin
-            endVector.sin = self.endSin
             
             startVector.polygon.numEdges += 2
-            
         else:
-            self._unskipVectorsKeepStartVector()
+            self._unskipVectors()
             
             startVector.next.skip = endVector.prev.prev.skip = \
                 endVector.prev.skip = endVector.skip = False
             startVector.polygon.numEdges += 4
+    
+    def restoreSins(self):
+        if self.endEdge:
+            startVector = self.startVector
+            endVector = self.endVector
+            startVector.sin, self.startSin = self.startSin, startVector.sin
+            endVector.sin, self.endSin = self.endSin, endVector.sin
+            self._restoreSinNextVector()
+        else:
+            super().restoreSins()
     
     def isSkippable(self):
         """
@@ -496,7 +514,7 @@ class ComplexConvex4(Feature):
     A class for complex convex features with exactly 4 edged
     """
     
-    __slots__ = ("endPrevVector", "endEdge", "endSin")
+    __slots__ = ("endPrevVector", "endEdge")
     
     def __init__(self, startVector, endVector):
         super().__init__(BldgPolygonFeature.complex4_convex, startVector, endVector)
@@ -561,13 +579,6 @@ class ComplexConvex4(Feature):
                     endVector.edge = BldgEdge('', newVert, endVector.id2, endVector.v2)
                     endVector.direct = True
                     
-                    self.startSin = startVector.sin
-                    self.endSin = endVector.sin
-                    self.nextSin = endVector.next.sin
-                    startVector.calculateSin()
-                    endVector.calculateSin()
-                    endVector.next.calculateSin()
-                    
                     startVector.polygon.numEdges -= 2
                     # the following line is needed to remove straight angles
                     endVector.feature = self
@@ -580,7 +591,17 @@ class ComplexConvex4(Feature):
             startVector.next.skip = endVector.prev.skip = endVector.skip = True
             startVector.polygon.numEdges -= 3
             
-            self._skipVectorsKeepStartVector(manager)
+            self._skipVectors(manager)
+    
+    def calculateSinsSkipped(self):
+        if self.endEdge:
+            self.startSin = self.startVector.sin
+            self.endSin = self.endVector.sin
+            self.startVector.calculateSin()
+            self.endVector.calculateSin()
+            self._calculateSinNextVector()
+        else:
+            super().calculateSinsSkipped()
     
     def skipVectorsCached(self):
         startVector = self.startVector
@@ -603,7 +624,7 @@ class ComplexConvex4(Feature):
             
             startVector.sin = self.startSin
             endVector.sin = self.endSin
-            endVector.next.sin = self.nextSin
+            self._calculateSinNextVector()
             
             startVector.polygon.numEdges -= 2
             # the following line is needed to remove straight angles
@@ -622,7 +643,6 @@ class ComplexConvex4(Feature):
             # remember <startVector.edge> and <startVector.direct> for the future use
             (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
             startVector.next = self.startNextVector
-            startVector.sin, self.startSin = self.startSin, startVector.sin
             
             startVector.next.skip = False
             
@@ -631,14 +651,23 @@ class ComplexConvex4(Feature):
             endVector.prev = self.endPrevVector
             # remember <endVector.edge> and <endVector.direct> for the future use
             (endVector.edge, endVector.direct), self.endEdge = self.endEdge, (endVector.edge, endVector.direct)
-            endVector.next.sin, self.nextSin = self.nextSin, endVector.next.sin
-            endVector.sin, self.endSin = self.endSin, endVector.sin
             
             startVector.polygon.numEdges += 2
         else:
-            self._unskipVectorsKeepStartVector()
+            self._unskipVectors()
             startVector.next.skip = endVector.prev.skip = endVector.skip = False
             startVector.polygon.numEdges += 3
+    
+    def restoreSins(self):
+        if self.endEdge:
+            startVector = self.startVector
+            endVector = self.endVector
+            
+            startVector.sin, self.startSin = self.startSin, startVector.sin
+            endVector.sin, self.endSin = self.endSin, endVector.sin
+            self._restoreSinNextVector()
+        else:
+            super().restoreSins()
     
     def isSkippable(self):
         """
@@ -662,7 +691,7 @@ class ComplexConvex4(Feature):
 
 class QuadConvex(Feature):
     
-    __slots__ = ("middleVector", "endEdge", "equalSideEdges", "leftEdgeShorter", "newVert", "endSin")
+    __slots__ = ("middleVector", "endEdge", "equalSideEdges", "leftEdgeShorter", "newVert")
         
     def __init__(self, startVector, endVector):
         self.init(BldgPolygonFeature.quadrangle_convex, startVector, endVector)
@@ -711,17 +740,11 @@ class QuadConvex(Feature):
             endVector.skip = True
             startVector.polygon.numEdges -= 2
             
-            self._skipVectorsKeepStartVector(manager)
+            self._skipVectors(manager)
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
-                nextVector = endVector.next
-                self.nextSin = nextVector.sin
-                
                 startVector.feature = None
-                self.endSin = endVector.sin
-                endVector.sin = self.middleVector.sin
             else:
-                self.startSin = startVector.sin
                 endVector.feature = None
             # instance of <BldgEdge> replaced for <startVector>
             self.startEdge = (startVector.edge, startVector.direct)
@@ -738,13 +761,20 @@ class QuadConvex(Feature):
             startVector.next = endVector
             endVector.prev = startVector
             
-            if self.leftEdgeShorter:
-                nextVector.calculateSin()
-            else:
-                startVector.calculateSin()
             startVector.polygon.numEdges -= 1
             
             self.skipped = True
+    
+    def calculateSinsSkipped(self):
+        if self.equalSideEdges:
+            super().calculateSinsSkipped()
+        elif self.leftEdgeShorter:
+            self.endSin = self.endVector.sin
+            self.endVector.sin = self.middleVector.sin
+            self._calculateSinNextVector()
+        else:
+            self.startSin = self.startVector.sin
+            self.startVector.calculateSin()
 
     def skipVectorsCached(self):
         startVector = self.startVector
@@ -762,8 +792,7 @@ class QuadConvex(Feature):
             if self.leftEdgeShorter: # endDistance < startDistance
                 startVector.feature = None
                 endVector.sin = self.middleVector.sin
-                
-                endVector.next.sin = self.nextSin
+                self._calculateSinNextVector()
             else:
                 endVector.feature = None
                 
@@ -785,20 +814,14 @@ class QuadConvex(Feature):
         
         self.middleVector.skip = False
         if self.equalSideEdges:
-            self._unskipVectorsKeepStartVector()
+            self._unskipVectors()
             
             endVector.skip = False
             startVector.polygon.numEdges += 2
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
-                # remember <endVector.next.sin> for the future use
-                endVector.next.sin, self.nextSin = self.nextSin, endVector.next.sin
                 startVector.feature = self
-                # remember <endVector.sin> for the future use
-                endVector.sin, self.endSin = self.endSin, endVector.sin
             else:
-                # remember <startVector.sin> for the future use
-                startVector.sin, self.startSin = self.startSin, startVector.sin
                 endVector.feature = self
             # remember <startVector.edge> and <startVector.direct> for the future use
             (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
@@ -809,7 +832,20 @@ class QuadConvex(Feature):
             startVector.next = self.middleVector
             endVector.prev = self.middleVector
             
-            self.skipped = False 
+            self.skipped = False
+    
+    def restoreSins(self):
+        if self.equalSideEdges:
+            super().restoreSins()
+        elif self.leftEdgeShorter:
+            endVector = self.endVector
+            # remember <endVector.sin> for the future use
+            endVector.sin, self.endSin = self.endSin, endVector.sin
+            self._restoreSinNextVector()
+        else:
+            startVector = self.startVector
+            # remember <startVector.sin> for the future use
+            startVector.sin, self.startSin = self.startSin, startVector.sin
     
     def getProxyVector(self):
         return self.endVector if self.leftEdgeShorter else self.startVector
@@ -875,7 +911,7 @@ class TriConvex(Feature):
             return
         endVector.skip = True
         startVector.polygon.numEdges -= 1
-        self._skipVectorsKeepStartVector(manager)
+        self._skipVectors(manager)
     
     def skipVectorsCached(self):
         if self.startVector.feature:
@@ -884,7 +920,7 @@ class TriConvex(Feature):
             self._skipVectorsKeepStartVectorCached()
     
     def unskipVectors(self):
-        self._unskipVectorsKeepStartVector()
+        self._unskipVectors()
         self.endVector.skip = False
         self.startVector.polygon.numEdges += 1
     

@@ -104,11 +104,11 @@ def setup(app, osm):
             )
         
         # the code below is for a test
-        buildings.addAction(SkipFeaturesAgain(UnskipFeatures()))
+        #buildings.addAction(SkipFeaturesAgain(SkipFeatures(), UnskipFeatures()))
         
         osm.addCondition(
             lambda tags, e: "building" in tags,
-            "buildings", 
+            "buildings",
             buildings
         )
     

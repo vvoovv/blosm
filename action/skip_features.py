@@ -34,11 +34,21 @@ class SkipFeatures:
             if not startVector:
                 startVector = feature.startVector
             self._skipFeatures(feature, manager)
+            # calculate the sines for the skipped features
+            self._calculateSinsSkipped(polygon.triangleFeature)
+        
+        # calculate the sines for the skipped features
+        
+        if polygon.smallFeature:
+            self._calculateSinsSkipped(polygon.smallFeature)
+        
+        if polygon.complex4Feature:
+            self._calculateSinsSkipped(polygon.complex4Feature)
         
         if startVector:
-            self.skipStraightAngles(startVector, manager)
+            self.skipStraightAnglesAfterSfs(startVector, manager)
     
-    def skipStraightAngles(self, startVector, manager):
+    def skipStraightAnglesAfterSfs(self, startVector, manager):
         
         currentVector = startVector
         
@@ -76,6 +86,21 @@ class SkipFeatures:
             else:
                 # mark as <None> to distinguish the feature from "normal" unskipped features
                 feature.skipped = None
+            
+            if feature.prev:
+                feature = feature.prev
+            else:
+                break
+    
+    def _calculateSinsSkipped(self, feature):
+        """
+        Calculate sines for the skipped features.
+        We have to skip ALL features first and only then calculate the sines for the skipped feature.
+        Otherwise the sines would be incorrect.
+        """
+        while True:
+            if feature.skipped:
+                feature.calculateSinsSkipped()
             
             if feature.prev:
                 feature = feature.prev

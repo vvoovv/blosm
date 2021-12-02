@@ -5,7 +5,8 @@ class SkipFeaturesAgain:
     This action is used to test how the feature can be skipped again after unskipping
     """
     
-    def __init__(self, unskipFeaturesAction=None):
+    def __init__(self, skipFeaturesAction, unskipFeaturesAction=None):
+        self.skipFeaturesAction = skipFeaturesAction
         self.unskipFeaturesAction = unskipFeaturesAction
     
     def do(self, manager):
@@ -17,31 +18,51 @@ class SkipFeaturesAgain:
                 self.unskipFeaturesAction.unskipFeatures(polygon)
             
             if polygon.saFeature and _neededFeatureDetectionAgain(polygon):
-                pass
+                self.skipFeatures(polygon, manager)
             else:
                 self.skipFeatures(polygon, manager)
     
     def skipFeatures(self, polygon, manager):
-        detectSaSfsAgain = False
+        # there are features (with <feature.skip> equal to zero) that were not skipped in the first pass
+        featuresNotSkipped = False
+        startVector = None
         
         # quadrangular features and features with 5 edges
         feature = polygon.smallFeature
         if feature:
-            detectSaSfsAgain = self._skipFeatures(feature, manager) or detectSaSfsAgain
+            featuresNotSkipped = self._skipFeatures(feature, manager) or featuresNotSkipped
+            if featuresNotSkipped:
+                startVector = feature.startVector
         
         # complex features with 4 edges
         feature = polygon.complex4Feature
         if feature:
-            detectSaSfsAgain = self._skipFeatures(feature, manager) or detectSaSfsAgain
+            featuresNotSkipped = self._skipFeatures(feature, manager) or featuresNotSkipped
+            if featuresNotSkipped and not startVector:
+                startVector = feature.startVector
         
         # triangular features
         feature = polygon.triangleFeature
         if feature:
-            detectSaSfsAgain = self._skipFeatures(feature, manager) or detectSaSfsAgain
+            featuresNotSkipped = self._skipFeatures(feature, manager) or featuresNotSkipped
+            if featuresNotSkipped and not startVector:
+                startVector = feature.startVector
         
         # straight angle features (<sfs> stands for "small feature skipped")
-        if detectSaSfsAgain:
-            self.skipFeaturesAction.skipStraightAngles(startVector, manager)
+        if featuresNotSkipped:
+            # calculate sines for the the features that were not skipped in the first pass
+            
+            if polygon.smallFeature:
+                self._calculateSins(polygon.smallFeature)
+            
+            if polygon.complex4Feature:
+                self._calculateSins(polygon.complex4Feature)
+            
+            if polygon.triangleFeature:
+                self._calculateSins(polygon.triangleFeature)
+            
+            polygon.saSfsFeature = None
+            self.skipFeaturesAction.skipStraightAnglesAfterSfs(startVector, manager)
         else:
             feature = polygon.saSfsFeature
             if feature:
@@ -55,20 +76,33 @@ class SkipFeaturesAgain:
                         break
     
     def _skipFeatures(self, feature, manager):
-        detectSaSfsAgain = False
+        featuresNotSkipped = False
         while True:
             # <feature.skipped> was set to <None> if <feature.isSkippable()> returned <False> 
             if feature.skipped is None:
                 feature.skipVectors(manager)
-                if not detectSaSfsAgain:
-                    detectSaSfsAgain = True
+                if not featuresNotSkipped:
+                    featuresNotSkipped = True
             else:
                 feature.skipVectorsCached()
             if feature.prev:
                 feature = feature.prev
             else:
                 break
-        return detectSaSfsAgain
+        return featuresNotSkipped
+    
+    def _calculateSins(self, feature):
+        """
+        Calculate sines for the features that were not skipped in the first pass
+        """
+        while True:
+            # a condition to detect a feature that was not skipped in the first pass
+            if not (feature.startSin or feature.endSin):
+                feature.calculateSinsSkipped()
+            if feature.prev:
+                feature = feature.prev
+            else:
+                break
 
 
 def _neededFeatureDetectionAgain(polygon):
