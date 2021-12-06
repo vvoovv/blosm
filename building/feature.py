@@ -130,7 +130,7 @@ class Feature:
     def _calculateSinNextVector(self):
         nextVector = self.endVector.next
         feature = nextVector.feature
-        if not (feature and feature.skipped):
+        if not (feature and feature.type != BldgPolygonFeature.straightAngle and feature.skipped):
             self.nextSin = nextVector.sin
             nextVector.calculateSin()
     
