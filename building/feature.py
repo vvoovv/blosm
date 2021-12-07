@@ -134,17 +134,17 @@ class Feature:
             self.nextSin = nextVector.sin
             nextVector.calculateSin()
     
+    def _setSinNextVectorCached(self):
+        nextVector = self.endVector.next
+        feature = nextVector.feature
+        if not (feature and feature.type != BldgPolygonFeature.straightAngle and feature.skipped):
+            nextVector.sin, self.nextSin = self.nextSin, nextVector.sin
+    
     def _skipVectorsKeepStartVectorCached(self):
         self._skipVectorsCached()
         
         self.startVector.sin = self.startSin
-        self._setSinNextVector()
-    
-    def _setSinNextVector(self):
-        nextVector = self.endVector.next
-        feature = nextVector.feature
-        if not (feature and feature.skipped):
-            nextVector.sin = self.nextSin
+        self._setSinNextVectorCached()
     
     def restoreSins(self):
         # remember <self.startVector.sin> and <self.endVector.next.sin> for the future use
@@ -154,7 +154,7 @@ class Feature:
     def _restoreSinNextVector(self):
         nextVector = self.endVector.next
         feature = nextVector.feature
-        if not (feature and feature.skipped):
+        if not (feature and feature.type != BldgPolygonFeature.straightAngle and feature.skipped):
             self.endVector.next.sin, self.nextSin = self.nextSin, self.endVector.next.sin
     
     def _checkTriangularFeature(self):
@@ -451,7 +451,7 @@ class ComplexConvex5(Feature):
             
             startVector.sin = self.startSin
             endVector.sin = self.endSin
-            self._calculateSinNextVector()
+            self._setSinNextVectorCached()
             
             startVector.polygon.numEdges -= 2
             # the following line is needed to remove straight angles
@@ -646,7 +646,7 @@ class ComplexConvex4(Feature):
             
             startVector.sin = self.startSin
             endVector.sin = self.endSin
-            self._calculateSinNextVector()
+            self._setSinNextVectorCached()
             
             startVector.polygon.numEdges -= 2
             # the following line is needed to remove straight angles
@@ -816,7 +816,7 @@ class QuadConvex(Feature):
             if self.leftEdgeShorter: # endDistance < startDistance
                 startVector.feature = None
                 endVector.sin = self.middleVector.sin
-                self._calculateSinNextVector()
+                self._setSinNextVectorCached()
             else:
                 endVector.feature = None
                 
