@@ -41,6 +41,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--simplifyPolygons", action='store_true', help="Simplify polygons with the detected features", default=False)
     app.argParserExtra.add_argument("--restoreFeatures", action='store_true', help="Restore simplified features", default=False)
     app.argParserExtra.add_argument("--wayClustering", action='store_true', help="Create way clusters", default=False)
+    app.argParserExtra.add_argument("--simplifyPolygonsAgain", action='store_true', help="Restore the features and simplify the polygons again", default=False)
     
     # parse the newly added command line arguments
     app.parseArgs()
@@ -57,6 +58,9 @@ def setup(app, osm):
     restoreFeatures = getattr(app, "restoreFeatures", False)
 
     wayClustering = getattr(app, "wayClustering", False)
+    
+    simplifyPolygonsAgain = getattr(app, "simplifyPolygonsAgain", False)
+    
     # create managers
     
     wayManager = WayManager(osm, app)
@@ -104,7 +108,8 @@ def setup(app, osm):
             )
         
         # the code below is for a test
-        buildings.addAction(SkipFeaturesAgain(SkipFeatures(), UnskipFeatures()))
+        if simplifyPolygonsAgain:
+            buildings.addAction(SkipFeaturesAgain(SkipFeatures(), UnskipFeatures()))
         
         osm.addCondition(
             lambda tags, e: "building" in tags,
