@@ -95,6 +95,18 @@ class SkipFeaturesAgain:
         """
         Calculate sines for the features that were not skipped in the first pass
         """
+        startFeature = feature
+        while True:
+            # a condition to detect a feature that was not skipped in the first pass
+            if feature.startSin or feature.endSin:
+                prevVectorFeature = feature.startVector.prev.feature
+                if prevVectorFeature and not (prevVectorFeature.startSin or prevVectorFeature.endSin):
+                    feature.startVector.calculateSin()
+            if feature.prev:
+                feature = feature.prev
+            else:
+                break
+        feature = startFeature
         while True:
             # a condition to detect a feature that was not skipped in the first pass
             if not (feature.startSin or feature.endSin):
