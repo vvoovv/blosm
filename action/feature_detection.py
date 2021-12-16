@@ -43,8 +43,6 @@ class FeatureDetection:
         for building in manager.buildings:
             polygon = building.polygon
             
-            polygon.prepareVectorsByIndex()
-            
             self.detectFeatures(polygon)
             
             if self.skipFeaturesAction and (polygon.smallFeature or polygon.complex4Feature or polygon.triangleFeature):
@@ -54,6 +52,8 @@ class FeatureDetection:
         """
         Detects patterns for small features
         """
+        
+        polygon.prepareVectorsByIndex()
 
         midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 2.)
         longEdgeThreshold = longEdgeFactor * polygon.dimension

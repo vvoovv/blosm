@@ -17,8 +17,8 @@ class SkipFeaturesAgain:
             if self.unskipFeaturesAction:
                 self.unskipFeaturesAction.unskipFeatures(polygon)
             
-            if polygon.saFeature and _neededFeatureDetectionAgain(polygon):
-                self.skipFeatures(polygon, manager)
+            if polygon.saFeature and self.skipSaFeatures(polygon.saFeature, manager):
+                pass
             else:
                 self.skipFeatures(polygon, manager)
     
@@ -115,18 +115,24 @@ class SkipFeaturesAgain:
                 feature = feature.prev
             else:
                 break
-
-
-def _neededFeatureDetectionAgain(polygon):
-        saFeature = polygon.saFeature
+    
+    def skipSaFeatures(self, saFeature, manager):
+        """
+        Returns:
+        <True> if there are straight angle features that were not skipped,
+        <False> otherwise.
+        """
+        result = False
         while True:
             
             if not saFeature.skipped:
-                return True
+                saFeature.skipVectors(manager)
+                if not result:
+                    result = True
             
             if saFeature.prev:
                 saFeature = saFeature.prev
             else:
                 break
         
-        return False
+        return result
