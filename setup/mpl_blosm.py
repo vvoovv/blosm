@@ -94,22 +94,28 @@ def setup(app, osm):
                 )
         )
         
+        # create some actions that can be reused
+        skipFeaturesAction = SkipFeatures()
+        unskipFeaturesAction = UnskipFeatures()
+        featureDetectionAction = FeatureDetection(skipFeaturesAction if simplifyPolygons else None)
+        
+        
         if detectFeatures:
             buildings.addAction(CurvedFeatures())
             buildings.addAction(StraightAngles())
-            buildings.addAction(FeatureDetection(SkipFeatures() if simplifyPolygons else None))
+            buildings.addAction(featureDetectionAction)
         
         if facadeVisibility or classifyFacades:
             buildings.addAction(FacadeVisibilityOther())
         
         if classifyFacades:
             buildings.addAction(
-                FacadeClassification(UnskipFeatures())
+                FacadeClassification(unskipFeaturesAction)
             )
         
         # the code below is for a test
         if simplifyPolygonsAgain:
-            buildings.addAction(SkipFeaturesAgain(SkipFeatures(), UnskipFeatures()))
+            buildings.addAction(SkipFeaturesAgain(skipFeaturesAction, unskipFeaturesAction))
         
         osm.addCondition(
             lambda tags, e: "building" in tags,
