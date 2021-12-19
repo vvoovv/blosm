@@ -745,11 +745,11 @@ class QuadConvex(Feature):
         polygon.smallFeature = self
     
     def setParentFeature(self):
-        if self.leftEdgeShorter:
-            self.parent = self.endVector.feature
+        self.parent = (self.startVector.feature, self.endVector.feature)
     
     def markVectors(self):
-        self.startVector.feature = self.middleVector.feature = self.endVector.feature = self
+        # <self.middleVector> will be skipped anyway. There is now need to mark it
+        self.startVector.feature = self.endVector.feature = self
     
     def skipVectors(self, manager):
         startVector = self.startVector

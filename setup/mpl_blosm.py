@@ -115,7 +115,7 @@ def setup(app, osm):
         
         # the code below is for a test
         if simplifyPolygonsAgain:
-            buildings.addAction(SkipFeaturesAgain(skipFeaturesAction, unskipFeaturesAction))
+            buildings.addAction(SkipFeaturesAgain(skipFeaturesAction, unskipFeaturesAction, featureDetectionAction))
         
         osm.addCondition(
             lambda tags, e: "building" in tags,

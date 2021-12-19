@@ -46,7 +46,7 @@ class FeatureDetection:
             self.detectFeatures(polygon)
             
             if self.skipFeaturesAction and (polygon.smallFeature or polygon.complex4Feature or polygon.triangleFeature):
-                self.skipFeaturesAction.skipFeatures(polygon, manager)
+                self.skipFeaturesAction.skipFeatures(polygon, True, manager)
     
     def detectFeatures(self, polygon):
         """

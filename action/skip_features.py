@@ -3,7 +3,7 @@ from building.feature import StraightAngleSfs
 
 class SkipFeatures:
     
-    def skipFeatures(self, polygon, manager):
+    def skipFeatures(self, polygon, checkIsSkippable, manager):
         # * Curved features aren't skipped.
         # * Complex features with 4 edges are processed separately since "free" neighbor vectors
         # are needed to skip the vectors of a complex feature. For example, the neighbor vectors
@@ -19,21 +19,21 @@ class SkipFeatures:
         feature = polygon.smallFeature
         if feature:
             startVector = feature.startVector
-            self._skipFeatures(feature, manager)
+            self._skipFeatures(feature, checkIsSkippable, manager)
         
         # complex features with 4 edges are treated separately
         feature = polygon.complex4Feature
         if feature:
             if not startVector:
                 startVector = feature.startVector
-            self._skipFeatures(feature, manager)
+            self._skipFeatures(feature, checkIsSkippable, manager)
         
         # triangular features are treated separetely
         feature = polygon.triangleFeature
         if feature:
             if not startVector:
                 startVector = feature.startVector
-            self._skipFeatures(feature, manager)
+            self._skipFeatures(feature, checkIsSkippable, manager)
             # calculate the sines for the skipped features
             self._calculateSinsSkipped(polygon.triangleFeature)
         
@@ -79,9 +79,9 @@ class SkipFeatures:
                     StraightAngleSfs(prevNonStraightVector, currentVector.prev).skipVectors(manager)
                 break
     
-    def _skipFeatures(self, feature, manager):
+    def _skipFeatures(self, feature, checkIsSkippable, manager):
         while True:
-            if feature.isSkippable():
+            if not checkIsSkippable or feature.isSkippable():
                 feature.skipVectors(manager)
             else:
                 # mark as <None> to distinguish the feature from "normal" unskipped features

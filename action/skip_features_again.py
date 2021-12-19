@@ -1,3 +1,4 @@
+from defs.building import BldgPolygonFeature
 
 
 class SkipFeaturesAgain:
@@ -5,9 +6,10 @@ class SkipFeaturesAgain:
     This action is used to test how the feature can be skipped again after unskipping
     """
     
-    def __init__(self, skipFeaturesAction, unskipFeaturesAction=None):
+    def __init__(self, skipFeaturesAction, unskipFeaturesAction, featureDetectionAction):
         self.skipFeaturesAction = skipFeaturesAction
         self.unskipFeaturesAction = unskipFeaturesAction
+        self.featureDetectionAction = featureDetectionAction
     
     def do(self, manager):
         
@@ -17,8 +19,9 @@ class SkipFeaturesAgain:
             if self.unskipFeaturesAction:
                 self.unskipFeaturesAction.unskipFeatures(polygon)
             
-            if polygon.saFeature and self.skipSaFeatures(polygon.saFeature, manager):
-                pass
+            if polygon.saFeature and self.skipSaFeatures(polygon, manager):
+                self.featureDetectionAction.detectFeatures(polygon)
+                self.skipFeaturesAction.skipFeatures(polygon, False, manager)
             else:
                 self.skipFeatures(polygon, manager)
     
@@ -106,6 +109,7 @@ class SkipFeaturesAgain:
                 feature = feature.prev
             else:
                 break
+        
         feature = startFeature
         while True:
             # a condition to detect a feature that was not skipped in the first pass
@@ -116,17 +120,22 @@ class SkipFeaturesAgain:
             else:
                 break
     
-    def skipSaFeatures(self, saFeature, manager):
+    def skipSaFeatures(self, polygon, manager):
         """
+        If there are straight angle features that were not skipped, perfom cleanup,
+        then skip those straight angle features.
+        
         Returns:
-        <True> if there are straight angle features that were not skipped,
-        <False> otherwise.
+            <True> if there are straight angle features that were not skipped,
+            <False> otherwise.
         """
+        saFeature = polygon.saFeature
         result = False
         while True:
-            
             if not saFeature.skipped:
-                saFeature.skipVectors(manager)
+                # check if <saFeature.startVector.feature> was overriden by other features
+                if not saFeature.startVector.feature is saFeature:
+                    saFeature.startVector.feature = saFeature
                 if not result:
                     result = True
             
@@ -134,5 +143,26 @@ class SkipFeaturesAgain:
                 saFeature = saFeature.prev
             else:
                 break
+            
+        if result:
+            # Cleanup vectors from possible features. Stgraight angle features will be preserved
+            for vector in polygon.getVectors():
+                if vector.feature and vector.featureType != BldgPolygonFeature.straightAngle:
+                    vector.feature = None
+            polygon.smallFeature = None
+            polygon.complex4Feature = None
+            polygon.triangleFeature = None
+            polygon.saSfsFeature = None
+            
+            # skip vectors for the straight angle features
+            saFeature = polygon.saFeature
+            while True:
+                if not saFeature.skipped:
+                    saFeature.skipVectors(manager)
+                
+                if saFeature.prev:
+                    saFeature = saFeature.prev
+                else:
+                    break
         
         return result
