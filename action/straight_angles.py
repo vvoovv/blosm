@@ -12,7 +12,7 @@ class StraightAngles:
         for building in manager.buildings:
             if building.polygon.saFeature:
                 self.processStraightAnglesFreeEdges(building.polygon, manager)
-                
+        
         for building in manager.buildings:
             if building.polygon.saFeature:
                 self.processStraightAnglesSharedEdges(building.polygon, manager)
@@ -138,7 +138,9 @@ class StraightAngles:
                 if vector is saFeature.endVector:
                     if numFreeEdges > 1 and not startVector is saFeature.startVector:
                         StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        # change <saFeature.endVector>
+                        # A straight angle feature was formed in the line above with the constructor <StraightAnglePart>.
+                        # <saFeature.endVector> is now the start vector of that feature, i.e. <startVector>.
+                        # So we change <saFeature.endVector> to <startVector>.
                         saFeature.endVector = startVector
                     break
                 vector = vector.next
@@ -188,6 +190,10 @@ class StraightAngles:
                 if vector is saFeature.endVector:
                     if numSharedEdges > 1 and not startVector is saFeature.startVector:
                         StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                        # A straight angle feature was formed in the line above with the constructor <StraightAnglePart>.
+                        # <saFeature.endVector> is now the start vector of that feature, i.e. <startVector>.
+                        # So we change <saFeature.endVector> to <startVector>.
+                        saFeature.endVector = startVector
                     break
                 vector = vector.next
             
