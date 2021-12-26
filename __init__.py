@@ -240,7 +240,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         else:
             if a.mode is a.realistic:
                 if a.enableExperimentalFeatures:
-                    from setup.realistic_dev import setup as setup_function
+                    from setup.realistic import setup as setup_function
                 else:
                     from setup.premium_default import setup as setup_function
             else:
