@@ -50,12 +50,26 @@ from action.terrain import Terrain
 from action.offset import Offset
 from action.volume import Volume
 
+from way.manager import WayManager
+
+from action.facade_visibility import FacadeVisibilityBlender
+from action.facade_classification import FacadeClassification
+from action.feature_detection import FeatureDetection
+from action.curved_features import CurvedFeatures
+from action.straight_angles import StraightAngles
+#from action.way_clustering import WayClustering
+from action.skip_features import SkipFeatures
+from action.unskip_features import UnskipFeatures
+
 
 def setup(app, data):
+    classifyFacades = True
     doExport = app.enableExperimentalFeatures and app.importForExport
     
     styleStore = StyleStore(app, styles=None)
-
+    
+    wayManager = WayManager(data, app) if classifyFacades else None
+    
     # comment the next line if logging isn't needed
     Logger(app, data)
     
@@ -68,6 +82,23 @@ def setup(app, data):
             buildingParts,
             RealisticBuildingLayerExport if doExport else RealisticBuildingLayer
         )
+        
+        
+        # create some actions that can be reused
+        skipFeaturesAction = SkipFeatures()
+        unskipFeaturesAction = UnskipFeatures()
+        featureDetectionAction = FeatureDetection(skipFeaturesAction)
+        
+        buildings.addAction(CurvedFeatures())
+        buildings.addAction(StraightAngles())
+        buildings.addAction(featureDetectionAction)
+        
+        if classifyFacades:
+            buildings.addAction(FacadeVisibilityBlender())
+            
+            buildings.addAction(
+                FacadeClassification(unskipFeaturesAction)
+            )
         
         # Important: <buildingRelation> beform <building>,
         # since there may be a tag building=* in an OSM relation of the type 'building'
