@@ -193,8 +193,7 @@ class Terrain:
         envelope.select_set(False)
         envelope.hide_viewport = True
     
-    def initProjectionProxy(self, buildingsP, data):
-        # <buildingsP> means "buildings from the parser"
+    def initProjectionProxy(self, buildings, data):
         
         proxyObj = createMeshObject("_projection_proxy_")
         proxyBm = getBmesh(proxyObj)
@@ -202,9 +201,9 @@ class Terrain:
         self.projectedVertIndices = {}
         
         index = 0
-        for buildingP in buildingsP:
-            outline = buildingP.outline
-            for vert in (outline.getOuterData(data) if outline.t is parse.multipolygon else outline.getData(data)):
+        for building in buildings:
+            element = building.element
+            for vert in (element.getOuterData(data) if element.t is parse.multipolygon else element.getData(data)):
                 vert = (vert[0], vert[1])
                 if not vert in self.projectedVertIndices:
                     self.projectedVertIndices[vert] = index

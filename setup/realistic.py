@@ -141,11 +141,11 @@ def setup(app, data):
         Building.actions = []
         # <app.terrain> isn't yet set at this pooint, so we use the string <app.terrainObject> instead
         if app.terrainObject:
-            Building.actions.append( Terrain(app, data, br.itemStore, br.itemFactory) )
+            Building.actions.append( Terrain(app, data, br.itemStore) )
         if not app.singleObject:
-            Building.actions.append( Offset(app, data, br.itemStore, br.itemFactory) )
+            Building.actions.append( Offset(app, data, br.itemStore) )
         
-        volumeAction = Volume(app, data, br.itemStore, br.itemFactory, itemRenderers)
+        volumeAction = Volume(app, data, br.itemStore, itemRenderers)
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)

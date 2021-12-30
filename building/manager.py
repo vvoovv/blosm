@@ -128,9 +128,9 @@ class BuildingManager(BaseBuildingManager, Manager):
         # create a BHV tree on demand only
         bvhTree = None
         for part in self.parts:
-            if part.outline.o:
+            if part.element.o:
                 # the outline for <part> is set in an OSM relation of the type 'building'
-                osmId, osmType = part.outline.o
+                osmId, osmType = part.element.o
                 elements = self.osm.ways if osmType is Osm.way else self.osm.relations
                 if osmId in elements:
                     building = elements[osmId].b

@@ -7,23 +7,21 @@ class Building:
     
     actions = []
     
-    def __init__(self):
+    def __init__(self, data):
+        self.data = data
+        
         self.verts = []
         # counterparts for <self.verts> in the BMesh
         self.bmVerts = []
         # A cache to store different stuff:
         # attributes evaluated per building rather than per footprint, cladding texture info
         self._cache = {}
-    
-    def init(self):
-        self.verts.clear()
-        self.bmVerts.clear()
+        
         self.offset = None
         # Instance of item.footprint.Footprint, it's only used if the building definition
         # in the data model doesn't contain building parts, i.e. the building is defined completely
         # by its outline
         self.footprint = None
-        self._cache.clear()
         self.assetInfoBldgIndex = None
         self._area = 0.
         # altitude difference for the building footprint projected on the terrain

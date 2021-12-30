@@ -20,17 +20,6 @@ class Item:
         # from <grammar.value.Value>
         self._cache = {}
     
-    def init(self):
-        self.valid = True
-        self.parent = None
-        self.footprint = None
-        self.styleBlock = None
-        self.width = None
-        self.relativeWidth = None
-        self.hasFlexWidth = False
-        self.materialId = None
-        self._cache.clear()
-    
     def evaluateCondition(self, styleBlock):
         return not styleBlock.condition or styleBlock.condition(self)
 

@@ -18,8 +18,8 @@ class Volume(Action):
     
     defaultRoofShape = "flat"
     
-    def __init__(self, app, data, itemStore, itemFactory, itemRenderers):
-        super().__init__(app, data, itemStore, itemFactory)
+    def __init__(self, app, data, itemStore, itemRenderers):
+        super().__init__(app, data, itemStore)
         if itemRenderers:
             self.setVolumeGenerators(data, itemRenderers)
     
@@ -56,7 +56,7 @@ class Volume(Action):
             footprint = itemStore.getItem(itemClass)
             self.prepareFootprint(footprint, building, buildingStyle)
             
-            element = footprint.bldgPart.outline
+            element = footprint.bldgPart.element
             if element.t is parse.multipolygon:
                 # check if the multipolygon has holes
                 if element.hasInner():

@@ -33,14 +33,14 @@ class BldgPolygon:
     
     straightAngleSin = 0.
     
-    def __init__(self, outline, manager, building):
+    def __init__(self, element, manager, building):
         # if <building> is None, it's a building part
         self.building = building
         self.reversed = False
         # vectors
         self.vectors = vectors = [
             self.createVector(nodeId1, nodeId2, manager) \
-                for nodeId1,nodeId2 in outline.pairNodeIds(manager.data) \
+                for nodeId1,nodeId2 in element.pairNodeIds(manager.data) \
                     if not manager.data.haveSamePosition(nodeId1, nodeId2)
         ]
         self.numEdges = len(self.vectors)
@@ -356,10 +356,10 @@ class Building:
     A wrapper for a OSM building
     """
     
-    __slots__ = ("outline", "parts", "polygon", "auxIndex", "crossedEdges", "renderInfo")
+    __slots__ = ("element", "parts", "polygon", "auxIndex", "crossedEdges", "renderInfo")
     
     def __init__(self, element, manager):
-        self.outline = element
+        self.element = element
         self.parts = []
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
@@ -371,7 +371,7 @@ class Building:
         # A polygon for the outline.
         # Projection may not be available when Building.__init__(..) is called. So we have to
         # create <self.polygon> after the parsing is finished and the projectin is available.
-        self.polygon = BldgPolygon(self.outline, manager, self)
+        self.polygon = BldgPolygon(self.element, manager, self)
     
     def addPart(self, part):
         self.parts.append(part)
@@ -387,19 +387,19 @@ class Building:
         self.crossedEdges.append( (edge, intsectX) )
         
     def attr(self, attr):
-        return self.outline.tags.get(attr)
+        return self.element.tags.get(attr)
 
     def __getitem__(self, attr):
         """
         That variant of <self.attr(..) is used in a setup script>
         """
-        return self.outline.tags.get(attr)
+        return self.element.tags.get(attr)
 
 
 class BldgPart:
     
     def __init__(self, element, manager):
-        self.outline = element
+        self.element = element
         self.polygon = BldgPolygon(element, manager, None)
 
 

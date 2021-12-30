@@ -70,7 +70,6 @@ class Roof:
         self.roofRenderer = itemRenderers.get(roofRendererId)
         
         self.itemStore = volumeAction.itemStore
-        self.itemFactory = volumeAction.itemFactory
         
         self.hasGable = False
         self.hasRoofLevels = True

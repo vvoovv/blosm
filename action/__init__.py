@@ -2,11 +2,10 @@
 
 class Action:
     
-    def __init__(self, app, data, itemStore, itemFactory):
+    def __init__(self, app, data, itemStore):
         self.app = app
         self.data = data
         self.itemStore = itemStore
-        self.itemFactory = itemFactory
     
     def cleanup(self):
         return

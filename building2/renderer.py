@@ -1,7 +1,6 @@
 import bpy
 from renderer import Renderer
 from .item_store import ItemStore
-from .item_factory import ItemFactory
 from .asset_store import AssetStore
 from .texture_exporter import TextureExporter
 
@@ -24,27 +23,25 @@ from item.roof_hipped import RoofHipped
 from item.roof_hipped_multi import RoofHippedMulti
 from item.roof_side import RoofSide
 
-
-def _createReferenceItems(app):
-    return (
-        (Building(), 5),
-        Footprint(app.buildingEntranceAttr),
-        Facade(),
-        Level(),
-        CurtainWall(),
-        Div(),
-        Bottom(),
-        Window(),
-        Door(),
-        Balcony(),
-        Chimney(),
-        RoofFlat(),
-        RoofFlatMulti(),
-        RoofProfile(),
-        RoofGeneratrix(),
-        RoofHipped(),
-        RoofHippedMulti(),
-        RoofSide()
+_itemClasses = (
+        Building,
+        Footprint,
+        Facade,
+        Level,
+        CurtainWall,
+        Div,
+        Bottom,
+        Window,
+        Door,
+        Balcony,
+        Chimney,
+        RoofFlat,
+        RoofFlatMulti,
+        RoofProfile,
+        RoofGeneratrix,
+        RoofHipped,
+        RoofHippedMulti,
+        RoofSide
     )
 
 
@@ -79,9 +76,7 @@ class BuildingRendererNew(Renderer):
             itemRenderers[item].init(itemRenderers, self)
         
         self.getStyle = getStyle
-        referenceItems = _createReferenceItems(app)
-        self.itemStore = ItemStore(referenceItems)
-        self.itemFactory = ItemFactory(referenceItems)
+        self.itemStore = ItemStore(_itemClasses)
         
         self.assetStore = AssetStore(app.assetInfoFilepath)
         
@@ -92,7 +87,7 @@ class BuildingRendererNew(Renderer):
         pass
 
     def preRender(self, building):
-        element = building.outline
+        element = building.element
         layer = element.l
         self.layer = element.l
         
@@ -121,13 +116,12 @@ class BuildingRendererNew(Renderer):
     
     def render(self, building, data):
         parts = building.parts
-        itemFactory = self.itemFactory
         itemStore = self.itemStore
         
         
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
-        building.renderInfo = Building.getItem(itemFactory, data)
+        building.renderInfo = Building(data)
         
         # get the style of the building
         buildingStyle = self.styleStore.get(self.getStyle(building, self.app))
@@ -138,16 +132,16 @@ class BuildingRendererNew(Renderer):
         
         self.preRender(building)
         
-        partTag = building.outline.tags.get("building:part")
+        partTag = building.element.tags.get("building:part")
         if not parts or (partTag and partTag != "no"):
             # the building has no parts
-            footprint = Footprint.getItem(itemFactory, building, building)
+            footprint = Footprint(building, building)
             # The attribute <footprint> below may be used in calculation of the area of
             # the building footprint or in <action.terrain.Terrain>
             #building.footprint = footprint
             itemStore.add(footprint)
         if parts:
-            itemStore.add((Footprint.getItem(itemFactory, part, building) for part in parts), Footprint, len(parts))
+            itemStore.add((Footprint(part, building) for part in parts), Footprint, len(parts))
         
         for itemClass in (Building, Footprint):
             for action in itemClass.actions:

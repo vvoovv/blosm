@@ -20,9 +20,7 @@ class LevelHeights:
     
     def __init__(self, footprint):
         self.footprint = footprint
-        self.init()
-    
-    def init(self):
+        
         self.topHeight = 0.
         self.lastLevelHeight = None
         self.levelHeight = None

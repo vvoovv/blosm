@@ -7,15 +7,18 @@ _facadeClassName = "Facade"
 
 class Footprint(Item):
     
-    def __init__(self, entranceAttr):
-        """
-        Args:
-            entranceAttr (str): A datta attribute for the entrance to look up in the polygon vertices.
-                Typically, it's "entrance" from OSM, that designates an etrance to the building.
-        """
+    def __init__(self, bldgPart, building, styleBlock=None):
+        # <styleBlock> is the style block within the markup definition,
+        # if the footprint is generated through the markup definition
         super().__init__()
-        self.entranceAttr = entranceAttr
-        self.building = None
+        # A data attribute for the entrance to look up in the polygon vertices.
+        # Typically, it's "entrance" from OSM, that designates an etrance to the building.
+        self.entranceAttr = "entrance"
+        self.bldgPart = bldgPart
+        self.polygon = bldgPart.polygon
+        self.element = bldgPart.element
+        self.building = building
+        self.styleBlock = styleBlock
         # all style blocks that define the style for the building
         self.buildingStyle = None
         self.projections = []
@@ -33,38 +36,8 @@ class Footprint(Item):
         self.facades = []
         self.levelHeights = LevelHeights(self)
     
-    def init(self):
-        super().init()
-        self.building = None
-        self.buildingStyle = None
-        self.numRoofLevels = 0
-        self.minLevel = 0
-        self.lastLevelOffset = 0.
-        self.projections.clear()
-        self.facadeStyle = None
-        self.facades.clear()
-        self.levelHeights.init()
-
-    def clone(self):
-        item = self.__class__(self.entranceAttr)
-        # set item factory to be used inside <item.calculateMarkupDivision(..s)>
-        item.itemFactory = self.itemFactory
-        return item
-    
-    @classmethod
-    def getItem(cls, itemFactory, bldgPart, building, styleBlock=None):
-        # <styleBlock> is the style block within the markup definition,
-        # if the footprint is generated through the markup definition
-        item = itemFactory.getItem(cls)
-        item.init()
-        item.styleBlock = styleBlock
-        item.polygon = bldgPart.polygon
-        item.element = bldgPart.element
-        item.building = building
-        return item
-    
     def attr(self, attr):
-        return self.bldgPart.outline.tags.get(attr)
+        return self.bldgPart.element.tags.get(attr)
     
     def getStyleBlockAttrDeep(self, attr):
         return self.getStyleBlockAttr(attr)

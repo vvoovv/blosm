@@ -3,17 +3,15 @@ from types import GeneratorType
 
 class ItemStore:
     
-    def __init__(self, referenceItems):
+    def __init__(self, itemClasses):
         self.skip = False
         store = {}
         self.store = store
-        for referenceItem in referenceItems:
-            if isinstance(referenceItem, tuple):
-                referenceItem = referenceItem[0]
+        for itemClass in itemClasses:
             # - A list of items
             # - Index of the current item
             # - The number of items
-            store[referenceItem.__class__.__name__] = [[], 0, 0]
+            store[itemClass.__name__] = [[], 0, 0]
     
     def add(self, items, itemClass=None, numItems=0):
         if isinstance(items, GeneratorType):
