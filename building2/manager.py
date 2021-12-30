@@ -1,5 +1,5 @@
 from building.manager import BuildingManager
-from . import Building
+from item.building import Building
 
 
 class RealisticBuildingManager(BuildingManager):

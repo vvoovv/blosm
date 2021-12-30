@@ -6,7 +6,7 @@ from building.manager import BuildingParts, BuildingRelations
 
 from manager.logging import Logger
 
-from building2 import Building
+from item.building import Building
 from building2.manager import RealisticBuildingManager
 from building2.renderer import BuildingRendererNew
 from building2.layer import RealisticBuildingLayer, RealisticBuildingLayerExport

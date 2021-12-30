@@ -1,11 +1,11 @@
 import bpy
-from . import Building
 from renderer import Renderer
 from .item_store import ItemStore
 from .item_factory import ItemFactory
 from .asset_store import AssetStore
 from .texture_exporter import TextureExporter
 
+from item.building import Building
 from item.footprint import Footprint
 from item.facade import Facade
 from item.level import Level, CurtainWall
@@ -124,7 +124,6 @@ class BuildingRendererNew(Renderer):
         itemFactory = self.itemFactory
         itemStore = self.itemStore
         
-        # <buildingP> means "building from the parser"
         
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
