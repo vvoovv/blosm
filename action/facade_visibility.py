@@ -413,7 +413,7 @@ class FacadeVisibilityBlender(FacadeVisibility):
         for building in buildings:
             if building.polygon:
                 for vert in building.polygon.verts:
-                    kdTree.insert(vert, index)
+                    kdTree.insert((vert[0], vert[1], 0.), index)
                     index += 1
         kdTree.balance()
         self.kdTree = kdTree
