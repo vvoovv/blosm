@@ -172,14 +172,14 @@ class BuildingFeatureRender(Renderer):
         self.showIDs = showIDs
 
     def render(self, building, data):
-        outline = building.outline
+        element = building.element
         # render the outer footprint
         #self.renderBuildingFootprint(building)
         # render holes for a multipolygon
-        if outline.t is parse.multipolygon:
-            for l in outline.ls:
+        if element.t is parse.multipolygon:
+            for l in element.ls:
                 if not l.role is Osm.outer:
-                    self.renderLineString(outline.getLinestringData(l, data), True, **BuildingRenderer.style)
+                    self.renderLineString(element.getLinestringData(l, data), True, **BuildingRenderer.style)
         
         if self.restoreFeatures:
             building.polygon.unskipFeatures()

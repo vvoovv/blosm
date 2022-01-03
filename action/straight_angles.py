@@ -136,12 +136,19 @@ class StraightAngles:
                         numFreeEdges += 1
                     
                 if vector is saFeature.endVector:
-                    if numFreeEdges > 1 and not startVector is saFeature.startVector:
-                        StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        # A straight angle feature was formed in the line above with the constructor <StraightAnglePart>.
-                        # <saFeature.endVector> is now the start vector of that feature, i.e. <startVector>.
-                        # So we change <saFeature.endVector> to <startVector>.
-                        saFeature.endVector = startVector
+                    if numFreeEdges > 1:
+                        if startVector is saFeature.startVector:
+                            # Skip the original <saFeature>, since it's composed entirely
+                            # from free edges. A shared edge may be formed from the resulting
+                            # edge and a neighbor edge if there a neighbor edge. That's needed
+                            # for the correct processing in <self.processStraightAnglesSharedEdges(..)>
+                            saFeature.skipVectors(manager)
+                        else:
+                            StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            # A straight angle feature was formed in the line above with the constructor <StraightAnglePart>.
+                            # <saFeature.endVector> is now the start vector of that feature, i.e. <startVector>.
+                            # So we change <saFeature.endVector> to <startVector>.
+                            saFeature.endVector = startVector
                     break
                 vector = vector.next
             
@@ -154,53 +161,55 @@ class StraightAngles:
         saFeature = polygon.saFeature
         startVector = neighborPolygon = None
         while True:
-            
-            numSharedEdges = 0
-            vector = saFeature.startVector
-            while True:
-                # <vector>'s edge is shared with another building's polygon
-                if vector.edge.hasSharedBldgVectors():
-                    if not saFeature.hasSharedEdge:
-                        saFeature.hasSharedEdge = True
-                    
-                    if vector.neighbor.featureType == BldgPolygonFeature.curved:
-                        if not saFeature.sharesCurve:
-                            saFeature.sharesCurve = True
-                        if numSharedEdges > 1:
-                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        numSharedEdges = 0
-                    elif numSharedEdges and neighborPolygon is vector.neighbor.polygon:
-                        numSharedEdges += 1
+            # <saFeature> could have been skipped in <self.processStraightAnglesFreeEdges(..)>
+            # if it had only free edges
+            if not saFeature.skipped:
+                numSharedEdges = 0
+                vector = saFeature.startVector
+                while True:
+                    # <vector>'s edge is shared with another building's polygon
+                    if vector.edge.hasSharedBldgVectors():
+                        if not saFeature.hasSharedEdge:
+                            saFeature.hasSharedEdge = True
+                        
+                        if vector.neighbor.featureType == BldgPolygonFeature.curved:
+                            if not saFeature.sharesCurve:
+                                saFeature.sharesCurve = True
+                            if numSharedEdges > 1:
+                                StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            numSharedEdges = 0
+                        elif numSharedEdges and neighborPolygon is vector.neighbor.polygon:
+                            numSharedEdges += 1
+                        else:
+                            if numSharedEdges and saFeature.sharesOnePolygon:
+                                saFeature.sharesOnePolygon = False
+                            if numSharedEdges > 1:
+                                StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            startVector = vector
+                            neighborPolygon = vector.neighbor.polygon
+                            numSharedEdges = 1
                     else:
-                        if numSharedEdges and saFeature.sharesOnePolygon:
-                            saFeature.sharesOnePolygon = False
-                        if numSharedEdges > 1:
-                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        startVector = vector
-                        neighborPolygon = vector.neighbor.polygon
-                        numSharedEdges = 1
-                else:
-                    if not saFeature.hasFreeEdge:
-                        saFeature.hasFreeEdge = True
-                    if numSharedEdges:
-                        if numSharedEdges > 1:
-                            StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        numSharedEdges = 0
-                    
-                if vector is saFeature.endVector:
-                    if numSharedEdges > 1 and not startVector is saFeature.startVector:
-                        StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
-                        # A straight angle feature was formed in the line above with the constructor <StraightAnglePart>.
-                        # <saFeature.endVector> is now the start vector of that feature, i.e. <startVector>.
-                        # So we change <saFeature.endVector> to <startVector>.
-                        saFeature.endVector = startVector
-                    break
-                vector = vector.next
-            
-            saFeature.setParentFeature()
-            saFeature.markVectors()
-            if not saFeature.hasSharedEdge or (not saFeature.hasFreeEdge and not saFeature.sharesCurve and saFeature.sharesOnePolygon):
-                saFeature.skipVectors(manager)
+                        if not saFeature.hasFreeEdge:
+                            saFeature.hasFreeEdge = True
+                        if numSharedEdges:
+                            if numSharedEdges > 1:
+                                StraightAnglePart(startVector, vector.prev, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            numSharedEdges = 0
+                        
+                    if vector is saFeature.endVector:
+                        if numSharedEdges > 1 and not startVector is saFeature.startVector:
+                            StraightAnglePart(startVector, vector, BldgPolygonFeature.straightAngle).skipVectors(manager)
+                            # A straight angle feature was formed in the line above with the constructor <StraightAnglePart>.
+                            # <saFeature.endVector> is now the start vector of that feature, i.e. <startVector>.
+                            # So we change <saFeature.endVector> to <startVector>.
+                            saFeature.endVector = startVector
+                        break
+                    vector = vector.next
+                
+                saFeature.setParentFeature()
+                saFeature.markVectors()
+                if not saFeature.hasSharedEdge or (not saFeature.hasFreeEdge and not saFeature.sharesCurve and saFeature.sharesOnePolygon):
+                    saFeature.skipVectors(manager)
             
             if saFeature.prev:
                 saFeature = saFeature.prev
