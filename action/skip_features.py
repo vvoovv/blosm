@@ -34,8 +34,14 @@ class SkipFeatures:
             if not startVector:
                 startVector = feature.startVector
             self._skipFeatures(feature, checkIsSkippable, manager)
-            # calculate the sines for the skipped features
-            self._calculateSinsSkipped(polygon.triangleFeature)
+            # Calculate the sines for the skipped features
+            # <self._calculateSinsSkipped(..)> for triangular features must be called before
+            # the one for the other features. That is needed to invalidate the triangular features
+            # located at a corner and forming a straight angle with a neighbor edge. That neighbor edge is
+            # a result of vector skipping for the neighbor features. Those triangular features must be
+            # invalidated before the call of <Feature._calculateSinNextVector(..)> in order to calculate
+            # <nextSin> for the edge of a triangular feature.
+            self._calculateSinsSkipped(feature)
         
         # calculate the sines for the skipped features
         

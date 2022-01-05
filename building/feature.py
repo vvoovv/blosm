@@ -156,24 +156,6 @@ class Feature:
         feature = nextVector.feature
         if not (feature and feature.type != BldgPolygonFeature.straightAngle and feature.skipped):
             self.endVector.next.sin, self.nextSin = self.nextSin, self.endVector.next.sin
-    
-    def _checkTriangularFeature(self):
-        """
-        Check if the triangular feature is located in a corner before this feature and
-        <endVector> of the triangular feature forms a straight angle with the neighbor edge of this feature
-        """
-        startVector = self.startVector
-        prevVector = startVector.prev
-        if prevVector.featureType == BldgPolygonFeature.triangle_convex:
-            triangularFeature = prevVector.feature
-            triangularEndVector = triangularFeature.endVector
-            startVector.prev = triangularEndVector
-            startVector.calculateSin()
-            if startVector.hasStraightAngle:
-                triangularFeature.unskipVectors()
-                triangularFeature.invalidate()
-            else:
-                startVector.prev = prevVector
 
 
 class StraightAnglePart(Feature):
@@ -411,9 +393,7 @@ class ComplexConvex5(Feature):
             
             self._skipVectors(manager)
     
-    def calculateSinsSkipped(self):
-        self._checkTriangularFeature()
-        
+    def calculateSinsSkipped(self):        
         if self.endEdge:
             self.startSin = self.startVector.sin
             self.endSin = self.endVector.sin
@@ -614,8 +594,6 @@ class ComplexConvex4(Feature):
             self._skipVectors(manager)
     
     def calculateSinsSkipped(self):
-        self._checkTriangularFeature()
-        
         if self.endEdge:
             self.startSin = self.startVector.sin
             self.endSin = self.endVector.sin
@@ -788,8 +766,6 @@ class QuadConvex(Feature):
             self.skipped = True
     
     def calculateSinsSkipped(self):
-        self._checkTriangularFeature()
-        
         if self.equalSideEdges:
             self._calculateSinsSkipped()
         elif self.leftEdgeShorter:
@@ -953,8 +929,8 @@ class TriConvex(Feature):
         self.startEdge[0].cl = self.endVector.edge.cl = self.startVector.edge.cl
     
     def calculateSinsSkipped(self):
-        # Check if the triangular feature is located in a corner and
-        # <self.startVector> forms a straight angle with the neighbor edge
+        # Check if the triangular feature is located in a corner after another feature and
+        # <self.startVector> forms a straight angle with the neighbor edge of this feature
         startVector = self.startVector
         prevVector = startVector.prev
         if prevVector.feature and not prevVector.featureType in (BldgPolygonFeature.triangle_convex, BldgPolygonFeature.curved):
@@ -967,6 +943,23 @@ class TriConvex(Feature):
                 self.unskipVectors()
                 self.invalidate()
                 return
+        
+        # Check if the triangular feature is located in a corner before another feature and
+        # <endVector> of the triangular feature forms a straight angle with the neighbor edge of this feature
+        endVector = self.endVector
+        nextVector = startVector.next
+        if nextVector.feature and not nextVector.featureType in (BldgPolygonFeature.triangle_convex, BldgPolygonFeature.curved):
+            # We need to reset <nextVector.prev> to <endVector> to check if
+            # <nextVector> forms a straight angle
+            nextVector.prev = endVector
+            nextVector.calculateSin()
+            if nextVector.hasStraightAngle:
+                self.unskipVectors()
+                self.invalidate()
+                return
+            else:
+                # No straight angle, so we set <nextVector.prev> back to <startVector>
+                nextVector.prev = startVector
         
         self._calculateSinsSkipped()
 

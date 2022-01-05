@@ -54,7 +54,7 @@ class FeatureDetection:
         """
         
         polygon.prepareVectorsByIndex()
-
+        
         midEdgeThreshold = max(midEdgeFactor * polygon.dimension, 2.)
         longEdgeThreshold = longEdgeFactor * polygon.dimension
         
