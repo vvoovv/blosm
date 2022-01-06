@@ -936,10 +936,13 @@ class TriConvex(Feature):
         if prevVector.feature and not prevVector.featureType in (BldgPolygonFeature.triangle_convex, BldgPolygonFeature.curved):
             # temporarily restore the original attributes <edge> and <direct> for <startVector>
             (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
+            _sin = startVector.sin
             startVector.calculateSin()
             # set back the values of the attributes <edge> and <direct> for <startVector>
             (startVector.edge, startVector.direct), self.startEdge = self.startEdge, (startVector.edge, startVector.direct)
             if startVector.hasStraightAngle:
+                # restore the sine
+                startVector.sin = _sin
                 self.unskipVectors()
                 self.invalidate()
                 return
@@ -952,8 +955,11 @@ class TriConvex(Feature):
             # We need to reset <nextVector.prev> to <endVector> to check if
             # <nextVector> forms a straight angle
             nextVector.prev = endVector
+            _sin = nextVector.sin
             nextVector.calculateSin()
             if nextVector.hasStraightAngle:
+                # restore the sine
+                nextVector.sin = _sin
                 self.unskipVectors()
                 self.invalidate()
                 return
