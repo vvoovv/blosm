@@ -8,7 +8,7 @@ class RoofFlat(ItemRenderer):
         building = roofItem.building
         face = self.r.createFace(
             building,
-            range(roofItem.firstVertIndex, roofItem.firstVertIndex+roofItem.footprint.polygon.n)
+            range(roofItem.firstVertIndex, roofItem.firstVertIndex+roofItem.footprint.polygon.numEdges)
         )
         
         cl = roofItem.getStyleBlockAttr("cl")

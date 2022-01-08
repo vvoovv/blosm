@@ -1,6 +1,6 @@
 import math
 from mathutils import Vector
-from util import zero
+from util import zero, zAxis
 
 
 """
@@ -29,8 +29,12 @@ directions = {
 
 
 def getDefaultDirection(polygon):
-    # a perpendicular to the longest edge of the polygon
-    return max(polygon.edges).cross(polygon.normal).normalized()
+    # this a perpendicular to the longest edge of the polygon
+    
+    # the longest vector
+    longestVector = max(polygon.getVectors()).vector
+    longestVector.normalize()
+    return Vector( (-longestVector[1], longestVector[0]) )
 
 
 class Roof:
@@ -76,32 +80,20 @@ class Roof:
         self.angleToHeight = None
         self.setUvs = True
     
-    def do(self, footprint, coords):
-        roofItem = self.init(footprint, coords)
+    def do(self, footprint):
+        roofItem = self.init(footprint)
         if footprint.valid:
             self.render(footprint, roofItem)
     
-    def init(self, footprint, coords):
+    def init(self, footprint):
         # calculate numerical dimensions for the building or building part
         self.calculateDimensions(footprint)
         if not footprint.valid:
             return
-        z1 = footprint.minHeight
         
-        # create a polygon located at <z1>
-        
-        # Check if a polygon has been already set (e.g. when placing the building on a terrain or
-        # calculating the area of the whole building footprint)
-        polygon = footprint.polygon
-        if polygon.allVerts:
-            polygon.setHeight(z1)
-        else:
-            polygon.init( Vector((coord[0], coord[1], z1)) for coord in coords )
-        if polygon.n < 3:
+        if footprint.polygon.numEdges < 3:
             footprint.valid = False
             return
-        # check the direction of vertices, it must be counterclockwise
-        polygon.checkDirection()
         
         return self.getRoofItem(footprint)
     
@@ -169,9 +161,9 @@ class Roof:
         # on the vector <d> that defines the roof direction
         projections = footprint.projections
         projections.extend( d[0]*v[0] + d[1]*v[1] for v in polygon.verts )
-        minProjIndex = min(range(polygon.n), key = lambda i: projections[i])
+        minProjIndex = min(range(polygon.numEdges), key = lambda i: projections[i])
         footprint.minProjIndex = minProjIndex
-        maxProjIndex = max(range(polygon.n), key = lambda i: projections[i])
+        maxProjIndex = max(range(polygon.numEdges), key = lambda i: projections[i])
         footprint.maxProjIndex = maxProjIndex
         # <polygon> width along the vector <d>
         footprint.polygonWidth = projections[maxProjIndex] - projections[minProjIndex]

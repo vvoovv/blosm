@@ -17,8 +17,8 @@ class ItemSize:
 
 class Container(Item):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent, footprint):
+        super().__init__(parent, footprint)
         # Look and Feel of the item
         # It may override the one defined for the whole building in the <Meta>
         self.laf = None
@@ -55,16 +55,6 @@ class Container(Item):
         self.uvs = None
         
         # an item renderer might need some data related to the material with <self.materialId>
-        self.materialData = None
-    
-    def init(self):
-        super().init()
-        self.markup.clear()
-        self.width = None
-        self.height = None
-        self.numRepeats = 1
-        self.arrangement = Horizontal
-        self.symmetry = None
         self.materialData = None
     
     def getWidth(self):

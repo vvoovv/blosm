@@ -265,8 +265,9 @@ class AssetStore:
         return _getCladTexInfoByClass(self.byBuilding[bldgIndex], claddingMaterial, assetType, claddingClass)
     
     def getCladTexInfo(self, building, claddingMaterial, assetType):
-        return _getCladTexInfo(self.byUse[building.buildingUse], claddingMaterial, assetType)\
-            or (_getCladTexInfo(self.byUse[None], claddingMaterial, assetType) if building.buildingUse else None)
+        buildingUse = building.renderInfo.buildingUse
+        return _getCladTexInfo(self.byUse[buildingUse], claddingMaterial, assetType)\
+            or (_getCladTexInfo(self.byUse[None], claddingMaterial, assetType) if buildingUse else None)
     
     def getCladTexInfoByBldgIndex(self, bldgIndex, claddingMaterial, assetType):
         return _getCladTexInfo(self.byBuilding[bldgIndex], claddingMaterial, assetType)

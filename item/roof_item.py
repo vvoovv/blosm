@@ -6,8 +6,9 @@ _className = "Roof"
 
 class RoofItem(Item):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent, parent)
+        self.setStyleBlock()
         self.buildingPart = "roof"
     
     def setStyleBlock(self):
@@ -44,20 +45,16 @@ class RoofItem(Item):
 
 class RoofWithSidesItem(RoofItem):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent)
         # a Python list of instances of item.roof_side.RoofSide
         self.roofSides = []
     
-    def init(self):
-        super().init()
-        self.roofSides.clear()
-    
-    def addRoofSide(self, roofSideIndices, uvs, itemIndex, itemFactory):
+    def addRoofSide(self, roofSideIndices, uvs, itemIndex):
         """
         Args:
             itemIndex (int): <slotIndex> for <RoofProfile>, <edgeIndex> for <RoofHipped>
         """
         self.roofSides.append(
-            RoofSide.getItem(itemFactory, self, roofSideIndices, uvs, itemIndex)
+            RoofSide(self, roofSideIndices, uvs, itemIndex)
         )

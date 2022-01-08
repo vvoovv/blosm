@@ -159,8 +159,9 @@ class BuildingRendererNew(Renderer):
     
     def createFace(self, building, indices):
         bm = self.bm
-        verts = building.verts
-        bmVerts = building.bmVerts
+        renderInfo = building.renderInfo
+        verts = renderInfo.verts
+        bmVerts = renderInfo.bmVerts
         
         # extend <bmVerts> to have the same number of vertices as in <verts>
         bmVerts.extend(None for _ in range(len(verts)-len(bmVerts)))
@@ -169,7 +170,7 @@ class BuildingRendererNew(Renderer):
         for index in indices:
             if not bmVerts[index]:
                 bmVerts[index] = bm.verts.new(
-                    (verts[index] + building.offset) if building.offset else verts[index]
+                    (verts[index] + renderInfo.offset) if renderInfo.offset else verts[index]
                 )
         
         return bm.faces.new(bmVerts[index] for index in indices)

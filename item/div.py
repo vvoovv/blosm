@@ -4,13 +4,9 @@ from .level_groups import LevelGroups
 
 class Div(Container):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent, footprint):
+        super().__init__(parent, footprint)
         self.levelGroups = LevelGroups(self)
-        
-    def init(self):
-        super().init()
-        self.levelGroups.clear()
     
     @classmethod
     def getItem(cls, itemFactory, parent, styleBlock):

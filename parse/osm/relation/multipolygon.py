@@ -106,6 +106,21 @@ class Linestring:
             for i in range(way.n):
                 yield way.nodes[i]
     
+    def pairNodeIds(self, osm):
+        """
+        A generator to get a pair of OSM node ids
+        
+        Returns a Python generator
+        """
+        prevNodeId = firstNodeId = None
+        for nodeId in self.nodeIds(osm):
+            if prevNodeId:
+                yield prevNodeId, nodeId
+            else:
+                firstNodeId = nodeId
+            prevNodeId = nodeId
+        yield nodeId, firstNodeId
+    
     def extend(self, wayId, start, end, connectWayStart):
         """
         Extend the linestring with the OSM way <wayId>
@@ -432,18 +447,11 @@ class Multipolygon(Relation):
 
     def pairNodeIds(self, osm):
         """
-        A generator to get a pair of OSM node ids for a building footprint (namely it outer ring)
+        A generator to get a pair of OSM node ids for a building footprint (namely its outer ring)
         
         Returns a Python generator
         """
-        prevNodeId = firstNodeId = None
-        for nodeId in self.outer.nodeIds(osm):
-            if prevNodeId:
-                yield prevNodeId, nodeId
-            else:
-                firstNodeId = nodeId
-            prevNodeId = nodeId
-        yield nodeId, firstNodeId
+        return self.outer.pairNodeIds(osm)
     
     def makePolygon(self):
         # get the outer linestring

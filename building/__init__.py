@@ -214,6 +214,15 @@ class BldgPolygon:
         vertsX = [ vector.v1[0] for vector in self.getVectors() ]
         vertsY = [ vector.v1[1] for vector in self.getVectors() ]
         return max( max(vertsX)-min(vertsX), max(vertsY)-min(vertsY) )
+    
+    def next(self, index):
+        """
+        Returns the next index for <index>
+        
+        Args:
+            index (int): A number between 0 and <self.numEdges - 1>
+        """
+        return (index+1) % self.numEdges
 
 
 class BldgEdge:

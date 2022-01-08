@@ -20,7 +20,7 @@ class RoofFlat(Roof):
     
     def render(self, footprint, roofItem):
         self.extrude(footprint, roofItem)
-        self.facadeRenderer.render(footprint, self.data)
+        self.facadeRenderer.render(footprint)
         self.roofRenderer.render(roofItem)
     
     def validate(self, footprint):
@@ -32,14 +32,13 @@ class RoofFlat(Roof):
             footprint.valid = False
     
     def getRoofFirstVertIndex(self, footprint):
-        return len(footprint.building.verts) + footprint.polygon.n
+        return len(footprint.building.renderInfo.verts) + footprint.polygon.numEdges
     
     def getRoofItem(self, footprint):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base;
         # since it depends on the total number of building vertices, we calculated it before any operation
         # that creates building geometry
-        return ItemRoofFlat.getItem(
-            self.itemFactory,
+        return ItemRoofFlat(
             footprint,
             self.getRoofFirstVertIndex(footprint)
         )
@@ -47,38 +46,42 @@ class RoofFlat(Roof):
     def extrude(self, footprint, roofItem):
         building = footprint.building
         facades = footprint.facades
-        verts = building.verts
+        verts = building.renderInfo.verts
         indexOffset = len(verts)
         polygon = footprint.polygon
-        numVerts = polygon.n
+        numVerts = polygon.numEdges
         
         # create vertices
-        z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
+        
         # verts for the lower cap
-        verts.extend(v for v in polygon.verts)
+        z = footprint.minHeight
+        verts.extend(Vector((v[0], v[1], z)) for v in polygon.verts)
         # verts for the upper cap
-        verts.extend(Vector((v.x, v.y, z)) for v in polygon.verts)
+        z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
+        verts.extend(Vector((v[0], v[1], z)) for v in polygon.verts)
         
         # the starting side
         _in = indexOffset+numVerts
-        facades.append(Facade.getItem(
-            self,
-            footprint,
-            (_in-1, indexOffset, _in, _in+numVerts-1),
-            0 # edge index
-        ))
+        facades.append(
+            Facade(
+                footprint,
+                (_in-1, indexOffset, _in, _in+numVerts-1),
+                0, # edge index
+                self
+            )
+        )
         # the rest of the sides
         facades.extend(
-            Facade.getItem(
-                self,
+            Facade(
                 footprint,
                 (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
-                i # edge index
+                i, # edge index
+                self
             ) for i in range(1, numVerts)
         )
     
     def initFacadeItem(self, item):
-        verts = item.building.verts
+        verts = item.building.renderInfo.verts
         indices = item.indices
         geometry = self.rectangleGeometry
         bottomVec = verts[indices[1]] - verts[indices[0]]

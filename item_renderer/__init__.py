@@ -10,13 +10,14 @@ _materialTemplateFilename = "building_material_templates.blend"
 
 def _setAssetInfoCache(building, assetInfo, key):
     if assetInfo:
-        building.assetInfoBldgIndex = assetInfo["_bldgIndex"]
+        renderInfo = building.renderInfo
+        renderInfo.assetInfoBldgIndex = assetInfo["_bldgIndex"]
         # Save building index from <assetInfo>, so later we can get
         # the buildings index for the given building part and class
         # and get an asset info for sure. We don't save <assetInfo> itself
         # in the cache since there may be several asset infos for the given building and
         # building part and class.
-        building._cache[key] = building.assetInfoBldgIndex
+        renderInfo._cache[key] = renderInfo.assetInfoBldgIndex
     
 
 class ItemRenderer:
@@ -86,6 +87,7 @@ class ItemRenderer:
     
     def _getCladdingTextureInfo(self, item):
         building = item.building
+        renderInfo = building.renderInfo
         claddingMaterial = item.getCladdingMaterial()
         if not claddingMaterial:
             return None
@@ -93,7 +95,7 @@ class ItemRenderer:
         # maybe it should be changed to <self.getStyleBlockAttrDeep("claddingClass")>
         claddingClass = item.getStyleBlockAttr("claddingClass")
         
-        if building.assetInfoBldgIndex is None:
+        if renderInfo.assetInfoBldgIndex is None:
             if claddingClass:
                 claddingTextureInfo = self.r.assetStore.getCladTexInfoByClass(
                     building, claddingMaterial, "texture", claddingClass
@@ -117,31 +119,31 @@ class ItemRenderer:
         else:
             if claddingClass:
                 key = "cc%s" % claddingMaterial
-                # If <key> is available in <building._cache>, that means we'll get <claddingTextureInfo> for sure
+                # If <key> is available in <renderInfo._cache>, that means we'll get <claddingTextureInfo> for sure
                 claddingTextureInfo = self.r.assetStore.getCladTexInfoByBldgIndexAndClass(
-                    building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                    renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
                     claddingMaterial,
                     "texture",
                     claddingClass
                 )
                 if not claddingTextureInfo:
-                    # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
-                    # in the call above. No we try to get <claddingTextureInfo> without <building.assetInfoBldgIndex>
+                    # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
+                    # in the call above. No we try to get <claddingTextureInfo> without <renderInfo.assetInfoBldgIndex>
                     claddingTextureInfo = self.r.assetStore.getCladTexInfoByClass(
                         building, claddingMaterial, "texture", claddingClass
                     )
                     _setAssetInfoCache(building, claddingTextureInfo, key)
             else:
                 key = "c%s" % claddingMaterial
-                # If <key> is available in <building._cache>, that means we'll get <claddingTextureInfo> for sure
+                # If <key> is available in <renderInfo._cache>, that means we'll get <claddingTextureInfo> for sure
                 claddingTextureInfo = self.r.assetStore.getCladTexInfoByBldgIndex(
-                    building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                    renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
                     claddingMaterial,
                     "texture"
                 )
                 if not claddingTextureInfo:
-                    # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
-                    # in the call above. No we try to get <claddingTextureInfo> without <building.assetInfoBldgIndex>
+                    # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
+                    # in the call above. No we try to get <claddingTextureInfo> without <renderInfo.assetInfoBldgIndex>
                     claddingTextureInfo = self.r.assetStore.getCladTexInfo(
                         building, claddingMaterial, "texture"
                     )

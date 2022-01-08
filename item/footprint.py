@@ -1,3 +1,4 @@
+from building import BldgPolygon
 from . import Item
 from action.volume.level_heights import LevelHeights
 
@@ -10,13 +11,14 @@ class Footprint(Item):
     def __init__(self, bldgPart, building, styleBlock=None):
         # <styleBlock> is the style block within the markup definition,
         # if the footprint is generated through the markup definition
-        super().__init__()
+        super().__init__(None, None)
         # A data attribute for the entrance to look up in the polygon vertices.
         # Typically, it's "entrance" from OSM, that designates an etrance to the building.
         self.entranceAttr = "entrance"
         self.bldgPart = bldgPart
-        self.polygon = bldgPart.polygon
-        self.element = bldgPart.element
+        if bldgPart:
+            self.polygon = bldgPart.polygon
+            self.element = bldgPart.element
         self.building = building
         self.styleBlock = styleBlock
         # all style blocks that define the style for the building
@@ -37,7 +39,7 @@ class Footprint(Item):
         self.levelHeights = LevelHeights(self)
     
     def attr(self, attr):
-        return self.bldgPart.element.tags.get(attr)
+        return self.element.tags.get(attr)
     
     def getStyleBlockAttrDeep(self, attr):
         return self.getStyleBlockAttr(attr)
@@ -80,6 +82,12 @@ class Footprint(Item):
             _facadeClassName,
             self.buildingStyle.styleBlocks.get(_facadeClassName)
         )
+    
+    def createPolygon(self, lineString, manager):
+        """
+        Create and set <self.polygon>. Used only for some exotic cases.
+        """
+        self.polygon = BldgPolygon(lineString, manager, self.building)
     
     def classifyFacades(self, data):
         # Definitions for the terms used below:

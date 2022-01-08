@@ -6,30 +6,15 @@ _className = "RoofSide"
 
 class RoofSide(Item):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent, indices, uvs, itemIndex):
+        super().__init__(parent, parent.footprint)
+        self.setStyleBlock()
         self.buildingPart = "roof_side"
+        # indices of <building.verts> that form the roof side
+        self.indices = indices
+        self.uvs = uvs
         # slot index for the profile roofs, edge index for hipped roofs
         self.itemIndex = 0
-        # indices of <building.verts> that form the roof side
-        self.indices = None
-    
-    @classmethod
-    def getItem(cls, itemFactory, parent, indices, uvs, itemIndex):
-        """
-        Args:
-            itemIndex (int): <slotIndex> for <RoofProfile>, <edgeIndex> for <RoofHipped>
-        """
-        item = itemFactory.getItem(cls)
-        item.init()
-        item.parent = parent
-        item.footprint = parent.footprint
-        item.setStyleBlock()
-        item.building = parent.building
-        item.indices = indices
-        item.uvs = uvs
-        item.itemIndex = itemIndex
-        return item
     
     def setStyleBlock(self):
         # The logic for setting a style block for the roof side is the following:

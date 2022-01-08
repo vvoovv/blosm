@@ -6,13 +6,10 @@ class Facade:
         self.Container.init(self, itemRenderers, globalRenderer)
         self.bottomRenderer = itemRenderers["Bottom"]
     
-    def render(self, footprint, data):
+    def render(self, footprint):
         # <r> is the global building renderer
         r = self.r
         building = footprint.building
-        
-        if footprint.building.classifyFacades and not footprint.noWalls:
-            footprint.classifyFacades(data)
         
         facadeStyle = footprint.facadeStyle
         if footprint.facadeStyle:

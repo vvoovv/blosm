@@ -145,7 +145,7 @@ def setup(app, data):
         if not app.singleObject:
             Building.actions.append( Offset(app, data, br.itemStore) )
         
-        volumeAction = Volume(app, data, br.itemStore, itemRenderers)
+        volumeAction = Volume(buildings, app, data, br.itemStore, itemRenderers)
         Footprint.actions = (volumeAction,)
         # <br> stands for "building renderer"
         buildings.setRenderer(br)

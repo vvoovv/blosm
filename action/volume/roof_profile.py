@@ -90,7 +90,7 @@ class ProfiledVert:
         self.i = i
         # the related index (in <verts>) of the polygon vertex in the basement of the volume
         vertBasementIndex = roof.vertOffset + i
-        verts = footprint.building.verts
+        verts = footprint.building.renderInfo.verts
         proj = footprint.projections
         p = roof.profile
         d = footprint.direction
@@ -531,7 +531,7 @@ class RoofProfile(Roof):
         profileQ.append(index)
         self.profileQ = profileQ
         
-        # where the vertices for the volume start in <footprint.building.verts>
+        # where the vertices for the volume start in <footprint.building.renderInfo.verts>
         self.vertOffset = 0
         
         self._initUv()
@@ -568,8 +568,8 @@ class RoofProfile(Roof):
         # the lenths of profile parts
         self.partLength = [0. for i in range(self.lastProfileIndex)]
     
-    def init(self, footprint, coords):
-        roofItem = super().init(footprint, coords)
+    def init(self, footprint):
+        roofItem = super().init(footprint)
         
         if not footprint.valid:
             return
@@ -615,14 +615,15 @@ class RoofProfile(Roof):
             self.slots[i].reset()
     
     def getRoofItem(self, footprint):
-        return ItemRoofProfile.getItem(self.itemFactory, footprint)
+        return ItemRoofProfile(footprint)
     
     def render(self, footprint, roofItem):
         polygon = footprint.polygon
         verts = footprint.building.renderInfo.verts
         self.vertOffset = len(verts)
         # vertices for the basement of the volume
-        verts.extend(v for v in polygon.verts)
+        minHeight = footprint.minHeight
+        verts.extend(Vector( (v[0], v[1], minHeight) ) for v in polygon.verts)
         
         slots = self.slots
         
@@ -686,7 +687,7 @@ class RoofProfile(Roof):
             slotL.trackDown(roofItem, slotIndex)
             self.onRoofForSlotCompleted(slotIndex)
         
-        self.facadeRenderer.render(footprint, self.data)
+        self.facadeRenderer.render(footprint)
         self.roofRenderer.render(roofItem)
     
     def getProfiledVert(self, footprint, i):
@@ -745,7 +746,7 @@ class RoofProfile(Roof):
             pv2 (ProfiledVert): Defines the second vertex of the segment of <self.polygon> projected on the profile
             _pv (ProfiledVert): Precedes <pv1>
         """
-        verts = footprint.building.verts
+        verts = footprint.building.renderInfo.verts
         p = self.profile
         slots = self.slots
         # the current slot
@@ -953,12 +954,14 @@ class RoofProfile(Roof):
         if appendPv1:
             _wallIndices.append(pv1.vertIndex)
         
-        footprint.facades.append(Facade.getItem(
-            self,
-            footprint,
-            _wallIndices,
-            pv1.i # edge index
-        ))
+        footprint.facades.append(
+            Facade(
+                footprint,
+                _wallIndices,
+                pv1.i, # edge index
+                self
+            )
+        )
         
         # append <pv2.vertIndex> to the last part of the current slot (i.e. to <slot.parts[-1]>)
         slot.append(pv2.vertIndex)
@@ -995,7 +998,7 @@ class RoofProfile(Roof):
         """
     
     def initFacadeItem(self, item):
-        verts = item.building.verts
+        verts = item.building.renderInfo.verts
         indices = item.indices
         numVerts = len(indices)
         firstVert = verts[indices[0]]
@@ -1038,8 +1041,7 @@ class RoofProfile(Roof):
         roofItem.addRoofSide(
             indices,
             self.getUvs(indices, slotIndex) if self.setUvs else None,
-            slotIndex,
-            self.itemFactory
+            slotIndex
         )
     
     def getUvs(self, indices, slotIndex):

@@ -1,11 +1,14 @@
+
+
 class Item:
     
-    def __init__(self):
+    def __init__(self, parent, footprint):
         self.valid = True
         # for example, a parent for a facade is a footprint
-        self.parent = None
+        self.parent = parent
         # a direct access to the footprint
-        self.footprint = None
+        self.footprint = footprint
+        self.building = parent.building if parent else None
         # A style block (an instance of grammar.Item) that defines the style for the item
         # within a markup definition.
         # Typically a style block is defined in the markup definition, however it can be also defined
@@ -49,7 +52,7 @@ class Item:
             return value
     
     def getCache(self, scope):
-        return self.building._cache if scope is perBuilding else self._cache
+        return self.building.renderInfo._cache if scope is perBuilding else self._cache
     
     def getItemRenderer(self, itemRenderers):
         """
