@@ -69,3 +69,6 @@ class WayManager:
     def addAction(self, action):
         action.app = self.app
         self.actions.append(action)
+    
+    def renderExtra(self):
+        pass
