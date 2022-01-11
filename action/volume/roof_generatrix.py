@@ -12,8 +12,7 @@ class RoofGeneratrix(RoofLeveled):
         self.extrudeTillRoof = True
     
     def getRoofItem(self, footprint):
-        return ItemRoofGeneratrix.getItem(
-            self.itemFactory,
+        return ItemRoofGeneratrix(
             footprint,
             self.getRoofFirstVertIndex(footprint)
         )

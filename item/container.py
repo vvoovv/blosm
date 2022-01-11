@@ -17,8 +17,9 @@ class ItemSize:
 
 class Container(Item):
     
-    def __init__(self, parent, footprint):
+    def __init__(self, parent, footprint, styleBlock):
         super().__init__(parent, footprint)
+        self.styleBlock = styleBlock
         # Look and Feel of the item
         # It may override the one defined for the whole building in the <Meta>
         self.laf = None
@@ -74,7 +75,7 @@ class Container(Item):
         
         if self.styleBlock.markup:
             self.markup.extend(
-                _styleBlock.getItem(self.itemFactory, self)\
+                _styleBlock.getItem(self)\
                     for _styleBlock in self.styleBlock.markup if self.evaluateCondition(_styleBlock)
             )
         

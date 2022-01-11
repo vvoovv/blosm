@@ -73,8 +73,8 @@ class LevelHeights:
                 footprint.numLevels = 0
         else:
             h = self.calculateBottomHeight(volumeGenerator)
-            if footprint.building.altitudeDifference:
-                h += footprint.building.altitudeDifference
+            if footprint.building.renderInfo.altitudeDifference:
+                h += footprint.building.renderInfo.altitudeDifference
             # get the number of wall levels
             numLevels = footprint.getStyleBlockAttr("numLevels")
             footprint.numLevels = numLevels
@@ -158,8 +158,8 @@ class LevelHeights:
                 # The heights of the bottom and the ground level have been already
                 # calculated in <self.calculateHeight()>
                 h = self.bottomHeight + self.groundLevelHeight if self.groundLevelHeight else levelHeight
-                if footprint.building.altitudeDifference:
-                    h += footprint.building.altitudeDifference
+                if footprint.building.renderInfo.altitudeDifference:
+                    h += footprint.building.renderInfo.altitudeDifference
                 if minLevel > 1:
                     # the height of the levels above the ground level
                     h += (minLevel-1)*levelHeight

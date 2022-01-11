@@ -32,8 +32,7 @@ def getDefaultDirection(polygon):
     # this a perpendicular to the longest edge of the polygon
     
     # the longest vector
-    longestVector = max(polygon.getVectors()).vector
-    longestVector.normalize()
+    longestVector = polygon.getLongestVector().unitVector
     return Vector( (-longestVector[1], longestVector[0]) )
 
 
@@ -141,8 +140,7 @@ class Roof:
             if self.hasRidge and footprint.getStyleBlockAttr("roofOrientation") == "across":
                 # The roof ridge is across the longest side of the building outline,
                 # i.e. the profile direction is along the longest side
-                d = max(polygon.getVectors())
-                d = d/d.length
+                d = polygon.getLongestVector().unitVector
             else:
                 d = getDefaultDirection(polygon)
         elif d in Roof.directions:

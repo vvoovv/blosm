@@ -227,7 +227,7 @@ class AssetStore:
         return byClass[itemClass].getEntry() if itemClass in byClass else byType[assetType]["other"].getEntry()
     
     def getAssetInfo(self, building, buildingPart, assetType):
-        _use = building.buildingUse
+        _use = building.renderInfo.buildingUse
         if not _use:
             return None
         

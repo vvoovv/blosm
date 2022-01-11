@@ -130,12 +130,12 @@ class RoofLeveled(RoofFlat):
         return h
     
     def getRoofFirstVertIndex(self, footprint):
-        return len(footprint.building.verts) if footprint.noWalls else super().getRoofFirstVertIndex(footprint)
+        return len(footprint.building.renderInfo.verts) if footprint.noWalls else super().getRoofFirstVertIndex(footprint)
     
     def extrude(self, footprint, roofItem):
         if footprint.noWalls:
             z = footprint.roofVerticalPosition
             # the basement of the roof
-            footprint.building.verts.extend(Vector((v.x, v.y, z)) for v in footprint.polygon.verts)
+            footprint.building.renderInfo.verts.extend(Vector((v.x, v.y, z)) for v in footprint.polygon.verts)
             return
         super().extrude(footprint, roofItem)

@@ -228,14 +228,14 @@ class Level(Item):
         self.isBottom = False
         self.isTop = False
 
-    def getItem(self, itemFactory, parent):
-        return ItemLevel.getItem(itemFactory, parent, self)
+    def getItem(self, parent):
+        return ItemLevel(parent, self)
 
 
 class CurtainWall(Level):
     
-    def getItem(self, itemFactory, parent):
-        return ItemCurtainWall.getItem(itemFactory, parent, self)
+    def getItem(self, parent):
+        return ItemCurtainWall(parent, self)
 
 
 class Window(Item):
@@ -304,8 +304,8 @@ class Bottom(Item):
         self.isBottom = True
         self.isTop = False
         
-    def getItem(self, itemFactory, parent):
-        return ItemBottom.getItem(itemFactory, parent, self)
+    def getItem(self, parent):
+        return ItemBottom(parent, self)
         
 
 def useFrom(itemId):

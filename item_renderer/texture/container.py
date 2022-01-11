@@ -171,8 +171,9 @@ class Container(ItemRenderer):
     
     def setMaterialId(self, item, buildingPart, uvs):
         building = item.building
+        renderInfo = building.renderInfo
         # get a texture that fits to the Level markup pattern
-        if building.assetInfoBldgIndex is None:
+        if renderInfo.assetInfoBldgIndex is None:
             facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
             _setAssetInfoCache(
                 building,
@@ -182,15 +183,15 @@ class Container(ItemRenderer):
             )
         else:
             key = "p%s" % buildingPart
-            # If <key> is available in <building._cache>, that means we'll get <assetInfo> for sure
+            # If <key> is available in <renderInfo._cache>, that means we'll get <assetInfo> for sure
             facadeTextureInfo = self.r.assetStore.getAssetInfoByBldgIndex(
-                building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
+                renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
                 buildingPart,
                 "texture"
             )
             if not facadeTextureInfo:
-                # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
-                # in the call above. No we try to get <facadeTextureInfo> without <building.assetInfoBldgIndex>
+                # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
+                # in the call above. No we try to get <facadeTextureInfo> without <renderInfo.assetInfoBldgIndex>
                 facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
                 _setAssetInfoCache(building, facadeTextureInfo, key)
         

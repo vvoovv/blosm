@@ -21,6 +21,7 @@ import parse
 from mathutils import Vector
 from defs.building import BldgPolygonFeature, StraightAngleType
 from defs.facade_classification import WayLevel, VisibilityAngleFactor
+from util import zeroVector2d
 
 
 class BldgPolygon:
@@ -223,6 +224,29 @@ class BldgPolygon:
             index (int): A number between 0 and <self.numEdges - 1>
         """
         return (index+1) % self.numEdges
+    
+    def getLongestVector(self):
+        # We don't cache it!
+        return max(
+            ( vector for vector in self.getVectors() ),
+            key = lambda vector: (vector.edge.v2 - vector.edge.v1).length_squared
+        )
+    
+    def center(self):
+        """
+        Returns geometric center of the polygon
+        """
+        return sum(self.verts, zeroVector2d())/self.numEdges
+    
+    def centerBB3d(self, z):
+        """
+        Return the center of the polygon bounding box alligned along the global X and Y axes
+        """
+        return Vector((
+            ( min(self.verts, key=lambda v: v[0])[0] + max(self.verts, key=lambda v: v[0])[0] )/2.,
+            ( min(self.verts, key=lambda v: v[1])[1] + max(self.verts, key=lambda v: v[1])[1] )/2.,
+            z
+        ))
 
 
 class BldgEdge:

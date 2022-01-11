@@ -150,13 +150,13 @@ class RectangleFRA(Geometry):
     
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         building = parentItem.building
-        verts = building.verts
+        verts = building.renderInfo.verts
         height = levelGroup.levelHeight\
             if levelGroup.singleLevel else\
             levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
         # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
         # an item with rectangular geometry to be created
-        indexTL = len(building.verts)
+        indexTL = len(verts)
         indexTR = indexTL + 1
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
         # to be created out of <parentItem>

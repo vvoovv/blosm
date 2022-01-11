@@ -8,7 +8,7 @@ class Facade(Div):
     """
     
     def __init__(self, parent, indices, edgeIndex, volumeGenerator):
-        super().__init__(parent, parent)
+        super().__init__(parent, parent, None)
         
         self.indices = indices
         self.edgeIndex = edgeIndex

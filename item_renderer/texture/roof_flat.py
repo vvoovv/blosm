@@ -1,5 +1,5 @@
 from .. import ItemRenderer
-from util import zAxis
+from mathutils import Vector
 
 
 class RoofFlat(ItemRenderer):
@@ -22,25 +22,22 @@ class RoofFlat(ItemRenderer):
         textureHeightM = textureWidthM * claddingTextureInfo["textureSize"][1] / claddingTextureInfo["textureSize"][0]
         
         polygon = roofItem.footprint.polygon
-        verts = polygon.allVerts
-        indices = polygon.indices
         
         # Arrange the texture along the longest edge of <polygon>,
         # so the longest edges surves as u-axis for the texture
-        maxEdgeIndex = polygon.maxEdgeIndex
-        offset = verts[indices[maxEdgeIndex]]
-        uVec = (verts[indices[maxEdgeIndex+1]] - offset)
-        uVec.normalize()
-        vVec = zAxis.cross(uVec)
+        uVec = polygon.getLongestVector()
+        offset = uVec.v1
+        uVec = uVec.unitVector
+        vVec = Vector( (-uVec[1], uVec[0]) )
 
         self.r.setUvs(
             face,
             # a generator!
             (
                 (
-                    (verts[indices[i]]-offset).dot(uVec)/textureWidthM,
-                    (verts[indices[i]]-offset).dot(vVec)/textureHeightM
-                ) for i in range(polygon.n)
+                    (vector.v2-offset).dot(uVec)/textureWidthM,
+                    (vector.v2-offset).dot(vVec)/textureHeightM
+                ) for vector in polygon.getVectors()
             ),
             self.r.layer.uvLayerNameCladding
         )

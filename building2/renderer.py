@@ -155,7 +155,7 @@ class BuildingRendererNew(Renderer):
         if itemStore.skip:
             itemStore.skip = False
         else:
-            self.postRender(building.outline)
+            self.postRender(building.element)
     
     def createFace(self, building, indices):
         bm = self.bm

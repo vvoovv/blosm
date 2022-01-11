@@ -50,8 +50,8 @@ class LevelGroups:
             bottomHeight = item.getStyleBlockAttr("bottomHeight")
             if bottomHeight is None:
                 bottomHeight = lh.bottomHeight
-            if item.building.altitudeDifference:
-                self.bottomGroup.levelHeight = item.building.altitudeDifference
+            if item.building.renderInfo.altitudeDifference:
+                self.bottomGroup.levelHeight = item.building.renderInfo.altitudeDifference
             if bottomHeight:
                 self.bottomGroup.levelHeight += bottomHeight
             if self.bottomGroup.levelHeight:

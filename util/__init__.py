@@ -26,4 +26,7 @@ zAxis = Vector((0., 0., 1.))
 def zeroVector():
     return Vector((0., 0., 0.))
 
+def zeroVector2d():
+    return Vector((0., 0.))
+
 zero = .001 # 1mm
