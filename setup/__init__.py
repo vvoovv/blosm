@@ -11,6 +11,42 @@ class Setup:
     
     def __init__(self, osm):
         self.osm = osm
+        
+        self.featureDetectionAction = None
+        self.skipFeaturesAction = None
+        self.unskipFeaturesAction = None
+    
+    def detectFeatures(self, simplifyPolygons):
+        from action.curved_features import CurvedFeatures
+        from action.straight_angles import StraightAngles
+        
+        buildingManager = self.buildingManager
+        buildingManager.addAction(CurvedFeatures())
+        buildingManager.addAction(StraightAngles())
+        buildingManager.addAction(self.getFeatureDetectionAction(simplifyPolygons))
+    
+    def facadeVisibility(self, facadeVisibilityAction):
+        if not facadeVisibilityAction:
+            from action.facade_visibility import FacadeVisibilityBlender
+            facadeVisibilityAction = FacadeVisibilityBlender()
+        
+        self.buildingManager.addAction(facadeVisibilityAction)
+    
+    def classifyFacades(self, facadeVisibilityAction):
+        from action.facade_classification import FacadeClassification
+        
+        self.facadeVisibility(facadeVisibilityAction)
+        
+        self.buildingManager.addAction(
+            FacadeClassification(self.getUnskipFeaturesAction())
+        )
+    
+    def buildings(self):
+        self.osm.addCondition(
+            lambda tags, e: "building" in tags,
+            "buildings",
+            self.buildingManager
+        )
     
     def skipWays(self, skipFunction=None):
         if not skipFunction:
@@ -105,3 +141,23 @@ class Setup:
             "railways",
             self.wayManager
         )
+    
+    def getFeatureDetectionAction(self, simplifyPolygons):
+        if not self.featureDetectionAction:
+            from action.feature_detection import FeatureDetection
+            self.featureDetectionAction = FeatureDetection(
+                self.getSkipFeaturesAction() if simplifyPolygons else None
+            )
+        return self.featureDetectionAction
+    
+    def getSkipFeaturesAction(self):
+        if not self.skipFeaturesAction:
+            from action.skip_features import SkipFeatures
+            self.skipFeaturesAction = SkipFeatures()
+        return self.skipFeaturesAction
+    
+    def getUnskipFeaturesAction(self):
+        if not self.unskipFeaturesAction:
+            from action.unskip_features import UnskipFeatures
+            self.unskipFeaturesAction = UnskipFeatures()
+        return self.unskipFeaturesAction
