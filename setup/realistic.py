@@ -1,157 +1,32 @@
-from style import StyleStore
-
-from parse.osm.relation.building import Building as BuildingRelation
-
-from building.manager import BuildingParts, BuildingRelations
+from setup import SetupBlender as Setup
 
 from manager.logging import Logger
 
-from item.building import Building
-from building2.manager import RealisticBuildingManager
-from building2.renderer import BuildingRendererNew
-from building2.layer import RealisticBuildingLayer, RealisticBuildingLayerExport
-
-from item.footprint import Footprint
-
-from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion, Center, MiddleOfTheLongesSide
-
 from setup.premium import setup_forests
-
-# item renderers
-from item_renderer.texture.base import\
-    Facade as FacadeRenderer,\
-    Div as DivRenderer,\
-    Level as LevelRenderer,\
-    CurtainWall as CurtainWallRenderer,\
-    Bottom as BottomRenderer,\
-    Door as DoorRenderer,\
-    RoofFlat as RoofFlatRenderer,\
-    RoofFlatMulti as RoofFlatMultiRenderer,\
-    RoofProfile as RoofProfileRenderer,\
-    RoofGeneratrix as RoofGeneratrixRenderer,\
-    RoofPyramidal as RoofPyramidalRenderer,\
-    RoofHipped as RoofHippedRenderer
-
-from item_renderer.texture.export import\
-    Facade as FacadeRendererExport,\
-    Div as DivRendererExport,\
-    Level as LevelRendererExport,\
-    CurtainWall as CurtainWallRendererExport,\
-    Bottom as BottomRendererExport,\
-    Door as DoorRendererExport,\
-    RoofFlat as RoofFlatRendererExport,\
-    RoofFlatMulti as RoofFlatMultiRendererExport,\
-    RoofProfile as RoofProfileRendererExport,\
-    RoofGeneratrix as RoofGeneratrixRendererExport,\
-    RoofPyramidal as RoofPyramidalRendererExport,\
-    RoofHipped as RoofHippedRendererExport
-
-from action.terrain import Terrain
-from action.offset import Offset
-from action.volume import Volume
 
 from way.manager import WayManager
 
-from action.facade_visibility import FacadeVisibilityBlender
-from action.facade_classification import FacadeClassification
-from action.feature_detection import FeatureDetection
-from action.curved_features import CurvedFeatures
-from action.straight_angles import StraightAngles
-#from action.way_clustering import WayClustering
-from action.skip_features import SkipFeatures
-from action.unskip_features import UnskipFeatures
 
-
-def setup(app, data):
+def setup(app, osm):
+    setup = Setup(app, osm)
+    
     classifyFacades = True
-    doExport = app.enableExperimentalFeatures and app.importForExport
     
-    styleStore = StyleStore(app, styles=None)
-    
-    wayManager = WayManager(data, app) if classifyFacades else None
+    wayManager = WayManager(osm, app) if classifyFacades else None
     
     # comment the next line if logging isn't needed
-    Logger(app, data)
+    Logger(app, osm)
     
     if app.buildings:
-        buildingParts = BuildingParts()
-        buildingRelations = BuildingRelations()
-        buildings = RealisticBuildingManager(
-            data,
-            app,
-            buildingParts,
-            RealisticBuildingLayerExport if doExport else RealisticBuildingLayer
-        )
+        setup.buildingsRealistic(getStyle=getStyle)
         
-        
-        # create some actions that can be reused
-        skipFeaturesAction = SkipFeatures()
-        unskipFeaturesAction = UnskipFeatures()
-        featureDetectionAction = FeatureDetection(skipFeaturesAction)
-        
-        buildings.addAction(CurvedFeatures())
-        buildings.addAction(StraightAngles())
-        buildings.addAction(featureDetectionAction)
+        setup.detectFeatures(simplifyPolygons=True)
         
         if classifyFacades:
-            buildings.addAction(FacadeVisibilityBlender())
-            
-            buildings.addAction(
-                FacadeClassification(unskipFeaturesAction)
-            )
-        
-        # Important: <buildingRelation> beform <building>,
-        # since there may be a tag building=* in an OSM relation of the type 'building'
-        data.addCondition(
-            lambda tags, e: isinstance(e, BuildingRelation),
-            None,
-            buildingRelations
-        )
-        data.addCondition(
-            lambda tags, e: "building" in tags,
-            "buildings",
-            buildings
-        )
-        data.addCondition(
-            lambda tags, e: "building:part" in tags,
-            None,
-            buildingParts
-        )
-        
-        # deal with item renderers
-        itemRenderers = dict(
-            Facade = FacadeRendererExport() if doExport else FacadeRenderer(),
-            Div = DivRendererExport() if doExport else DivRenderer(),
-            Level = LevelRendererExport() if doExport else LevelRenderer(),
-            CurtainWall = CurtainWallRendererExport() if doExport else CurtainWallRenderer(),
-            Bottom = BottomRendererExport() if doExport else BottomRenderer(),
-            Door = DoorRendererExport() if doExport else DoorRenderer(),
-            RoofFlat = RoofFlatRendererExport() if doExport else RoofFlatRenderer(),
-            RoofFlatMulti = RoofFlatMultiRendererExport() if doExport else RoofFlatMultiRenderer(),
-            RoofProfile = RoofProfileRendererExport() if doExport else RoofProfileRenderer(),
-            RoofDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = Center),
-            RoofHalfDome = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_dome(7), basePointPosition = MiddleOfTheLongesSide),
-            RoofOnion = (RoofGeneratrixRendererExport if doExport else RoofGeneratrixRenderer)(generatrix_onion, basePointPosition = Center),
-            RoofPyramidal = RoofPyramidalRendererExport() if doExport else RoofPyramidalRenderer(),
-            RoofHipped = RoofHippedRendererExport() if doExport else RoofHippedRenderer()
-        )
-        
-        br = BuildingRendererNew(app, styleStore, itemRenderers, getStyle=getStyle)
-        
-        Building.actions = []
-        # <app.terrain> isn't yet set at this pooint, so we use the string <app.terrainObject> instead
-        if app.terrainObject:
-            Building.actions.append( Terrain(app, data, br.itemStore) )
-        if not app.singleObject:
-            Building.actions.append( Offset(app, data, br.itemStore) )
-        
-        volumeAction = Volume(buildings, app, data, br.itemStore, itemRenderers)
-        Footprint.actions = (volumeAction,)
-        # <br> stands for "building renderer"
-        buildings.setRenderer(br)
+            setup.classifyFacades()
     
     if app.forests:
-        setup_forests(app, data)
+        setup_forests(app, osm)
 
 
 def getStyle(building, app):

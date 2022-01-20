@@ -1,3 +1,4 @@
+from building.manager import BuildingParts, BuildingRelations
 
 
 def conditionsSkipWays(tags, e):
@@ -9,7 +10,8 @@ def conditionsSkipWays(tags, e):
 
 class Setup:
     
-    def __init__(self, osm):
+    def __init__(self, app, osm):
+        self.app = app
         self.osm = osm
         
         self.featureDetectionAction = None
@@ -32,7 +34,7 @@ class Setup:
         
         self.buildingManager.addAction(facadeVisibilityAction)
     
-    def classifyFacades(self, facadeVisibilityAction):
+    def classifyFacades(self, facadeVisibilityAction=None):
         from action.facade_classification import FacadeClassification
         
         self.facadeVisibility(facadeVisibilityAction)
@@ -161,3 +163,155 @@ class Setup:
             from action.unskip_features import UnskipFeatures
             self.unskipFeaturesAction = UnskipFeatures()
         return self.unskipFeaturesAction
+
+
+class SetupBlender(Setup):
+    
+    def __init__(self, app, osm):
+        super().__init__(app, osm)
+        
+        self.doExport = app.enableExperimentalFeatures and app.importForExport
+    
+    def buildingsRealistic(self, getStyle):
+        from building2.manager import RealisticBuildingManager
+        from building2.renderer import BuildingRendererNew
+        from style import StyleStore
+        
+        if self.doExport:
+            from building2.layer import RealisticBuildingLayerExport as RealisticBuildingLayer
+        else:
+            from building2.layer import RealisticBuildingLayer
+        
+        buildingParts = BuildingParts()
+        buildingRelations = BuildingRelations()
+        self.buildingManager = buildingManager = RealisticBuildingManager(
+            self.osm,
+            self.app,
+            buildingParts,
+            RealisticBuildingLayer
+        )
+        
+        self.conditionsBuildings(buildingManager, buildingParts, buildingRelations)
+        
+        itemRenderers = self.itemRenderers()
+        
+        buildingRenderer = BuildingRendererNew(
+            self.app,
+            StyleStore(self.app, styles=None),
+            itemRenderers,
+            getStyle=getStyle
+        )
+        
+        self.actionsBuildings(buildingManager, buildingRenderer, itemRenderers)
+        
+        buildingManager.setRenderer(buildingRenderer)
+    
+    def conditionsBuildings(self, buildingManager, buildingParts, buildingRelations):
+        from parse.osm.relation.building import Building as BuildingRelation
+        
+        osm = self.osm
+        # Important: <buildingRelation> beform <building>,
+        # since there may be a tag building=* in an OSM relation of the type 'building'
+        osm.addCondition(
+            lambda tags, e: isinstance(e, BuildingRelation),
+            None,
+            buildingRelations
+        )
+        osm.addCondition(
+            lambda tags, e: "building" in tags,
+            "buildings",
+            buildingManager
+        )
+        osm.addCondition(
+            lambda tags, e: "building:part" in tags,
+            None,
+            buildingParts
+        )
+    
+    def itemRenderers(self):
+        from item_renderer.texture.roof_generatrix import generatrix_dome, generatrix_onion, Center, MiddleOfTheLongesSide
+        
+        if self.doExport:
+            from item_renderer.texture.export import\
+                Facade as FacadeRendererExport,\
+                Div as DivRendererExport,\
+                Level as LevelRendererExport,\
+                CurtainWall as CurtainWallRendererExport,\
+                Bottom as BottomRendererExport,\
+                Door as DoorRendererExport,\
+                RoofFlat as RoofFlatRendererExport,\
+                RoofFlatMulti as RoofFlatMultiRendererExport,\
+                RoofProfile as RoofProfileRendererExport,\
+                RoofGeneratrix as RoofGeneratrixRendererExport,\
+                RoofPyramidal as RoofPyramidalRendererExport,\
+                RoofHipped as RoofHippedRendererExport
+            
+            itemRenderers = dict(
+                Facade = FacadeRendererExport(),
+                Div = DivRendererExport(),
+                Level = LevelRendererExport(),
+                CurtainWall = CurtainWallRendererExport(),
+                Bottom = BottomRendererExport(),
+                Door = DoorRendererExport(),
+                RoofFlat = RoofFlatRendererExport(),
+                RoofFlatMulti = RoofFlatMultiRendererExport(),
+                RoofProfile = RoofProfileRendererExport(),
+                RoofDome = RoofGeneratrixRendererExport(generatrix_dome(7), basePointPosition = Center),
+                RoofHalfDome = RoofGeneratrixRendererExport(generatrix_dome(7), basePointPosition = MiddleOfTheLongesSide),
+                RoofOnion = RoofGeneratrixRendererExport(generatrix_onion, basePointPosition = Center),
+                RoofPyramidal = RoofPyramidalRendererExport(),
+                RoofHipped = RoofHippedRendererExport()
+            )
+        else:
+            from item_renderer.texture.base import\
+                Facade as FacadeRenderer,\
+                Div as DivRenderer,\
+                Level as LevelRenderer,\
+                CurtainWall as CurtainWallRenderer,\
+                Bottom as BottomRenderer,\
+                Door as DoorRenderer,\
+                RoofFlat as RoofFlatRenderer,\
+                RoofFlatMulti as RoofFlatMultiRenderer,\
+                RoofProfile as RoofProfileRenderer,\
+                RoofGeneratrix as RoofGeneratrixRenderer,\
+                RoofPyramidal as RoofPyramidalRenderer,\
+                RoofHipped as RoofHippedRenderer
+            
+            itemRenderers = dict(
+                Facade = FacadeRenderer(),
+                Div = DivRenderer(),
+                Level = LevelRenderer(),
+                CurtainWall = CurtainWallRenderer(),
+                Bottom = BottomRenderer(),
+                Door = DoorRenderer(),
+                RoofFlat = RoofFlatRenderer(),
+                RoofFlatMulti = RoofFlatMultiRenderer(),
+                RoofProfile = RoofProfileRenderer(),
+                RoofDome = RoofGeneratrixRenderer(generatrix_dome(7), basePointPosition = Center),
+                RoofHalfDome = RoofGeneratrixRenderer(generatrix_dome(7), basePointPosition = MiddleOfTheLongesSide),
+                RoofOnion = RoofGeneratrixRenderer(generatrix_onion, basePointPosition = Center),
+                RoofPyramidal = RoofPyramidalRenderer(),
+                RoofHipped = RoofHippedRenderer()
+            )
+        
+        return itemRenderers
+    
+    def actionsBuildings(self, buildingManager, buildingRenderer, itemRenderers):
+        from action.volume import Volume
+        from item.building import Building
+        from item.footprint import Footprint
+        
+        app = self.app
+        osm = self.osm
+        
+        Building.actions = []
+        # <app.terrain> isn't yet set at this pooint, so we use the string <app.terrainObject> instead
+        if app.terrainObject:
+            from action.terrain import Terrain
+            Building.actions.append( Terrain(app, osm, buildingRenderer.itemStore) )
+        if not app.singleObject:
+            from action.offset import Offset
+            Building.actions.append( Offset(app, osm, buildingRenderer.itemStore) )
+        
+        volumeAction = Volume(buildingManager, app, osm, buildingRenderer.itemStore, itemRenderers)
+        Footprint.actions = (volumeAction,)
