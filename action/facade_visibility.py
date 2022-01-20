@@ -424,7 +424,7 @@ class FacadeVisibilityBlender(FacadeVisibility):
         The buildings indices aren't unique
         """
         return (
-            self.vertIndexToBldgIndex[vertIndex] for _,vertIndex,_ in self.kdTree.find_range(searchCenter, searchRadius)
+            self.vertIndexToBldgIndex[vertIndex] for _,vertIndex,_ in self.kdTree.find_range((searchCenter[0], searchCenter[1], 0.), searchRadius)
         )
 
 

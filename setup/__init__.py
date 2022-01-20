@@ -14,6 +14,8 @@ class Setup:
         self.app = app
         self.osm = osm
         
+        self.wayManager = None
+        
         self.featureDetectionAction = None
         self.skipFeaturesAction = None
         self.unskipFeaturesAction = None
@@ -57,7 +59,7 @@ class Setup:
     
     def roadsAndPaths(self):
         osm = self.osm
-        wayManager = self.wayManager
+        wayManager = self.getWayManager()
         
         osm.addCondition(
             lambda tags, e: tags.get("highway") in ("motorway", "motorway_link"),
@@ -139,9 +141,9 @@ class Setup:
     
     def railways(self):
         self.osm.addCondition(
-            lambda tags, e: "railway" in tags,
+            lambda tags, e: tags.get("railway") in ("rail", "tram", "subway", "light_rail", "funicular", "monorail"),
             "railways",
-            self.wayManager
+            self.getWayManager()
         )
     
     def getFeatureDetectionAction(self, simplifyPolygons):
@@ -163,6 +165,12 @@ class Setup:
             from action.unskip_features import UnskipFeatures
             self.unskipFeaturesAction = UnskipFeatures()
         return self.unskipFeaturesAction
+    
+    def getWayManager(self):
+        if not self.wayManager:
+            from way.manager import WayManager
+            self.wayManager = WayManager(self.osm, self.app)
+        return self.wayManager
 
 
 class SetupBlender(Setup):

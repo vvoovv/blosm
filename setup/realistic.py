@@ -4,18 +4,30 @@ from manager.logging import Logger
 
 from setup.premium import setup_forests
 
-from way.manager import WayManager
-
 
 def setup(app, osm):
     setup = Setup(app, osm)
     
     classifyFacades = True
     
-    wayManager = WayManager(osm, app) if classifyFacades else None
-    
     # comment the next line if logging isn't needed
     Logger(app, osm)
+    
+    # Important the stuff for roadways and railways goes before the one for buildings.
+    # Reason: instances of way.Way must be already initialized when actions for the building manager
+    # are processed
+    
+    if app.highways or app.railways:
+        setup.skipWays()
+    
+        if app.highways:
+            setup.roadsAndPaths()
+        
+        if app.railways:
+            setup.railways()
+        
+        if app.forests:
+            setup_forests(app, osm)
     
     if app.buildings:
         setup.buildingsRealistic(getStyle=getStyle)
@@ -24,9 +36,6 @@ def setup(app, osm):
         
         if classifyFacades:
             setup.classifyFacades()
-    
-    if app.forests:
-        setup_forests(app, osm)
 
 
 def getStyle(building, app):

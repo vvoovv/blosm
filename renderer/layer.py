@@ -67,6 +67,9 @@ class Layer:
             )
             self.parent = parent
         return parent
+    
+    def init(self):
+        return
 
 
 class MeshLayer(Layer):

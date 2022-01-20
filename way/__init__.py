@@ -1,4 +1,4 @@
-import numpy
+from mathutils import Vector
 from defs.way import allRoadwayCategoriesSet
 
 
@@ -15,11 +15,11 @@ class WaySegment:
     
     def __init__(self, id1, v1, id2, v2, way):
         self.id1 = id1
-        self.v1 = numpy.array((v1[0], v1[1]))
+        self.v1 = Vector((v1[0], v1[1]))
         self.id2 = id2
-        self.v2 = numpy.array((v2[0], v2[1]))
+        self.v2 = Vector((v2[0], v2[1]))
         vector = self.v2 - self.v1
-        self.length = numpy.linalg.norm(vector)
+        self.length = vector.length
         self.unitVector = vector/self.length
         
         self.way = way

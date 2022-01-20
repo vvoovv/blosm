@@ -1,7 +1,6 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
 from setup import Setup
 from building.manager import BaseBuildingManager
-from way.manager import WayManager
 from mpl.renderer.facade_classification import \
     BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender, BuildingFeatureRender
 from mpl.renderer import BuildingBaseRenderer
@@ -46,11 +45,11 @@ def setup(app, osm):
     simplifyPolygonsAgain = getattr(app, "simplifyPolygonsAgain", False)
     
     
-    setup = Setup(osm)
+    setup = Setup(app, osm)
     
     # create managers
     
-    wayManager = setup.wayManager = WayManager(osm, app)
+    wayManager = setup.getWayManager()
     
     if app.buildings:
         buildings = setup.buildingManager = BaseBuildingManager(osm, app, None, None)
