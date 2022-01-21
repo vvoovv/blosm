@@ -80,13 +80,16 @@ class ProfiledVert:
     """
     A class represents a vertex belonging to RoofProfile.polygon projected on the profile
     """
-    def __init__(self, footprint, roof, i):
+    def __init__(self, footprint, roof, vector, i):
         """
         Args:
             footprint (item.footprint.Footprint): a <Footprint> item
             roof (RoofProfile): an instance of the class <RoofProfile>
+            vector (building.BldgVector): a vector that originates from the given polygon vertex to
+                the next polygon vertex
             i (int): index (between 0 and <footprint.polygon.n-1>) of the polygon vertex
         """
+        self.vector = vector
         self.i = i
         # the related index (in <verts>) of the polygon vertex in the basement of the volume
         vertBasementIndex = roof.vertOffset + i
@@ -635,17 +638,19 @@ class RoofProfile(Roof):
         # Start with the vertex from <polygon> with <x=0.> in the profile coordinate system;
         # the variable <i0> is needed to break the cycle below
         i = i0 = footprint.minProjIndex
+        vector = footprint.minProjVector
         # Create a profiled vertex out of the related basement vertex;
         # <pv> stands for profiled vertex
-        pv1 = pv0 = self.getProfiledVert(footprint, i)
+        pv1 = pv0 = self.getProfiledVert(footprint, vector, i)
         _pv = None
         while True:
             i = polygon.next(i)
             if i == i0:
                 # came to the starting vertex, so break the cycle
                 break
+            vector = vector.next
             # create a profiled vertex out of the related basement vertex
-            pv2 = self.getProfiledVert(footprint, i)
+            pv2 = self.getProfiledVert(footprint, vector, i)
             # The order of profiled vertices is <_pv>, <pv1>, <pv2>
             # Create in-between vertices located on the slots for the segment between <pv1> and <pv2>),
             # also form a wall face under the segment between <pv1> and <pv2>
@@ -690,14 +695,14 @@ class RoofProfile(Roof):
         self.facadeRenderer.render(footprint)
         self.roofRenderer.render(roofItem)
     
-    def getProfiledVert(self, footprint, i):
+    def getProfiledVert(self, footprint, vector, i):
         """
         A factory method to get an instance of the <ProfiledVert> class.
         
         The arguments of the method are the same as for the constructor
         of the <ProfiledVert> class.
         """
-        pv = ProfiledVert(footprint, self, i)
+        pv = ProfiledVert(footprint, self, vector, i)
         
         # the code below is needed for UV-mapping
         y = pv.y
@@ -958,7 +963,7 @@ class RoofProfile(Roof):
             Facade(
                 footprint,
                 _wallIndices,
-                pv1.i, # edge index
+                pv1.vector,
                 self
             )
         )

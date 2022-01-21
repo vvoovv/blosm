@@ -45,7 +45,6 @@ class RoofFlat(Roof):
     
     def extrude(self, footprint, roofItem):
         building = footprint.building
-        facades = footprint.facades
         verts = building.renderInfo.verts
         indexOffset = len(verts)
         polygon = footprint.polygon
@@ -60,24 +59,27 @@ class RoofFlat(Roof):
         z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
         verts.extend(Vector((v[0], v[1], z)) for v in polygon.verts)
         
-        # the starting side
+        vectors = polygon.getVectors()
+        
         _in = indexOffset+numVerts
-        facades.append(
+        # the first <numVerts-1> edges
+        footprint.facades.extend(
+            Facade(
+                footprint,
+                (indexOffset+i, indexOffset+i+1, _in+i+1, _in+i),
+                vector, # edge index
+                self
+            ) for i,vector in zip(range(numVerts-1), vectors)
+        )
+        
+        # the closing edge
+        footprint.facades.append(
             Facade(
                 footprint,
                 (_in-1, indexOffset, _in, _in+numVerts-1),
-                0, # edge index
+                next(vectors),
                 self
             )
-        )
-        # the rest of the sides
-        facades.extend(
-            Facade(
-                footprint,
-                (indexOffset+i-1, indexOffset+i, _in+i, _in+i-1),
-                i, # edge index
-                self
-            ) for i in range(1, numVerts)
         )
     
     def initFacadeItem(self, item):

@@ -157,12 +157,12 @@ class Roof:
         
         # For each vertex from <polygon.verts> calculate projection of the vertex
         # on the vector <d> that defines the roof direction
-        projections = footprint.projections
-        projections.extend( d[0]*v[0] + d[1]*v[1] for v in polygon.verts )
-        minProjIndex = min(range(polygon.numEdges), key = lambda i: projections[i])
+        projections = footprint.projections = [ d[0]*v[0] + d[1]*v[1] for v in polygon.verts ]
+        minProjIndex, footprint.minProjVector = min(
+            ( (i, vector) for i, vector in zip(range(polygon.numEdges), polygon.getVectors()) ), key = lambda entry: projections[entry[0]]
+        )
         footprint.minProjIndex = minProjIndex
-        maxProjIndex = max(range(polygon.numEdges), key = lambda i: projections[i])
-        footprint.maxProjIndex = maxProjIndex
+        maxProjIndex = footprint.maxProjIndex = max(range(polygon.numEdges), key = lambda i: projections[i])
         # <polygon> width along the vector <d>
         footprint.polygonWidth = projections[maxProjIndex] - projections[minProjIndex]
     
