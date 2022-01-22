@@ -30,7 +30,7 @@ class Facade(Div):
                 self.side = True
             elif facadeClass == FacadeClass.shared:
                 self.shared = True
-            else:
+            elif facadeClass == FacadeClass.back:
                 self.back = True
         
         # <volumeGenerator> knows which geometry the facade items have and how to map UV-coordinates
