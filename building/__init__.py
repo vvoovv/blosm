@@ -402,7 +402,7 @@ class Building:
     
     def init(self, manager):
         # A polygon for the outline.
-        # Projection may not be available when Building.__init__(..) is called. So we have to
+        # Projection may not be available when <Building.__init__(..)> is called. So we have to
         # create <self.polygon> after the parsing is finished and the projectin is available.
         self.polygon = BldgPolygon(self.element, manager, self)
     
@@ -431,9 +431,14 @@ class Building:
 
 class BldgPart:
     
-    def __init__(self, element, manager):
+    def __init__(self, element):
         self.element = element
-        self.polygon = BldgPolygon(element, manager, None)
+    
+    def init(self, manager):
+        # A polygon for the building part.
+        # Projection may not be available when <BldgPart.__init__(..)> is called. So we have to
+        # create <self.polygon> after the parsing is finished and the projectin is available.
+        self.polygon = BldgPolygon(self.element, manager, None)
 
 
 class VisibilityInfo:

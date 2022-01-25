@@ -204,7 +204,7 @@ class BuildingParts:
         self.createBldgPart(element)
     
     def createBldgPart(self, element):
-        self.parts.append(BldgPart(element, self.bldgManager))
+        self.parts.append(BldgPart(element))
 
 
 class BuildingRelations:
