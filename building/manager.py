@@ -128,6 +128,9 @@ class BuildingManager(BaseBuildingManager, Manager):
         # create a BHV tree on demand only
         bvhTree = None
         for part in self.parts:
+            
+            part.init(self)
+            
             if part.element.o:
                 # the outline for <part> is set in an OSM relation of the type 'building'
                 osmId, osmType = part.element.o
@@ -162,6 +165,11 @@ class BuildingManager(BaseBuildingManager, Manager):
                 if not buildingIndex is None:
                     # we condider that <part> is located inside <buildings[buildingIndex]>
                     buildings[buildingIndex].addPart(part)
+        
+        # process the building parts for each building
+        for building in buildings:
+            if building.parts:
+                building.processParts(self)
     
     def createBvhTree(self):
         from mathutils.bvhtree import BVHTree

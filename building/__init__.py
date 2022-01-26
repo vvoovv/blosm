@@ -24,6 +24,23 @@ from defs.facade_classification import WayLevel, VisibilityAngleFactor
 from util import zeroVector2d
 
 
+def _inheritFacadeClass(saFeature):
+    """
+    Inherit a facade class from a vector with a skipped straight angle feature
+    to the vectors that form that straight angle feature
+    """
+    cl = saFeature.startVector.edge.cl
+    # process the starting edge that was skipped
+    saFeature.startEdge[0].cl = cl
+    # process the rest of edges that form <saFeature>
+    _vector = saFeature.startNextVector
+    while True:
+        _vector.edge.cl = cl
+        if _vector is saFeature.endVector:
+            break
+        _vector = _vector.next
+
+
 class BldgPolygon:
     
     __slots__ = (
@@ -117,20 +134,6 @@ class BldgPolygon:
             print(vector.id, math.sqrt(radius_2), vector.polygon.dimension)
         else:
             print(vector.id, "inf", vector.polygon.dimension)
-    
-    def processStraightAnglesBldgPart(self, manager):
-        """
-        Given <verts> constituting a polygon, removes vertices forming a straight angle
-        """
-        
-        vec_ = self.vectors[0 if self.reversed else -1].vector
-        for vector in (reversed(self.vectors) if self.reversed else self.vectors):
-            vec = vector.vector
-            dot = vec_.dot(vec)
-            if dot and abs( vec_.cross(vec)/dot ) < BldgPolygon.straightAngleSin:
-                # got a straight angle
-                vector.straightAngle = BldgPolygonFeature.straightAngle
-            vec_ = vec
     
     def directionCondition(self, vectorIn, vectorOut):
         return vectorIn[0] * vectorOut[1] - vectorIn[1] * vectorOut[0] < 0.
@@ -408,6 +411,7 @@ class Building:
     
     def addPart(self, part):
         self.parts.append(part)
+        part.building = self
     
     def resetVisInfoTmp(self):
         for vector in self.polygon.vectors:
@@ -427,18 +431,73 @@ class Building:
         That variant of <self.attr(..) is used in a setup script>
         """
         return self.element.tags.get(attr)
+    
+    def processParts(self, manager):
+        for part in self.parts:
+            part.process(manager)
 
 
 class BldgPart:
     
     def __init__(self, element):
         self.element = element
+        self.building = None
     
     def init(self, manager):
         # A polygon for the building part.
         # Projection may not be available when <BldgPart.__init__(..)> is called. So we have to
         # create <self.polygon> after the parsing is finished and the projectin is available.
         self.polygon = BldgPolygon(self.element, manager, None)
+    
+    def process(self, manager):
+        bldgFacadeClassesInherited = False
+        bldgPolygon = self.building.polygon
+        # assign facade class to the edges of the building part
+        for vector in self.polygon.getVectors():
+            if not vector.edge.cl:
+                if not bldgFacadeClassesInherited:
+                    saFeature = bldgPolygon.saFeature
+                    if saFeature:
+                        # Inherit the facade class from a vector with the straight angle feature
+                        # to the vectors that form the straight angle feature.
+                        while True:
+                            # iterate through all straight angle features
+                            if saFeature.skipped:
+                                # <saFeature> doesn't contain nested straight angle features
+                                # represented by the class <StraightAnglePart>.
+                                _inheritFacadeClass(saFeature)
+                            else:
+                                # <saFeature> has one or more nested straight angle features represented
+                                # by the class <StraightAnglePart>
+                                
+                                if saFeature.parent:
+                                    # If <saFeature.parent> isn't equal to <None>, it means that
+                                    # <saFeature.startVector> is the resulting vector after skipping
+                                    # some vectors because they form a straight angle feature represented
+                                    # by the class <StraightAnglePart>
+                                    _inheritFacadeClass(saFeature.parent)
+                                # process the rest of vectors that form <saFeature>
+                                _vector = saFeature.startVector.next
+                                while True:
+                                    if _vector.feature:
+                                        # It can be only nested straight angle feature represented
+                                        # by the class <StraightAnglePart>. For that feature we can only have
+                                        # the attribute <skipped> equal to <True>.
+                                        _inheritFacadeClass(_vector.feature)
+                                    if _vector is saFeature.endVector:
+                                        break
+                                    _vector = _vector.next
+                            
+                            if saFeature.prev:
+                                saFeature = saFeature.prev
+                            else:
+                                break
+                    
+                    bldgFacadeClassesInherited = True
+                
+                if not vector.edge.cl:
+                    # calculate facade class
+                    pass
 
 
 class VisibilityInfo:
