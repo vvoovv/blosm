@@ -805,7 +805,6 @@ class QuadConvex(Feature):
             endVector.prev = startVector
             
             startVector.polygon.numEdges -= 1
-            
             self.skipped = True
     
     def unskipVectors(self):
@@ -816,8 +815,8 @@ class QuadConvex(Feature):
         if self.equalSideEdges:
             self._unskipVectors()
             
-            endVector.skip = False
             startVector.polygon.numEdges += 2
+            endVector.skip = False
         else:
             if self.leftEdgeShorter: # endDistance < startDistance
                 startVector.feature = self
@@ -832,6 +831,7 @@ class QuadConvex(Feature):
             startVector.next = self.middleVector
             endVector.prev = self.middleVector
             
+            startVector.polygon.numEdges += 1
             self.skipped = False
     
     def restoreSins(self):
