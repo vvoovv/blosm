@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import parse
 from mathutils import Vector
 from defs.building import BldgPolygonFeature, StraightAngleType
-from defs.facade_classification import WayLevel, VisibilityAngleFactor
+from defs.facade_classification import FacadeClass, WayLevel, VisibilityAngleFactor
 from util import zeroVector2d
 
 
@@ -496,8 +496,37 @@ class BldgPart:
                     bldgFacadeClassesInherited = True
                 
                 if not vector.edge.cl:
-                    # calculate facade class
-                    pass
+                    # We try to estimate the facade class for <vector.edge> by projecting the vectors
+                    # of the building footprint on it and checking if the projection overlaps with <vector>
+                    # We ingore complex things like concave parts of the building footprint.
+                    
+                    # an overlap of a projected vector of the building footprint with <vector>
+                    maxOverlap = 0.
+                    maxOverlapClass = FacadeClass.unknown
+                    unitVector = vector.unitVector
+                    # a normal to <unitVector> pointing outwards
+                    nVector = Vector((unitVector[1], -unitVector[0]))
+                    x1, x2, y = vector.v1.dot(unitVector), vector.v2.dot(unitVector), vector.v1.dot(nVector)
+                    for bldgVector in bldgPolygon.getVectors():
+                        _bldgVector, _v1, _v2 = bldgVector.vector, bldgVector.v1, bldgVector.v2
+                        # The conditions < _bldgVector.v1.dot(nVector) >=y > and < _bldgVector.v2.dot(nVector) >= y > mean
+                        # that the vector <_bldgVector> must be located above <unitVector>
+                        # along the axis <nVector> 
+                        if unitVector.dot(_bldgVector) > 0. and _v1.dot(nVector) >= y or _v2.dot(nVector) >= y:
+                            _x1, _x2 = _v1.dot(unitVector), _v2.dot(unitVector)
+                            if _x1 < x2 and x1 < _x2:
+                                if x2 < _x2:
+                                    overlap = x2 - _x1
+                                elif _x1 < x1:
+                                    overlap = _x2 - x1
+                                else:
+                                    overlap = _x2 - _x1
+                                
+                                if overlap > maxOverlap:
+                                    maxOverlap = overlap
+                                    maxOverlapClass = bldgVector.edge.cl
+                    
+                    vector.edge.cl = maxOverlapClass
 
 
 class VisibilityInfo:
