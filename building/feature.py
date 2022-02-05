@@ -75,11 +75,8 @@ class Feature:
         
         self.skipped = True
         
-        # The condition below actually checks if we have the footprint
-        # for the whole building or a building part
-        if startVector.polygon.building:
-            # we have just created a new edge, so we have to add the related vector to the edge
-            startVector.edge.addVector(startVector)
+        # we have just created a new edge, so we have to add the related vector to the edge
+        startVector.edge.addVector(startVector)
     
     def _skipVectorsCached(self):
         startVector = self.startVector

@@ -22,6 +22,7 @@ from mathutils import Vector
 from defs.building import BldgPolygonFeature, StraightAngleType
 from defs.facade_classification import FacadeClass, WayLevel, VisibilityAngleFactor
 from util import zeroVector2d
+import building
 
 
 def _inheritFacadeClass(saFeature):
@@ -72,8 +73,8 @@ class BldgPolygon:
         self.forceCcwDirection()
         if building:
             for vector in self.vectors:
-                # mark that the start node <vector.id1> of <vector> is used by <vector>
                 vector.calculateSin()
+                # mark that the start node <vector.id1> of <vector> is used by <vector>
                 manager.data.nodes[vector.id1].bldgVectors.append(vector)
         
         self._area = 0.
@@ -141,8 +142,7 @@ class BldgPolygon:
     def createVector(self, nodeId1, nodeId2, manager):
         edge = manager.getEdge(nodeId1, nodeId2)
         vector = BldgVector(edge, edge.id1 == nodeId1, self)
-        if self.building:
-            edge.addVector(vector)
+        edge.addVector(vector)
         return vector
     
     def reverse(self):
@@ -252,11 +252,56 @@ class BldgPolygon:
         ))
 
 
+class BldgPartPolygon(BldgPolygon):
+    
+    __slots__ = ("part",)
+    
+    def __init__(self, element, manager, part):
+        self.part = part
+        super().__init__(element, manager, None)
+        
+        # Fill in the attributes <partVectors12> and <partVectors21> of each vector's edge
+        # Also we attempt to assign the part polygon to a building if the part polygon shares
+        # any vector with a building and the part's vector and the building's vector
+        # have the same value of the attribute <direct>.
+        for vector in self.vectors:
+            edge = vector.edge
+            if vector.direct:
+                if edge.partVectors12 is None:
+                    edge.partVectors12 = [vector]
+                else:
+                    edge.partVectors12.append(vector)
+            else:
+                if edge.partVectors21 is None:
+                    edge.partVectors21 = [vector]
+                else:
+                    edge.partVectors21.append(vector)
+            
+            if not self.building:
+                # try to assign the vector to a building
+                vectors = edge.vectors
+                if vectors:
+                    if vector.direct == vectors[0].direct:
+                        self.building = vectors[0].polygon.building
+                    elif len(vectors) == 2 and vector.direct == vectors[1].direct:
+                        self.building = vectors[1].polygon.building
+                    if self.building:
+                        # We don't make a call <self.building.addPart(self.part)> here
+                        # That call will be made in the method <manager.process(..)>
+                        manager.partPolygonsSharingBldgEdge.append(self)
+    
+    def createVector(self, nodeId1, nodeId2, manager):
+        edge = manager.getEdge(nodeId1, nodeId2)
+        vector = BldgVector(edge, edge.id1 == nodeId1, self)
+        return vector
+
+
 class BldgEdge:
     
     __slots__ = (
         "id", # debug
-        "id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "_length"
+        "id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "_length",
+        "partVectors12", "partVectors21"
     )
     
     ID = 0 # debug
@@ -280,6 +325,13 @@ class BldgEdge:
         # edge or facade class (front, side, back, shared)
         self.cl = 0
         self._length = None
+        
+        # Building part vectors starting at <self.id1> and ending at <self.id2>,
+        # i.e. the attribute <direct> of the vector is equal to <True>
+        self.partVectors12 = None
+        # building part vectors starting at <self.id2> and ending at <self.id1>,
+        # i.e. the attribute <direct> of the vector is equal to <False>
+        self.partVectors21 = None
     
     def addVector(self, vector):
         if self.vectors:
@@ -409,10 +461,6 @@ class Building:
         # create <self.polygon> after the parsing is finished and the projectin is available.
         self.polygon = BldgPolygon(self.element, manager, self)
     
-    def addPart(self, part):
-        self.parts.append(part)
-        part.building = self
-    
     def resetVisInfoTmp(self):
         for vector in self.polygon.vectors:
             vector.edge._visInfo.reset()
@@ -432,9 +480,9 @@ class Building:
         """
         return self.element.tags.get(attr)
     
-    def processParts(self, manager):
+    def processParts(self):
         for part in self.parts:
-            part.process(manager)
+            part.process()
 
 
 class BldgPart:
@@ -447,11 +495,11 @@ class BldgPart:
         # A polygon for the building part.
         # Projection may not be available when <BldgPart.__init__(..)> is called. So we have to
         # create <self.polygon> after the parsing is finished and the projectin is available.
-        self.polygon = BldgPolygon(self.element, manager, None)
+        self.polygon = BldgPartPolygon(self.element, manager, self)
     
-    def process(self, manager):
+    def process(self):
         bldgFacadeClassesInherited = False
-        bldgPolygon = self.building.polygon
+        bldgPolygon = self.polygon.building.polygon
         # assign facade class to the edges of the building part
         for vector in self.polygon.getVectors():
             if not vector.edge.cl:

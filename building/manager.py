@@ -24,6 +24,24 @@ from util import zAxis
 from . import Building, BldgEdge, BldgPart
 
 
+def _assignBuildingToPartPolygon(building, partPolygon):
+    partPolygon.building = building
+    building.parts.append(partPolygon.part)
+    
+    
+    for vector in partPolygon.getVectors():
+        edge = vector.edge
+        if not edge.vectors:
+            if edge.partVectors12:
+                for _vector in edge.partVectors12:
+                    if not _vector is vector and not _vector.polygon.building:
+                        _assignBuildingToPartPolygon(building, _vector.polygon)
+            if edge.partVectors21:
+                for _vector in edge.partVectors21:
+                    if not _vector is vector and not _vector.polygon.building:
+                        _assignBuildingToPartPolygon(building, _vector.polygon)
+
+
 class BaseBuildingManager:
     
     def __init__(self, data, app, buildingParts, layerClass):
@@ -114,6 +132,7 @@ class BuildingManager(BaseBuildingManager, Manager):
         self.osm = osm
         Manager.__init__(self, osm)
         BaseBuildingManager.__init__(self, osm, app, buildingParts, layerClass)
+        self.partPolygonsSharingBldgEdge = []
     
     def process(self):
         BaseBuildingManager.process(self)
@@ -125,8 +144,6 @@ class BuildingManager(BaseBuildingManager, Manager):
         # to find a building from <self.buildings> to which
         # the related <part> belongs
         
-        # create a BHV tree on demand only
-        bvhTree = None
         for part in self.parts:
             
             part.init(self)
@@ -138,38 +155,33 @@ class BuildingManager(BaseBuildingManager, Manager):
                 if osmId in elements:
                     building = elements[osmId].b
                     if building:
-                        building.addPart(part)
-                        # we are done
-                        continue
+                        part.polygon.building = building
+                        building.parts.append(part)
+
+        for partPolygon in self.partPolygonsSharingBldgEdge:
+            _assignBuildingToPartPolygon(partPolygon.building, partPolygon)
             
-            for vector in part.polygon.getVectors():
-                if vector.edge.vectors:
-                    for bldgVector in vector.edge.vectors:
-                        if vector.direct == bldgVector.direct:
-                            bldgVector.polygon.building.addPart(part)
-                            break
-                    else:
-                        # continue with the next vector in <part.polygon>
-                        continue
-                    # we are done: found a <bldgVector> that coinsides with <vector>
-                    break
-            else:
-                # <part> doesn't have a vector sharing an edge with a building footprint
-                # Take <vector> and calculated if it is located inside any building from <self.buildings>
-                if not bvhTree:
-                    bvhTree = self.createBvhTree()
-                coords = vector.v1
-                # Cast a ray from the point with horizontal coords equal to <coords> and
-                # z = -1. in the direction of <zAxis>
-                buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
-                if not buildingIndex is None:
-                    # we condider that <part> is located inside <buildings[buildingIndex]>
-                    buildings[buildingIndex].addPart(part)
+        if sum(1 for part in self.parts if not part.polygon.building):
+            bvhTree = self.createBvhTree()
+            
+            for part in self.parts:
+                if not part.polygon.building:
+                    for vector in part.polygon.getVectors():
+                        # <part> doesn't have a vector sharing an edge with a building footprint
+                        # Take <vector> and calculated if it is located inside any building from <self.buildings>
+                        coords = vector.v1
+                        # Cast a ray from the point with horizontal coords equal to <coords> and
+                        # z = -1. in the direction of <zAxis>
+                        buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
+                        if not buildingIndex is None:
+                            # we condider that <part> is located inside <buildings[buildingIndex]>
+                            part.polygon.building = buildings[buildingIndex]
+                            buildings[buildingIndex].parts.append(part)
         
         # process the building parts for each building
         for building in buildings:
             if building.parts:
-                building.processParts(self)
+                building.processParts()
     
     def createBvhTree(self):
         from mathutils.bvhtree import BVHTree
