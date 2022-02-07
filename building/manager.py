@@ -166,17 +166,16 @@ class BuildingManager(BaseBuildingManager, Manager):
             
             for part in self.parts:
                 if not part.polygon.building:
-                    for vector in part.polygon.getVectors():
-                        # <part> doesn't have a vector sharing an edge with a building footprint
-                        # Take <vector> and calculated if it is located inside any building from <self.buildings>
-                        coords = vector.v1
-                        # Cast a ray from the point with horizontal coords equal to <coords> and
-                        # z = -1. in the direction of <zAxis>
-                        buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
-                        if not buildingIndex is None:
-                            # we condider that <part> is located inside <buildings[buildingIndex]>
-                            part.polygon.building = buildings[buildingIndex]
-                            buildings[buildingIndex].parts.append(part)
+                    # <part> doesn't have a vector sharing an edge with a building footprint
+                    # Take <vector> and calculated if it is located inside any building from <self.buildings>
+                    coords = next(part.polygon.verts)
+                    # Cast a ray from the point with horizontal coords equal to <coords> and
+                    # z = -1. in the direction of <zAxis>
+                    buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
+                    if not buildingIndex is None:
+                        # we condider that <part> is located inside <buildings[buildingIndex]>
+                        part.polygon.building = buildings[buildingIndex]
+                        buildings[buildingIndex].parts.append(part)
         
         # process the building parts for each building
         for building in buildings:
