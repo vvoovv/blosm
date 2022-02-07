@@ -8,7 +8,7 @@ from setup.premium import setup_forests
 def setup(app, osm):
     setup = Setup(app, osm)
     
-    classifyFacades = True
+    classifyFacades = False
     
     # comment the next line if logging isn't needed
     Logger(app, osm)
