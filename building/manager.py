@@ -25,9 +25,7 @@ from . import Building, BldgEdge, BldgPart
 
 
 def _assignBuildingToPartPolygon(building, partPolygon):
-    partPolygon.building = building
-    building.parts.append(partPolygon.part)
-    
+    building.addPart(partPolygon.part)
     
     for vector in partPolygon.getVectors():
         edge = vector.edge
@@ -155,8 +153,7 @@ class BuildingManager(BaseBuildingManager, Manager):
                 if osmId in elements:
                     building = elements[osmId].b
                     if building:
-                        part.polygon.building = building
-                        building.parts.append(part)
+                        building.addPart(part)
 
         for partPolygon in self.partPolygonsSharingBldgEdge:
             _assignBuildingToPartPolygon(partPolygon.building, partPolygon)
@@ -174,8 +171,7 @@ class BuildingManager(BaseBuildingManager, Manager):
                     buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
                     if not buildingIndex is None:
                         # we condider that <part> is located inside <buildings[buildingIndex]>
-                        part.polygon.building = buildings[buildingIndex]
-                        buildings[buildingIndex].parts.append(part)
+                        buildings[buildingIndex].addPart(part)
         
         # process the building parts for each building
         for building in buildings:

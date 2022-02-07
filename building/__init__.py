@@ -483,6 +483,10 @@ class Building:
     def processParts(self):
         for part in self.parts:
             part.process()
+    
+    def addPart(self, part):
+        part.polygon.building = self
+        self.parts.append(part)
 
 
 class BldgPart:
