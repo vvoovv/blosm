@@ -47,11 +47,12 @@ class Item:
             value = attrs[attr]
             # a Python tuple containg two elements
             if isinstance(value, Scope):
-                value.value.scope = value.scope
+                # <Scope> only makes sense for complex values
+                value.value.value.scope = value.scope
                 value = value.value
             isComplexValue = isinstance(value, Value)
             if isComplexValue and attr in _perBuildingByDefault:
-                value.scope = perBuilding
+                value.value.scope = perBuilding
             attrs[attr] = (value.value if isComplexValue else value, isComplexValue)
     
     def setParent(self, styleBlock):

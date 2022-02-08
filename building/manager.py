@@ -171,7 +171,10 @@ class BuildingManager(BaseBuildingManager, Manager):
                     buildingIndex = bvhTree.ray_cast((coords[0], coords[1], -1.), zAxis)[2]
                     if not buildingIndex is None:
                         # we condider that <part> is located inside <buildings[buildingIndex]>
-                        buildings[buildingIndex].addPart(part)
+                        # Assign <part> to <buildings[buildingIndex]> and check
+                        # if this part has one more neighbors
+                        _assignBuildingToPartPolygon(buildings[buildingIndex], part.polygon)
+                        
         
         # process the building parts for each building
         for building in buildings:
