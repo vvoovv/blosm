@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import parse
+
+
 class Way:
     """
     A class to represent an OSM way
@@ -110,3 +113,24 @@ class Way:
         if self.closed:
             # we use <-2> since <nodes[-1] == nodes[0]> according to OSM specification for a closed way
             yield nodes[-2], nodes[0]
+
+
+class MissingBldgPartWay(Way):
+    
+    def __init__(self, nodes, tags):
+        self.nodes = nodes
+        self.tags = tags
+        self.n = len(nodes)
+        self.closed = True
+        self.t = parse.polygon
+        
+    def pairNodeIds(self, osm):
+        """
+        A generator to get a pair of OSM node ids for a building footprint or a real way
+        
+        Returns a Python generator
+        """
+        nodes = self.nodes
+        for i in range(self.n-1):
+            yield nodes[i], nodes[i+1]
+        yield nodes[-1], nodes[0]

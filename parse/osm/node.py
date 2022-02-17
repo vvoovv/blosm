@@ -32,7 +32,9 @@ class Node:
         rr: A renderer for the OSM node
     """
     
-    __slots__ = ("l", "tags", "lat", "lon", "coords", "w", "rr", "valid", "bldgVectors", "m")
+    __slots__ = (
+        "l", "tags", "lat", "lon", "coords", "w", "rr", "valid", "m", "bldgVectors", "bldgPartEdges"
+    )
     
     def __init__(self, lat, lon, tags):
         self.tags = tags
@@ -40,6 +42,7 @@ class Node:
         self.lon = lon
         self.w = dict()
         self.bldgVectors = []
+        self.bldgPartEdges = None
         # projected coordinates
         self.coords = None
         self.rr = None

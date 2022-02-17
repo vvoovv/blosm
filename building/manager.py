@@ -22,22 +22,45 @@ import parse
 from parse.osm import Osm
 from util import zAxis
 from . import Building, BldgEdge, BldgPart
+from defs.building import Visited
 
 
-def _assignBuildingToPartPolygon(building, partPolygon):
-    building.addPart(partPolygon.part)
-    
-    for vector in partPolygon.getVectors():
-        edge = vector.edge
-        if not edge.vectors:
-            if edge.partVectors12:
-                for _vector in edge.partVectors12:
-                    if not _vector is vector and not _vector.polygon.building:
-                        _assignBuildingToPartPolygon(building, _vector.polygon)
-            if edge.partVectors21:
-                for _vector in edge.partVectors21:
-                    if not _vector is vector and not _vector.polygon.building:
-                        _assignBuildingToPartPolygon(building, _vector.polygon)
+# Adapted from https://stackoverflow.com/questions/16542042/fastest-way-to-sort-vectors-by-angle-without-actually-computing-that-angle
+# Input:  d: difference vector.
+# Output: a number from the range [0 .. 4] which is monotonic
+#         in the angle this vector makes against the x axis.
+def _pseudoangle(edge, _id):
+    if _id == edge.id1:
+        dx, dy = edge.v2 - edge.v1
+    else:
+        dx, dy = edge.v1 - edge.v2
+    p = dx/(abs(dx)+abs(dy)) # -1 .. 1 increasing with x
+    if dy < 0: 
+        return 3 + p  #  2 .. 4 increasing with x
+    else:
+        return 1 - p  #  0 .. 2 decreasing with x
+
+
+def _notInsideAnotherBldgPart(vector):
+    vectorPrev = vector.prev
+    vectorsOverlapPrev = vectorPrev.edge.partVectors12 if vectorPrev.direct else vectorPrev.edge.partVectors21
+    if vectorsOverlapPrev:
+        vector = vector.vector
+        vectorPrev = vectorPrev.vector
+        # project <vector> on <vectorPrev> and calculate the pseudoangle
+        # dx = vectorPrev.dot(vector)
+        # dy = vectorPrev.cross(vector)
+        p = _pseudoangle(
+            vectorPrev.dot(vector),
+            vectorPrev.cross(vector)
+        )
+        for vectorOverlapPrev in vectorsOverlapPrev:
+            vectorOverlapNext = vectorOverlapPrev.next.vector
+            # project <vectorOverlapNext> on <vectorPrev> and calculate the pseudoangle
+            _p = _pseudoangle( vectorPrev.dot(vectorOverlapNext), vectorPrev.cross(vectorOverlapNext) )
+            if _pseudoangle( vectorPrev.dot(vectorOverlapNext), vectorPrev.cross(vectorOverlapNext) ) > p:
+                return False
+    return True
 
 
 class BaseBuildingManager:
@@ -122,6 +145,29 @@ class BaseBuildingManager:
             )
             self.edges[key] = edge
         return edge
+    
+    def markBldgPartEdgeNodes(self, edge):
+        """
+        Add <edge> to <self.data.nodes[edge.id1].bldgPartEdges> and <self.data.nodes[edge.id2].bldgPartEdges>
+        
+        Args:
+            edge (building.BldgEdge): an edge that belongs to a building part
+        """
+        node = self.data.nodes[edge.id1]
+        if node.bldgPartEdges:
+            node.bldgPartEdges[0].append(edge)
+        else:
+            # <False> means that the node was not visited during processing.
+            # It also means that the list of edges was not sorted by the angle to the horizontal axis
+            node.bldgPartEdges = ([edge], False)
+            
+        node = self.data.nodes[edge.id2]
+        if node.bldgPartEdges:
+            node.bldgPartEdges[0].append(edge)
+        else:
+            # <False> means that the node was not visited during processing.
+            # It also means that the list of edges was not sorted by the angle to the horizontal axis
+            node.bldgPartEdges = ([edge], False)
 
 
 class BuildingManager(BaseBuildingManager, Manager):
@@ -133,10 +179,11 @@ class BuildingManager(BaseBuildingManager, Manager):
         self.partPolygonsSharingBldgEdge = []
     
     def process(self):
-        BaseBuildingManager.process(self)
-        # create a Python set for each OSM node to store indices of the entries from <self.buildings>,
-        # where instances of the wrapper class <building.manager.Building> are stored
         buildings = self.buildings
+        
+        for building in buildings:
+            # create <building.polygon>
+            building.init(self)
         
         # Iterate through building parts (building:part=*)
         # to find a building from <self.buildings> to which
@@ -152,11 +199,11 @@ class BuildingManager(BaseBuildingManager, Manager):
                 elements = self.osm.ways if osmType is Osm.way else self.osm.relations
                 if osmId in elements:
                     building = elements[osmId].b
-                    if building:
+                    if building and not part.polygon.building:
                         building.addPart(part)
 
         for partPolygon in self.partPolygonsSharingBldgEdge:
-            _assignBuildingToPartPolygon(partPolygon.building, partPolygon)
+            self.assignBuildingToPartPolygon(partPolygon.building, partPolygon, False)
             
         if sum(1 for part in self.parts if not part.polygon.building):
             bvhTree = self.createBvhTree()
@@ -173,13 +220,16 @@ class BuildingManager(BaseBuildingManager, Manager):
                         # we condider that <part> is located inside <buildings[buildingIndex]>
                         # Assign <part> to <buildings[buildingIndex]> and check
                         # if this part has one more neighbors
-                        _assignBuildingToPartPolygon(buildings[buildingIndex], part.polygon)
+                        self.assignBuildingToPartPolygon(buildings[buildingIndex], part.polygon, True)
                         
         
         # process the building parts for each building
         for building in buildings:
             if building.parts:
                 building.processParts()
+        
+        for action in self.actions:
+            action.do(self)
     
     def createBvhTree(self):
         from mathutils.bvhtree import BVHTree
@@ -197,6 +247,65 @@ class BuildingManager(BaseBuildingManager, Manager):
             polygons.append(tuple(range(vertexIndex1, vertexIndex2)))
             vertexIndex1 = vertexIndex2
         return BVHTree.FromPolygons(vertices, polygons)
+    
+    def assignBuildingToPartPolygon(self, building, partPolygon, isPartIsland):
+        building.addPart(partPolygon.part)
+        
+        # find an initial edge
+        for edge in partPolygon.getEdges():
+            if not edge.vectors:
+                break
+        else:
+            return
+        
+        self.processEdge(
+            edge,
+            edge.id1,
+            building
+        )
+        self.processEdge(
+            edge,
+            edge.id2,
+            building
+        )
+    
+    def processEdge(self, edge, _id, building):
+        edges, _visited = self.data.nodes[_id].bldgPartEdges
+        if _visited:
+            return
+        
+        edge.visited = Visited.buildingAssigned
+        
+        if len(edges) > 2:
+            edges.sort(key = lambda edge: _pseudoangle(edge, _id))
+        self.data.nodes[_id].bldgPartEdges = (edges, True)
+        
+        for edge in edges:
+            if edge.vectors or edge.visited == Visited.buildingAssigned:
+                continue
+            
+            partVectors12, partVectors21 = edge.partVectors12, edge.partVectors21
+            
+            # exclude edges that belong to part in the neighbor building
+            _building = (partVectors12 or partVectors21)[0].polygon.building
+            if _building and not _building is building:
+                continue
+            
+            if partVectors12:
+                for vector in partVectors12:
+                    if not vector.polygon.building:
+                        building.addPart(vector.polygon.part)
+            
+            if partVectors21:
+                for vector in partVectors21:
+                    if not vector.polygon.building:
+                        building.addPart(vector.polygon.part)
+            
+            self.processEdge(
+                edge,
+                edge.id2 if _id==edge.id1 else edge.id1,
+                building
+            )
 
 
 class BuildingParts:

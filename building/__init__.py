@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import parse
+from parse.osm.way import MissingBldgPartWay
 from mathutils import Vector
-from defs.building import BldgPolygonFeature, StraightAngleType
+from defs.building import BldgPolygonFeature, StraightAngleType, Visited
 from defs.facade_classification import FacadeClass, WayLevel, VisibilityAngleFactor
 from util import zeroVector2d
 import building
@@ -266,6 +266,11 @@ class BldgPartPolygon(BldgPolygon):
         # have the same value of the attribute <direct>.
         for vector in self.vectors:
             edge = vector.edge
+            
+            if not edge.visited:
+                manager.markBldgPartEdgeNodes(edge)
+                edge.visited = Visited.nodesMarked
+            
             if vector.direct:
                 if edge.partVectors12 is None:
                     edge.partVectors12 = [vector]
@@ -285,7 +290,7 @@ class BldgPartPolygon(BldgPolygon):
                         self.building = vectors[0].polygon.building
                     elif len(vectors) == 2 and vector.direct == vectors[1].direct:
                         self.building = vectors[1].polygon.building
-                    if self.building:
+                    if not part.wasMissing and self.building:
                         # We don't make a call <self.building.addPart(self.part)> here
                         # That call will be made in the method <manager.process(..)>
                         manager.partPolygonsSharingBldgEdge.append(self)
@@ -301,7 +306,7 @@ class BldgEdge:
     __slots__ = (
         "id", # debug
         "id1", "v1", "id2", "v2", "visInfo", "_visInfo", "vectors", "cl", "_length",
-        "partVectors12", "partVectors21"
+        "partVectors12", "partVectors21", "visited"
     )
     
     ID = 0 # debug
@@ -332,6 +337,9 @@ class BldgEdge:
         # building part vectors starting at <self.id2> and ending at <self.id1>,
         # i.e. the attribute <direct> of the vector is equal to <False>
         self.partVectors21 = None
+        
+        # specifies if the edge was visited during the processing
+        self.visited = None
     
     def addVector(self, vector):
         if self.vectors:
@@ -487,6 +495,72 @@ class Building:
     def addPart(self, part):
         part.polygon.building = self
         self.parts.append(part)
+    
+    def addMissingPart(self, startVector, manager):
+        tags = {
+            "building:part": "yes"
+        }
+        bldgTags = self.element.tags
+        
+        # copy some attributes from <bldgTags> to <tags>
+        if "height" in bldgTags:
+            tags["height"] = bldgTags["height"]
+            
+        if "building:levels" in bldgTags:
+            tags["building:levels"] = bldgTags["building:levels"]
+        
+        if "roof:shape" in bldgTags:
+            tags["roof:shape"] = bldgTags["roof:shape"]
+            
+        nodes = [startVector.id1]
+        
+        isBldgFootprint = False
+        vector = startVector.prev
+        initialEdge = None
+        while True:
+            if isBldgFootprint:
+                nodes.append(vector.id2)
+                vector = vector.next
+                edge = vector.edge
+                vectorsOverlap = edge.partVectors12 if vector.direct else edge.partVectors21
+                if vectorsOverlap:
+                    vector = vectorsOverlap[0].prev
+                    isBldgFootprint = False
+            else:
+                edge = vector.edge
+                if edge.vectors:
+                    bldgVectors = edge.vectors
+                    if len(bldgVectors) == 1:
+                        vector = bldgVectors[0]
+                    else:
+                        vector = bldgVectors[0] if vector.direct == bldgVectors[0].direct else bldgVectors[1]
+                    vector = vector.next
+                    if (vector.direct and vector.edge.partVectors12) or (not vector.direct and vector.edge.partVectors21):
+                        return
+                    isBldgFootprint = True
+                else:
+                    if vector is startVector:
+                        break
+                    vectorsNeighbor = edge.partVectors21 if vector.direct else edge.partVectors12
+                    if vectorsNeighbor:
+                        vector = vectorsNeighbor[0]
+                        if initialEdge:
+                            if edge is initialEdge:
+                                return
+                        else:
+                            initialEdge = edge
+                    else:
+                        nodes.append(vector.id1)
+                        if initialEdge:
+                            initialEdge = None
+                    vector = vector.prev
+        
+        part = BldgPart(
+            MissingBldgPartWay(nodes, tags)
+        )
+        part.wasMissing = True
+        part.init(manager)
+        self.addPart(part)
 
 
 class BldgPart:
@@ -494,6 +568,7 @@ class BldgPart:
     def __init__(self, element):
         self.element = element
         self.building = None
+        self.wasMissing = False
     
     def init(self, manager):
         # A polygon for the building part.

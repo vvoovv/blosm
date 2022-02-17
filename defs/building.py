@@ -33,6 +33,11 @@ class StraightAngleType:
     smallFeatureSkipped = 4
 
 
+class Visited:
+    nodesMarked = 1
+    buildingAssigned = 2
+
+
 sin_lo = abs(sin(pi/180.*4.5))
 sin_me = abs(sin(pi/180.*30.))
 sin_hi = abs(sin(pi/180.*80.))
