@@ -26,7 +26,6 @@ from defs.building import Visited
 
 
 # Adapted from https://stackoverflow.com/questions/16542042/fastest-way-to-sort-vectors-by-angle-without-actually-computing-that-angle
-# Input:  d: difference vector.
 # Output: a number from the range [0 .. 4] which is monotonic
 #         in the angle this vector makes against the x axis.
 def _pseudoangle(edge, _id):
@@ -251,7 +250,7 @@ class BuildingManager(BaseBuildingManager, Manager):
     def assignBuildingToPartPolygon(self, building, partPolygon, isPartIsland):
         building.addPart(partPolygon.part)
         
-        # find an initial edge
+        # find an initial edge that isn't part of the building footprint
         for edge in partPolygon.getEdges():
             if not edge.vectors:
                 break
