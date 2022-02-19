@@ -40,28 +40,6 @@ def _pseudoangle(edge, _id):
         return 1 - p  #  0 .. 2 decreasing with x
 
 
-def _notInsideAnotherBldgPart(vector):
-    vectorPrev = vector.prev
-    vectorsOverlapPrev = vectorPrev.edge.partVectors12 if vectorPrev.direct else vectorPrev.edge.partVectors21
-    if vectorsOverlapPrev:
-        vector = vector.vector
-        vectorPrev = vectorPrev.vector
-        # project <vector> on <vectorPrev> and calculate the pseudoangle
-        # dx = vectorPrev.dot(vector)
-        # dy = vectorPrev.cross(vector)
-        p = _pseudoangle(
-            vectorPrev.dot(vector),
-            vectorPrev.cross(vector)
-        )
-        for vectorOverlapPrev in vectorsOverlapPrev:
-            vectorOverlapNext = vectorOverlapPrev.next.vector
-            # project <vectorOverlapNext> on <vectorPrev> and calculate the pseudoangle
-            _p = _pseudoangle( vectorPrev.dot(vectorOverlapNext), vectorPrev.cross(vectorOverlapNext) )
-            if _pseudoangle( vectorPrev.dot(vectorOverlapNext), vectorPrev.cross(vectorOverlapNext) ) > p:
-                return False
-    return True
-
-
 class BaseBuildingManager:
     
     def __init__(self, data, app, buildingParts, layerClass):
@@ -156,17 +134,17 @@ class BaseBuildingManager:
         if node.bldgPartEdges:
             node.bldgPartEdges[0].append(edge)
         else:
-            # <False> means that the node was not visited during processing.
+            # <None> means that the node was not visited during processing.
             # It also means that the list of edges was not sorted by the angle to the horizontal axis
-            node.bldgPartEdges = ([edge], False)
+            node.bldgPartEdges = ([edge], None)
             
         node = self.data.nodes[edge.id2]
         if node.bldgPartEdges:
             node.bldgPartEdges[0].append(edge)
         else:
-            # <False> means that the node was not visited during processing.
+            # <None> means that the node was not visited during processing.
             # It also means that the list of edges was not sorted by the angle to the horizontal axis
-            node.bldgPartEdges = ([edge], False)
+            node.bldgPartEdges = ([edge], None)
 
 
 class BuildingManager(BaseBuildingManager, Manager):
@@ -202,7 +180,7 @@ class BuildingManager(BaseBuildingManager, Manager):
                         building.addPart(part)
 
         for partPolygon in self.partPolygonsSharingBldgEdge:
-            self.assignBuildingToPartPolygon(partPolygon.building, partPolygon, False)
+            self.assignBuildingToPartPolygon(partPolygon.building, partPolygon, True)
             
         if sum(1 for part in self.parts if not part.polygon.building):
             bvhTree = self.createBvhTree()
@@ -219,7 +197,7 @@ class BuildingManager(BaseBuildingManager, Manager):
                         # we condider that <part> is located inside <buildings[buildingIndex]>
                         # Assign <part> to <buildings[buildingIndex]> and check
                         # if this part has one more neighbors
-                        self.assignBuildingToPartPolygon(buildings[buildingIndex], part.polygon, True)
+                        self.assignBuildingToPartPolygon(buildings[buildingIndex], part.polygon, False)
                         
         
         # process the building parts for each building
@@ -247,7 +225,7 @@ class BuildingManager(BaseBuildingManager, Manager):
             vertexIndex1 = vertexIndex2
         return BVHTree.FromPolygons(vertices, polygons)
     
-    def assignBuildingToPartPolygon(self, building, partPolygon, isPartIsland):
+    def assignBuildingToPartPolygon(self, building, partPolygon, createMissingParts):
         building.addPart(partPolygon.part)
         
         # find an initial edge that isn't part of the building footprint
@@ -260,24 +238,35 @@ class BuildingManager(BaseBuildingManager, Manager):
         self.processEdge(
             edge,
             edge.id1,
-            building
+            building,
+            createMissingParts
         )
         self.processEdge(
             edge,
             edge.id2,
-            building
+            building,
+            createMissingParts
         )
     
-    def processEdge(self, edge, _id, building):
-        edges, _visited = self.data.nodes[_id].bldgPartEdges
-        if _visited:
+    def processEdge(self, edge, _id, building, createMissingParts):
+        edges, visited = self.data.nodes[_id].bldgPartEdges
+        if visited:
             return
         
         edge.visited = Visited.buildingAssigned
         
-        if len(edges) > 2:
+        # If <_visited> is <None>, it means that was not sorted in <self.createMissingPart(..)>
+        if len(edges) > 2 and visited is None:
             edges.sort(key = lambda edge: _pseudoangle(edge, _id))
         self.data.nodes[_id].bldgPartEdges = (edges, True)
+        
+        isId1 = _id==edge.id1
+        
+        if createMissingParts:
+            if (isId1 and edge.partVectors21 is None) or (not isId1 and edge.partVectors12 is None):
+                self.traceMissingPart(building, edge, _id)
+            elif (isId1 and edge.partVectors12 is None) or (not isId1 and edge.partVectors21 is None):
+                self.traceMissingPart(building, edge, edge.id2 if isId1 else edge.id1)
         
         for edge in edges:
             if edge.vectors or edge.visited == Visited.buildingAssigned:
@@ -302,9 +291,39 @@ class BuildingManager(BaseBuildingManager, Manager):
             
             self.processEdge(
                 edge,
-                edge.id2 if _id==edge.id1 else edge.id1,
-                building
+                edge.id2 if isId1 else edge.id1,
+                building,
+                createMissingParts
             )
+    
+    def traceMissingPart(self, building, edgeStart, _id):
+        nodes = [_id]
+        _edge = edgeStart
+        while True:
+            edges, visited = self.data.nodes[_id].bldgPartEdges
+            numEdges = len(edges)
+            if numEdges > 2:
+                if visited is None:
+                    edges.sort(key = lambda edge: _pseudoangle(edge, _id))
+                    # <False> means that the edges were sorted but not yet visted
+                    self.data.nodes[_id].bldgPartEdges = (edges, False)
+                
+                _edge = edges[ edges.index(_edge) - 1 ]
+            else:
+                _edge = edges[1] if edges[0] is _edge else edges[0]
+            
+            if _edge is edgeStart:
+                building.addMissingPart(nodes, self)
+                return
+            
+            # check validity of the edge
+            if (_edge.partVectors12 and _edge.partVectors21) or\
+                    (_id == _edge.id1 and _edge.partVectors12) or\
+                    (_id == _edge.id2 and _edge.partVectors21):
+                return
+            
+            _id = _edge.id2 if _id == _edge.id1 else _edge.id1
+            nodes.append(_id)
 
 
 class BuildingParts:

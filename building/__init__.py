@@ -496,64 +496,19 @@ class Building:
         part.polygon.building = self
         self.parts.append(part)
     
-    def addMissingPart(self, startVector, manager):
+    def addMissingPart(self, nodes, manager):
         tags = {
             "building:part": "yes"
         }
         bldgTags = self.element.tags
         
         # copy some attributes from <bldgTags> to <tags>
-        if "height" in bldgTags:
-            tags["height"] = bldgTags["height"]
-            
-        if "building:levels" in bldgTags:
-            tags["building:levels"] = bldgTags["building:levels"]
-        
-        if "roof:shape" in bldgTags:
-            tags["roof:shape"] = bldgTags["roof:shape"]
-            
-        nodes = [startVector.id1]
-        
-        isBldgFootprint = False
-        vector = startVector.prev
-        initialEdge = None
-        while True:
-            if isBldgFootprint:
-                nodes.append(vector.id2)
-                vector = vector.next
-                edge = vector.edge
-                vectorsOverlap = edge.partVectors12 if vector.direct else edge.partVectors21
-                if vectorsOverlap:
-                    vector = vectorsOverlap[0].prev
-                    isBldgFootprint = False
-            else:
-                edge = vector.edge
-                if edge.vectors:
-                    bldgVectors = edge.vectors
-                    if len(bldgVectors) == 1:
-                        vector = bldgVectors[0]
-                    else:
-                        vector = bldgVectors[0] if vector.direct == bldgVectors[0].direct else bldgVectors[1]
-                    vector = vector.next
-                    if (vector.direct and vector.edge.partVectors12) or (not vector.direct and vector.edge.partVectors21):
-                        return
-                    isBldgFootprint = True
-                else:
-                    if vector is startVector:
-                        break
-                    vectorsNeighbor = edge.partVectors21 if vector.direct else edge.partVectors12
-                    if vectorsNeighbor:
-                        vector = vectorsNeighbor[0]
-                        if initialEdge:
-                            if edge is initialEdge:
-                                return
-                        else:
-                            initialEdge = edge
-                    else:
-                        nodes.append(vector.id1)
-                        if initialEdge:
-                            initialEdge = None
-                    vector = vector.prev
+        for tag in (
+                "height", "building:levels", "roof:shape", "building:material", "building:colour",
+                "roof:material", "roof:colour"
+                ):
+            if tag in bldgTags:
+                tags[tag] = bldgTags[tag]
         
         part = BldgPart(
             MissingBldgPartWay(nodes, tags)
