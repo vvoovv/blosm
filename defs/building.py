@@ -36,6 +36,7 @@ class StraightAngleType:
 class Visited:
     nodesMarked = 1
     buildingAssigned = 2
+    noMissingPart = 3
 
 
 sin_lo = abs(sin(pi/180.*4.5))
