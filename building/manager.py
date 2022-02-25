@@ -325,7 +325,7 @@ class BuildingManager(BaseBuildingManager, Manager):
         if _edge.visited == Visited.noMissingPart:
             return
         else:
-            # mark the starting edge as visited to avoid tracing the same sequence again and again
+            # mark the starting edge as visited to avoid tracing the same sequence of edges again and again
             _edge.visited = Visited.noMissingPart
         
         nodes = [_id]
@@ -352,12 +352,15 @@ class BuildingManager(BaseBuildingManager, Manager):
                 numEdges = len(edges)
                 if numEdges > 2:
                     if visited is None:
+                        # sort the edges by angle around the node <_id>
                         edges.sort(key = lambda edge: _pseudoangle(edge, _id))
                         # <False> means that the edges were sorted but not yet visited
                         self.data.nodes[_id].bldgPartEdges = (edges, False)
                     
+                    # use the neighbor edge to the left from <_edge>
                     _edge = edges[ edges.index(_edge) - 1 ]
                 else:
+                    # use the neighbor edge
                     _edge = edges[1] if edges[0] is _edge else edges[0]
                 
                 if _edge is edgeStart:
@@ -367,10 +370,17 @@ class BuildingManager(BaseBuildingManager, Manager):
                 if _edge.visited == Visited.noMissingPart:
                     return
                 else:
+                    # # mark <_edge> as visited to avoid tracing the same sequence of edges again and again
                     _edge.visited = Visited.noMissingPart
                 
+                # check if <_edge> takes part in the building footprint
                 bldgVectors = _edge.vectors
                 if bldgVectors:
+                    # If there are two buildings using <_edge> choose the building vector
+                    # belonging to <building>
+                    # Then jump to the next building vector
+                    # <bldgVector> is not <None> now. It means that we switched to mode
+                    # of tracing along the building footprint
                     bldgVector = (
                         bldgVectors[0] if len(bldgVectors) == 1 else (
                             bldgVectors[0] if bldgVectors[0].polygon.building is building else bldgVectors[1]
@@ -381,6 +391,7 @@ class BuildingManager(BaseBuildingManager, Manager):
                             (not bldgVector.direct and bldgVector.edge.partVectors21) or\
                             "building:part" in building.element.tags:
                         return
+                    # continue tracing along the building footprint
                     nodes.append(bldgVector.id2)
                 else:
                     # check validity of the edge
@@ -389,6 +400,7 @@ class BuildingManager(BaseBuildingManager, Manager):
                             (_id == _edge.id2 and _edge.partVectors21):
                         return
                     
+                    # continue tracing along building parts
                     _id = _edge.id2 if _id == _edge.id1 else _edge.id1
                     nodes.append(_id)
 
