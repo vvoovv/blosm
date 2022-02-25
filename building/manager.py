@@ -312,23 +312,40 @@ class BuildingManager(BaseBuildingManager, Manager):
             )
     
     def traceMissingPart(self, building, edgeStart, _id):
+        """
+        Trace the candidate for a missing building part
+        
+        Args:
+            building (building.Building): A building
+            edgeStart (building.BldgEdge): The edge to start tracing from
+            _id (str): The id of the edge's node gives the direction of tracing
+        """
         _edge = edgeStart
         
         if _edge.visited == Visited.noMissingPart:
             return
         else:
+            # mark the starting edge as visited to avoid tracing the same sequence again and again
             _edge.visited = Visited.noMissingPart
         
         nodes = [_id]
+        # The current vector along the footprint of the whole building if tracing is needed along
+        # the building footprint.
+        # <bldgVector> also serves as a switch between two modes in the <while> cycle:
+        # 1) tracing along the buiding footprint
+        # 2) tracing along building parts
         bldgVector = None
         while True:
             if bldgVector:
                 bldgVector = bldgVector.next
                 _edge = bldgVector.edge
                 if (bldgVector.direct and _edge.partVectors12) or (not bldgVector.direct and _edge.partVectors21):
+                    # reached a building part
                     _id = bldgVector.id1
+                    # switch the mode to tracing along building parts
                     bldgVector = None
                 else:
+                    # continue tracing along the building footprint
                     nodes.append(bldgVector.id2)
             else:
                 edges, visited = self.data.nodes[_id].bldgPartEdges
