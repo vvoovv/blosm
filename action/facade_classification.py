@@ -1,3 +1,4 @@
+from mathutils import Vector
 from defs.facade_classification import *
 
 
@@ -126,3 +127,109 @@ class FacadeClassification:
             if not edge.cl:
                 if vector.prev.edge.cl in FrontLikeFacades or vector.next.edge.cl in FrontLikeFacades:
                     edge.cl = FacadeClass.side
+
+
+def _inheritFacadeClass(saFeature):
+    """
+    Inherit a facade class from a vector with a skipped straight angle feature
+    to the vectors that form that straight angle feature
+    """
+    cl = saFeature.startVector.edge.cl
+    # process the starting edge that was skipped
+    saFeature.startEdge[0].cl = cl
+    # process the rest of edges that form <saFeature>
+    _vector = saFeature.startNextVector
+    while True:
+        _vector.edge.cl = cl
+        if _vector is saFeature.endVector:
+            break
+        _vector = _vector.next
+
+
+class FacadeClassificationPart:
+    
+    def do(self, manager):
+        # process the building parts for each building
+        for building in manager.buildings:
+            if building.parts:
+                for part in building.parts:
+                    self.classify(part)
+    
+    def classify(self, part):
+        bldgFacadeClassesInherited = False
+        bldgPolygon = part.polygon.building.polygon
+        # assign facade class to the edges of the building part
+        for vector in part.polygon.getVectors():
+            if not vector.edge.cl:
+                if not bldgFacadeClassesInherited:
+                    saFeature = bldgPolygon.saFeature
+                    if saFeature:
+                        # Inherit the facade class from a vector with the straight angle feature
+                        # to the vectors that form the straight angle feature.
+                        while True:
+                            # iterate through all straight angle features
+                            if saFeature.skipped:
+                                # <saFeature> doesn't contain nested straight angle features
+                                # represented by the class <StraightAnglePart>.
+                                _inheritFacadeClass(saFeature)
+                            else:
+                                # <saFeature> has one or more nested straight angle features represented
+                                # by the class <StraightAnglePart>
+                                
+                                if saFeature.parent:
+                                    # If <saFeature.parent> isn't equal to <None>, it means that
+                                    # <saFeature.startVector> is the resulting vector after skipping
+                                    # some vectors because they form a straight angle feature represented
+                                    # by the class <StraightAnglePart>
+                                    _inheritFacadeClass(saFeature.parent)
+                                # process the rest of vectors that form <saFeature>
+                                _vector = saFeature.startVector.next
+                                while True:
+                                    if _vector.feature:
+                                        # It can be only nested straight angle feature represented
+                                        # by the class <StraightAnglePart>. For that feature we can only have
+                                        # the attribute <skipped> equal to <True>.
+                                        _inheritFacadeClass(_vector.feature)
+                                    if _vector is saFeature.endVector:
+                                        break
+                                    _vector = _vector.next
+                            
+                            if saFeature.prev:
+                                saFeature = saFeature.prev
+                            else:
+                                break
+                    
+                    bldgFacadeClassesInherited = True
+                
+                if not vector.edge.cl:
+                    # We try to estimate the facade class for <vector.edge> by projecting the vectors
+                    # of the building footprint on it and checking if the projection overlaps with <vector>
+                    # We ingore complex things like concave parts of the building footprint.
+                    
+                    # an overlap of a projected vector of the building footprint with <vector>
+                    maxOverlap = 0.
+                    maxOverlapClass = FacadeClass.unknown
+                    unitVector = vector.unitVector
+                    # a normal to <unitVector> pointing outwards
+                    nVector = Vector((unitVector[1], -unitVector[0]))
+                    x1, x2, y = vector.v1.dot(unitVector), vector.v2.dot(unitVector), vector.v1.dot(nVector)
+                    for bldgVector in bldgPolygon.getVectors():
+                        _bldgVector, _v1, _v2 = bldgVector.vector, bldgVector.v1, bldgVector.v2
+                        # The conditions < _bldgVector.v1.dot(nVector) >=y > and < _bldgVector.v2.dot(nVector) >= y > mean
+                        # that the vector <_bldgVector> must be located above <unitVector>
+                        # along the axis <nVector> 
+                        if unitVector.dot(_bldgVector) > 0. and _v1.dot(nVector) >= y or _v2.dot(nVector) >= y:
+                            _x1, _x2 = _v1.dot(unitVector), _v2.dot(unitVector)
+                            if _x1 < x2 and x1 < _x2:
+                                if x2 < _x2:
+                                    overlap = x2 - _x1
+                                elif _x1 < x1:
+                                    overlap = _x2 - x1
+                                else:
+                                    overlap = _x2 - _x1
+                                
+                                if overlap > maxOverlap:
+                                    maxOverlap = overlap
+                                    maxOverlapClass = bldgVector.edge.cl
+                    
+                    vector.edge.cl = maxOverlapClass

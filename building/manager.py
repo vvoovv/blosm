@@ -198,12 +198,6 @@ class BuildingManager(BaseBuildingManager, Manager):
                         # Assign <part> to <buildings[buildingIndex]> and check
                         # if this part has one more neighbors
                         self.processBldgPartEdges(buildings[buildingIndex], part.polygon, False)
-                        
-        
-        # process the building parts for each building
-        for building in buildings:
-            if building.parts:
-                building.processParts()
         
         for action in self.actions:
             action.do(self)
