@@ -37,12 +37,16 @@ class Setup:
         self.buildingManager.addAction(facadeVisibilityAction)
     
     def classifyFacades(self, facadeVisibilityAction=None):
-        from action.facade_classification import FacadeClassification
+        from action.facade_classification import FacadeClassification, FacadeClassificationPart
         
         self.facadeVisibility(facadeVisibilityAction)
         
         self.buildingManager.addAction(
             FacadeClassification(self.getUnskipFeaturesAction())
+        )
+        
+        self.buildingManager.addAction(
+            FacadeClassificationPart()
         )
     
     def buildings(self):
