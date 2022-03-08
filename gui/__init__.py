@@ -602,7 +602,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -89.,
         max = 89.,
-        default=55.7457 if _has3dRealistic else 51.33
+        default= 40.7463 if _has3dRealistic else 51.33
     )
 
     maxLat: bpy.props.FloatProperty(
@@ -611,7 +611,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -89.,
         max = 89.,
-        default=55.7527 if _has3dRealistic else 51.33721
+        default= 40.7523 if _has3dRealistic else 51.33721
     )
 
     minLon: bpy.props.FloatProperty(
@@ -620,7 +620,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -180.,
         max = 180.,
-        default= 37.5321 if _has3dRealistic else 12.36902
+        default= -73.9892 if _has3dRealistic else 12.36902
     )
 
     maxLon: bpy.props.FloatProperty(
@@ -629,7 +629,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
         precision = 4,
         min = -180.,
         max = 180.,
-        default= 37.5447 if _has3dRealistic else 12.37983
+        default= -73.9812 if _has3dRealistic else 12.37983
     )
     
     coordinatesAsFilter: bpy.props.BoolProperty(
