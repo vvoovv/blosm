@@ -306,6 +306,12 @@ class Overlay:
     
     def getOverlaySubDir(self):
         url = self.url
+        if url.startswith("https://api.mapbox.com"):
+            accessTokenPosition = url.find("?access_token=")
+            if accessTokenPosition != -1:
+                # Remove the access token to decrease the length of the path.
+                # Windows and probably the other OS have a limit for the path in the file system.
+                url = url[0:accessTokenPosition]
         urlOffset = 0
         if url[:7] == "http://":
             urlOffset = 7
