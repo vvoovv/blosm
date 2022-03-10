@@ -21,6 +21,7 @@ import math, os, sys
 from threading import Thread
 import numpy
 from urllib import request
+import ssl
 import bpy
 
 from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
@@ -271,7 +272,9 @@ class Overlay:
                 }
             )
             try:
-                tileData = request.urlopen(req).read()
+                # a hack to avoid CERTIFICATE_VERIFY_FAILED error
+                ctx = ssl._create_unverified_context()
+                tileData = request.urlopen(req, context=ctx).read()
             except:
                 if getattr(sys.exc_info()[1], "code", None) == 404:
                     # The error code 404 means that the tile doesn't exist
