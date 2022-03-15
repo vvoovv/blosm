@@ -1007,12 +1007,11 @@ class RoofProfile(Roof):
         indices = item.indices
         numVerts = len(indices)
         firstVert = verts[indices[0]]
-        # a vector along the bottom side of the trapezoid
-        bottomVec = verts[indices[1]] - firstVert
+        
         heightLeft = verts[indices[-1]][2] - firstVert[2]
         heightRight = verts[indices[2]][2] - verts[indices[1]][2]
         # facade item width
-        width = bottomVec.length
+        width = item.vector.length
         if numVerts == 4:
             if heightLeft == heightRight:
                 geometry = self.geometryRectangle
@@ -1025,19 +1024,21 @@ class RoofProfile(Roof):
         else:
             geometry = self.geometryTrapezoidChained
             # flat vertices coordinates on the facade surface (i.e. on the chained trapezoid)
-            unitBottomVec = bottomVec/width
+            unitBottomVec = item.vector.unitVector
             # Now flat vertices coordinates on the facade surface:
             # first the vertices at the bottom and the next vertex,
             # then the rest of the vertices but the last one,
             # and finally the last vertex adjoining the left vertex at the bottom
             # A sum of several Python tuples gives a single Python tuple
+            
+            # The following dot product is calculated in the code below:
+            # (verts[indices[i]]-firstVert)*unitBottomVec
             uvs =\
                 ((0., 0.), (width, 0.), (width, heightRight)) +\
-                tuple( ((verts[indices[i]]-firstVert).dot(unitBottomVec), verts[indices[i]][2]-firstVert[2]) for i in range(3,numVerts-1) ) +\
+                tuple( ((verts[indices[i]][0]-firstVert[0])*unitBottomVec[0] + (verts[indices[i]][1]-firstVert[1])*unitBottomVec[1], verts[indices[i]][2]-firstVert[2]) for i in range(3,numVerts-1) ) +\
                 ( (0., heightLeft), )
         
         item.width = width
-        item.normal = bottomVec.cross(zAxis)/width
         item.geometry = geometry
         # assign uv-coordinates (i.e. surface coordinates on the facade plane)
         item.uvs = uvs

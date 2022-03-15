@@ -83,15 +83,11 @@ class RoofFlat(Roof):
         )
     
     def initFacadeItem(self, item):
-        verts = item.building.renderInfo.verts
-        indices = item.indices
         geometry = self.rectangleGeometry
-        bottomVec = verts[indices[1]] - verts[indices[0]]
-        width = bottomVec.length
+        width = item.vector.length
         height = item.footprint.wallHeight
         
         item.width = width
-        item.normal = bottomVec.cross(zAxis)/width
         item.geometry = geometry
         # assign uv-coordinates (i.e. surface coordinates on the facade plane)
         item.uvs = geometry.getUvs(width, height)

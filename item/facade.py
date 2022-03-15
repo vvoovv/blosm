@@ -15,6 +15,8 @@ class Facade(Div):
         
         self.buildingPart = "facade"
         
+        self.vector = vector
+        
         self.outer = True
         
         # set facade class
