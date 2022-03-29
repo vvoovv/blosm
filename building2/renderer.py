@@ -63,6 +63,7 @@ class BuildingRendererNew(Renderer):
         self.useCladdingColor = True
         
         self.itemRenderers = itemRenderers
+        self.facadeRenderer = itemRenderers["Facade"]
         
         self.exportMaterials = app.enableExperimentalFeatures and app.importForExport
         
@@ -81,6 +82,11 @@ class BuildingRendererNew(Renderer):
         self.assetStore = AssetStore(app.assetInfoFilepath)
         
         self._cache = {}
+        
+        self.buildingActions = []
+        self.footprintActions = []
+        # "rev" stands for "render extruded volumes"
+        self.revActions = []
     
     def prepare(self):
         # nothing to be done here for now
@@ -105,9 +111,8 @@ class BuildingRendererNew(Renderer):
             self.materialIndices = layer.materialIndices
     
     def cleanup(self):
-        if Building.actions:
-            for action in Building.actions:
-                action.cleanup()
+        for action in self.buildingActions:
+            action.cleanup()
         
         if self.exportMaterials:
             self.textureExporter.cleanup()
@@ -117,7 +122,6 @@ class BuildingRendererNew(Renderer):
     def render(self, building, data):
         parts = building.parts
         itemStore = self.itemStore
-        
         
         #if "id" in outline.tags: print(outline.tags["id"]) #DEBUG OSM id
         
@@ -130,10 +134,10 @@ class BuildingRendererNew(Renderer):
             return
         building.renderInfo.setStyleMeta(buildingStyle)
         
-        self.preRender(building)
+        if self.app.renderAfterExtrude:
+            self.preRender(building)
         
-        partTag = building.element.tags.get("building:part")
-        if not parts or (partTag and partTag != "no"):
+        if not parts or building.alsoPart:
             # the building has no parts
             footprint = Footprint(building, building)
             # The attribute <footprint> below may be used in calculation of the area of
@@ -143,9 +147,9 @@ class BuildingRendererNew(Renderer):
         if parts:
             itemStore.add((Footprint(part, building) for part in parts), Footprint, len(parts))
         
-        for itemClass in (Building, Footprint):
-            for action in itemClass.actions:
-                action.do(building, itemClass, buildingStyle, self)
+        for actions in (self.buildingActions, self.footprintActions):
+            for action in actions:
+                action.do(building, buildingStyle, self)
                 if itemStore.skip:
                     break
             if itemStore.skip:
@@ -154,8 +158,30 @@ class BuildingRendererNew(Renderer):
         
         if itemStore.skip:
             itemStore.skip = False
-        else:
+        elif self.app.renderAfterExtrude:
             self.postRender(building.element)
+    
+    def renderExtrudedVolumes(self, building, data):
+        self.preRender(building)
+        
+        # render building footprint
+        if not building.parts or building.alsoPart:
+            self.renderExtrudedVolume(building.footprint, True)
+        # render building parts
+        for part in building.parts:
+            self.renderExtrudedVolume(part.footprint, False)
+        
+        self.postRender(building.element)
+    
+    def renderExtrudedVolume(self, footprint, isBldgFootprint):
+        if not footprint:
+            return
+        
+        for action in self.renderExtrudedVolumeActions:
+            action.do(footprint, isBldgFootprint)
+        
+        self.facadeRenderer.render(footprint)
+        footprint.roofRenderer.render(footprint.roofItem)
     
     def createFace(self, building, indices):
         bm = self.bm

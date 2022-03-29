@@ -5,7 +5,7 @@ from item.facade import Facade
 from item.roof_profile import RoofProfile as ItemRoofProfile
 from .geometry.trapezoid import TrapezoidRV, TrapezoidChainedRV
 from .geometry.rectangle import RectangleFRA
-from util import zero, zAxis
+from util import zero
 
 
 # Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
@@ -620,7 +620,7 @@ class RoofProfile(Roof):
     def getRoofItem(self, footprint):
         return ItemRoofProfile(footprint)
     
-    def render(self, footprint, roofItem):
+    def extrude(self, footprint, roofItem):
         polygon = footprint.polygon
         verts = footprint.building.renderInfo.verts
         self.vertOffset = len(verts)
@@ -691,9 +691,6 @@ class RoofProfile(Roof):
             slotR.trackUp(roofItem, slotIndex)
             slotL.trackDown(roofItem, slotIndex)
             self.onRoofForSlotCompleted(slotIndex)
-        
-        self.facadeRenderer.render(footprint)
-        self.roofRenderer.render(roofItem)
     
     def getProfiledVert(self, footprint, vector, i):
         """
@@ -1064,7 +1061,7 @@ class RoofProfile(Roof):
         #     if <roofVertexData[index][0]> is equal to False;
         # <roofVertexData[index][2]> is a coordinate along Y-axis of the profile
         #     coordinate system
-        return (
+        return [
             (
                 # U-coordinate: set it depending on the value of <slopes[slotIndex]>
                 self.maxY - roofVertexData[index][2]\
@@ -1082,4 +1079,4 @@ class RoofProfile(Roof):
                 roofVertexData[index][1]
             )
             for index in indices
-        )
+        ]

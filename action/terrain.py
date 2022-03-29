@@ -10,7 +10,7 @@ class Terrain(Action):
         # <buildingsP> means "buildings from the parser"
         self.app.terrain.initProjectionProxy(buildingsP, self.data)
     
-    def do(self, building, itemClass, style, globalRenderer):
+    def do(self, building, style, globalRenderer):
         #self.projectSingleVertex(building)
         self.projectAllVertices(building)
     

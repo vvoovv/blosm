@@ -140,6 +140,10 @@ class BlenderApp(BaseApp):
         self.polygonLayer = MeshLayer
         self.nodeLayer = NodeLayer
         self.wayLayer = CurveLayer
+        
+        # If <True>: render a building immediately after extruding its volume.
+        # If <False>: first extrude all buildings and only then render them
+        self.renderAfterExtrude = False
     
     def getAssetsDir(self, context):
         addonName = self.addonName

@@ -18,11 +18,11 @@ class Volume(Action):
     
     defaultRoofShape = "flat"
     
-    def __init__(self, manager, app, data, itemStore, itemRenderers):
-        super().__init__(app, data, itemStore)
+    def __init__(self, manager, itemStore, itemRenderers):
+        super().__init__(manager.app, manager.data, itemStore)
         self.manager = manager
         if itemRenderers:
-            self.setVolumeGenerators(data, itemRenderers)
+            self.setVolumeGenerators(manager.data, itemRenderers)
     
     def setRenderer(self, renderer):
         """
@@ -51,10 +51,10 @@ class Volume(Action):
                 _footprint.buildingStyle = buildingStyle
                 self.itemStore.add(_footprint)
     
-    def do(self, building, itemClass, buildingStyle, globalRenderer):
+    def do(self, building, buildingStyle, globalRenderer):
         itemStore = self.itemStore
-        while itemStore.hasItems(itemClass):
-            footprint = itemStore.getItem(itemClass)
+        while itemStore.hasItems(Footprint):
+            footprint = itemStore.getItem(Footprint)
             self.prepareFootprint(footprint, building, buildingStyle)
             
             element = footprint.element

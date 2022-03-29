@@ -349,7 +349,7 @@ class BldgVector:
     
     __slots__ = (
         "id", # debug
-        "edge", "direct", "prev", "next", "polygon",
+        "edge", "direct", "prev", "next", "polygon", "facade",
         "straightAngle", "feature", "skip", "sin", "vectorByIndex",
         "featureSymbol" # debug
     )
@@ -368,6 +368,8 @@ class BldgVector:
         self.straightAngle = 0
         self.feature = None
         self.skip = False
+        # a facade originating from the vector
+        self.facade = None
     
     def reverse(self):
         self.direct = not self.direct
@@ -435,16 +437,26 @@ class Building:
     A wrapper for a OSM building
     """
     
-    __slots__ = ("element", "parts", "polygon", "auxIndex", "crossedEdges", "renderInfo")
+    __slots__ = (
+        "element", "parts", "polygon", "auxIndex", "crossedEdges", "renderInfo", "footprint",
+        "alsoPart"
+    )
     
     def __init__(self, element, manager):
         self.element = element
         self.parts = []
+        
+        partTag = element.tags.get("building:part")
+        # is the building footprint also a building part?
+        self.alsoPart = partTag and partTag != "no"
+        
         # an auxiliary variable used to store the first index of the building vertices in an external list or array
         self.auxIndex = 0
         # A dictionary with edge indices as keys and crossing ratio as value,
         # used for buildings that get crossed by way-segments.
         self.crossedEdges = []
+        
+        self.footprint = None
     
     def init(self, manager):
         # A polygon for the outline.
@@ -499,10 +511,19 @@ class Building:
 
 class BldgPart:
     
+    __slots__ = (
+        "element",
+        "building",
+        "wasMissing",
+        "polygon",
+        "footprint" 
+    )
+    
     def __init__(self, element):
         self.element = element
         self.building = None
         self.wasMissing = False
+        self.footprint = None
     
     def init(self, manager):
         # A polygon for the building part.

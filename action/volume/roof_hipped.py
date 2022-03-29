@@ -57,7 +57,7 @@ class RoofHipped(RoofLeveled):
                 return False
         return True
     
-    def render(self, footprint, roofItem):
+    def extrude(self, footprint, roofItem):
         # <firstVertIndex> is the index of the first vertex of the polygon that defines the roof base
         firstVertIndex = self.getRoofFirstVertIndex(footprint)
         
@@ -69,16 +69,20 @@ class RoofHipped(RoofLeveled):
         else:
             ok = self.generateRoof(footprint, roofItem, firstVertIndex)
         
-        if ok:
-            self.facadeRenderer.render(footprint, self.data)
-            self.roofRenderer.render(roofItem)
-        else:
+        if not ok:
             # Unable to generate the hipped roof.
             # Generate a flat roof as a fallback solution
             self.volumeAction.volumeGenerators["flat"].do(
                 footprint,
                 footprint.element.getData(self.data)
             )
+        
+        return ok
+
+    def render(self, footprint, roofItem):
+        if self.extrude(self, footprint, roofItem):
+            self.facadeRenderer.render(footprint, self.data)
+            self.roofRenderer.render(roofItem)
     
     def generateRoofQuadrangle(self, footprint, roofItem, firstVertIndex):
         verts = footprint.building.verts

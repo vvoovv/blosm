@@ -4,8 +4,6 @@ from item.roof_flat import RoofFlat as ItemRoofFlat
 from .geometry.rectangle import RectangleFRA
 from mathutils import Vector
 
-from util import zAxis
-
 
 class RoofFlat(Roof):
     
@@ -17,11 +15,6 @@ class RoofFlat(Roof):
         self.rectangleGeometry = RectangleFRA()
         self.hasRoofLevels = False
         self.extrudeTillRoof = False
-    
-    def render(self, footprint, roofItem):
-        self.extrude(footprint, roofItem)
-        self.facadeRenderer.render(footprint)
-        self.roofRenderer.render(roofItem)
     
     def validate(self, footprint):
         """
@@ -42,7 +35,7 @@ class RoofFlat(Roof):
             footprint,
             self.getRoofFirstVertIndex(footprint)
         )
-    
+                
     def extrude(self, footprint, roofItem):
         building = footprint.building
         verts = building.renderInfo.verts

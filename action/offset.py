@@ -13,7 +13,7 @@ class Offset(Action):
         # <buildingsP> means "buildings from the parser"
         return
 
-    def do(self, building, itemClass, style, globalRenderer):
+    def do(self, building, style, globalRenderer):
         outline = building.outline
         offset = Vector(
             next(

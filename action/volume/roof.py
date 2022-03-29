@@ -1,6 +1,6 @@
 import math
 from mathutils import Vector
-from util import zero, zAxis
+from util import zero
 
 
 """
@@ -74,6 +74,8 @@ class Roof:
         
         self.itemStore = volumeAction.itemStore
         
+        self.renderAfterExtrude = volumeAction.app.renderAfterExtrude
+        
         self.hasGable = False
         self.hasRoofLevels = True
         self.angleToHeight = None
@@ -82,7 +84,18 @@ class Roof:
     def do(self, footprint):
         roofItem = self.init(footprint)
         if footprint.valid:
-            self.render(footprint, roofItem)
+            if self.renderAfterExtrude:
+                self.render(footprint, roofItem)
+            else:
+                self.extrude(footprint, roofItem)
+                footprint.roofItem = roofItem
+                footprint.roofRenderer = self.roofRenderer
+                footprint.bldgPart.footprint = footprint
+    
+    def render(self, footprint, roofItem):
+        self.extrude(footprint, roofItem)
+        self.facadeRenderer.render(footprint)
+        self.roofRenderer.render(roofItem)
     
     def init(self, footprint):
         # calculate numerical dimensions for the building or building part

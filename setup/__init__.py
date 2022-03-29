@@ -310,20 +310,23 @@ class SetupBlender(Setup):
     
     def actionsBuildings(self, buildingManager, buildingRenderer, itemRenderers):
         from action.volume import Volume
-        from item.building import Building
-        from item.footprint import Footprint
         
         app = self.app
         osm = self.osm
         
-        Building.actions = []
         # <app.terrain> isn't yet set at this pooint, so we use the string <app.terrainObject> instead
         if app.terrainObject:
             from action.terrain import Terrain
-            Building.actions.append( Terrain(app, osm, buildingRenderer.itemStore) )
+            buildingRenderer.buildingActions.append( Terrain(app, osm, buildingRenderer.itemStore) )
         if not app.singleObject:
             from action.offset import Offset
-            Building.actions.append( Offset(app, osm, buildingRenderer.itemStore) )
+            buildingRenderer.buildingActions.append( Offset(app, osm, buildingRenderer.itemStore) )
         
-        volumeAction = Volume(buildingManager, app, osm, buildingRenderer.itemStore, itemRenderers)
-        Footprint.actions = (volumeAction,)
+        volumeAction = Volume(buildingManager, buildingRenderer.itemStore, itemRenderers)
+        buildingRenderer.footprintActions.append(volumeAction)
+        
+        from action.facade_boolean import FacadeBoolean
+        # "rev" stands for "render extruded volumes"
+        buildingRenderer.revActions.append(
+            FacadeBoolean()
+        )

@@ -5,8 +5,6 @@ class Building:
     A class representing the building for the renderer
     """
     
-    actions = []
-    
     def __init__(self, data):
         self.data = data
         
@@ -29,7 +27,6 @@ class Building:
         
         # attributes from @meta of the style block
         self.buildingUse = None
-        self.classifyFacades = 1
     
     def setStyleMeta(self, style):
         if style.meta:
