@@ -196,4 +196,8 @@ class RectangleFRA(Geometry):
             (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
             ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
         )
+    
+    def join(self, facade, _facade):
+        # <self> is the geometry for <facade>
+        _geometry = _facade.geometry
         
