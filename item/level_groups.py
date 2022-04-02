@@ -8,7 +8,6 @@ class LevelGroups:
     def __init__(self, item):
         self.item = item
         self.groups = tuple(LevelGroup() for _ in range(_numGroups))
-        self.bottom = None
         # a wrapper level group for the bottom
         self.bottomGroup = LevelGroup()
         # setting <singleLevel> to <True> is needed for correct height calculation of the level group
@@ -30,7 +29,7 @@ class LevelGroups:
         numLevels = footprint.numLevels
         numRoofLevels = footprint.numRoofLevels
         totalNumLevels = numLevels + numRoofLevels
-        minLevel = footprint.minLevel
+        minLevel = item.minLevel
         top = None
         bottom = None
         begin = None
@@ -46,7 +45,7 @@ class LevelGroups:
             top.levelHeight = topHeight
             self.top = top
         # check if have the bottom
-        if not footprint.minHeight:
+        if not item.minHeight:
             bottomHeight = item.getStyleBlockAttr("bottomHeight")
             if bottomHeight is None:
                 bottomHeight = lh.bottomHeight

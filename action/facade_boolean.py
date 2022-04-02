@@ -6,6 +6,8 @@ class FacadeBoolean:
         pass
     
     def do(self, footprint):
+        if footprint.noWalls:
+            return
         
         building = footprint.building
         polygon = footprint.polygon
@@ -31,18 +33,19 @@ class FacadeBoolean:
                     
                     neighborBldgVector = bldgVectors[1] if bldgVectors[0].polygon is polygon else bldgVectors[0]
                     neighborBldgParts = neighborBldgVector.polygon.building.parts
-                    if neighborBldgParts:
+                    if neighborBldgParts and neighborBldgVector.facade:
+                        # added <neighborBldgVector.facade> in the condition above as a hack
                         self.processVectorsOppDir(vector, neighborBldgVector)
                     
                     if not building.parts and not neighborBldgParts and not neighborBldgVector.facade.processed:
                         # No vectors that define building parts. There are only <bldgVectors>
-                        # <vector> is defines the footprint of <building>
-                        vector.facade.geometry.geometry.subtract(vector.facade, neighborBldgVector.facade)
+                        # <vector> defines the footprint of <building>
+                        vector.facade.geometry.subtract(vector.facade, neighborBldgVector.facade)
             else:
                 # <edge> is located inside the footprint of <building>
                 self.processVectorsSameDir(vector)
                 
-                self.processVectorsOppDir(vector)
+                self.processVectorsOppDir(vector, None)
 
             # mark <vector> as processed
             vector.facade.processed = True

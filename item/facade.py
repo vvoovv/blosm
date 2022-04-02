@@ -15,9 +15,16 @@ class Facade(Div):
         
         self.buildingPart = "facade"
         
+        # Is facade visible or hidden by other facades that belong to other buildings or building parts?
+        self.visible = True
+        
         self.vector = vector
+        vector.facade = self
         
         self.outer = True
+        
+        # is facade processed in the action <FacadeBoolean>?
+        self.processed = False
         
         # set facade class
         self.front = False

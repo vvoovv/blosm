@@ -1,6 +1,29 @@
+from mathutils import Vector
 from util import zAxis
 
 from . import Geometry
+
+
+def _updateFacadeBottomVerts(facade, z, verts):
+    numVerts = len(verts)
+    indices = facade.indices
+    # add new vertice for the bottom part of the facade
+    verts.append( Vector( (verts[indices[0]][0], verts[indices[0]][1], z)) )
+    verts.append( Vector((verts[indices[1]][0], verts[indices[1]][1], z)) )
+    
+    facade.indices = (numVerts, numVerts+1, indices[2], indices[3])
+    
+    facade.minHeight = z
+    facade.minLevel = facade.footprint.levelHeights.calculateMinLevelFromMinHeight(z)
+
+def _updateFacadeTopVerts(facade, z, verts):
+    numVerts = len(verts)
+    indices = facade.indices
+    # add new vertice for the bottom part of the facade
+    verts.append( Vector( (verts[indices[2]][0], verts[indices[2]][1], z)) )
+    verts.append( Vector((verts[indices[3]][0], verts[indices[3]][1], z)) )
+    
+    facade.indices = (indices[0], indices[1], numVerts, numVerts+1)
 
 
 class RectangleFRA(Geometry):
@@ -199,5 +222,61 @@ class RectangleFRA(Geometry):
     
     def join(self, facade, _facade):
         # <self> is the geometry for <facade>
-        _geometry = _facade.geometry
         
+        # <facade> and <_facade> belongs to the same building
+        verts = facade.footprint.building.renderInfo.verts
+        
+        _geometry = _facade.geometry
+        indices, _indices = facade.indices, _facade.indices
+        
+        if isinstance(_geometry, RectangleFRA):
+            z1, z2 = verts[indices[0]][2], verts[indices[-1]][2]
+            _z1, _z2 = verts[_indices[0]][2], verts[_indices[-1]][2]
+            
+            if z1 <= _z1 < _z2 <= z2:
+                _facade.visible = False
+            elif _z1 <= z1 < z2 <= _z2:
+                facade.visible = False
+            elif z1 < _z1 < z2:
+                _updateFacadeBottomVerts(_facade, z2, verts)
+            elif _z1 < z1 < _z2:
+                _updateFacadeBottomVerts(facade, _z2, verts)
+    
+    def subtract(self, facade, _facade):
+        # <self> is the geometry for <facade>
+        
+        verts, _verts = facade.footprint.building.renderInfo.verts, _facade.footprint.building.renderInfo.verts
+        _geometry = _facade.geometry
+        indices, _indices = facade.indices, _facade.indices
+        
+        if isinstance(_geometry, RectangleFRA):
+            z1, z2 = verts[indices[0]][2], verts[indices[-1]][2]
+            _z1, _z2 = _verts[_indices[0]][2], _verts[_indices[-1]][2]
+            
+            if z1 == _z1:
+                if _z2 < z2:
+                    _facade.visible = False
+                    _updateFacadeBottomVerts(facade, _z2, verts)
+                elif z2 < _z2:
+                    facade.visible = False
+                    _updateFacadeBottomVerts(_facade, z2, _verts)
+                else:
+                    # z2 == _z2
+                    facade.visible = _facade.visible = False
+            elif z2 == _z2:
+                if z1 < _z1:
+                    _facade.visible = False
+                    _updateFacadeTopVerts(facade, _z1, verts)
+                elif _z1 < z1:
+                    facade.visible = False
+                    _updateFacadeTopVerts(_facade, z1, _verts)
+            elif z1 < _z1 < z2 < _z2:
+                _updateFacadeBottomVerts(_facade, z2, _verts)
+                _updateFacadeTopVerts(facade, _z1, verts)
+            elif _z1 < z1 < _z2 < z2:
+                _updateFacadeBottomVerts(facade, _z2, verts)
+                _updateFacadeTopVerts(_facade, z1, _verts)
+            elif z1 < _z1 < _z2 < z2:
+                _facade.visible = False
+            elif _z1 < z1 < z2 < _z2:
+                facade.visible = False

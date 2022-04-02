@@ -1,3 +1,4 @@
+from math import floor
 
 
 class LevelHeights:
@@ -167,8 +168,34 @@ class LevelHeights:
             h = footprint.getStyleBlockAttr("minHeight")
             if h is None:
                 h = 0.
+            else:
+                footprint.minLevel = self.calculateMinLevelFromMinHeight(h)
         footprint.minHeight = h
         return h
+    
+    def calculateMinLevelFromMinHeight(self, minHeight):
+        footprint = self.footprint
+        
+        if footprint.numLevels < 2:
+            return 0
+        
+        if self.levelHeights:
+            return self.levelHeights.calculateMinLevelFromMinHeight(minHeight)
+        else:
+            factorBottom = 0.3
+            factorTop = 1 - factorBottom
+            footprint = self.footprint
+            levelHeight = self.levelHeight
+            # The heights of the bottom and the ground level have been already
+            # calculated in <self.calculateHeight()>
+            groundLevelHeight = self.groundLevelHeight if self.groundLevelHeight else levelHeight
+            heightTillGroundLevel = self.bottomHeight + groundLevelHeight
+            if footprint.building.renderInfo.altitudeDifference:
+                heightTillGroundLevel += footprint.building.renderInfo.altitudeDifference
+            if heightTillGroundLevel >= minHeight > (heightTillGroundLevel - factorTop * groundLevelHeight):
+                return 1
+            else:
+                return 1 + floor(( minHeight - heightTillGroundLevel)/levelHeight)
     
     def getLevelHeight(self, index):
         if self.levelHeight:

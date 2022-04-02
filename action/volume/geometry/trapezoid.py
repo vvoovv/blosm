@@ -164,6 +164,12 @@ class TrapezoidRV(Geometry):
     
     def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
         return
+    
+    def subtract(self, facade, _facade):
+        return
+    
+    def join(self, facade, _facade):
+        return
 
 
 class TrapezoidChainedRV(Geometry):
@@ -323,3 +329,9 @@ class TrapezoidChainedRV(Geometry):
                     texVb + deltaTexV * (uvs[i][1] - uvs[0][1]) / deltaV
                 ) for i in range(2, numVerts)
             )
+    
+    def subtract(self, facade, _facade):
+        return
+    
+    def join(self, facade, _facade):
+        return
