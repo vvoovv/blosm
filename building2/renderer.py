@@ -177,11 +177,12 @@ class BuildingRendererNew(Renderer):
         if not footprint:
             return
         
-        for action in self.revActions:
-            action.do(footprint)
-        
         if not footprint.noWalls:
+            for action in self.revActions:
+                action.do(footprint)
+            
             self.facadeRenderer.render(footprint)
+        
         footprint.roofRenderer.render(footprint.roofItem)
     
     def createFace(self, building, indices):

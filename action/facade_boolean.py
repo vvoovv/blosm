@@ -6,9 +6,6 @@ class FacadeBoolean:
         pass
     
     def do(self, footprint):
-        if footprint.noWalls:
-            return
-        
         building = footprint.building
         polygon = footprint.polygon
         

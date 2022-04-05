@@ -37,16 +37,12 @@ class Setup:
         self.buildingManager.addAction(facadeVisibilityAction)
     
     def classifyFacades(self, facadeVisibilityAction=None):
-        from action.facade_classification import FacadeClassification, FacadeClassificationPart
+        from action.facade_classification import FacadeClassification
         
         self.facadeVisibility(facadeVisibilityAction)
         
         self.buildingManager.addAction(
             FacadeClassification(self.getUnskipFeaturesAction())
-        )
-        
-        self.buildingManager.addAction(
-            FacadeClassificationPart()
         )
     
     def buildings(self):
@@ -310,6 +306,8 @@ class SetupBlender(Setup):
     
     def actionsBuildings(self, buildingManager, buildingRenderer, itemRenderers):
         from action.volume import Volume
+        from action.facade_boolean import FacadeBoolean
+        from action.facade_classification import FacadeClassificationPart
         
         app = self.app
         osm = self.osm
@@ -325,8 +323,10 @@ class SetupBlender(Setup):
         volumeAction = Volume(buildingManager, buildingRenderer.itemStore, itemRenderers)
         buildingRenderer.footprintActions.append(volumeAction)
         
-        from action.facade_boolean import FacadeBoolean
         # "rev" stands for "render extruded volumes"
         buildingRenderer.revActions.append(
             FacadeBoolean()
+        )
+        buildingRenderer.revActions.append(
+            FacadeClassificationPart()
         )

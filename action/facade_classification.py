@@ -148,20 +148,18 @@ def _inheritFacadeClass(saFeature):
 
 class FacadeClassificationPart:
     
-    def do(self, manager):
-        # process the building parts for each building
-        for building in manager.buildings:
-            if building.parts:
-                for part in building.parts:
-                    self.classify(part)
-    
-    def classify(self, part):
+    def do(self, footprint):
+        if (footprint.bldgPart is footprint.building and not footprint.building.alsoPart):
+            # nothing to classify
+            return 
+        
         bldgFacadeClassesInherited = False
-        bldgPolygon = part.polygon.building.polygon
+        bldgPolygon = footprint.polygon.building.polygon
         # assign facade class to the edges of the building part
-        for vector in part.polygon.getVectors():
-            edge = vector.edge
-            if not edge.cl:
+        for vector in footprint.polygon.getVectors():
+            edge, facade = vector.edge, vector.facade
+            
+            if facade.visible and not edge.cl:
                 if not bldgFacadeClassesInherited:
                     saFeature = bldgPolygon.saFeature
                     if saFeature:
@@ -233,4 +231,4 @@ class FacadeClassificationPart:
                                     maxOverlap = overlap
                                     maxOverlapClass = bldgVector.edge.cl
                     
-                    edge.cl = maxOverlapClass
+                    facade.setClass(maxOverlapClass)

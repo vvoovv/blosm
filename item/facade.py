@@ -27,20 +27,25 @@ class Facade(Div):
         self.processed = False
         
         # set facade class
+        self.cl = None
         self.front = False
         self.side = False
         self.back = False
         self.shared = False
-        facadeClass = vector.edge.cl
-        if facadeClass:
-            if facadeClass == FacadeClass.front:
-                self.front = True
-            elif facadeClass == FacadeClass.side:
-                self.side = True
-            elif facadeClass == FacadeClass.shared:
-                self.shared = True
-            elif facadeClass == FacadeClass.back:
-                self.back = True
+        cl = vector.edge.cl
+        if cl:
+            self.setClass(cl)
         
         # <volumeGenerator> knows which geometry the facade items have and how to map UV-coordinates
         volumeGenerator.initFacadeItem(self)
+    
+    def setClass(self, cl):
+        self.cl = cl
+        if cl == FacadeClass.front:
+            self.front = True
+        elif cl == FacadeClass.side:
+            self.side = True
+        elif cl == FacadeClass.back:
+            self.back = True
+        elif cl == FacadeClass.shared:
+            self.shared = True
