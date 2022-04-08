@@ -21,6 +21,7 @@ import math, os, sys
 from threading import Thread
 import numpy
 from urllib import request
+import ssl
 import bpy
 
 from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
@@ -271,7 +272,9 @@ class Overlay:
                 }
             )
             try:
-                tileData = request.urlopen(req).read()
+                # a hack to avoid CERTIFICATE_VERIFY_FAILED error
+                ctx = ssl._create_unverified_context()
+                tileData = request.urlopen(req, context=ctx).read()
             except:
                 if getattr(sys.exc_info()[1], "code", None) == 404:
                     # The error code 404 means that the tile doesn't exist
@@ -306,6 +309,12 @@ class Overlay:
     
     def getOverlaySubDir(self):
         url = self.url
+        if url.startswith("https://api.mapbox.com"):
+            accessTokenPosition = url.find("?access_token=")
+            if accessTokenPosition != -1:
+                # Remove the access token to decrease the length of the path.
+                # Windows and probably the other OS have a limit for the path in the file system.
+                url = url[0:accessTokenPosition]
         urlOffset = 0
         if url[:7] == "http://":
             urlOffset = 7
@@ -385,6 +394,6 @@ overlayTypeData = {
     'mapbox-satellite': (Mapbox, "mapbox.satellite", 19),
     'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
     'arcgis-streets': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", 19),
-    'mapbox-streets': (Mapbox, "mapbox.streets", 19),
+    'mapbox-streets': (Overlay, "mapbox://styles/mapbox/streets-v11", 19),
     'custom': (Overlay, '', 19)
 }

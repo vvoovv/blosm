@@ -213,8 +213,8 @@ class Container(ItemRenderer):
         building = parentItem.building      
         face = self.r.createFace(building, indices)
         item = levelGroup.item
-        # <item.styleBlock.markup is 0> is an optimization to prevent numerous calls to the asset store
-        if item and not item.styleBlock.markup is 0:
+        # <item.styleBlock.markup != 0> is an optimization to prevent numerous calls to the asset store
+        if item and item.styleBlock.markup != 0:
             if item.materialId is None:
                 self.setMaterialId(
                     item,

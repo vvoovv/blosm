@@ -300,6 +300,8 @@ class CurveRenderer(Renderer):
     def createBlenderObject(self, name, location, collection=None, parent=None):
         curve = bpy.data.curves.new(name, 'CURVE')
         curve.fill_mode = 'NONE'
+        if hasattr(curve, "bevel_mode"):
+            curve.bevel_mode = 'OBJECT'
         obj = bpy.data.objects.new(name, curve)
         if location:
             obj.location = location
