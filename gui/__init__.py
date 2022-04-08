@@ -64,9 +64,27 @@ _defaultLevels = (
     (6, 10)
 )
 
+
 def getBlenderMaterials(self, context):
     materialType = context.scene.blosm.materialType
     return tuple((m[0], m[0], m[0]) for m in _blenderMaterials if m[1] == materialType)
+
+
+_gnSetups2d = []
+def updateGnBlendFile2d(self, context):
+    _gnSetups2d.clear()
+    
+    filepath = os.path.realpath(
+        bpy.path.abspath(self.gnBlendFile2d)
+    )
+    if os.path.isfile(filepath):
+        with bpy.data.libraries.load(filepath) as (data_from, data_to):
+            if data_from.node_groups:
+                _gnSetups2d.extend((gnSetup, gnSetup, gnSetup) for gnSetup in data_from.node_groups)
+
+
+def getGnSetups2d(self, context):
+    return _gnSetups2d
 
 
 def addDefaultLevels():
@@ -418,8 +436,13 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             #box.prop(addon, "straightAngleThreshold")
             
-            box = layout.box()
-            box.prop(addon, "singleObject")
+            layout.box().prop(addon, "singleObject")
+            
+            if addon.singleObject:
+                box = layout.box()
+                box.label(text="[Geometry Nodes]:")
+                box.prop(addon, "gnBlendFile2d", text="File")
+                box.prop(addon, "gnSetup2d", text="Name")
             
             layout.box().prop(addon, "ignoreGeoreferencing")
             
@@ -950,6 +973,22 @@ class BlosmProperties(bpy.types.PropertyGroup):
     materialScript: bpy.props.StringProperty(
         name = "Script",
         description = "A Python script to generate materials with selected textures"
+    )
+    
+    #
+    # Properties for a Geometry Nodes setup applied to building footprints
+    #
+    gnBlendFile2d: bpy.props.StringProperty(
+        name = "File with Geometry Nodes",
+        subtype = 'FILE_PATH',
+        description = "Path to a Blender file with a Geometry Nodes setup applied to building footprints",
+        update = updateGnBlendFile2d
+    )
+    
+    gnSetup2d: bpy.props.EnumProperty(
+        name = "Geometry Nodes setup",
+        items = getGnSetups2d,
+        description = "A Geometry Nodes setup applied to building footprints"
     )
 
 
