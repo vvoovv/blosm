@@ -224,6 +224,22 @@ class BlenderApp(BaseApp):
                 )
             
             self.setAssetPackagePaths()
+        
+        if self.mode == BaseApp.twoD and self.gnSetup2d:
+            filepath = os.path.realpath(
+                bpy.path.abspath(self.gnBlendFile2d)
+            )
+            try:
+                with bpy.data.libraries.load(filepath) as (data_from, data_to):
+                    data_to.node_groups = [self.gnSetup2d]
+            except Exception as _:
+                raise Exception(
+                    "Unable to load the Geometry Nodes setup with tha name \"" + self.gnSetup2d + "\"" +\
+                    "from the file " + filepath
+                )
+            # A Geometry Nodes setup with name <self.gnSetup2d> may alredy exist.
+            # That's why following line
+            self.gnSetup2d = data_to.node_groups[0].name 
     
     def validateAssetsDirContent(self, context):
         assetsDir = self.getAssetsDir(context)
