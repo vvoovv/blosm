@@ -32,6 +32,7 @@ class Facade(Div):
         self.side = False
         self.back = False
         self.shared = False
+        # If <vector> lies on the building footprint, its edge may hold the facade class
         cl = vector.edge.cl
         if cl:
             self.setClass(cl)

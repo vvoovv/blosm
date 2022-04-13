@@ -159,7 +159,7 @@ class FacadeClassificationPart:
         for vector in footprint.polygon.getVectors():
             edge, facade = vector.edge, vector.facade
             
-            if facade.visible and not edge.cl:
+            if facade.visible and not facade.cl:
                 if not bldgFacadeClassesInherited:
                     saFeature = bldgPolygon.saFeature
                     if saFeature:
@@ -200,7 +200,9 @@ class FacadeClassificationPart:
                     
                     bldgFacadeClassesInherited = True
                 
-                if not edge.cl:
+                if edge.cl:
+                    facade.setClass(edge.cl)
+                else:
                     # We try to estimate the facade class for <vector.edge> by projecting the vectors
                     # of the building footprint on it and checking if the projection overlaps with <vector>
                     # We ingore complex things like concave parts of the building footprint.
