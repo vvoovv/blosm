@@ -4,6 +4,7 @@ from .scope import *
 
 from item.div import Div as ItemDiv
 from item.level import Level as ItemLevel, CurtainWall as ItemCurtainWall
+from item.top import Top as ItemTop
 from item.bottom import Bottom as ItemBottom
 from item.window import Window as ItemWindow
 from item.balcony import Balcony as ItemBalcony
@@ -294,7 +295,19 @@ class Ridge(Item):
 class Dormer(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
-        super().__init__(defName, use, markup, condition, attrs) 
+        super().__init__(defName, use, markup, condition, attrs)
+
+
+class Top(Item):
+
+    def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
+        super().__init__(defName, use, markup, condition, attrs)
+        self.isLevel = True
+        self.isBottom = False
+        self.isTop = True
+        
+    def getItem(self, parent):
+        return ItemTop(parent, self)
 
 
 class Bottom(Item):
