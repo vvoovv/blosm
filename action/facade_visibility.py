@@ -241,6 +241,9 @@ class FacadeVisibility:
                                 # all intersections with the way-segment itself are passages
                                 for edge, intsectX in edgeIntersections:
                                     if abs(intsectX) <= 1.001:
+                                        # don't override higher way level
+                                        if edge.visInfo.waySegment and WayLevel[way.category] > WayLevel[edge.visInfo.waySegment.way.category]:
+                                            continue                                        
                                         edge.cl = FacadeClass.passage # facade with passage 
                                         edge._visInfo.value = 1.
                                         edge.visInfo.update(edge._visInfo)
