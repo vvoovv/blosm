@@ -35,6 +35,7 @@ class GnBldg2dManager:
     def __init__(self, app):
         self.layerClass = GnBldg2dLayer
         self.renderer = GnBldg2dRenderer(app)
+        self.acceptBroken = False
     
     def parseWay(self, element, elementId):
         if element.closed:
