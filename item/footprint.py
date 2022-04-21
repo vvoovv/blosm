@@ -11,16 +11,12 @@ class Footprint(Item):
     def __init__(self, bldgPart, building, styleBlock=None):
         # <styleBlock> is the style block within the markup definition,
         # if the footprint is generated through the markup definition
-        super().__init__(None, None)
-        # A data attribute for the entrance to look up in the polygon vertices.
-        # Typically, it's "entrance" from OSM, that designates an etrance to the building.
-        self.entranceAttr = "entrance"
+        super().__init__(None, None, styleBlock)
         self.bldgPart = bldgPart
         if bldgPart:
             self.polygon = bldgPart.polygon
             self.element = bldgPart.element
         self.building = building
-        self.styleBlock = styleBlock
         # all style blocks that define the style for the building
         self.buildingStyle = None
         self.projections = None

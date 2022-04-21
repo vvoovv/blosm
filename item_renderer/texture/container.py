@@ -77,7 +77,15 @@ class Container(ItemRenderer):
             #face = self.r.createFace(item.building, item.indices)
             #self.renderCladding(item, face, item.uvs)
             #return
-            self.renderLevels(item)
+            if item.highEnoughForLevel:
+                self.renderLevels(item)
+            else:
+                # No levels, so we render cladding only.
+                self.renderCladding(
+                    item,
+                    self.r.createFace(item.building, item.indices),
+                    item.uvs
+                )
         else:
             self.renderDivs(item)
         if not item.valid:

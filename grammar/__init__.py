@@ -216,8 +216,8 @@ class Div(Item):
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
     
-    def getItem(self, itemFactory, parent):
-        return ItemDiv.getItem(itemFactory, parent, self)
+    def getItem(self, parent):
+        return ItemDiv(parent, parent.footprint, self)
 
 
 class Level(Item):
@@ -270,8 +270,8 @@ class Door(Item):
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         
-    def getItem(self, itemFactory, parent):
-        return ItemDoor.getItem(itemFactory, parent, self)
+    def getItem(self, parent):
+        return ItemDoor(parent, parent.footprint, self)
         
 
 class Chimney(Item):

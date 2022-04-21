@@ -245,6 +245,7 @@ class SetupBlender(Setup):
                 Div as DivRendererExport,\
                 Level as LevelRendererExport,\
                 CurtainWall as CurtainWallRendererExport,\
+                Top as TopRendererExport,\
                 Bottom as BottomRendererExport,\
                 Door as DoorRendererExport,\
                 RoofFlat as RoofFlatRendererExport,\
@@ -259,6 +260,7 @@ class SetupBlender(Setup):
                 Div = DivRendererExport(),
                 Level = LevelRendererExport(),
                 CurtainWall = CurtainWallRendererExport(),
+                Top = TopRendererExport(),
                 Bottom = BottomRendererExport(),
                 Door = DoorRendererExport(),
                 RoofFlat = RoofFlatRendererExport(),
@@ -276,6 +278,7 @@ class SetupBlender(Setup):
                 Div as DivRenderer,\
                 Level as LevelRenderer,\
                 CurtainWall as CurtainWallRenderer,\
+                Top as TopRenderer,\
                 Bottom as BottomRenderer,\
                 Door as DoorRenderer,\
                 RoofFlat as RoofFlatRenderer,\
@@ -290,6 +293,7 @@ class SetupBlender(Setup):
                 Div = DivRenderer(),
                 Level = LevelRenderer(),
                 CurtainWall = CurtainWallRenderer(),
+                Top = TopRenderer(),
                 Bottom = BottomRenderer(),
                 Door = DoorRenderer(),
                 RoofFlat = RoofFlatRenderer(),

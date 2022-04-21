@@ -2,7 +2,7 @@
 
 class Item:
     
-    def __init__(self, parent, footprint):
+    def __init__(self, parent, footprint, styleBlock):
         self.valid = True
         # for example, a parent for a facade is a footprint
         self.parent = parent
@@ -13,7 +13,7 @@ class Item:
         # within a markup definition.
         # Typically a style block is defined in the markup definition, however it can be also defined
         # at the very top if the style definition for the item Footprint, Facade, RoofSide, Ridge, Roof
-        self.styleBlock = None
+        self.styleBlock = styleBlock
         self.width = None
         self.relativeWidth = None
         self.hasFlexWidth = False

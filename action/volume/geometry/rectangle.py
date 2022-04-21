@@ -14,7 +14,13 @@ def _updateFacadeBottomVerts(facade, z, verts):
     facade.indices = (numVerts, numVerts+1, indices[2], indices[3])
     
     facade.minHeight = z
-    facade.minLevel = facade.footprint.levelHeights.calculateMinLevelFromMinHeight(z)
+    
+    minLevel = facade.footprint.levelHeights.calculateMinLevelFromMinHeight(z)
+    if minLevel == facade.footprint.numLevels:
+        facade.highEnoughForLevel = False
+    else:
+        facade.minLevel = minLevel
+
 
 def _updateFacadeTopVerts(facade, z, verts):
     numVerts = len(verts)

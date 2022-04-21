@@ -18,8 +18,7 @@ class ItemSize:
 class Container(Item):
     
     def __init__(self, parent, footprint, styleBlock):
-        super().__init__(parent, footprint)
-        self.styleBlock = styleBlock
+        super().__init__(parent, footprint, styleBlock)
         # Look and Feel of the item
         # It may override the one defined for the whole building in the <Meta>
         self.laf = None

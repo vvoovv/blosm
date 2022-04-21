@@ -184,18 +184,19 @@ class LevelHeights:
         else:
             factorBottom = 0.3
             factorTop = 1 - factorBottom
-            footprint = self.footprint
             levelHeight = self.levelHeight
             # The heights of the bottom and the ground level have been already
             # calculated in <self.calculateHeight()>
             groundLevelHeight = self.groundLevelHeight if self.groundLevelHeight else levelHeight
-            heightTillGroundLevel = self.bottomHeight + groundLevelHeight
+            heightTillFirstLevel = self.bottomHeight + groundLevelHeight
             if footprint.building.renderInfo.altitudeDifference:
-                heightTillGroundLevel += footprint.building.renderInfo.altitudeDifference
-            if heightTillGroundLevel >= minHeight > (heightTillGroundLevel - factorTop * groundLevelHeight):
+                heightTillFirstLevel += footprint.building.renderInfo.altitudeDifference
+            if heightTillFirstLevel >= minHeight > (heightTillFirstLevel - factorTop * groundLevelHeight):
                 return 1
             else:
-                return 1 + floor(( minHeight - heightTillGroundLevel)/levelHeight)
+                n = ( minHeight - heightTillFirstLevel)/levelHeight
+                nf = floor(n)
+                return 1 + nf if (n - nf) < factorBottom else 2 + nf
     
     def getLevelHeight(self, index):
         if self.levelHeight:

@@ -3,6 +3,7 @@ from .container import Container
 from ..facade import Facade as FacadeBase
 from ..div import Div as DivBase
 from ..level import Level as LevelBase
+from ..top import Top as TopBase
 from ..bottom import Bottom as BottomBase
 from .door import Door
 from .level import CurtainWall
@@ -38,6 +39,15 @@ class Level(LevelBase, Container):
         self.Container = Container
         Container.__init__(self, exportMaterials=False)
         LevelBase.__init__(self)
+
+
+class Top(TopBase, Container):
+    
+    def __init__(self):
+        # a reference to the Container class used in the parent classes
+        self.Container = Container
+        Container.__init__(self, exportMaterials=False)
+        TopBase.__init__(self)
 
 
 class Bottom(BottomBase, Container):
