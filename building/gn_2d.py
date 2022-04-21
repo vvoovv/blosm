@@ -48,7 +48,11 @@ class GnBldg2dManager:
 
     def parseRelation(self, element, elementId):
         # skip the relation for now
-        element.valid = False
+        if element.valid:
+            element.makePolygon()
+            # render it in <BaseManager.render(..)>
+            element.r = True
+            element.rr = self.renderer
 
     def createLayer(self, layerId, app, **kwargs):
         return app.createLayer(layerId, self.layerClass)
