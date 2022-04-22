@@ -54,6 +54,10 @@ class LevelHeights:
             if not levelHeight:
                 levelHeight = volumeGenerator.levelHeight
             self.levelHeight = levelHeight
+            self.groundLevelHeight = footprint.getStyleBlockAttr("groundLevelHeight")
+            self.lastLevelHeight = footprint.getStyleBlockAttr("lastLevelHeight")
+            if self.lastLevelHeight:
+                self.multipleHeights = True
         
         h = footprint.getStyleBlockAttr("height")
         if h:
@@ -69,7 +73,7 @@ class LevelHeights:
                     # then we adjust levels height based on <h> and <footprint.numLevels>
                     self.adjustLevelHeights(levelsHeight, h)
             elif numLevels is None:
-                self.calculateNumLevelsFromHeight(h)
+                self.calculateNumLevelsFromHeight(h, volumeGenerator)
             else: # numLevels == 0:
                 footprint.numLevels = 0
         else:
@@ -112,11 +116,7 @@ class LevelHeights:
             #
             # ground level
             #
-            h = footprint.getStyleBlockAttr("groundLevelHeight")
-            if h:
-                self.groundLevelHeight = h
-            else:
-                h = levelHeight
+            h = self.groundLevelHeight or levelHeight
             #
             # the levels above the ground level
             #
@@ -127,12 +127,7 @@ class LevelHeights:
                 #
                 # the last level
                 #
-                lastLevelHeight = footprint.getStyleBlockAttr("lastLevelHeight")
-                if lastLevelHeight:
-                    self.lastLevelHeight = lastLevelHeight
-                    self.multipleHeights = True
-                else:
-                    lastLevelHeight = levelHeight
+                lastLevelHeight = self.lastLevelHeight or levelHeight
                 h += lastLevelHeight
                 #
                 # the levels between the ground and the last ones
@@ -230,6 +225,9 @@ class LevelHeights:
     def adjustLevelHeights(self, levelsHeight, totalHeight):
         """
         Adjust the height of levels
+        
+        Args:
+            levelsHeight (float): calculated height of all levels
         """
         footprint = self.footprint
         totalHeight -= self.bottomHeight
@@ -285,12 +283,12 @@ class LevelHeights:
         if self.lastRoofLevelHeight:
             self.lastRoofLevelHeight *= factor
     
-    def calculateNumLevelsFromHeight(self, totalHeight):
+    def calculateNumLevelsFromHeight(self, totalHeight, volumeGenerator):
         if self.levelHeights:
             numLevels, levelsHeight = self.levelHeights.calculateNumLevelsFromHeight(totalHeight)
         else:
             footprint = self.footprint
-            # calculate the height of wall levels
+            # calculate the actual height of wall levels
             levelsHeight = totalHeight - self.bottomHeight
             if footprint.building.renderInfo.altitudeDifference:
                 levelsHeight -= footprint.building.renderInfo.altitudeDifference
@@ -323,4 +321,4 @@ class LevelHeights:
                 numLevels = 1
         
         footprint.numLevels = numLevels
-        self.adjustLevelHeights(levelsHeight, totalHeight)
+        self.adjustLevelHeights(self.calculateLevelsHeight(volumeGenerator), totalHeight)
