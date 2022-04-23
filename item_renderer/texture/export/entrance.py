@@ -1,24 +1,24 @@
 import os
 from util.blender_extra.material import setImage
 from .container import Container
-from ..door import Door as DoorBase
+from ..entrance import Entrance as EntranceBase
 from ...util import getPath
 
 
-_doorFaceWidthPx = 1028
+_entranceFaceWidthPx = 1028
 
 
-class Door(DoorBase, Container):
+class Entrance(EntranceBase, Container):
         
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
         Container.__init__(self, exportMaterials=True)
-        DoorBase.__init__(self)
+        EntranceBase.__init__(self)
     
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
-        return "door_%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
+        return "entrance_%s_%s_%s" % (claddingTextureInfo["name"], color, facadeTextureInfo["name"])\
             if claddingTextureInfo and color else\
             ("%s_%s" % (color, facadeTextureInfo["name"]) if color else facadeTextureInfo["name"])
 
@@ -30,7 +30,7 @@ class Door(DoorBase, Container):
                 item,
                 parentItem.building,
                 # building part
-                "door",
+                "entrance",
                 uvs
             )
         if item.materialId:
@@ -44,9 +44,9 @@ class Door(DoorBase, Container):
             )
         self.r.setMaterial(face, item.materialId)
     
-    def makeTexture(self, item, textureFilename, textureDir, textureFilepath, textColor, doorTextureInfo, claddingTextureInfo, uvs):
+    def makeTexture(self, item, textureFilename, textureDir, textureFilepath, textColor, entranceTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter
-        scene = textureExporter.getTemplateScene("compositing_door_cladding_color")
+        scene = textureExporter.getTemplateScene("compositing_entrance_cladding_color")
         nodes = textureExporter.makeCommonPreparations(
             scene,
             textureFilename,
@@ -54,33 +54,33 @@ class Door(DoorBase, Container):
         )
         faceWidthM = uvs[1][0] - uvs[0][0]
         faceHeightM = uvs[2][1] - uvs[1][1]
-        faceWidthPx = _doorFaceWidthPx
+        faceWidthPx = _entranceFaceWidthPx
         faceHeightPx = faceHeightM / faceWidthM * faceWidthPx
         # the size of the empty image
         image = nodes["empty_image"].image
         image.generated_width = faceWidthPx
         image.generated_height = faceHeightPx
-        # door texture
+        # entrance texture
         textureExporter.setImage(
-            doorTextureInfo["name"],
-            getPath(self.r, doorTextureInfo["path"]),
+            entranceTextureInfo["name"],
+            getPath(self.r, entranceTextureInfo["path"]),
             nodes,
-            "door_texture"
+            "entrance_texture"
         )
-        # scale for the door texture
-        scaleY = doorTextureInfo["textureHeightM"]/doorTextureInfo["textureHeightPx"]*faceHeightPx/faceHeightM
+        # scale for the entrance texture
+        scaleY = entranceTextureInfo["textureHeightM"]/entranceTextureInfo["textureHeightPx"]*faceHeightPx/faceHeightM
         textureExporter.setScaleNode(
             nodes,
-            "door_scale",
-            doorTextureInfo["textureWidthM"]/doorTextureInfo["textureWidthPx"]*faceWidthPx/faceWidthM,
+            "entrance_scale",
+            entranceTextureInfo["textureWidthM"]/entranceTextureInfo["textureWidthPx"]*faceWidthPx/faceWidthM,
             scaleY
         )
-        # translate for the door texture
+        # translate for the entrance texture
         textureExporter.setTranslateNode(
             nodes,
-            "door_translate",
+            "entrance_translate",
             0,
-            (scaleY*doorTextureInfo["textureHeightPx"] - faceHeightPx)/2
+            (scaleY*entranceTextureInfo["textureHeightPx"] - faceHeightPx)/2
         )
         # cladding texture
         textureExporter.setImage(

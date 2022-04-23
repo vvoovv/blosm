@@ -11,7 +11,7 @@ from item.level import Level, CurtainWall
 from item.div import Div
 from item.bottom import Bottom
 from item.window import Window
-from item.door import Door
+from item.entrance import Entrance
 from item.balcony import Balcony
 from item.chimney import Chimney
 
@@ -32,7 +32,7 @@ _itemClasses = (
         Div,
         Bottom,
         Window,
-        Door,
+        Entrance,
         Balcony,
         Chimney,
         RoofFlat,

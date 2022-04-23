@@ -1,17 +1,17 @@
 import bpy
 from .container import Container
-from ..door import Door as DoorBase
+from ..entrance import Entrance as EntranceBase
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 from ...util import getPath
 
 
-class Door(DoorBase, Container):
+class Entrance(EntranceBase, Container):
     
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
         Container.__init__(self, exportMaterials=False)
-        DoorBase.__init__(self)
+        EntranceBase.__init__(self)
     
     def renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
         face = self.r.createFace(parentItem.building, indices)
@@ -21,18 +21,18 @@ class Door(DoorBase, Container):
                 item,
                 parentItem.building,
                 # building part
-                "door",
+                "entrance",
                 uvs
             )
         if item.materialId:
             facadeTextureInfo, claddingTextureInfo = item.materialData
             faceWidth = uvs[1][0] - uvs[0][0]
             faceHeight = uvs[2][1] - uvs[1][1]
-            doorWidth = facadeTextureInfo["textureWidthM"]
-            doorHeight = facadeTextureInfo["textureHeightM"]
-            u1 = 0.5 - 0.5*faceWidth/doorWidth
+            entranceWidth = facadeTextureInfo["textureWidthM"]
+            entranceHeight = facadeTextureInfo["textureHeightM"]
+            u1 = 0.5 - 0.5*faceWidth/entranceWidth
             u2 = 1. - u1
-            v = faceHeight/doorHeight
+            v = faceHeight/entranceHeight
             self.r.setUvs(
                 face,
                 # we assume that the face is a rectangle
@@ -73,7 +73,7 @@ class Door(DoorBase, Container):
 
     def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo):
         if claddingTextureInfo:
-            materialTemplateName = "door_cladding_color" if self.r.useCladdingColor else "door_cladding"
+            materialTemplateName = "entrance_cladding_color" if self.r.useCladdingColor else "entrance_cladding"
         else:
             materialTemplateName = "export"
         return self.getMaterialTemplate(materialTemplateName)

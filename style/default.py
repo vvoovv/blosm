@@ -154,7 +154,7 @@ styles = {
             Level(
                 indices = (0, 0),
                 markup = [
-                    Door(label = "entrance door")
+                    Entrance(label = "entrance door")
                 ]
             )
         ]

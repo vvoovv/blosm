@@ -1,7 +1,7 @@
 import os, json
 
 
-_parts = ("facade", "level", "groundlevel", "door")
+_parts = ("facade", "level", "groundlevel", "entrance")
 
 _uses = (
     "apartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"

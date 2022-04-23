@@ -5,7 +5,7 @@ from ..div import Div as DivBase
 from ..level import Level as LevelBase
 from ..top import Top as TopBase
 from ..bottom import Bottom as BottomBase
-from .door import Door
+from .entrance import Entrance
 from .level import CurtainWall
 
 from ..roof_flat import RoofFlat as RoofFlatBase

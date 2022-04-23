@@ -172,7 +172,7 @@ def setup(app, data):
             Level = GeometryRenderer(),
             CurtainWall = GeometryRenderer(),
             Bottom = GeometryRenderer(),
-            Door = GeometryRenderer(),
+            Entrance = GeometryRenderer(),
             RoofFlat = GeometryRendererRoofFlat(),
             RoofFlatMulti = GeometryRenderer(),
             RoofProfile = GeometryRenderer(),

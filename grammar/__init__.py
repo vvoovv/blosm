@@ -8,7 +8,7 @@ from item.top import Top as ItemTop
 from item.bottom import Bottom as ItemBottom
 from item.window import Window as ItemWindow
 from item.balcony import Balcony as ItemBalcony
-from item.door import Door as ItemDoor
+from item.entrance import Entrance as ItemEntrance
 
 
 # style attributes that are evaluated once per building by default
@@ -265,13 +265,13 @@ class Balcony(Item):
         return ItemBalcony.getItem(itemFactory, parent, self)
 
 
-class Door(Item):
+class Entrance(Item):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)
         
     def getItem(self, parent):
-        return ItemDoor(parent, parent.footprint, self)
+        return ItemEntrance(parent, parent.footprint, self)
         
 
 class Chimney(Item):

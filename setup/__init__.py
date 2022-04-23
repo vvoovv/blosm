@@ -247,7 +247,7 @@ class SetupBlender(Setup):
                 CurtainWall as CurtainWallRendererExport,\
                 Top as TopRendererExport,\
                 Bottom as BottomRendererExport,\
-                Door as DoorRendererExport,\
+                Entrance as EntranceRendererExport,\
                 RoofFlat as RoofFlatRendererExport,\
                 RoofFlatMulti as RoofFlatMultiRendererExport,\
                 RoofProfile as RoofProfileRendererExport,\
@@ -262,7 +262,7 @@ class SetupBlender(Setup):
                 CurtainWall = CurtainWallRendererExport(),
                 Top = TopRendererExport(),
                 Bottom = BottomRendererExport(),
-                Door = DoorRendererExport(),
+                Entrance = EntranceRendererExport(),
                 RoofFlat = RoofFlatRendererExport(),
                 RoofFlatMulti = RoofFlatMultiRendererExport(),
                 RoofProfile = RoofProfileRendererExport(),
@@ -280,7 +280,7 @@ class SetupBlender(Setup):
                 CurtainWall as CurtainWallRenderer,\
                 Top as TopRenderer,\
                 Bottom as BottomRenderer,\
-                Door as DoorRenderer,\
+                Entrance as EntranceRenderer,\
                 RoofFlat as RoofFlatRenderer,\
                 RoofFlatMulti as RoofFlatMultiRenderer,\
                 RoofProfile as RoofProfileRenderer,\
@@ -295,7 +295,7 @@ class SetupBlender(Setup):
                 CurtainWall = CurtainWallRenderer(),
                 Top = TopRenderer(),
                 Bottom = BottomRenderer(),
-                Door = DoorRenderer(),
+                Entrance = EntranceRenderer(),
                 RoofFlat = RoofFlatRenderer(),
                 RoofFlatMulti = RoofFlatMultiRenderer(),
                 RoofProfile = RoofProfileRenderer(),

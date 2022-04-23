@@ -1,7 +1,7 @@
 from . import Item
 
 
-class Door(Item):
+class Entrance(Item):
     
     # default values
     width = 1.2
@@ -10,4 +10,4 @@ class Door(Item):
     marginRight = 1.
 
     def getWidth(self):
-        return Door.marginLeft + (self.getStyleBlockAttr("width") or Door.width) + Door.marginRight
+        return Entrance.marginLeft + (self.getStyleBlockAttr("width") or Entrance.width) + Entrance.marginRight
