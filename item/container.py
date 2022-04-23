@@ -60,10 +60,11 @@ class Container(Item):
     def getWidth(self):
         if not self.markup:
             self.prepareMarkupItems()
+        # if there is no markup 0. is returned
         return self.width or (
             self.calculateMarkupDivision() if self.arrangement is Horizontal else\
                 self.getWidthForVerticalArrangement()
-        )
+        ) if self.markup else 0.
     
     def prepareMarkupItems(self):
         """
