@@ -101,9 +101,8 @@ class Container(Item):
         totalFlexWidth = 0.
         totalRelativeWidth = 0.
         
-        if self.width:
-            repeat = self.getStyleBlockAttr("repeat")
-            repeat = True if repeat is None else bool(repeat)
+        # <repeat> is equal to <True> by default
+        repeat = bool( self.getStyleBlockAttr("repeat") )
         
         # iterate through the markup items
         for item in markup:

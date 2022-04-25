@@ -80,7 +80,7 @@ class Container(ItemRenderer):
             if item.highEnoughForLevel:
                 self.renderLevels(item)
             else:
-                # No levels, so we render cladding only.
+                # No space for levels, so we render cladding only.
                 self.renderCladding(
                     item,
                     self.r.createFace(item.building, item.indices),
@@ -92,19 +92,19 @@ class Container(ItemRenderer):
             return
     
     def renderLevels(self, item):
-        geometry = item.geometry
-        levelGroups = item.levelGroups
-        levelGroups.init()
-        # sanity check
-        width = item.getWidthForVerticalArrangement()
-        if width > item.width:
-            item.valid = False
-            return
+        item.levelGroups.init()
+        
+        for _item in item.markup:
+            _item.prepareMarkupItems()
+            # inherit the width from <item> to the markup items
+            _item.width = item.width
+            if _item.markup:
+                _item.calculateMarkupDivision()
         
         # calculate number of repeats in the method below
         item.finalizeMarkupDivision()
         
-        geometry.renderLevelGroups(item, self)
+        item.geometry.renderLevelGroups(item, self)
     
     def renderDivs(self, item):
         # <r> is the global building renderer
