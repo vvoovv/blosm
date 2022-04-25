@@ -108,7 +108,6 @@ class Container(Item):
         for item in markup:
             width = item.getStyleBlockAttr("width")
             if width:
-                width += item.getMargin()
                 item.width = width
                 totalFixedWidth += width
             else:
