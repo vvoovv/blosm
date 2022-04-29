@@ -65,8 +65,9 @@ class RectangleFRA(Geometry):
             itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
             rs
         ):
+        unitVector = Vector((unitVector[0], unitVector[1], 0.))
         # <startIndex> is not used by the <Rectangle> geometry
-        verts = building.verts
+        verts = building.renderInfo.verts
         # <texVb> is the V-coordinate for the bottom vertices of the rectangular items
         # to be created out of <item>
         texVb = item.uvs[0][1]
@@ -85,8 +86,8 @@ class RectangleFRA(Geometry):
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
             # on the right side of an item with rectangular geometry to be created
             # Additional vertices can be created inside <_item.getItemRenderer(item.itemRenderers).render(..)>,
-            # that's why we use <len(building.verts)>
-            indexRB = len(building.verts)
+            # that's why we use <len(verts)>
+            indexRB = len(verts)
             indexRT = indexRB + 1
             incrementVector = _item.width * unitVector
             v1 = v1 + incrementVector
@@ -194,16 +195,25 @@ class RectangleFRA(Geometry):
         verts.append(verts[rs.indexBL] + height*zAxis)
         verts.append(verts[rs.indexBR] + height*zAxis)
         texVt = rs.texVb + height
-        if levelGroup.item:
+        
+        item = levelGroup.item
+        if item:
             # Set the geometry for the <levelGroup.item>;
             # division of a rectangle can only generate rectangles
-            levelGroup.item.geometry = self
-        levelRenderer.renderLevelGroup(
-            parentItem,
-            levelGroup,
-            (rs.indexBL, rs.indexBR, indexTR, indexTL),
-            ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-        )
+            item.geometry = self
+        
+            if item.markup:
+                item.indices = (rs.indexBL, rs.indexBR, indexTR, indexTL)
+                item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                levelRenderer.renderDivs(levelGroup.item)
+        
+        if not item or not item.markup:
+            levelRenderer.renderLevelGroup(
+                parentItem,
+                levelGroup,
+                (rs.indexBL, rs.indexBR, indexTR, indexTL),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            )
         rs.indexBL = indexTL
         rs.indexBR = indexTR
         rs.texVb = texVt
@@ -215,16 +225,25 @@ class RectangleFRA(Geometry):
         # to be created out of <parentItem>
         texUl = parentItem.uvs[0][0]
         texUr = parentItem.uvs[1][0]
+        
+        item = levelGroup.item
         if levelGroup.item:
             # Set the geometry for the <group.item>;
             # division of a rectangle can only generate rectangles
             levelGroup.item.geometry = self
-        levelRenderer.renderLevelGroup(
-            parentItem,
-            levelGroup,
-            (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
-            ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-        )
+            
+            if item.markup:
+                item.indices = (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3])
+                item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                levelRenderer.renderDivs(levelGroup.item)
+        
+        if not item or not item.markup:
+            levelRenderer.renderLevelGroup(
+                parentItem,
+                levelGroup,
+                (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            )
     
     def join(self, facade, _facade):
         # <self> is the geometry for <facade>

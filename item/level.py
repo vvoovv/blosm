@@ -24,8 +24,6 @@ class CurtainWall(Level):
     def __init__(self, parent, styleBlock):
         super().__init__(parent, styleBlock)
         self.buildingPart = "curtain_wall"
-        # It doesn't need the <facadePatternInfo>
-        self.hasFacadePatternInfo = False
     
     def getLevelRenderer(self, levelGroup, itemRenderers):
         """

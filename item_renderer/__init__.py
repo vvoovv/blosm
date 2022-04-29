@@ -3,7 +3,6 @@ import bpy
 
 from util.blender import loadMaterialsFromFile
 from util.blender_extra.material import createMaterialFromTemplate, setImage
-from .util import setTextureSize, setTextureSize2
 
 _materialTemplateFilename = "building_material_templates.blend"
 
@@ -22,7 +21,7 @@ def _setAssetInfoCache(building, assetInfo, key):
 
 class ItemRenderer:
     
-    def __init__(self, exportMaterials=False):
+    def __init__(self, exportMaterials):
         self.exportMaterials = exportMaterials
         self.materialTemplateFilename = _materialTemplateFilename
     
@@ -242,3 +241,18 @@ class ItemRenderer:
             ( ( texUl + (uv[0]-minU)/deltaU, texVb + (uv[1]-minV)/deltaV ) for uv in uvs ),
             self.r.layer.uvLayerNameFacade
         )
+    
+    def getAssetInfo(self, item):
+        assetInfo = self.r.assetStore.getAssetInfo(
+            item.building,
+            item.getBuildingPart(),
+            self.getAssetType()
+        )
+        if assetInfo:
+            assetInfo = self.setAttributesForAssetInfo(assetInfo)
+            item.assetInfo = assetInfo
+        return assetInfo
+    
+    def getTileWidthM(self, item):
+        assetInfo = self.getAssetInfo(item)
+        return assetInfo["tileWidthM"] if assetInfo else 0.

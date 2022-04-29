@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import bpy
+from ..blender import loadImage
 from app.blender import app
 from defs import Keys
 
@@ -253,14 +254,7 @@ def setImage(fileName, directory, nodes, nodeName, imageSuffix=None):
     if node:
         if imageSuffix:
             fileName = "%s_%s.png" % (fileName[:-4], imageSuffix)
-        image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
-        if not image:
-            # absolute path!
-            imagePath = os.path.join(directory, fileName) if directory else fileName
-            try:
-                image = bpy.data.images.load(imagePath)
-            except Exception:
-                print("Unable to load the image %s" % imagePath)
+        image = loadImage(fileName, directory)
         node.image = image
     else:
         image = None

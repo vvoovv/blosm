@@ -13,6 +13,9 @@ class ItemRendererMixin:
     A mixin class
     """
     
+    def getAssetType(self):
+        return "texture"
+    
     def getCladdingMaterialId(self, item, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
         return "%s_%s%s" % (color, claddingTextureInfo["material"], os.path.splitext(claddingTextureInfo["name"])[1])\

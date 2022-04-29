@@ -1,5 +1,5 @@
 import bmesh
-from .. import ItemRenderer
+from . import ItemRendererTexture
 from util import zAxis
 
 
@@ -11,7 +11,7 @@ def _getEdge(bmVert):
     ).edge
 
 
-class RoofFlatMulti(ItemRenderer):
+class RoofFlatMulti(ItemRendererTexture):
     
     def render(self, roofItem):
         building = roofItem.building

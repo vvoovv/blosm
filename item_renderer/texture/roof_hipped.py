@@ -1,7 +1,7 @@
-from .. import ItemRenderer
+from . import ItemRendererTexture
 
 
-class RoofHipped(ItemRenderer):
+class RoofHipped(ItemRendererTexture):
         
     def render(self, roofItem):
         building = roofItem.building

@@ -1,8 +1,8 @@
-from .. import ItemRenderer
+from . import ItemRendererTexture
 from mathutils import Vector
 
 
-class RoofFlat(ItemRenderer):
+class RoofFlat(ItemRendererTexture):
     
     def render(self, roofItem):
         building = roofItem.building

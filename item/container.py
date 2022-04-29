@@ -22,9 +22,6 @@ class Container(Item):
         # Look and Feel of the item
         # It may override the one defined for the whole building in the <Meta>
         self.laf = None
-        # Typically <facadePatternInfo> can be calculated for all container items.
-        # But Curtain Wall doesn't need the <facadePatternInfo>
-        self.hasFacadePatternInfo = True
         # a Python list to store markup items
         self.markup = []
         # The meaning of <self.width> and <self.height> for the items derived from <Container>
@@ -57,14 +54,14 @@ class Container(Item):
         # an item renderer might need some data related to the material with <self.materialId>
         self.materialData = None
     
-    def getWidth(self):
-        if not self.markup:
+    def getWidth(self, globalRenderer):
+        if self.styleBlock.markup and not self.markup:
             self.prepareMarkupItems()
-        # if there is no markup 0. is returned
-        return self.width or (
-            self.calculateMarkupDivision() if self.arrangement is Horizontal else\
-                self.getWidthForVerticalArrangement()
-        ) if self.markup else 0.
+        
+        if self.markup:
+            return 0.
+        else:
+            return globalRenderer.itemRenderers[self.__class__.__name__].getTileWidthM(self)
     
     def prepareMarkupItems(self):
         """
@@ -94,15 +91,17 @@ class Container(Item):
         if symmetry:
             self.symmetry = symmetry
     
-    def calculateMarkupDivision(self):
+    def calculateMarkupDivision(self, globalRenderer):
         markup = self.markup
         
         totalFixedWidth = 0.
         totalFlexWidth = 0.
         totalRelativeWidth = 0.
+        noWidthItems = []
         
         # <repeat> is equal to <True> by default
         repeat = bool( self.getStyleBlockAttr("repeat") )
+        
         
         # iterate through the markup items
         for item in markup:
@@ -118,10 +117,13 @@ class Container(Item):
                 else:
                     # No width is given in the style block.
                     # So we calculate the width estimate
-                    width = item.getWidth()
-                    item.width = width
-                    item.hasFlexWidth = True
-                    totalFlexWidth += width
+                    width = item.getWidth(globalRenderer)
+                    if width:
+                        item.hasFlexWidth = True
+                        item.width = width
+                        totalFlexWidth += width
+                    else:
+                        noWidthItems.append(item)
         
         # treat the case with the symmetry
         symmetry = self.getStyleBlockAttr("symmetry")
@@ -246,16 +248,24 @@ class Container(Item):
             # there are no items with the relative width
             if self.width:
                 if totalNonRelativeWidth < self.width:
-                    extraWidth = self.width - totalNonRelativeWidth
-                    if totalFlexWidth:
-                        _totalFlexWidth = totalFlexWidth + extraWidth
+                    if noWidthItems:
+                        # Total width for the items in <noWidthItems>.
+                        # The items in <noWidthItems> have the same with by design
+                        _width = (self.width - totalNonRelativeWidth)/len(noWidthItems)
+                        for item in noWidthItems:
+                            item.width = _width
+                    elif totalFlexWidth:  
+                        factor = (self.width - totalFixedWidth)/totalFlexWidth
                         # distribute the excessive width among the markup items with the flexible width
                         for item in markup:
                             if item.hasFlexWidth:
-                                item.width *= _totalFlexWidth/totalFlexWidth
+                                item.width *= factor
                     else:
                         # distribute the excessive width to the left and right margins
                         pass # TODO
+                else:
+                    self.valid = False
+                    return
             else:
                 self.width = totalNonRelativeWidth
         # always return the total width of all markup elements

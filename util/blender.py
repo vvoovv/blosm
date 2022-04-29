@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import os
 import bpy, bmesh
 
 
@@ -255,3 +256,15 @@ def addShrinkwrapModifier(obj, target, offset):
     m.use_project_z = True
     m.target = target
     m.offset = offset
+
+
+def loadImage(fileName, directory):
+    image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
+    if not image:
+        # absolute path!
+        imagePath = os.path.join(directory, fileName) if directory else fileName
+        try:
+            image = bpy.data.images.load(imagePath)
+        except Exception:
+            print("Unable to load the image %s" % imagePath)
+    return image

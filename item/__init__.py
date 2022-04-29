@@ -22,6 +22,7 @@ class Item:
         # Python dictionary to cache attributes from <self.styleBlock> that are derived
         # from <grammar.value.Value>
         self._cache = {}
+        self.assetInfo = None
     
     def evaluateCondition(self, styleBlock):
         return not styleBlock.condition or styleBlock.condition(self)
@@ -71,6 +72,12 @@ class Item:
     
     def getCladdingColor(self):
         return self.getStyleBlockAttrDeep("claddingColor")
+
+    def getWidth(self, globalRenderer):
+        return globalRenderer.itemRenderers[self.__class__.__name__].getTileWidthM(self)
+    
+    def getBuildingPart(self):
+        return self.buildingPart
 
 
 from grammar import perBuilding

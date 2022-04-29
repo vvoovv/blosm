@@ -1,12 +1,12 @@
 from mathutils import Vector
-from .. import ItemRenderer
+from . import ItemRendererTexture
 from ..util import initUvAlongPolygonEdge
 from grammar import smoothness
 
 from util import zAxis
 
 
-class RoofPyramidal(ItemRenderer):
+class RoofPyramidal(ItemRendererTexture):
         
     def render(self, roofItem):
         smoothFaces = roofItem.getStyleBlockAttr("faces") is smoothness.Smooth

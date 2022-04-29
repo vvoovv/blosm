@@ -1,8 +1,8 @@
-from .. import ItemRenderer
+from . import ItemRendererTexture
 from grammar import smoothness
 
 
-class RoofProfile(ItemRenderer):
+class RoofProfile(ItemRendererTexture):
         
     def render(self, roofItem):
         building = roofItem.building

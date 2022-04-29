@@ -14,7 +14,7 @@ class ItemRendererMixin:
     
     def getCladdingMaterialId(self, item, claddingTextureInfo):
         return claddingTextureInfo["name"]
-
+    
     def createCladdingMaterial(self, materialName, claddingTextureInfo):
         materialTemplate = self.getMaterialTemplate(
             _claddingMaterialTemplateName

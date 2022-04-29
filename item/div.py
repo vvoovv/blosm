@@ -10,3 +10,6 @@ class Div(Container):
         self.minHeight = self.footprint.minHeight
         self.minLevel = self.footprint.minLevel
         self.highEnoughForLevel = True
+    
+    def getBuildingPart(self):
+        return self.parent.getBuildingPart()

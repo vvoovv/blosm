@@ -1,4 +1,5 @@
-from .. import ItemRenderer, _setAssetInfoCache
+from . import ItemRendererTexture
+from .. import _setAssetInfoCache
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
@@ -58,7 +59,7 @@ class RenderState:
         self.tmpTriangle = True
         
 
-class Container(ItemRenderer):
+class Container(ItemRendererTexture):
     """
     The base class for the item renderers Facade, Div, Layer, Bottom
     """
@@ -67,8 +68,6 @@ class Container(ItemRenderer):
         super().__init__(exportMaterials)
         self.claddingTexture = True
         self.renderState = RenderState()
-        # no pre-set <facadePatternInfo>
-        self.facadePatternInfo = None
     
     def renderMarkup(self, item):
         item.prepareMarkupItems()
@@ -99,7 +98,7 @@ class Container(ItemRenderer):
             # inherit the width from <item> to the markup items
             _item.width = item.width
             if _item.markup:
-                _item.calculateMarkupDivision()
+                _item.calculateMarkupDivision(self.r)
         
         # calculate number of repeats in the method below
         item.finalizeMarkupDivision()
@@ -115,7 +114,7 @@ class Container(ItemRenderer):
         
         if item.arrangement is Horizontal:
             # get markup width and number of repeats
-            item.calculateMarkupDivision()
+            #item.calculateMarkupDivision(r.assetStore)
             if not item.valid:
                 return
             # create vertices for the markup items
@@ -129,11 +128,10 @@ class Container(ItemRenderer):
             else:
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
-                verts = building.verts
                 rs = self.renderState
                 geometry.initRenderStateForDivs(rs, item)
                 # a unit vector along U-axis (the horizontal axis)
-                unitVector = (verts[parentIndices[1]] - verts[rs.indexLB]) / item.width
+                unitVector = item.parent.vector.unitVector
                 
                 # Generate Div items but the last one;
                 # the special case is when a symmetry is available

@@ -1,5 +1,5 @@
 import math
-from .. import ItemRenderer
+from . import ItemRendererTexture
 from ..util import initUvAlongPolygonEdge
 from grammar import smoothness
 from util import zAxis
@@ -36,7 +36,7 @@ generatrix_onion =(
 )
 
 
-class RoofGeneratrix(ItemRenderer):
+class RoofGeneratrix(ItemRendererTexture):
     
     def __init__(self, generatrix, basePointPosition, exportMaterials=False):
         super().__init__(exportMaterials)
