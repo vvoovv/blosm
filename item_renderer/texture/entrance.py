@@ -8,7 +8,7 @@ class Entrance:
     A mixin class for Entrance texture based item renderers
     """
     
-    def render(self, item, indices, uvs):
+    def render(self, item, levelGroup, indices, uvs):
         face = self.r.createFace(item.building, indices)
         if item.materialId is None:
             self.setMaterialId(

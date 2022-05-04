@@ -62,12 +62,16 @@ class RectangleFRA(Geometry):
         )
     
     def renderDivs(self,
-            itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
+            itemRenderer, item, levelGroup, unitVector, markupItemIndex1, markupItemIndex2, step,
             rs
         ):
+        # If <levelGroup> is given, that actually means that <item> is a level or contained
+        # inside another level item. In this case the call to <self.renderLevelGroup(..)>
+        # will be made later in the code
+        
         unitVector = Vector((unitVector[0], unitVector[1], 0.))
         # <startIndex> is not used by the <Rectangle> geometry
-        verts = building.renderInfo.verts
+        verts = item.building.renderInfo.verts
         # <texVb> is the V-coordinate for the bottom vertices of the rectangular items
         # to be created out of <item>
         texVb = item.uvs[0][1]
@@ -97,6 +101,7 @@ class RectangleFRA(Geometry):
             texUr = texUl + _item.width
             _item.getItemRenderer(itemRenderer.itemRenderers).render(
                 _item,
+                levelGroup,
                 (indexLB, indexRB, indexRT, indexLT),
                 ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
             )
@@ -108,7 +113,11 @@ class RectangleFRA(Geometry):
         rs.indexLT = indexLT
         rs.texUl = texUl
     
-    def renderLastDiv(self, itemRenderer, parentItem, lastItem, rs):
+    def renderLastDiv(self, itemRenderer, parentItem, levelGroup, lastItem, rs):
+        # If <levelGroup> is given, that actually means that <item> is a level or contained
+        # inside another level item. In this case the call to <self.renderLevelGroup(..)>
+        # will be made later in the code
+        
         # <texVt> and <startIndex> are not used by the <Rectangle> geometry
         parentIndices = parentItem.indices
         indexLB = rs.indexLB
@@ -124,6 +133,7 @@ class RectangleFRA(Geometry):
         lastItem.geometry = self
         lastItem.getItemRenderer(itemRenderer.itemRenderers).render(
             lastItem,
+            levelGroup,
             (indexLB, parentIndices[1], parentIndices[2], indexLT),
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
         )
@@ -179,8 +189,7 @@ class RectangleFRA(Geometry):
         )
     
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        building = parentItem.building
-        verts = building.renderInfo.verts
+        verts = parentItem.building.renderInfo.verts
         height = levelGroup.levelHeight\
             if levelGroup.singleLevel else\
             levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
@@ -202,12 +211,11 @@ class RectangleFRA(Geometry):
             # division of a rectangle can only generate rectangles
             item.geometry = self
         
-            if item.markup:
-                item.indices = (rs.indexBL, rs.indexBR, indexTR, indexTL)
-                item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-                levelRenderer.renderDivs(levelGroup.item)
-        
-        if not item or not item.markup:
+        if item and item.markup:
+            item.indices = (rs.indexBL, rs.indexBR, indexTR, indexTL)
+            item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            levelRenderer.renderDivs(item, levelGroup)
+        else:
             levelRenderer.renderLevelGroup(
                 parentItem,
                 levelGroup,
@@ -232,12 +240,11 @@ class RectangleFRA(Geometry):
             # division of a rectangle can only generate rectangles
             levelGroup.item.geometry = self
             
-            if item.markup:
-                item.indices = (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3])
-                item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-                levelRenderer.renderDivs(levelGroup.item)
-        
-        if not item or not item.markup:
+        if item and item.markup:
+            item.indices = (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3])
+            item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            levelRenderer.renderDivs(item, levelGroup)
+        else:
             levelRenderer.renderLevelGroup(
                 parentItem,
                 levelGroup,

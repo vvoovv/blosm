@@ -105,10 +105,13 @@ class Container(ItemRendererTexture):
         
         item.geometry.renderLevelGroups(item, self)
     
-    def renderDivs(self, item):
+    def renderDivs(self, item, levelGroup):
+        # If <levelGroup> is given, that actually means that <item> is a level or contained
+        # inside another level item. In this case the call to <self.renderLevelGroup(..)>
+        # will be made later in the code
+        
         # <r> is the global building renderer
         r = self.r
-        building = item.building
         parentIndices = item.indices
         geometry = item.geometry
         
@@ -124,7 +127,7 @@ class Container(ItemRendererTexture):
                 _item = item.markup[0]
                 _item.indices = parentIndices
                 _item.uvs = item.uvs
-                r.createFace(building, _item.indices)
+                r.createFace(item.building, _item.indices)
             else:
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
@@ -138,31 +141,31 @@ class Container(ItemRendererTexture):
                 if numRepeats>1:
                     for _ in range(numRepeats-1):
                         geometry.renderDivs(
-                            self, building, item, unitVector,
+                            self, item, levelGroup, unitVector,
                             0, numItems, 1,
                             rs
                         )
                         if symmetry:
                             geometry.renderDivs(
-                                self, building, item, unitVector,
+                                self, item, levelGroup, unitVector,
                                 numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1,
                                 rs
                             )
                 geometry.renderDivs(
-                    self, building, item, unitVector,
+                    self, item, levelGroup, unitVector,
                     0, numItems if symmetry else numItems-1, 1,
                     rs
                 )
                 if symmetry:
                     geometry.renderDivs(
-                        self, building, item, unitVector,
+                        self, item, levelGroup, unitVector,
                         numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1,
                         rs
                     )
                 # process the last item
                 lastItem = item.markup[0] if symmetry else item.markup[-1]
                 geometry.renderLastDiv(
-                    self, item, lastItem,
+                    self, item, levelGroup, lastItem,
                     rs
                 )
         else:
@@ -178,28 +181,32 @@ class Container(ItemRendererTexture):
     def setMaterialId(self, item, buildingPart, uvs):
         building = item.building
         renderInfo = building.renderInfo
-        # get a texture that fits to the Level markup pattern
-        if renderInfo.assetInfoBldgIndex is None:
-            facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
-            _setAssetInfoCache(
-                building,
-                facadeTextureInfo,
-                # here <p> is for part
-                "p%s" % buildingPart
-            )
-        else:
-            key = "p%s" % buildingPart
-            # If <key> is available in <renderInfo._cache>, that means we'll get <assetInfo> for sure
-            facadeTextureInfo = self.r.assetStore.getAssetInfoByBldgIndex(
-                renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
-                buildingPart,
-                "texture"
-            )
-            if not facadeTextureInfo:
-                # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
-                # in the call above. No we try to get <facadeTextureInfo> without <renderInfo.assetInfoBldgIndex>
+        
+        # asset info could have been set in the call to item.getWidth(..)
+        facadeTextureInfo = item.assetInfo
+        if not facadeTextureInfo:
+            # get a texture that fits to the Level markup pattern
+            if renderInfo.assetInfoBldgIndex is None:
                 facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
-                _setAssetInfoCache(building, facadeTextureInfo, key)
+                _setAssetInfoCache(
+                    building,
+                    facadeTextureInfo,
+                    # here <p> is for part
+                    "p%s" % buildingPart
+                )
+            else:
+                key = "p%s" % buildingPart
+                # If <key> is available in <renderInfo._cache>, that means we'll get <assetInfo> for sure
+                facadeTextureInfo = self.r.assetStore.getAssetInfoByBldgIndex(
+                    renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
+                    buildingPart,
+                    "texture"
+                )
+                if not facadeTextureInfo:
+                    # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
+                    # in the call above. No we try to get <facadeTextureInfo> without <renderInfo.assetInfoBldgIndex>
+                    facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
+                    _setAssetInfoCache(building, facadeTextureInfo, key)
         
         if facadeTextureInfo:
             claddingTextureInfo = self.getCladdingTextureInfo(item)\
@@ -215,8 +222,20 @@ class Container(ItemRendererTexture):
         else:
             item.materialId = ""
     
-    def renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
-        building = parentItem.building      
+    def renderLevelGroup(self, referenceItem, levelGroup, indices, uvs):
+        """
+        Args:
+            referenceItem (item.container.Container): It's needed to get <building> and
+                width for the placeholder of <levelGroup>. Example configurations:
+                facade.level (<referenceItem> is facade)
+                facade.div.level (<referenceItem> is div)
+                facade.level.div (<referenceItem> is div)
+                facade.div.level.div (<referenceItem> is the second div)
+            levelGroup: level group
+            indices (list or tuple): indices of vertices
+            uvs (list or tuple): UV-coordinates of the vertices
+        """
+        building = referenceItem.building      
         face = self.r.createFace(building, indices)
         item = levelGroup.item
         # <item.styleBlock.markup != 0> is an optimization to prevent numerous calls to the asset store
@@ -233,7 +252,7 @@ class Container(ItemRendererTexture):
                     face,
                     item.geometry.getFinalUvs(
                         item.numRepeats*len(item.markup) if item.markup else\
-                            max( round(parentItem.width/_getTileWidthM(facadeTextureInfo)), 1 ),
+                            max( round(referenceItem.width/_getTileWidthM(facadeTextureInfo)), 1 ),
                         self.getNumLevelsInFace(levelGroup),
                         facadeTextureInfo["numTilesU"],
                         facadeTextureInfo["numTilesV"]
@@ -245,4 +264,7 @@ class Container(ItemRendererTexture):
             else:
                 self.renderCladding(item, face, uvs)
         else:
-            self.renderCladding(item or parentItem, face, uvs)
+            self.renderCladding(item or referenceItem, face, uvs)
+    
+    def getNumLevelsInFace(self, levelGroup):
+        return 1 if levelGroup.singleLevel else (levelGroup.index2-levelGroup.index1+1)

@@ -5,6 +5,7 @@ class Level(Container):
     
     def __init__(self, parent, styleBlock):
         super().__init__(parent, parent.footprint, styleBlock)
+        self.isContainer = True
         self.buildingPart = "level"
     
     def getLevelRenderer(self, levelGroup, itemRenderers):

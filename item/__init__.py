@@ -9,6 +9,8 @@ class Item:
         # a direct access to the footprint
         self.footprint = footprint
         self.building = parent.building if parent else None
+        # div and level are containers
+        self.isContainer = False
         # A style block (an instance of grammar.Item) that defines the style for the item
         # within a markup definition.
         # Typically a style block is defined in the markup definition, however it can be also defined

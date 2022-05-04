@@ -114,7 +114,7 @@ class LevelGroups:
                 if lh.groundLevelHeight and not minLevel:
                     if begin.singleLevel:
                         # override <buildingPart> for an item
-                        begin.buildingPart = "groundlevel"
+                        #begin.buildingPart = "groundlevel"
                         group = begin
                     else:
                         # split <begin>

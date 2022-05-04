@@ -1,4 +1,3 @@
-import os
 import bpy
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 

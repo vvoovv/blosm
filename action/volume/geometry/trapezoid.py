@@ -186,11 +186,11 @@ class TrapezoidChainedRV(Geometry):
         rs.startIndex = len(item.indices) - 1
     
     def renderDivs(self,
-            itemRenderer, building, item, unitVector, markupItemIndex1, markupItemIndex2, step,
+            itemRenderer, item, levelGroup, unitVector, markupItemIndex1, markupItemIndex2, step,
             rs
         ):
         # <startIndex> is used for optimization
-        verts = building.verts
+        verts = item.building.verts
         indices = item.indices
         uvs = item.uvs
         indexLB = rs.indexLB
@@ -212,7 +212,7 @@ class TrapezoidChainedRV(Geometry):
             # on the right side of an item with rectangular geometry to be created
             # Additional vertices can be created inside <_item.getItemRenderer(itemRenderer.itemRenderers).render(..)>,
             # that's why we use <len(building.verts)>
-            indexRB = len(building.verts)
+            indexRB = len(item.building.verts)
             incrementVector = _item.width * unitVector
             v1 = v1 + incrementVector
             verts.append(v1)
@@ -253,6 +253,7 @@ class TrapezoidChainedRV(Geometry):
                 _item.geometry = self
                 _item.getItemRenderer(itemRenderer.itemRenderers).render(
                     _item,
+                    levelGroup,
                     _indices + tuple( indices[i] for i in range(stopIndexPlus1, startIndex) ) + (indexLT,),
                     _uvs + tuple( uvs[i] for i in range(stopIndexPlus1, startIndex) ) + ((texUl, texVlt),)
                 )
@@ -260,6 +261,7 @@ class TrapezoidChainedRV(Geometry):
                 _item.geometry = self.geometryTrapezoid
                 _item.getItemRenderer(itemRenderer.itemRenderers).render(
                     _item,
+                    levelGroup,
                     (indexLB, indexRB, indexRT, indexLT),
                     ( (texUl, texVb), (texUr, texVb), (texUr, texVrt), (texUl,texVlt) )
                 )

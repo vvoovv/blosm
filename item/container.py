@@ -97,7 +97,9 @@ class Container(Item):
         totalFixedWidth = 0.
         totalFlexWidth = 0.
         totalRelativeWidth = 0.
-        noWidthItems = []
+        # Items that have flexible number of child items. The number of child items is
+        # defined be the resulting width of the item
+        flexibleChildrenItems = []
         
         # <repeat> is equal to <True> by default
         repeat = bool( self.getStyleBlockAttr("repeat") )
@@ -115,15 +117,14 @@ class Container(Item):
                     item.relativeWidth = relativeWidth
                     totalRelativeWidth += relativeWidth
                 else:
-                    # No width is given in the style block.
-                    # So we calculate the width estimate
-                    width = item.getWidth(globalRenderer)
-                    if width:
+                    # We check if <item> is a container (i.e. level or div)
+                    if item.isContainer and not item.styleBlock.markup:
+                        flexibleChildrenItems.append(item)
+                    else:
+                        width = item.getWidth(globalRenderer)
                         item.hasFlexWidth = True
                         item.width = width
                         totalFlexWidth += width
-                    else:
-                        noWidthItems.append(item)
         
         # treat the case with the symmetry
         symmetry = self.getStyleBlockAttr("symmetry")
@@ -166,7 +167,7 @@ class Container(Item):
         # process the results of the first iteration through the markup items
         
         # treat the case with repeats first
-        if self.width and repeat:
+        if repeat:
             if totalRelativeWidth:
                 if totalNonRelativeWidth:
                     # width of a single markup pattern without any repeats
@@ -246,28 +247,25 @@ class Container(Item):
                     item.width = item.relativeWidth*width/totalRelativeWidth
         else:
             # there are no items with the relative width
-            if self.width:
-                if totalNonRelativeWidth < self.width:
-                    if noWidthItems:
-                        # Total width for the items in <noWidthItems>.
-                        # The items in <noWidthItems> have the same with by design
-                        _width = (self.width - totalNonRelativeWidth)/len(noWidthItems)
-                        for item in noWidthItems:
-                            item.width = _width
-                    elif totalFlexWidth:  
-                        factor = (self.width - totalFixedWidth)/totalFlexWidth
-                        # distribute the excessive width among the markup items with the flexible width
-                        for item in markup:
-                            if item.hasFlexWidth:
-                                item.width *= factor
-                    else:
-                        # distribute the excessive width to the left and right margins
-                        pass # TODO
+            if totalNonRelativeWidth < self.width:
+                if flexibleChildrenItems:
+                    # Total width for the items in <flexibleChildrenItems>.
+                    # The items in <noWidthItems> have the same with by design
+                    _width = (self.width - totalNonRelativeWidth)/len(flexibleChildrenItems)
+                    for item in flexibleChildrenItems:
+                        item.width = _width
+                elif totalFlexWidth:  
+                    factor = (self.width - totalFixedWidth)/totalFlexWidth
+                    # distribute the excessive width among the markup items with the flexible width
+                    for item in markup:
+                        if item.hasFlexWidth:
+                            item.width *= factor
                 else:
-                    self.valid = False
-                    return
+                    # distribute the excessive width to the left and right margins
+                    pass # TODO
             else:
-                self.width = totalNonRelativeWidth
+                self.valid = False
+                return
         # always return the total width of all markup elements
         return self.width
     
