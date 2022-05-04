@@ -98,6 +98,11 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
         description = "A string token to access overlays from Mapbox company"
     )
     
+    arcgisAccessToken: bpy.props.StringProperty(
+        name = "ArcGIS access token",
+        description = "A string token (API Key) to access satellite imagery from ArcGIS location service"
+    )
+    
     osmServer: bpy.props.EnumProperty(
         name = "OSM data server",
         items = (
@@ -134,9 +139,12 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "assetsDir")
             
             layout.separator()
-            layout.box().label(text="Optional:")
             split = layout.split(factor=0.9)
             split.prop(self, "mapboxAccessToken")
+            split.operator("blosm.get_mapbox_token", text="Get it!")
+            
+            split = layout.split(factor=0.9)
+            split.prop(self, "arcgisAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
             
             layout.separator()
