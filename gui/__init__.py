@@ -786,13 +786,9 @@ class BlosmProperties(bpy.types.PropertyGroup):
         name = "Overlay",
         items = (
             #("bing-aerial", "Bing Aerial", "Bing Aerial"),
-            # From https://github.com//Esri/esri-leaflet/wiki/FAQ#which-services-require-authentication:
-            # Esri Basemaps are free to use and do not require authentication.
-            # You can learn more about limits in the Terms of Use FAQ.
             ("arcgis-satellite", "ArcGIS Satellite", "ArcGIS Satellite"),
             ("mapbox-satellite", "Mapbox Satellite", "Mapbox Satellite"),
             ("osm-mapnik", "OSM Mapnik", "OpenStreetMap Mapnik"),
-            ("arcgis-streets", "AcrGIS Street Map", "AcrGIS Street Map"),
             ("mapbox-streets", "Mapbox Streets", "Mapbox Streets"),
             ("custom", "Custom URL", "A URL template for the custom image overlay")
         ),
