@@ -139,11 +139,12 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "assetsDir")
             
             layout.separator()
+            layout.label(text="Paste one or more access tokens to get satellite imagery:")
+            
             split = layout.split(factor=0.9)
             split.prop(self, "arcgisAccessToken")
             split.operator("blosm.get_arcgis_token", text="Get it!")
             
-            layout.label(text="Paste one or more access tokens to get satellite imagery:")
             split = layout.split(factor=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
