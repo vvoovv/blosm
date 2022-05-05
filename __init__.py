@@ -140,11 +140,12 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             
             layout.separator()
             split = layout.split(factor=0.9)
-            split.prop(self, "mapboxAccessToken")
-            split.operator("blosm.get_mapbox_token", text="Get it!")
-            
-            split = layout.split(factor=0.9)
             split.prop(self, "arcgisAccessToken")
+            split.operator("blosm.get_arcgis_token", text="Get it!")
+            
+            layout.label(text="Paste one or more access tokens to get satellite imagery:")
+            split = layout.split(factor=0.9)
+            split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
             
             layout.separator()
@@ -159,13 +160,27 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
 blenderApp.app.addonName = BlosmPreferences.bl_idname
 
 
+class BLOSM_OT_GetArcgisToken(bpy.types.Operator):
+    bl_idname = "blosm.get_arcgis_token"
+    bl_label = ""
+    bl_description = "Get ArcGIS access token"
+    bl_options = {'INTERNAL'}
+    
+    url = "https://www.mapbox.com/account/access-tokens"
+    
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
+
+
 class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
     bl_idname = "blosm.get_mapbox_token"
     bl_label = ""
     bl_description = "Get Mapbox access token"
     bl_options = {'INTERNAL'}
     
-    url = "https://www.mapbox.com/account/access-tokens"
+    url = "https://developers.arcgis.com/sign-up/"
     
     def execute(self, context):
         import webbrowser
@@ -620,6 +635,7 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
 
 _classes = (
     BlosmPreferences,
+    BLOSM_OT_GetArcgisToken,
     BLOSM_OT_GetMapboxToken,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,
