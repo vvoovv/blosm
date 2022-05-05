@@ -167,7 +167,7 @@ class BLOSM_OT_GetArcgisToken(bpy.types.Operator):
     bl_description = "Get ArcGIS access token"
     bl_options = {'INTERNAL'}
     
-    url = "https://www.mapbox.com/account/access-tokens"
+    url = "https://developers.arcgis.com/sign-up/"
     
     def execute(self, context):
         import webbrowser
@@ -181,7 +181,7 @@ class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
     bl_description = "Get Mapbox access token"
     bl_options = {'INTERNAL'}
     
-    url = "https://developers.arcgis.com/sign-up/"
+    url = "https://www.mapbox.com/account/access-tokens"
     
     def execute(self, context):
         import webbrowser
