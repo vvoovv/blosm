@@ -1,4 +1,4 @@
-import os, math
+import os, math, ssl
 from urllib import request
 
 from util.polygon import Polygon
@@ -55,7 +55,17 @@ class BaseApp:
         print("Downloading the file from %s..." % url)
         if data:
             data = data.encode('ascii')
-        request.urlretrieve(url, filepath, None, data)
+        
+        req = request.Request(
+            url,
+            data = data,
+            headers = {
+                "User-Agent": "custom"
+            }
+        )
+        ctx = ssl._create_unverified_context()
+        with request.urlopen(req, context=ctx) as u, open(filepath, 'wb') as f:
+            f.write(u.read())
         print("Saving the file to %s..." % filepath)
     
     def downloadOsmFile(self, osmDir, minLon, minLat, maxLon, maxLat):
