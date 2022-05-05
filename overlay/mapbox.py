@@ -43,3 +43,4 @@ class Mapbox(Overlay):
             # Remove the access token to decrease the length of the path.
             # Windows and probably the other OS have a limit for the path in the file system.
             url = url[0:accessTokenPosition]
+        return url
