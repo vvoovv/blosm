@@ -36,3 +36,11 @@ class Mapbox(Overlay):
     
     def getOverlaySubDir(self):
         return self.mapId
+    
+    def removeAccessToken(self, url):
+        accessTokenPosition = url.find("?access_token=")
+        if accessTokenPosition != -1:
+            # Remove the access token to decrease the length of the path.
+            # Windows and probably the other OS have a limit for the path in the file system.
+            url = url[0:accessTokenPosition]
+        return url
