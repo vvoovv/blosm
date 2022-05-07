@@ -4,6 +4,7 @@ import parse
 from renderer import Renderer2d
 from renderer.layer import MeshLayer
 from util.osm import parseNumber
+from util.random import RandomWeighted
 
 
 class GnBldg2dLayer(MeshLayer):
@@ -63,6 +64,13 @@ class GnBldg2dRenderer(Renderer2d):
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
         self.applyMaterial = False
+        
+        # initializing the stuff dealing with the default number of levels
+        defaultLevels = bpy.context.scene.blosm.defaultLevels
+        if not defaultLevels:
+            from gui import addDefaultLevels
+            addDefaultLevels()
+        self.randomLevels = RandomWeighted(tuple((e.levels, e.weight) for e in defaultLevels))
     
     def renderPolygon(self, element, data):
         super().renderPolygon(element, data)
@@ -73,12 +81,20 @@ class GnBldg2dRenderer(Renderer2d):
         Returns the number of levels from the ground as defined by the OSM tag <building:levels>
         """
         n = element.tags.get("building:levels")
-        if not n is None:
+        if n:
             n = parseNumber(n)
-            if not n is None:
-                n = ceil(n)
-                if n < 1.:
+            if n:
+                n = int( ceil(n) )
+                if n < 1:
                     n = None
-        if n is None:
-            n = 5
+        if not n:
+            h = element.tags.get("height")
+            if h:
+                h = parseNumber(h)
+                if h:
+                    # An estimate for the number of levels. It takes into account
+                    # the ground level factor (1.5) and the level height (3.)
+                    n = int( ceil(abs(h/3. - 0.5)) )
+            if not n:
+                n = self.randomLevels.value
         return n

@@ -443,6 +443,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
                 box.label(text="[Geometry Nodes]:")
                 box.prop(addon, "gnBlendFile2d", text="File")
                 box.prop(addon, "gnSetup2d", text="Name")
+                
+                if addon.gnSetup2d:
+                    self._drawDefaultLevels(box, addon)
             
             layout.box().prop(addon, "ignoreGeoreferencing")
             
@@ -458,6 +461,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
         
+        self._drawDefaultLevels(box, addon)
+    
+    def _drawDefaultLevels(self, box, addon):
         column = box.column()
         split = column.split(factor=0.67, align=True)
         split.label(text="Default number of levels:")
