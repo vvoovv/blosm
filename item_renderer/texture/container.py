@@ -222,10 +222,10 @@ class Container(ItemRendererTexture):
         else:
             item.materialId = ""
     
-    def renderLevelGroup(self, referenceItem, levelGroup, indices, uvs):
+    def renderLevelGroup(self, item, levelGroup, indices, uvs):
         """
         Args:
-            referenceItem (item.container.Container): It's needed to get <building> and
+            item (item.container.Container): It's needed to get <building> and
                 width for the placeholder of <levelGroup>. Example configurations:
                 facade.level (<referenceItem> is facade)
                 facade.div.level (<referenceItem> is div)
@@ -235,15 +235,13 @@ class Container(ItemRendererTexture):
             indices (list or tuple): indices of vertices
             uvs (list or tuple): UV-coordinates of the vertices
         """
-        building = referenceItem.building      
+        building = item.building      
         face = self.r.createFace(building, indices)
-        item = levelGroup.item
-        # <item.styleBlock.markup != 0> is an optimization to prevent numerous calls to the asset store
-        if item and item.styleBlock.markup != 0:
+        if levelGroup.item:
             if item.materialId is None:
                 self.setMaterialId(
                     item,
-                    levelGroup.buildingPart or item.buildingPart,
+                    levelGroup.buildingPart or levelGroup.item.buildingPart,
                     uvs
                 )
             if item.materialId:
@@ -251,8 +249,7 @@ class Container(ItemRendererTexture):
                 self.r.setUvs(
                     face,
                     item.geometry.getFinalUvs(
-                        item.numRepeats*len(item.markup) if item.markup else\
-                            max( round(referenceItem.width/_getTileWidthM(facadeTextureInfo)), 1 ),
+                        max( round(item.width/_getTileWidthM(facadeTextureInfo)), 1 ),
                         self.getNumLevelsInFace(levelGroup),
                         facadeTextureInfo["numTilesU"],
                         facadeTextureInfo["numTilesV"]
@@ -264,7 +261,7 @@ class Container(ItemRendererTexture):
             else:
                 self.renderCladding(item, face, uvs)
         else:
-            self.renderCladding(item or referenceItem, face, uvs)
+            self.renderCladding(item, face, uvs)
     
     def getNumLevelsInFace(self, levelGroup):
         return 1 if levelGroup.singleLevel else (levelGroup.index2-levelGroup.index1+1)
