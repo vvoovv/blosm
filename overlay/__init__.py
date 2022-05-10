@@ -54,7 +54,7 @@ def getMapboxAccessToken(addonName):
             raise Exception("An access token for Mapbox overlays isn't set in the addon preferences")
     else:
         j = os.path.join
-        with open(j( j(os.path.realpath(__file__), os.pardir), "access_token.txt"), 'r') as file:
+        with open(j( j(os.path.realpath(__file__), os.pardir), "mapbox_access_token.txt"), 'r') as file:
             accessToken = file.read()
     return accessToken
 
@@ -309,12 +309,7 @@ class Overlay:
     
     def getOverlaySubDir(self):
         url = self.url
-        if url.startswith("https://api.mapbox.com"):
-            accessTokenPosition = url.find("?access_token=")
-            if accessTokenPosition != -1:
-                # Remove the access token to decrease the length of the path.
-                # Windows and probably the other OS have a limit for the path in the file system.
-                url = url[0:accessTokenPosition]
+        url = self.removeAccessToken(url)
         urlOffset = 0
         if url[:7] == "http://":
             urlOffset = 7
@@ -323,6 +318,10 @@ class Overlay:
         else:
             urlOffset = 0
         return url[urlOffset:].translate(prohibitedCharacters)
+    
+    def removeAccessToken(self, url):
+        # nothing to do here
+        return url
     
     def getTileUrl(self, zoom, x, y):
         return self.url.format(
@@ -387,13 +386,13 @@ class Overlay:
 
 
 from .mapbox import Mapbox
+from .arcgis import Arcgis
 
 
 overlayTypeData = {
-    'arcgis-satellite': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", 19),
     'mapbox-satellite': (Mapbox, "mapbox.satellite", 19),
+    'arcgis-satellite': (Arcgis, "World_Imagery", 19),
     'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
-    'arcgis-streets': (Overlay, "http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", 19),
     'mapbox-streets': (Overlay, "mapbox://styles/mapbox/streets-v11", 19),
     'custom': (Overlay, '', 19)
 }

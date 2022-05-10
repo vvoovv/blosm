@@ -2,7 +2,7 @@ from parse.osm import Osm
 from app.command_line import CommandLineApp
 
 
-def importOsm():
+def importData():
     
     a = CommandLineApp()
     
@@ -60,4 +60,4 @@ def importOsm():
     a.clean()
 
 
-importOsm()
+importData()
