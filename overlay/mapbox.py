@@ -17,18 +17,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from . import Overlay, getMapboxAccessToken
+from . import Overlay
 
 
 class Mapbox(Overlay):
     
     baseUrl = "http://[a,b,c,d].tiles.mapbox.com/v4/%s/{z}/{x}/{y}.png?access_token=%s"
     
-    def __init__(self, mapId, maxZoom, addonName):
+    def __init__(self, mapId, maxZoom, app):
         super().__init__(
-            self.baseUrl % (mapId, getMapboxAccessToken(addonName)),
+            self.baseUrl % (mapId, app.getMapboxAccessToken()),
             maxZoom,
-            addonName
+            app
         )
         self.mapId = mapId
         if mapId == "mapbox.satellite":

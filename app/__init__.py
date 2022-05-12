@@ -238,3 +238,26 @@ class BaseApp:
         if manager.id:
             self.managersById[manager.id] = manager
         self.managers.append(manager)
+    
+    def setOverlay(self, OverlayMixin):
+        from types import MethodType
+        from overlay import overlayTypeData
+        
+        data = overlayTypeData[self.overlayType]
+        
+        overlay = data[0](
+            self.overlayUrl if self.overlayType == "custom" else data[1],
+            data[2],
+            self
+        )
+        
+        for methodName in OverlayMixin.__dict__:
+            if not methodName.startswith('_'):
+                setattr(
+                    overlay,
+                    methodName,
+                    MethodType( OverlayMixin.__dict__[methodName], overlay)
+                )
+        self.overlay = overlay
+        
+        return overlay

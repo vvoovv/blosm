@@ -298,24 +298,15 @@ class BlenderApp(BaseApp):
             )
     
     def initOverlay(self, context):
-        addonName = self.addonName
-        from overlay import Overlay, overlayTypeData
-        addon = context.scene.blosm
-        data = overlayTypeData[addon.overlayType]
+        from overlay.blender import OverlayMixin
         
-        # <addonName> can be used by some classes derived from <Overlay>
-        # to access addon settings
-        overlay = data[0](
-            addon.overlayUrl if addon.overlayType == "custom" else data[1],
-            data[2],
-            addonName
-        )
-        self.overlay = overlay
+        addonName = self.addonName
+        
+        overlay = self.setOverlay(OverlayMixin)
         
         self.setDataDir(context, self.basePath, addonName)
         # create a sub-directory under <self.dataDir> for overlay tiles
-        j = os.path.join
-        overlayDir = j( j(self.dataDir, self.overlaySubDir), overlay.getOverlaySubDir() )
+        overlayDir = os.path.join( self.dataDir, self.overlaySubDir, overlay.getOverlaySubDir() )
         if not os.path.exists(overlayDir):
             os.makedirs(overlayDir)
         overlay.overlayDir = overlayDir
@@ -406,7 +397,6 @@ class BlenderApp(BaseApp):
         Sets <self.dataDir>, i.e. path to data
         """
         prefs = context.preferences.addons
-        j = os.path.join
         if addonName in prefs:
             dataDir = prefs[addonName].preferences.dataDir
             if not dataDir:
@@ -417,7 +407,9 @@ class BlenderApp(BaseApp):
             self.dataDir = dataDir
         else:
             # set <self.dataDir> to basePath/../../../data (development version)
-            self.dataDir = os.path.realpath( j( j( j( j(basePath, os.pardir), os.pardir), os.pardir), "data") )
+            self.dataDir = os.path.realpath(os.path.join(
+                basePath, os.pardir, os.pardir, os.pardir, "data"
+            ))
     
     def render(self):
         logger = self.logger
@@ -699,6 +691,38 @@ class BlenderApp(BaseApp):
         with open(os.path.join(assetsDir, "asset_packages.json"), 'r') as jsonFile:
             apListJson = json.load(jsonFile)
         return apListJson["assetPackages"]
+    
+    def getArcgisAccessToken(self):
+        prefs = bpy.context.preferences.addons
+        if self.addonName in prefs:
+            accessToken = prefs[self.addonName].preferences.arcgisAccessToken
+            if not accessToken:
+                raise Exception("An access token for ArcGIS overlays isn't set in the addon preferences")
+        else:
+            with open(
+               os.path.realpath(os.path.join(
+                    os.path.realpath(__file__), os.pardir, os.pardir, "overlay", "arcgis_access_token.txt"
+                )),
+                'r'
+                ) as file:
+                accessToken = file.read()
+        return accessToken
+
+    def getMapboxAccessToken(self):
+        prefs = bpy.context.preferences.addons
+        if self.addonName in prefs:
+            accessToken = prefs[self.addonName].preferences.mapboxAccessToken
+            if not accessToken:
+                raise Exception("An access token for Mapbox overlays isn't set in the addon preferences")
+        else:
+            with open(
+               os.path.realpath(os.path.join(
+                    os.path.realpath(__file__), os.pardir, os.pardir, "overlay", "mapbox_access_token.txt"
+                )),
+                'r'
+                ) as file:
+                accessToken = file.read()
+        return accessToken
 
 
 if "bpy" in sys.modules:

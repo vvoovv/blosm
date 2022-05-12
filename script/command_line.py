@@ -55,9 +55,32 @@ def importData():
     a.initLayers()
     
     a.process()
+    
+    if a.overlayType:
+        importOverlay(a)
+    
     a.render()
     
     a.clean()
+
+
+def importOverlay(a):
+    import matplotlib.pyplot as plt
+    
+    overlay = a.overlay
+    
+    overlay.prepareImport(a.minLon, a.minLat, a.maxLon, a.maxLat)
+    
+    hasTiles = True
+    while hasTiles:
+        hasTiles = overlay.importNextTile()
+    if overlay.finalizeImport():
+        print("Overlay import is finished!")
+    else:
+        print("Probably something is wrong with the tile server!")
+        return
+    
+    plt.imshow(overlay.imageData, extent=overlay.fromTileCoordsToAppCoords())
 
 
 importData()

@@ -51,6 +51,14 @@ class CommandLineApp(BaseApp):
         argParser.add_argument("--forests", action='store_true', help="Import forests", default=False)
         argParser.add_argument("--vegetation", action='store_true', help="Import vegetation", default=False)
         
+        # arguments for an overlay
+        argParser.add_argument("--overlayDir", help="A directory for overlay images")
+        argParser.add_argument("--overlayType", help="Type of an overlay. Possible values: arcgis-satellite, mapbox-satellite, osm-mapnik, mapbox-streets, custom")
+        argParser.add_argument("--overlayUrl", help="URL template for the custom overlay type")
+        argParser.add_argument("--overlayAccessToken", help="An access token for some overlay providers (ArcGIS, Mapbox)")
+        argParser.add_argument("--maxNumTiles", type=int, default=256, help="Maximum number of overlay tiles")
+        
+        
         args, self.unparsedArgs = argParser.parse_known_args()
         args = vars(args)
         for arg in args:
@@ -59,6 +67,9 @@ class CommandLineApp(BaseApp):
         if self.coords:
             self.minLon, self.minLat, self.maxLon, self.maxLat =\
                 map(lambda coord: float(coord), self.coords.split(',') )
+        
+        if self.overlayType:
+            self.initOverlay()
     
     def parseArgs(self):
         """
@@ -98,3 +109,22 @@ class CommandLineApp(BaseApp):
     def clean(self):
         self.managers = None
         self.renderers = None
+    
+    def initOverlay(self):
+        from overlay.command_line import OverlayMixin
+        
+        overlay = self.setOverlay(OverlayMixin)
+        overlay.originAtTop = True
+        if overlay.imageExtension == 'jpg':
+            # jpg-images don't have the opacity component
+            overlay.numComponents = 3
+        overlay.overlayDir = os.path.join( self.overlayDir, overlay.getOverlaySubDir() )
+    
+    def getArcgisAccessToken(self):
+        return self.overlayAccessToken
+    
+    def getMapboxAccessToken(self):
+        return self.overlayAccessToken
+    
+    def print(self, value):
+        print(value)
