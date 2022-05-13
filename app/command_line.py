@@ -57,6 +57,7 @@ class CommandLineApp(BaseApp):
         argParser.add_argument("--overlayUrl", help="URL template for the custom overlay type")
         argParser.add_argument("--overlayAccessToken", help="An access token for some overlay providers (ArcGIS, Mapbox)")
         argParser.add_argument("--maxNumTiles", type=int, default=256, help="Maximum number of overlay tiles")
+        argParser.add_argument("--showOverlayOnly", action='store_true', help="Show overlay only", default=False)
         
         
         args, self.unparsedArgs = argParser.parse_known_args()

@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from parse.osm import Osm
 from app.command_line import CommandLineApp
 
@@ -6,11 +7,7 @@ def importData():
     
     a = CommandLineApp()
     
-    #try:
     a.initOsm()
-    #except Exception as e:
-    #    print("Error")
-    #    return
     
     forceExtentCalculation = bool(a.osmFilepath)
     
@@ -52,21 +49,22 @@ def importData():
         a.minLon = osm.minLon
         a.maxLon = osm.maxLon
     
-    a.initLayers()
-    
-    a.process()
-    
     if a.overlayType:
         importOverlay(a)
     
-    a.render()
-    
-    a.clean()
+    if a.overlayType and a.showOverlayOnly:
+        plt.show()
+    else:
+        a.initLayers()
+        
+        a.process()
+        
+        a.render()
+        
+        a.clean()
 
 
 def importOverlay(a):
-    import matplotlib.pyplot as plt
-    
     overlay = a.overlay
     
     overlay.prepareImport(a.minLon, a.minLat, a.maxLon, a.maxLat)
