@@ -75,6 +75,12 @@ class Overlay:
         # bottom left corner (False)
         self.originAtTop = False
         
+        if app.overlayType == "custom":
+            if "jpg" in url:
+                self.imageExtension = "jpg"
+            elif "jpeg" in url:
+                self.imageExtension = "jpeg"
+        
         url = url.strip()
         
         if url.startswith("mapbox://styles/"):
@@ -329,5 +335,5 @@ overlayTypeData = {
     'arcgis-satellite': (Arcgis, "World_Imagery", 19),
     'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
     'mapbox-streets': (Overlay, "mapbox://styles/mapbox/streets-v11", 19),
-    'custom': (Overlay, '', 19)
+    'custom': (Overlay, '', 20)
 }

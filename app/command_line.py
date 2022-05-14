@@ -116,7 +116,7 @@ class CommandLineApp(BaseApp):
         
         overlay = self.setOverlay(OverlayMixin)
         overlay.originAtTop = True
-        if overlay.imageExtension == 'jpg':
+        if overlay.imageExtension in ('jpg', 'jpeg'):
             # jpg-images don't have the opacity component
             overlay.numComponents = 3
         overlay.overlayDir = os.path.join( self.overlayDir, overlay.getOverlaySubDir() )
