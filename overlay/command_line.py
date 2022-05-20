@@ -1,6 +1,7 @@
+import os
 import numpy
 # matplotlib is used to load an image
-import matplotlib.pyplot as plt
+import PIL.Image
 
 
 class OverlayMixin:
@@ -12,4 +13,23 @@ class OverlayMixin:
         return True
     
     def getTileDataFromImage(self, tilePath):
-        return numpy.reshape(plt.imread(tilePath), self.w*self.tileHeight)
+        image = PIL.Image.open(tilePath)
+        imageFormat = image.format
+        tileData = numpy.array(image.getdata())
+        image.close()
+        
+        if self.checkImageFormat:
+            # <self.imageExtension> is equal to <png> by defaul
+            if imageFormat == "JPEG":
+                self.imageExtension = "jpg"
+                self.numComponents = 3
+                self.initImageData()
+                os.rename(
+                    tilePath,
+                    "%s.jpg" % os.path.splitext(tilePath)[0]
+                )
+            self.checkImageFormat = False
+        
+        return numpy.reshape(
+            tileData, self.w*self.tileHeight
+        )

@@ -75,11 +75,16 @@ class Overlay:
         # bottom left corner (False)
         self.originAtTop = False
         
+        self.checkImageFormat = False 
+        
         if app.overlayType == "custom":
             if "jpg" in url:
                 self.imageExtension = "jpg"
             elif "jpeg" in url:
                 self.imageExtension = "jpeg"
+            elif not "png" in url:
+                # The image tile format is unknown. We have to check it for the command line mode
+                self.checkImageFormat = True
         
         url = url.strip()
         
@@ -155,22 +160,25 @@ class Overlay:
         self.numTilesX = numTilesX = r - l + 1
         self.numTilesY = numTilesY = b - t + 1
         self.numTiles = numTilesX * numTilesY
-        self.w = self.numComponents * self.tileWidth
-        # a numpy array for the resulting image stitched out of all tiles
-        self.imageData = numpy.zeros(
-            self.w * numTilesX * numTilesY * self.tileHeight,
-            dtype = numpy.float64 if self.numComponents == 4 else numpy.uint8
-        )
+        self.initImageData()
         # <self.x> and <self.y> are the current tile coordinates
         self.x = l
         self.y = t
     
+    def initImageData(self):
+        self.w = self.numComponents * self.tileWidth
+        # a numpy array for the resulting image stitched out of all tiles
+        self.imageData = numpy.zeros(
+            self.w * self.numTilesX * self.numTilesY * self.tileHeight,
+            dtype = numpy.float64 if self.numComponents == 4 else numpy.uint8
+        )
+    
     def importNextTile(self):
-        w = self.w
         self.tileCounter += 1
         x = self.x
         y = self.y
         tileData = self.getTileData(self.zoom, x, y)
+        w = self.w
         if tileData is True or tileData is False:
             # Boolean in <tileData> means that we have to restart everything from the beginning since 
             # the tiles aren't available for the given zoom.
@@ -195,6 +203,10 @@ class Overlay:
     def getTileData(self, zoom, x, y):
         # check if we the tile in the file cache
         tileDir = os.path.join(self.overlayDir, str(zoom), str(x))
+        if self.checkImageFormat and os.path.exists(tileDir):
+            # Tile image format is unknown. We'll get from the the file extension
+            # of the tile image
+            self.getImageExtensionFromFile(tileDir)
         tilePath = os.path.join(tileDir, "%s.%s" % (y, self.imageExtension))
         tileUrl = self.getTileUrl(zoom, x, y)
         if os.path.exists(tilePath):
@@ -324,6 +336,16 @@ class Overlay:
         r, t = self.app.projection.fromGeographic(t, r)
         
         return (l, r, b, t)
+    
+    def getImageExtensionFromFile(self, tileDir):
+        images = os.listdir(tileDir)
+        if images:
+            # we use the extension of the first file in <tileDir>
+            self.imageExtension = os.path.splitext(images[0])[1][1:]
+            if self.imageExtension == "jpg":
+                self.numComponents = 3
+                self.initImageData()
+            self.checkImageFormat = False
 
 
 from .mapbox import Mapbox
