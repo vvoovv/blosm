@@ -1,5 +1,5 @@
 #from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken
-from script import Setup
+from setup import Setup
 from building.manager import BaseBuildingManager
 from mpl.renderer.facade_classification import \
     BuildingVisibilityRender, WayVisibilityRenderer, BuildingClassificationRender, BuildingFeatureRender
