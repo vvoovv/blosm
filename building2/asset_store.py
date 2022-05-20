@@ -4,11 +4,21 @@ import os, json
 _parts = ("facade", "level", "groundlevel", "entrance")
 
 _uses = (
-    "apartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
+    "any", "apartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
 )
 
-_assetTypes = (
-    "texture", "mesh"
+_facades = (
+    "front", "side", "back", "shared", "all"
+)
+
+_claddings = (
+    "brick",
+    "plaster",
+    "concrete",
+    "metal",
+    "glass",
+    "gravel",
+    "roof_tiles"
 )
 
 
@@ -37,6 +47,92 @@ def _getCladTexInfo(obj, claddingMaterial, assetType):
 
 
 class AssetStore:
+    
+    def __init__(self, assetInfoFilepath):
+        #
+        # For assets representing building parts:
+        # collection -> part -> class
+        #
+        # For cladding assets:
+        # collection -> cladding -> class
+        # 
+        self.baseDir = os.path.dirname(os.path.dirname(assetInfoFilepath))
+        
+        self.collections = {}
+        
+        # building parts without collections
+        self.textureParts = self.initPartsNoCols()
+        # cladding without collections
+        self.textureCladdings = self.initCladdingsNoCols()
+        
+        # building parts without collections
+        self.meshParts = self.initPartsNoCols()
+
+        with open(assetInfoFilepath, 'r') as jsonFile:
+            # getting asset entries for collections
+            collections = json.load(jsonFile)["collections"]
+            
+            for collection in collections:
+                assets = collection["assets"]
+                if len(assets) == 1:
+                    self.processNoCollectionAsset(assets[0])
+                else:
+                    collectionName = collection["name"]
+                    collection = Collection()
+                    if not collectionName in self.collections:
+                        self.collections[collectionName] = EntryList()
+                    self.collections[collectionName].addEntry(collection)
+                    
+                    for asset in assets:
+                        self.processCollectionAsset(asset, collection)
+    
+    def processCollectionAsset(self, asset, collection):
+        category = asset["category"]
+        tp = asset["type"]
+        cl = asset.get("class")
+        
+        if category == "part":
+            parts = collection.meshParts if tp == "mesh" else collection.textureParts
+            parts[ asset["part"] ][cl] = asset
+        else: # cladding
+            cladding = collection.textureCladdings[ asset["cladding"] ]
+            cladding[cl] = asset
+    
+    def processNoCollectionAsset(self, asset):
+        category = asset["category"]
+        tp = asset["type"]
+        cl = asset.get("class")
+        
+        if category == "part":
+            parts = self.meshParts if tp == "mesh" else self.textureParts
+            part = parts[ asset["part"] ]
+            if not cl in part:
+                part[cl] = EntryList()
+            part[cl].addEntry(asset)
+        else: # cladding
+            cladding = self.textureCladdings[ asset["cladding"] ]
+            if not cl in cladding:
+                cladding[cl] = EntryList()
+            cladding[cl].addEntry(asset)
+    
+    def initPartsNoCols(self):
+        parts = {}
+        
+        for _part in _parts:
+            parts[_part] = {}
+        
+        return parts
+    
+    def initCladdingsNoCols(self):
+        claddings = {}
+        
+        for _cladding in _claddings:
+            claddings[_cladding] = {}
+        
+        return claddings
+
+
+class AssetStore1:
     
     def __init__(self, assetInfoFilepath):
         self.baseDir = os.path.dirname(os.path.dirname(assetInfoFilepath))
@@ -271,6 +367,29 @@ class AssetStore:
     
     def getCladTexInfoByBldgIndex(self, bldgIndex, claddingMaterial, assetType):
         return _getCladTexInfo(self.byBuilding[bldgIndex], claddingMaterial, assetType)
+
+
+class Collection:
+    
+    __slots__ = (
+        "textureParts",
+        "textureCladdings"
+        "meshParts",
+        
+    )
+    
+    def __init__(self):
+        self.textureParts = {}
+        for _part in _parts:
+            self.textureParts[_part] = {}
+        
+        self.textureCladdings = {}
+        for _cladding in _claddings:
+            self.textureCladdings[_cladding] = {}
+        
+        self.meshParts = {}
+        for _part in _parts:
+            self.meshParts[_part] = {}
 
 
 class EntryList:
