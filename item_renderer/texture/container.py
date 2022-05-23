@@ -1,5 +1,4 @@
 from . import ItemRendererTexture
-from .. import _setAssetInfoCache
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 
@@ -179,34 +178,15 @@ class Container(ItemRendererTexture):
             loop[uvLayer].uv = uv
     
     def setMaterialId(self, item, buildingPart, uvs):
-        building = item.building
-        renderInfo = building.renderInfo
-        
         # asset info could have been set in the call to item.getWidth(..)
         facadeTextureInfo = item.assetInfo
         if not facadeTextureInfo:
-            # get a texture that fits to the Level markup pattern
-            if renderInfo.assetInfoBldgIndex is None:
-                facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
-                _setAssetInfoCache(
-                    building,
-                    facadeTextureInfo,
-                    # here <p> is for part
-                    "p%s" % buildingPart
-                )
-            else:
-                key = "p%s" % buildingPart
-                # If <key> is available in <renderInfo._cache>, that means we'll get <assetInfo> for sure
-                facadeTextureInfo = self.r.assetStore.getAssetInfoByBldgIndex(
-                    renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
-                    buildingPart,
-                    "texture"
-                )
-                if not facadeTextureInfo:
-                    # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
-                    # in the call above. No we try to get <facadeTextureInfo> without <renderInfo.assetInfoBldgIndex>
-                    facadeTextureInfo = self.r.assetStore.getAssetInfo(building, buildingPart, "texture")
-                    _setAssetInfoCache(building, facadeTextureInfo, key)
+            facadeTextureInfo = self.r.assetStore.getAssetInfoTexture(
+                item.building,
+                item.getStyleBlockAttrDeep("collection"),
+                buildingPart,
+                item.getStyleBlockAttrDeep("cl")
+            )
         
         if facadeTextureInfo:
             claddingTextureInfo = self.getCladdingTextureInfo(item)\

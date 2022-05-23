@@ -92,10 +92,13 @@ class AssetStore:
         cl = asset.get("class")
         
         if category == "part":
+            if not cl:
+                return
             parts = collection.meshParts if tp == "mesh" else collection.textureParts
             parts[ asset["part"] ][cl] = asset
         else: # cladding
             cladding = collection.textureCladdings[ asset["cladding"] ]
+            # None is allowed for <cl>. The previous value for <cladding[None]> will be overriden
             cladding[cl] = asset
     
     def processNoCollectionAsset(self, asset):
@@ -130,6 +133,93 @@ class AssetStore:
             claddings[_cladding] = {}
         
         return claddings
+    
+    def getCollection(self, collection, key, cache):
+        """
+        Check if <collection> is available in <cache> using <key>.
+        
+        Returns:
+            The value available in <cache> or a value from <self.collections> (including None).
+            In the latter case the value is set in <cache> for <key>.
+        """
+        
+        if key in cache:
+            return cache[key]
+        else:
+            collection = self.getCollection(collection, cache)
+            # get an instance of <EntryList>
+            collection = self.collections.get(collection)
+            if collection:
+                collection = collection.getEntry()
+            # save the resulting value in <cache>
+            cache[key] = collection
+        
+        return collection
+    
+    def getAssetInfoTexture(self, building, collection, buildingPart, cl):
+        if not cl:
+            return None
+        
+        cache = building.renderInfo._cache
+        
+        if collection:
+            collection = self.getCollection(collection, "col_"+collection, cache)
+            
+            if collection:
+                assetInfo = collection.textureParts[buildingPart].get(cl)
+                if assetInfo:
+                    return assetInfo
+                else:
+                    # try to get an asset info without a collection in the code below
+                    collection = None
+        
+        if not collection:
+            # Check if an entry is available in <cache> for the given combination of <buildingPart> and <cl>
+            # <pcl> stands for "(building) part" and "class"
+            key = "pcl_" + buildingPart + cl
+            if key in cache:
+                assetInfo = cache[key]
+            else:
+                # get an instance of <EntryList>
+                assetInfo = self.textureParts[buildingPart].get(cl)
+                if assetInfo:
+                    assetInfo = assetInfo.getEntry()
+                # save the resulting value in <cache>
+                cache[key] = assetInfo
+        
+        return assetInfo
+    
+    def getAssetInfoCladdingTexture(self, building, collection, cladding, cl):
+        # <None> is allowed for <cl>
+        
+        cache = building.renderInfo._cache
+        
+        if collection:
+            collection = self.getCollection(collection, "col_"+collection, cache)
+            
+            if collection:
+                assetInfo = collection.textureCladdings[cladding].get(cl)
+                if assetInfo:
+                    return assetInfo
+                else:
+                    # try to get an asset info without a collection in the code below
+                    collection = None
+        
+        if not collection:
+            # Check if an entry is available in <cache> for the given combination of <cladding> and <cl>
+            # <pcl> stands for "cladding" and "class"
+            key = "ccl_" + (cladding + cl if cl else cladding)
+            if key in cache:
+                assetInfo = cache[key]
+            else:
+                # get an instance of <EntryList>
+                assetInfo = self.textureCladdings[cladding].get(cl)
+                if assetInfo:
+                    assetInfo = assetInfo.getEntry()
+                # save the resulting value in <cache>
+                cache[key] = assetInfo
+        
+        return assetInfo
 
 
 class AssetStore1:

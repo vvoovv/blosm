@@ -20,7 +20,6 @@ class Building:
         # in the data model doesn't contain building parts, i.e. the building is defined completely
         # by its outline
         self.footprint = None
-        self.assetInfoBldgIndex = None
         self._area = 0.
         # altitude difference for the building footprint projected on the terrain
         self.altitudeDifference = 0.

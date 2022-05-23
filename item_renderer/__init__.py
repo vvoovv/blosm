@@ -85,69 +85,16 @@ class ItemRenderer:
         )
     
     def _getCladdingTextureInfo(self, item):
-        building = item.building
-        renderInfo = building.renderInfo
         claddingMaterial = item.getCladdingMaterial()
         if not claddingMaterial:
             return None
         
-        # maybe it should be changed to <self.getStyleBlockAttrDeep("claddingClass")>
-        claddingClass = item.getStyleBlockAttr("claddingClass")
-        
-        if renderInfo.assetInfoBldgIndex is None:
-            if claddingClass:
-                claddingTextureInfo = self.r.assetStore.getCladTexInfoByClass(
-                    building, claddingMaterial, "texture", claddingClass
-                )
-                _setAssetInfoCache(
-                    building,
-                    claddingTextureInfo,
-                    # here the first <c> is for cladding, the second <c> is for class
-                    "cc%s" % claddingMaterial
-                )
-            else:
-                claddingTextureInfo = self.r.assetStore.getCladTexInfo(
-                    building, claddingMaterial, "texture"
-                )
-                _setAssetInfoCache(
-                    building,
-                    claddingTextureInfo,
-                    # here <c> is for cladding
-                    "c%s" % claddingMaterial
-                )
-        else:
-            if claddingClass:
-                key = "cc%s" % claddingMaterial
-                # If <key> is available in <renderInfo._cache>, that means we'll get <claddingTextureInfo> for sure
-                claddingTextureInfo = self.r.assetStore.getCladTexInfoByBldgIndexAndClass(
-                    renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
-                    claddingMaterial,
-                    "texture",
-                    claddingClass
-                )
-                if not claddingTextureInfo:
-                    # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
-                    # in the call above. No we try to get <claddingTextureInfo> without <renderInfo.assetInfoBldgIndex>
-                    claddingTextureInfo = self.r.assetStore.getCladTexInfoByClass(
-                        building, claddingMaterial, "texture", claddingClass
-                    )
-                    _setAssetInfoCache(building, claddingTextureInfo, key)
-            else:
-                key = "c%s" % claddingMaterial
-                # If <key> is available in <renderInfo._cache>, that means we'll get <claddingTextureInfo> for sure
-                claddingTextureInfo = self.r.assetStore.getCladTexInfoByBldgIndex(
-                    renderInfo._cache[key] if key in renderInfo._cache else renderInfo.assetInfoBldgIndex,
-                    claddingMaterial,
-                    "texture"
-                )
-                if not claddingTextureInfo:
-                    # <key> isn't available in <renderInfo._cache>, so <renderInfo.assetInfoBldgIndex> was used
-                    # in the call above. No we try to get <claddingTextureInfo> without <renderInfo.assetInfoBldgIndex>
-                    claddingTextureInfo = self.r.assetStore.getCladTexInfo(
-                        building, claddingMaterial, "texture"
-                    )
-                    _setAssetInfoCache(building, claddingTextureInfo, key)
-        return claddingTextureInfo
+        return self.r.assetStore.getAssetInfoCladdingTexture(
+            item.building,
+            item.getStyleBlockAttrDeep("collection"),
+            claddingMaterial,
+            item.getStyleBlockAttrDeep("claddingClass")
+        )
     
     def renderClass(self, item, itemClass, face, uvs):
         building = item.building
@@ -243,10 +190,11 @@ class ItemRenderer:
         )
     
     def getAssetInfo(self, item):
-        assetInfo = self.r.assetStore.getAssetInfo(
+        assetInfo = self.r.assetStore.getAssetInfoTexture(
             item.building,
+            item.getStyleBlockAttrDeep("collection"),
             item.getBuildingPart(),
-            self.getAssetType()
+            item.getStyleBlockAttrDeep("cl")
         )
         if assetInfo:
             assetInfo = self.setAttributesForAssetInfo(assetInfo)
