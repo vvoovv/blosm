@@ -217,7 +217,7 @@ class RectangleFRA(Geometry):
             levelRenderer.renderDivs(item, levelGroup)
         else:
             levelRenderer.renderLevelGroup(
-                parentItem,
+                item or parentItem,
                 levelGroup,
                 (rs.indexBL, rs.indexBR, indexTR, indexTL),
                 ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
