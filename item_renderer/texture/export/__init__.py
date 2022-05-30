@@ -1,6 +1,6 @@
 from .item_renderer import ItemRendererMixin
 from .container import Container
-from ..facade import Facade as FacadeBase
+from ...facade import Facade as FacadeBase
 from ..div import Div as DivBase
 from ..level import Level as LevelBase
 from ..top import Top as TopBase
