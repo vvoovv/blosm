@@ -415,10 +415,11 @@ class BlenderApp(BaseApp):
         logger = self.logger
         if logger: logger.renderStart()
         
+        Renderer.begin(self)
+        
         for r in self.renderers:
             r.prepare()
         
-        Renderer.begin(self)
         for m in self.managers:
             m.render()
         Renderer.end(self)

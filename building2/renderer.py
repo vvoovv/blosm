@@ -59,6 +59,8 @@ class BuildingRendererNew(Renderer):
         self.assetsDir = app.assetsDir
         self.assetPackageDir = app.assetPackageDir
         
+        self.layer = None
+        
         # do wee need to apply a cladding color for facade textures?
         self.useCladdingColor = True
         
@@ -89,23 +91,27 @@ class BuildingRendererNew(Renderer):
         self.revActions = []
     
     def prepare(self):
-        # nothing to be done here for now
-        pass
+        app = self.app
+        
+        if app.singleObject:
+            from .layer import BuildingLayer
+            
+            for layer in app.layers:
+                if isinstance(layer, BuildingLayer):
+                    layer.obj = self.createBlenderObject(
+                        layer.name,
+                        layer.location,
+                        collection = self.collection,
+                        parent = None
+                    )
+                    layer.prepare(layer)
 
     def preRender(self, building):
-        element = building.element
-        layer = element.l
-        self.layer = element.l
+        layer = building.element.l
         
-        if layer.singleObject:
-            if not layer.bm:
-                layer.obj = self.createBlenderObject(
-                    layer.name,
-                    layer.location,
-                    collection = self.collection,
-                    parent = None
-                )
-                layer.prepare(layer)
+        if layer.singleObject and not layer is self.layer:
+            # there may be several building layers
+            self.layer = layer
             self.bm = layer.bm
             self.obj = layer.obj
             self.materialIndices = layer.materialIndices

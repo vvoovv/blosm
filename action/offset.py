@@ -14,20 +14,19 @@ class Offset(Action):
         return
 
     def do(self, building, style, globalRenderer):
-        outline = building.outline
-        offset = Vector(
-            next(
-                outline.getOuterData(self.data) if outline.t is parse.multipolygon else outline.getData(self.data)
-            )
+        element = building.element
+        offset = next(
+            element.getOuterData(self.data) if element.t is parse.multipolygon else element.getData(self.data)
         )
+        offset = Vector( (offset[0], offset[1], 0.) )
         
-        layer = outline.l
+        layer = element.l
         globalRenderer.obj = globalRenderer.createBlenderObject(
-            globalRenderer.getName(outline),
-            offset+building.offset if building.offset else offset,
+            globalRenderer.getName(element),
+            offset+building.renderInfo.offset if building.renderInfo.offset else offset,
             collection = layer.getCollection(globalRenderer.collection),
             parent = layer.getParent( layer.getCollection(globalRenderer.collection) )
         )
         layer.prepare(globalRenderer)
         
-        building.offset = -offset
+        building.renderInfo.offset = -offset

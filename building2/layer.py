@@ -41,3 +41,18 @@ class RealisticBuildingLayerExport(BuildingLayer):
         uv_layers.new(name=self.uvLayerNameFacade)
         
         super().prepare(instance)
+
+
+class RealisticBuildingLayerInstance(BuildingLayer):
+    
+    def prepare(self, instance):
+        mesh = instance.obj.data
+        
+        # an asset index in the Blender collection
+        mesh.attributes.new("asset_index", 'INT', 'POINT')
+        # a unit vector along the related building facade
+        mesh.attributes.new("vector", 'FLOAT_VECTOR', 'POINT')
+        # 3 float number to scale an instance along its local x, y and z axes
+        mesh.attributes.new("scale", 'FLOAT_VECTOR', 'POINT')
+        
+        super().prepare(instance)
