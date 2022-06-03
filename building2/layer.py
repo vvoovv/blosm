@@ -2,12 +2,29 @@ from building.layer import BuildingLayer
 
 
 class RealisticBuildingLayer(BuildingLayer):
-        
+    
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
         
         # the name for the base UV map used for facade textures
         self.uvLayerNameFacade = "facade"
+        
+        # A Blender object for vertex clouds. 3D-modules representing a basic building appearance
+        # will be instanced on those vertices.
+        self.objGn = None
+        # <self.objGnExtra> will be used for the future development
+        # Additional details may be added (like, air vents, flowers, interiors).
+        # Those 3D-modules for the details will be instanced on vertices that belong to
+        # the Blender object(s) <self.objGnExtra>.
+        # <self.objGnExtra> could be a single Blender object or a list of Blender objects
+        self.objGnExtra = None
+
+
+class RealisticBuildingLayerBase(RealisticBuildingLayer):
+        
+    def __init__(self, layerId, app):
+        super().__init__(layerId, app)
+        
         # the name for the auxiliary UV map used for claddding textures
         self.uvLayerNameCladding = "cladding"
         # the name for the vertex color layer
@@ -24,13 +41,11 @@ class RealisticBuildingLayer(BuildingLayer):
         super().prepare(instance)
 
 
-class RealisticBuildingLayerExport(BuildingLayer):
+class RealisticBuildingLayerExport(RealisticBuildingLayer):
         
     def __init__(self, layerId, app):
         super().__init__(layerId, app)
         
-        # The name for the base UV map used for facade textures
-        self.uvLayerNameFacade = "facade"
         # The name for the base UV map used for cladding textures.
         # The same UV-map is used for both the facade and cladding textures
         self.uvLayerNameCladding = "facade"

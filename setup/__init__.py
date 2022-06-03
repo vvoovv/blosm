@@ -188,7 +188,7 @@ class SetupBlender(Setup):
         if self.doExport:
             from building2.layer import RealisticBuildingLayerExport as RealisticBuildingLayer
         else:
-            from building2.layer import RealisticBuildingLayer
+            from building2.layer import RealisticBuildingLayerBase as RealisticBuildingLayer
         
         buildingParts = BuildingParts()
         buildingRelations = BuildingRelations()

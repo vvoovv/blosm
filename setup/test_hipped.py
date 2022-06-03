@@ -8,7 +8,7 @@ from manager.logging import Logger
 
 from building2.manager import RealisticBuildingManager
 from building2.renderer import BuildingRendererNew, Building
-from building2.layer import RealisticBuildingLayer
+from building2.layer import RealisticBuildingLayerBase as RealisticBuildingLayer
 
 from item.footprint import Footprint
 
