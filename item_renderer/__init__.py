@@ -195,7 +195,8 @@ class ItemRenderer:
         
         assetInfo = None
         if self.r.app.preferMesh:
-            assetInfo = self.r.assetStore.getAssetInfoMesh(
+            assetInfo = self.r.assetStore.getAssetInfo(
+                True,
                 building,
                 collection,
                 part,
@@ -207,7 +208,8 @@ class ItemRenderer:
 
         if not assetInfo:
             # try to get a texture asset
-            assetInfo = self.r.assetStore.getAssetInfoTexture(
+            assetInfo = self.r.assetStore.getAssetInfo(
+                False,
                 building,
                 collection,
                 part,

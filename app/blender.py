@@ -145,7 +145,7 @@ class BlenderApp(BaseApp):
         # If <False>: first extrude all buildings and only then render them
         self.renderAfterExtrude = False
         
-        self.preferMesh = False
+        self.preferMesh = True
     
     def getAssetsDir(self, context):
         addonName = self.addonName

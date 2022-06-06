@@ -150,7 +150,7 @@ class AssetStore:
         
         return collection
     
-    def getAssetInfoTexture(self, building, collection, buildingPart, cl):
+    def getAssetInfo(self, meshType, building, collection, buildingPart, cl):
         if not cl:
             return None
         
@@ -160,7 +160,7 @@ class AssetStore:
             collection = self.getCollection(collection, "col_"+collection, cache)
             
             if collection:
-                assetInfo = collection.textureParts[buildingPart].get(cl)
+                assetInfo = ( collection.meshParts[buildingPart] if meshType else collection.textureParts[buildingPart] ).get(cl)
                 if assetInfo:
                     return assetInfo
                 else:
@@ -175,7 +175,7 @@ class AssetStore:
                 assetInfo = cache[key]
             else:
                 # get an instance of <EntryList>
-                assetInfo = self.textureParts[buildingPart].get(cl)
+                assetInfo = ( self.meshParts[buildingPart] if meshType else self.textureParts[buildingPart] ).get(cl)
                 if assetInfo:
                     assetInfo = assetInfo.getEntry()
                 # save the resulting value in <cache>
