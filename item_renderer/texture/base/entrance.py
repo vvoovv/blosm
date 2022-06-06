@@ -13,7 +13,7 @@ class Entrance(EntranceBase, Container):
         Container.__init__(self, exportMaterials=False)
         EntranceBase.__init__(self)
     
-    def renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
+    def OBSOLETE_renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
         face = self.r.createFace(parentItem.building, indices)
         item = levelGroup.item
         if item.materialId is None:

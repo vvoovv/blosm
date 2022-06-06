@@ -43,6 +43,8 @@ class AssetStore:
         
         # building parts without collections
         self.meshParts = self.initPartsNoCols()
+        
+        self.hasMesh = self.hasTexture = False
 
         with open(assetInfoFilepath, 'r') as jsonFile:
             # getting asset entries for collections
@@ -76,6 +78,8 @@ class AssetStore:
             cladding = collection.textureCladdings[ asset["cladding"] ]
             # None is allowed for <cl>. The previous value for <cladding[None]> will be overriden
             cladding[cl] = asset
+        
+        self.processHasMeshOrTexture(tp)
     
     def processNoCollectionAsset(self, asset):
         category = asset["category"]
@@ -93,6 +97,20 @@ class AssetStore:
             if not cl in cladding:
                 cladding[cl] = EntryList()
             cladding[cl].addEntry(asset)
+        
+        self.processHasMeshOrTexture(tp)
+    
+    def processHasMeshOrTexture(self, tp):
+        """
+        Args:
+            tp (str): An asset type (mesh or texture)
+        """
+        if tp == "mesh":
+            if not self.hasMesh:
+                self.hasMesh = True
+        else: # texture
+            if not self.hasTexture:
+                self.hasTexture = True
     
     def initPartsNoCols(self):
         parts = {}

@@ -190,15 +190,33 @@ class ItemRenderer:
         )
     
     def getAssetInfo(self, item):
-        assetInfo = self.r.assetStore.getAssetInfoTexture(
-            item.building,
-            item.getStyleBlockAttrDeep("collection"),
-            item.getBuildingPart(),
-            item.getStyleBlockAttrDeep("cl")
-        )
-        if assetInfo:
-            assetInfo = self.setAttributesForAssetInfo(assetInfo)
-            item.assetInfo = assetInfo
+        building, collection, part, cl =\
+            item.building, item.getStyleBlockAttrDeep("collection"), item.getBuildingPart(), item.getStyleBlockAttrDeep("cl")
+        
+        assetInfo = None
+        if self.r.app.preferMesh:
+            assetInfo = self.r.assetStore.getAssetInfoMesh(
+                building,
+                collection,
+                part,
+                cl
+            )
+        
+            if assetInfo:
+                item.assetInfo = assetInfo
+
+        if not assetInfo:
+            # try to get a texture asset
+            assetInfo = self.r.assetStore.getAssetInfoTexture(
+                building,
+                collection,
+                part,
+                cl
+            )
+            if assetInfo:
+                assetInfo = self.setAttributesForAssetInfoTexture(assetInfo)
+                item.assetInfo = assetInfo
+        
         return assetInfo
     
     def getTileWidthM(self, item):

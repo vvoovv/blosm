@@ -177,28 +177,15 @@ class Container(ItemRendererTexture):
         for loop in face.loops:
             loop[uvLayer].uv = uv
     
-    def setMaterialId(self, item, buildingPart, uvs):
-        # asset info could have been set in the call to item.getWidth(..)
-        facadeTextureInfo = item.assetInfo
-        if not facadeTextureInfo:
-            facadeTextureInfo = self.r.assetStore.getAssetInfoTexture(
-                item.building,
-                item.getStyleBlockAttrDeep("collection"),
-                buildingPart,
-                item.getStyleBlockAttrDeep("cl")
-            )
+    def setMaterialId(self, item, facadeTextureInfo, uvs):
+        claddingTextureInfo = self.getCladdingTextureInfo(item)\
+            if facadeTextureInfo.get("cladding") and self.claddingTexture else\
+            None
         
-        if facadeTextureInfo:
-            claddingTextureInfo = self.getCladdingTextureInfo(item)\
-                if facadeTextureInfo.get("cladding") and self.claddingTexture else\
-                None
-            
-            materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
-            if self.createFacadeMaterial(item, materialId, facadeTextureInfo, claddingTextureInfo, uvs):
-                item.materialId = materialId
-                item.materialData = facadeTextureInfo, claddingTextureInfo
-            else:
-                item.materialId = ""
+        materialId = self.getFacadeMaterialId(item, facadeTextureInfo, claddingTextureInfo)
+        if self.createFacadeMaterial(item, materialId, facadeTextureInfo, claddingTextureInfo, uvs):
+            item.materialId = materialId
+            item.materialData = facadeTextureInfo, claddingTextureInfo
         else:
             item.materialId = ""
     
@@ -215,33 +202,60 @@ class Container(ItemRendererTexture):
             indices (list or tuple): indices of vertices
             uvs (list or tuple): UV-coordinates of the vertices
         """
-        building = item.building      
-        face = self.r.createFace(building, indices)
+        building = item.building
+        assetInfo = None
+        
         if levelGroup.item:
-            if item.materialId is None:
-                self.setMaterialId(
-                    item,
-                    levelGroup.buildingPart or levelGroup.item.buildingPart,
-                    uvs
-                )
-            if item.materialId:
-                facadeTextureInfo, claddingTextureInfo = item.materialData
-                self.r.setUvs(
-                    face,
-                    item.geometry.getFinalUvs(
-                        max( round(item.width/_getTileWidthM(facadeTextureInfo)), 1 ),
-                        self.getNumLevelsInFace(levelGroup),
-                        facadeTextureInfo["numTilesU"],
-                        facadeTextureInfo["numTilesV"]
-                    ),
-                    self.r.layer.uvLayerNameFacade
-                )
-                self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
-                self.r.setMaterial(face, item.materialId)
-            else:
-                self.renderCladding(item, face, uvs)
-        else:
-            self.renderCladding(item, face, uvs)
+            # asset info could have been set in the call to item.getWidth(..)
+            assetInfo = item.assetInfo
+            if not assetInfo:
+                assetInfo = self.getAssetInfo(item)
+            
+            if assetInfo:
+                if assetInfo["type"] == "mesh":
+                    #
+                    # mesh
+                    #
+                    pass
+                else:
+                    #
+                    # texture
+                    #
+                    face = self.r.createFace(building, indices)
+                    
+                    if item.materialId is None:
+                        self.setMaterialId(
+                            item,
+                            assetInfo,
+                            uvs
+                        )
+                    if item.materialId:
+                        facadeTextureInfo, claddingTextureInfo = item.materialData
+                        self.r.setUvs(
+                            face,
+                            self.getUvs(item, levelGroup, facadeTextureInfo),
+                            self.r.layer.uvLayerNameFacade
+                        )
+                        self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
+                        self.r.setMaterial(face, item.materialId)
+                    else:
+                        self.renderCladding(item, face, uvs)
+        
+        if not assetInfo:
+            self.renderCladding(
+                item,
+                self.r.createFace(building, indices),
+                uvs
+            )
+            item.materialId = ""
+    
+    def getUvs(self, item, levelGroup, facadeTextureInfo):
+        return item.geometry.getFinalUvs(
+            max( round(item.width/_getTileWidthM(facadeTextureInfo)), 1 ),
+            self.getNumLevelsInFace(levelGroup),
+            facadeTextureInfo["numTilesU"],
+            facadeTextureInfo["numTilesV"]
+        )
     
     def getNumLevelsInFace(self, levelGroup):
         return 1 if levelGroup.singleLevel else (levelGroup.index2-levelGroup.index1+1)

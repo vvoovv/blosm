@@ -11,7 +11,7 @@ class ItemRendererTexture(ItemRenderer):
     def getAssetType(self):
         return "texture"
     
-    def setAttributesForAssetInfo(self, assetInfo):
+    def setAttributesForAssetInfoTexture(self, assetInfo):
         image = loadImage(
             assetInfo["name"],
             getPath(self.r, assetInfo["path"])

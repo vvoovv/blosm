@@ -99,12 +99,13 @@ class RectangleFRA(Geometry):
             v2 = v2 + incrementVector
             verts.append(v2)
             texUr = texUl + _item.width
-            _item.getItemRenderer(itemRenderer.itemRenderers).render(
-                _item,
-                levelGroup,
-                (indexLB, indexRB, indexRT, indexLT),
-                ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
-            )
+            if levelGroup:
+                _item.getItemRenderer(itemRenderer.itemRenderers).renderLevelGroup(
+                    _item,
+                    levelGroup,
+                    (indexLB, indexRB, indexRT, indexLT),
+                    ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
+                )
             indexLB = indexRB
             indexLT = indexRT
             texUl = texUr
