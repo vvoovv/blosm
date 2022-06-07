@@ -287,10 +287,9 @@ class CurveRenderer(Renderer):
         layer = element.l
         
         if not layer.singleObject:
-            obj = self.obj
             # assign OSM tags to the blender object
-            assignTags(obj, element.tags)
-            layer.finalizeBlenderObject(obj)
+            assignTags(layer.obj, element.tags)
+            layer.finalize()
     
     def cleanup(self):
         super().cleanup()

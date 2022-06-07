@@ -45,10 +45,11 @@ class CurveLayer(MeshLayer):
     def getDefaultSwOffset(self, app):
         return app.swWayOffset
 
-    def finalizeBlenderObject(self, obj):
+    def finalize(self):
         """
         Slice Blender MESH object, add modifiers
         """
+        obj = self.obj
         # set a bevel object for the curve
         curve = obj.data
         # the name of the bevel object

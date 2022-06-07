@@ -147,7 +147,7 @@ class BlenderApp(BaseApp):
         # If <False>: first extrude all buildings and only then render them
         self.renderAfterExtrude = False
         
-        self.preferMesh = True
+        self.preferMesh = False
     
     def getAssetsDir(self, context):
         addonName = self.addonName
@@ -234,6 +234,8 @@ class BlenderApp(BaseApp):
             self.setAssetPackagePaths()
             
             self.assetStore = AssetStore(self.assetInfoFilepath)
+            if self.preferMesh and not self.assetStore.hasMesh:
+                self.preferMesh = False
     
     def validateAssetsDirContent(self, context):
         assetsDir = self.getAssetsDir(context)
@@ -428,10 +430,14 @@ class BlenderApp(BaseApp):
         
         for m in self.managers:
             m.render()
+        
         Renderer.end(self)
         
         for m in self.managers:
             m.renderExtra()
+
+        for r in self.renderers:
+            r.finalize()
         
         for r in self.renderers:
             r.cleanup()

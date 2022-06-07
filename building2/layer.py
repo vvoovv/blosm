@@ -1,5 +1,8 @@
 from building.layer import BuildingLayer
 
+from renderer import Renderer
+from util.blender import getBmesh
+
 
 class RealisticBuildingLayer(BuildingLayer):
     
@@ -39,6 +42,17 @@ class RealisticBuildingLayerBase(RealisticBuildingLayer):
         mesh.vertex_colors.new(name=self.vertexColorLayerNameCladding)
         
         super().prepare(instance)
+        
+        if self.app.preferMesh:
+            obj = instance.obj
+            # copy the values from <self.obj>
+            instance.objGn = Renderer.createBlenderObject(
+                obj.name + "_gn",
+                obj.location,
+                obj.users_collection[0],
+                obj.parent
+            )
+            instance.bmGn = getBmesh(instance.objGn)
 
 
 class RealisticBuildingLayerExport(RealisticBuildingLayer):

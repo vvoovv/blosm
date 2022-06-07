@@ -1,5 +1,6 @@
 import bpy
 from renderer import Renderer
+from .layer import BuildingLayer
 from .item_store import ItemStore
 from .texture_exporter import TextureExporter
 
@@ -88,12 +89,8 @@ class BuildingRendererNew(Renderer):
         self.revActions = []
     
     def prepare(self):
-        app = self.app
-        
-        if app.singleObject:
-            from .layer import BuildingLayer
-            
-            for layer in app.layers:
+        if self.app.singleObject:
+            for layer in self.app.layers:
                 if isinstance(layer, BuildingLayer):
                     layer.obj = self.createBlenderObject(
                         layer.name,
@@ -103,6 +100,12 @@ class BuildingRendererNew(Renderer):
                     )
                     layer.prepare(layer)
 
+    def finalize(self):
+        if self.app.singleObject:
+            for layer in self.app.layers:
+                if isinstance(layer, BuildingLayer):
+                    layer.finalize(layer)
+    
     def preRender(self, building):
         layer = building.element.l
         

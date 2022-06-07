@@ -128,10 +128,15 @@ class MeshLayer(Layer):
         instance.bm = getBmesh(instance.obj)
         instance.materialIndices = {}
     
-    def finalizeBlenderObject(self, obj):
+    def finalize(self, instance):
         """
         Slice Blender MESH object, add modifiers
         """
+        obj = instance.obj
+        
+        if self.app.singleObject:
+            setBmesh(obj, instance.bm)
+        
         app = self.app
         terrain = app.terrain
         if terrain and self.sliceMesh:
