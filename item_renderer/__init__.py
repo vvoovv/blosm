@@ -89,7 +89,7 @@ class ItemRenderer:
         if not claddingMaterial:
             return None
         
-        return self.r.assetStore.getAssetInfoCladdingTexture(
+        return self.r.app.assetStore.getAssetInfoCladdingTexture(
             item.building,
             item.getStyleBlockAttrDeep("collection"),
             claddingMaterial,
@@ -193,9 +193,11 @@ class ItemRenderer:
         building, collection, part, cl =\
             item.building, item.getStyleBlockAttrDeep("collection"), item.getBuildingPart(), item.getStyleBlockAttrDeep("cl")
         
+        assetStore = self.r.app.assetStore
+        
         assetInfo = None
         if self.r.app.preferMesh:
-            assetInfo = self.r.assetStore.getAssetInfo(
+            assetInfo = assetStore.getAssetInfo(
                 True,
                 building,
                 collection,
@@ -208,7 +210,7 @@ class ItemRenderer:
 
         if not assetInfo:
             # try to get a texture asset
-            assetInfo = self.r.assetStore.getAssetInfo(
+            assetInfo = assetStore.getAssetInfo(
                 False,
                 building,
                 collection,

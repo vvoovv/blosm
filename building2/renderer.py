@@ -1,7 +1,6 @@
 import bpy
 from renderer import Renderer
 from .item_store import ItemStore
-from .asset_store import AssetStore
 from .texture_exporter import TextureExporter
 
 from item.building import Building
@@ -80,8 +79,6 @@ class BuildingRendererNew(Renderer):
         
         self.getStyle = getStyle
         self.itemStore = ItemStore(_itemClasses)
-        
-        self.assetStore = AssetStore(app.assetInfoFilepath)
         
         self._cache = {}
         
