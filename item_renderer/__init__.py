@@ -28,6 +28,7 @@ class ItemRenderer:
     def init(self, itemRenderers, globalRenderer):
         self.itemRenderers = itemRenderers
         self.r = globalRenderer
+        self.app = globalRenderer.app
 
     def requireUvLayer(self, name):
         uv = self.r.bm.loops.layers.uv
@@ -89,7 +90,7 @@ class ItemRenderer:
         if not claddingMaterial:
             return None
         
-        return self.r.app.assetStore.getAssetInfoCladdingTexture(
+        return self.app.assetStore.getAssetInfoCladdingTexture(
             item.building,
             item.getStyleBlockAttrDeep("collection"),
             claddingMaterial,
@@ -193,11 +194,9 @@ class ItemRenderer:
         building, collection, part, cl =\
             item.building, item.getStyleBlockAttrDeep("collection"), item.getBuildingPart(), item.getStyleBlockAttrDeep("cl")
         
-        assetStore = self.r.app.assetStore
-        
         assetInfo = None
-        if self.r.app.preferMesh:
-            assetInfo = assetStore.getAssetInfo(
+        if self.app.preferMesh:
+            assetInfo = self.app.assetStore.getAssetInfo(
                 True,
                 building,
                 collection,
@@ -210,7 +209,7 @@ class ItemRenderer:
 
         if not assetInfo:
             # try to get a texture asset
-            assetInfo = assetStore.getAssetInfo(
+            assetInfo = self.app.assetStore.getAssetInfo(
                 False,
                 building,
                 collection,

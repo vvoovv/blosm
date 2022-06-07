@@ -69,7 +69,7 @@ class ItemRendererMixin:
     
     def getTextureFilepath(self, materialName):
         textureFilename = "baked_%s" % materialName
-        textureDir = os.path.join(self.r.app.dataDir, _textureDir)
+        textureDir = os.path.join(self.app.dataDir, _textureDir)
         return textureFilename, textureDir, os.path.join(textureDir, textureFilename)
     
     def createMaterialFromTemplate(self, materialName, textureFilepath):
