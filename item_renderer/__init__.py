@@ -51,8 +51,11 @@ class ItemRenderer:
     def getFacadeMaterialTemplate(self, facadeTextureInfo, claddingTextureInfo):
         if claddingTextureInfo:
             materialTemplateName = "facade_cladding_color" if self.r.useCladdingColor else "facade_cladding"
+        elif facadeTextureInfo.get("specularMapName"):
+            materialTemplateName = "facade_specular_color" if self.r.useCladdingColor else "facade_specular"
         else:
             materialTemplateName = "export"
+        
         return self.getMaterialTemplate(materialTemplateName)
     
     def renderCladding(self, item, face, uvs):

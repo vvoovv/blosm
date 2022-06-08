@@ -16,25 +16,3 @@ class Level(Container):
         return itemRenderers["Entrance"]\
             if len(self.markup) == 1 and self.markup[0].__class__.__name__ == "Entrance"\
             else itemRenderers["Level"]
-
-
-class CurtainWall(Level):
-        
-    width = 0.
-    
-    def __init__(self, parent, styleBlock):
-        super().__init__(parent, styleBlock)
-        self.buildingPart = "curtain_wall"
-    
-    def getLevelRenderer(self, levelGroup, itemRenderers):
-        """
-        Get a renderer for the <levelGroup> representing the item.
-        """
-        return itemRenderers["CurtainWall"]
-    
-    def getWidth(self):
-        width = self.getStyleBlockAttr("width")
-        if width is None:
-            width = CurtainWall.width
-        self.width = width
-        return width

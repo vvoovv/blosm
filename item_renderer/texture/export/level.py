@@ -1,15 +1,13 @@
 from .container import Container
-from ..level import CurtainWall as CurtainWallBase
 from ...util import getPath
 
 
-class CurtainWall(CurtainWallBase, Container):
+class CurtainWall(Container):
     
     def __init__(self):
         # a reference to the Container class used in the parent classes
         self.Container = Container
         Container.__init__(self, exportMaterials=True)
-        CurtainWallBase.__init__(self)
     
     def makeTexture(self, item, textureFilename, textureDir, textureFilepath, color, facadeTextureInfo, claddingTextureInfo, uvs):
         textureExporter = self.r.textureExporter

@@ -3,7 +3,7 @@ from .value import Value
 from .scope import *
 
 from item.div import Div as ItemDiv
-from item.level import Level as ItemLevel, CurtainWall as ItemCurtainWall
+from item.level import Level as ItemLevel
 from item.top import Top as ItemTop
 from item.bottom import Bottom as ItemBottom
 from item.window import Window as ItemWindow
@@ -232,12 +232,6 @@ class Level(Item):
 
     def getItem(self, parent):
         return ItemLevel(parent, self)
-
-
-class CurtainWall(Level):
-    
-    def getItem(self, parent):
-        return ItemCurtainWall(parent, self)
 
 
 class Window(Item):

@@ -69,6 +69,14 @@ class ItemRendererMixin:
                     "Cladding"
                 )
                 setTextureSize(claddingTextureInfo, image)
+            elif facadeTextureInfo.get("specularMapName"):
+                # specular map
+                setImage(
+                    facadeTextureInfo["specularMapName"],
+                    getPath(self.r, facadeTextureInfo["path"]),
+                    nodes,
+                    "Specular Map"
+                )
         
         setTextureSize2(facadeTextureInfo, materialName, "Main")
         if claddingTextureInfo:

@@ -170,7 +170,6 @@ def setup(app, data):
             Facade = GeometryRendererFacade(),
             Div = GeometryRenderer(),
             Level = GeometryRenderer(),
-            CurtainWall = GeometryRenderer(),
             Bottom = GeometryRenderer(),
             Entrance = GeometryRenderer(),
             RoofFlat = GeometryRendererRoofFlat(),

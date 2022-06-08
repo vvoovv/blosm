@@ -7,7 +7,7 @@ from .texture_exporter import TextureExporter
 from item.building import Building
 from item.footprint import Footprint
 from item.facade import Facade
-from item.level import Level, CurtainWall
+from item.level import Level
 from item.div import Div
 from item.bottom import Bottom
 from item.window import Window
@@ -28,7 +28,6 @@ _itemClasses = (
         Footprint,
         Facade,
         Level,
-        CurtainWall,
         Div,
         Bottom,
         Window,

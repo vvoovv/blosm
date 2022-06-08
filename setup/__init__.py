@@ -244,7 +244,6 @@ class SetupBlender(Setup):
                 Facade as FacadeRendererExport,\
                 Div as DivRendererExport,\
                 Level as LevelRendererExport,\
-                CurtainWall as CurtainWallRendererExport,\
                 Top as TopRendererExport,\
                 Bottom as BottomRendererExport,\
                 Entrance as EntranceRendererExport,\
@@ -259,7 +258,6 @@ class SetupBlender(Setup):
                 Facade = FacadeRendererExport(),
                 Div = DivRendererExport(),
                 Level = LevelRendererExport(),
-                CurtainWall = CurtainWallRendererExport(),
                 Top = TopRendererExport(),
                 Bottom = BottomRendererExport(),
                 Entrance = EntranceRendererExport(),
@@ -277,7 +275,6 @@ class SetupBlender(Setup):
                 Facade as FacadeRenderer,\
                 Div as DivRenderer,\
                 Level as LevelRenderer,\
-                CurtainWall as CurtainWallRenderer,\
                 Top as TopRenderer,\
                 Bottom as BottomRenderer,\
                 Entrance as EntranceRenderer,\
@@ -292,7 +289,6 @@ class SetupBlender(Setup):
                 Facade = FacadeRenderer(),
                 Div = DivRenderer(),
                 Level = LevelRenderer(),
-                CurtainWall = CurtainWallRenderer(),
                 Top = TopRenderer(),
                 Bottom = BottomRenderer(),
                 Entrance = EntranceRenderer(),

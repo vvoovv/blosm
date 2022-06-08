@@ -287,14 +287,6 @@ styles = {
         label = "cladding only for structures without levels",
         condition = lambda facade: not facade.footprint.numLevels
     ),
-    Facade(
-        markup = [
-            CurtainWall(
-                indices = (0, -1)#,
-                #width = 1.
-            )
-        ]
-    ),
     Roof(
         roofCladdingMaterial = "concrete",
         roofCladdingColor = (0.98, 0.502, 0.447, 1.), # salmon
@@ -368,14 +360,6 @@ styles = {
         condition = lambda facade: not facade.footprint.numLevels or\
             facade.footprint.height - facade.footprint.minHeight < minHeightForLevels or\
             facade.width < minWidthForOpenings
-    ),
-    Facade(
-        condition = lambda item: item.footprint.getStyleBlockAttr("claddingMaterial") == "glass",
-        markup = [
-            CurtainWall(
-                indices = (0, -1)
-            )
-        ]
     ),
     Facade(
         markup = [
