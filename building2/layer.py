@@ -33,26 +33,26 @@ class RealisticBuildingLayerBase(RealisticBuildingLayer):
         # the name for the vertex color layer
         self.vertexColorLayerNameCladding = "cladding_color"
     
-    def prepare(self, instance):
-        mesh = instance.obj.data
+    def prepare(self):
+        mesh = self.obj.data
         uv_layers = mesh.uv_layers
         uv_layers.new(name=self.uvLayerNameFacade)
         uv_layers.new(name=self.uvLayerNameCladding)
         
         mesh.vertex_colors.new(name=self.vertexColorLayerNameCladding)
         
-        super().prepare(instance)
+        super().prepare()
         
         if self.app.preferMesh:
-            obj = instance.obj
+            obj = self.obj
             # copy the values from <self.obj>
-            instance.objGn = Renderer.createBlenderObject(
+            self.objGn = Renderer.createBlenderObject(
                 obj.name + "_gn",
                 obj.location,
                 obj.users_collection[0],
                 obj.parent
             )
-            instance.bmGn = getBmesh(instance.objGn)
+            self.bmGn = getBmesh(self.objGn)
 
 
 class RealisticBuildingLayerExport(RealisticBuildingLayer):

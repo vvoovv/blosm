@@ -5,12 +5,11 @@ from grammar import smoothness
 class RoofProfile(ItemRendererTexture):
         
     def render(self, roofItem):
-        building = roofItem.building
         smoothFaces = roofItem.getStyleBlockAttr("faces") is smoothness.Smooth
         
         for roofSide in roofItem.roofSides:
             face = self.r.createFace(
-                building,
+                roofItem.footprint,
                 roofSide.indices
             )
             if smoothFaces:

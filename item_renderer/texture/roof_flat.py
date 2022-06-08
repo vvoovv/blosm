@@ -5,9 +5,8 @@ from mathutils import Vector
 class RoofFlat(ItemRendererTexture):
     
     def render(self, roofItem):
-        building = roofItem.building
         face = self.r.createFace(
-            building,
+            roofItem.footprint,
             range(roofItem.firstVertIndex, roofItem.firstVertIndex+roofItem.footprint.polygon.numEdges)
         )
         
@@ -39,7 +38,8 @@ class RoofFlat(ItemRendererTexture):
                     (vector.v2-offset).dot(vVec)/textureHeightM
                 ) for vector in polygon.getVectors()
             ),
-            self.r.layer.uvLayerNameCladding
+            roofItem.footprint.element.l,
+            roofItem.footprint.element.l.uvLayerNameCladding
         )
     
     def setClassUvs(self, item, face, uvs, texUl, texVb, texUr, texVt):

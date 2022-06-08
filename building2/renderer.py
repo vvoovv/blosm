@@ -58,8 +58,6 @@ class BuildingRendererNew(Renderer):
         self.assetsDir = app.assetsDir
         self.assetPackageDir = app.assetPackageDir
         
-        self.layer = None
-        
         # do wee need to apply a cladding color for facade textures?
         self.useCladdingColor = True
         
@@ -97,23 +95,13 @@ class BuildingRendererNew(Renderer):
                         collection = self.collection,
                         parent = None
                     )
-                    layer.prepare(layer)
+                    layer.prepare()
 
     def finalize(self):
         if self.app.singleObject:
             for layer in self.app.layers:
                 if isinstance(layer, BuildingLayer):
-                    layer.finalize(layer)
-    
-    def preRender(self, building):
-        layer = building.element.l
-        
-        if layer.singleObject and not layer is self.layer:
-            # there may be several building layers
-            self.layer = layer
-            self.bm = layer.bm
-            self.obj = layer.obj
-            self.materialIndices = layer.materialIndices
+                    layer.finalize()
     
     def cleanup(self):
         for action in self.buildingActions:
@@ -139,8 +127,8 @@ class BuildingRendererNew(Renderer):
             return
         building.renderInfo.setStyleMeta(buildingStyle)
         
-        if self.app.renderAfterExtrude:
-            self.preRender(building)
+        #if self.app.renderAfterExtrude:
+        #    self.preRender(building)
         
         if not parts or building.alsoPart:
             # the building has no parts
@@ -167,7 +155,7 @@ class BuildingRendererNew(Renderer):
             self.postRender(building.element)
     
     def renderExtrudedVolumes(self, building, data):
-        self.preRender(building)
+        #self.preRender(building)
         
         # render building footprint
         if not building.parts or building.alsoPart:
@@ -190,9 +178,9 @@ class BuildingRendererNew(Renderer):
         
         footprint.roofRenderer.render(footprint.roofItem)
     
-    def createFace(self, building, indices):
-        bm = self.bm
-        renderInfo = building.renderInfo
+    def createFace(self, footprint, indices):
+        bm = footprint.element.l.bm
+        renderInfo = footprint.building.renderInfo
         verts = renderInfo.verts
         bmVerts = renderInfo.bmVerts
         
@@ -208,24 +196,24 @@ class BuildingRendererNew(Renderer):
         
         return bm.faces.new(bmVerts[index] for index in indices)
     
-    def setUvs(self, face, uvs, layerName):
+    def setUvs(self, face, uvs, layer, uvLayerName):
         # assign uv coordinates
-        uvLayer = self.bm.loops.layers.uv[layerName]
+        uvLayer = layer.bm.loops.layers.uv[uvLayerName]
         loops = face.loops
         for loop,uv in zip(loops, uvs):
             loop[uvLayer].uv = uv
     
-    def setVertexColor(self, face, color, layerName):
-        vertexColorLayer = self.bm.loops.layers.color[layerName]
+    def setVertexColor(self, face, color, layer, layerName):
+        vertexColorLayer = layer.bm.loops.layers.color[layerName]
         for loop in face.loops:
             loop[vertexColorLayer] = color
 
-    def setMaterial(self, face, materialName):
+    def setMaterial(self, layer, face, materialName):
         """
         Set material (actually material index) for the given <face>.
         """
-        materialIndices = self.materialIndices
-        materials = self.obj.data.materials
+        materialIndices = layer.materialIndices
+        materials = layer.obj.data.materials
         
         if not materialName in materialIndices:
             materialIndices[materialName] = len(materials)

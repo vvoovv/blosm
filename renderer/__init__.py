@@ -91,8 +91,8 @@ class Renderer:
         layer = element.l
         if not layer.singleObject:
             # assign OSM tags to the blender object
-            assignTags(self.obj, element.tags)
-            layer.finalize(self)
+            assignTags(layer.obj, element.tags)
+            layer.finalize()
     
     @classmethod
     def end(self, app):

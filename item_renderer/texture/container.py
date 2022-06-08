@@ -202,7 +202,6 @@ class Container(ItemRendererTexture):
             indices (list or tuple): indices of vertices
             uvs (list or tuple): UV-coordinates of the vertices
         """
-        building = item.building
         assetInfo = None
         
         if levelGroup.item:
@@ -221,7 +220,7 @@ class Container(ItemRendererTexture):
                     #
                     # texture
                     #
-                    face = self.r.createFace(building, indices)
+                    face = self.r.createFace(item.footprint, indices)
                     
                     if item.materialId is None:
                         self.setMaterialId(
@@ -231,20 +230,22 @@ class Container(ItemRendererTexture):
                         )
                     if item.materialId:
                         facadeTextureInfo, claddingTextureInfo = item.materialData
+                        layer = item.footprint.element.l
                         self.r.setUvs(
                             face,
                             self.getUvs(item, levelGroup, facadeTextureInfo),
-                            self.r.layer.uvLayerNameFacade
+                            layer,
+                            layer.uvLayerNameFacade
                         )
                         self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
-                        self.r.setMaterial(face, item.materialId)
+                        self.r.setMaterial(layer, face, item.materialId)
                     else:
                         self.renderCladding(item, face, uvs)
         
         if not assetInfo:
             self.renderCladding(
                 item,
-                self.r.createFace(building, indices),
+                self.r.createFace(item.footprint, indices),
                 uvs
             )
             item.materialId = ""

@@ -124,18 +124,17 @@ class MeshLayer(Layer):
     def getDefaultSwOffset(self, app):
         return app.swOffset
     
-    def prepare(self, instance):
-        instance.bm = getBmesh(instance.obj)
-        instance.materialIndices = {}
+    def prepare(self):
+        self.bm = getBmesh(self.obj)
+        self.materialIndices = {}
     
-    def finalize(self, instance):
+    def finalize(self):
         """
         Slice Blender MESH object, add modifiers
         """
-        obj = instance.obj
+        obj = self.obj
         
-        if self.app.singleObject:
-            setBmesh(obj, instance.bm)
+        setBmesh(obj, self.bm)
         
         app = self.app
         terrain = app.terrain

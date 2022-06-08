@@ -44,7 +44,7 @@ class Facade:
                                     # No markup, so we render cladding only.
                                     self.renderCladding(
                                         facade,
-                                        r.createFace(building, facade.indices),
+                                        r.createFace(footprint, facade.indices),
                                         facade.uvs
                                     )
                                     break
@@ -56,10 +56,10 @@ class Facade:
                         # Use style of <footprint> to render cladding for <facade>
                         self.renderCladding(
                             footprint,
-                            r.createFace(building, facade.indices),
+                            r.createFace(footprint, facade.indices),
                             facade.uvs
                         )
         else:
             # simply create BMFaces here
             for facade in footprint.facades:
-                r.createFace(building, facade.indices)
+                r.createFace(footprint, facade.indices)

@@ -21,12 +21,12 @@ class Offset(Action):
         offset = Vector( (offset[0], offset[1], 0.) )
         
         layer = element.l
-        globalRenderer.obj = globalRenderer.createBlenderObject(
+        layer.obj = globalRenderer.createBlenderObject(
             globalRenderer.getName(element),
             offset+building.renderInfo.offset if building.renderInfo.offset else offset,
             collection = layer.getCollection(globalRenderer.collection),
             parent = layer.getParent( layer.getCollection(globalRenderer.collection) )
         )
-        layer.prepare(globalRenderer)
+        layer.prepare()
         
         building.renderInfo.offset = -offset
