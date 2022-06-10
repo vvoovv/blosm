@@ -14,7 +14,7 @@ class Entrance(EntranceBase, Container):
         EntranceBase.__init__(self)
     
     def OBSOLETE_renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
-        face = self.r.createFace(parentItem.building, indices)
+        face = self.r.createFace(parentItem.footprint, indices)
         item = levelGroup.item
         if item.materialId is None:
             self.setMaterialId(

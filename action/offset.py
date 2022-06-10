@@ -15,18 +15,12 @@ class Offset(Action):
 
     def do(self, building, style, globalRenderer):
         element = building.element
+        renderInfo = building.renderInfo
+        
         offset = next(
             element.getOuterData(self.data) if element.t is parse.multipolygon else element.getData(self.data)
         )
-        offset = Vector( (offset[0], offset[1], 0.) )
+        # <renderInfo.offsetVertex> could have been set in <action.terrain>
+        renderInfo.offsetBlenderObject = Vector( (offset[0], offset[1], renderInfo.offsetVertex[2]) ) if renderInfo.offsetVertex else Vector( (offset[0], offset[1], 0.) )
         
-        layer = element.l
-        layer.obj = globalRenderer.createBlenderObject(
-            globalRenderer.getName(element),
-            offset+building.renderInfo.offset if building.renderInfo.offset else offset,
-            collection = layer.getCollection(globalRenderer.collection),
-            parent = layer.getParent( layer.getCollection(globalRenderer.collection) )
-        )
-        layer.prepare()
-        
-        building.renderInfo.offset = -offset
+        renderInfo.offsetVertex = Vector( (-offset[0], -offset[1], 0.) )

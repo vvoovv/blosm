@@ -38,8 +38,8 @@ class RoofFlat(ItemRendererTexture):
                     (vector.v2-offset).dot(vVec)/textureHeightM
                 ) for vector in polygon.getVectors()
             ),
-            roofItem.footprint.element.l,
-            roofItem.footprint.element.l.uvLayerNameCladding
+            roofItem.building.element.l,
+            roofItem.building.element.l.uvLayerNameCladding
         )
     
     def setClassUvs(self, item, face, uvs, texUl, texVb, texUr, texVt):

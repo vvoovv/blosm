@@ -72,7 +72,7 @@ class Container(ItemRendererTexture):
         item.prepareMarkupItems()
         
         if item.styleBlock.markup[0].isLevel:
-            #face = self.r.createFace(item.building, item.indices)
+            #face = self.r.createFace(item.footprint, item.indices)
             #self.renderCladding(item, face, item.uvs)
             #return
             if item.highEnoughForLevel:
@@ -81,7 +81,7 @@ class Container(ItemRendererTexture):
                 # No space for levels, so we render cladding only.
                 self.renderCladding(
                     item,
-                    self.r.createFace(item.building, item.indices),
+                    self.r.createFace(item.footprint, item.indices),
                     item.uvs
                 )
         else:
@@ -126,7 +126,7 @@ class Container(ItemRendererTexture):
                 _item = item.markup[0]
                 _item.indices = parentIndices
                 _item.uvs = item.uvs
-                r.createFace(item.building, _item.indices)
+                r.createFace(item.footprint, _item.indices)
             else:
                 numRepeats = item.numRepeats
                 symmetry = item.symmetry
@@ -230,7 +230,7 @@ class Container(ItemRendererTexture):
                         )
                     if item.materialId:
                         facadeTextureInfo, claddingTextureInfo = item.materialData
-                        layer = item.footprint.element.l
+                        layer = item.building.element.l
                         self.r.setUvs(
                             face,
                             self.getUvs(item, levelGroup, facadeTextureInfo),

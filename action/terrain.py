@@ -40,7 +40,7 @@ class Terrain(Action):
             ),
             key = lambda vert: vert[2]
         )
-        building.renderInfo.offset = offsetZ[2] * zAxis
+        building.renderInfo.offsetVertex = offsetZ[2] * zAxis
         # we also need to store the altitude difference for the building footprint
         building.renderInfo.altitudeDifference = maxZ - offsetZ[2]
     

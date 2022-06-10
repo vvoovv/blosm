@@ -156,7 +156,7 @@ class RectangleFRA(Geometry):
             parentRenderer.renderCladding(
                 parentItem,
                 parentRenderer.r.createFace(
-                    parentItem.building,
+                    parentItem.footprint,
                     (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
                 ),
                 ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )

@@ -53,7 +53,7 @@ class RoofPyramidal(ItemRendererTexture):
         )
     
     def createFace(self, roofItem, smooth, indices, uVec, uv0, uv1):
-        face = self.r.createFace(roofItem.building, indices)
+        face = self.r.createFace(roofItem.footprint, indices)
         if smooth:
             face.smooth = smooth
         

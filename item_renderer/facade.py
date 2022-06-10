@@ -26,7 +26,7 @@ class Facade:
                                     self.renderClass(
                                         facade,
                                         facadeClass,
-                                        r.createFace(building, facade.indices),
+                                        r.createFace(footprint, facade.indices),
                                         facade.uvs
                                     )
                                     break

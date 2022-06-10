@@ -157,6 +157,18 @@ class BuildingRendererNew(Renderer):
     def renderExtrudedVolumes(self, building, data):
         #self.preRender(building)
         
+        if not self.app.singleObject:
+            renderInfo = building.renderInfo
+            layer = building.element.l
+            
+            layer.obj = self.createBlenderObject(
+                self.getName(building.element),
+                renderInfo.offsetBlenderObject,
+                collection = layer.getCollection(self.collection),
+                parent = layer.getParent( layer.getCollection(self.collection) )
+            )
+            layer.prepare()
+        
         # render building footprint
         if not building.parts or building.alsoPart:
             self.renderExtrudedVolume(building.footprint, True)
@@ -179,7 +191,7 @@ class BuildingRendererNew(Renderer):
         footprint.roofRenderer.render(footprint.roofItem)
     
     def createFace(self, footprint, indices):
-        bm = footprint.element.l.bm
+        bm = footprint.building.element.l.bm
         renderInfo = footprint.building.renderInfo
         verts = renderInfo.verts
         bmVerts = renderInfo.bmVerts
@@ -191,7 +203,7 @@ class BuildingRendererNew(Renderer):
         for index in indices:
             if not bmVerts[index]:
                 bmVerts[index] = bm.verts.new(
-                    (verts[index] + renderInfo.offset) if renderInfo.offset else verts[index]
+                    (verts[index] + renderInfo.offsetVertex) if renderInfo.offsetVertex else verts[index]
                 )
         
         return bm.faces.new(bmVerts[index] for index in indices)

@@ -15,7 +15,10 @@ class Building:
         # attributes evaluated per building rather than per footprint, cladding texture info
         self._cache = {}
         
-        self.offset = None
+        # offset for vertices
+        self.offsetVertex = None
+        # Offset for a Blender object. Used only for <app.singleObject=True>
+        self.offsetBlenderObject = None
         # Instance of item.footprint.Footprint, it's only used if the building definition
         # in the data model doesn't contain building parts, i.e. the building is defined completely
         # by its outline

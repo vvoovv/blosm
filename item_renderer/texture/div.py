@@ -20,4 +20,4 @@ class Div:
         elif levelGroup:
             self.renderLevelGroup(item, levelGroup, indices, uvs)
         else:
-            self.r.createFace(item.building, indices)
+            self.r.createFace(item.footprint, indices)

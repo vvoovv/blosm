@@ -23,7 +23,7 @@ class Entrance(EntranceBase, Container):
             ("%s_%s" % (color, facadeTextureInfo["name"]) if color else facadeTextureInfo["name"])
 
     def renderLevelGroup(self, parentItem, levelGroup, indices, uvs):
-        face = self.r.createFace(parentItem.building, indices)
+        face = self.r.createFace(parentItem.footprint, indices)
         item = levelGroup.item
         if item.materialId is None:
             self.setMaterialId(
