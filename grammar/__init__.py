@@ -217,7 +217,7 @@ class Div(Item):
         super().__init__(defName, use, markup, condition, attrs)
     
     def getItem(self, parent):
-        return ItemDiv(parent, parent.footprint, self)
+        return ItemDiv(parent, parent.footprint, parent.facade, self)
 
 
 class Level(Item):

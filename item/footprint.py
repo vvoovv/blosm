@@ -11,7 +11,7 @@ class Footprint(Item):
     def __init__(self, bldgPart, building, styleBlock=None):
         # <styleBlock> is the style block within the markup definition,
         # if the footprint is generated through the markup definition
-        super().__init__(None, None, styleBlock)
+        super().__init__(None, None, None, styleBlock)
         self.bldgPart = bldgPart
         if bldgPart:
             self.polygon = bldgPart.polygon

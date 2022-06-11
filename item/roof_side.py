@@ -7,7 +7,7 @@ _className = "RoofSide"
 class RoofSide(Item):
     
     def __init__(self, parent, indices, uvs, itemIndex):
-        super().__init__(parent, parent.footprint, None)
+        super().__init__(parent, parent.footprint, None, None)
         self.setStyleBlock()
         self.buildingPart = "roof_side"
         # indices of <building.verts> that form the roof side

@@ -2,13 +2,14 @@
 
 class Item:
     
-    def __init__(self, parent, footprint, styleBlock):
+    def __init__(self, parent, footprint, facade, styleBlock):
         self.valid = True
         # for example, a parent for a facade is a footprint
         self.parent = parent
         # a direct access to the footprint
         self.footprint = footprint
         self.building = parent.building if parent else None
+        self.facade = facade
         # div and level are containers
         self.isContainer = False
         # A style block (an instance of grammar.Item) that defines the style for the item

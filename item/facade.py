@@ -9,7 +9,7 @@ class Facade(Div):
     """
     
     def __init__(self, parent, indices, vector, volumeGenerator):
-        super().__init__(parent, parent, None)
+        super().__init__(parent, parent, self, None)
         
         self.indices = indices
         

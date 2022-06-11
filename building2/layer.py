@@ -1,7 +1,7 @@
 from building.layer import BuildingLayer
 
 from renderer import Renderer
-from util.blender import getBmesh
+from util.blender import getBmesh, setBmesh
 
 
 class RealisticBuildingLayer(BuildingLayer):
@@ -21,6 +21,12 @@ class RealisticBuildingLayer(BuildingLayer):
         # the Blender object(s) <self.objGnExtra>.
         # <self.objGnExtra> could be a single Blender object or a list of Blender objects
         self.objGnExtra = None
+    
+    def finalize(self):
+        super().finalize()
+        
+        if self.app.preferMesh:
+            setBmesh(self.objGn, self.bmGn)
 
 
 class RealisticBuildingLayerBase(RealisticBuildingLayer):

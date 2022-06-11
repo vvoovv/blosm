@@ -7,7 +7,7 @@ _className = "Roof"
 class RoofItem(Item):
     
     def __init__(self, parent):
-        super().__init__(parent, parent, None)
+        super().__init__(parent, parent, None, None)
         self.setStyleBlock()
         self.buildingPart = "roof"
     
