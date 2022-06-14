@@ -1,3 +1,5 @@
+from math import floor
+from mathutils import Vector
 from . import ItemRendererTexture
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
@@ -132,32 +134,30 @@ class Container(ItemRendererTexture):
                 symmetry = item.symmetry
                 rs = self.renderState
                 geometry.initRenderStateForDivs(rs, item)
-                # a unit vector along U-axis (the horizontal axis)
-                unitVector = item.parent.vector.unitVector
                 
                 # Generate Div items but the last one;
                 # the special case is when a symmetry is available
                 if numRepeats>1:
                     for _ in range(numRepeats-1):
                         geometry.renderDivs(
-                            self, item, levelGroup, unitVector,
+                            self, item, levelGroup,
                             0, numItems, 1,
                             rs
                         )
                         if symmetry:
                             geometry.renderDivs(
-                                self, item, levelGroup, unitVector,
+                                self, item, levelGroup,
                                 numItems-2 if symmetry is MiddleOfLast else numItems-1, -1, -1,
                                 rs
                             )
                 geometry.renderDivs(
-                    self, item, levelGroup, unitVector,
+                    self, item, levelGroup,
                     0, numItems if symmetry else numItems-1, 1,
                     rs
                 )
                 if symmetry:
                     geometry.renderDivs(
-                        self, item, levelGroup, unitVector,
+                        self, item, levelGroup,
                         numItems-2 if symmetry is MiddleOfLast else numItems-1, 0, -1,
                         rs
                     )
@@ -215,7 +215,31 @@ class Container(ItemRendererTexture):
                     #
                     # mesh
                     #
-                    pass
+                    layer = item.building.element.l
+                    tileWidth = assetInfo["tileWidthM"]
+                    
+                    numTilesX = max( floor(item.width/tileWidth), 1 )
+                    numTilesY = 1 if levelGroup.singleLevel else levelGroup.index2 - levelGroup.index1 + 1
+                    scaleX = item.width/(numTilesX*tileWidth)
+                    scaleY = levelGroup.levelHeight/assetInfo["tileHeightM"]
+                    
+                    tileWidth *= scaleX
+                    
+                    # increment along X-axis of <item>
+                    incrementVector = tileWidth * item.facade.vector.unitVector3d
+                    
+                    _vertLocation = item.building.renderInfo.verts[indices[0]] + 0.5*incrementVector
+                    if numTilesY == 1:
+                        for _ in range(numTilesX):
+                            layer.bmGn.verts.new(_vertLocation)
+                            _vertLocation += incrementVector
+                    else:
+                        for _ in range(numTilesY):
+                            vertLocation = _vertLocation.copy()
+                            for _ in range(numTilesX):
+                                layer.bmGn.verts.new(vertLocation)
+                                vertLocation += incrementVector
+                            _vertLocation[2] += levelGroup.levelHeight
                 else:
                     #
                     # texture

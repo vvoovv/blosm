@@ -62,14 +62,14 @@ class RectangleFRA(Geometry):
         )
     
     def renderDivs(self,
-            itemRenderer, item, levelGroup, unitVector, markupItemIndex1, markupItemIndex2, step,
+            itemRenderer, item, levelGroup, markupItemIndex1, markupItemIndex2, step,
             rs
         ):
         # If <levelGroup> is given, that actually means that <item> is a level or contained
         # inside another level item. In this case the call to <self.renderLevelGroup(..)>
         # will be made later in the code
         
-        unitVector = Vector((unitVector[0], unitVector[1], 0.))
+        unitVector = item.facade.vector.unitVector3d
         # <startIndex> is not used by the <Rectangle> geometry
         verts = item.building.renderInfo.verts
         # <texVb> is the V-coordinate for the bottom vertices of the rectangular items

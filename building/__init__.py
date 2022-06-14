@@ -351,6 +351,7 @@ class BldgVector:
         "id", # debug
         "edge", "direct", "prev", "next", "polygon", "facade",
         "straightAngle", "feature", "skip", "sin", "vectorByIndex",
+        "_unitVector", "_unitVector3d",
         "featureSymbol" # debug
     )
     
@@ -370,6 +371,9 @@ class BldgVector:
         self.skip = False
         # a facade originating from the vector
         self.facade = None
+        
+        self._unitVector = None
+        self._unitVector3d = None
     
     def reverse(self):
         self.direct = not self.direct
@@ -407,7 +411,17 @@ class BldgVector:
     
     @property
     def unitVector(self):
-        return self.vector/self.edge.length
+        if not self._unitVector:
+            self._unitVector = self.vector/self.edge.length
+        return self._unitVector
+    
+    @property
+    def unitVector3d(self):
+        if not self._unitVector3d:
+            if not self._unitVector:
+                self._unitVector = self.vector/self.edge.length
+            self._unitVector3d = Vector((self._unitVector[0], self._unitVector[1], 0.))
+        return self._unitVector3d
     
     @property
     def length(self):
