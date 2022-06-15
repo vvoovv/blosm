@@ -225,19 +225,35 @@ class Container(ItemRendererTexture):
                     
                     tileWidth *= scaleX
                     
+                    unitVector = item.facade.vector.unitVector3d
                     # increment along X-axis of <item>
-                    incrementVector = tileWidth * item.facade.vector.unitVector3d
+                    incrementVector = tileWidth * unitVector
+                    
+                    bmVerts = layer.bmGn.verts
+                    attributeValuesGn = layer.attributeValuesGn
                     
                     _vertLocation = item.building.renderInfo.verts[indices[0]] + 0.5*incrementVector
                     if numTilesY == 1:
                         for _ in range(numTilesX):
-                            layer.bmGn.verts.new(_vertLocation)
+                            bmVerts.new(_vertLocation)
                             _vertLocation += incrementVector
+                            attributeValuesGn.append((
+                                10,
+                                unitVector,
+                                scaleX,
+                                scaleY
+                            ))
                     else:
                         for _ in range(numTilesY):
                             vertLocation = _vertLocation.copy()
                             for _ in range(numTilesX):
-                                layer.bmGn.verts.new(vertLocation)
+                                bmVerts.new(vertLocation)
+                                attributeValuesGn.append((
+                                    10,
+                                    unitVector,
+                                    scaleX,
+                                    scaleY
+                                ))
                                 vertLocation += incrementVector
                             _vertLocation[2] += levelGroup.levelHeight
                 else:

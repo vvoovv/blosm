@@ -26,7 +26,26 @@ class RealisticBuildingLayer(BuildingLayer):
         super().finalize()
         
         if self.app.preferMesh:
-            setBmesh(self.objGn, self.bmGn)
+            objGn = self.objGn
+            
+            setBmesh(objGn, self.bmGn)
+            
+            # create attributes for the Geometry Nodes
+            objGnMesh = self.objGn.data
+            # an asset index in the Blender collection
+            assetIndex = objGnMesh.attributes.new("asset_index", 'INT', 'POINT').data
+            # a unit vector along the related building facade
+            unitVector = objGnMesh.attributes.new("vector", 'FLOAT_VECTOR', 'POINT').data
+            # 3 float number to scale an instance along its local x, y and z axes
+            scale = objGnMesh.attributes.new("scale", 'FLOAT_VECTOR', 'POINT').data
+            
+            scale = objGn.data.attributes["scale"].data
+            for index, (_assetIndex, _unitVector, scaleX, scaleY) in enumerate(self.attributeValuesGn):
+                assetIndex[index].value = _assetIndex
+                unitVector[index].vector = _unitVector
+                scale[index].vector = (scaleX, scaleY, 1.)
+            
+            self.attributeValuesGn.clear()
 
 
 class RealisticBuildingLayerBase(RealisticBuildingLayer):
@@ -59,13 +78,7 @@ class RealisticBuildingLayerBase(RealisticBuildingLayer):
                 obj.parent
             )
             
-            objGnMesh = self.objGn.data
-            # an asset index in the Blender collection
-            objGnMesh.attributes.new("asset_index", 'INT', 'POINT')
-            # a unit vector along the related building facade
-            objGnMesh.attributes.new("vector", 'FLOAT_VECTOR', 'POINT')
-            # 3 float number to scale an instance along its local x, y and z axes
-            objGnMesh.attributes.new("scale", 'FLOAT_VECTOR', 'POINT')
+            self.attributeValuesGn = []
             
             self.bmGn = getBmesh(self.objGn)
 
