@@ -27,8 +27,11 @@ class GnBldg2dLayer(MeshLayer):
         
         m = obj.modifiers.new("", "NODES")
         m.node_group = bpy.data.node_groups[self.app.gnSetup2d]
-        m["Input_2_use_attribute"] = 1
-        m["Input_2_attribute_name"] ="building:levels"
+        # The first input in the modifier <m> serves as a switch between the "Blosm" mode of
+        # the Geometry Nodes setup and its manual editing mode
+        m[ list(m.keys())[0] ] = 0
+        #m["Input_2_use_attribute"] = 1
+        #m["Input_2_attribute_name"] ="building:levels"
 
 
 class GnBldg2dManager:
