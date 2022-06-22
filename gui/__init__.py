@@ -237,6 +237,17 @@ class BLOSM_OT_ExtentFromActive(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class BLOSM_OT_Gn2d_Info(bpy.types.Operator):
+    bl_idname = "blosm.gn2d_info"
+    bl_label = "Geometry Nodes"
+    bl_description = "Information on applying Geometry Nodes to imported building footprints"
+    bl_options = {'INTERNAL'}
+    
+    def invoke(self, context, event):
+        webbrowser.open_new_tab("https://github.com/vvoovv/blender-osm/wiki/Applying-Geometry-Nodes-to-Building-Footprints")
+        return {'FINISHED'}
+
+
 class BLOSM_OT_LevelsAdd(bpy.types.Operator):
     bl_idname = "blosm.default_levels_add"
     bl_label = "+"
@@ -440,7 +451,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             if addon.singleObject:
                 box = layout.box()
-                box.label(text="[Geometry Nodes]:")
+                row = box.row()
+                row.label(text="[Geometry Nodes]:")
+                row.operator("blosm.gn2d_info", text='', icon='QUESTION')
                 box.prop(addon, "gnBlendFile2d", text="File")
                 box.prop(addon, "gnSetup2d", text="Name")
                 
@@ -1001,6 +1014,7 @@ _classes = (
     BLOSM_OT_SelectExtent,
     BLOSM_OT_PasteExtent,
     BLOSM_OT_ExtentFromActive,
+    BLOSM_OT_Gn2d_Info,
     BLOSM_OT_LevelsAdd,
     BLOSM_OT_LevelsDelete,
     BLOSM_PT_Extent,
