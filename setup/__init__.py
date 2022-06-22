@@ -2,7 +2,8 @@ from building.manager import BuildingParts, BuildingRelations
 
 
 def conditionsSkipWays(tags, e):
-    if tags.get("area") == "yes" or tags.get("tunnel") == "yes" or tags.get("ice_road") == "yes":
+    if tags.get("area") == "yes" or tags.get("tunnel") == "yes" or\
+      tags.get("ice_road") == "yes" or "indoor" in tags:
         e.valid = False
         return True
     return False
