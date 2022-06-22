@@ -436,6 +436,9 @@ class Multipolygon(Relation):
             (nodeId for nodeId in l.nodeIds(osm))
     
     def makePolygon(self):
+        """
+        Make a polygon out of the multipolygon with holes
+        """
         # get the outer linestring
         for _l in self.ls:
             if _l.role is Osm.outer:

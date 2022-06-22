@@ -64,9 +64,27 @@ _defaultLevels = (
     (6, 10)
 )
 
+
 def getBlenderMaterials(self, context):
     materialType = context.scene.blosm.materialType
     return tuple((m[0], m[0], m[0]) for m in _blenderMaterials if m[1] == materialType)
+
+
+_gnSetups2d = []
+def updateGnBlendFile2d(self, context):
+    _gnSetups2d.clear()
+    
+    filepath = os.path.realpath(
+        bpy.path.abspath(self.gnBlendFile2d)
+    )
+    if os.path.isfile(filepath):
+        with bpy.data.libraries.load(filepath) as (data_from, data_to):
+            if data_from.node_groups:
+                _gnSetups2d.extend((gnSetup, gnSetup, gnSetup) for gnSetup in data_from.node_groups)
+
+
+def getGnSetups2d(self, context):
+    return _gnSetups2d
 
 
 def addDefaultLevels():
@@ -216,6 +234,17 @@ class BLOSM_OT_ExtentFromActive(bpy.types.Operator):
             context
         )
         
+        return {'FINISHED'}
+
+
+class BLOSM_OT_Gn2d_Info(bpy.types.Operator):
+    bl_idname = "blosm.gn2d_info"
+    bl_label = "Geometry Nodes"
+    bl_description = "Information on applying Geometry Nodes to imported building footprints"
+    bl_options = {'INTERNAL'}
+    
+    def invoke(self, context, event):
+        webbrowser.open_new_tab("https://github.com/vvoovv/blender-osm/wiki/Applying-Geometry-Nodes-to-Building-Footprints")
         return {'FINISHED'}
 
 
@@ -418,8 +447,18 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             #box.prop(addon, "straightAngleThreshold")
             
-            box = layout.box()
-            box.prop(addon, "singleObject")
+            layout.box().prop(addon, "singleObject")
+            
+            if addon.singleObject:
+                box = layout.box()
+                row = box.row()
+                row.label(text="[Geometry Nodes]:")
+                row.operator("blosm.gn2d_info", text='', icon='QUESTION')
+                box.prop(addon, "gnBlendFile2d", text="File")
+                box.prop(addon, "gnSetup2d", text="Name")
+                
+                if addon.gnSetup2d:
+                    self._drawDefaultLevels(box, addon)
             
             layout.box().prop(addon, "ignoreGeoreferencing")
             
@@ -435,6 +474,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         split.prop(addon, "defaultRoofShape", text="")
         box.prop(addon, "levelHeight")
         
+        self._drawDefaultLevels(box, addon)
+    
+    def _drawDefaultLevels(self, box, addon):
         column = box.column()
         split = column.split(factor=0.67, align=True)
         split.label(text="Default number of levels:")
@@ -947,6 +989,22 @@ class BlosmProperties(bpy.types.PropertyGroup):
         name = "Script",
         description = "A Python script to generate materials with selected textures"
     )
+    
+    #
+    # Properties for a Geometry Nodes setup applied to building footprints
+    #
+    gnBlendFile2d: bpy.props.StringProperty(
+        name = "File with Geometry Nodes",
+        subtype = 'FILE_PATH',
+        description = "Path to a Blender file with a Geometry Nodes setup applied to building footprints",
+        update = updateGnBlendFile2d
+    )
+    
+    gnSetup2d: bpy.props.EnumProperty(
+        name = "Geometry Nodes setup",
+        items = getGnSetups2d,
+        description = "A Geometry Nodes setup applied to building footprints"
+    )
 
 
 _classes = (
@@ -956,6 +1014,7 @@ _classes = (
     BLOSM_OT_SelectExtent,
     BLOSM_OT_PasteExtent,
     BLOSM_OT_ExtentFromActive,
+    BLOSM_OT_Gn2d_Info,
     BLOSM_OT_LevelsAdd,
     BLOSM_OT_LevelsDelete,
     BLOSM_PT_Extent,
