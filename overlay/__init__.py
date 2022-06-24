@@ -55,10 +55,7 @@ class Overlay:
     # the name for the base UV map
     uvName = "UVMap"
     
-    # relative path to default materials
-    materialPath = "assets/base.blend"
-    
-    # name of the default material from <Overlay.materialPath>
+    # name of the default material
     defaultMaterial = "overlay"
     
     def __init__(self, url, maxZoom, app):

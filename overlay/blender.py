@@ -45,11 +45,7 @@ class OverlayMixin:
         if app.setOverlayMaterial:
             materials = app.terrain.terrain.data.materials
             material = loadMaterialsFromFile(
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    os.pardir,
-                    self.materialPath
-                ),
+                self.app.baseAssetPath,
                 False, # i.e. append rather than link
                 self.defaultMaterial
             )[0]

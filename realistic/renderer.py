@@ -32,8 +32,6 @@ class TerrainRenderer:
     
     materialName = "terrain"
     
-    baseAssetPath = "assets/base.blend"
-    
     # default width of a image texture in meters
     w = 6.
     
@@ -41,9 +39,6 @@ class TerrainRenderer:
     h = 6.
     
     def render(self, app):
-        assetPath = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), self.baseAssetPath
-        )
         terrain = app.terrain
         # the size of the terrain
         sizeX = terrain.maxX - terrain.minX
@@ -58,10 +53,10 @@ class TerrainRenderer:
         
         if materials:
             if not materials[0] or materials[0].name != materialName:
-                material = getMaterialByName(terrain, materialName, assetPath)
+                material = getMaterialByName(terrain, materialName, app.baseAssetPath)
         else:
             materials.append(None)
-            material = getMaterialByName(terrain, materialName, assetPath)
+            material = getMaterialByName(terrain, materialName, app.baseAssetPath)
         
         if not material:
             return
@@ -86,7 +81,7 @@ class TerrainRenderer:
                     mapping.scale[0] = sizeX/mapping.scale[0]
                     mapping.scale[1] = sizeY/mapping.scale[1]
         
-        loadNodeGroupsFromFile(assetPath, *nodeGroups)
+        loadNodeGroupsFromFile(app.baseAssetPath, *nodeGroups)
         
         nodes = material.node_tree.nodes
         links = material.node_tree.links
@@ -143,14 +138,7 @@ class TerrainRenderer:
 
 class AreaRenderer:
     
-    baseAssetPath = "assets/base.blend"
-    
     calculateArea = False
-    
-    def __init__(self):
-        self.assetPath = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), self.baseAssetPath
-        )
     
     def finalizeBlenderObject(self, layer, app):
         terrain = app.terrain
@@ -421,7 +409,7 @@ class WaterRenderer(VertexGroupBaker):
         # if there are no materials create an empty slot
         if not terrain.data.materials:
             terrain.data.materials.append(None)
-        terrain.active_material_index = getMaterialIndexByName(terrain, layer.id, self.assetPath)
+        terrain.active_material_index = getMaterialIndexByName(terrain, layer.id, app.baseAssetPath)
         bpy.ops.object.material_slot_assign()
         bpy.ops.object.mode_set(mode='OBJECT')
         terrain.select_set(False)

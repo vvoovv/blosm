@@ -72,6 +72,8 @@ class BlenderApp(BaseApp):
     
     overlaySubDir = "overlay"
     
+    baseAssetPath = "assets/base.blend"
+    
     bldgMaterialsFileName = "building_materials.blend"
     
     vegetationFileName = "vegetation.blend"
@@ -120,10 +122,12 @@ class BlenderApp(BaseApp):
         super().__init__()
         
         # path to the top directory of the addon
-        self.basePath = os.path.join(
+        self.basePath = os.path.realpath(os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             os.pardir
-        )
+        ))
+        self.baseAssetPath = os.path.realpath(os.path.join(self.basePath, BlenderApp.baseAssetPath))
+        
         # a cache for the license keys
         self._keys = {}
         # fill in the cache <self._keys> for the license keys

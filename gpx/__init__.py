@@ -19,10 +19,7 @@ class GpxRenderer:
     # Default value for <offset> parameter of the SHRINKWRAP modifier;
     swOffset = 0.5
     
-    # relative path to default materials
-    materialPath = "assets/base.blend"
-    
-    # name of the default material from <Overlay.materialPath>
+    # name of the default material
     defaultMaterial = "gpx"
             
     def __init__(self, app):
@@ -163,11 +160,7 @@ class GpxRenderer:
         material = bpy.data.materials.get(GpxRenderer.defaultMaterial)
         if not material:
             material = loadMaterialsFromFile(
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    os.pardir,
-                    GpxRenderer.materialPath
-                ),
+                self.app.baseAssetPath,
                 False, # i.e. append rather than link
                 GpxRenderer.defaultMaterial
             )[0]

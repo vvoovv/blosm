@@ -172,7 +172,7 @@ class ItemRenderer:
             item.materialId = ""
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
-        return "%s_%s" % (facadeTextureInfo["name"], claddingTextureInfo["name"])\
+        return facadeTextureInfo["name"] + "_" +claddingTextureInfo["name"]\
             if claddingTextureInfo\
             else facadeTextureInfo["name"]
     
