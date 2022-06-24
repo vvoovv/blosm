@@ -86,6 +86,38 @@ class BuildingRendererNew(Renderer):
         self.revActions = []
     
     def prepare(self):
+        if self.app.preferMesh:
+            # A key to the dictionary below is an object name as it's defined in <self.app.assetStore>.
+            # A related value is tuple that consists of 
+            # (1) A link to a Blender object in the file defined in the related asset info.
+            # (2) A list of custom attributes defined for this object. The addon will
+            # create a separate object for each unique set of the attributes. All those created objects will
+            # share the same Blender mesh.
+            # (3) A dictionary:
+            #     A key is a combination of custom attributes described above.
+            #     A value is the name of the Blender object created for the unique set of attributes
+            #     used in the key.
+            self.meshAssets = {}
+            
+            _collectionName = "blosm_building_assets"
+            if not _collectionName in bpy.data.collections:
+                bpy.data.collections.new(_collectionName)
+            # a Blender collection for instances on the points cloud
+            self.buildingAssetsCollection = bpy.data.collections[_collectionName]
+            
+            # check if a Geometry Nodes setup with the name "blosm_gn_building" is already available
+            _gnName, _gnCollection = "blosm_gn_building", "Collection Info"
+            node_groups = bpy.data.node_groups
+            if _gnName in node_groups and _gnCollection in node_groups[_gnName].nodes:
+                self.gnBuilding = node_groups[_gnName]
+            else:
+                # load the Geometry Nodes setup with the name "blosm_gn_building" from <self.app.baseAssetPath>
+                with bpy.data.libraries.load(self.app.baseAssetPath) as (_, data_to):
+                    data_to.node_groups = [_gnName]
+                self.gnBuilding = data_to.node_groups[0]
+            # set the input of <self.gnBuilding.nodes[_gnCollection]> to <self.buildingAssetsCollection>
+            self.gnBuilding.nodes[_gnCollection].inputs['Collection'].default_value = self.buildingAssetsCollection
+        
         if self.app.singleObject:
             for layer in self.app.layers:
                 if isinstance(layer, BuildingLayer):
@@ -101,7 +133,7 @@ class BuildingRendererNew(Renderer):
         if self.app.singleObject:
             for layer in self.app.layers:
                 if isinstance(layer, BuildingLayer):
-                    layer.finalize()
+                    layer.finalize(self)
     
     def cleanup(self):
         for action in self.buildingActions:

@@ -1,5 +1,6 @@
 import os
 import bpy
+from util import rgbToHex
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 from ...util import setTextureSize, setTextureSize2, getPath
 
@@ -65,7 +66,7 @@ class ItemRendererMixin:
         # remember the color for a future use in the next funtion call
         self.claddingColor = color
         # return a hex string
-        return "{:02x}{:02x}{:02x}".format(round(255*color[0]), round(255*color[1]), round(255*color[2]))
+        return rgbToHex(color)
     
     def getTextureFilepath(self, materialName):
         textureFilename = "baked_%s" % materialName

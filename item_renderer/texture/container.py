@@ -1,8 +1,13 @@
+import bpy
+
 from math import floor
 from mathutils import Vector
 from . import ItemRendererTexture
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
+from util import rgbToHex
+from util.blender import linkObjectFromFile, createMeshObject
+from ..util import getFilepath
 
 
 def _getTileWidthM(facadeTextureInfo):
@@ -215,7 +220,49 @@ class Container(ItemRendererTexture):
                     #
                     # mesh
                     #
+                    meshAssets = self.r.meshAssets
                     layer = item.building.element.l
+                    
+                    objectName = assetInfo["object"]
+                    
+                    # If <objectName> isn't available in <meshAssets>, that also means
+                    # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
+                    if not objectName in meshAssets:
+                        obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objectName)
+                        if not obj:
+                            self.renderCladding(
+                                item,
+                                self.r.createFace(item.footprint, indices),
+                                uvs
+                            )
+                            return
+                        # We need only the properties of a Blender object created by a designer.
+                        # <rna_properties> is used to filter our the other properties
+                        rna_properties = {
+                            prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
+                        }
+                        properties = [_property for _property in obj.keys() if not _property in rna_properties]
+                        meshAssets[objectName] = (obj, properties, {} if properties else None)
+                        
+                        if not properties:
+                            # use <obj> as is (i.e. linked from another Blender file)
+                            self.r.buildingAssetsCollection.objects.link(obj)
+                    
+                    obj, properties, instances = meshAssets[objectName]
+                    
+                    if properties:
+                        # create a key out of <properties>
+                        key = '_'.join(
+                            rgbToHex( item.getStyleBlockAttrDeep(_property) or obj[_property] ) for _property in properties
+                        )
+                        if not key in instances:
+                            # the created Blender object <_obj> shares the mesh data with <obj>
+                            _obj = instances[key] = createMeshObject(objectName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
+                            # set properties
+                            for _property in properties:
+                                _obj[_property] = item.getStyleBlockAttrDeep(_property) or obj[_property]
+                        obj = instances[key]
+                    
                     tileWidth = assetInfo["tileWidthM"]
                     
                     numTilesX = max( floor(item.width/tileWidth), 1 )
@@ -238,7 +285,7 @@ class Container(ItemRendererTexture):
                             bmVerts.new(_vertLocation)
                             _vertLocation += incrementVector
                             attributeValuesGn.append((
-                                10,
+                                obj.name,
                                 unitVector,
                                 scaleX,
                                 scaleY
@@ -249,7 +296,7 @@ class Container(ItemRendererTexture):
                             for _ in range(numTilesX):
                                 bmVerts.new(vertLocation)
                                 attributeValuesGn.append((
-                                    10,
+                                    obj.name,
                                     unitVector,
                                     scaleX,
                                     scaleY

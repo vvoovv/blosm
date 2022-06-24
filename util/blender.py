@@ -186,6 +186,19 @@ def appendObjectsFromFile(filepath, collection, *names):
     return data_to.objects
 
 
+def linkObjectFromFile(filepath, collection, name):
+    with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.objects>
+        data_to.objects = [name]
+    obj = data_to.objects[0]
+    if collection:
+        # link <obj> to <collection>
+        collection.objects.link(obj)
+        obj.select_set(False)
+    # return the appended Blender objects
+    return obj
+
+
 def getMaterialIndexByName(obj, name, filepath):
     """
     Check if Blender material with the <name> is already set for <obj>,

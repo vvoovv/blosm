@@ -28,3 +28,10 @@ def getPath(globalRenderer, path):
         return os.path.join(globalRenderer.assetsDir, path[1:])
     else:
         return os.path.join(globalRenderer.assetPackageDir, path)
+
+
+def getFilepath(globalRenderer, assetInfo):
+    return os.path.join(
+        getPath(globalRenderer, assetInfo["path"]),
+        assetInfo["name"]
+    )
