@@ -69,7 +69,8 @@ class Osm:
         # use separate conditions for nodes to get some performance gain
         self.nodeConditions = []
         
-        # the variable below is used for the bounds calculation
+        # The variable below is used for the bounds calculation
+        # Have we encountered the first point in the bounds calculations?
         self.firstPoint = True
         
         self.minLat = 0.
@@ -95,8 +96,6 @@ class Osm:
         # <self.projection> could be set during a previous call of <self.parse(..)>
         if not self.projection:
             self.projection = self.app.projection
-        if not self.projection or forceExtentCalculation:
-            self.firstPoint = True
         
         relations = self.relations
         

@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 6, 0),
+    "version": (2, 6, 1),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -286,6 +286,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
             setLatLon = True
         else:
+            # This is the case if <a.osmSource == "file"> and if the first condition is not true
             setLatLon = True
         
         osm.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)
@@ -322,8 +323,10 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a.process()
         a.render()
         
-        # setting <lon> and <lat> attributes for <scene> if necessary
-        if setLatLon:
+        # Set <lon> and <lat> attributes for <scene> if necessary.
+        # <osm.projection> is set in <osm.setProjection(..)> along with <osm.lat> and <osm.lon>
+        # So we test if <osm.projection> is set, that also means that <osm.lat> and <osm.lon> are also set.
+        if setLatLon and osm.projection:
             # <osm.lat> and <osm.lon> have been set in osm.parse(..)
             self.setCenterLatLon(context, osm.lat, osm.lon)
         
