@@ -52,8 +52,17 @@ class Item:
                 value.value.value.scope = value.scope
                 value = value.value
             isComplexValue = isinstance(value, Value)
-            if isComplexValue and attr in _perBuildingByDefault:
-                value.value.scope = perBuilding
+            if isComplexValue:
+                if attr in _perBuildingByDefault:
+                    value.value.scope = perBuilding
+            elif isinstance(value, str):
+                if value == "yes":
+                    value = True
+                elif value == "no":
+                    value = False
+                elif value == "none":
+                    value = None
+            
             attrs[attr] = (value.value if isComplexValue else value, isComplexValue)
     
     def setParent(self, styleBlock):
