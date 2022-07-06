@@ -91,7 +91,7 @@ spec_conditions
     ;
 
 spec_condition
-    : ('@roof' | 'all')          #SPEC_ROOF
+    : ('@roof' | '@all')        #SPEC_ROOF
     | NUMBER                    #SPEC_SINGLE
     | NUMBER COLON NUMBER       #SPEC_FULL_INDX
     | NUMBER COLON              #SPEC_LEFT_INDX
@@ -126,8 +126,8 @@ arith_expr
     ;
 
 arith_atom
-    : 'item' '.' IDENTIFIER                                 # ATOM_SINGLE
-    | 'item' '.' IDENTIFIER '.' IDENTIFIER                  # ATOM_SINGLE
+    : 'item' '.' IDENTIFIER ('.' IDENTIFIER)*               # ATOM_SINGLE
+    | 'item' '.' IDENTIFIER                                 # ATOM_SINGLE
     | 'item' '.' IDENTIFIER LBRACK STRING_LITERAL RBRACK    # ATOM_FROMATTR
     | 'item' LBRACK STRING_LITERAL RBRACK                   # ATOM_FROMATTR_SHORT
     | 'style' '.' IDENTIFIER                                # ATOM_STYLE

@@ -480,7 +480,7 @@ class PythonCoder():
     #     ;
     # spec_condition
     #     : '@roof'                   #SPEC_ROOF
-    #     | 'all'                     #SPEC_ALL
+    #     | '@all'                    #SPEC_ALL
     #     | NUMBER COLON NUMBER       #SPEC_FULL_INDX
     #     | NUMBER COLON              #SPEC_LEFT_INDX
     #     | COLON NUMBER              #SPEC_RIGHT_INDX
@@ -495,7 +495,7 @@ class PythonCoder():
         self.write(self.attribCommaStack[-1])
         self.write(self.indent()+'roofLevels = '+roof_val )
         self.attribCommaStack[-1] = ",\n"
-        all_val = 'True' if 'all' in self.spec_condition else 'False'
+        all_val = 'True' if '@all' in self.spec_condition else 'False'
         self.write(self.attribCommaStack[-1])
         self.write(self.indent()+'allLevels  = '+all_val )
         self.attribCommaStack[-1] = ",\n"

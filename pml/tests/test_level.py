@@ -202,7 +202,7 @@ Level(
 def test_all():
     makeTest(
 """
-level[all] {
+level[@all] {
     class: myclass;
 }
 """,
@@ -237,7 +237,7 @@ Level(
 def test_all_condition():
     makeTest(
 """
-level[all](item.front) {
+level[@all](item.front) {
     class: myclass;
 }
 """,
@@ -273,7 +273,7 @@ Level(
 def test_all_indices():
     makeTest(
 """
-level[all][0:1] {
+level[@all][0:1] {
     class: myclass;
 }
 """,
@@ -309,7 +309,7 @@ Level(
 def test_all_single_index():
     makeTest(
 """
-level[all][0] {
+level[@all][0] {
     class: myclass;
 }
 """,
@@ -346,7 +346,7 @@ Level(
 def test_all_indices_condition():
     makeTest(
 """
-level[all][0:1](item.front) {
+level[@all][0:1](item.front) {
     class: myclass;
 }
 """,
@@ -384,7 +384,7 @@ Level(
 def test_all_single_index_condition():
     makeTest(
 """
-level[all][1](item.front) {
+level[@all][1](item.front) {
     class: myclass;
 }
 """,

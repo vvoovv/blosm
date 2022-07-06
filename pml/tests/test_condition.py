@@ -15,3 +15,19 @@ Facade(
 )
 """
     )
+
+
+def test_nested_attributes():
+    makeTest(
+"""
+facade(item.aa or item.aa.bb or item.aa.bb.cc or item.aa.bb.cc.dd or item.aa.bb.cc.dd.ee) {
+    class: my_class;
+}
+""",
+"""
+Facade(
+    condition = lambda item : item.aa or item.aa.bb or item.aa.bb.cc or item.aa.bb.cc.dd or item.aa.bb.cc.dd.ee,
+    cl = "my_class"
+)
+"""
+    )
