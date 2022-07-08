@@ -72,7 +72,7 @@ class Container(Item):
                 _styleBlock.getItem(self)\
                     for _styleBlock in self.styleBlock.markup if self.evaluateCondition(_styleBlock)
             )
-        
+            
             # check if have levels in the markup
             if self.styleBlock.markup[0].isLevel:
                 # the arrangement of the Level items is always vertical 
@@ -82,6 +82,27 @@ class Container(Item):
                 arrangement = self.getStyleBlockAttr("arrangement")
                 if arrangement:
                     self.arrangement = arrangement
+            
+            if self.arrangement == Vertical:
+                # if the item is located in the left corner of <self.facade>, mark
+                # all items in <self.markup> that they are located in the left corner too.
+                if self.cornerLeft:
+                    for item in self.markup:
+                        item.cornerLeft = True
+                # if the item is located in the right corner of <self.facade>, mark
+                # all items in <self.markup> that they are located in the right corner too.
+                if self.cornerRight:
+                    for item in self.markup:
+                        item.cornerRight = True
+            else: # self.arrangement == Horizontal
+                # if the item is located in the left corner of <self.facade>, mark
+                # the leftmost item in <self.markup> that is located in the left corner too.
+                if self.cornerLeft:
+                    self.markup[0].cornerLeft = True
+                # if the item is located in the right corner of <self.facade>, mark
+                # the rightmost item in <self.markup> that is located in the right corner too.
+                if self.cornerRight:
+                    self.markup[-1].cornerRight = True
                 
         # check if have symmetry for the markup items
         symmetry = self.getStyleBlockAttr("symmetry")
@@ -265,15 +286,6 @@ class Container(Item):
                 return
         # always return the total width of all markup elements
         return self.width
-    
-    def finalizeMarkupDivision(self):
-        """
-        The method is used for vertical arrangement to calculate the number of repeats for the child items
-        """
-        for item in self.markup:
-            if item.width and item.numRepeats == 1:
-                item.numRepeats = max( round(self.width/item.width), 1)
-                
     
     def getWidthForVerticalArrangement(self):
         return max(item.getWidth() for item in self.markup)

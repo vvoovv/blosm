@@ -196,7 +196,7 @@ class ItemRenderer:
     
     def getAssetInfo(self, item):
         building, collection, part, cl =\
-            item.building, item.getStyleBlockAttrDeep("collection"), item.getBuildingPart(), item.getStyleBlockAttrDeep("cl")
+            item.building, item.getStyleBlockAttrDeep("collection"), item.getBuildingPart(), item.getClass()
         
         assetInfo = None
         if self.app.preferMesh:
@@ -223,6 +223,9 @@ class ItemRenderer:
             if assetInfo:
                 assetInfo = self.setAttributesForAssetInfoTexture(assetInfo)
                 item.assetInfo = assetInfo
+            else:
+                # <0> prevents from subsequent querying <self.app.assetStore>
+                item.assetInfo = 0
         
         return assetInfo
     

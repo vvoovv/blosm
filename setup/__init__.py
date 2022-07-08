@@ -248,6 +248,7 @@ class SetupBlender(Setup):
                 Top as TopRendererExport,\
                 Bottom as BottomRendererExport,\
                 Entrance as EntranceRendererExport,\
+                Corner as CornerRendererExport,\
                 RoofFlat as RoofFlatRendererExport,\
                 RoofFlatMulti as RoofFlatMultiRendererExport,\
                 RoofProfile as RoofProfileRendererExport,\
@@ -262,6 +263,7 @@ class SetupBlender(Setup):
                 Top = TopRendererExport(),
                 Bottom = BottomRendererExport(),
                 Entrance = EntranceRendererExport(),
+                Corner = CornerRendererExport(),
                 RoofFlat = RoofFlatRendererExport(),
                 RoofFlatMulti = RoofFlatMultiRendererExport(),
                 RoofProfile = RoofProfileRendererExport(),
@@ -279,6 +281,7 @@ class SetupBlender(Setup):
                 Top as TopRenderer,\
                 Bottom as BottomRenderer,\
                 Entrance as EntranceRenderer,\
+                Corner as CornerRenderer,\
                 RoofFlat as RoofFlatRenderer,\
                 RoofFlatMulti as RoofFlatMultiRenderer,\
                 RoofProfile as RoofProfileRenderer,\
@@ -293,6 +296,7 @@ class SetupBlender(Setup):
                 Top = TopRenderer(),
                 Bottom = BottomRenderer(),
                 Entrance = EntranceRenderer(),
+                Corner = CornerRenderer(),
                 RoofFlat = RoofFlatRenderer(),
                 RoofFlatMulti = RoofFlatMultiRenderer(),
                 RoofProfile = RoofProfileRenderer(),

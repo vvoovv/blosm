@@ -106,9 +106,6 @@ class Container(ItemRendererTexture):
             if _item.markup:
                 _item.calculateMarkupDivision(self.r)
         
-        # calculate number of repeats in the method below
-        item.finalizeMarkupDivision()
-        
         item.geometry.renderLevelGroups(item, self)
     
     def renderDivs(self, item, levelGroup):
@@ -168,10 +165,11 @@ class Container(ItemRendererTexture):
                     )
                 # process the last item
                 lastItem = item.markup[0] if symmetry else item.markup[-1]
-                geometry.renderLastDiv(
-                    self, item, levelGroup, lastItem,
-                    rs
-                )
+                if lastItem.width:
+                    geometry.renderLastDiv(
+                        self, item, levelGroup, lastItem,
+                        rs
+                    )
         else:
             pass
 
@@ -212,7 +210,8 @@ class Container(ItemRendererTexture):
         if levelGroup.item:
             # asset info could have been set in the call to item.getWidth(..)
             assetInfo = item.assetInfo
-            if not assetInfo:
+            # if <assetInfo=0>, then it was already queried in the asset store and nothing was found
+            if assetInfo is None:
                 assetInfo = self.getAssetInfo(item)
             
             if assetInfo:
@@ -272,9 +271,8 @@ class Container(ItemRendererTexture):
                     
                     tileWidth *= scaleX
                     
-                    unitVector = item.facade.vector.unitVector3d
                     # increment along X-axis of <item>
-                    incrementVector = tileWidth * unitVector
+                    incrementVector = tileWidth * item.facade.vector.unitVector3d
                     
                     bmVerts = layer.bmGn.verts
                     attributeValuesGn = layer.attributeValuesGn
@@ -286,7 +284,7 @@ class Container(ItemRendererTexture):
                             _vertLocation += incrementVector
                             attributeValuesGn.append((
                                 obj.name,
-                                unitVector,
+                                item.facade.vector.vector3d,
                                 scaleX,
                                 scaleY
                             ))
@@ -297,7 +295,7 @@ class Container(ItemRendererTexture):
                                 bmVerts.new(vertLocation)
                                 attributeValuesGn.append((
                                     obj.name,
-                                    unitVector,
+                                    item.facade.vector.vector3d,
                                     scaleX,
                                     scaleY
                                 ))

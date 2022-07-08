@@ -9,6 +9,7 @@ from item.bottom import Bottom as ItemBottom
 from item.window import Window as ItemWindow
 from item.balcony import Balcony as ItemBalcony
 from item.entrance import Entrance as ItemEntrance
+from item.corner import Corner as ItemCorner
 
 
 # style attributes that are evaluated once per building by default
@@ -275,6 +276,15 @@ class Entrance(Item):
         
     def getItem(self, parent):
         return ItemEntrance(parent, parent.footprint, self)
+
+
+class Corner(Item):
+    
+    def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
+        super().__init__(defName, use, markup, condition, attrs)
+        
+    def getItem(self, parent):
+        return ItemCorner(parent, parent.footprint, self)
         
 
 class Chimney(Item):

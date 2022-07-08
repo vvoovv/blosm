@@ -11,6 +11,9 @@ class Facade(Div):
     def __init__(self, parent, indices, vector, volumeGenerator):
         super().__init__(parent, parent, self, None)
         
+        self.cornerLeft = True
+        self.cornerRight = True
+        
         self.indices = indices
         
         self.buildingPart = "facade"
@@ -50,3 +53,17 @@ class Facade(Div):
             self.back = True
         elif cl == FacadeClass.shared:
             self.shared = True
+    
+    @property
+    def left(self):
+        """
+        The neighbor of the facade from the left
+        """
+        return self.vector.prev.facade
+    
+    @property
+    def right(self):
+        """
+        The neighbor of the facade from the right
+        """
+        return self.vector.next.facade

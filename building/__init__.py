@@ -408,6 +408,11 @@ class BldgVector:
             v1 = self.edge.v2
             v2 = self.edge.v1
         return v2-v1
+
+    @property
+    def vector3d(self):
+        vector2d = self.vector
+        return Vector((vector2d[0], vector2d[1], 0.))
     
     @property
     def unitVector(self):

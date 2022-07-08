@@ -12,6 +12,12 @@ class Item:
         self.facade = facade
         # div and level are containers
         self.isContainer = False
+        
+        # is the item located in the left corner of <facade>?
+        self.cornerLeft = False
+        # is the item located in the right corner of <facade>?
+        self.cornerRight = False
+        
         # A style block (an instance of grammar.Item) that defines the style for the item
         # within a markup definition.
         # Typically a style block is defined in the markup definition, however it can be also defined
@@ -81,6 +87,9 @@ class Item:
     
     def getBuildingPart(self):
         return self.buildingPart
+
+    def getClass(self):
+        return self.getStyleBlockAttrDeep("cl")
 
 
 from grammar import perBuilding

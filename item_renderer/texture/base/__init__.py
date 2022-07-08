@@ -6,6 +6,7 @@ from ..level import Level as LevelBase
 from ..top import Top as TopBase
 from ..bottom import Bottom as BottomBase
 from .entrance import Entrance
+from .corner import Corner
 
 from ..roof_flat import RoofFlat as RoofFlatBase
 from .roof_flat_multi import RoofFlatMulti

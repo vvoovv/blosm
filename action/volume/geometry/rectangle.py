@@ -85,6 +85,8 @@ class RectangleFRA(Geometry):
         
         for _i in range(markupItemIndex1, markupItemIndex2, step):
             _item = item.markup[_i]
+            if not _item.width:
+                continue
             # Set the geometry for the <_item>; division of a rectangle can only generate rectangles
             _item.geometry = self
             # <indexRB> and <indexRT> are indices of the bottom and top vertices
@@ -132,7 +134,7 @@ class RectangleFRA(Geometry):
         texVt = parentItem.uvs[3][1]
         # Set the geometry for the <lastItem>; division of a rectangle can only generate rectangles
         lastItem.geometry = self
-        lastItem.getItemRenderer(itemRenderer.itemRenderers).render(
+        lastItem.getItemRenderer(itemRenderer.itemRenderers).renderLevelGroup(
             lastItem,
             levelGroup,
             (indexLB, parentIndices[1], parentIndices[2], indexLT),

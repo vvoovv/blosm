@@ -25,9 +25,6 @@ class BaseApp:
     def initOsm(self):
         self.baseInit()
         
-        # a data attribute to mark a building entrance
-        self.buildingEntranceAttr = "entrance"
-        
         # <self.logger> may be set in <setup(..)>
         self.logger = None
         

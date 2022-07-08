@@ -12,6 +12,7 @@ from item.div import Div
 from item.bottom import Bottom
 from item.window import Window
 from item.entrance import Entrance
+from item.corner import Corner
 from item.balcony import Balcony
 from item.chimney import Chimney
 
@@ -32,6 +33,7 @@ _itemClasses = (
         Bottom,
         Window,
         Entrance,
+        Corner,
         Balcony,
         Chimney,
         RoofFlat,
