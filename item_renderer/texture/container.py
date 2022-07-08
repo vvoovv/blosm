@@ -240,26 +240,26 @@ class Container(ItemRendererTexture):
                         rna_properties = {
                             prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
                         }
-                        properties = [_property for _property in obj.keys() if not _property in rna_properties]
-                        meshAssets[objectName] = (obj, properties, {} if properties else None)
+                        params = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
+                        meshAssets[objectName] = (obj, params, {} if params else None)
                         
-                        if not properties:
+                        if not params:
                             # use <obj> as is (i.e. linked from another Blender file)
                             self.r.buildingAssetsCollection.objects.link(obj)
                     
-                    obj, properties, instances = meshAssets[objectName]
+                    obj, params, instances = meshAssets[objectName]
                     
-                    if properties:
+                    if params:
                         # create a key out of <properties>
                         key = '_'.join(
-                            rgbToHex( item.getStyleBlockAttrDeep(_property) or obj[_property] ) for _property in properties
+                            rgbToHex( item.getStyleBlockAttrDeep(_param) or obj[_param] ) for _param in params
                         )
                         if not key in instances:
                             # the created Blender object <_obj> shares the mesh data with <obj>
                             _obj = instances[key] = createMeshObject(objectName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
                             # set properties
-                            for _property in properties:
-                                _obj[_property] = item.getStyleBlockAttrDeep(_property) or obj[_property]
+                            for _param in params:
+                                _obj[_param] = item.getStyleBlockAttrDeep(_param) or obj[_param]
                         obj = instances[key]
                     
                     tileWidth = assetInfo["tileWidthM"]
