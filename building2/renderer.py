@@ -100,6 +100,9 @@ class BuildingRendererNew(Renderer):
             #     A value is the name of the Blender object created for the unique set of attributes
             #     used in the key.
             self.meshAssets = {}
+            # A Python dictionary to store processed information about Blender objects that belong to
+            # a Blender collection. Each collection is defined in the asset store.
+            self.blenderCollections = {}
             
             _collectionName = "blosm_building_assets"
             if not _collectionName in bpy.data.collections:

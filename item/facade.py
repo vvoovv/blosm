@@ -11,8 +11,14 @@ class Facade(Div):
     def __init__(self, parent, indices, vector, volumeGenerator):
         super().__init__(parent, parent, self, None)
         
-        self.cornerLeft = True
-        self.cornerRight = True
+        self.cornerL = True
+        self.cornerR = True
+        
+        # We store in the variables below information about corner items. The variables are set to
+        # a Python set. Z-coordinate of a corner item is used as the key. The variables below prevent
+        # from creating a corner item twice for each of the adjacent facades.
+        self.cornerInfoL = None
+        self.cornerInfoR = None
         
         self.indices = indices
         

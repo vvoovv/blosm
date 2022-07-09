@@ -14,9 +14,9 @@ class Item:
         self.isContainer = False
         
         # is the item located in the left corner of <facade>?
-        self.cornerLeft = False
+        self.cornerL = False
         # is the item located in the right corner of <facade>?
-        self.cornerRight = False
+        self.cornerR = False
         
         # A style block (an instance of grammar.Item) that defines the style for the item
         # within a markup definition.

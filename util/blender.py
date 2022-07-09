@@ -118,6 +118,16 @@ def loadCollectionFromFile(filepath, name):
     return data_to.collections[0]
 
 
+def linkCollectionFromFile(filepath, name):
+    """
+    Links a Blender collection with the given <name> from the .blend file with the given <filepath>
+    """
+    with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
+        data_to.collections = [name]
+    return data_to.collections[0]
+
+
 def loadSceneFromFile(filepath, name):
     """
     Loads a Blender scene with the given <name> from the .blend file with the given <filepath>

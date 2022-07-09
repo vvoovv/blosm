@@ -222,30 +222,32 @@ class Container(ItemRendererTexture):
                     meshAssets = self.r.meshAssets
                     layer = item.building.element.l
                     
-                    objectName = assetInfo["object"]
-                    
-                    # If <objectName> isn't available in <meshAssets>, that also means
-                    # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
-                    if not objectName in meshAssets:
-                        obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objectName)
-                        if not obj:
-                            self.renderCladding(
-                                item,
-                                self.r.createFace(item.footprint, indices),
-                                uvs
-                            )
-                            return
-                        # We need only the properties of a Blender object created by a designer.
-                        # <rna_properties> is used to filter our the other properties
-                        rna_properties = {
-                            prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
-                        }
-                        params = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
-                        meshAssets[objectName] = (obj, params, {} if params else None)
+                    if "object" in assetInfo:
+                        objectName = assetInfo["object"]
                         
-                        if not params:
-                            # use <obj> as is (i.e. linked from another Blender file)
-                            self.r.buildingAssetsCollection.objects.link(obj)
+                        # If <objectName> isn't available in <meshAssets>, that also means
+                        # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
+                        if not objectName in meshAssets:
+                            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objectName)
+                            if not obj:
+                                return
+                            # We need only the properties of a Blender object created by a designer.
+                            # <rna_properties> is used to filter our the other properties
+                            rna_properties = {
+                                prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
+                            }
+                            params = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
+                            meshAssets[objectName] = (obj, params, {} if params else None)
+                            
+                            if not params:
+                                # use <obj> as is (i.e. linked from another Blender file)
+                                self.r.buildingAssetsCollection.objects.link(obj)
+                    
+                    else:
+                        objectName = self.processCollection(item, assetInfo, indices)
+                        if not objectName:
+                            # something is wrong or no actions are needed
+                            return
                     
                     obj, params, instances = meshAssets[objectName]
                     

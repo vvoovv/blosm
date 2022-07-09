@@ -86,23 +86,23 @@ class Container(Item):
             if self.arrangement == Vertical:
                 # if the item is located in the left corner of <self.facade>, mark
                 # all items in <self.markup> that they are located in the left corner too.
-                if self.cornerLeft:
+                if self.cornerL:
                     for item in self.markup:
-                        item.cornerLeft = True
+                        item.cornerL = True
                 # if the item is located in the right corner of <self.facade>, mark
                 # all items in <self.markup> that they are located in the right corner too.
-                if self.cornerRight:
+                if self.cornerR:
                     for item in self.markup:
-                        item.cornerRight = True
+                        item.cornerR = True
             else: # self.arrangement == Horizontal
                 # if the item is located in the left corner of <self.facade>, mark
                 # the leftmost item in <self.markup> that is located in the left corner too.
-                if self.cornerLeft:
-                    self.markup[0].cornerLeft = True
+                if self.cornerL:
+                    self.markup[0].cornerL = True
                 # if the item is located in the right corner of <self.facade>, mark
                 # the rightmost item in <self.markup> that is located in the right corner too.
-                if self.cornerRight:
-                    self.markup[-1].cornerRight = True
+                if self.cornerR:
+                    self.markup[-1].cornerR = True
                 
         # check if have symmetry for the markup items
         symmetry = self.getStyleBlockAttr("symmetry")
