@@ -439,6 +439,10 @@ class Multipolygon(Relation):
         """
         Make a polygon out of the multipolygon with holes
         """
+        if self.t == parse.polygon:
+            # It's already a polygon. We have nothing to do for it.
+            return
+        
         # get the outer linestring
         for _l in self.ls:
             if _l.role is Osm.outer:
