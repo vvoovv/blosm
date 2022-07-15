@@ -220,36 +220,27 @@ class Container(ItemRendererTexture):
                     # mesh
                     #
                     meshAssets = self.r.meshAssets
-                    layer = item.building.element.l
                     
                     if "object" in assetInfo:
-                        objectName = assetInfo["object"]
+                        objName = assetInfo["object"]
                         
                         # If <objectName> isn't available in <meshAssets>, that also means
                         # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
-                        if not objectName in meshAssets:
-                            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objectName)
+                        if not objName in meshAssets:
+                            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objName)
                             if not obj:
                                 return
-                            # We need only the properties of a Blender object created by a designer.
-                            # <rna_properties> is used to filter our the other properties
-                            rna_properties = {
-                                prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
-                            }
-                            params = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
-                            meshAssets[objectName] = (obj, params, {} if params else None)
-                            
-                            if not params:
-                                # use <obj> as is (i.e. linked from another Blender file)
-                                self.r.buildingAssetsCollection.objects.link(obj)
-                    
+                            self.processAssetMeshObject(obj, objName)
                     else:
-                        objectName = self.processCollection(item, assetInfo, indices)
-                        if not objectName:
+                        obj = self.processCollection(item, assetInfo, indices)
+                        if not obj:
                             # something is wrong or no actions are needed
                             return
+                        objName = obj.name
+                        if not objName in meshAssets:
+                            self.processAssetMeshObject(obj, objName)
                     
-                    obj, params, instances = meshAssets[objectName]
+                    obj, params, instances = meshAssets[objName]
                     
                     if params:
                         # create a key out of <properties>
@@ -258,51 +249,13 @@ class Container(ItemRendererTexture):
                         )
                         if not key in instances:
                             # the created Blender object <_obj> shares the mesh data with <obj>
-                            _obj = instances[key] = createMeshObject(objectName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
+                            _obj = instances[key] = createMeshObject(objName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
                             # set properties
                             for _param in params:
                                 _obj[_param] = item.getStyleBlockAttrDeep(_param) or obj[_param]
                         obj = instances[key]
                     
-                    tileWidth = assetInfo["tileWidthM"]
-                    
-                    numTilesX = max( floor(item.width/tileWidth), 1 )
-                    numTilesY = 1 if levelGroup.singleLevel else levelGroup.index2 - levelGroup.index1 + 1
-                    scaleX = item.width/(numTilesX*tileWidth)
-                    scaleY = levelGroup.levelHeight/assetInfo["tileHeightM"]
-                    
-                    tileWidth *= scaleX
-                    
-                    # increment along X-axis of <item>
-                    incrementVector = tileWidth * item.facade.vector.unitVector3d
-                    
-                    bmVerts = layer.bmGn.verts
-                    attributeValuesGn = layer.attributeValuesGn
-                    
-                    _vertLocation = item.building.renderInfo.verts[indices[0]] + 0.5*incrementVector
-                    if numTilesY == 1:
-                        for _ in range(numTilesX):
-                            bmVerts.new(_vertLocation)
-                            _vertLocation += incrementVector
-                            attributeValuesGn.append((
-                                obj.name,
-                                item.facade.vector.vector3d,
-                                scaleX,
-                                scaleY
-                            ))
-                    else:
-                        for _ in range(numTilesY):
-                            vertLocation = _vertLocation.copy()
-                            for _ in range(numTilesX):
-                                bmVerts.new(vertLocation)
-                                attributeValuesGn.append((
-                                    obj.name,
-                                    item.facade.vector.vector3d,
-                                    scaleX,
-                                    scaleY
-                                ))
-                                vertLocation += incrementVector
-                            _vertLocation[2] += levelGroup.levelHeight
+                    self.prepareGnVerts(item, levelGroup, indices, assetInfo, obj)
                 else:
                     #
                     # texture
@@ -347,3 +300,59 @@ class Container(ItemRendererTexture):
     
     def getNumLevelsInFace(self, levelGroup):
         return 1 if levelGroup.singleLevel else (levelGroup.index2-levelGroup.index1+1)
+    
+    def processAssetMeshObject(self, obj, objName):
+        # We need only the properties of a Blender object created by a designer.
+        # <rna_properties> is used to filter our the other properties
+        rna_properties = {
+            prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
+        }
+        params = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
+        self.r.meshAssets[objName] = (obj, params, {} if params else None)
+        
+        if not params:
+            # use <obj> as is (i.e. linked from another Blender file)
+            self.r.buildingAssetsCollection.objects.link(obj)
+    
+    def prepareGnVerts(self, item, levelGroup, indices, assetInfo, obj):
+        layer = item.building.element.l
+        
+        tileWidth = assetInfo["tileWidthM"]
+        
+        numTilesX = max( floor(item.width/tileWidth), 1 )
+        numTilesY = 1 if levelGroup.singleLevel else levelGroup.index2 - levelGroup.index1 + 1
+        scaleX = item.width/(numTilesX*tileWidth)
+        scaleY = levelGroup.levelHeight/assetInfo["tileHeightM"]
+        
+        tileWidth *= scaleX
+        
+        # increment along X-axis of <item>
+        incrementVector = tileWidth * item.facade.vector.unitVector3d
+        
+        bmVerts = layer.bmGn.verts
+        attributeValuesGn = layer.attributeValuesGn
+        
+        _vertLocation = item.building.renderInfo.verts[indices[0]] + 0.5*incrementVector
+        if numTilesY == 1:
+            for _ in range(numTilesX):
+                bmVerts.new(_vertLocation)
+                _vertLocation += incrementVector
+                attributeValuesGn.append((
+                    obj.name,
+                    item.facade.vector.vector3d,
+                    scaleX,
+                    scaleY
+                ))
+        else:
+            for _ in range(numTilesY):
+                vertLocation = _vertLocation.copy()
+                for _ in range(numTilesX):
+                    bmVerts.new(vertLocation)
+                    attributeValuesGn.append((
+                        obj.name,
+                        item.facade.vector.vector3d,
+                        scaleX,
+                        scaleY
+                    ))
+                    vertLocation += incrementVector
+                _vertLocation[2] += levelGroup.levelHeight

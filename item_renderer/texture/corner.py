@@ -9,6 +9,11 @@ from ..util import getFilepath
 class Corner:
     
     def processCollection(self, item, assetInfo, indices):
+        """
+        Returns:
+            <None> if the corner is visited for the first time or there is something wrong
+            A Blender object for the corner with an angle that fits best to the corner in question
+        """
         
         # a quick validity check
         if not item.cornerL and not item.cornerR:
@@ -16,20 +21,20 @@ class Corner:
         
         facade = item.facade
         
-        leftCorner = item.cornerL
+        cornerL = item.cornerL
         
-        if leftCorner:
+        if cornerL:
             if not facade.cornerInfoL:
                 facade.cornerInfoL = facade.vector.prev.facade.cornerInfoR = {}
             cornerInfo = facade.cornerInfoL
-            # <cornerVert> is a vert at the bottom of the corner item and on its left side
-            cornerVert = item.building.renderInfo.verts[indices[0]]
+            # <cornerVert> is a vert at the bottom of the corner item and on its right side
+            cornerVert = item.building.renderInfo.verts[indices[1]]
         else:
             if not facade.cornerInfoR:
                 facade.cornerInfoR = facade.vector.next.facade.cornerInfoL = {}
             cornerInfo = facade.cornerInfoR
-            # <cornerVert> is a vert at the bottom of the corner item and on its right side
-            cornerVert = item.building.renderInfo.verts[indices[1]]
+            # <cornerVert> is a vert at the bottom of the corner item and on its left side
+            cornerVert = item.building.renderInfo.verts[indices[0]]
             
         # Create a key as a z-coordinate of the bottom of <item>. Note that strings as keys
         # for Python dictionaries and sets work faster than floats
@@ -66,17 +71,17 @@ class Corner:
         collectionInfo = self.r.blenderCollections[collectionKey]
         # Find a Blender object in the Blender collection represented by <collectionInfo>
         # that angle is the closest one to the angle of the corner in question
-        vector = item.facade.vector.next if leftCorner else item.facade.vector
+        vector = item.facade.vector.next if cornerL else item.facade.vector
         
         if vector.sin > 0.:
             #
             # convex angle of the corner
             #
             
-            # <_cos> is a negated cosine
+            # <_cos> is a negated cosine!
             _cos = -vector.unitVector.dot(vector.prev.unitVector)
             i = bisect_left(collectionInfo[1], _cos, key=itemgetter(1))
-            if not i and (_cos - collectionInfo[1][i-1][1]) < (collectionInfo[1][i][1] - _cos):
+            if i and (_cos - collectionInfo[1][i-1][1]) < (collectionInfo[1][i][1] - _cos):
                 i -= 1
             obj = collectionInfo[1][i][0]
         else:
@@ -84,4 +89,20 @@ class Corner:
             # concave angle of the corner
             #
             _cos = vector.unitVector.dot(vector.prev.unitVector)
+        
+        item.building.element.l.bmGn.verts.new((
+            (cornerInfo[cornerKey] + cornerVert)/2.
+        ))
+
+        item.building.element.l.attributeValuesGn.append((
+            obj.name,
+            item.facade.vector.vector3d,
+            scaleX,
+            scaleY
+        ))
+        
+        return obj
+    
+    def prepareGnVerts(self, item, _, indices, assetInfo, obj):
+        # everything was done in <self>
         return
