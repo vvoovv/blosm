@@ -62,7 +62,7 @@ def setup(app, osm):
             osm.addCondition(
                 lambda tags, e: "building" in tags,
                 "buildings", 
-                GnBldg2dManager(app) if app.gnSetup2d else polygon
+                GnBldg2dManager(app) if app.gnSetup2d != '-' else polygon
             )
         else: # 3D
             buildingParts = BuildingParts()

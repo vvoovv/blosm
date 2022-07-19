@@ -70,7 +70,7 @@ def getBlenderMaterials(self, context):
     return tuple((m[0], m[0], m[0]) for m in _blenderMaterials if m[1] == materialType)
 
 
-_gnSetups2d = []
+_gnSetups2d = [('-', '', '')]
 def updateGnBlendFile2d(self, context):
     _gnSetups2d.clear()
     
@@ -81,6 +81,9 @@ def updateGnBlendFile2d(self, context):
         with bpy.data.libraries.load(filepath) as (data_from, data_to):
             if data_from.node_groups:
                 _gnSetups2d.extend((gnSetup, gnSetup, gnSetup) for gnSetup in data_from.node_groups)
+    else:
+        _gnSetups2d.append(('-', '', ''))
+        self.gnSetup2d = '-'
 
 
 def getGnSetups2d(self, context):

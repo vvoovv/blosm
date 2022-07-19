@@ -224,7 +224,7 @@ class BlenderApp(BaseApp):
             
             self.setAssetPackagePaths()
         
-        if self.mode == BaseApp.twoD and self.gnSetup2d:
+        if self.mode == BaseApp.twoD and self.gnSetup2d != '-':
             filepath = os.path.realpath(
                 bpy.path.abspath(self.gnBlendFile2d)
             )
