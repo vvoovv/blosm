@@ -93,16 +93,28 @@ class Corner:
         item.building.element.l.bmGn.verts.new((
             (cornerInfo[cornerKey] + cornerVert)/2.
         ))
-
-        item.building.element.l.attributeValuesGn.append((
-            obj.name,
-            item.facade.vector.vector3d,
-            scaleX,
-            scaleY
-        ))
+        
+        cornerVector = cornerVert-cornerInfo[cornerKey] \
+            if cornerL else\
+            cornerInfo[cornerKey] - cornerVert
+        
+        # Blender object name will be set in <self.prepareGnVerts(..)>,
+        # since a separate object may be created later in the code for the given parameters
+        # out of the mesh data of <obj>.
+        # Vertical scale will be set later in <self.prepareGnVerts(..)>,
+        # since we don't have <levelGroup> that is required to set the vertical scale.
+        item.building.element.l.attributeValuesGn.append([
+            '', # Blender object name
+            cornerVector,
+            cornerVector.length/obj["width"], # horizontal scale,
+            0. # vertical scale
+        ])
         
         return obj
     
-    def prepareGnVerts(self, item, _, indices, assetInfo, obj):
-        # everything was done in <self>
-        return
+    def prepareGnVerts(self, item, levelGroup, indices, assetInfo, obj):
+        attributeValues = item.building.element.l.attributeValuesGn[-1]
+        # set Blender object name
+        attributeValues[0] = obj.name
+        # set the vertical scale
+        attributeValues[3] = levelGroup.levelHeight/assetInfo["tileHeightM"]

@@ -1,7 +1,4 @@
-import bpy
-
 from math import floor
-from mathutils import Vector
 from . import ItemRendererTexture
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
