@@ -41,12 +41,22 @@ class Corner:
         cornerKey = str( round(cornerVert[2], 3) )
         
         if not cornerKey in cornerInfo:
-            # The corner was not visited before. We'll store the bottom coordinate of the corner element
-            # that belong to <item.facade>
-            cornerInfo[cornerKey] = cornerVert
+            # The corner was not visited before. We'll store the corner item and
+            # the bottom coordinate of the corner element that belong to <item.facade>
+            cornerInfo[cornerKey] = (item, cornerVert)
             # <cornerVert> will be used when we encounter the neighbor part of the corner.
             # it's needed to position the corner asset correctly.
             return
+        
+        cornerInfo = cornerInfo[cornerKey]
+        
+        # The styling for the whole corner is defined in either <item> or
+        # its item <cornerInfo[0]> on the neighbor side of the corner. We check,
+        # which one of them has more style attributes.
+        # If the item <cornerInfo[0]> on the neighbor side of the corner has more style
+        # attributes, than those style attributes are set for <item>.
+        if len(cornerInfo[0].styleBlock.attrs) > len(item.styleBlock.attrs):
+            item.styleBlock.attrs = cornerInfo[0].styleBlock.attrs
         
         collectionName = assetInfo["collection"]
         # path to a Blender file defined in <assetInfo>
@@ -91,12 +101,12 @@ class Corner:
             _cos = vector.unitVector.dot(vector.prev.unitVector)
         
         item.building.element.l.bmGn.verts.new((
-            (cornerInfo[cornerKey] + cornerVert)/2.
+            (cornerInfo[1] + cornerVert)/2.
         ))
         
-        cornerVector = cornerVert-cornerInfo[cornerKey] \
+        cornerVector = cornerVert-cornerInfo[1] \
             if cornerL else\
-            cornerInfo[cornerKey] - cornerVert
+            cornerInfo[1] - cornerVert
         
         # Blender object name will be set in <self.prepareGnVerts(..)>,
         # since a separate object may be created later in the code for the given parameters
