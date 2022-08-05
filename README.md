@@ -1,12 +1,12 @@
 # blender-osm: OpenStreetMap and terrain for Blender
 **blender-osm** provides one click download and import of OpenStreetMap and real world terrain data for Blender with global coverage. Two versions of the addon are available:
-* [blender-osm (premium)](https://gumroad.com/l/blosm)
-* [blender-osm](https://gumroad.com/l/blender-osm) (the base version, available for free)
+* [blender-osm (premium)](https://prochitecture.gumroad.com/l/blosm)
+* [blender-osm](https://prochitecture.gumroad.com/l/blender-osm) (the base version, available for free)
 
 They are briefly described below.
 
-## [blender-osm (premium)](https://gumroad.com/l/blosm)
-[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm.png)](https://gumroad.com/l/blosm)
+## [blender-osm (premium)](https://prochitecture.gumroad.com/l/blosm)
+[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm.png)](https://prochitecture.gumroad.com/l/blosm)
 
 In addition to the features of the base version, the premium one provides:
 * Import of buildings from OpenStreetMap with default materials, tileable building textures and UV-mapping applied
@@ -15,12 +15,12 @@ In addition to the features of the base version, the premium one provides:
 * Options to use custom tileable building textures (e.g. from textures.com)
 * Satellite imagery and web maps projected on a terrain
 
-Buy the addon at [gumroad.com](https://gumroad.com/l/blosm)! By [purchasing](https://gumroad.com/l/blosm) the addon you support the addon development. All customers will get the addon source code under GPL license!
+Buy the addon at [gumroad.com](https://prochitecture.gumroad.com/l/blosm)! By [purchasing](https://prochitecture.gumroad.com/l/blosm) the addon you support the addon development. All customers will get the addon source code under GPL license!
 
 The detailed documentation is available [here](https://github.com/vvoovv/blender-osm/wiki/Premium-Version).
 
-## [blender-osm](https://gumroad.com/l/blender-osm) (the base version)
-[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender-osm.png)](https://gumroad.com/l/blender-osm)
+## [blender-osm](https://prochitecture.gumroad.com/l/blender-osm) (the base version)
+[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender-osm.png)](https://prochitecture.gumroad.com/l/blender-osm)
 
 * **blender-osm** imports buildings from OpenStreetMap _without_ any texture applied. Building height and number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed. A large number of roof shapes is supported. If a terrain is provided, buildings are placed on the terrain automatically.
 * **blender-osm** downloads and imports real world terrain data with resolution about 30 meter.
@@ -28,13 +28,13 @@ The detailed documentation is available [here](https://github.com/vvoovv/blender
 * River, lakes, forests, vegetation are imported as polygons. If a terrain is provided, they are projected on the terrain.
 * Imported roads, paths and railways have width. They are represented by Blender curves with a profile object. If a terrain is provided, roads are projected on the terrain.
 
-Get the addon at [gumroad.com](https://gumroad.com/l/blender-osm)! You might prefer to pay some price for the addon to support its development. However it is completely optional. The addon source code is available under GPL license!
+Get the addon at [gumroad.com](https://prochitecture.gumroad.com/l/blender-osm)! You might prefer to pay some price for the addon to support its development. However it is completely optional. The addon source code is available under GPL license!
 
 The detailed documentation is available [here](https://github.com/vvoovv/blender-osm/wiki/Documentation).
 
 
 ## Links and contacts
-* Purchase: [premium version](https://gumroad.com/l/blosm), [base version](https://gumroad.com/l/blender-osm)
+* Purchase: [premium version](https://prochitecture.gumroad.com/l/blosm), [base version](https://prochitecture.gumroad.com/l/blender-osm)
 * Documentation: [premium version](https://github.com/vvoovv/blender-osm/wiki/Premium-Version), [base version](https://github.com/vvoovv/blender-osm/wiki/Documentation)
 * e-mail: [prokitektura+support@gmail.com](mailto:prokitektura+support@gmail.com)
 * facebook: [@prochitecture](https://www.facebook.com/prochitecture)
