@@ -81,24 +81,27 @@ class Corner:
         collectionInfo = self.r.blenderCollections[collectionKey]
         # Find a Blender object in the Blender collection represented by <collectionInfo>
         # that angle is the closest one to the angle of the corner in question
-        vector = item.facade.vector.next if cornerL else item.facade.vector
+        vector = item.facade.vector if cornerL else item.facade.vector.next
         
         if vector.sin > 0.:
             #
             # convex angle of the corner
             #
-            
-            # <_cos> is a negated cosine!
-            _cos = -vector.unitVector.dot(vector.prev.unitVector)
-            i = bisect_left(collectionInfo[1], _cos, key=itemgetter(1))
-            if i and (_cos - collectionInfo[1][i-1][1]) < (collectionInfo[1][i][1] - _cos):
-                i -= 1
-            obj = collectionInfo[1][i][0]
+            _cos = vector.unitVector.dot(vector.prev.unitVector)
+            collectionInfo = collectionInfo[1]
         else:
             #
             # concave angle of the corner
             #
-            _cos = vector.unitVector.dot(vector.prev.unitVector)
+            
+            # <_cos> is a negated cosine!
+            _cos = -vector.unitVector.dot(vector.prev.unitVector)
+            collectionInfo = collectionInfo[2]
+
+        i = bisect_left(collectionInfo, _cos, key=itemgetter(1))
+        if i==len(collectionInfo) or ( i and (_cos - collectionInfo[i-1][1]) < (collectionInfo[i][1] - _cos) ):
+            i -= 1
+        obj = collectionInfo[i][0]
         
         item.building.element.l.bmGn.verts.new((
             (cornerInfo[1] + cornerVert)/2.
