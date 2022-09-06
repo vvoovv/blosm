@@ -209,6 +209,12 @@ class Overlay:
         # cleanup
         self.imageData = None
         
+        image["tile_zoom"] = self.zoom
+        image["tile_left"] = self.l
+        image["tile_right"] = self.r
+        image["tile_bottom"] = self.b
+        image["tile_top"] = self.t
+        
         if app.saveOverlayToFile:
             path = os.path.join(app.dataDir, "texture", f"overlay.{image.file_format.lower()}")
             image.save_render(path)
