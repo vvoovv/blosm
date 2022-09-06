@@ -16,7 +16,7 @@ def _updateFacadeBottomVerts(facade, z, verts):
     facade.minHeight = z
     
     minLevel = facade.footprint.levelHeights.calculateMinLevelFromMinHeight(z)
-    if minLevel == facade.footprint.numLevels:
+    if minLevel >= facade.footprint.numLevels:
         facade.highEnoughForLevel = False
     else:
         facade.minLevel = minLevel

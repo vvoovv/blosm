@@ -763,12 +763,12 @@ class BLOSM_OT_ApeCopyAp(bpy.types.Operator):
     
     def processAssetInfos(self, assetInfos, apDirName):
         """
-        The method checks every building entry in <assetInfo> and
-        then every 'part' in the building entry.
+        The method checks every collection entry in <assetInfo> and
+        then every 'asset' in the collection entry.
         If the field 'path' doesn't start with /, the prefix apDirName/ is added to the field 'path'
         """
-        for bldgEntry in assetInfos["buildings"]:
-            for assetInfo in bldgEntry["assets"]:
+        for collection in assetInfos["collections"]:
+            for assetInfo in collection["assets"]:
                 path = assetInfo["path"]
                 if path[0] != '/':
                     assetInfo["path"] = "/%s/%s" % (apDirName, path)
