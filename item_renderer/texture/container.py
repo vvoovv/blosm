@@ -1,5 +1,6 @@
 from math import floor
 from . import ItemRendererTexture
+from .corner import Corner
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 from util import rgbToHex
@@ -216,43 +217,45 @@ class Container(ItemRendererTexture):
                     #
                     # mesh
                     #
-                    meshAssets = self.r.meshAssets
                     
                     if "object" in assetInfo:
+                        #
+                        # a separate Blender object
+                        #
+                        
+                        # first we check for corner modules (mesh only) defined implicitly
+                        if floor(item.width/assetInfo["tileWidthM"]) > 1:
+                            if item.cornerL or item.cornerR:
+                                assetInfoCorner = self.getAssetInfoCorner(item, assetInfo["class"])
+                                if assetInfoCorner and "collection" in assetInfoCorner:
+                                    self.processImplicitCornerItems(item, levelGroup, indices, assetInfo, assetInfoCorner)
+                                    return
+                        
                         objName = assetInfo["object"]
                         
                         # If <objectName> isn't available in <meshAssets>, that also means
                         # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
-                        if not objName in meshAssets:
+                        if not objName in self.r.meshAssets:
                             obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objName)
                             if not obj:
                                 return
                             self.processAssetMeshObject(obj, objName)
                     else:
+                        #
+                        # a Blender collection (e.g. of corner modules)
+                        #
                         obj = self.processCollection(item, assetInfo, indices)
                         if not obj:
                             # something is wrong or no actions are needed
                             return
                         objName = obj.name
-                        if not objName in meshAssets:
+                        if not objName in self.r.meshAssets:
                             self.processAssetMeshObject(obj, objName)
                     
-                    obj, params, instances = meshAssets[objName]
-                    
-                    if params:
-                        # create a key out of <properties>
-                        key = '_'.join(
-                            rgbToHex( item.getStyleBlockAttrDeep(_param) or obj[_param] ) for _param in params
-                        )
-                        if not key in instances:
-                            # the created Blender object <_obj> shares the mesh data with <obj>
-                            _obj = instances[key] = createMeshObject(objName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
-                            # set properties
-                            for _param in params:
-                                _obj[_param] = item.getStyleBlockAttrDeep(_param) or obj[_param]
-                        obj = instances[key]
-                    
-                    self.prepareGnVerts(item, levelGroup, indices, assetInfo, obj)
+                    self.prepareGnVerts(
+                        item, levelGroup, indices, assetInfo,
+                        self.getGnInstanceObject(item, objName)
+                    )
                 else:
                     #
                     # texture
@@ -286,6 +289,24 @@ class Container(ItemRendererTexture):
                 uvs
             )
             item.materialId = ""
+    
+    def getGnInstanceObject(self, item, objName):
+        obj, params, instances = self.r.meshAssets[objName]
+        
+        if params:
+            # create a key out of <properties>
+            key = '_'.join(
+                rgbToHex( item.getStyleBlockAttrDeep(_param) or obj[_param] ) for _param in params
+            )
+            if not key in instances:
+                # the created Blender object <_obj> that shares the mesh data with <obj>
+                _obj = instances[key] = createMeshObject(objName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
+                # set properties
+                for _param in params:
+                    _obj[_param] = item.getStyleBlockAttrDeep(_param) or obj[_param]
+            obj = instances[key]
+        
+        return obj
     
     def getUvs(self, item, levelGroup, facadeTextureInfo):
         return item.geometry.getFinalUvs(
@@ -353,3 +374,101 @@ class Container(ItemRendererTexture):
                     ))
                     vertLocation += incrementVector
                 _vertLocation[2] += levelGroup.levelHeight
+    
+    def processImplicitCornerItems(self, item, levelGroup, indices, assetInfo, assetInfoCorner):
+        # the same code as in self.prepareGnVerts(..)
+        # the beginning of the code >
+        layer = item.building.element.l
+        
+        tileWidth = assetInfo["tileWidthM"]
+        
+        numTilesX = max( floor(item.width/tileWidth), 1 )
+        numTilesY = 1 if levelGroup.singleLevel else levelGroup.index2 - levelGroup.index1 + 1
+        scaleX = item.width/(numTilesX*tileWidth)
+        scaleY = levelGroup.levelHeight/assetInfo["tileHeightM"]
+        
+        tileWidth *= scaleX
+        
+        # increment along X-axis of <item>
+        incrementVector = tileWidth * item.facade.vector.unitVector3d
+        
+        bmVerts = layer.bmGn.verts
+        attributeValuesGn = layer.attributeValuesGn
+        # the end of the code <
+        
+        if item.cornerL:
+            self._processImplicitCornerItem(
+                item, levelGroup, assetInfoCorner, True,
+                item.building.renderInfo.verts[indices[0]] + incrementVector
+            )
+        if item.cornerR:
+            self._processImplicitCornerItem(
+                item, levelGroup, assetInfoCorner, False,
+                item.building.renderInfo.verts[indices[1]] - incrementVector
+            )
+        
+        objName = assetInfo["object"]
+        
+        # If <objectName> isn't available in <meshAssets>, that also means
+        # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
+        if not objName in self.r.meshAssets:
+            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objName)
+            if not obj:
+                return
+            self.processAssetMeshObject(obj, objName)
+        
+        obj = self.getGnInstanceObject(item, objName)
+        
+        _vertLocation = item.building.renderInfo.verts[indices[0]] + (1.5 if item.cornerL else 0.5) *incrementVector
+        if numTilesY == 1:
+            for _ in range(1 if item.cornerL else 0, numTilesX-1 if item.cornerR else numTilesX):
+                # the same code as in self.prepareGnVerts(..)
+                bmVerts.new(_vertLocation)
+                _vertLocation += incrementVector
+                attributeValuesGn.append((
+                    obj.name,
+                    item.facade.vector.vector3d,
+                    scaleX,
+                    scaleY
+                ))
+        else:
+            for _ in range(numTilesY):
+                vertLocation = _vertLocation.copy()
+                for _ in range(1 if item.cornerL else 0, numTilesX-1 if item.cornerR else numTilesX):
+                    # the same code as in self.prepareGnVerts(..)
+                    bmVerts.new(vertLocation)
+                    attributeValuesGn.append((
+                        obj.name,
+                        item.facade.vector.vector3d,
+                        scaleX,
+                        scaleY
+                    ))
+                    vertLocation += incrementVector
+                _vertLocation[2] += levelGroup.levelHeight
+    
+    def getAssetInfoCorner(self, item, baseClass):
+        building, collection =\
+            item.building, item.getStyleBlockAttrDeep("collection")
+        
+        return self.app.assetStore.getAssetInfo(
+            True,
+            building,
+            collection,
+            "corner",
+            baseClass + "_corner"
+        )
+    
+    def _processImplicitCornerItem(self, item, levelGroup, assetInfoCorner, cornerL, cornerVert):
+        obj = Corner.processCorner(self,
+            item, assetInfoCorner, cornerL,
+            cornerVert
+        )
+        if obj:
+            objName = obj.name
+            if not objName in self.r.meshAssets:
+                self.processAssetMeshObject(obj, objName)
+            
+            Corner.prepareGnVerts(self,
+                item, levelGroup, None, assetInfoCorner,
+                self.getGnInstanceObject(item, objName)
+            )

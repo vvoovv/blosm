@@ -19,23 +19,36 @@ class Corner:
         if not item.cornerL and not item.cornerR:
             return
         
-        facade = item.facade
-        
         cornerL = item.cornerL
+
+        return self.processCorner(
+            item,
+            assetInfo,
+            cornerL,
+            # <cornerVert> is a vert at the bottom of the corner item and on its right side
+            item.building.renderInfo.verts[indices[1]] \
+                if cornerL else\
+                # <cornerVert> is a vert at the bottom of the corner item and on its right side
+                item.building.renderInfo.verts[indices[0]]
+        )
+    
+    def processCorner(self, item, assetInfo, cornerL, cornerVert):
+        """
+        Returns:
+            <None> if the corner is visited for the first time or there is something wrong
+            A Blender object for the corner with an angle that fits best to the corner in question
+        """
+        facade = item.facade
         
         if cornerL:
             if not facade.cornerInfoL:
                 facade.cornerInfoL = facade.vector.prev.facade.cornerInfoR = {}
             cornerInfo = facade.cornerInfoL
-            # <cornerVert> is a vert at the bottom of the corner item and on its right side
-            cornerVert = item.building.renderInfo.verts[indices[1]]
         else:
             if not facade.cornerInfoR:
                 facade.cornerInfoR = facade.vector.next.facade.cornerInfoL = {}
             cornerInfo = facade.cornerInfoR
-            # <cornerVert> is a vert at the bottom of the corner item and on its left side
-            cornerVert = item.building.renderInfo.verts[indices[0]]
-            
+        
         # Create a key as a z-coordinate of the bottom of <item>. Note that strings as keys
         # for Python dictionaries and sets work faster than floats
         cornerKey = str( round(cornerVert[2], 3) )
@@ -97,7 +110,10 @@ class Corner:
             # <_cos> is a negated cosine!
             _cos = -vector.unitVector.dot(vector.prev.unitVector)
             collectionInfo = collectionInfo[2]
-
+        
+        if not collectionInfo:
+            return
+        
         i = bisect_left(collectionInfo, _cos, key=itemgetter(1))
         if i==len(collectionInfo) or ( i and (_cos - collectionInfo[i-1][1]) < (collectionInfo[i][1] - _cos) ):
             i -= 1
@@ -116,18 +132,24 @@ class Corner:
         # out of the mesh data of <obj>.
         # Vertical scale will be set later in <self.prepareGnVerts(..)>,
         # since we don't have <levelGroup> that is required to set the vertical scale.
-        item.building.element.l.attributeValuesGn.append([
-            '', # Blender object name
+        
+        # We store <cornerVector> and the horizontal scale to avoid
+        # their calculation in <self.prepareGnVerts(..)>
+        item.building.element.l.attributeValuesGn.append((
             cornerVector,
-            cornerVector.length/obj["width"], # horizontal scale,
-            0. # vertical scale
-        ])
+            cornerVector.length/obj["width"], # horizontal scale
+        ))
         
         return obj
     
     def prepareGnVerts(self, item, levelGroup, indices, assetInfo, obj):
-        attributeValues = item.building.element.l.attributeValuesGn[-1]
-        # set Blender object name
-        attributeValues[0] = obj.name
-        # set the vertical scale
-        attributeValues[3] = levelGroup.levelHeight/assetInfo["tileHeightM"]
+        attributeValuesGn = item.building.element.l.attributeValuesGn
+        # set actual values for <attributeValuesGn[-1]>
+        attributeValuesGn[-1] = (
+            # set Blender object name
+            obj.name,
+            attributeValuesGn[-1][0],
+            attributeValuesGn[-1][1],
+            # set the vertical scale
+            levelGroup.levelHeight/assetInfo["tileHeightM"]
+        )
