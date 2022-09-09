@@ -119,9 +119,9 @@ class Corner:
             i -= 1
         obj = collectionInfo[i][0]
         
-        item.building.element.l.bmGn.verts.new((
-            (cornerInfo[1] + cornerVert)/2.
-        ))
+        # the origin of the corner item
+        vertLocation = (cornerInfo[1] + cornerVert)/2.
+        item.building.element.l.bmGn.verts.new(vertLocation)
         
         cornerVector = cornerVert-cornerInfo[1] \
             if cornerL else\
@@ -133,23 +133,36 @@ class Corner:
         # Vertical scale will be set later in <self.prepareGnVerts(..)>,
         # since we don't have <levelGroup> that is required to set the vertical scale.
         
-        # We store <cornerVector> and the horizontal scale to avoid
+        # We store <cornerVector>, the horizontal scale and <vertLocation> to avoid
         # their calculation in <self.prepareGnVerts(..)>
         item.building.element.l.attributeValuesGn.append((
             cornerVector,
             cornerVector.length/obj["width"], # horizontal scale
+            vertLocation
         ))
         
         return obj
     
-    def prepareGnVerts(self, item, levelGroup, indices, assetInfo, obj):
+    def prepareGnVerts(self, item, levelGroup, indices, assetInfo, obj, numTilesY=1):
         attributeValuesGn = item.building.element.l.attributeValuesGn
+        bmVerts = item.building.element.l.bmGn.verts
+        
+        cornerVector, scaleX, vertLocation = attributeValuesGn[-1]
         # set actual values for <attributeValuesGn[-1]>
         attributeValuesGn[-1] = (
             # set Blender object name
             obj.name,
-            attributeValuesGn[-1][0],
-            attributeValuesGn[-1][1],
+            cornerVector,
+            scaleX,
             # set the vertical scale
             levelGroup.levelHeight/assetInfo["tileHeightM"]
         )
+        
+        if numTilesY > 1:
+            for _ in range(numTilesY-1):
+                vertLocation = vertLocation.copy()
+                vertLocation[2] += levelGroup.levelHeight
+                bmVerts.new(vertLocation)
+                attributeValuesGn.append(
+                    attributeValuesGn[-1]
+                )

@@ -399,12 +399,14 @@ class Container(ItemRendererTexture):
         if item.cornerL:
             self._processImplicitCornerItem(
                 item, levelGroup, assetInfoCorner, True,
-                item.building.renderInfo.verts[indices[0]] + incrementVector
+                item.building.renderInfo.verts[indices[0]] + incrementVector,
+                numTilesY
             )
         if item.cornerR:
             self._processImplicitCornerItem(
                 item, levelGroup, assetInfoCorner, False,
-                item.building.renderInfo.verts[indices[1]] - incrementVector
+                item.building.renderInfo.verts[indices[1]] - incrementVector,
+                numTilesY
             )
         
         objName = assetInfo["object"]
@@ -458,17 +460,14 @@ class Container(ItemRendererTexture):
             baseClass + "_corner"
         )
     
-    def _processImplicitCornerItem(self, item, levelGroup, assetInfoCorner, cornerL, cornerVert):
-        obj = Corner.processCorner(self,
-            item, assetInfoCorner, cornerL,
-            cornerVert
-        )
+    def _processImplicitCornerItem(self, item, levelGroup, assetInfoCorner, cornerL, cornerVert, numTilesY):
+        obj = Corner.processCorner(self, item, assetInfoCorner, cornerL, cornerVert)
         if obj:
             objName = obj.name
             if not objName in self.r.meshAssets:
                 self.processAssetMeshObject(obj, objName)
             
-            Corner.prepareGnVerts(self,
-                item, levelGroup, None, assetInfoCorner,
-                self.getGnInstanceObject(item, objName)
-            )
+            obj = self.getGnInstanceObject(item, objName)
+            Corner.prepareGnVerts(self, item, levelGroup, None, assetInfoCorner, obj, numTilesY)
+            
+            return obj
