@@ -1,5 +1,6 @@
-from . import Way
-from defs.way import allWayCategories, facadeVisibilityWayCategories
+from . import Way, Railway
+from defs.base.polyline import Polyline
+from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories
 
 
 class WayManager:
@@ -28,18 +29,18 @@ class WayManager:
         app.addManager(self)
 
     def parseWay(self, element, elementId):
-        self.createWay(element)
-    
-    def parseRelation(self, element, elementId):
-        return
-    
-    def createWay(self, element):
         # create a wrapper for the OSM way <element>
         way = Way(element, self)
         self.layers[way.category].append(way)
     
+    def parseRelation(self, element, elementId):
+        return
+    
     def getAllWays(self):
         return (way for category in allWayCategories for way in self.layers[category])
+    
+    def getAllIntersectionWays(self):
+        return (way for category in wayIntersectionCategories for way in self.layers[category])
     
     def getFacadeVisibilityWays(self):
         return (
@@ -70,5 +71,122 @@ class WayManager:
         action.app = self.app
         self.actions.append(action)
     
-    def renderExtra(self):
-        pass
+    def getRailwayManager(self):
+        return RailwayManager(self)
+
+class RailwayManager:
+    """
+    An auxiliary manager to process railways
+    """
+    
+    def __init__(self, wayManager):
+        self.layers = wayManager.layers
+        # use the default layer class in the <app>
+        self.layerClass = None
+    
+    def parseWay(self, element, elementId):
+        # create a wrapper for the OSM way <element>
+        way = Railway(element, self)
+        self.layers[way.category].append(way)
+    
+    def parseRelation(self, element, elementId):
+        return
+
+
+class RoadPolygonsManager:
+    
+    def __init__(self, data, app):
+        self.id = "road_polygons"
+        self.data = data
+        self.app = app
+        
+        self.polylines = []
+        self.buildings = None
+        #self.connectedManagers = []
+        self.actions = []
+        
+        # don't accept broken multipolygons
+        self.acceptBroken = False
+        
+        app.addManager(self)
+    
+    def addAction(self, action):
+        action.app = self.app
+        self.actions.append(action)
+    
+    def process(self):
+        # get <self.buildings>
+        self.buildings = self.app.managersById.get("buildings") and self.app.managersById.get("buildings").buildings
+        
+        for polyline in self.polylines:
+            polyline.init(self)
+            
+        #for connectedManager in self.connectedManagers:
+        #    self.polylines.extend(connectedManager.getPolylines())
+        
+        for action in self.actions:
+            action.do(self)
+
+    def parseWay(self, element, elementId):
+        self.polylines.append(Polyline(element))
+    
+    def parseRelation(self, element, elementId):
+        return
+    
+    def render(self):
+        RoadPolygonsRenderer().render(self)
+
+
+from mpl.renderer import Renderer
+class RoadPolygonsRenderer(Renderer):
+    """
+    A temporary class
+    """
+    def render(self, manager):
+        ax = self.mpl.ax
+        for polyline in manager.polylines:
+            lineStyle, areaColor = self.getStyles(polyline.element)
+            if lineStyle:
+                for edge in polyline.edges:
+                    ax.plot(
+                        (edge.v1[0], edge.v2[0]),
+                        (edge.v1[1], edge.v2[1]),
+                        **lineStyle
+                    )
+            if areaColor:
+                ax.fill(
+                    [ edge.v1[0] for edge in polyline.edges ],
+                    [ edge.v1[1] for edge in polyline.edges ],
+                    areaColor
+                )
+    
+    def getStyles(self, element):
+        tags = element.tags
+        if "building" in tags:
+            return ( dict(color="#c2b5aa", linewidth=1.), "#d9d0c9" )
+        elif "landuse" in tags:
+            landuse = tags["landuse"]
+            if landuse == "construction":
+                return (None, "#c7c7b4")
+            elif landuse == "industrial":
+                return (None, "#e6d1e3")
+            elif landuse == "forest":
+                return (None, "#9dca8a")
+            elif landuse == "cemetery":
+                return (None, "#aacbaf")
+            elif landuse in ("grass", "village_green"):
+                return (None, "#c5ec94")
+            else:
+                return (None, "#a7a87e")
+        elif "natural" in tags:
+            natural = tags["natural"]
+            if natural == "water":
+                return (None, "#a6c6c6")
+            elif natural == "tree_row":
+                return ( dict(color="#a9cea1", linewidth=2.5), None )
+            elif natural == "wood":
+                return (None, "#9dca8a")
+            else:
+                return (None, "#d6d99f")
+        elif "barrier" in tags:
+            return ( dict(color="black", linewidth=0.5), None )

@@ -19,7 +19,7 @@ allRoadwayCategories = (
     "track",
     "escape",
     "raceway",
-    "other",
+    "other_roadway",
     # "road", # other
     "steps",
     "footway",
@@ -38,14 +38,54 @@ allRailwayCategories = (
     "light_rail",
     "tram",
     "funicular",
-    "monorail"
-    
+    "monorail",
+    "other_railway"
 )
 allRailwayCategoriesSet = set(allRailwayCategories)
 
-
 allWayCategories = allRoadwayCategories + allRailwayCategories
 
+roadwayIntersectionCategories  = (
+    "motorway",
+    "motorway_link",
+    "trunk",
+    "trunk_link",
+    "primary",
+    "primary_link",
+    "secondary",
+    "secondary_link",
+    "tertiary",
+    "tertiary_link",
+    "unclassified",
+    "residential",
+    "living_street",
+    "service",
+    "pedestrian",
+    "track",
+    "escape",
+    "raceway",
+    "other_roadway",
+    "footway",
+    "path",
+    "cycleway",
+    "bridleway"
+)
+roadwayIntersectionCategoriesSet = set(roadwayIntersectionCategories)
+
+railwayIntersectionCategories = (
+    "rail",
+    "subway",
+    "light_rail",
+    "tram",
+    "funicular",
+    "monorail",
+    "other_railway"
+)
+railwayIntersectionCategoriesSet = set(railwayIntersectionCategories)
+
+wayIntersectionCategories = roadwayIntersectionCategories + railwayIntersectionCategories
+
+allWayIntersectionCategoriesRank = dict(zip(wayIntersectionCategories, range(len(wayIntersectionCategories))))
 
 facadeVisibilityWayCategories = (
     "primary",

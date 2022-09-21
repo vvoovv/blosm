@@ -70,3 +70,13 @@ class Way:
         else:
             segments[0].prev = None
             segments[-1].next = None
+
+class Railway(Way):
+
+    def __init__(self, element, manager):
+        self.element = element
+        
+        railwayTag = element.tags.get("railway")
+        self.category = railwayTag if railwayTag in allRailwayCategoriesSet else "other_railway"
+        self.tunnel = "tunnel" in element.tags
+        self.bridge = "bridge" in element.tags
