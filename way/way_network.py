@@ -1,25 +1,29 @@
 from mathutils import Vector
 from functools import cmp_to_key
 from math import atan2, pi
+
 from defs.way import allRoadwayCategoriesRank
 
 PI2 = 2.*pi
 
-class NetSegment():
+class NetSection():
     ID = 0  # just used during debugging
 
     def __init__(self, *args):
-        self.ID = NetSegment.ID # just used during debugging
-        NetSegment.ID += 1      # just used during debugging
+        self.ID = NetSection.ID 
+        self.sectionId = self.ID
+        NetSection.ID += 1      
         if len(args) > 1:
             self.initFromDetails(*args)
         else:
             self.initFromOther(*args)
 
-    def initFromDetails(self, source, target, category, length=None, path=None):
+    def initFromDetails(self, source, target, category, tags, length=None, path=None):
         self.s = Vector(source).freeze()    # source node
         self.t = Vector(target).freeze()    # target node
+        self.forward = True
         self.category = category
+        self.tags = tags
         self.geomLength = (self.t-self.s).length
         if length:
             self.length = length
@@ -30,15 +34,22 @@ class NetSegment():
         else:
             self.path = [self.s,self.t]
         self.firstV = self.path[1]-self.path[0]  # vector of first way-segment in path
+        self.oneWay = 0
+        if self.tags and 'oneway' in self.tags:
+            if self.tags['oneway'] == 'true':
+                self.oneWay = 1
 
     def initFromOther(self, other):
         self.s = other.s    # source node
         self.t = other.t    # target node
+        self.forward = other.forward
         self.category = other.category
+        self.tags = other.tags
         self.geomLength = other.geomLength
         self.length = other.length
         self.path = other.path        # includes source and target
         self.firstV = other.firstV
+        self.oneWay = other.oneWay
 
     def join(self, segment):
         assert self.category == segment.category, "segment to join must have same category"
@@ -58,14 +69,16 @@ class NetSegment():
 
     def __invert__(self):
         # create segment with the reversed direction
-        return self.__class__(self.t, self.s, self.category, self.length, self.path[::-1])
+        rev = self.__class__(self.t, self.s, self.category, self.tags, self.length, self.path[::-1])
+        rev.oneWay = -self.oneWay
+        rev.forward = not self.forward
+        rev.sectionId = self.sectionId
+        return rev
     def __eq__(self, other):
         # comparison of segments (no duplicates allowed)
         return self.category == other.category and self.path == other.path
     def __hash__(self):
         return hash((self.s, self.t, self.length))
-
-
 
 class WayNetwork(dict):
     # undirected multigraph
@@ -104,13 +117,13 @@ class WayNetwork(dict):
                     oldSegment = segmentList[thisIndex]
                     if allRoadwayCategoriesRank[segment.category] < allRoadwayCategoriesRank[oldSegment.category]:
                         segmentList[thisIndex] = segment
-                        return
+                    return
 
         self.addNode(s)
         self.addNode(t)
         self[s].setdefault(t, list() ).append(segment)
-        if s != t:  # a loop is added only once
-            self[t].setdefault(s, list() ).append(~segment)
+        # if s != t:  # a loop is added only once
+        self[t].setdefault(s, list() ).append(~segment)
 
     def delSegment(self,segment):
         # remove a <segment> from the network
@@ -135,6 +148,9 @@ class WayNetwork(dict):
         # generator for all nodes from the network
         return iter(self)
 
+    def order(self,source):
+        return sum(1 for target in self[source] for segment in self[target][source])
+
     def iterInSegments(self, source):
         # generator for all in-segments from the network
         source = Vector(source).freeze()
@@ -158,8 +174,17 @@ class WayNetwork(dict):
         # generator for all segments from the network
         for source in self.iterNodes():
             for target in self[source]:
-                # if source > target: ??
+                # When source == target, we have a loop segment
+                if source <= target: 
                     for segment in self[source][target]:
+                        yield segment
+
+    def iterAllForwardSegments(self):
+        # generator for all segments from the network
+        for source in self.iterNodes():
+            for target in self[source]:
+                for segment in self[source][target]:
+                    if segment.forward:
                         yield segment
 
     def iterAllIntersectionNodes(self):
@@ -172,13 +197,22 @@ class WayNetwork(dict):
     def iterAlongWay(self,segment):
         # Generator for nodes that follow the way in the direction given by the
         # <segment>, until a crossing occurs, an end-point is reached or the 
-        # way-category changes. The first return is <segment>.
+        # way-type changes. The first return is <segment>.
+        def changedWayType(category1,category2,tags1,tags2):
+            if category1 != category2: return True
+            if tags1 and tags2: # category 'scene_border' has no tags
+                if tags1.get('lanes') != tags2.get('lanes'): return True
+                if tags1.get('oneway') != tags2.get('oneway'): return True
+                # if tags1.get('bridge') != tags2.get('bridge'): return True
+            return False
+
         firstCategory = segment.category
+        firstTags = segment.tags
         current = segment
         yield current
         while len(self[current.t]) == 2: # order of node == 2 -> no crossing or end-point
             current = [self[current.t][source] for source in self[current.t] if source != current.s][0][0]
-            if current.category != firstCategory:
+            if changedWayType(firstCategory,current.category,firstTags,current.tags):
                 break
             yield current
 
@@ -207,36 +241,52 @@ class WayNetwork(dict):
                 ordering = neighbors
             self.counterClockEmbedding[node] = ordering
 
-    def iterCycles(self):
+    def getCycles(self):
         if not self.counterClockEmbedding:
             self.createCircularEmbedding()
 
         # create set of all segments 
-        segmentSet = set( s for s in self.iterAllSegments() )
+        segmentSet = set(segment for segment in self.iterAllSegments())
 
-        cycles = []
+        cycleSegs = []
+        islandSegs = []
+        solitarySegs = []
         while (len(segmentSet) > 0):
             # start with a first segment
             s = next(iter(segmentSet))
-            path = [s]
+            segs = [s]
             segmentSet -= set([s])
             while True:
-                neighbors = self.counterClockEmbedding[path[-1].t]
-                nextSeg = neighbors[(neighbors.index(~path[-1])+1)%(len(neighbors))]
-                if nextSeg == path[0]:
-                    cycles.append(path)
+                neighbors = self.counterClockEmbedding[segs[-1].t]
+                nextSeg = neighbors[(neighbors.index(~segs[-1])+1)%(len(neighbors))]
+                if nextSeg == segs[0]:
+                    cycVerts = [v for s in segs for v in s.path[:-1] ] + [segs[0].s]
+                    area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(cycVerts,cycVerts[1:]+[cycVerts[0]])) 
+                    # Clockwise cycles are outer contours.
+                    if area < 0.:
+                            cycleSegs.append(segs)
+                    # Counter-clockwise cycles are from islands (holes).
+                    # Exception: the outer contour of the scene border
+                    elif area > 0.:
+                        if not all(s.category == 'scene_border' for s in segs):
+                            islandSegs.append(segs)
+                            # plotSimpleCycle(segs,'r')
+                    # These are solitary spurs or dead-end ways
+                    else:
+                        solitarySegs.append(segs)
+                        # plotSimpleCycle(segs,'b')
                     break
                 else:
-                    path.append(nextSeg)
+                    if nextSeg in segs:
+                        print('ERROR: Endless loop stopped in WayNetwork.getCycles(')
+                        break
+                    segs.append(nextSeg)
                     segmentSet -= set([nextSeg])
+        return cycleSegs, islandSegs, solitarySegs
 
-        for cycle in cycles:
-            plotCycle(cycle)
-
-        return cycles
-
+    
 # ------------------------------------------------------------------
-# this part is only used to temporary visualize the cycles
+# this part is only used to temporary visualize the cycles during development.
 from itertools import *
 import matplotlib.pyplot as plt
 def _iterCircularPrevNext(lst):
@@ -266,9 +316,43 @@ def plotCycle(cycle):
 
     x = [n[0] for n in scaledNodes]
     y = [n[1] for n in scaledNodes]
-    plt.fill(x,y,'#0000ff',alpha = 0.1,zorder = 50)
+    plt.fill(x,y,'#ff0000',alpha = 0.03,zorder = 500)
     for v1,v2 in _iterCircularPrevNext(scaledNodes):
-        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),'b:',alpha = 1.0,zorder = 50,linewidth=0.5)
+        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),'b:',alpha = 1.0,zorder = 500,linewidth=0.5)
+
+cCount = 0
+cColors = ['r','b','g']
+
+def plotSingleCycle(cycle):
+    global cCount,cColors
+    nodes = [n for s in cycle for n in s.path[:-1]]
+    x = [n[0] for n in nodes]
+    y = [n[1] for n in nodes]
+    plt.fill(x,y,'#ff0000',alpha = 0.03,zorder = 500)
+    color = cColors[cCount]
+    cCount +=1
+    for v1,v2 in _iterCircularPrevNext(nodes):
+        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),'r:',alpha = 1.0,zorder = 500,linewidth=1)
+    for wayseg in cycle:
+        x = (v1[0]+v2[0])/2
+        y = (v1[1]+v2[1])/2
+        plt.text(x,y,str(wayseg.ID))
+
+def plotSimpleCycle(cycle,color='k'):
+    nodes = [n for s in cycle for n in s.path[:-1]]
+    for v1,v2 in _iterCircularPrevNext(nodes):
+        plt.plot((v1[0], v2[0]),(v1[1], v2[1]),color,alpha = 1.0,zorder = 900,linewidth=2)
+    for i,wayseg in enumerate(cycle):
+        v1,v2 = wayseg.s,wayseg.t
+        x = (v1[0]+v2[0])/2
+        y = (v1[1]+v2[1])/2
+        # plt.text(x,y,str(wayseg.ID))
+        # plt.text(x,y,str(i))
+
+def plotEnd():
+    plt.gca().axis('equal')
+    plt.show()
+
 
 
 
