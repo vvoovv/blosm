@@ -1,0 +1,47 @@
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+2003-11-06
+
+Initial development of GEOS was funded by:
+
+  Vivid Solutions Inc (www.vividsolutions.com)
+  Refractions Research Inc (www.refractions.net)
+  British Columbia Advanced Systems Institute (www.asi.bc.ca)
+
+GEOS is based on algorithms originally developed in Java
+by Martin Davis (mbdavis@refractions.net) in the 
+JTS Topology Suite (www.vividsolutions.com/jts/jtshome.htm)
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+2004 to 2006 
+
+Continued development of GEOS funded by Refractions Research Inc.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+2006
+
+Continued development of GEOS funded by Refractions Research Inc.
+
+Inclusion of new JTS functionality in JTS 1.5 to 1.7 funded 
+by Safe Software and Autodesk.
+
+Improved robustness of geometric operations for GEOS 3.0.0 funded 
+by the Bavarian State Ministry of Agriculture and Forestry and the 
+State Survey of Bavaria.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Developers:
+  Active:
+  Martin Davis (mbdavis@refractions.net) - Architecture
+  Mateusz Loskot (mateusz@loskot.net) - Unit testing
+  Regina Obe (lr@pcorp.us) - QA / Windows
+  Paul Ramsey (pramsey@refractions.net) - Coordination / Build
+  Sandro Santilli (strk@kbt.io) - Bug Fixing / Maintenance
+  Frank Warmerdam (warmerdam@pobox.com) - VStudio porting
+
+  In Active:
+  Dave Blasby (dblasby@gmail.com) - PostGIS Connectivity
+  Yury Bychkov (me@yury.ca) - Initial Porting
+  Sean Gillies (sgillies@frii.com) - Scripting Interface
+  Fernando Villa (fvilla@zoo.uvm.edu) - GNU Build System
+  Norman Vine (nvine@cape.com) - Porting / C++ Expertise
+

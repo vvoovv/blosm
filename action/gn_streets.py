@@ -3,28 +3,38 @@ from mathutils import Vector
 
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
+from way.way_section import WaySection
+from way.way_intersections import Intersection
+from way.output_for_GN import WaySection_gn, IntersectionPoly_gn
 from defs.road_polygons import ExcludedWayTags
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.algorithms import SCClipper
-
-
 
 class StreetsForGN():
 
     def __init__(self):
         self.networkGraph = None
         self.sectionNetwork = None
+        self.waySections = dict()
+        self.intersections = dict()
+        self.intersectionAreas = []
+        self.waySectionLines = dict()
 
     def do(self,manager):
-        self.findSelfIntersections(manager)
+        self.useFillet = False
+        self.findSelfIntersections()
         self.createWaySectionNetwork()
-        pass
+        self.createWaySections()
+        self.createOutputForGN(self.useFillet)
 
-    def findSelfIntersections(self, manager):
+        self.debug = False
+        self.plotOutput()
+
+    def findSelfIntersections(self):
         wayManager = self.app.managersById["ways"]
 
         # some way tags to exclude, used also in createWaySectionNetwork(),
-        # should be moved to defs.
+        # ExcludedWayTags is defined in <defs>.
         uniqueSegments = defaultdict(set)
         for way in wayManager.getAllWays():
             if [tag for tag in ExcludedWayTags if tag in way.category]:
@@ -48,6 +58,7 @@ class StreetsForGN():
         clipper = SCClipper(minX,maxX,minY,maxY)
 
         wayManager = self.app.managersById["ways"]
+
         # Not really used. This is a relict from way_clustering.py
         wayManager.junctions = (
             [],#mainJunctions,
@@ -57,8 +68,8 @@ class StreetsForGN():
          # create full way network
         wayManager.networkGraph = self.networkGraph = WayNetwork()
 
-        # some way tags to exclude, used also in findSelfIntersections(),
-        # should be moved to defs.
+        # some way tags to exclude, used also in createWaySectionNetwork(),
+        # ExcludedWayTags is defined in <defs>.
         for way in wayManager.getAllIntersectionWays():
             # Exclude ways with unwanted tags
             if [tag for tag in ExcludedWayTags if tag in way.category]:
@@ -88,3 +99,91 @@ class StreetsForGN():
 
         # create way-section network
         wayManager.sectionNetwork = self.sectionNetwork = createSectionNetwork(wayManager.networkGraph)
+
+    def createWaySections(self):
+        for net_section in self.sectionNetwork.iterAllForwardSegments():
+            if net_section.category != 'scene_border':
+                section = WaySection(net_section)
+                self.waySections[net_section.sectionId] = section
+
+    def createOutputForGN(self, useFillet):
+        for node in self.sectionNetwork:
+            intersection = Intersection(node, self.sectionNetwork, self.waySections)
+            self.intersections[node] = intersection
+
+        # Transitions have to be processed first, because way widths may be altered.
+        for node,intersection in self.intersections.items():
+            if intersection.order == 2:
+                polygon, connectors = intersection.findTransitionPoly()
+                if polygon:
+                    isectArea = IntersectionPoly_gn()
+                    isectArea.polygon = polygon
+                    isectArea.connectors = connectors
+                    self.intersectionAreas.append(isectArea)
+
+        # Now, the normal intersection areas are constructed
+        for node,intersection in self.intersections.items():
+            if intersection.order > 2:
+                if self.useFillet:
+                    polygon, connectors = intersection.intersectionPoly()
+                else:
+                    polygon, connectors = intersection.intersectionPoly_noFillet()
+                if polygon:
+                    isectArea = IntersectionPoly_gn()
+                    isectArea.polygon = polygon
+                    isectArea.connectors = connectors
+                    self.intersectionAreas.append(isectArea)
+
+        # Finally, the trimmed centerlines of the was are constructed
+        for sectionNr,section in self.waySections.items():
+            waySlice = None
+            if section.trimT > section.trimS:
+                waySlice = section.polyline.trimmed(section.trimS,section.trimT)
+                section_gn = WaySection_gn()
+                section_gn.centerline = waySlice.verts
+                section_gn.category = section.originalSection.category
+                section_gn.endWidths = section_gn.startWidths = (section.leftWidth, section.rightWidth)
+                section_gn.tags = section.originalSection.tags
+                if section.turnParams:
+                    section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
+                self.waySectionLines[section.id] = section_gn
+
+    def plotOutput(self):
+        for isectArea in self.intersectionAreas:
+            plotPolygon(isectArea.polygon,False,'r','r',2,True)
+            if self.debug:
+                for id, connector in isectArea.connectors.items():
+                    p = isectArea.polygon[connector[0]]
+                    plt.text(p[0],p[1],str(id)+' '+connector[1])
+
+        for sectionNr,section_gn in self.waySectionLines.items():
+            if self.debug:
+                plotWay(section_gn.centerline,True,'b',2.)
+                center = sum(section_gn.centerline,Vector((0,0)))/len(section_gn.centerline)
+                plt.text(center[0],center[1],str(sectionNr),zorder=120)
+            else:
+                plotWay(section_gn.centerline,False,'b',2.)
+
+
+import matplotlib.pyplot as plt
+def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
+    x = [n[0] for n in poly] + [poly[0][0]]
+    y = [n[1] for n in poly] + [poly[0][1]]
+    if fill:
+        plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
+    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
+    if vertsOrder:
+        for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
+            plt.text(xx,yy,str(i),fontsize=12)
+
+def plotWay(way,vertsOrder,lineColor='k',width=1.,order=100):
+    x = [n[0] for n in way]
+    y = [n[1] for n in way]
+    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
+    if vertsOrder:
+        for i,(xx,yy) in enumerate(zip(x,y)):
+            plt.text(xx,yy,str(i),fontsize=12)
+
+def plotEnd():
+    plt.gca().axis('equal')
+    plt.show()

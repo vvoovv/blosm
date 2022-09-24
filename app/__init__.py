@@ -143,7 +143,7 @@ class BaseApp:
             module = imp.load_module(moduleName, _file, _pathname, _description)
             _file.close()
             return module.setup
-        except Exception:
+        except Exception as e:
             raise Exception(
                 "Unable to execute the setup script! See the error message in the Blender console!"
             )
