@@ -27,6 +27,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--restoreFeatures", action='store_true', help="Restore simplified features", default=False)
     app.argParserExtra.add_argument("--wayClustering", action='store_true', help="Create way clusters", default=False)
     app.argParserExtra.add_argument("--simplifyPolygonsAgain", action='store_true', help="Restore the features and simplify the polygons again", default=False)
+    app.argParserExtra.add_argument("--generateStreets", action='store_true', help="Generate and show streets and intersections", default=False)
     
     # parse the newly added command line arguments
     app.parseArgs()
@@ -43,6 +44,8 @@ def setup(app, osm):
     restoreFeatures = getattr(app, "restoreFeatures", False)
     
     simplifyPolygonsAgain = getattr(app, "simplifyPolygonsAgain", False)
+    
+    generateStreets = getattr(app, "generateStreets", False)
     
     
     setup = Setup(app, osm)
@@ -92,7 +95,13 @@ def setup(app, osm):
     
     if app.highways or app.railways:
         setup.skipWays()
-        wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))
+        if generateStreets:
+            from action.gn_streets import StreetsForGN
+            from mpl.renderer.road_polygons import RoadPolygonsRenderer
+            wayManager.addAction(StreetsForGN())
+            wayManager.addRenderer(RoadPolygonsRenderer())
+        else:
+            wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))
     
     if app.highways:
         setup.roadsAndPaths()
