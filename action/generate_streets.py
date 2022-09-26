@@ -10,6 +10,7 @@ from defs.road_polygons import ExcludedWayTags
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.algorithms import SCClipper
 
+
 class StreetGenerator():
 
     def __init__(self):
@@ -20,7 +21,8 @@ class StreetGenerator():
         self.intersectionAreas = []
         self.waySectionLines = dict()
 
-    def do(self,manager):
+    def do(self, manager):
+        self.wayManager = manager
         self.useFillet = False
         self.findSelfIntersections()
         self.createWaySectionNetwork()
@@ -31,12 +33,10 @@ class StreetGenerator():
         self.plotOutput()
 
     def findSelfIntersections(self):
-        wayManager = self.app.managersById["ways"]
-
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
         uniqueSegments = defaultdict(set)
-        for way in wayManager.getAllWays():
+        for way in self.wayManager.getAllWays():
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
             for segment in way.segments:
@@ -50,6 +50,7 @@ class StreetGenerator():
 
     # Creates the network graph <self.sectionNetwork> for way-sctions (ways between crossings)
     def createWaySectionNetwork(self):
+        wayManager = self.wayManager
         # get border polygon (ounter-clockwise) of scene frame
         minX, minY = self.app.projection.fromGeographic(self.app.minLat, self.app.minLon)
         maxX, maxY = self.app.projection.fromGeographic(self.app.maxLat, self.app.maxLon)
@@ -57,15 +58,13 @@ class StreetGenerator():
         # prepare clipper for this frame
         clipper = SCClipper(minX,maxX,minY,maxY)
 
-        wayManager = self.app.managersById["ways"]
-
         # Not really used. This is a relict from way_clustering.py
         wayManager.junctions = (
             [],#mainJunctions,
             []#smallJunctions
         )
 
-         # create full way network
+        # create full way network
         wayManager.networkGraph = self.networkGraph = WayNetwork()
 
         # some way tags to exclude, used also in createWaySectionNetwork(),
