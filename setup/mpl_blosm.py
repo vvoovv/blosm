@@ -96,9 +96,9 @@ def setup(app, osm):
     if app.highways or app.railways:
         setup.skipWays()
         if generateStreets:
-            from action.gn_streets import StreetsForGN
+            from action.generate_streets import StreetGenerator
             from mpl.renderer.road_polygons import RoadPolygonsRenderer
-            wayManager.addAction(StreetsForGN())
+            wayManager.addAction(StreetGenerator())
             wayManager.addRenderer(RoadPolygonsRenderer())
         else:
             wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))

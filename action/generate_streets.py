@@ -1,4 +1,4 @@
-from collections import defaultdict, deque
+from collections import defaultdict
 from mathutils import Vector
 
 from way.way_network import WayNetwork, NetSection
@@ -10,7 +10,7 @@ from defs.road_polygons import ExcludedWayTags
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.algorithms import SCClipper
 
-class StreetsForGN():
+class StreetGenerator():
 
     def __init__(self):
         self.networkGraph = None
