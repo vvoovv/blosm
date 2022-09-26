@@ -74,7 +74,7 @@ def estimateWayWidth(category,tags):
     if lanes:
         return lanes * wayCategoryProps[category]['lane'] * localScale
 
-    oneWay = 0.5 if isOneWay else 1.
+    oneWay = 0.5 if isOneWay(tags) and category != 'pedestrian' else 1.
     return wayCategoryProps[category]['default'] * oneWay * localScale
 
 def estFilletRadius(category,tags):
