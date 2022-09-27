@@ -288,7 +288,6 @@ class WayNetwork(dict):
 # ------------------------------------------------------------------
 # this part is only used to temporary visualize the cycles during development.
 from itertools import *
-import matplotlib.pyplot as plt
 def _iterCircularPrevNext(lst):
     prevs, nexts = tee(lst)
     prevs = islice(cycle(prevs), len(lst) - 1, None)
@@ -301,6 +300,7 @@ def _iterCircularPrevThisNext(lst):
     return zip(prevs, this, nexts)
 
 def plotCycle(cycle):
+    import matplotlib.pyplot as plt
     nodes = [n for s in cycle for n in s.path[:-1]]
 
     scaledNodes = []
@@ -324,6 +324,7 @@ cCount = 0
 cColors = ['r','b','g']
 
 def plotSingleCycle(cycle):
+    import matplotlib.pyplot as plt
     global cCount,cColors
     nodes = [n for s in cycle for n in s.path[:-1]]
     x = [n[0] for n in nodes]
@@ -339,6 +340,7 @@ def plotSingleCycle(cycle):
         plt.text(x,y,str(wayseg.ID))
 
 def plotSimpleCycle(cycle,color='k'):
+    import matplotlib.pyplot as plt
     nodes = [n for s in cycle for n in s.path[:-1]]
     for v1,v2 in _iterCircularPrevNext(nodes):
         plt.plot((v1[0], v2[0]),(v1[1], v2[1]),color,alpha = 1.0,zorder = 900,linewidth=2)
@@ -350,9 +352,6 @@ def plotSimpleCycle(cycle,color='k'):
         # plt.text(x,y,str(i))
 
 def plotEnd():
+    import matplotlib.pyplot as plt
     plt.gca().axis('equal')
     plt.show()
-
-
-
-

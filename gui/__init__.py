@@ -375,6 +375,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             box = layout.box()
             box.box().prop(addon, "buildings")
             
+            box.box().prop(addon, "highways")
+            box.box().prop(addon, "railways")
+            
             box = box.box()
             box.prop(addon, "forests", text="Import forests and separate trees")
             if addon.forests:
