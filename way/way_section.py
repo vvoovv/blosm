@@ -1,7 +1,6 @@
 from lib.CompGeom.PolyLine import PolyLine
 from way.way_properties import estimateWayWidth, getLanes
 
-import matplotlib.pyplot as plt
 
 class WaySection():
     ID = 0

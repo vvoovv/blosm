@@ -164,8 +164,8 @@ class StreetGenerator():
                 plotWay(section_gn.centerline,False,'b',2.)
 
 
-import matplotlib.pyplot as plt
 def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
+    import matplotlib.pyplot as plt
     x = [n[0] for n in poly] + [poly[0][0]]
     y = [n[1] for n in poly] + [poly[0][1]]
     if fill:
@@ -176,6 +176,7 @@ def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,
             plt.text(xx,yy,str(i),fontsize=12)
 
 def plotWay(way,vertsOrder,lineColor='k',width=1.,order=100):
+    import matplotlib.pyplot as plt
     x = [n[0] for n in way]
     y = [n[1] for n in way]
     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
@@ -184,5 +185,6 @@ def plotWay(way,vertsOrder,lineColor='k',width=1.,order=100):
             plt.text(xx,yy,str(i),fontsize=12)
 
 def plotEnd():
+    import matplotlib.pyplot as plt
     plt.gca().axis('equal')
     plt.show()

@@ -1,9 +1,6 @@
 from collections import deque
 import heapq
-from itertools import combinations
-from scipy.spatial import cKDTree 
 from way.way_network import WayNetwork, NetSection
-import matplotlib.pyplot as plt
 
 class PriorityQueue:
     def __init__(self):

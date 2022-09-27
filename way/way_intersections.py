@@ -2,14 +2,13 @@ from math import sin, cos, atan2, pi, sqrt, floor
 from operator import xor
 from mathutils import Vector
 from itertools import tee,islice, cycle
-from itertools import cycle
 from lib.CompGeom.PolyLine import PolyLine
 from way.way_properties import estFilletRadius
-import matplotlib.pyplot as plt
+
 
 # helper functions -----------------------------------------------
 def pairs(iterable):
-	# s -> (s0,s1), (s1,s2), (s2, s3), ...
+    # s -> (s0,s1), (s1,s2), (s2, s3), ...
     p1, p2 = tee(iterable)
     next(p2, None)
     return zip(p1,p2)
@@ -165,6 +164,7 @@ class Intersection():
                 continue
             iP,_,_,_,_ = isectParams
             if doDebug:
+                import matplotlib.pyplot as plt
                 plt.plot(iP[0],iP[1],'mx',markersize=10)
 
             # The line parameters of the intersection may be different from the line parameter of
@@ -270,6 +270,7 @@ class Intersection():
                 continue
             iP,tL,tR,uVL,uVR = isectParams
             if doDebug:
+                import matplotlib.pyplot as plt
                 plt.plot(iP[0],iP[1],'mx',markersize=10)
 
             # Now, the fillet of this intersection gets constructed.
@@ -609,6 +610,7 @@ class IntersectionCluster():
         doDebug = False
 
         if doDebug:
+            import matplotlib.pyplot as plt
             x = [n[0] for n in self.clusterPoly] + [self.clusterPoly[0][0]]
             y = [n[1] for n in self.clusterPoly] + [self.clusterPoly[0][1]]
             plt.plot(x,y,'k:',linewidth=1,zorder=999)

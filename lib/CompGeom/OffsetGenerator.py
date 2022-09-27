@@ -2,8 +2,6 @@ from itertools import tee
 from math import isclose, pi, sin, cos, atan2
 from mathutils import Vector
 
-import matplotlib.pyplot as plt
-
 # Simplified from
 # Xu-Zheng Liu, Jun-Hai Yong, Guo-Qin Zheng, Jia-Guang Sun.
 # An offset algorithm for polyline curves.

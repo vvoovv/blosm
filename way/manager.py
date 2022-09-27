@@ -67,6 +67,9 @@ class WayManager:
         for renderer in self.renderers:
             renderer.render(self, self.data)
     
+    def renderExtra(self):
+        return
+    
     def addAction(self, action):
         action.app = self.app
         self.actions.append(action)
@@ -134,17 +137,11 @@ class RoadPolygonsManager:
         return
     
     def render(self):
-        RoadPolygonsRenderer().render(self)
-
-
-from mpl.renderer import Renderer
-class RoadPolygonsRenderer(Renderer):
-    """
-    A temporary class
-    """
-    def render(self, manager):
+        """
+        A temporary function for rendering the results in matplotlib
+        """
         ax = self.mpl.ax
-        for polyline in manager.polylines:
+        for polyline in self.polylines:
             lineStyle, areaColor = self.getStyles(polyline.element)
             if lineStyle:
                 for edge in polyline.edges:
@@ -161,6 +158,9 @@ class RoadPolygonsRenderer(Renderer):
                 )
     
     def getStyles(self, element):
+        """
+        A temporary function for rendering the results in matplotlib
+        """
         tags = element.tags
         if "building" in tags:
             return ( dict(color="#c2b5aa", linewidth=1.), "#d9d0c9" )

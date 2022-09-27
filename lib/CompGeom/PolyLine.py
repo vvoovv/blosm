@@ -33,15 +33,14 @@ from mathutils import Vector
 from itertools import tee, accumulate, product
 import numpy as np
 from bisect import bisect_left
-from math import floor,ceil
-import matplotlib.pyplot as plt
+from math import floor
 
 from lib.pygeos.shared import Coordinate
 from lib.CompGeom.OffsetGenerator import OffsetGenerator
 
 # helper functions -----------------------------------------------
 def pairs(iterable):
-	# s -> (s0,s1), (s1,s2), (s2, s3), ...
+    # s -> (s0,s1), (s1,s2), (s2, s3), ...
     p1, p2 = tee(iterable)
     next(p2, None)
     return zip(p1,p2)
@@ -238,7 +237,7 @@ class PolyLine():
         for p1,p2 in pairs(self.verts[self.view]):
             edgeVector = p2-p1
             t = (p-p1).dot(edgeVector)/edgeVector.dot(edgeVector)
-            r = self.t2v(t+edgeNr)
+            #r = self.t2v(t+edgeNr)
             if  0. <= t < 1.:
                 passedEnd = False
                 break
@@ -393,7 +392,7 @@ class PolyLine():
         return offVerts
 
     def parabolicBuffer(self,leftW,rightW,leftD,rightD ):
-        p = self.verts[0]
+        #p = self.verts[0]
         # plt.plot(p[0],p[1],'ro',markersize=10,zorder=950)
         offsetter = OffsetGenerator()
         if leftD != 0.:
@@ -410,8 +409,8 @@ class PolyLine():
         return offsetPoly
 
     def plot(self,color):
+        import matplotlib.pyplot as plt
         for v1,v2 in pairs(self.verts[self.view]):
             plt.plot([v1.x,v2.x],[v1.y,v2.y],color)
             plt.plot(v1.x,v1.y,'k.')
             plt.plot(v2.x,v2.y,'k.')
-
