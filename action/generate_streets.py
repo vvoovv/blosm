@@ -5,14 +5,35 @@ from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
 from way.way_intersections import Intersection
-from way.output_for_GN import WaySection_gn, IntersectionPoly_gn
 from defs.road_polygons import ExcludedWayTags
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.algorithms import SCClipper
+from lib.CompGeom.BoolPolyOps import boolPolyOp
 
+class TrimmedWaySection():
+    def __init__(self):
+        self.centerline = None      # The trimmed centerline in forward direction (first vertex is start.
+                                    # and last is end). A Python list of vertices of type mathutils.Vector.
+        self.category = None        # The category of the way-section.
+        self.startWidths = None     # The left and right width at its start, seen relative to the direction
+                                    # of the centerline. A tuple of floats.
+        self.endWidths = None       # The left and right width at its end, seen relative to the direction
+                                    # of the centerline. A tuple of floats.
+        self.tags = None            # The OSM tags of the way-section.
+
+class IntersectionArea():
+    def __init__(self):
+        self.polygon = None         # The vertices of the polygon in counter-clockwise order. A Python
+                                    # list of vertices of type mathutils.Vector.
+        self.connectors = dict()    # The connectors (class Connector_gn) of this polygon to the way-sections.
+                                    # A dictionary of tuples, where the key is the ID of the corresponding
+                                    # way-section key in the dictionary of TrimmedWaySection. The tuple has two
+                                    # elements, <indx> and <end>. <indx> is the first index in the intersection
+                                    # polygon for this connector, the second index is <indx>+1. <end> is
+                                    # the type 'S' for the start or 'E' for the end of the TrimmedWaySection
+                                    # connected here.
 
 class StreetGenerator():
-
     def __init__(self):
         self.networkGraph = None
         self.sectionNetwork = None
@@ -27,7 +48,7 @@ class StreetGenerator():
         self.findSelfIntersections()
         self.createWaySectionNetwork()
         self.createWaySections()
-        self.createOutputForGN(self.useFillet)
+        self.createOutput()
 
         self.debug = False
         self.plotOutput()
@@ -105,19 +126,22 @@ class StreetGenerator():
                 section = WaySection(net_section)
                 self.waySections[net_section.sectionId] = section
 
-    def createOutputForGN(self, useFillet):
+    def createOutput(self):
         for node in self.sectionNetwork:
             intersection = Intersection(node, self.sectionNetwork, self.waySections)
             self.intersections[node] = intersection
 
+        
+        node2isectArea = dict()
         # Transitions have to be processed first, because way widths may be altered.
         for node,intersection in self.intersections.items():
             if intersection.order == 2:
                 polygon, connectors = intersection.findTransitionPoly()
                 if polygon:
-                    isectArea = IntersectionPoly_gn()
+                    isectArea = IntersectionArea()
                     isectArea.polygon = polygon
                     isectArea.connectors = connectors
+                    node2isectArea[node] = len(self.intersectionAreas)
                     self.intersectionAreas.append(isectArea)
 
         # Now, the normal intersection areas are constructed
@@ -128,17 +152,87 @@ class StreetGenerator():
                 else:
                     polygon, connectors = intersection.intersectionPoly_noFillet()
                 if polygon:
-                    isectArea = IntersectionPoly_gn()
+                    isectArea = IntersectionArea()
                     isectArea.polygon = polygon
                     isectArea.connectors = connectors
+                    node2isectArea[node] = len(self.intersectionAreas)
                     self.intersectionAreas.append(isectArea)
+
+        # Find conflicting intersection areas from over-trimmed way-sections
+        from lib.CompGeom.GraphBasedAlgos import DisjointSets
+        conflictingSets = DisjointSets()
+        for sectionNr,section in self.waySections.items():
+            if section.trimT <= section.trimS:
+                if section.originalSection.s not in node2isectArea or section.originalSection.t not in node2isectArea:
+                    continue
+                indxS = node2isectArea[section.originalSection.s] # index of isectArea at source
+                indxT = node2isectArea[section.originalSection.t] # index of isectArea at target
+                conflictingSets.addSegment(indxS,indxT)
+
+        # merge conficting intersection areas
+        # adapted from:
+        # https://stackoverflow.com/questions/7150766/union-of-many-more-than-two-polygons-without-holes
+        conflictingAreasIndcs = []
+        mergedAreas = []
+        for conflicting in conflictingSets:
+            conflictingAreasIndcs.extend(conflicting)
+            waiting = conflicting.copy()  # indices of unprocessed conflicting areas
+            merged = []                   # indices of processed (merged) conflicting areas
+            while waiting:
+                p = waiting.pop()
+                merged.append(p)
+                mergedPoly = self.intersectionAreas[p].polygon
+                changed = True
+                while changed:
+                    changed = False
+                    for q in waiting:
+                        for s in merged:
+                            if q in conflictingSets.G[s]: # True, if areas s and q conflict (intersect)
+                                waiting.remove(q)
+                                changed = True
+                                try:
+                                    ret = boolPolyOp(mergedPoly,self.intersectionAreas[q].polygon,'union')
+                                except:
+                                    break
+                                mergedPoly = ret[0]
+                                merged.append(q)
+                                break
+
+            # The merged poygon is now in <mergedPoly>. Be sure that it 
+            # is ordered counter-clockwise.
+            area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(mergedPoly,mergedPoly[1:]+[mergedPoly[0]]))
+            if area > 0.:
+                mergedPoly.reverse()
+
+            # An instance of IntersectionArea is now constrcuted with
+            # its remaining connectors.
+            mergedArea = IntersectionArea()
+            mergedArea.polygon = mergedPoly
+            for indx in conflicting:
+                conflictingArea = self.intersectionAreas[indx]
+                connectors = conflictingArea.connectors
+                for key,connector in connectors.items():
+                    # vertices of this connector
+                    v0 = conflictingArea.polygon[connector[0]]
+                    v1 = conflictingArea.polygon[connector[0]+1]
+                    # if both vertices of the connector are still here,
+                    # the connector has survived.
+                    if v0 in mergedPoly and v1 in mergedPoly:
+                        newConnector = (mergedPoly.index(v0),connector[1])
+                        mergedArea.connectors[key] = newConnector
+            mergedAreas.append(mergedArea)
+
+        # Now remove conflicting areas from list and add the merged areas
+        for i in sorted(conflictingAreasIndcs, reverse = True):
+                del self.intersectionAreas[i]
+        self.intersectionAreas.extend(mergedAreas)
 
         # Finally, the trimmed centerlines of the was are constructed
         for sectionNr,section in self.waySections.items():
             waySlice = None
             if section.trimT > section.trimS:
                 waySlice = section.polyline.trimmed(section.trimS,section.trimT)
-                section_gn = WaySection_gn()
+                section_gn = TrimmedWaySection()
                 section_gn.centerline = waySlice.verts
                 section_gn.category = section.originalSection.category
                 section_gn.endWidths = section_gn.startWidths = (section.leftWidth, section.rightWidth)
@@ -146,8 +240,13 @@ class StreetGenerator():
                 if section.turnParams:
                     section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
                 self.waySectionLines[section.id] = section_gn
+            # else:
+            #     # already treated as reason for conflicting areas
+            #     plotWay(section.polyline.verts,False,'c',2,999)
+
 
     def plotOutput(self):
+        import matplotlib.pyplot as plt
         for isectArea in self.intersectionAreas:
             plotPolygon(isectArea.polygon,False,'r','r',2,True)
             if self.debug:

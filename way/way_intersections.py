@@ -375,7 +375,6 @@ class Intersection():
                 # Use only the trim point.
                 polygon.append(pL)
 
-
             # The same procedure is then done for the right border of the centerline <way2>
             pR = way2.polyline.offsetPointAt(t2,way2.rightW)
             if filletVerts:
@@ -515,7 +514,7 @@ def filletLine(o, tp1, tp2, radius):
     # choose angle increment so that each segment has equal length
     ainc = atot / nSegs
 
-    acurr = 0.
+    acurr = ainc
     # pt = Coordinate()
     while acurr < atot:
         a = a1 + acurr
@@ -523,7 +522,8 @@ def filletLine(o, tp1, tp2, radius):
         vertList.append(pt)
         acurr += ainc
 
-    vertList.append(tp1)
+    if (tp1-vertList[-1]).length > 0.5:
+        vertList.append(tp1)
     vertList.reverse()
     return vertList
 

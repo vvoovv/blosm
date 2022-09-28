@@ -35,7 +35,7 @@ import numpy as np
 from bisect import bisect_left
 from math import floor
 
-from lib.pygeos.shared import Coordinate
+# from lib.pygeos.shared import Coordinate
 from lib.CompGeom.OffsetGenerator import OffsetGenerator
 
 # helper functions -----------------------------------------------
@@ -85,8 +85,8 @@ class PolyLine():
         self.verts = None
         if isinstance(vertList[0],Vector):
             self.verts = vertList
-        elif isinstance(vertList[0],Coordinate):
-            self.verts = [Vector((v.x,v.x)) for v in vertList]
+        # elif isinstance(vertList[0],Coordinate):
+        #     self.verts = [Vector((v.x,v.x)) for v in vertList]
         elif isinstance(vertList[0],tuple):
             self.verts = [Vector(v) for v in vertList]
         else:
@@ -159,6 +159,9 @@ class PolyLine():
     def lengthOfSegment(self,i):
         # Returns the length of the ith segment of the line
         assert i<len(self.verts)+1
+        # if i<0:
+        #     return (self.verts[1]-self.verts[0]).length * abs(i)
+        # else:
         return (self.verts[i+1]-self.verts[i]).length
 
     def unitVectors(self):
@@ -409,7 +412,7 @@ class PolyLine():
         return offsetPoly
 
     def plot(self,color):
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt        
         for v1,v2 in pairs(self.verts[self.view]):
             plt.plot([v1.x,v2.x],[v1.y,v2.y],color)
             plt.plot(v1.x,v1.y,'k.')
