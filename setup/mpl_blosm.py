@@ -97,7 +97,9 @@ def setup(app, osm):
         setup.skipWays()
         if generateStreets:
             from action.generate_streets import StreetGenerator
+            from mpl.renderer.streets import StreetRenderer
             wayManager.addAction(StreetGenerator())
+            wayManager.addRenderer(StreetRenderer(debug=False))
         else:
             wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))
     

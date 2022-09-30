@@ -1,5 +1,4 @@
 from . import Way, Railway
-from defs.base.polyline import Polyline
 from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories
 
 
@@ -21,6 +20,11 @@ class WayManager:
         self.renderers = []
         
         self.actions = []
+        
+        # <self.intersectionAreas> and <self.waySectionLines> are used for realistic rendering of streets
+        self.intersectionAreas = []
+        # street sections
+        self.waySectionLines = dict()
         
         # <self.networkGraph>, <self.waySectionGraph> and <self.junctions> are set in an action,
         # for example <action.way_clustering.Way>
