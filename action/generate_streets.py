@@ -249,7 +249,4 @@ class StreetGenerator():
                 self.waySectionLines[section.id] = section_gn
             # else:
             #     # already treated as reason for conflicting areas
-<<<<<<< HEAD
-            #     plotWay(section.polyline.verts,False,'c',2,999)
-=======
             #     plotWay(section.polyline.verts,False,'c',2,999)
