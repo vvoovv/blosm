@@ -289,7 +289,7 @@ class PolyLine():
         d1, d2 = p2-p1, p4-p3
         cross = d1.cross(d2)
         dot = d1.dot(d2)
-        if abs(cross/dot) < limTan: # tangent of ~1°, almost parallel
+        if dot and abs(cross/dot) < limTan: # tangent of ~1°, almost parallel
             return None
         d3 = p1-p3
         t1 = (d2[0]*d3[1] - d2[1]*d3[0])/cross

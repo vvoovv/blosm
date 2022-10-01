@@ -15,6 +15,9 @@ class TrimmedWaySection():
         self.centerline = None      # The trimmed centerline in forward direction (first vertex is start.
                                     # and last is end). A Python list of vertices of type mathutils.Vector.
         self.category = None        # The category of the way-section.
+        self.nrOfLanes = None       # The left and right number of lanes, seen relative to the direction
+                                    # of the centerline. A tuple of integers. For one-way streets, only one
+                                    # integer with the number of lanes is in the tuple.
         self.startWidths = None     # The left and right width at its start, seen relative to the direction
                                     # of the centerline. A tuple of floats.
         self.endWidths = None       # The left and right width at its end, seen relative to the direction
@@ -130,7 +133,7 @@ class StreetGenerator():
             intersection = Intersection(node, self.sectionNetwork, self.waySections)
             self.intersections[node] = intersection
 
-        
+
         node2isectArea = dict()
         # Transitions have to be processed first, because way widths may be altered.
         for node,intersection in self.intersections.items():
@@ -192,6 +195,7 @@ class StreetGenerator():
                                 try:
                                     ret = boolPolyOp(mergedPoly,self.intersectionAreas[q].polygon,'union')
                                 except:
+                                    print('Problem')
                                     break
                                 mergedPoly = ret[0]
                                 merged.append(q)
@@ -234,6 +238,10 @@ class StreetGenerator():
                 section_gn = TrimmedWaySection()
                 section_gn.centerline = waySlice.verts
                 section_gn.category = section.originalSection.category
+                if section.isOneWay:
+                    section_gn.nrOfLanes = (section.nrRightLanes)
+                else:
+                    section_gn.nrOfLanes = (section.nrLeftLanes, section.nrRightLanes)
                 section_gn.endWidths = section_gn.startWidths = (section.leftWidth, section.rightWidth)
                 section_gn.tags = section.originalSection.tags
                 if section.turnParams:
@@ -241,4 +249,7 @@ class StreetGenerator():
                 self.waySectionLines[section.id] = section_gn
             # else:
             #     # already treated as reason for conflicting areas
+<<<<<<< HEAD
+            #     plotWay(section.polyline.verts,False,'c',2,999)
+=======
             #     plotWay(section.polyline.verts,False,'c',2,999)

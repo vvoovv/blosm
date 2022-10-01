@@ -1,5 +1,5 @@
 from lib.CompGeom.PolyLine import PolyLine
-from way.way_properties import estimateWayWidth, getLanes
+from way.way_properties import estimateWayWidth, getLanes, isOneWay
 
 
 class WaySection():
@@ -17,6 +17,18 @@ class WaySection():
         self.turnParams = None  # parameters for turning lanes
         self.isValid = True
         WaySection.ID += 1
+        self.isOneWay = isOneWay(self.originalSection.tags)
+        nrOfLanes = getLanes(self.originalSection.tags)
+        if nrOfLanes:
+            if self.isOneWay:
+                self.nrLeftLanes = 0
+                self.nrRightLanes = nrOfLanes
+            else:
+                self.nrLeftLanes = nrOfLanes//2
+                self.nrRightLanes = nrOfLanes//2
+        else:
+            self.nrLeftLanes = 1
+            self.nrRightLanes = 1
         self.processTurnLanes()
 
     @property
@@ -54,6 +66,9 @@ class WaySection():
                     halfSymLaneWidth = laneWidth*(nrOfLanes - leftTurnLanes - rightTurnLanes)/2
                     self.leftWidth = halfSymLaneWidth + leftTurnLanes * laneWidth
                     self.rightWidth = halfSymLaneWidth + rightTurnLanes * laneWidth
+                    if not self.isOneWay:
+                        self.nrLeftLanes += leftTurnLanes - rightTurnLanes
+                        self.nrRightLanes += rightTurnLanes - leftTurnLanes
             else:
                 self.leftWidth = width/2.
                 self.rightWidth = width/2.
