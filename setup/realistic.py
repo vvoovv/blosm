@@ -24,7 +24,7 @@ def setup(app, osm):
         from way.renderer_streets import StreetRenderer
         wayManager = setup.getWayManager()
         wayManager.addAction(StreetGenerator())
-        wayManager.addRenderer(StreetRenderer())
+        wayManager.addRenderer(StreetRenderer(app))
     
         if app.highways:
             setup.roadsAndPaths()

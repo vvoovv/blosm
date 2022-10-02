@@ -66,7 +66,7 @@ class RealisticBuildingLayer(BuildingLayer):
             self.attributeValuesGn.clear()
             
             # create a modifier for the Geometry Nodes setup
-            m = objGn.modifiers.new("", "NODES")
+            m = objGn.modifiers.new("Buildings", "NODES")
             m.node_group = globalRenderer.gnBuilding
             # <mAttributes> have the form like: 
             # [
