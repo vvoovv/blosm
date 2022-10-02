@@ -113,7 +113,7 @@ class Intersection():
         for node in positions:
             for net_section in network.iterOutSegments(node):
                 if net_section.category != 'scene_border':
-                    waySections[net_section.sectionId].polyline.plot('k')
+                    #waySections[net_section.sectionId].polyline.plot('k')
                     if net_section.s not in positions or net_section.t not in positions:
                         waySection = waySections[net_section.sectionId]
                         if waySection.isValid:
