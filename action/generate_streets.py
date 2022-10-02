@@ -9,6 +9,7 @@ from defs.road_polygons import ExcludedWayTags
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.algorithms import SCClipper
 from lib.CompGeom.BoolPolyOps import boolPolyOp
+from lib.CompGeom.GraphBasedAlgos import DisjointSets
 
 class TrimmedWaySection():
     def __init__(self):
@@ -129,10 +130,28 @@ class StreetGenerator():
                 self.waySections[net_section.sectionId] = section
 
     def createOutput(self):
+        # Find first nodes that will produce conflicting intersections
+        conflictingNodes = DisjointSets()
         for node in self.sectionNetwork:
             intersection = Intersection(node, self.sectionNetwork, self.waySections)
-            self.intersections[node] = intersection
+            conflictNodes = intersection.checkForConflicts()
+            if conflictNodes:
+               for conflict in conflictNodes:
+                    conflictingNodes.addSegment(node,conflict)
+                    # import matplotlib.pyplot as plt
+                    # plt.plot(conflict[0],conflict[1],'co',markersize=10,zorder=999)
+                    # plt.plot(node[0],node[1],'mx',markersize=15,zorder=999)
 
+        # Create intersections from nodes, that did not produce conflicts
+        for node in self.sectionNetwork:
+            if node not in conflictingNodes.G:
+                intersection = Intersection(node, self.sectionNetwork, self.waySections)
+                self.intersections[node] = intersection
+
+        # Create Intersections from conflicting nodes
+        for conflictingCluster in conflictingNodes:
+            intersection = Intersection(conflictingCluster, self.sectionNetwork, self.waySections)
+            self.intersections[intersection.position.freeze()] = intersection
 
         node2isectArea = dict()
         # Transitions have to be processed first, because way widths may be altered.
@@ -161,7 +180,6 @@ class StreetGenerator():
                     self.intersectionAreas.append(isectArea)
 
         # Find conflicting intersection areas from over-trimmed way-sections
-        from lib.CompGeom.GraphBasedAlgos import DisjointSets
         conflictingSets = DisjointSets()
         for sectionNr,section in self.waySections.items():
             if section.trimT <= section.trimS:

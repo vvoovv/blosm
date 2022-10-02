@@ -1,10 +1,12 @@
 from mathutils import Vector
 import matplotlib.pyplot as plt
+from . import Renderer
 
 
-class StreetRenderer:
+class StreetRenderer(Renderer):
     
     def __init__(self, debug):
+        super().__init__()
         self.debug = debug
     
     def prepare(self):
@@ -25,6 +27,7 @@ class StreetRenderer:
                 plt.text(center[0],center[1],str(sectionNr),zorder=120)
             else:
                 plotWay(section_gn.centerline,False,'b',2.)
+
 
 
 def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):

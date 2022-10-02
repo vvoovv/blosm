@@ -326,7 +326,7 @@ class PolyLine():
             # only between first segments.
             iP, t1, t2 = isect
             if (i1,i2) == (0,0): 
-                if t1 > 1. or t2 > 1.:
+                if t1 > 2. or t2 > 2.:
                     continue # out of segment
             else:
                 if t1 < 0. or t1 > 1. or t2 < 0. or t2 > 1.:
@@ -411,9 +411,9 @@ class PolyLine():
         offsetPoly = PolyLine(offsetVerts)
         return offsetPoly
 
-    def plot(self,color):
+    def plot(self,color,width=1):
         import matplotlib.pyplot as plt        
         for v1,v2 in pairs(self.verts[self.view]):
-            plt.plot([v1.x,v2.x],[v1.y,v2.y],color)
+            plt.plot([v1.x,v2.x],[v1.y,v2.y],color,linewidth=width)
             plt.plot(v1.x,v1.y,'k.')
             plt.plot(v2.x,v2.y,'k.')

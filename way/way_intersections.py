@@ -5,6 +5,17 @@ from itertools import tee,islice, cycle
 from lib.CompGeom.PolyLine import PolyLine
 from way.way_properties import estFilletRadius
 
+# import matplotlib.pyplot as plt
+# def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
+#     x = [n[0] for n in poly] + [poly[0][0]]
+#     y = [n[1] for n in poly] + [poly[0][1]]
+#     if fill:
+#         plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
+#     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
+#     if vertsOrder:
+#         for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
+#             plt.text(xx,yy,str(i),fontsize=12)
+
 
 # helper functions -----------------------------------------------
 def pairs(iterable):
@@ -73,7 +84,13 @@ class OutgoingWay():
             self.section.trimT = len(self.polyline)-1 - trim
 
 class Intersection():
-    def __init__(self, position, network, waySections):
+    def __init__(self, *args):
+        if isinstance(args[0],Vector):
+            self.initFromNode(args[0], args[1], args[2])
+        else:
+            self.initFromConflictingNodes(args[0], args[1], args[2])
+
+    def initFromNode(self, position, network, waySections):
         self.position = position
         self.outWays = []
         self.order = 0
@@ -82,8 +99,54 @@ class Intersection():
             if net_section.category != 'scene_border':
                 if waySections[net_section.sectionId].isValid:
                     self.addSection( position, waySections[net_section.sectionId] )
+        self.sortSections(self.position)
 
-        self.sortSections()
+    def initFromConflictingNodes(self, positions, network, waySections):
+        self.position = sum( (v for v in positions),Vector((0.,0.)) )/len(positions)
+        self.outWays = []
+        self.order = 0
+
+        # plt.subplot(1,2,1)
+        # for p in positions:
+        #     plt.plot(p[0],p[1],'co',markersize=10)
+        # plt.plot(self.position[0],self.position[1],'cx',markersize=6)
+        for node in positions:
+            for net_section in network.iterOutSegments(node):
+                if net_section.category != 'scene_border':
+                    waySections[net_section.sectionId].polyline.plot('k')
+                    if net_section.s not in positions or net_section.t not in positions:
+                        waySection = waySections[net_section.sectionId]
+                        if waySection.isValid:
+                            if waySection.isLoop:
+                                self.outWays.append( OutgoingWay(waySection,True))
+                                self.outWays.append( OutgoingWay(waySection,False))
+                                self.order += 2
+                            else:
+                                if node == waySection.originalSection.s:
+                                    self.outWays.append( OutgoingWay(waySection,True))
+                                else:
+                                    self.outWays.append( OutgoingWay(waySection,False))
+                                self.order += 1
+
+            def sort_key(outway):
+                vec = outway.polyline[-1] - self.position
+                length = vec.length
+                angle = atan2(vec.y,vec.x)
+                if angle < 0:
+                    return 2*pi+angle, length
+                else:
+                    return angle, length
+            self.outWays= sorted(self.outWays, key = sort_key)
+
+        # poly,_ = self.intersectionPoly_noFillet()
+        # for i,outway in enumerate(self.outWays):
+        #     outway.polyline.plot('k')
+        # # plotPolygon(poly,False,'c','k',3)
+
+        # import matplotlib.pyplot as plt
+        # plt.gca().axis('equal')
+        # plt.show()
+
 
     def addSection(self, position, waySection):
         # The polyline of the outgoing way of the intersection in <self.outWays> starts
@@ -103,12 +166,12 @@ class Intersection():
                 self.outWays.append( OutgoingWay(waySection,False))
             self.order += 1
 
-    def sortSections(self):
+    def sortSections(self,position):
     # Sort the outgoing ways in <self.outWays> first by their angle in counter-clockwise order
     # around their start positions and then by the distance of their
     # end-point from this position.
         def sort_key(outway):
-            vec = outway.polyline[-1] - self.position
+            vec = outway.polyline[-1] - position
             length = vec.length
             angle = atan2(vec.y,vec.x)
             if angle < 0:
@@ -116,9 +179,51 @@ class Intersection():
             else:
                 return angle, length
         self.outWays = sorted(self.outWays, key = sort_key)
+
+        # import matplotlib.pyplot as plt
         # for i,outway in enumerate(self.outWays):
+        #     outway.polyline.plot('k')
         #     p = outway.polyline[-1]
         #     plt.text(p[0],p[1],str(i),fontsize=12)
+        # plt.gca().axis('equal')
+        # plt.show()
+
+    def checkForConflicts(self):
+        conflictingNodes = []
+        for (indx1, indx2), (way1,way2) in zip(cyclePair(range(self.order)),cyclePair(self.outWays)):
+            # <way1> and <way2> are consecutive outgoing polylines in counter-clockwise order of the
+            # intersection. These are the centerlines of the way-sections, <way1> is to the right
+            # (clockwise) of <way2>.
+
+            # Compute the left border <borderL> of the way-section given by way1 and the 
+            # right border <borderR> of the way-section given by way2.
+            # For way-loops, the forward and backward polyline is in expected consecutive order
+            # in <self.outWayLines>. For way-loops, a parallel offset can't be computed
+            # correctly, therefore, only their first segments are used.
+            if way1.section.isLoop and way2.section.isLoop:
+                trimmed1 = PolyLine(way1.polyline[:2])
+                trimmed2 = PolyLine(way2.polyline[:2])
+                borderL = trimmed1.parallelOffset(way1.leftW)
+                borderR = trimmed2.parallelOffset(way2.rightW)
+            else:
+                borderL = way1.polyline.parallelOffset(way1.leftW)
+                borderR = way2.polyline.parallelOffset(way2.rightW)
+
+            # Find the intersection between the left border <borderL> of <way1> 
+            # and the right border <borderR> of <way2>.
+            # In <isectParams>, <iP> is the intersection point, <tL> and <tR> are the
+            # line parameters of the intersection point (see PolyLine.py) for the 
+            # left and the right border. <uVL> and <uVR> are the unit vectors of the intersecting
+            # segments.
+            isectParams = PolyLine.intersection(borderL,borderR)
+            if isectParams:
+                _,tL,tR,_,_ = isectParams
+                if tL > len(borderL.verts)-1:
+                    conflictingNodes.append(way1.section.originalSection.t if way1.fwd else way1.section.originalSection.s)
+                if tR > len(borderR.verts)-1:
+                    conflictingNodes.append(way2.section.originalSection.t if way2.fwd else way2.section.originalSection.s)
+
+        return conflictingNodes
 
     def intersectionPoly_noFillet(self):
         tmax = [0.]*self.order  # List of maximum line parameters of the projections of the intersection
