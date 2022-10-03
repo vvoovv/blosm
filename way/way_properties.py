@@ -37,6 +37,12 @@ wayCategoryProps = {
     "other_railway":    {'default':  3, 'lane': 3.5, 'radius':  1},
 }
 
+# The way width of the following categories is not halved when
+# tagged as one-way.
+keepWidthIfOneWay = (
+    'pedestrian','track','footway','path','cycleway', 
+)
+
 intNum   = re.compile('\d*\d+')
 floatNum = re.compile('\d*\.?\d+')
 alphaNum = re.compile('[A-Za-z]*[A-Za-z]+')
@@ -74,7 +80,7 @@ def estimateWayWidth(category,tags):
     if lanes:
         return lanes * wayCategoryProps[category]['lane'] * localScale
 
-    oneWay = 0.5 if isOneWay(tags) and category != 'pedestrian' else 1.
+    oneWay = 0.5 if isOneWay(tags) and category not in keepWidthIfOneWay else 1.
     return wayCategoryProps[category]['default'] * oneWay * localScale
 
 def estFilletRadius(category,tags):
