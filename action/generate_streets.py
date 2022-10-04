@@ -169,7 +169,13 @@ class StreetGenerator():
         for node,intersection in self.intersections.items():
             if intersection.order > 2:
                 if self.useFillet:
-                    polygon, connectors = intersection.intersectionPoly()
+                    polygon = None
+                    try:
+                        polygon, connectors = intersection.intersectionPoly()
+                    except:
+                        pass
+                        # import matplotlib.pyplot as plt
+                        # plt.plot(node[0],node[1],'co',markersize=5,zorder=999)
                 else:
                     polygon, connectors = intersection.intersectionPoly_noFillet()
                 if polygon:
