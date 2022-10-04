@@ -168,8 +168,8 @@ class StreetGenerator():
         # Now, the normal intersection areas are constructed
         for node,intersection in self.intersections.items():
             if intersection.order > 2:
+                polygon = None
                 if self.useFillet:
-                    polygon = None
                     try:
                         polygon, connectors = intersection.intersectionPoly()
                     except:
@@ -177,7 +177,10 @@ class StreetGenerator():
                         # import matplotlib.pyplot as plt
                         # plt.plot(node[0],node[1],'co',markersize=5,zorder=999)
                 else:
-                    polygon, connectors = intersection.intersectionPoly_noFillet()
+                    try:
+                        polygon, connectors = intersection.intersectionPoly_noFillet()
+                    except:
+                        pass
                 if polygon:
                     isectArea = IntersectionArea()
                     isectArea.polygon = polygon
