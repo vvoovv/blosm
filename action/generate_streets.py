@@ -50,7 +50,7 @@ class StreetGenerator():
         self.intersectionAreas = manager.intersectionAreas
         self.waySectionLines = manager.waySectionLines
         
-        self.useFillet = False
+        self.useFillet = True
         self.findSelfIntersections()
         self.createWaySectionNetwork()
         self.createWaySections()
