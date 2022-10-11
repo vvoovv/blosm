@@ -24,10 +24,12 @@ class StreetRenderer:
         )
         
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
-        _gnName = "blosm_gn_street_no_terrain"
+        _gnNameStreet = "blosm_gn_street_no_terrain"
+        _gnNameLamps = "blosm_street_lamps"
         node_groups = bpy.data.node_groups
-        if _gnName in node_groups:
-            self.gnStreet = node_groups[_gnName]
+        if _gnNameStreet in node_groups:
+            self.gnStreet = node_groups[_gnNameStreet]
+            self.gnLamps = node_groups[_gnNameLamps]
         else:
             #
             # TEMPORARY CODE
@@ -35,8 +37,8 @@ class StreetRenderer:
             # load the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" from
             # the file <parent_directory of_<self.app.baseAssetPath>/prochitecture_carriageway_with_sidewalks.blend>
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_carriageway_with_sidewalks.blend")) as (_, data_to):
-                data_to.node_groups = [_gnName]
-            self.gnStreet = data_to.node_groups[0]
+                data_to.node_groups = [_gnNameStreet, _gnNameLamps]
+            self.gnStreet, self.gnLamps = data_to.node_groups
     
     def render(self, manager, data):
         self.renderStreetSections(manager)
@@ -64,6 +66,11 @@ class StreetRenderer:
             m["Input_26"] = 2.5
             m["Input_9"] = self.getMaterial("blosm_carriageway")
             m["Input_24"] = self.getMaterial("blosm_sidewalk")
+            m["Input_28"] = self.getMaterial("blosm_zebra")
+            
+            m = obj.modifiers.new("Street Lamps", "NODES")
+            m.node_group = self.gnLamps
+            m["Input_26"] = 10.
 
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
