@@ -50,7 +50,7 @@ class StreetGenerator():
         self.intersectionAreas = manager.intersectionAreas
         self.waySectionLines = manager.waySectionLines
         
-        self.useFillet = True
+        self.useFillet = False
         self.findSelfIntersections()
         self.createWaySectionNetwork()
         self.createWaySections()
@@ -252,12 +252,19 @@ class StreetGenerator():
                         mergedArea.connectors[key] = newConnector
             mergedAreas.append(mergedArea)
 
+            # avoid a connector to reach over polygon end point index
+            mc = max(c[0] for c in mergedArea.connectors.values())
+            if mc >= len(mergedArea.polygon)-1:
+                mergedArea.polygon = mergedArea.polygon[1:] + mergedArea.polygon[:1]
+                for key,connector in mergedArea.connectors.items():
+                    mergedArea.connectors[key] = (connector[0]-1,connector[1])
+
         # Now remove conflicting areas from list and add the merged areas
         for i in sorted(conflictingAreasIndcs, reverse = True):
                 del self.intersectionAreas[i]
         self.intersectionAreas.extend(mergedAreas)
 
-        # Finally, the trimmed centerlines of the was are constructed
+        # Finally, the trimmed centerlines of the ways are constructed
         for sectionNr,section in self.waySections.items():
             waySlice = None
             if section.trimT > section.trimS:

@@ -499,6 +499,23 @@ class Intersection():
         # an outgoing way. They have to be processed before the other intersections,
         # because way widths may be altered due to turning lanes.
         way1, way2 = self.outWays
+
+        # Check angle between these ways. If it is larger than about 20°, just create common
+        # intersection area. The vectors of the first segments are used.
+        vec1 = way1.section.sV if way1.fwd else way1.section.tV
+        vec1 /= vec1.length # make unit vector
+        vec2 = way2.section.sV if way2.fwd else way2.section.tV
+        vec2 /= vec2.length # make unit vector
+
+        if vec1.dot(vec2) > 0.5:
+            polygon = None
+            connectors = None
+            try:
+                polygon, connectors = self.intersectionPoly_noFillet()
+            except:
+                print('Problem in findTransitionPoly)')
+            return polygon, connectors
+
         outWay, inWay = (way1, way2) if way1.fwd else (way2, way1)
         inTags, outTags = inWay.section.originalSection.tags, outWay.section.originalSection.tags
 
