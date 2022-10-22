@@ -520,12 +520,15 @@ class Intersection():
         inTags, outTags = inWay.section.originalSection.tags, outWay.section.originalSection.tags
 
         # Do we have turn lanes? They are only possible in the outLine.
-        if 'turn:lanes' in outTags:
+        # ******* turn lanes curently switche off
+        if False:# 'turn:lanes' in outTags:
             # There is no transition polygon required. The outgoing way section
             # becomes eventually a turning lane.
             laneDescs = outTags['turn:lanes'].split('|')
-            leftTurnLanes = sum(1 for tag in laneDescs if 'left' in tag)
-            rightTurnLanes = sum(1 for tag in laneDescs if 'right' in tag)
+            leftTurns = ['left','slight_left','sharp_left']
+            rightTurns = ['right','slight_right','sharp_right']
+            leftTurnLanes = sum(1 for tag in laneDescs if any(x in tag for x in leftTurns) )
+            rightTurnLanes = sum(1 for tag in laneDescs if any(x in tag for x in rightTurns) )
             if leftTurnLanes or rightTurnLanes:
                 leftWidthDifference = outWay.section.leftWidth - inWay.section.leftWidth
                 rightWidthDifference = outWay.section.rightWidth - inWay.section.rightWidth

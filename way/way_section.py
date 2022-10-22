@@ -4,7 +4,8 @@ from way.way_properties import estimateWayWidth, getLanes, isOneWay
 
 class WaySection():
     ID = 0
-    def __init__(self,net_section):
+    def __init__(self,net_section,network):
+        self.network = network
         self.originalSection = net_section
         self.rightWidth = self.leftWidth = estimateWayWidth(net_section.category,net_section.tags)/2.
         self.polyline = PolyLine(net_section.path)
@@ -55,20 +56,27 @@ class WaySection():
         if 'turn:lanes' in tags:
             nrOfLanes = getLanes(tags)
             if nrOfLanes:
-                laneWidth = width/nrOfLanes
                 laneDescs = tags['turn:lanes'].split('|')
-                leftTurnLanes = sum(1 for tag in laneDescs if 'left' in tag)
-                rightTurnLanes = sum(1 for tag in laneDescs if 'right' in tag)
-                if leftTurnLanes == rightTurnLanes:
+                leftTurns = ['left','slight_left','sharp_left']
+                rightTurns = ['right','slight_right','sharp_right']
+                leftTurnLanes = sum(1 for tag in laneDescs if any(x in tag for x in leftTurns) )
+                rightTurnLanes = sum(1 for tag in laneDescs if any(x in tag for x in rightTurns) )
+                # ******* turn lanes curently switche off
+                if True:#leftTurnLanes == rightTurnLanes:
                     self.leftWidth = width/2.
                     self.rightWidth = width/2.
                 else:
-                    halfSymLaneWidth = laneWidth*(nrOfLanes - leftTurnLanes - rightTurnLanes)/2
-                    self.leftWidth = halfSymLaneWidth + leftTurnLanes * laneWidth
-                    self.rightWidth = halfSymLaneWidth + rightTurnLanes * laneWidth
-                    if not self.isOneWay:
-                        self.nrLeftLanes += leftTurnLanes - rightTurnLanes
-                        self.nrRightLanes += rightTurnLanes - leftTurnLanes
+                    if self.network.borderlessOrder(self.polyline[0]) == 2:
+                        laneWidth = width/nrOfLanes
+                        halfSymLaneWidth = laneWidth*(nrOfLanes - leftTurnLanes - rightTurnLanes)/2
+                        self.leftWidth = halfSymLaneWidth + leftTurnLanes * laneWidth
+                        self.rightWidth = halfSymLaneWidth + rightTurnLanes * laneWidth
+                        if not self.isOneWay:
+                            self.nrLeftLanes += leftTurnLanes - rightTurnLanes
+                            self.nrRightLanes += rightTurnLanes - leftTurnLanes
+                    else:
+                        self.leftWidth = width/2.
+                        self.rightWidth = width/2.
             else:
                 self.leftWidth = width/2.
                 self.rightWidth = width/2.

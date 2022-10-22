@@ -126,7 +126,7 @@ class StreetGenerator():
     def createWaySections(self):
         for net_section in self.sectionNetwork.iterAllForwardSegments():
             if net_section.category != 'scene_border':
-                section = WaySection(net_section)
+                section = WaySection(net_section,self.sectionNetwork)
                 self.waySections[net_section.sectionId] = section
 
     def createOutput(self):

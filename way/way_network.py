@@ -151,6 +151,9 @@ class WayNetwork(dict):
     def order(self,source):
         return sum(1 for target in self[source] for segment in self[target][source])
 
+    def borderlessOrder(self,source):
+        return sum(1 for target in self[source] for segment in self[target][source] if segment.category != 'scene_border')
+
     def iterInSegments(self, source):
         # generator for all in-segments from the network
         source = Vector(source).freeze()

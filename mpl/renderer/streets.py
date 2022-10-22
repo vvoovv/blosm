@@ -27,6 +27,11 @@ class StreetRenderer(Renderer):
                 plt.text(center[0],center[1],str(sectionNr),zorder=120)
             else:
                 plotWay(section_gn.centerline,False,'b',2.)
+                from lib.CompGeom.PolyLine import PolyLine
+                polyline = PolyLine(section_gn.centerline)
+                lW,rW = section_gn.startWidths if len(section_gn.startWidths)==2 else (section_gn.startWidths[0]/2.,section_gn.startWidths[0]/2.)
+                buffer = polyline.buffer(lW,rW)
+                plotPolygon(buffer,False,'k','b',1,True,0.1)
 
 
 
