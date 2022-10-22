@@ -172,6 +172,16 @@ def loadNodeGroupsFromFile(filepath, *names):
         ]
 
 
+def appendNodeGroupFromFile(filepath, name):
+    """
+    Appends node groups with <name> from the .blend file with the given <filepath>.
+    """
+    with bpy.data.libraries.load(filepath) as (_, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.node_groups>
+        data_to.node_groups = [name]
+    return data_to.node_groups[0]
+
+
 def loadTextFromFile(filepath, name):
     """
     Loads a Blender text with the given <name> from the .blend file with the given <filepath>
@@ -291,3 +301,11 @@ def loadImage(fileName, directory):
         except Exception:
             print("Unable to load the image %s" % imagePath)
     return image
+
+
+def useAttributeForGnInput(modifier, inputId, attributeName):
+    # Set "_use_attribute" to 1 to use geometry attributes instead of
+    # using manually entered input values
+    modifier[inputId + "_use_attribute"] = 1
+    # set "_attribute_name" to the related mesh attribute of the Blender object
+    modifier[inputId + "_attribute_name"] = attributeName

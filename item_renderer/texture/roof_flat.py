@@ -15,6 +15,19 @@ class RoofFlat(ItemRendererTexture):
             self.renderClass(roofItem, cl, face, None)
         else:
             self.renderCladding(roofItem, face, None)
+
+        if self.app.preferMesh:
+            area = face.calc_area()
+            # set attributes
+            roofItem.building.element.l.attributeValuesFlatRoof.append((
+                False, # triangulate
+                # subdivide_level
+                0 if area <= 50. else (
+                    1 if 50. < area <= 500. else (
+                        2 if 500. < area < 2000. else 3
+                    )
+                )
+            ))
     
     def setCladdingUvs(self, roofItem, face, claddingTextureInfo, uvs):
         textureWidthM = claddingTextureInfo["textureWidthM"]

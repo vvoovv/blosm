@@ -49,7 +49,13 @@ class RoofFlat(Roof):
         z = footprint.minHeight
         verts.extend(Vector((v[0], v[1], z)) for v in polygon.verts)
         # verts for the upper cap
-        z = footprint.roofVerticalPosition if self.extrudeTillRoof else footprint.height
+        if self.extrudeTillRoof:
+            z = footprint.roofVerticalPosition
+        elif self.roofRenderer.app.preferMesh:
+            roofOffset = roofItem.getStyleBlockAttr("roofOffset")
+            z = footprint.height - roofOffset if roofOffset else footprint.height
+        else:
+            z = footprint.height
         verts.extend(Vector((v[0], v[1], z)) for v in polygon.verts)
         
         vectors = polygon.getVectors()

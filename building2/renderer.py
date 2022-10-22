@@ -1,3 +1,5 @@
+import os
+
 import bpy
 from renderer import Renderer
 from .layer import BuildingLayer
@@ -23,6 +25,8 @@ from item.roof_generatrix import RoofGeneratrix
 from item.roof_hipped import RoofHipped
 from item.roof_hipped_multi import RoofHippedMulti
 from item.roof_side import RoofSide
+
+from util.blender import appendNodeGroupFromFile
 
 _itemClasses = (
         Building,
@@ -113,15 +117,17 @@ class BuildingRendererNew(Renderer):
             # check if the Geometry Nodes setup with the name "blosm_gn_building" is already available
             _gnName, _gnCollection = "blosm_gn_building", "Collection Info"
             node_groups = bpy.data.node_groups
-            if _gnName in node_groups and _gnCollection in node_groups[_gnName].nodes:
-                self.gnBuilding = node_groups[_gnName]
-            else:
-                # load the Geometry Nodes setup with the name "blosm_gn_building" from <self.app.baseAssetPath>
-                with bpy.data.libraries.load(self.app.baseAssetPath) as (_, data_to):
-                    data_to.node_groups = [_gnName]
-                self.gnBuilding = data_to.node_groups[0]
+            self.gnBuilding = node_groups[_gnName]\
+                if _gnName in node_groups and _gnCollection in node_groups[_gnName].nodes else\
+                appendNodeGroupFromFile(self.app.baseAssetPath, _gnName)
             # set the input of <self.gnBuilding.nodes[_gnCollection]> to <self.buildingAssetsCollection>
             self.gnBuilding.nodes[_gnCollection].inputs['Collection'].default_value = self.buildingAssetsCollection
+            
+            # a TEMPORARY code below to load the Geometry Nodes setup for flat roofs
+            self.gnFlatRoof = appendNodeGroupFromFile(
+                os.path.join(os.path.dirname(self.app.baseAssetPath), "flat_roof_objects.blend"),
+                "blosm_flat_roof_objects"
+            )
         
         if self.app.singleObject:
             for layer in self.app.layers:

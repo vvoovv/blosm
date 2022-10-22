@@ -3,7 +3,7 @@ from operator import attrgetter
 from building.layer import BuildingLayer
 
 from renderer import Renderer
-from util.blender import getBmesh, setBmesh
+from util.blender import getBmesh, setBmesh, useAttributeForGnInput
 
 
 class RealisticBuildingLayer(BuildingLayer):
@@ -29,6 +29,18 @@ class RealisticBuildingLayer(BuildingLayer):
         # the Blender object(s) <self.objGnExtra>.
         # <self.objGnExtra> could be a single Blender object or a list of Blender objects
         self.objGnExtra = None
+
+    def prepare(self):
+        # below is the TEMPORARY oode to place roof objects on float roofs
+        
+        if self.app.preferMesh:
+            # create attributes for the Geometry Nodes
+            objGnMesh = self.obj.data
+            # an asset index in Blender collection <globalRenderer.buildingAssetsCollection>
+            objGnMesh.attributes.new("triangulate", 'BOOLEAN', 'FACE')
+            objGnMesh.attributes.new("subdivide_level", 'INT', 'FACE')
+        
+        super().prepare()
     
     def finalize(self, globalRenderer):
         super().finalize()
@@ -61,7 +73,7 @@ class RealisticBuildingLayer(BuildingLayer):
             for index, (objName, _unitVector, scaleX, scaleZ) in enumerate(self.attributeValuesGn):
                 assetIndex[index].value = objNameToIndex[objName]
                 unitVector[index].vector = _unitVector
-                scale[index].vector = (scaleX, 1., scaleZ)
+                scale[index].vector = (scaleX, scaleX, scaleZ)
             
             self.attributeValuesGn.clear()
             
@@ -75,11 +87,24 @@ class RealisticBuildingLayer(BuildingLayer):
             # ]
             mAttributes = list(m.keys())
             for i1,i2 in zip( range(0, len(mAttributes), 3), range(len(mAttributes)//3) ):
-                # Set "_use_attribute" to 1 to use geometry attributes instead of
-                # using manually entered input values
-                m[mAttributes[i1]+"_use_attribute"] = 1
-                # set "_attribute_name" to the related mesh attribute of <objGn>
-                m[mAttributes[i1]+"_attribute_name"] = gnMeshAttributes[i2]
+                useAttributeForGnInput(m, mAttributes[i1], gnMeshAttributes[i2])
+            
+            # TEMPORARY code below to place objects on flat roofs
+            # set attributes
+            for index, (triangulate, subdivide_level) in enumerate(self.attributeValuesFlatRoof):
+                self.obj.data.attributes["triangulate"].data[index].value = triangulate
+                self.obj.data.attributes["subdivide_level"].data[index].value = subdivide_level
+            self.attributeValuesFlatRoof.clear()
+            # create a modifier for the Geometry Nodes setup
+            m = self.obj.modifiers.new("Objects on flat roofs", "NODES")
+            m.node_group = globalRenderer.gnFlatRoof
+            # triangulate
+            useAttributeForGnInput(m, "Input_10", "triangulate")
+            # The parameter <free_area_factor>: the probability that an area will be deleted in
+            # the Geometry-Nodes-setup and therefore will not host a flat roof object
+            m["Input_11"] = 0.2
+            # subdivide_level
+            useAttributeForGnInput(m, "Input_12", "subdivide_level")
 
 
 class RealisticBuildingLayerBase(RealisticBuildingLayer):
@@ -113,6 +138,8 @@ class RealisticBuildingLayerBase(RealisticBuildingLayer):
             )
             
             self.attributeValuesGn = []
+            
+            self.attributeValuesFlatRoof = []
             
             self.bmGn = getBmesh(self.objGn)
 

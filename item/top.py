@@ -4,7 +4,7 @@ from .container import Container
 class Top(Container):
     
     def __init__(self, parent, styleBlock):
-        super().__init__(parent, parent, styleBlock)
+        super().__init__(parent, parent.footprint, parent.facade, styleBlock)
         self.buildingPart = "top"
     
     def getLevelRenderer(self, levelGroup, itemRenderers):
