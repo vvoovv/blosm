@@ -30,7 +30,7 @@
 # ----------------------------------------------------------------
 
 from mathutils import Vector
-from itertools import tee, accumulate, product
+from itertools import tee, islice, cycle, accumulate, product
 import numpy as np
 from bisect import bisect_left
 from math import floor
@@ -44,6 +44,11 @@ def pairs(iterable):
     p1, p2 = tee(iterable)
     next(p2, None)
     return zip(p1,p2)
+
+def cyclePairs(lst):
+    prevs, nexts = tee(lst)
+    prevs = islice(cycle(prevs), len(lst) - 1, None)
+    return zip(prevs,nexts)
 
 class LinearInterpolator():
     def __init__(self, x, y):
@@ -371,6 +376,34 @@ class PolyLine():
         offsetVerts = offsetL + offsetR
         offsetPoly = PolyLine(offsetVerts)
         return offsetPoly
+
+    def bufferPoly(self,dist, resolution=8):
+        # Interprets the polyline as polygon and expands it by <dist> if 
+        # dist is poisitve or shrinks it when dist is negative.
+        # This solution is a hack and will maybe not work for all polygons !!!
+
+        assert len(self.verts) > 3, 'does not work for triangles'
+        verts = self.verts[self.view]
+
+         # adapt if polygon has clockwise order
+        if sum( v1.cross(v2) for v1,v2 in cyclePairs(verts) ) < 0.:
+            dist = -dist
+
+        # split polyline at longest edge
+        lengths = [(v2-v1).length for v1,v2 in cyclePairs(verts)]
+        longIndx = lengths.index(max(lengths))
+        verts = verts[longIndx:] + verts[:longIndx]
+
+        # offset polyline
+        offsetter = OffsetGenerator(resolution)
+        offset = offsetter.parallel_offset(verts,-dist)
+
+        # create and offset cap
+        cap = verts[-2:] + verts[:2]
+        offsetCap = offsetter.parallel_offset(cap,-dist)
+
+        # combine both and return
+        return offset[1:-1] + offsetCap[1:-1]
 
     def parabolicOffset(self,dist,delta,nrPoints = 30):
         # Prepare transform of segment lengths along polyline to line parameters <t>
