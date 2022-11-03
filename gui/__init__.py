@@ -452,7 +452,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             layout.box().prop(addon, "singleObject")
             
-            if addon.singleObject:
+            if addon.mode == "2D" and addon.singleObject:
                 box = layout.box()
                 row = box.row()
                 row.label(text="[Geometry Nodes]:")
@@ -460,7 +460,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
                 box.prop(addon, "gnBlendFile2d", text="File")
                 box.prop(addon, "gnSetup2d", text="Name")
                 
-                if addon.gnSetup2d:
+                if addon.gnSetup2d != '-':
                     self._drawDefaultLevels(box, addon)
             
             layout.box().prop(addon, "ignoreGeoreferencing")
