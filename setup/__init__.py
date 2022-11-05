@@ -144,7 +144,7 @@ class Setup:
         self.osm.addCondition(
             lambda tags, e: tags.get("railway") in ("rail", "tram", "subway", "light_rail", "funicular", "monorail"),
             "railways",
-            self.getWayManager()
+            self.getWayManager().getRailwayManager()
         )
     
     def getFeatureDetectionAction(self, simplifyPolygons):
