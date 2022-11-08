@@ -46,7 +46,7 @@ class Way:
         # A carriageway may contain tram tracks. The related OSM-way may contain
         # both the tag <highway> and <railway=tram>
         self.railway = "railway" in element.tags
-        if self.railway: print(self.railway)
+        # if self.railway: print(self.railway)
     
     def init(self, manager):
         data = manager.data
