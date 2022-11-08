@@ -33,7 +33,7 @@ class WaySegment:
 
 class Way:
     
-    __slots__ = ("element", "category", "segments", "numSegments", "tunnel", "bridge")
+    __slots__ = ("element", "category", "segments", "numSegments", "tunnel", "bridge", "railway")
     
     def __init__(self, element, manager):
         self.element = element
@@ -42,6 +42,11 @@ class Way:
         self.category = highwayTag if highwayTag in allRoadwayCategoriesSet else "other"
         self.tunnel = "tunnel" in element.tags
         self.bridge = "bridge" in element.tags
+        
+        # A carriageway may contain tram tracks. The related OSM-way may contain
+        # both the tag <highway> and <railway=tram>
+        self.railway = "railway" in element.tags
+        if self.railway: print(self.railway)
     
     def init(self, manager):
         data = manager.data
@@ -80,3 +85,5 @@ class Railway(Way):
         self.category = railwayTag if railwayTag in allRailwayCategoriesSet else "other_railway"
         self.tunnel = "tunnel" in element.tags
         self.bridge = "bridge" in element.tags
+        # <self.railway> is needed for the consistency with the parent class <Way>
+        self.railway = True
