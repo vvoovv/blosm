@@ -197,6 +197,21 @@ class WayNetwork(dict):
             if len(self[source]) != 2: # order of node != 2
                 yield source
 
+    def iterAllChangeWayTypeNodes(self):
+        # iterator for all nodes that form an type change
+        for source in self.iterNodes():
+            if len(self[source]) == 2: # order of node != 2
+                # for target in self[source]:
+                segments = [segment for target in self[source] for segment in self[source][target]]
+                if segments[0].category != segments[1].category:
+                    yield source
+                if segments[0].tags and segments[1].tags: # category 'scene_border' has no tags
+                    if segments[0].tags.get('lanes') != segments[1].tags.get('lanes'):
+                        yield source
+                    if segments[0].tags.get('oneway') != segments[1].tags.get('oneway'):
+                        yield source
+
+
     def iterAlongWay(self,segment):
         # Generator for nodes that follow the way in the direction given by the
         # <segment>, until a crossing occurs, an end-point is reached or the 
