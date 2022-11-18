@@ -128,6 +128,32 @@ smallRoads = (
     "cycleway"
 )
 
+# aAll roads used by motorized vehicles
+vecicleRoadsCategories = (
+    "motorway",
+    "motorway_link",
+    "trunk",
+    "trunk_link",
+    "primary",
+    "primary_link",
+    "secondary",
+    "secondary_link",
+    "tertiary",
+    "tertiary_link",
+    "unclassified",
+    "residential",
+    "living_street",
+    "service",
+    "rail",
+    "subway",
+    "light_rail",
+    "tram",
+    "funicular",
+    "monorail",
+    "other_railway",
+)
+vecicleRoadsCategoriesSet = set(vecicleRoadsCategories)
+
 
 class Category:
     __slots__ = tuple()

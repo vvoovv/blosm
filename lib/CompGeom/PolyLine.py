@@ -262,6 +262,14 @@ class PolyLine():
             t += edgeNr-1 if passedEnd else edgeNr
         return self.t2v(t), t
 
+    def distTo(self,p0):
+        # Projects the point <p0> onto the polyline and return the
+        # distance to this projection <p1>.  The line is evaluated from
+        # start to end. A projection before the first vertex on the
+        # infinite line of the first edge, or after the  last vertex
+        # on the infinite line of the last edge are accepted.
+        p1, _ = self.orthoProj(p0)
+        return p1, (p1-p0).length
 
     def offsetPointAt(self,t,dist):
         # Computes the position of a point <p> on the line using
@@ -444,9 +452,12 @@ class PolyLine():
         offsetPoly = PolyLine(offsetVerts)
         return offsetPoly
 
-    def plot(self,color,width=1):
+    def plot(self,color,width=1,order=999):
         import matplotlib.pyplot as plt        
         for v1,v2 in pairs(self.verts[self.view]):
-            plt.plot([v1.x,v2.x],[v1.y,v2.y],color,linewidth=width)
-            plt.plot(v1.x,v1.y,'k.')
-            plt.plot(v2.x,v2.y,'k.')
+            plt.plot([v1.x,v2.x],[v1.y,v2.y],color=color,linewidth=width,zorder=order)
+            # plt.plot(v1.x,v1.y,'k.',zorder=order)
+            # plt.plot(v2.x,v2.y,'k.',zorder=order)
+        v1,v2 = self.verts[self.view][0], self.verts[self.view][-1]
+        # plt.plot(v1.x,v1.y,'gx',zorder=order,markersize=7)
+        # plt.plot(v2.x,v2.y,'gx',zorder=order,markersize=7)

@@ -5,6 +5,11 @@ from itertools import *
 
 MULT_EPSILON = 1 + 1e-14
 
+def cyclePairs(lst):
+    this, nexts = tee(lst)
+    nexts = islice(cycle(nexts), len(lst) + 1, None)
+    return zip(this,nexts)
+
 # Create smallest enclosing circle of a list of points
 # The points are expected as mathutils.Vector
 # Returns tuple (center,radius)
@@ -92,26 +97,41 @@ def circumCircle(points):
     return c
 
 class CyrusBeckClipper():
-    # polygon in expected as numpy array with dimensions (N,2).
-    # it must consist of N>2 2>>D vectors in counter-clockwise order
+    # The polygon in expected as a Python list of vertices of type mathutis.Vector.
+    # Works only for convex polygons.
     def __init__(self, polygon):
-        self.polyVertices = polygon
-        self.eV = np.roll(polygon,-1,axis=0) - polygon  # polygon vectors
-        self.eN = self.eV[:,[1,0]]*np.array((1,-1))     # vetor normal to outside of polygon
+        self.poly = polygon
+        # Be sure that it is ordered counter-clockwise.
+        area = sum( (v2[0]-v1[0])*(v2[1]+v1[1]) for v1,v2 in cyclePairs(self.poly))
+        if area > 0.:
+            print('reverted')
+            self.poly.reverse()
 
-    def clipSegment(self, p1, p2):
-        assert any(p1 != p2), 'degenerated segment'
-        dS = p2 - p1
+        self.eV = [v2-v1 for v1,v2 in cyclePairs(self.poly)] # edge vectors of polygon
+
+    # In literature, the normal pointing to the outside of the polygon's edge is used for
+    # a dot prodcut with other vectors. The normal of the egde vector E(ex,ey) is then
+    # defined as N(ey,-ex). The (2D) dot product with a vector V(vx,vy) then becomes:
+    #   N dot V = ey*vx - ex*vy
+    # But this is identical to the (2D) cross product of the edge vector with V:
+    #   E cross V = ey*vx - ex*vy
+    # Like this, the computation of the normal N can be avoided.
+    def clipSegment(self, p0, p1):
+        import matplotlib.pyplot as plt
+        assert p0 != p1, 'degenerated segment'
+        D = p1 - p0
         tE, tL = 0., 1.
-        for eNi, Pi in zip(self.eN,self.polyVertices):
-            dotP = np.dot(eNi, dS)
-            if dotP:
-                t = np.dot(eNi, p1 - Pi) / (-dotP)
-                tE, tL = (max(tE, t), tL) if dotP < 0 else (tE, min(tL, t))
+        for ei, pi in zip(self.eV,self.poly):
+            p0i = p0 - pi
+            denom = ei[1]*D[0] - ei[0]*D[1] # 2D cross product
+            if denom:
+                numer = ei[1]*p0i[0] - ei[0]*p0i[1] # 2D cross product
+                t = numer/-denom
+                tE, tL = (max(tE, t), tL) if denom < 0. else (tE, min(tL, t))
         if (tE,tL) == (0.,1.):  # inside poly
-            return 1, p1, p2
+            return 1, p0, p1
         elif tE <= tL:    # clipped
-            return 0, p1 + dS*tE, p1 + dS*tL
+            return 0, p0 + D*tE, p0 + D*tL
         else:   #outside
             return -1, None, None
 

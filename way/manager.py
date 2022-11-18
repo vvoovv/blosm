@@ -1,5 +1,5 @@
 from . import Way, Railway
-from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories
+from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories, vecicleRoadsCategories
 
 
 class WayManager:
@@ -45,6 +45,12 @@ class WayManager:
     
     def getAllIntersectionWays(self):
         return (way for category in wayIntersectionCategories for way in self.layers[category])
+
+    def getAllVehicleWays(self):
+        return (
+            way for category in vecicleRoadsCategories for way in self.layers[category] \
+            if not way.bridge and not way.tunnel
+        )
     
     def getFacadeVisibilityWays(self):
         return (

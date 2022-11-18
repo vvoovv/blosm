@@ -5,6 +5,7 @@ from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
 from way.way_intersections import Intersection
+from way.way_cluster import findWayCluster
 from defs.road_polygons import ExcludedWayTags
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.algorithms import SCClipper
@@ -49,18 +50,28 @@ class StreetGenerator():
         self.wayManager = manager
         self.intersectionAreas = manager.intersectionAreas
         self.waySectionLines = manager.waySectionLines
+
+        self.evalType = 'streets_GN'
         
-        self.useFillet = False
-        self.findSelfIntersections()
-        self.createWaySectionNetwork()
-        self.createWaySections()
-        self.createOutput()
+        if self.evalType == 'streets_GN':
+            self.useFillet = False
+            self.findSelfIntersections()
+            self.createWaySectionNetwork()
+            self.createWaySections()
+            self.createOutput()
+
+        if self.evalType == 'way_clusters':
+            self.findSelfIntersections()
+            self.createWaySectionNetwork()
+            self.createWaySections()
+            findWayCluster(self,self.waySections)
 
     def findSelfIntersections(self):
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
         uniqueSegments = defaultdict(set)
-        for way in self.wayManager.getAllWays():
+        wayCategories = self.wayManager.getAllIntersectionWays() if self.evalType == 'streets_GN' else self.wayManager.getAllVehicleWays()
+        for way in wayCategories:#self.wayManager.getAllWays():
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
             for segment in way.segments:
@@ -93,7 +104,8 @@ class StreetGenerator():
 
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
-        for way in wayManager.getAllIntersectionWays():
+        wayCategories = wayManager.getAllIntersectionWays() if self.evalType == 'streets_GN' else wayManager.getAllVehicleWays()
+        for way in wayCategories: #wayManager.getAllIntersectionWays():
             # Exclude ways with unwanted tags
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
