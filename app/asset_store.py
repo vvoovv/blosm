@@ -140,12 +140,12 @@ class AssetStore:
         if key in cache:
             return cache[key]
         else:
-            collection = self.getCollection(collection, cache)
             # get an instance of <EntryList>
             collection = self.collections.get(collection)
             if collection:
                 collection = collection.getEntry()
-            # save the resulting value in <cache>
+            # Save the resulting value in <cache>. Next time a collection with
+            # the name <collection> is needed for this building, the one saved in <cache[key]> will be used
             cache[key] = collection
         
         return collection
@@ -220,7 +220,7 @@ class Collection:
     
     __slots__ = (
         "textureParts",
-        "textureCladdings"
+        "textureCladdings",
         "meshParts",
         
     )
