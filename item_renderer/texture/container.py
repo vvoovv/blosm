@@ -4,7 +4,7 @@ from .corner import Corner
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 from util import rgbToHex
-from util.blender import linkObjectFromFile, createMeshObject
+from util.blender import linkObjectFromFile, createMeshObject, addGeometryNodesModifier, useAttributeForGnInput
 from ..util import getFilepath
 
 
@@ -61,7 +61,32 @@ class RenderState:
         self.startIndex = 0
         
         self.tmpTriangle = True
-        
+
+
+def getParamValue(param, item, obj):
+    return item.getStyleBlockAttrDeep(param) or obj[param]
+
+
+def getParamValueGn(gnParam, item, obj):
+    #gnInput, modifierAttr = gnParam
+    return item.getStyleBlockAttrDeep(gnParam[0].name[2:]) or obj.modifiers[0][gnParam[1]]
+
+
+def getStringForGnKey(gnParam, item, obj):
+    gnInputType = gnParam[0].type
+    value = getParamValueGn(gnParam, item, obj)
+    
+    if gnInputType == 'VALUE':
+        return str(round( value, 3 ))
+    elif gnInputType == 'STRING':
+        return value
+    elif gnInputType == 'RGBA':
+        return rgbToHex(value)
+    elif gnInputType == 'BOOLEAN':
+        return "1" if value else '0'
+    elif gnInputType == 'INT':
+        return str(value)
+
 
 class Container(ItemRendererTexture):
     """
@@ -291,19 +316,48 @@ class Container(ItemRendererTexture):
             item.materialId = ""
     
     def getGnInstanceObject(self, item, objName):
-        obj, params, instances = self.r.meshAssets[objName]
+        obj, objParams, gnParams, instances = self.r.meshAssets[objName]
         
-        if params:
-            # create a key out of <properties>
-            key = '_'.join(
-                rgbToHex( item.getStyleBlockAttrDeep(_param) or obj[_param] ) for _param in params
-            )
+        if objParams or gnParams:
+            # create a key out of <objParams> and <gnParams>
+            objKey = gnKey = ''
+            if objParams:
+                objKey = '_'.join(
+                    str(paramIndex) + '_' + rgbToHex( getParamValue(param, item, obj) )\
+                        for paramIndex, param in enumerate(objParams)
+                )
+            numObjParams = len(objParams)
+            if gnParams:
+                gnKey = '_'.join(
+                    str(numObjParams+paramIndex) + '_' + getStringForGnKey(param, item, obj)\
+                        for paramIndex, param in enumerate(gnParams)
+                )
+            key = objKey + "_" +gnKey if objKey and gnKey else objKey or gnKey
             if not key in instances:
                 # the created Blender object <_obj> that shares the mesh data with <obj>
                 _obj = instances[key] = createMeshObject(objName, mesh = obj.data, collection = self.r.buildingAssetsCollection)
-                # set properties
-                for _param in params:
-                    _obj[_param] = item.getStyleBlockAttrDeep(_param) or obj[_param]
+                #
+                # set object properties for <_obj>
+                #
+                if objParams:
+                    for param in objParams:
+                        _obj[param] = getParamValue(param, item, obj)
+                #
+                # now deal with Geometry Nodes
+                #
+                if gnParams:
+                    # create a Geometry Nodes modifier
+                    m = addGeometryNodesModifier(_obj, obj.modifiers[0].node_group, '')
+                    # <mAttrs> can be used as a dictionary of attributes of
+                    # the Geometry Nodes modifier
+                    mAttrs = obj.modifiers[0]
+                    # get a list of all attributes of the Geometry Nodes modifier <m>
+                    mAttrNames = list(mAttrs.keys())
+                    for mAttr in (mAttrNames[mAttrIndex] for mAttrIndex in range(0, len(mAttrNames), 3)):
+                        # If <mAttr> in <obj> uses an <obj>'s attribute defined in <obj>'s data, than
+                        # <mAttr> in <_obj> also uses the <obj>'s attribute defined in <_obj>'s data
+                        if mAttrs[mAttr + "_use_attribute"]:
+                            useAttributeForGnInput(m, mAttr, mAttrs[mAttr + "_attribute_name"])
             obj = instances[key]
         
         return obj
@@ -325,10 +379,23 @@ class Container(ItemRendererTexture):
         rna_properties = {
             prop.identifier for prop in obj.bl_rna.properties if prop.is_runtime
         }
-        params = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
-        self.r.meshAssets[objName] = (obj, params, {} if params else None)
+        objParams = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
         
-        if not params:
+        # now get the properties from the Geometry Nodes modifier
+        gnParams = []
+        if obj.modifiers:
+            # only a single Geometry Nodes modifier is allowed!
+            modifierAttrs = list(obj.modifiers[0].keys())
+            # Input names of the Geometry Nodes setup must start with <p_>
+            gnParams = [
+                (gnInput, modifierAttrs[3*(gnInputIndex-1)])\
+                    for gnInputIndex, gnInput in enumerate(obj.modifiers[0].node_group.inputs)\
+                    if gnInput.name.startswith("p_")
+            ]
+        
+        self.r.meshAssets[objName] = (obj, objParams, gnParams, {} if objParams or gnParams else None)
+        
+        if not objParams and not gnParams:
             # use <obj> as is (i.e. linked from another Blender file)
             self.r.buildingAssetsCollection.objects.link(obj)
     

@@ -3,7 +3,7 @@ from operator import attrgetter
 from building.layer import BuildingLayer
 
 from renderer import Renderer
-from util.blender import getBmesh, setBmesh, useAttributeForGnInput
+from util.blender import getBmesh, setBmesh, addGeometryNodesModifier, useAttributeForGnInput
 
 
 class RealisticBuildingLayer(BuildingLayer):
@@ -78,16 +78,15 @@ class RealisticBuildingLayer(BuildingLayer):
             self.attributeValuesGn.clear()
             
             # create a modifier for the Geometry Nodes setup
-            m = objGn.modifiers.new("", "NODES")
-            m.node_group = globalRenderer.gnBuilding
-            # <mAttributes> have the form like: 
+            m = addGeometryNodesModifier(objGn, globalRenderer.gnBuilding, "Buildings")
+            # <mAttrs> have the form like: 
             # [
             #     "Input_4", "Input_4_use_attribute", "Input_4_attribute_name",
             #     "Input_3", "Input_3_use_attribute", "Input_3_attribute_name"
             # ]
-            mAttributes = list(m.keys())
-            for i1,i2 in zip( range(0, len(mAttributes), 3), range(len(mAttributes)//3) ):
-                useAttributeForGnInput(m, mAttributes[i1], gnMeshAttributes[i2])
+            mAttrs = list(m.keys())
+            for i1,i2 in zip( range(0, len(mAttrs), 3), range(len(mAttrs)//3) ):
+                useAttributeForGnInput(m, mAttrs[i1], gnMeshAttributes[i2])
             
             # TEMPORARY code below to place objects on flat roofs
             # set attributes
@@ -96,8 +95,7 @@ class RealisticBuildingLayer(BuildingLayer):
                 self.obj.data.attributes["subdivide_level"].data[index].value = subdivide_level
             self.attributeValuesFlatRoof.clear()
             # create a modifier for the Geometry Nodes setup
-            m = self.obj.modifiers.new("Objects on flat roofs", "NODES")
-            m.node_group = globalRenderer.gnFlatRoof
+            m = addGeometryNodesModifier(self.obj, globalRenderer.gnFlatRoof, "Objects on flat roofs")
             # triangulate
             useAttributeForGnInput(m, "Input_10", "triangulate")
             # The parameter <free_area_factor>: the probability that an area will be deleted in
