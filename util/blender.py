@@ -291,6 +291,12 @@ def addShrinkwrapModifier(obj, target, offset):
     m.offset = offset
 
 
+def addGeometryNodesModifier(obj, nodeGroup, modifierName=''):
+    m = obj.modifiers.new(modifierName, "NODES")
+    m.node_group = nodeGroup
+    return m
+
+
 def loadImage(fileName, directory):
     image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
     if not image:
