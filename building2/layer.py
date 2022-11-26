@@ -73,7 +73,7 @@ class RealisticBuildingLayer(BuildingLayer):
             for index, (objName, _unitVector, scaleX, scaleZ) in enumerate(self.attributeValuesGn):
                 assetIndex[index].value = objNameToIndex[objName]
                 unitVector[index].vector = _unitVector
-                scale[index].vector = (scaleX, scaleX, scaleZ)
+                scale[index].vector = (scaleX, 1., scaleZ)
             
             self.attributeValuesGn.clear()
             
