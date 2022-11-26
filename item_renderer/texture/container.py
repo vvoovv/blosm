@@ -67,14 +67,14 @@ def getParamValue(param, item, obj):
     return item.getStyleBlockAttrDeep(param) or obj[param]
 
 
-def getParamValueGn(gnParam, item, obj):
-    #gnInput, modifierAttr = gnParam
-    return item.getStyleBlockAttrDeep(gnParam[0].name[2:]) or obj.modifiers[0][gnParam[1]]
+def getParamValueGn(gnInput, item, obj):
+    # isPmlParamater, mAttr, (pmlParameter, inputType) = gnInput
+    return item.getStyleBlockAttrDeep(gnInput[2][0]) or obj.modifiers[0][gnInput[1]]
 
 
-def getStringForGnKey(gnParam, item, obj):
-    gnInputType = gnParam[0].type
-    value = getParamValueGn(gnParam, item, obj)
+def getStringForGnKey(gnInput, item, obj):
+    gnInputType = gnInput[2][1]
+    value = getParamValueGn(gnInput, item, obj)
     
     if gnInputType == 'VALUE':
         return str(round( value, 3 ))
@@ -316,10 +316,10 @@ class Container(ItemRendererTexture):
             item.materialId = ""
     
     def getGnInstanceObject(self, item, objName):
-        obj, objParams, gnParams, instances = self.r.meshAssets[objName]
+        obj, objParams, gnInputs, instances = self.r.meshAssets[objName]
         
-        if objParams or gnParams:
-            # create a key out of <objParams> and <gnParams>
+        if objParams or gnInputs:
+            # create a key out of <objParams> and <gnInputs>
             objKey = gnKey = ''
             if objParams:
                 objKey = '_'.join(
@@ -327,10 +327,10 @@ class Container(ItemRendererTexture):
                         for paramIndex, param in enumerate(objParams)
                 )
             numObjParams = len(objParams)
-            if gnParams:
+            if gnInputs:
                 gnKey = '_'.join(
-                    str(numObjParams+paramIndex) + '_' + getStringForGnKey(param, item, obj)\
-                        for paramIndex, param in enumerate(gnParams)
+                    str(numObjParams+paramIndex) + '_' + getStringForGnKey(gnInput, item, obj)\
+                        for paramIndex, gnInput in enumerate(gnInputs) if gnInput[0]
                 )
             key = objKey + "_" +gnKey if objKey and gnKey else objKey or gnKey
             if not key in instances:
@@ -345,19 +345,28 @@ class Container(ItemRendererTexture):
                 #
                 # now deal with Geometry Nodes
                 #
-                if gnParams:
+                if gnInputs:
+                    m = obj.modifiers[0]
                     # create a Geometry Nodes modifier
-                    m = addGeometryNodesModifier(_obj, obj.modifiers[0].node_group, '')
-                    # <mAttrs> can be used as a dictionary of attributes of
-                    # the Geometry Nodes modifier
-                    mAttrs = obj.modifiers[0]
-                    # get a list of all attributes of the Geometry Nodes modifier <m>
-                    mAttrNames = list(mAttrs.keys())
-                    for mAttr in (mAttrNames[mAttrIndex] for mAttrIndex in range(0, len(mAttrNames), 3)):
-                        # If <mAttr> in <obj> uses an <obj>'s attribute defined in <obj>'s data, than
-                        # <mAttr> in <_obj> also uses the <obj>'s attribute defined in <_obj>'s data
-                        if mAttrs[mAttr + "_use_attribute"]:
-                            useAttributeForGnInput(m, mAttr, mAttrs[mAttr + "_attribute_name"])
+                    _m = addGeometryNodesModifier(_obj, m.node_group, '')
+                    for isPmlParamater, mAttr, extraData in gnInputs:
+                        if isPmlParamater:
+                            #
+                            # pmlParameter = extraData[0]
+                            #
+                            _m[mAttr] = item.getStyleBlockAttrDeep(extraData[0]) or m[mAttr]
+                        else:
+                            #
+                            # useDataAttribute = dataAttribute = extraData
+                            #
+                            if extraData:
+                                # If <mAttr> in <obj> uses an <obj>'s attribute defined in <obj>'s data, than
+                                # <mAttr> in <_obj> also uses the <_obj>'s attribute defined in <_obj>'s data.
+                                # Note, that <obj> and <_obj> use the same data.
+                                useAttributeForGnInput(_m, mAttr, extraData)
+                            else:
+                                _m[mAttr] = m[mAttr]
+                         
             obj = instances[key]
         
         return obj
@@ -382,20 +391,36 @@ class Container(ItemRendererTexture):
         objParams = [_property[2:] for _property in obj.keys() if not _property in rna_properties and _property.startswith("p_")]
         
         # now get the properties from the Geometry Nodes modifier
-        gnParams = []
+        gnInputs = []
         if obj.modifiers:
             # only a single Geometry Nodes modifier is allowed!
-            modifierAttrs = list(obj.modifiers[0].keys())
-            # Input names of the Geometry Nodes setup must start with <p_>
-            gnParams = [
-                (gnInput, modifierAttrs[3*(gnInputIndex-1)])\
-                    for gnInputIndex, gnInput in enumerate(obj.modifiers[0].node_group.inputs)\
-                    if gnInput.name.startswith("p_")
-            ]
+            m = obj.modifiers[0]
+            inputs = m.node_group.inputs
+            
+            mAttrs = list(obj.modifiers[0].keys())
+            attrIndex = 0
+            for inputIndex in range(1, len(inputs)):
+                inp = inputs[inputIndex]
+                mAttr = mAttrs[attrIndex]
+                if inp.name.startswith("p_"):
+                    gnInputs.append((
+                        True, # <True> since it represents PML parameter, because it starts with <p_>
+                        mAttr, # the related modifier's attribute
+                        (inp.name[2:], inp.type) # PML parameter, input type
+                    ))
+                    attrIndex += 3 if mAttr + "_use_attribute" in m else 1
+                else:
+                    useDataAttribute = m.get(mAttr + "_use_attribute")
+                    gnInputs.append((
+                        False, # <False> since it doesn't represent a PML parameter, i.e. it doesn't start with <p_>
+                        mAttr, # the related modifier's attribute
+                        m[mAttr + "_attribute_name"] if useDataAttribute else None # the name of the data attribute or None
+                    ))
+                    attrIndex += 1 if useDataAttribute is None else 3
         
-        self.r.meshAssets[objName] = (obj, objParams, gnParams, {} if objParams or gnParams else None)
+        self.r.meshAssets[objName] = (obj, objParams, gnInputs, {} if objParams or gnInputs else None)
         
-        if not objParams and not gnParams:
+        if not objParams and not gnInputs:
             # use <obj> as is (i.e. linked from another Blender file)
             self.r.buildingAssetsCollection.objects.link(obj)
     
