@@ -354,7 +354,19 @@ class Container(ItemRendererTexture):
                             #
                             # pmlParameter = extraData[0]
                             #
-                            _m[mAttr] = item.getStyleBlockAttrDeep(extraData[0]) or m[mAttr]
+                            itemAttrValue = item.getStyleBlockAttrDeep(extraData[0])
+                            if itemAttrValue:
+                                if extraData[1] == 'RGBA':
+                                    # At the moment  it isn't possible to set a color for
+                                    # a Geometry Nodes attribute through
+                                    # _m[mAttr] = itemAttrValue
+                                    # We have to set the color like it's done below:
+                                    _m[mAttr][0], _m[mAttr][1], _m[mAttr][2], _m[mAttr][3] =\
+                                    itemAttrValue[0], itemAttrValue[1], itemAttrValue[2], itemAttrValue[3]
+                                else:
+                                    _m[mAttr] = itemAttrValue
+                            else:
+                                _m[mAttr] = m[mAttr]
                         else:
                             #
                             # useDataAttribute = dataAttribute = extraData
