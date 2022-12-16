@@ -71,75 +71,90 @@ class Corner:
         if len(cornerInfo[0].styleBlock.attrs) > len(item.styleBlock.attrs):
             item.styleBlock.attrs = cornerInfo[0].styleBlock.attrs
         
-        collectionName = assetInfo["collection"]
-        # path to a Blender file defined in <assetInfo>
-        filepath = getFilepath(self.r, assetInfo)
-        collectionKey = filepath + "_" + collectionName
-        
-        if not collectionKey in self.r.blenderCollections:
-            collection = linkCollectionFromFile(filepath, collectionName)
-            if not collection:
-                return
-            # The first Python list is for corner with convex angles, the second one is
-            # for the corners with concave angles
-            collectionInfo = (
-                collection,
-                [ ( obj, -cos(radians(obj["angle"])) ) for obj in collection.objects if obj["angle"]>0.],
-                [ ( obj,  cos(radians(obj["angle"])) ) for obj in collection.objects if obj["angle"]<0.]
-            )
-            collectionInfo[1].sort(key=itemgetter(1))
-            collectionInfo[2].sort(key=itemgetter(1))
-            self.r.blenderCollections[collectionKey] = collectionInfo
-        
-        collectionInfo = self.r.blenderCollections[collectionKey]
-        # Find a Blender object in the Blender collection represented by <collectionInfo>
-        # that angle is the closest one to the angle of the corner in question
-        vector = item.facade.vector if cornerL else item.facade.vector.next
-        
-        if vector.sin > 0.:
+        collectionName = assetInfo.get("collection")
+        if collectionName:
             #
-            # convex angle of the corner
-            #
-            _cos = vector.unitVector.dot(vector.prev.unitVector)
-            collectionInfo = collectionInfo[1]
-        else:
-            #
-            # concave angle of the corner
+            # Corner modules for the specific corner angles.
+            # All corners are in a Blender collection with the name <collectionName>
             #
             
-            # <_cos> is a negated cosine!
-            _cos = -vector.unitVector.dot(vector.prev.unitVector)
-            collectionInfo = collectionInfo[2]
-        
-        if not collectionInfo:
-            return
-        
-        i = bisect_left(collectionInfo, _cos, key=itemgetter(1))
-        if i==len(collectionInfo) or ( i and (_cos - collectionInfo[i-1][1]) < (collectionInfo[i][1] - _cos) ):
-            i -= 1
-        obj = collectionInfo[i][0]
-        
-        # the origin of the corner item
-        vertLocation = (cornerInfo[1] + cornerVert)/2.
-        item.building.element.l.bmGn.verts.new(vertLocation)
-        
-        cornerVector = cornerVert-cornerInfo[1] \
-            if cornerL else\
-            cornerInfo[1] - cornerVert
-        
-        # Blender object name will be set in <self.prepareGnVerts(..)>,
-        # since a separate object may be created later in the code for the given parameters
-        # out of the mesh data of <obj>.
-        # Vertical scale will be set later in <self.prepareGnVerts(..)>,
-        # since we don't have <levelGroup> that is required to set the vertical scale.
-        
-        # We store <cornerVector>, the horizontal scale and <vertLocation> to avoid
-        # their calculation in <self.prepareGnVerts(..)>
-        item.building.element.l.attributeValuesGn.append((
-            cornerVector,
-            cornerVector.length/obj["width"], # horizontal scale
-            vertLocation
-        ))
+            # path to a Blender file defined in <assetInfo>
+            filepath = getFilepath(self.r, assetInfo)
+            collectionKey = filepath + "_" + collectionName
+            
+            if not collectionKey in self.r.blenderCollections:
+                collection = linkCollectionFromFile(filepath, collectionName)
+                if not collection:
+                    return
+                # The first Python list is for corner with convex angles, the second one is
+                # for the corners with concave angles
+                collectionInfo = (
+                    collection,
+                    [ ( obj, -cos(radians(obj["angle"])) ) for obj in collection.objects if obj["angle"]>0.],
+                    [ ( obj,  cos(radians(obj["angle"])) ) for obj in collection.objects if obj["angle"]<0.]
+                )
+                collectionInfo[1].sort(key=itemgetter(1))
+                collectionInfo[2].sort(key=itemgetter(1))
+                self.r.blenderCollections[collectionKey] = collectionInfo
+            
+            collectionInfo = self.r.blenderCollections[collectionKey]
+            # Find a Blender object in the Blender collection represented by <collectionInfo>
+            # that angle is the closest one to the angle of the corner in question
+            vector = item.facade.vector if cornerL else item.facade.vector.next
+            
+            if vector.sin > 0.:
+                #
+                # convex angle of the corner
+                #
+                _cos = vector.unitVector.dot(vector.prev.unitVector)
+                collectionInfo = collectionInfo[1]
+            else:
+                #
+                # concave angle of the corner
+                #
+                
+                # <_cos> is a negated cosine!
+                _cos = -vector.unitVector.dot(vector.prev.unitVector)
+                collectionInfo = collectionInfo[2]
+            
+            if not collectionInfo:
+                return
+            
+            i = bisect_left(collectionInfo, _cos, key=itemgetter(1))
+            if i==len(collectionInfo) or ( i and (_cos - collectionInfo[i-1][1]) < (collectionInfo[i][1] - _cos) ):
+                i -= 1
+            obj = collectionInfo[i][0]
+            
+            # the origin of the corner item
+            vertLocation = (cornerInfo[1] + cornerVert)/2.
+            item.building.element.l.bmGn.verts.new(vertLocation)
+            
+            cornerVector = cornerVert-cornerInfo[1] \
+                if cornerL else\
+                cornerInfo[1] - cornerVert
+            
+            # Blender object name will be set in <self.prepareGnVerts(..)>,
+            # since a separate object may be created later in the code for the given parameters
+            # out of the mesh data of <obj>.
+            # Vertical scale will be set later in <self.prepareGnVerts(..)>,
+            # since we don't have <levelGroup> that is required to set the vertical scale.
+            
+            # We store <cornerVector>, the horizontal scale and <vertLocation> to avoid
+            # their calculation in <self.prepareGnVerts(..)>
+            item.building.element.l.attributeValuesGn.append((
+                cornerVector,
+                cornerVector.length/obj["width"], # horizontal scale
+                vertLocation
+            ))
+        else:
+            #
+            # The case of a single corner module with a Geometry Nodes setup to bend the module,
+            # so it would fit the corner angle
+            #
+            objName = assetInfo["object"]
+            if not self.processModuleObject(objName, assetInfo):
+                return
+            obj = self.r.meshAssets[objName][0]
         
         return obj
     

@@ -1,7 +1,8 @@
 import os
 import bpy
 
-from util.blender import loadMaterialsFromFile
+from util.blender import loadMaterialsFromFile, linkObjectFromFile
+from .util import getFilepath
 from util.blender_extra.material import createMaterialFromTemplate, setImage
 
 _materialTemplateFilename = "building_material_templates.blend"
@@ -232,3 +233,21 @@ class ItemRenderer:
     def getTileWidthM(self, item):
         assetInfo = self.getAssetInfo(item)
         return assetInfo["tileWidthM"] if assetInfo else 0.
+
+    def processModuleObject(self, objName, assetInfo):
+        """
+        Get and process a module object if it wasn't processed before.
+        
+        Returns:
+            <False> if no module object with the name <objName> can be found,
+            <True> otherwise.
+        """
+        
+        # If <objectName> isn't available in <meshAssets>, that also means
+        # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
+        if not objName in self.r.meshAssets:
+            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objName)
+            if not obj:
+                return False
+            self.processAssetMeshObject(obj, objName)
+        return True

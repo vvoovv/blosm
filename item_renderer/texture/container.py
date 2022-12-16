@@ -4,8 +4,7 @@ from .corner import Corner
 from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 from util import rgbToHex
-from util.blender import linkObjectFromFile, createMeshObject, addGeometryNodesModifier, useAttributeForGnInput
-from ..util import getFilepath
+from util.blender import createMeshObject, addGeometryNodesModifier, useAttributeForGnInput
 
 
 def _getTileWidthM(facadeTextureInfo):
@@ -252,19 +251,14 @@ class Container(ItemRendererTexture):
                         if floor(item.width/assetInfo["tileWidthM"]) > 1:
                             if item.cornerL or item.cornerR:
                                 assetInfoCorner = self.getAssetInfoCorner(item, assetInfo["class"])
-                                if assetInfoCorner and "collection" in assetInfoCorner:
+                                if assetInfoCorner:
                                     self.processImplicitCornerItems(item, levelGroup, indices, assetInfo, assetInfoCorner)
                                     return
                         
                         objName = assetInfo["object"]
                         
-                        # If <objectName> isn't available in <meshAssets>, that also means
-                        # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
-                        if not objName in self.r.meshAssets:
-                            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objName)
-                            if not obj:
-                                return
-                            self.processAssetMeshObject(obj, objName)
+                        if not self.processModuleObject(objName, assetInfo):
+                            return
                     else:
                         #
                         # a Blender collection (e.g. of corner modules)
@@ -411,24 +405,27 @@ class Container(ItemRendererTexture):
             
             mAttrs = list(obj.modifiers[0].keys())
             attrIndex = 0
-            for inputIndex in range(1, len(inputs)):
-                inp = inputs[inputIndex]
-                mAttr = mAttrs[attrIndex]
-                if inp.name.startswith("p_"):
-                    gnInputs.append((
-                        True, # <True> since it represents PML parameter, because it starts with <p_>
-                        mAttr, # the related modifier's attribute
-                        (inp.name[2:], inp.type) # PML parameter, input type
-                    ))
-                    attrIndex += 3 if mAttr + "_use_attribute" in m else 1
-                else:
-                    useDataAttribute = m.get(mAttr + "_use_attribute")
-                    gnInputs.append((
-                        False, # <False> since it doesn't represent a PML parameter, i.e. it doesn't start with <p_>
-                        mAttr, # the related modifier's attribute
-                        m[mAttr + "_attribute_name"] if useDataAttribute else None # the name of the data attribute or None
-                    ))
-                    attrIndex += 1 if useDataAttribute is None else 3
+            # the number of inputs with the name starting with <_p>
+            numGnParams = sum(inputs[inputIndex].name.startswith("p_") for inputIndex in range(1, len(inputs)))
+            if numGnParams:
+                for inputIndex in range(1, len(inputs)):
+                    inp = inputs[inputIndex]
+                    mAttr = mAttrs[attrIndex]
+                    if inp.name.startswith("p_"):
+                        gnInputs.append((
+                            True, # <True> since it represents PML parameter, because it starts with <p_>
+                            mAttr, # the related modifier's attribute
+                            (inp.name[2:], inp.type) # PML parameter, input type
+                        ))
+                        attrIndex += 3 if mAttr + "_use_attribute" in m else 1
+                    else:
+                        useDataAttribute = m.get(mAttr + "_use_attribute")
+                        gnInputs.append((
+                            False, # <False> since it doesn't represent a PML parameter, i.e. it doesn't start with <p_>
+                            mAttr, # the related modifier's attribute
+                            m[mAttr + "_attribute_name"] if useDataAttribute else None # the name of the data attribute or None
+                        ))
+                        attrIndex += 1 if useDataAttribute is None else 3
         
         self.r.meshAssets[objName] = (obj, objParams, gnInputs, {} if objParams or gnInputs else None)
         
@@ -515,13 +512,8 @@ class Container(ItemRendererTexture):
         
         objName = assetInfo["object"]
         
-        # If <objectName> isn't available in <meshAssets>, that also means
-        # that <objectName> isn't available in <self.r.buildingAssetsCollection.objects>
-        if not objName in self.r.meshAssets:
-            obj = linkObjectFromFile(getFilepath(self.r, assetInfo), None, objName)
-            if not obj:
-                return
-            self.processAssetMeshObject(obj, objName)
+        if not self.processModuleObject(objName, assetInfo):
+            return
         
         obj = self.getGnInstanceObject(item, objName)
         

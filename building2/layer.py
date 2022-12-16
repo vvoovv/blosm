@@ -14,7 +14,8 @@ class RealisticBuildingLayer(BuildingLayer):
         self.gnMeshAttributes = (
             "asset_index",
             "vector",
-            "scale"
+            "scale",
+            "extra"
         )
         
         # the name for the base UV map used for facade textures
@@ -57,8 +58,10 @@ class RealisticBuildingLayer(BuildingLayer):
             assetIndex = objGnMesh.attributes.new(gnMeshAttributes[0], 'INT', 'POINT').data
             # a unit vector along the related building facade
             unitVector = objGnMesh.attributes.new(gnMeshAttributes[1], 'FLOAT_VECTOR', 'POINT').data
-            # 3 float number to scale an instance along its local x, y and z axes
+            # 3 float numbers to scale an instance along its local x, y and z axes
             scale = objGnMesh.attributes.new(gnMeshAttributes[2], 'FLOAT_VECTOR', 'POINT').data
+            # 2 float additional numbers. They are used only by corner modules for now
+            extra = objGnMesh.attributes.new(gnMeshAttributes[3], 'FLOAT_VECTOR', 'POINT').data
             
             # Indices in <assetIndex> refer to Blender objects in Blender collection
             # <globalRenderer.buildingAssetsCollection> sorted by the name of the Blender object.
@@ -70,10 +73,12 @@ class RealisticBuildingLayer(BuildingLayer):
                 )
             )
             
-            for index, (objName, _unitVector, scaleX, scaleZ) in enumerate(self.attributeValuesGn):
+            for index, (objName, _unitVector, scaleX, scaleZ, extra) in enumerate(self.attributeValuesGn):
                 assetIndex[index].value = objNameToIndex[objName]
                 unitVector[index].vector = _unitVector
                 scale[index].vector = (scaleX, 1., scaleZ)
+                if extra:
+                    extra[index].vector = extra
             
             self.attributeValuesGn.clear()
             
