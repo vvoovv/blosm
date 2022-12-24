@@ -1,14 +1,10 @@
-from mathutils import Vector
 from itertools import tee
 
-from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist, canPair
-from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
-from lib.CompGeom.GraphBasedAlgos import DisjointSets
-from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
+from defs.way_cluster_params import transitionLimit,transitionSlope
+from way.way_properties import estimateWayWidth
+from lib.CompGeom.offset_intersection import offsetPolylineIntersection
+from lib.CompGeom.PolyLine import PolyLine
 
-debug = []
-if debug:
-    import matplotlib.pyplot as plt
 
 # helper functions -----------------------------------------------
 def pairs(iterable):
@@ -17,253 +13,463 @@ def pairs(iterable):
     next(p2, None)
     return zip(p1,p2)
 
-def triples(iterable):
-    # iterable -> (p0,p1,p2), (p1,p2,p3), (p2,p3,p4), ...
-    p1, p2, p3 = tee(iterable,3)
-    next(p2, None)
-    next(p3, None)
-    next(p3, None)
-    return zip(p1,p2,p3)
+def widthOrthoCenterline(centerline,left,right,p):
+    pc,_ = centerline.orthoProj(p)
+    _,dL = left.distTo(pc)
+    _,dR = right.distTo(pc)
+    return dL + dR
+# ----------------------------------------------------------------
 
-def maxAngleTan(polyline):
-    # computes the tanget of the maximum angle between polyline segments
-    if len(polyline) < 3:
-        return 0.
-    maxtan = 0.
-    for p1, p2, p3 in triples(polyline):
-        d1, d2 = p2-p1, p3-p2
-        cross = d1.cross(d2)
-        dot = d1.dot(d2)
-        tan_angle = abs(cross/dot) if dot else float('inf')
-        if tan_angle > maxtan:
-            maxtan = tan_angle
-    return maxtan
- # ----------------------------------------------------------------
+class LongClusterWay():
+    def __init__(self,cls):
+        self.cls = cls
+        self.leftSectionIDs = None
+        self.rightSectionIDs = None
+        self.intersectionsAll = None
+        self.left = None
+        self.right = None
+        self.centerline = None
 
+        self.clusterWays = []
+        
+    def split(self):
+        debug = []
+        # Find intersections along cluster, given as line parameter t of centerline.
+        # Sort them so that they are aligned along the cluster centerline.
+        leftWIndx = 0
+        rightWIndx = 0
+        intermediateIsects = [(0.,'both',self.left[0],self.right[0],self.leftSectionIDs[leftWIndx], self.rightSectionIDs[rightWIndx])]
+        for intersectionsThis in self.intersectionsAll:
+            for isect in intersectionsThis:
+                type = 'left' if isect in self.left else 'right'
+                p,t = self.centerline.orthoProj(isect)
+                if type == 'left':
+                    rightP,_ = self.right.intersectWithLine(isect,p)
+                    leftWIndx += 1
+                    intermediateIsects.append((t,'left',isect,rightP,self.leftSectionIDs[leftWIndx], self.rightSectionIDs[rightWIndx]))
+                else:
+                    leftP,_ = self.left.intersectWithLine(isect,p)
+                    rightWIndx += 1
+                    intermediateIsects.append((t,'right',leftP,isect,self.leftSectionIDs[leftWIndx], self.rightSectionIDs[rightWIndx]))
+        intermediateIsects.append((len(self.centerline),'both',self.left[-1],self.right[-1],None,None))
+        intermediateIsects.sort(key=lambda x: x[0])
 
-def findWayCluster(cls,waySections):
-    print('start')
+        # Create clusters, split them when there are intermdiate intersections
+        for c0,c1 in pairs(intermediateIsects):
+            clusterWay = ClusterWay(self.centerline.trimmed(c0[0],c1[0]))
+            clusterWay.leftWayID = c0[4]
+            clusterWay.rightWayID = c0[5]
+            clusterWay.startPoints = c0[1:]
+            clusterWay.endPoints = c1[1:]
+            clusterWay.startWidth = widthOrthoCenterline(clusterWay.centerline,self.left,self.right,clusterWay.startPoints[1])
+            clusterWay.endWidth = widthOrthoCenterline(clusterWay.centerline,self.left,self.right,clusterWay.endPoints[1])
 
-    # Create spatial index (R-tree) from way sections
-    spatialIndex = StaticSpatialIndex()
-    indx2Id = dict()
-    boxes = dict()
-    for Id, section in waySections.items():
-        min_x = min(v[0] for v in section.polyline.verts)
-        min_y = min(v[1] for v in section.polyline.verts)
-        max_x = max(v[0] for v in section.polyline.verts)
-        max_y = max(v[1] for v in section.polyline.verts)
-        bbox = BBox(None,min_x,min_y,max_x,max_y)
-        index = spatialIndex.add(min_x,min_y,max_x,max_y)
-        indx2Id[index] = Id
-        bbox.index = index
-        boxes[Id] = (min_x,min_y,max_x,max_y)
-    spatialIndex.finish()
+            # prepare data eventually required for width transition
+            widthDifference = abs(clusterWay.startWidth - clusterWay.endWidth)
+            if widthDifference < transitionLimit:
+                clusterWay.clusterWidth = (clusterWay.startWidth + clusterWay.endWidth)/2.
+                clusterWay.transitionWidth = 0.
+                clusterWay.transitionPos = None
+            else:
+                clusterWay.clusterWidth = min(clusterWay.startWidth, clusterWay.endWidth)
+                clusterWay.transitionWidth = widthDifference
+                clusterWay.transitionPos = 'start' if clusterWay.startWidth > clusterWay.endWidth else 'end'
 
-    parallelWaysIndxs = DisjointSets()
-    for Id, section in waySections.items():
-        # if Id not in [778,814]:
-        #     continue
+            # Get widths of left and right ways
+            categoryL = self.cls.waySections[clusterWay.leftWayID].originalSection.category
+            tagsL = self.cls.waySections[clusterWay.leftWayID].originalSection.tags
+            clusterWay.leftWayWidth = estimateWayWidth(categoryL,tagsL)
+            categoryR = self.cls.waySections[clusterWay.rightWayID].originalSection.category
+            tagsR = self.cls.waySections[clusterWay.rightWayID].originalSection.tags
+            clusterWay.rightWayWidth = estimateWayWidth(categoryR,tagsR)
+            self.clusterWays.append(clusterWay)
 
-        # section.polyline.plot('k',1)
-        if 1 in debug:
-            center = sum(section.polyline.verts,Vector((0,0)))/len(section.polyline)
-            plt.text(center[0],center[1],str(Id),zorder=999)
+class ClusterWay():
+    ID = 0
+    def __init__(self,centerline):
+        self.id = ClusterWay.ID
+        ClusterWay.ID += 1
+        self.centerline = centerline
+        self.clusterWidth = None
+        self.transitionWidth = None
+        self.transitionPos = None
+        self.trimS = 0.                      # trim factor for start
+        self.trimT = len(self.centerline)-1  # trim factor for target
+        self.leftWayID = None
+        self.leftWayWidth = None
+        self.rightWayID = None
+        self.rightWayWidth = None
+        self.startPoints = None
+        self.endPoints = None
 
-        # Use only ways of minimal length as template.
-        if section.polyline.length() > minTemplateLength:
-            # Expand the template way, <expandBy> is some kind of search range.
-            templateCategory = section.originalSection.category
-            expandBy = searchDist[templateCategory]
-            templatePoly = section.polyline.buffer(expandBy,expandBy)
-            # section.polyline.plot('k',0.5)
+    # def transitionBecauseWidth(self):
+    #     widthDiff = self.endWidth - self.startWidth
+    #     if abs(widthDiff) > widthThresh:
+    #         w = self.endWidth
+    #         d = self.centerline.length() - 
+    #         t = len(self.centerline)
+    #         pL = self.centerline.offsetPointAt(t,abs(w/2))
+    #         pR = self.centerline.offsetPointAt(t,-abs(w/2))
+    #         end = ('trans',pL,pR,self.leftWay,self.rightWay)
+    #         segCluster = ClusterWay(self.centerline)
+    #         segCluster.startPoints = self.startPoints
+    #         segCluster.endPoints = end
+    #         segCluster.leftWay = self.leftWay
+    #         segCluster.rightWay = self.rightWay
+    #         segCluster.startWidth = self.startWidth
 
-            # Create polygon clipper from expanded template way
-            clipper = LinePolygonClipper(templatePoly.verts)
+    def outW(self):
+        return self.clusterWidth + (self.leftWayWidth+self.rightWayWidth)/2.
+    def outWL(self):
+        return (self.clusterWidth + self.leftWayWidth)/2.
+    def outWR(self):
+        return (self.clusterWidth + self.rightWayWidth)/2.
+    def inWL(self):
+        return (self.clusterWidth - self.leftWayWidth)/2.
+    def inWR(self):
+        return (self.clusterWidth - self.rightWayWidth)/2.
 
-            # Get neighbors of template way from static spatial index with a search
-            # bounding box expanded by the same width as the template way is expanded.
-            min_x,min_y,max_x,max_y = boxes[Id]
-            results = stack = []
-            result = spatialIndex.query(min_x-expandBy,min_y-expandBy,max_x+expandBy,max_y+expandBy,results,stack)
+    # def splitBecauseWidth(self):
+    #     clusters = []
+    #     widthDiff = self.endWidth - self.startWidth
+    #     if abs(widthDiff) > widthThresh:
+    #         nrOfSegs = ceil(abs(widthDiff) / widthThresh)
+    #         totalLength = self.centerline.length()
+    #         lengthStep = totalLength/nrOfSegs
+    #         widthStep = widthDiff/(nrOfSegs-1)
 
-            # Check all neighbor way-sections
-            for indx in result:
-                if indx2Id[indx] == Id: continue    # don't check template way-section
+    #         lastEndPoints = self.startPoints
+    #         last_t = 0.
+    #         for segNr in range(nrOfSegs-1):
+    #             d = lengthStep * (segNr+1)
+    #             w = self.startWidth + widthStep * segNr
+    #             t = self.centerline.d2t(d)
+    #             pL = self.centerline.offsetPointAt(t,abs(w/2))
+    #             pR = self.centerline.offsetPointAt(t,-abs(w/2))
+    #             end = ('width',pL,pR,self.leftWayID,self.rightWayID)
 
-                # Check if the pairing is allowed
-                neighborCategory = waySections[indx2Id[indx]].originalSection.category
-                if not canPair[templateCategory][neighborCategory]: continue
+    #             segCluster = ClusterWay(self.centerline.trimmed(last_t,t))
+    #             segCluster.startPoints = lastEndPoints
+    #             segCluster.endPoints = end
+    #             segCluster.leftWayID = self.leftWayID
+    #             segCluster.rightWayID = self.rightWayID
+    #             segCluster.startWidth = w
 
-                # Clip the neighbor line with the template polygon
-                neighborLine = waySections[indx2Id[indx]].polyline
-                if neighborLine.length() > minNeighborLength:
-                    fragments, fragsLength, nrOfON = clipper.clipLine(neighborLine.verts)
+    #             clusters.append(segCluster)
 
-                    if fragsLength == 0.:
-                        continue # nothing inside the polygon
+    #             last_t = t
+    #             lastEndPoints = segCluster.endPoints
 
-                    # Evaluate the "slope" relative to the template's line
-                    p1, d1 = section.polyline.distTo(fragments[0][0])     # distance to start of fragment
-                    p2, d2 = section.polyline.distTo(fragments[-1][-1])   # distance to end of fragment
-                    p_dist = (p2-p1).length
-                    slope = abs(d1-d2)/p_dist if p_dist else 1.
-
-                    reasonText = 'slope: %s, ends: %s, ON: %s, frags %s'%(slope < 0.15, min(d1,d2) <= expandBy, nrOfON <= 2, fragsLength > expandBy/2)
-                    conditions = slope < 0.15 and min(d1,d2) <= expandBy and  nrOfON <= 2 and fragsLength > expandBy/2
-                    if conditions:
-                        parallelWaysIndxs.addSegment(Id,indx2Id[indx])
-
-                        if 2 in debug:
-                            print( fragsLength , expandBy/2)
-                            if slope < 0.1 and min(d1,d2) <= expandBy and nrOfON <= 2:# and fragsLength > expandBy/2. :
-                                plotNetwork(cls.sectionNetwork, waySections)
-                                plt.plot(p1[0],p1[1],'ro')
-                                plt.plot(p2[0],p2[1],'ro')
-                                plotPolygon(templatePoly.verts,False,'k','k',0.5)
-                                section.polyline.plot('r',2)
-                                # neighborLine.plot('b',2)
-                                for f in fragments:
-                                    plotLine([f[0],f[1]],False,'r',2)
-                                plt.title('OK ' + reasonText )
-                                plotEnd()
-                    else:
-                        if 2 in debug:
-                            print( fragsLength , expandBy/2)
-                            plotNetwork(cls.sectionNetwork, waySections)
-                            plotPolygon(templatePoly.verts,False,'k','k',0.5)
-                            section.polyline.plot('b',4)
-                            neighborLine.plot('k',2)
-                            for f in fragments:
-                                plotLine([f[0],f[1]],False,'b',4)
-                            plt.title('BAD ' + reasonText )
-                            plotEnd()
-
-    if 3 in debug:
-        for section in waySections.values():
-            section.polyline.plot('k')
-        import numpy as np
-        N = len([w for w in parallelWaysIndxs])
-        import matplotlib.cm as cm
-        from math import pi
-        colors = cm.prism(np.linspace(0, 1, N))#int(pi*2.5*N)))
-        # import random
-        # random.shuffle(colors)
-        for pW, color in zip(parallelWaysIndxs,colors):
-            # for section in waySections.values():
-            #     section.polyline.plot('k')
-            for id in pW:
-                section = waySections[id]
-                section.polyline.plot(color,4)
-            # plotEnd()
-
-        # import os
-        # plt.title(os.path.basename(wayManager.app.osmFilepath))
-
-    if 4 in debug:
-        for clusterIDs in parallelWaysIndxs:
-            partialIntersections(cls,clusterIDs, waySections)
-        #     break
-
-def partialIntersections(cls,clusterIDs, waySections):
-    pass
-    # plotNetwork(cls.sectionNetwork, waySections)
-    for i,Id in enumerate(clusterIDs):
-        waySections[Id].polyline.plot('b',2)
-        oS = waySections[Id].originalSection
-        marker = ['ro', 'cx', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', 'bo', ]
-        for p in [oS.s,oS.t]:
-            order = cls.sectionNetwork.borderlessOrder(p)
-            v = p
-            plt.plot(v.x,v.y,marker[order-1],markersize=6,zorder=999)
-            plt.text(v.x,v.y,'  '+str(order),fontsize=12)
-
-    plotEnd()
+    #         segCluster = ClusterWay(self.centerline.trimmed(last_t,len(self.centerline)))
+    #         segCluster.startPoints = lastEndPoints
+    #         segCluster.endPoints = self.endPoints
+    #         segCluster.leftWayID = self.leftWayID
+    #         segCluster.rightWayID = self.rightWayID
+    #         segCluster.startWidth = self.endWidth
+    #         clusters.append(segCluster)
 
 
-def constructCluster(clusterIDs, waySections):
-    # find projection line along cluster using polyline of longest section
-    lengths_IDs = [(Id,waySections[Id].polyline.length()) for Id in clusterIDs]
-    longestID, length = max(lengths_IDs,key=lambda x: x[1])
+    #         return clusters
+    #     else:
+    #         return [self]
 
-    # find noraml to line between endpoints of longest line
-    # plotLine([waySections[longestID].polyline[-1],waySections[longestID].polyline[0]],False,'r',2)
-    end0, end1 = waySections[longestID].polyline[-1], waySections[longestID].polyline[0]
-    endVec = (end1-end0)
-    normVec = Vector((-endVec[1],endVec[0]))
+def computeTransitionWidths(cluster1,cluster2):
+    # Inter-cluster transition width. Clusters have different widths. Positive if <cluster2 is
+    # thicker. We correct it on the smaller cluster.
+    interTransWidth = cluster2.outW()-cluster1.outW()
 
-    # For every vertex in the clustered way-sections find intersection points along normal
-    # with other polylines.
-    centerline = []
-    for Id in clusterIDs:
-        verts = waySections[Id].polyline.verts
-        for v in verts:
-            isects = [v]
-            p1,p2 = v, v+normVec
-            # plt.plot(v[0],v[1],'bo')
-            # plotLine([p1,p2],False,'r:')
-            for subID in clusterIDs:
-                if subID == Id:
-                    continue
-                waySections[Id].polyline.plot('k')
-                waySections[subID].polyline.plot('g')
-                for p3,p4 in pairs(waySections[subID].polyline):
-                    # compute intersection point
-                    d1, d2 = p2-p1, p4-p3
-                    cross = d1.cross(d2)
-                    if cross == 0.:
-                        continue
-                    d3 = p1-p3
-                    # t1 = (d2[0]*d3[1] - d2[1]*d3[0])/cross
-                    t2 = (d1[0]*d3[1] - d1[1]*d3[0])/cross
-                    if 0. <= t2 <= 1.:
-                        v0 = p3 + d2*t2
-                        isects.append(v0)
-                        plt.plot(v0[0],v0[1],'rx')
-                        # print(t1,t2)
-                    test = 1
-            center = sum(isects,Vector((0,0)))/len(isects)
-            centerline.append(center)
-            # plt.plot(center[0],center[1],'r.',markersize=8)
+    # Required transitionwidth for cluster1
+    transWidth1 = interTransWidth if interTransWidth > 0. else 0.
+    transWidth1 += cluster1.transitionWidth if cluster1.transitionPos == 'end' else 0.
+    if abs(transWidth1) < transitionLimit: transWidth1 = 0.
+    
+    # Required transitionwidth for cluster2
+    transWidth2 = -interTransWidth if interTransWidth < 0. else 0.
+    transWidth2 += cluster2.transitionWidth if cluster2.transitionPos == 'start' else 0.
+    if abs(transWidth2) < transitionLimit: transWidth2 = 0.
 
-    for Id in clusterIDs:
-        waySections[Id].polyline.plot('k',0.5)
-    for center in centerline:
-        plt.plot(center[0],center[1],'r.')#,markersize=8)
-    plotEnd()
-    test = 1
+    return transWidth1, transWidth2
 
-def plotNetwork(network,waySections):
-    from mpl.renderer.road_polygons import RoadPolygonsRenderer
-    for section in waySections.values():
-        seg = section.originalSection
-    # for count,seg in enumerate(network.iterAllSegments()):
-        # plt.plot(seg.s[0],seg.s[1],'k.')
-        # plt.plot(seg.t[0],seg.t[1],'k.')
-        color = 'r' if seg.category=='scene_border' else 'y'
+def widthAndLineFromID(cls,node,ID):
+    section = cls.waySections[ID]
+    fwd = section.originalSection.s == node
+    category = section.originalSection.category
+    tags = section.originalSection.tags
+    width = estimateWayWidth(category,tags)
+    line = PolyLine(section.fwd() if fwd else section.rev())
+    return line,width
 
-        for v1,v2 in zip(seg.path[:-1],seg.path[1:]):
-            plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), **RoadPolygonsRenderer.styles[seg.category], zorder=50 )
+def createLeftTransition(cls, cluster1, cluster2):
+    area = []
+    transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
 
+    # Construct area through cluster1 (counter-clockwise order)
+    transitionLength = transWidth1/transitionSlope
+    dTrans = cluster1.centerline.length() - transitionLength
+    tTrans = cluster1.centerline.d2t(dTrans)
+    cluster1.trimT = min(cluster1.trimT,tTrans)
+    # Two additional points due to transition
+    p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
+    area.append(p)
+    if cls.isectShape == 'common':
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
+    elif cls.isectShape == 'separated':
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.inWL())
+    area.append(p)
 
-def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
-    x = [n[0] for n in poly] + [poly[0][0]]
-    y = [n[1] for n in poly] + [poly[0][1]]
-    if fill:
-        plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
-    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
-    if vertsOrder:
-        for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
-            plt.text(xx,yy,str(i),fontsize=12)
+    # Construct area through cluster2 (counter-clockwise order)
+    # if transWidth2:
+    transitionLength = transWidth2/transitionSlope
+    dTrans = transitionLength
+    tTrans = cluster2.centerline.d2t(dTrans)
+    cluster2.trimS = max(cluster2.trimS,tTrans)
+    # Two additional points due to transition
+    if cls.isectShape == 'common':
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
+    elif cls.isectShape == 'separated':
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+    area.append(p)
+    p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
+    area.append(p)
 
-def plotLine(line,vertsOrder,lineColor='k',width=1.,order=100):
-    x = [n[0] for n in line]
-    y = [n[1] for n in line]
-    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
-    if vertsOrder:
-        for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
-            plt.text(xx,yy,str(i),fontsize=12)
+    clustConnectors = dict()
+    clustConnectors[cluster1.id] = ( 0, 'E', -1 if cls.isectShape == 'common' else 0)
+    clustConnectors[cluster2.id] = ( 2, 'S', -1 if cls.isectShape == 'common' else 0)
+    return area, clustConnectors
 
-def plotEnd():
-    plt.gca().axis('equal')
-    plt.show()
+def createRightTransition(cls, cluster1, cluster2):
+    area = []
+    transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
+
+    # Construct area through cluster1 (counter-clockwise order)
+    transitionLength = transWidth1/transitionSlope
+    dTrans = cluster1.centerline.length() - transitionLength
+    tTrans = cluster1.centerline.d2t(dTrans)
+    cluster1.trimT = min(cluster1.trimT,tTrans)
+    # Two additional points due to transition
+    p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
+    area.append(p)
+    if cls.isectShape == 'common':
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
+    elif cls.isectShape == 'separated':
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
+    area.append(p)
+
+    # Construct area through cluster2 (counter-clockwise order)
+    transitionLength = transWidth2/transitionSlope
+    dTrans = transitionLength
+    tTrans = cluster2.centerline.d2t(dTrans)
+    cluster2.trimS = max(cluster2.trimS,tTrans)
+    # Two additional points due to transition
+    if cls.isectShape == 'common':
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
+    elif cls.isectShape == 'separated':
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.inWR())
+    area.append(p)
+    p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
+    area.append(p)
+
+    clustConnectors = dict()
+    clustConnectors[cluster1.id] = ( 1, 'E', -1 if cls.isectShape == 'common' else 1)
+    clustConnectors[cluster2.id] = ( 3, 'S', -1 if cls.isectShape == 'common' else 1)
+    return area, clustConnectors
+
+def createLeftIntersection(cls, cluster1, cluster2, node):
+    wayConnectors = dict()
+    clustConnectors = dict()
+    # find width of outgoing way
+    id1, id2 = cluster1.leftWayID, cluster2.leftWayID
+    id3 = id1-1 if id1%2 else id1+1
+    id4 = id2-1 if id2%2 else id2+1
+    outWayID = [w.ID for w in cls.sectionNetwork.iterOutSegments(node) if w.ID not in (id1,id2,id3,id4)][0]
+
+    outLine, outWidth = widthAndLineFromID(cls,node,outWayID)
+
+    # Find intersections <p1> and <p3> of way borders left and right of the out-way
+    outW = max(cluster1.outWL(),cluster2.outWL())
+    p1, valid = offsetPolylineIntersection(cluster2.centerline,outLine,outW,outWidth/2.)
+    assert valid=='valid'
+    reverseCenterline = PolyLine(cluster1.centerline[::-1])
+    p3, valid = offsetPolylineIntersection(outLine,reverseCenterline,outWidth/2.,outW)
+    assert valid=='valid'
+
+    # Project these onto cluster centerlines to get initial trim values
+    _,t = cluster1.centerline.orthoProj(p3)
+    cluster1.trimT = min(cluster1.trimT, t)
+    _,t = cluster2.centerline.orthoProj(p1)
+    cluster2.trimS = max(cluster2.trimS, t)
+
+    # Project these onto the centerline of out-way and create intermediate polygon point <p1>
+    _,tP1 = outLine.orthoProj(p1)
+    _,tP3 = outLine.orthoProj(p3)
+    section = cls.waySections[outWayID]
+    fwd = section.originalSection.s == node
+    if tP3 > tP1:
+        p2 = outLine.offsetPointAt(tP3,-outWidth/2.)
+        tP = tP3
+        wayConnectors[outWayID] = ( 1, 'S' if fwd else 'E')
+    else:
+        p2 = outLine.offsetPointAt(tP1,outWidth/2.)
+        tP = tP1
+        wayConnectors[outWayID] = ( 0, 'S' if fwd else 'E')
+    if fwd:
+        section.trimS = tP
+    else:
+        section.trimT = tP
+
+    # start area in counter-clockwise order, continue at end of cluster1
+    area = [p1,p2,p3]
+
+    transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
+
+    # Construct area through cluster1 (counter-clockwise order)
+    if transWidth1:
+        transitionLength = transWidth1/transitionSlope
+        dTrans = cluster1.centerline.length() - transitionLength
+        tTrans = cluster1.centerline.d2t(dTrans)
+        cluster1.trimT = min(cluster1.trimT,tTrans)
+        # Two additional points due to transition
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
+        area.append(p)
+        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 0)
+        if cls.isectShape == 'common':
+            p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.inWL())
+        area.append(p)
+    else:
+        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 0)
+        _,tP = cluster1.centerline.orthoProj(p3)
+        cluster1.trimT = min(cluster1.trimT,tP)
+        if cls.isectShape == 'common':
+            p = cluster1.centerline.offsetPointAt(tP,-cluster1.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster1.centerline.offsetPointAt(tP,cluster1.inWL())
+        area.append(p)
+
+    # Construct area through cluster2 (counter-clockwise order)
+    if transWidth2:
+        transitionLength = transWidth2/transitionSlope
+        dTrans = transitionLength
+        tTrans = cluster2.centerline.d2t(dTrans)
+        cluster2.trimS = max(cluster2.trimS,tTrans)
+        # Two additional points due to transition
+        if cls.isectShape == 'common':
+            p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+        area.append(p)
+        clustConnectors[cluster2.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 0)
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
+        area.append(p)
+    else:
+        _,tP = cluster2.centerline.orthoProj(p1)
+        cluster2.trimS = max(cluster2.trimS,tP)
+        if cls.isectShape == 'common':
+            p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+        area.append(p)
+        clustConnectors[cluster2.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 0)
+ 
+    return area, clustConnectors, wayConnectors
+
+def createRightIntersection(cls, cluster1, cluster2, node):
+    wayConnectors = dict()
+    clustConnectors = dict()
+    # find width of outgoing way
+    id1, id2 = cluster1.leftWayID, cluster2.leftWayID
+    id3 = id1-1 if id1%2 else id1+1
+    id4 = id2-1 if id2%2 else id2+1
+    outWayID = [w.ID for w in cls.sectionNetwork.iterOutSegments(node) if w.ID not in (id1,id2,id3,id4)][0]
+
+    outLine, outWidth = widthAndLineFromID(cls,node,outWayID)
+
+    # Find intersections <p1> and <p3> of way borders left and right of the out-way
+    reverseCenterline = PolyLine(cluster1.centerline[::-1])
+    outW = max(cluster1.outWL(),cluster2.outWL())
+    p1, valid = offsetPolylineIntersection(reverseCenterline,outLine,outWidth/2.,outW)
+    assert valid=='valid'
+    p3, valid = offsetPolylineIntersection(outLine,cluster2.centerline,outW,outWidth/2.)
+    assert valid=='valid'
+
+    # Project these onto cluster centerlines to get initial trim values
+    _,t = cluster2.centerline.orthoProj(p3)
+    cluster2.trimT = min(cluster2.trimS, t)
+    _,t = cluster1.centerline.orthoProj(p1)
+    cluster1.trimS = max(cluster1.trimT, t)
+
+    # Project these onto the centerline of out-way and create intermediate polygon point <p1>
+    _,tP1 = outLine.orthoProj(p1)
+    _,tP3 = outLine.orthoProj(p3)
+    section = cls.waySections[outWayID]
+    fwd = section.originalSection.s == node
+    if tP3 > tP1:
+        p2 = outLine.offsetPointAt(tP3,outWidth/2.)
+        tP = tP3
+        wayConnectors[outWayID] = ( 1, 'S' if fwd else 'E')
+    else:
+        p2 = outLine.offsetPointAt(tP1,-outWidth/2.)
+        tP = tP1
+        wayConnectors[outWayID] = ( 0, 'S' if fwd else 'E')
+    if fwd:
+        section.trimS = tP
+    else:
+        section.trimT = tP
+
+    # start area in counter-clockwise order, end is on clutser1
+    area = [p1,p2,p3]
+
+    transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
+
+    # Construct area through cluster2 (counter-clockwise order)
+    if transWidth2:
+        transitionLength = transWidth2/transitionSlope
+        dTrans = cluster2.centerline.length() - transitionLength
+        tTrans = cluster2.centerline.d2t(dTrans)
+        cluster2.trimS = max(cluster2.trimS,tTrans)
+        # Two additional points due to transition
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster1.outWL())
+        area.append(p)
+        if cls.isectShape == 'common':
+            p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster1.inWL())
+        area.append(p)
+        clustConnectors[cluster2.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
+    else:
+        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
+        _,tP = cluster2.centerline.orthoProj(p3)
+        cluster1.trimS = min(cluster1.trimS,tP)
+        if cls.isectShape == 'common':
+            p = cluster2.centerline.offsetPointAt(tP,-cluster2.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster2.centerline.offsetPointAt(tP,cluster2.inWL())
+        area.append(p)
+
+    # Construct area through cluster1 (counter-clockwise order)
+    if transWidth1:
+        transitionLength = transWidth1/transitionSlope
+        dTrans = transitionLength
+        tTrans = cluster1.centerline.d2t(dTrans)
+        cluster1.trimT = max(cluster1.trimT,tTrans)
+        # Two additional points due to transition
+        if cls.isectShape == 'common':
+            p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.inWL())
+        area.append(p)
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
+        area.append(p)
+        clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
+    else:
+        clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
+        _,tP = cluster1.centerline.orthoProj(p1)
+        cluster1.trimS = max(cluster1.trimT,tP)
+        if cls.isectShape == 'common':
+            p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
+        elif cls.isectShape == 'separated':
+            p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.inWL())
+        area.append(p)
+
+    return area, clustConnectors, wayConnectors

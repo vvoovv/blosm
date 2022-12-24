@@ -21,10 +21,12 @@ class WayManager:
         
         self.actions = []
         
-        # <self.intersectionAreas> and <self.waySectionLines> are used for realistic rendering of streets
+        # <self.intersectionAreas>, <self.wayClusters> and <self.waySectionLines>
+        # are used for realistic rendering of streets
         self.intersectionAreas = []
-        # street sections
+        # street sections and clusters
         self.waySectionLines = dict()
+        self.wayClusters = dict()
         
         # <self.networkGraph>, <self.waySectionGraph> and <self.junctions> are set in an action,
         # for example <action.way_clustering.Way>

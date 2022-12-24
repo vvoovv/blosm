@@ -19,6 +19,9 @@ class StreetRenderer(Renderer):
                 for id, connector in isectArea.connectors.items():
                     p = isectArea.polygon[connector[0]]
                     plt.text(p[0],p[1],str(id)+' '+connector[1])
+                for id, connector in isectArea.clusterConns.items():
+                    p = isectArea.polygon[connector[0]]
+                    plt.text(p[0],p[1],'C'+str(id)+' '+connector[1]+' '+str(connector[2]))
 
         for sectionNr,section_gn in manager.waySectionLines.items():
             if self.debug:
@@ -32,6 +35,29 @@ class StreetRenderer(Renderer):
                 lW,rW = section_gn.startWidths if len(section_gn.startWidths)==2 else (section_gn.startWidths[0]/2.,section_gn.startWidths[0]/2.)
                 buffer = polyline.buffer(lW,rW)
                 plotPolygon(buffer,False,'k','b',1,True,0.1)
+
+        for Id,cluster in manager.wayClusters.items(): 
+            from lib.CompGeom.PolyLine import PolyLine 
+            centerlinClust = PolyLine(cluster.centerline)
+            centerlinClust.plot('m',1)         
+
+            leftWay = centerlinClust.parallelOffset(cluster.distToLeft)
+            leftDesc = cluster.wayDescriptors[0]
+            leftPoly = leftWay.buffer(leftDesc[1]/2.,leftDesc[1]/2.)
+            plotPolygon(leftPoly,False,'g','g',1.,True,0.3,120)
+
+            rightWay = centerlinClust.parallelOffset(-cluster.distToLeft)
+            rightDesc = cluster.wayDescriptors[1]
+            rightPoly = rightWay.buffer(rightDesc[1]/2.,rightDesc[1]/2.)
+            plotPolygon(rightPoly,False,'g','g',1.,True,0.3,120)
+
+            poly = centerlinClust.buffer(cluster.distToLeft+leftDesc[1]/2,cluster.distToLeft+rightDesc[1]/2.)
+            plotPolygon(poly,False,'c','c',1,True,0.2,110)
+
+            if self.debug:
+                plotWay(cluster.centerline,False,'b',2.)
+                center = sum(cluster.centerline, Vector((0,0)))/len(cluster.centerline)
+                plt.text(center[0],center[1],str(Id),fontsize=22,zorder=130)
 
 
 

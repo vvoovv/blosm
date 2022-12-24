@@ -1,5 +1,10 @@
-minTemplateLength = 5.
-minNeighborLength = 5.
+minTemplateLength = 20.
+minNeighborLength = 10.
+
+transitionLimit = 0.01
+transitionSlope = 0.3
+
+dbScanDist = 15.
 
 searchDist = {
         "motorway":      50., "motorway_link":  50., "trunk":      30., "trunk_link":    30., "primary":      30., "primary_link":  30.,
@@ -61,7 +66,7 @@ canPair = {
                 },
     "secondary_link": {
                     "motorway":      False, "motorway_link":  False, "trunk":      False, "trunk_link":    False, "primary":      False, "primary_link":  False,
-                    "secondary":     False, "secondary_link":  True, "tertiary":   False, "tertiary_link": False, "unclassified": False, "residential":   False, 
+                    "secondary":     False, "secondary_link": False, "tertiary":   False, "tertiary_link": False, "unclassified": False, "residential":   False, 
                     "living_street": False, "service":        False, "pedestrian": False, "track":         False, "escape":       False, "raceway":       False,        
                     "other_roadway": False, "footway":        False, "path":       False, "cycleway":      False, "bridleway":    False, "rail":          False, 
                     "subway":        False, "light_rail":     False, "tram":       False, "funicular":     False, "monorail":     False, "other_railway": False,
@@ -89,10 +94,10 @@ canPair = {
                 },
     "residential": {
                     "motorway":      False, "motorway_link":  False, "trunk":      False, "trunk_link":    False, "primary":      False, "primary_link":  False,
-                    "secondary":     False, "secondary_link": False, "tertiary":   False, "tertiary_link": False, "unclassified": False, "residential":    True, 
+                    "secondary":     False, "secondary_link": False, "tertiary":   False, "tertiary_link": False, "unclassified": False, "residential":   False, 
                     "living_street": False, "service":        False, "pedestrian": False, "track":         False, "escape":       False, "raceway":       False,        
                     "other_roadway": False, "footway":        False, "path":       False, "cycleway":      False, "bridleway":    False, "rail":          False, 
-                    "subway":        False, "light_rail":     False, "tram":        True, "funicular":     False, "monorail":     False, "other_railway": False,
+                    "subway":        False, "light_rail":     False, "tram":       False, "funicular":     False, "monorail":     False, "other_railway": False,
                 },
     "living_street": {
                     "motorway":      False, "motorway_link":  False, "trunk":      False, "trunk_link":    False, "primary":      False, "primary_link":  False,
@@ -102,8 +107,8 @@ canPair = {
                     "subway":        False, "light_rail":     False, "tram":       False, "funicular":     False, "monorail":     False, "other_railway": False,
                 },
     "service": {
-                    "motorway":      False, "motorway_link":  False, "trunk":      False, "trunk_link":    False, "primary":       True, "primary_link":  False,
-                    "secondary":      True, "secondary_link": False, "tertiary":    True, "tertiary_link": False, "unclassified":  True, "residential":    True, 
+                    "motorway":      False, "motorway_link":  False, "trunk":      False, "trunk_link":    False, "primary":      False, "primary_link":  False,
+                    "secondary":     False, "secondary_link": False, "tertiary":   False, "tertiary_link": False, "unclassified": False, "residential":   False, 
                     "living_street": False, "service":        False, "pedestrian": False, "track":         False, "escape":       False, "raceway":       False,        
                     "other_roadway": False, "footway":        False, "path":       False, "cycleway":      False, "bridleway":    False, "rail":          False, 
                     "subway":        False, "light_rail":     False, "tram":       False, "funicular":     False, "monorail":     False, "other_railway": False,

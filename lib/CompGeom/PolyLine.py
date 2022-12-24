@@ -35,7 +35,6 @@ import numpy as np
 from bisect import bisect_left
 from math import floor
 
-# from lib.pygeos.shared import Coordinate
 from lib.CompGeom.OffsetGenerator import OffsetGenerator
 
 # helper functions -----------------------------------------------
@@ -53,7 +52,7 @@ def cyclePairs(lst):
 class LinearInterpolator():
     def __init__(self, x, y):
         # <x> and <Y> must be of equal length (at least two elements) and x must
-        # attributes
+        # be continuously increasing.
         self.x = x
         self.y = y
         self.length = len(x)
@@ -77,7 +76,6 @@ def unitDoubleParabola(nrPoints):
 def unitHalfParabola(nrPoints):
     x = np.linspace(0.,1.,nrPoints)
     return np.where(x <= 0.5, 1.-4*(0.5-x)*(0.5-x), 1.)
-
 # ----------------------------------------------------------------
 
 class PolyLine():
@@ -203,35 +201,6 @@ class PolyLine():
             return PolyLine(pS + pE)
         else:
             return PolyLine(pS + self.verts[self.view][iS:iE] + pE)
-
-        # N = len(self.verts)
-        # if tS==0.:
-        #     pS = []
-        #     iS = -1
-        # else:
-        #     if floor(tS) != tS:
-        #         iS = floor(tS)
-        #         v0,v1 = self.verts[self.view][iS], self.verts[self.view][iS+1]
-        #         pS = [v0 + (v1 - v0) * (tS % 1)]
-        #     else:
-        #         pS = []
-        #         iS = floor(tS)-1
-
-        # if tE==0.:
-        #     pE = []
-        #     iE = N-1
-        # else:
-        #     t = N-1-tE
-        #     if floor(t) != t:
-        #         iE = floor(t)
-        #         v0,v1 = self.verts[self.view][iE], self.verts[self.view][iE+1]
-        #         pE = [v0 + (v1 - v0) * (t % 1)]
-        #     else:
-        #         pE = []
-        #         iE = floor(t)+1
-
-        # inter = [v for v in self.verts[self.view][iS+1:iE+1]]
-        # return PolyLine(pS+inter+pE)
 
     def orthoProj(self,p):
         # Projects the point <p> onto the polyline. The return values
@@ -366,6 +335,21 @@ class PolyLine():
                 return v1 + d1*t1, t1
         return None
 
+    def intersectWithLine(self, p1, p2):
+        # Intersection of ths polyline with the infinite line
+        # given by p1 and p2
+        for v1,v2 in pairs(self.verts[self.view]):
+            d1, d2 = v2-v1, p2-p1
+            cross = d1.cross(d2)
+            if cross == 0.:
+                continue
+            d3 = v1-p1
+            t1 = (d2[0]*d3[1] - d2[1]*d3[0])/cross
+            # t2 = (d1[0]*d3[1] - d1[1]*d3[0])/cross
+            if 0. <= t1 <= 1.:# and 0. <= t2 <= 1:
+                return v1 + d1*t1, t1
+        return None
+
     def parallelOffset(self, dist):
         # Returns the PolyLine that is offset perpendicularly by
         # the distance <dist>. The result is on the left of
@@ -456,8 +440,9 @@ class PolyLine():
         import matplotlib.pyplot as plt        
         for v1,v2 in pairs(self.verts[self.view]):
             plt.plot([v1.x,v2.x],[v1.y,v2.y],color=color,linewidth=width,zorder=order)
-            # plt.plot(v1.x,v1.y,'k.',zorder=order)
-            # plt.plot(v2.x,v2.y,'k.',zorder=order)
+            plt.plot(v1.x,v1.y,'k.',zorder=order)
+            plt.plot(v2.x,v2.y,'k.',zorder=order)
         v1,v2 = self.verts[self.view][0], self.verts[self.view][-1]
         # plt.plot(v1.x,v1.y,'gx',zorder=order,markersize=7)
         # plt.plot(v2.x,v2.y,'gx',zorder=order,markersize=7)
+

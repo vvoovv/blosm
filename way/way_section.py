@@ -48,7 +48,7 @@ class WaySection():
         return [v for v in self.polyline]
 
     def rev(self):
-        return [v for v in self.polyline.reversed()]
+        return [v for v in self.polyline[::-1]]
 
     def processTurnLanes(self):
         width = estimateWayWidth(self.originalSection.category,self.originalSection.tags)

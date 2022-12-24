@@ -61,7 +61,9 @@ class OffsetGenerator():
             (p1,p2),(p3,p4) = offs
             p12 = p2-p1
             p34 = p4-p3
-            if isclose(p12.cross(p34), 0.,abs_tol=1.e-4): 
+            p12n = p12/p12.length
+            p34n = p34/p34.length
+            if isclose(p12n.cross(p34n), 0.,abs_tol=1.e-2): 
                 # case 1: offset segments are collinear and consecutive
                 self.connected.append(p2)
             else:

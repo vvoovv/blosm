@@ -1,16 +1,26 @@
 from collections import defaultdict
+from itertools import tee, islice, cycle
 from mathutils import Vector
 
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
+from way.way_cluster import LongClusterWay, createLeftTransition,\
+                            createRightTransition, createLeftIntersection, createRightIntersection
 from way.way_intersections import Intersection
-from way.way_cluster import findWayCluster
+from way.intersection_cluster import IntersectionCluster
 from defs.road_polygons import ExcludedWayTags
+from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
+                                    canPair, dbScanDist, transitionSlope
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
+from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
 from lib.CompGeom.algorithms import SCClipper
 from lib.CompGeom.BoolPolyOps import boolPolyOp
 from lib.CompGeom.GraphBasedAlgos import DisjointSets
+from lib.CompGeom.PolyLine import PolyLine
+from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
+from lib.CompGeom.centerline import centerlineOf
+from lib.CompGeom.dbscan import dbClusterScan
 
 class TrimmedWaySection():
     def __init__(self):
@@ -26,52 +36,117 @@ class TrimmedWaySection():
                                     # of the centerline. A tuple of floats.
         self.tags = None            # The OSM tags of the way-section.
 
+class WayCluster():
+    def __init__(self):
+        self.centerline = []        # The centerline of the cluster in forward direction. (first vertex is start.
+                                    # and last is end). A Python list of vertices of type <mathutils.Vector>.
+                                    # It is the centerline between the centerlines of the outermost ways in the cluster.
+        self.distToLeft = 0.        # The distance from the cluster centerline to the centerline of the leftmost way,
+                                    # seen relative to the direction of the cluster centerline.
+        self.wayDescriptors = []    # A Python list of way descriptors. The way descriptors in this list are ordered from
+                                    # left to right relative to the centerline of the cluster. A way descriptor is a tuple
+                                    # with the following content:
+                                    # Index:    Content:
+                                    #   0       Distance of the way's centerline from the left border of the cluster,
+                                    #           given by <distToLeft>. Zero for the leftmost way.
+                                    #   1       The width of the way.
+                                    #   2       The left and right number of lanes, seen relative to the direction
+                                    #           of the cluster centerline. A tuple of integers. For one-way streets,
+                                    #           only one integer with the number of lanes is in the tuple. 
+                                    #   3       The category of the way.
+                                    #   4       The OSM tags of the of the way.
+
 class IntersectionArea():
     def __init__(self):
         self.polygon = None         # The vertices of the polygon in counter-clockwise order. A Python
                                     # list of vertices of type mathutils.Vector.
-        self.connectors = dict()    # The connectors (class Connector_gn) of this polygon to the way-sections.
+        self.connectors = dict()    # The connectors of this polygon to the way-sections.
                                     # A dictionary of tuples, where the key is the ID of the corresponding
                                     # way-section key in the dictionary of TrimmedWaySection. The tuple has two
                                     # elements, <indx> and <end>. <indx> is the first index in the intersection
                                     # polygon for this connector, the second index is <indx>+1. <end> is
                                     # the type 'S' for the start or 'E' for the end of the TrimmedWaySection
                                     # connected here.
+        self.clusterConns = dict()  # The connectors of this polygon to the way-clusters. A dictionary of tuples,
+                                    # where the key is also the key of the corresponding way-cluster in the 
+                                    # dictionary <wayClusters> of The manager. The tuple has three elements, <indx>,
+                                    # <end> and <way>. <indx> is the first index in the intersection
+                                    # polygon for this connector, the second index is <indx>+1. <end> is
+                                    # the type 'S' for the start or 'E' for the end of the way cluster
+                                    # connected here. <way> is -1 if the whole way-cluster connects there,
+                                    # or the index in the list of way descriptors <wayDescriptors> in <WayCluster>,
+                                    # if only a single way of the cluster connects there.
+# helper functions -----------------------------------------------
+def pairs(iterable):
+    # iterable -> (p0,p1), (p1,p2), (p2, p3), ...
+    p1, p2 = tee(iterable)
+    next(p2, None)
+    return zip(p1,p2)
+
+def cyclePair(iterable):
+    # iterable -> (p0,p1), (p1,p2), (p2, p3), ..., (pn, p0)
+    prevs, nexts = tee(iterable)
+    prevs = islice(cycle(prevs), len(iterable) - 1, None)
+    return zip(prevs,nexts)
+
+def triples(iterable):
+    # iterable -> (p0,p1,p2), (p1,p2,p3), (p2,p3,p4), ...
+    p1, p2, p3 = tee(iterable,3)
+    next(p2, None)
+    next(p3, None)
+    next(p3, None)
+    return zip(p1,p2,p3)
+
+def isEdgy(polyline):
+    vu = polyline.unitVectors()
+    for v1,v2 in pairs(vu):
+        if abs(v1.cross(v2)) > 0.65:
+            return True
+    return False
+# ----------------------------------------------------------------
 
 class StreetGenerator():
     
-    def __init__(self):
+    def __init__(self,isectShape='common'): # isectShape -> 'common' or 'separated'
+        self.isectShape = isectShape
+
+        # Interface via manager
+        self.intersectionAreas = None
+        self.wayClusters = None
+        self.waySectionLines = None
         self.networkGraph = None
         self.sectionNetwork = None
+
+        # Internal use
         self.waySections = dict()
         self.intersections = dict()
+        self.waysForClusters = None
+        self.longClusterWays = []
+        self.virtualWayIndx = -1
+        self.processedNodes = set()
 
     def do(self, manager):
         self.wayManager = manager
         self.intersectionAreas = manager.intersectionAreas
+        self.wayClusters = manager.wayClusters
         self.waySectionLines = manager.waySectionLines
 
-        self.evalType = 'streets_GN'
-        
-        if self.evalType == 'streets_GN':
-            self.useFillet = False
-            self.findSelfIntersections()
-            self.createWaySectionNetwork()
-            self.createWaySections()
-            self.createOutput()
-
-        if self.evalType == 'way_clusters':
-            self.findSelfIntersections()
-            self.createWaySectionNetwork()
-            self.createWaySections()
-            findWayCluster(self,self.waySections)
+        self.useFillet = False          # Don't change, it does not yet work!
+        self.findSelfIntersections()
+        self.createWaySectionNetwork()
+        self.createWaySections()
+        self.detectWayClusters()
+        self.createLongClusterWays()
+        self.createClusterTransitionAreas()
+        self.createClusterIntersections()
+        self.createWayClusters()
+        self.createOutput()
 
     def findSelfIntersections(self):
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
         uniqueSegments = defaultdict(set)
-        wayCategories = self.wayManager.getAllIntersectionWays() if self.evalType == 'streets_GN' else self.wayManager.getAllVehicleWays()
-        for way in wayCategories:#self.wayManager.getAllWays():
+        for way in self.wayManager.getAllVehicleWays():
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
             for segment in way.segments:
@@ -104,8 +179,7 @@ class StreetGenerator():
 
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
-        wayCategories = wayManager.getAllIntersectionWays() if self.evalType == 'streets_GN' else wayManager.getAllVehicleWays()
-        for way in wayCategories: #wayManager.getAllIntersectionWays():
+        for way in wayManager.getAllVehicleWays():
             # Exclude ways with unwanted tags
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
@@ -141,24 +215,415 @@ class StreetGenerator():
                 section = WaySection(net_section,self.sectionNetwork)
                 self.waySections[net_section.sectionId] = section
 
+    def detectWayClusters(self):
+        # Create spatial index (R-tree) of way sections
+        spatialIndex = StaticSpatialIndex()
+        indx2Id = dict()    # Dictionary from index to Id
+        boxes = dict()      # Bounding boxes of way-sections
+        for Id, section in self.waySections.items():
+            # exclusions by some criteria
+            if isEdgy(section.polyline): continue
+            if section.polyline.length() < min(minTemplateLength,minNeighborLength):
+                continue
+
+            min_x = min(v[0] for v in section.polyline.verts)
+            min_y = min(v[1] for v in section.polyline.verts)
+            max_x = max(v[0] for v in section.polyline.verts)
+            max_y = max(v[1] for v in section.polyline.verts)
+            bbox = BBox(None,min_x,min_y,max_x,max_y)
+            index = spatialIndex.add(min_x,min_y,max_x,max_y)
+            indx2Id[index] = Id
+            bbox.index = index
+            boxes[Id] = (min_x,min_y,max_x,max_y)
+        spatialIndex.finish()
+
+        self.waysForClusters = DisjointSets()
+        # Use every way-section, that has been inserted into spatial index 
+        # as template and create a buffer around it.
+        for Id, section in ((Id, section) for Id, section in self.waySections.items() if Id in boxes):
+            # The template must have a minimum length.
+            if section.polyline.length() > minTemplateLength:
+                # Create buffer width width depending on category.
+                bufferWidth = searchDist[section.originalSection.category]
+                bufferPoly = section.polyline.buffer(bufferWidth,bufferWidth)
+
+                # Create line clipper with this polygon.
+                clipper = LinePolygonClipper(bufferPoly.verts)
+
+                # Get neighbors of template way from static spatial index with its
+                # bounding box, expanded by the buffer width.
+                min_x,min_y,max_x,max_y = boxes[Id]
+                results = stack = []
+                neighbors = spatialIndex.query(min_x-bufferWidth,min_y-bufferWidth,
+                                               max_x+bufferWidth,max_y+bufferWidth,results,stack)
+
+                # Now test all neighbors of the remplate for parallelism
+                for neigborIndx in neighbors:
+                    neighborID = indx2Id[neigborIndx]
+                    # The template is its own neighbor
+                    if neighborID == Id: continue
+
+                    # Check in table if pairing as cluster is allowed
+                    neighborCategory = self.waySections[neighborID].originalSection.category
+                    if not canPair[section.originalSection.category][neighborCategory]: continue
+
+                    # Polyline of this neighbor ...
+                    neighborLine = self.waySections[neighborID].polyline
+
+                    # ... must be longer than minimal length ...
+                    if neighborLine.length() > minNeighborLength:
+                        # ... then clip it with buffer polygon
+                        inLine, inLineLength, nrOfON = clipper.clipLine(neighborLine.verts)
+
+                        if inLineLength < 0.1: continue # discard short inside lines
+
+                        # To check the quality of parallelism, the "slope" relative to the template's
+                        # line is evaluated.
+                        p1, d1 = section.polyline.distTo(inLine[0][0])     # distance to start of inLine
+                        p2, d2 = section.polyline.distTo(inLine[-1][-1])   # distance to end of inLine
+                        p_dist = (p2-p1).length
+                        slope = abs(d1-d2)/p_dist if p_dist else 1.
+
+                        # Conditions for acceptable inside line.
+                        acceptCond = slope < 0.15 and min(d1,d2) <= bufferWidth and \
+                                     nrOfON <= 2 and inLineLength > bufferWidth/2
+                        if acceptCond:
+                            # Accept this pair as parallel.
+                            self.waysForClusters.addSegment(Id,neighborID)
+
+    def createLongClusterWays(self):
+        for cIndx,wayIndxs in enumerate(self.waysForClusters):
+            # Get the sections included in this cluster
+            sections = [self.waySections[Id] for Id in wayIndxs]
+
+            # Find their endpoints (ends of the cluster)
+            # TODO: In the general case, clusters may have common endpoints 
+            sectionEnds = defaultdict(list)
+            for section in sections:
+                s,t = section.originalSection.s, section.originalSection.t
+                sectionEnds[s].append( section )
+                sectionEnds[t].append( section )
+            endpoints = [k for k, v in sectionEnds.items() if len(v) == 1]
+
+            # Collect adjacent way-sections and join them to lines
+            # TODO: Again, in the general case, clusters may have common endpoints
+            sectionIDs = wayIndxs.copy()
+            lines = []
+            intersectionsAll = []
+            sectionsIDsAll = []
+            while endpoints:
+                cur = endpoints.pop()
+                line = [cur]
+                intersectionsThis = []
+                sectionsIDs = []
+                while True:
+                    curID = next(filter(lambda x: cur in [self.waySections[x].originalSection.s,self.waySections[x].originalSection.t], sectionIDs) )
+                    curSec = self.waySections[curID]
+                    sectionIDs.remove(curID)
+                    sectVerts = curSec.polyline.verts if curSec.originalSection.s==cur else curSec.polyline.verts[::-1]
+                    line.extend(sectVerts[1:])
+                    sectionsIDs.append(curID)
+                    cur = sectVerts[-1]
+                    if cur in endpoints:
+                        endpoints.remove(cur)
+                        lines.append(line)
+                        intersectionsAll.append(intersectionsThis)
+                        sectionsIDsAll.append(sectionsIDs)
+                        break
+                    else:
+                        intersectionsThis.append(cur)
+
+            # project endpoints of line0 onto line1 to find corresponding ends.
+            # Reverse line1, if required, so that both starts are on the same side.
+            line0, line1 = PolyLine(lines[0]), PolyLine(lines[1])
+            sectionsIDs0, sectionsIDs1 = sectionsIDsAll[0], sectionsIDsAll[1]
+            _,t0 = line1.orthoProj(line0[0])
+            _,t1 = line1.orthoProj(line0[-1])
+            if t1 < t0:
+                line1 = PolyLine(line1.verts[::-1])
+                sectionsIDs1 = sectionsIDs1[::-1]
+
+            # Check ratio of endpoînt distances to decide if valid cluster
+            d0 = (line0[0]-line1[0]).length
+            d1 = (line0[-1]-line1[-1]).length
+            ratio = min(d0,d1)/max(d0,d1)
+
+            # Discard cluster if too asymetric ends.
+            # TODO: Will require moe sophisticated test
+            if ratio < 0.5:
+                continue
+
+            # centerline = PolyLine( centerlineInterOf(line0.verts,line1.verts,5.) )
+            centerline = PolyLine( centerlineOf(line0.verts,line1.verts) )
+            # find order of lines from left to right
+            side = (line0[1]-line0[0]).cross(line1[0]-line0[0]) < 0.
+            left, right = (line0,line1) if side else (line1,line0)
+            leftSectionIDs, rightSectionIDs = (sectionsIDs0,sectionsIDs1) if side else (sectionsIDs1,sectionsIDs0)
+
+            longCluster = LongClusterWay(self)
+            longCluster.leftSectionIDs = leftSectionIDs
+            longCluster.rightSectionIDs = rightSectionIDs
+            longCluster.intersectionsAll = intersectionsAll
+            longCluster.left = left
+            longCluster.right = right
+            longCluster.centerline = centerline
+
+            # Split the long cluster in smaller pieces of type <ClusterWay>,
+            # stored in <longCluster>.
+            longCluster.split()
+
+            self.longClusterWays.append(longCluster)
+
+    def createClusterTransitionAreas(self):
+        areas = []
+        for nr,longClusterWay in enumerate(self.longClusterWays):
+            if len(longClusterWay.clusterWays) > 1:
+                for cluster1,cluster2 in pairs(longClusterWay.clusterWays):
+                    clustConnectors = dict()
+                    wayConnectors = dict()
+                    if cluster1.endPoints[0] == 'left':
+                        node = cluster1.endPoints[1].freeze()
+                        order = self.sectionNetwork.borderlessOrder(node)
+                        if order == 2:
+                            area, clustConnectors = createLeftTransition(self,cluster1,cluster2)
+                        else:
+                            area, clustConnectors, wayConnectors = createLeftIntersection(self,cluster1,cluster2,node)
+                    elif cluster1.endPoints[0] == 'right':
+                        node = cluster1.endPoints[2].freeze()
+                        order = self.sectionNetwork.borderlessOrder(node)
+                        if order == 2:
+                            area, clustConnectors = createRightTransition(self,cluster1,cluster2)
+                        else:
+                            area, clustConnectors, wayConnectors = createRightIntersection(self,cluster1,cluster2,node)
+
+                    # Create the final cluster area instance
+                    isectArea = IntersectionArea()
+                    isectArea.polygon = area
+                    isectArea.connectors = wayConnectors
+                    isectArea.clusterConns = clustConnectors
+                    self.intersectionAreas.append(isectArea)
+
+                    areas.append(area)
+
+                    # Eventually we need to create a short way at a transition
+                    if self.isectShape == 'separated':
+                        if cluster1.endPoints[0] == 'left':
+                            s1 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.clusterWidth/2.)
+                            s2 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.clusterWidth/2.) 
+                            Id = cluster1.rightWayID    # cluster1.rightWayID == cluster2.rightWayID)
+                        if cluster1.endPoints[0] == 'right':
+                            s1 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.clusterWidth/2.)
+                            s2 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.clusterWidth/2.) 
+                            Id = cluster1.leftWayID     # cluster1.leftWayID == cluster2.leftWayID)
+
+                        section = self.waySections[Id]
+                        section_gn = TrimmedWaySection()
+                        section_gn.centerline = [s1,s2]
+                        section_gn.category = section.originalSection.category
+                        if section.isOneWay:
+                            section_gn.nrOfLanes = (section.nrRightLanes)
+                        else:
+                            section_gn.nrOfLanes = (section.nrLeftLanes, section.nrRightLanes)
+                        section_gn.endWidths = section_gn.startWidths = (section.leftWidth, section.rightWidth)
+                        section_gn.tags = section.originalSection.tags
+                        if section.turnParams:
+                            section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
+                        self.waySectionLines[self.virtualWayIndx] = section_gn
+                        self.virtualWayIndx -= 1    # Use negative index to avoid conflicts with ordinary ways
+
+            else:   # only one cluster way
+                cluster = longClusterWay.clusterWays[0]
+
+    def createClusterIntersections(self):
+        # Find groups of neighboring endpoints of cluster ways,
+        # using density based scan
+        endPoints = []
+        for longClusterWay in self.longClusterWays:
+            start = longClusterWay.clusterWays[0]
+            end = longClusterWay.clusterWays[-1]
+            endPoints.append( (start.centerline[0],start,'start') )
+            endPoints.append( (end.centerline[-1],end,'end') )
+        clusterGroups = dbClusterScan(endPoints, dbScanDist, 2)
+
+        # <clusterGroups> is a list that contains lists of clusterways, where their
+        # endpoints are neighbors. These will form intersection clusters, probably 
+        # with additional outgoing way-sections. A list entry for a clusterway
+        # is a <clusterGroup> and is formed as
+        # [centerline-endpoint, cluster-way, type ('start' or 'end')]
+
+        # Create an intersection cluster area for every <clusterGroup>
+        for clusterGroup in clusterGroups:
+            # Create an instance of <IntersectionCluster>, which will form the
+            # cluster area and its connectors.
+            isectCluster = IntersectionCluster()
+
+            # Collect all intersection nodes of the way-sections at the cluster.
+            # TODO Possibly there are more nodes within the cluster area.           
+            nodes = set()
+            for cluster in clusterGroup:
+                if cluster[2] == 'start':
+                    nodes.update( cluster[1].startPoints[1:3])
+                elif cluster[2] == 'end':
+                    nodes.update( cluster[1].endPoints[1:3])
+                else:
+                    assert False, 'Should not happen'
+
+            # Insert centerlines and widths of clusters to <IntersectionCluster>. Keep a map
+            # <ID2Object> for the ID in <IntersectionCluster> to the inserted object.
+            # Collect way IDs (key of <self.waySections>) so that the cluster ways may later
+            # be excluded from outgoing ways at end-nodes.
+            wayIDs = []
+            ID2Object = dict()
+            for cluster in clusterGroup:
+                wayIDs.extend( cluster[1].startPoints[3:] )
+                if cluster[2] == 'start':
+                    Id = isectCluster.addWay(cluster[1].centerline,cluster[1].outWL(),cluster[1].outWR())
+                    ID2Object[Id] = cluster
+                elif cluster[2] == 'end':
+                    Id = isectCluster.addWay(PolyLine(cluster[1].centerline[::-1]),cluster[1].outWR(),cluster[1].outWL())
+                    ID2Object[Id] = cluster
+                else:
+                    assert False, 'Should not happen'
+
+            # Find all outgoing way-sections that are connected to cluster nodes, but exlude
+            # those that belong to the clusters, using <wayIDs>. Insert them together with their
+            # widths into <IntersectionCluster>. Extend the map <ID2Object> for the ID in
+            # <IntersectionCluster> to the inserted object.
+            for node in nodes:
+                for net_section in self.sectionNetwork.iterOutSegments(node):
+                    if net_section.category != 'scene_border':
+                        if net_section.sectionId not in wayIDs:
+                            section = self.waySections[net_section.sectionId]
+                            if not (net_section.s in nodes and net_section.t in nodes):                               
+                                if section.originalSection.s == node:
+                                    Id = isectCluster.addWay(section.polyline,section.leftWidth,section.rightWidth)
+                                    ID2Object[Id] = (section,True)  # forward = True
+                                else:
+                                    Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
+                                    ID2Object[Id] = (section,False) # forward = False
+                            else:
+                                # way-sections that connect nodes internally in the cluster area.
+                                section.isValid = False
+
+            # An intersection area can only be constructed, when more than one way present.
+            if len(isectCluster.outWays) > 1:
+                # Create the intersection area and their connectors5 
+                area, connectors = isectCluster.create()
+
+                # Transfer the trim values to the objects
+                for outWay in isectCluster.outWays:
+                    object = ID2Object[outWay.id]
+                    if isinstance(object[0],WaySection):
+                        if object[1]:   # if forward
+                            object[0].trimS = max(object[0].trimS,outWay.trim_t)
+                        else:
+                            t = len(object[0].polyline)-1 - outWay.trim_t
+                            object[0].trimT = min(object[0].trimT, t)
+                    else:   # it's a cluster way
+                        if object[2] == 'start':
+                            object[1].trimS = max(object[1].trimS,outWay.trim_t)
+                        else:
+                            t = len(object[1].centerline)-1 - outWay.trim_t
+                            object[1].trimT = min(object[1].trimT,t)
+
+                # Create connectors for this area.
+                clustConnectors = dict()
+                wayConnectors = dict()
+                conOffset = 0
+                for con in connectors:
+                    object = ID2Object[con[2]]
+                    if isinstance(object[0],WaySection):
+                        wayConnectors[object[0].id] = ( con[0]+conOffset, 'S' if object[1] else 'E')
+                    else:
+                        if object[2] == object[1].transitionPos:
+                            if object[2] == 'start':
+                                transitionLength = object[1].transitionWidth/transitionSlope
+                                dTrans = transitionLength
+                                tTrans = object[1].centerline.d2t(dTrans)
+                                if tTrans > object[1].trimS:
+                                    p1 = object[1].centerline.offsetPointAt(tTrans,-object[1].outWR())
+                                    p2 = object[1].centerline.offsetPointAt(tTrans,object[1].outWL())
+                                    object[1].trimS = max(object[1].trimS,tTrans)
+                                    area.insert(con[0]+conOffset+1,p1)
+                                    clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'S', -1)
+                                    area.insert(con[0]+conOffset+2,p2)
+                                    conOffset += 2
+                                else:
+                                    clustConnectors[object[1].id] = ( con[0]+conOffset, 'S', -1)
+                            else:   # object[2] == 'end'
+                                transitionLength = object[1].transitionWidth/transitionSlope
+                                dTrans = object[1].centerline.length() - transitionLength
+                                tTrans = object[1].centerline.d2t(dTrans)
+                                if tTrans < object[1].trimT:
+                                    p1 = object[1].centerline.offsetPointAt(tTrans,object[1].outWL())
+                                    p2 = object[1].centerline.offsetPointAt(tTrans,-object[1].outWR())
+                                    object[1].trimT = min(object[1].trimT,tTrans)
+                                    area.insert(con[0]+conOffset+1,p1)
+                                    clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'E', -1)
+                                    area.insert(con[0]+conOffset+2,p2)
+                                    conOffset += 2
+                                else:
+                                    clustConnectors[object[1].id] = ( con[0]+conOffset, 'E', -1)
+                        else:
+                            clustConnectors[object[1].id] = ( con[0]+conOffset, 'S' if object[2]=='start' else 'E', -1)
+
+                isectArea = IntersectionArea()
+                isectArea.polygon = area
+                isectArea.connectors = wayConnectors
+                isectArea.clusterConns = clustConnectors
+                self.intersectionAreas.append(isectArea)
+
+    def createWayClusters(self):
+        for longClusterWay in self.longClusterWays:
+            for cluster in longClusterWay.clusterWays:
+                wayCluster = WayCluster()
+                wayCluster.centerline = cluster.centerline.trimmed(cluster.trimS,cluster.trimT)[:]
+                wayCluster.distToLeft = cluster.clusterWidth/2.
+
+                for wayID in [cluster.leftWayID, cluster.rightWayID]:
+                    section = self.waySections[wayID]
+                    fwd = section.originalSection.s == cluster.startPoints[1]
+                    if section.isOneWay:
+                        nrOfLanes = (section.nrRightLanes)
+                    else:
+                        nrOfLanes = (section.nrLeftLanes, section.nrRightLanes) if fwd else (section.nrRightLanes, section.nrLeftLanes)
+                    wayCluster.wayDescriptors.append(
+                        (
+                            0.,
+                            section.rightWidth+section.leftWidth,
+                            nrOfLanes,
+                            section.originalSection.category,
+                            section.originalSection.tags,
+                        )
+                    )
+                    # cleanup
+                    section.isValid = False
+                self.wayClusters[cluster.id] = wayCluster
+
+                # Some bookkeeping
+                # TODO expand this for multiple ways
+                for node in cluster.startPoints[1:3]:
+                    self.processedNodes.add(node.freeze())
+                for node in cluster.endPoints[1:3]:
+                    self.processedNodes.add(node.freeze())
+
     def createOutput(self):
         # Find first nodes that will produce conflicting intersections
         conflictingNodes = DisjointSets()
         for node in self.sectionNetwork:
-            intersection = Intersection(node, self.sectionNetwork, self.waySections)
-            conflictNodes = intersection.checkForConflicts()
-            if conflictNodes:
-               for conflict in conflictNodes:
-                    conflictingNodes.addSegment(node,conflict)
-                    # import matplotlib.pyplot as plt
-                    # plt.plot(conflict[0],conflict[1],'co',markersize=10,zorder=999)
-                    # plt.plot(node[0],node[1],'mx',markersize=15,zorder=999)
+            if node not in self.processedNodes:
+                intersection = Intersection(node, self.sectionNetwork, self.waySections)
+                conflictNodes = intersection.checkForConflicts()
+                if conflictNodes:
+                    for conflict in conflictNodes:
+                            conflictingNodes.addSegment(node,conflict)
 
         # Create intersections from nodes, that did not produce conflicts
         for node in self.sectionNetwork:
-            if node not in conflictingNodes.G:
-                intersection = Intersection(node, self.sectionNetwork, self.waySections)
-                self.intersections[node] = intersection
+            if node not in self.processedNodes:
+                if node not in conflictingNodes.G:
+                    intersection = Intersection(node, self.sectionNetwork, self.waySections)
+                    self.intersections[node] = intersection
 
         # Create Intersections from conflicting nodes
         for conflictingCluster in conflictingNodes:
@@ -186,8 +651,6 @@ class StreetGenerator():
                         polygon, connectors = intersection.intersectionPoly()
                     except:
                         pass
-                        # import matplotlib.pyplot as plt
-                        # plt.plot(node[0],node[1],'co',markersize=5,zorder=999)
                 else:
                     try:
                         polygon, connectors = intersection.intersectionPoly_noFillet()
@@ -278,8 +741,10 @@ class StreetGenerator():
 
         # Finally, the trimmed centerlines of the ways are constructed
         for sectionNr,section in self.waySections.items():
+            if not section.isValid:
+                continue
             waySlice = None
-            if section.trimT > section.trimS:
+            if section.trimT > section.trimS + 1.e-5:
                 waySlice = section.polyline.trimmed(section.trimS,section.trimT)
                 section_gn = TrimmedWaySection()
                 section_gn.centerline = waySlice.verts
@@ -295,4 +760,3 @@ class StreetGenerator():
                 self.waySectionLines[section.id] = section_gn
             # else:
             #     # already treated as reason for conflicting areas
-            #     plotWay(section.polyline.verts,False,'c',2,999)
