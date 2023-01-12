@@ -87,7 +87,7 @@ def setup(app, osm):
                 SkipFeaturesAgain(
                     setup.getSkipFeaturesAction(),
                     setup.getUnskipFeaturesAction(),
-                    setup.getFeatureDetectionAction()
+                    setup.getFeatureDetectionAction(simplifyPolygons)
                 )
             )
         

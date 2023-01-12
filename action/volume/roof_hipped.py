@@ -42,7 +42,7 @@ class RoofHipped(RoofLeveled):
         self.distance = []
     
     def getRoofItem(self, footprint):
-        return ItemRoofHipped.getItem(self.itemFactory, footprint)
+        return ItemRoofHipped(footprint)
 
     def validate(self, footprint):
         """
@@ -64,7 +64,7 @@ class RoofHipped(RoofLeveled):
         super().extrude(footprint, roofItem)
         
         # now generate the roof
-        if footprint.polygon.n == 4:
+        if footprint.polygon.numEdges == 4:
             ok = self.generateRoofQuadrangle(footprint, roofItem, firstVertIndex)
         else:
             ok = self.generateRoof(footprint, roofItem, firstVertIndex)
@@ -200,8 +200,8 @@ class RoofHipped(RoofLeveled):
         return True
     
     def generateRoof(self, footprint, roofItem, firstVertIndex):
-        verts = footprint.building.verts
-        numPolygonVerts = footprint.polygon.n
+        verts = footprint.building.renderInfo.verts
+        numPolygonVerts = footprint.polygon.numEdges
         lastVertIndex = firstVertIndex + numPolygonVerts - 1
         
         length, unitVector, roofSideIndices = self.length, self.unitVector, self.roofSideIndices
@@ -261,8 +261,7 @@ class RoofHipped(RoofLeveled):
                             (verts[ indices[_index] ][2] - roofVerticalPosition) * factor
                         ) for _index in range(2, len(indices))
                     ),
-                    edgeIndex,
-                    self.itemFactory
+                    edgeIndex
                 )
             else:
                 # A special exotic case:
@@ -285,8 +284,7 @@ class RoofHipped(RoofLeveled):
                             (verts[indices[_index]] - origin).dot(v)
                         ) for _index in range(len(indices))
                     ),
-                    -1,
-                    self.itemFactory
+                    -1
                 )
         return True
     

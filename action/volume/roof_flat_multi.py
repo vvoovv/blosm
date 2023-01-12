@@ -85,7 +85,7 @@ class RoofMulti:
             # create an inner polygon located at <minHeight>
             innerPolygon = PolygonCW()
             innerPolygon.init( Vector((coord[0], coord[1], z1)) for coord in element.getLinestringData(_l, data) )
-            if innerPolygon.n < 3:
+            if innerPolygon.numEdges < 3:
                 continue
             # check the direction of vertices, it must be clockwise (!)
             innerPolygon.checkDirection()
