@@ -130,6 +130,7 @@ class StreetGenerator():
         self.intersectionAreas = manager.intersectionAreas
         self.wayClusters = manager.wayClusters
         self.waySectionLines = manager.waySectionLines
+        NetSection.ID = 0   # This class variable doesn't get reset with new instance of StreetGenerator!!
 
         self.useFillet = False          # Don't change, it does not yet work!
         self.findSelfIntersections()
