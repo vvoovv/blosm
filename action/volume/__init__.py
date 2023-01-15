@@ -59,7 +59,6 @@ class Volume(Action):
             
             element = footprint.element
             if element.t is parse.multipolygon:
-                continue # FIXME
                 # check if the multipolygon has holes
                 if element.hasInner():
                     if footprint.getStyleBlockAttr("roofShape") in ("hipped", "gabled"):
