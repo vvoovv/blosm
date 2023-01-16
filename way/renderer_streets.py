@@ -41,36 +41,27 @@ class StreetRenderer:
             self.gnStreet, self.gnLamps = data_to.node_groups
     
     def render(self, manager, data):
-        self.renderStreetSections(manager)
+        obj = CurveRenderer.createBlenderObject(
+            "Street Sections",
+            Vector((0., 0., 0.)),
+            self.streetSectionsCollection,
+            None
+        )
+        # street sections without a cluster
+        self.renderStreetSections(manager.waySectionLines, obj)
+        # street sections clustered
+        self.renderStreetSections(manager.wayClusters, obj)
         self.renderIntersections(manager)
+        
+        #self.setGnModifiers(obj)
     
-    def renderStreetSections(self, manager):
-        location = Vector((0., 0., 0.))
-        for streetSection in manager.waySectionLines.values():
+    def renderStreetSections(self, streetSections, obj):
+        for streetSection in streetSections.values():
             centerline = streetSection.centerline
-            obj = CurveRenderer.createBlenderObject(
-                streetSection.tags.get("name", "street section"),
-                location,
-                self.streetSectionsCollection,
-                None
-            )
             spline = obj.data.splines.new('POLY')
             spline.points.add(len(centerline)-1)
             for index,point in enumerate(centerline):
                 spline.points[index].co = (point[0], point[1], 0., 1.)
-
-            # create a modifier for the Geometry Nodes setup
-            m = obj.modifiers.new("Street section", "NODES")
-            m.node_group = self.gnStreet
-            m["Input_25"] = streetSection.startWidths[0] + streetSection.startWidths[1]
-            m["Input_26"] = 2.5
-            m["Input_9"] = self.getMaterial("blosm_carriageway")
-            m["Input_24"] = self.getMaterial("blosm_sidewalk")
-            m["Input_28"] = self.getMaterial("blosm_zebra")
-            
-            m = obj.modifiers.new("Street Lamps", "NODES")
-            m.node_group = self.gnLamps
-            m["Input_26"] = 10.
 
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
@@ -81,7 +72,21 @@ class StreetRenderer:
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
             )
         
-        setBmesh(self.intersectionAreasObj, bm)        
+        setBmesh(self.intersectionAreasObj, bm)
+    
+    def setGnModifiers(self, obj):
+        # create a modifier for the Geometry Nodes setup
+        m = obj.modifiers.new("Street section", "NODES")
+        m.node_group = self.gnStreet
+        m["Input_25"] = streetSection.startWidths[0] + streetSection.startWidths[1]
+        m["Input_26"] = 2.5
+        m["Input_9"] = self.getMaterial("blosm_carriageway")
+        m["Input_24"] = self.getMaterial("blosm_sidewalk")
+        m["Input_28"] = self.getMaterial("blosm_zebra")
+        
+        m = obj.modifiers.new("Street Lamps", "NODES")
+        m.node_group = self.gnLamps
+        m["Input_26"] = 10.    
     
     def finalize(self):
         return
