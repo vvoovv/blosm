@@ -448,6 +448,11 @@ class BldgVector:
         return self.edge.length > other.edge.length
     
     def calculateSin(self):
+        # delete cached unit vectors
+        if self._unitVector:
+            self._unitVector = None
+        if self.prev._unitVector:
+            self.prev._unitVector = None
         self.sin = self.prev.unitVector.cross(self.unitVector)
 
 

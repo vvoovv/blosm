@@ -114,7 +114,7 @@ class BuildingRendererNew(Renderer):
             # a Blender collection for instances on the points cloud
             self.buildingAssetsCollection = bpy.data.collections[_collectionName]
             
-            # check if a Geometry Nodes setup with the name "blosm_gn_building" is already available
+            # check if the Geometry Nodes setup with the name "blosm_gn_building" is already available
             _gnName, _gnCollection = "blosm_gn_building", "Collection Info"
             node_groups = bpy.data.node_groups
             self.gnBuilding = node_groups[_gnName]\

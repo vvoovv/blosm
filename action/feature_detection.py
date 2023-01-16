@@ -132,12 +132,12 @@ class FeatureDetection:
             polygon, '4'
         )   
 
-        self.matchPattern(
-            sequence, sequenceLength,
-            FeatureDetection.triConvexPattern,
-            TriConvex,
-            polygon, ''
-        )
+        #self.matchPattern(
+        #    sequence, sequenceLength,
+        #    FeatureDetection.triConvexPattern,
+        #    TriConvex,
+        #    polygon, ''
+        #)
         
         #self.matchPattern(
         #    sequence, sequenceLength,

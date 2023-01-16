@@ -88,7 +88,7 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
             holesInfo.append((_offset, innerPolygons[0].n))
             holesInfo.extend(
                 zip(
-                    (_offset + v for v in accumulate( (innerPolygons[i].n for i in range(numHoles-1)), add)), (innerPolygons[i].n for i in range(1, numHoles))
+                    (_offset + v for v in accumulate( (innerPolygons[i].numEdges for i in range(numHoles-1)), add)), (innerPolygons[i].numEdges for i in range(1, numHoles))
                 )
             )
         else:
@@ -96,7 +96,7 @@ class RoofHippedMulti(RoofMulti, RoofHipped):
             holesInfo.append((_offset, innerPolygons[0].n))
             holesInfo.extend(
                 zip(
-                    (_offset + v for v in accumulate( (innerPolygons[i].n + innerPolygons[i+1].n for i in range(numHoles-1)), add)), (innerPolygons[i].n for i in range(1, numHoles))
+                    (_offset + v for v in accumulate( (innerPolygons[i].numEdges + innerPolygons[i+1].numEdges for i in range(numHoles-1)), add)), (innerPolygons[i].numEdges for i in range(1, numHoles))
                 )
             )
         

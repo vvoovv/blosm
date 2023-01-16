@@ -1,5 +1,5 @@
-from . import Way
-from defs.way import allWayCategories, facadeVisibilityWayCategories
+from . import Way, Railway
+from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories, vecicleRoadsCategories
 
 
 class WayManager:
@@ -21,6 +21,13 @@ class WayManager:
         
         self.actions = []
         
+        # <self.intersectionAreas>, <self.wayClusters> and <self.waySectionLines>
+        # are used for realistic rendering of streets
+        self.intersectionAreas = []
+        # street sections and clusters
+        self.waySectionLines = dict()
+        self.wayClusters = dict()
+        
         # <self.networkGraph>, <self.waySectionGraph> and <self.junctions> are set in an action,
         # for example <action.way_clustering.Way>
         self.networkGraph = self.waySectionGraph = self.junctions = None
@@ -28,18 +35,24 @@ class WayManager:
         app.addManager(self)
 
     def parseWay(self, element, elementId):
-        self.createWay(element)
-    
-    def parseRelation(self, element, elementId):
-        return
-    
-    def createWay(self, element):
         # create a wrapper for the OSM way <element>
         way = Way(element, self)
         self.layers[way.category].append(way)
     
+    def parseRelation(self, element, elementId):
+        return
+    
     def getAllWays(self):
         return (way for category in allWayCategories for way in self.layers[category])
+    
+    def getAllIntersectionWays(self):
+        return (way for category in wayIntersectionCategories for way in self.layers[category])
+
+    def getAllVehicleWays(self):
+        return (
+            way for category in vecicleRoadsCategories for way in self.layers[category] \
+            if not way.bridge and not way.tunnel
+        )
     
     def getFacadeVisibilityWays(self):
         return (
@@ -66,9 +79,30 @@ class WayManager:
         for renderer in self.renderers:
             renderer.render(self, self.data)
     
+    def renderExtra(self):
+        return
+    
     def addAction(self, action):
         action.app = self.app
         self.actions.append(action)
     
-    def renderExtra(self):
-        pass
+    def getRailwayManager(self):
+        return RailwayManager(self)
+
+class RailwayManager:
+    """
+    An auxiliary manager to process railways
+    """
+    
+    def __init__(self, wayManager):
+        self.layers = wayManager.layers
+        # use the default layer class in the <app>
+        self.layerClass = None
+    
+    def parseWay(self, element, elementId):
+        # create a wrapper for the OSM way <element>
+        way = Railway(element, self)
+        self.layers[way.category].append(way)
+    
+    def parseRelation(self, element, elementId):
+        return

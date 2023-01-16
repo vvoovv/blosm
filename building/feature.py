@@ -94,12 +94,11 @@ class Feature:
     def unskipVectors(self):
         self._unskipVectors()
         
-        currentVector = self.startVector
+        currentVector = self.startVector.next
         
-        while True:
+        while not currentVector is self.endVector.next:
             currentVector.skip = False
-            if currentVector is self.endVector:
-                break
+            currentVector.polygon.numEdges += 1
             currentVector = currentVector.next
     
     def _unskipVectors(self):
@@ -500,10 +499,13 @@ class ComplexConvex5(Feature):
         """
         self.startEdge[0].cl = \
         self.startNextVector.edge.cl = \
-        self.startNextVector.next.edge.cl = \
-        self.endVector.prev.edge.cl = \
-        self.endVector.edge.cl = \
         self.startVector.edge.cl
+        
+        self.middleEdge[0].cl = self.startVector.next.edge.cl
+        
+        self.endEdge[0].cl = \
+        self.endPrevVector.edge.cl = \
+        self.endVector.edge.cl
 
 
 class ComplexConvex4(Feature):

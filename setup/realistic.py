@@ -19,6 +19,12 @@ def setup(app, osm):
     
     if app.highways or app.railways:
         setup.skipWays()
+        
+        from action.generate_streets import StreetGenerator
+        from way.renderer_streets import StreetRenderer
+        wayManager = setup.getWayManager()
+        wayManager.addAction(StreetGenerator())
+        wayManager.addRenderer(StreetRenderer(app))
     
         if app.highways:
             setup.roadsAndPaths()
