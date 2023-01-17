@@ -171,7 +171,7 @@ class Intersection():
     # around their start positions and then by the distance of their
     # end-point from this position.
         def sort_key(outway):
-            vec = outway.polyline[-1] - position
+            vec = outway.polyline[1] - position
             length = vec.length
             angle = atan2(vec.y,vec.x)
             if angle < 0:
