@@ -41,27 +41,46 @@ class StreetRenderer:
             self.gnStreet, self.gnLamps = data_to.node_groups
     
     def render(self, manager, data):
-        obj = CurveRenderer.createBlenderObject(
-            "Street Sections",
-            Vector((0., 0., 0.)),
-            self.streetSectionsCollection,
-            None
-        )
+        obj = self.setupStreetObject()
+        bm = getBmesh(obj)
         # street sections without a cluster
-        self.renderStreetSections(manager.waySectionLines, obj)
+        self.generateStreetSections(manager.waySectionLines, bm)
         # street sections clustered
-        self.renderStreetSections(manager.wayClusters, obj)
+        self.generateStreetSections(manager.wayClusters, bm)
         self.renderIntersections(manager)
         
         #self.setGnModifiers(obj)
+        setBmesh(obj, bm)
+        
+        self.setAttributes(manager.waySectionLines, obj.data.attributes)
     
-    def renderStreetSections(self, streetSections, obj):
+    def setupStreetObject(self):
+        obj = createMeshObject(
+            "Street Sections",
+            collection = self.streetSectionsCollection
+        )
+        obj.data.attributes.new("offset1", 'FLOAT', 'POINT')
+        obj.data.attributes.new("width1", 'FLOAT', 'POINT')
+        obj.data.attributes.new("texture_offset1", 'INT', 'POINT')
+        
+        return obj
+    
+    def generateStreetSections(self, streetSections, bm):
         for streetSection in streetSections.values():
             centerline = streetSection.centerline
-            spline = obj.data.splines.new('POLY')
-            spline.points.add(len(centerline)-1)
-            for index,point in enumerate(centerline):
-                spline.points[index].co = (point[0], point[1], 0., 1.)
+            # create verts and edges
+            prevVert = bm.verts.new((centerline[0][0], centerline[0][1], 0.))
+            for i in range(1, len(centerline)):
+                vert = bm.verts.new((centerline[i][0], centerline[i][1], 0.))
+                bm.edges.new((prevVert, vert))
+                prevVert = vert
+    
+    def setAttributes(self, streetSections, attributes):
+        index = 0
+        for streetSection in streetSections.values():
+            for _ in streetSection.centerline:
+                attributes['width1'].data[index].value = streetSection.startWidths[0] + streetSection.startWidths[1]
+                index += 1
 
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
