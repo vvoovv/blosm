@@ -30,10 +30,7 @@ class TrimmedWaySection():
         self.nrOfLanes = None       # The left and right number of lanes, seen relative to the direction
                                     # of the centerline. A tuple of integers. For one-way streets, only one
                                     # integer with the number of lanes is in the tuple.
-        self.startWidths = None     # The left and right width at its start, seen relative to the direction
-                                    # of the centerline. A tuple of floats.
-        self.endWidths = None       # The left and right width at its end, seen relative to the direction
-                                    # of the centerline. A tuple of floats.
+        self.width = None           # The width of the way.
         self.tags = None            # The OSM tags of the way-section.
 
 class WayCluster():
@@ -754,10 +751,10 @@ class StreetGenerator():
                     section_gn.nrOfLanes = (section.nrRightLanes)
                 else:
                     section_gn.nrOfLanes = (section.nrLeftLanes, section.nrRightLanes)
-                section_gn.endWidths = section_gn.startWidths = (section.leftWidth, section.rightWidth)
+                section_gn.width = section.leftWidth + section.rightWidth
                 section_gn.tags = section.originalSection.tags
-                if section.turnParams:
-                    section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
+                # if section.turnParams:
+                #     section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
                 self.waySectionLines[section.id] = section_gn
             # else:
             #     # already treated as reason for conflicting areas
