@@ -52,16 +52,17 @@ class StreetRenderer:
         #self.setGnModifiers(obj)
         setBmesh(obj, bm)
         
-        self.setAttributes(manager.waySectionLines, obj.data.attributes)
+        self.setAttributes(manager, obj.data.attributes)
     
     def setupStreetObject(self):
         obj = createMeshObject(
             "Street Sections",
             collection = self.streetSectionsCollection
         )
-        obj.data.attributes.new("offset1", 'FLOAT', 'POINT')
-        obj.data.attributes.new("width1", 'FLOAT', 'POINT')
-        obj.data.attributes.new("texture_offset1", 'INT', 'POINT')
+        for i in range(4):
+            obj.data.attributes.new("offset"+str(i), 'FLOAT', 'POINT')
+            obj.data.attributes.new("width"+str(i), 'FLOAT', 'POINT')
+            obj.data.attributes.new("texture_offset"+str(i), 'INT', 'POINT')
         
         return obj
     
@@ -75,13 +76,20 @@ class StreetRenderer:
                 bm.edges.new((prevVert, vert))
                 prevVert = vert
     
-    def setAttributes(self, streetSections, attributes):
+    def setAttributes(self, manager, attributes):
         index = 0
-        for streetSection in streetSections.values():
+        
+        for streetSection in manager.waySectionLines.values():
             for _ in streetSection.centerline:
-                attributes['width1'].data[index].value = streetSection.startWidths[0] + streetSection.startWidths[1]
+                attributes["width0"].data[index].value = streetSection.width
                 index += 1
-
+        
+        for streetSection in manager.wayClusters.values():
+            for _ in streetSection.centerline:
+                for i, (offset, width, _, _, _) in enumerate(streetSection.wayDescriptors):
+                    attributes["width"+str(i)].data[index].value = width
+                index += 1
+    
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
         
