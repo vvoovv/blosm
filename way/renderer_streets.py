@@ -24,7 +24,7 @@ class StreetRenderer:
         )
         
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
-        _gnNameStreet = "blosm_gn_street_no_terrain"
+        _gnNameStreet = "blosm_street"
         _gnNameLamps = "blosm_street_lamps"
         node_groups = bpy.data.node_groups
         if _gnNameStreet in node_groups:
@@ -36,59 +36,59 @@ class StreetRenderer:
             #
             # load the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" from
             # the file <parent_directory of_<self.app.baseAssetPath>/prochitecture_carriageway_with_sidewalks.blend>
-            with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_carriageway_with_sidewalks.blend")) as (_, data_to):
+            with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
                 data_to.node_groups = [_gnNameStreet, _gnNameLamps]
             self.gnStreet, self.gnLamps = data_to.node_groups
     
     def render(self, manager, data):
-        obj = self.setupStreetObject()
-        bm = getBmesh(obj)
         # street sections without a cluster
-        self.generateStreetSections(manager.waySectionLines, bm)
+        self.generateStreetSectionsSimple(manager.waySectionLines)
         # street sections clustered
-        self.generateStreetSections(manager.wayClusters, bm)
+        self.generateStreetSectionsClusters(manager.wayClusters)
         self.renderIntersections(manager)
-        
-        #self.setGnModifiers(obj)
-        setBmesh(obj, bm)
-        
-        self.setAttributes(manager, obj.data.attributes)
     
-    def setupStreetObject(self):
-        obj = createMeshObject(
-            "Street Sections",
-            collection = self.streetSectionsCollection
+    def generateStreetSection(self, streetSection, waySection, location):
+        centerline = streetSection.centerline
+        
+        obj = CurveRenderer.createBlenderObject(
+            waySection.tags.get("name", "Street section"),
+            location,
+            self.streetSectionsCollection,
+            None
         )
-        for i in range(4):
-            obj.data.attributes.new("offset"+str(i), 'FLOAT', 'POINT')
-            obj.data.attributes.new("width"+str(i), 'FLOAT', 'POINT')
-            obj.data.attributes.new("texture_offset"+str(i), 'INT', 'POINT')
+        spline = obj.data.splines.new('POLY')
+        spline.points.add(len(centerline)-1)
+        for index,point in enumerate(centerline):
+            spline.points[index].co = (point[0], point[1], 0., 1.)
         
         return obj
     
-    def generateStreetSections(self, streetSections, bm):
+    def generateStreetSectionsSimple(self, streetSections):
+        location = Vector((0., 0., 0.))
+        
         for streetSection in streetSections.values():
-            centerline = streetSection.centerline
-            # create verts and edges
-            prevVert = bm.verts.new((centerline[0][0], centerline[0][1], 0.))
-            for i in range(1, len(centerline)):
-                vert = bm.verts.new((centerline[i][0], centerline[i][1], 0.))
-                bm.edges.new((prevVert, vert))
-                prevVert = vert
+            obj = self.generateStreetSection(streetSection, streetSection, location)
+            
+            self.setModifierCarriageway(obj, streetSection)
     
-    def setAttributes(self, manager, attributes):
-        index = 0
+    def generateStreetSectionsClusters(self, streetSections):
+        location = Vector((0., 0., 0.))
         
-        for streetSection in manager.waySectionLines.values():
-            for _ in streetSection.centerline:
-                attributes["width0"].data[index].value = streetSection.width
-                index += 1
-        
-        for streetSection in manager.wayClusters.values():
-            for _ in streetSection.centerline:
-                for i, (offset, width, _, _, _) in enumerate(streetSection.wayDescriptors):
-                    attributes["width"+str(i)].data[index].value = width
-                index += 1
+        for streetSection in streetSections.values():
+            obj = self.generateStreetSection(streetSection, streetSection.waySections[0], location)
+            
+            for i, waySection in enumerate(streetSection.waySections):
+                waySection.offset = (2*i-1)*streetSection.distToLeft # FIXME: a hack
+                self.setModifierCarriageway(obj, waySection)
+    
+    def setModifierCarriageway(self, obj, waySection):
+        m = obj.modifiers.new("Street section", "NODES")
+        m.node_group = self.gnStreet
+        m["Input_2"] = waySection.offset
+        m["Input_3"] = waySection.width
+        #m["Input_9"] = self.getMaterial("blosm_carriageway")
+        #m["Input_24"] = self.getMaterial("blosm_sidewalk")
+        #m["Input_28"] = self.getMaterial("blosm_zebra")
     
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
@@ -99,21 +99,7 @@ class StreetRenderer:
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
             )
         
-        setBmesh(self.intersectionAreasObj, bm)
-    
-    def setGnModifiers(self, obj):
-        # create a modifier for the Geometry Nodes setup
-        m = obj.modifiers.new("Street section", "NODES")
-        m.node_group = self.gnStreet
-        m["Input_25"] = streetSection.startWidths[0] + streetSection.startWidths[1]
-        m["Input_26"] = 2.5
-        m["Input_9"] = self.getMaterial("blosm_carriageway")
-        m["Input_24"] = self.getMaterial("blosm_sidewalk")
-        m["Input_28"] = self.getMaterial("blosm_zebra")
-        
-        m = obj.modifiers.new("Street Lamps", "NODES")
-        m.node_group = self.gnLamps
-        m["Input_26"] = 10.    
+        setBmesh(self.intersectionAreasObj, bm) 
     
     def finalize(self):
         return

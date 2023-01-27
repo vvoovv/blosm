@@ -22,57 +22,81 @@ from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
 from lib.CompGeom.centerline import centerlineOf
 from lib.CompGeom.dbscan import dbClusterScan
 
-class TrimmedWaySection():
-    def __init__(self):
-        self.centerline = None      # The trimmed centerline in forward direction (first vertex is start.
-                                    # and last is end). A Python list of vertices of type mathutils.Vector.
-        self.category = None        # The category of the way-section.
-        self.nrOfLanes = None       # The left and right number of lanes, seen relative to the direction
-                                    # of the centerline. A tuple of integers. For one-way streets, only one
-                                    # integer with the number of lanes is in the tuple.
-        self.width = None           # The width of the way.
-        self.tags = None            # The OSM tags of the way-section.
 
-class WayCluster():
+class TrimmedWaySection:
+    
     def __init__(self):
-        self.centerline = []        # The centerline of the cluster in forward direction. (first vertex is start.
-                                    # and last is end). A Python list of vertices of type <mathutils.Vector>.
-                                    # It is the centerline between the centerlines of the outermost ways in the cluster.
-        self.distToLeft = 0.        # The distance from the cluster centerline to the centerline of the leftmost way,
-                                    # seen relative to the direction of the cluster centerline.
-        self.wayDescriptors = []    # A Python list of way descriptors. The way descriptors in this list are ordered from
-                                    # left to right relative to the centerline of the cluster. A way descriptor is a tuple
-                                    # with the following content:
-                                    # Index:    Content:
-                                    #   0       Distance of the way's centerline from the left border of the cluster,
-                                    #           given by <distToLeft>. Zero for the leftmost way.
-                                    #   1       The width of the way.
-                                    #   2       The left and right number of lanes, seen relative to the direction
-                                    #           of the cluster centerline. A tuple of integers. For one-way streets,
-                                    #           only one integer with the number of lanes is in the tuple. 
-                                    #   3       The category of the way.
-                                    #   4       The OSM tags of the of the way.
+        # The trimmed centerline in forward direction (first vertex is start.
+        # and last is end). A Python list of vertices of type mathutils.Vector.
+        self.centerline = None
+        
+        # If it is a separate way section (not a part of a cluster), it's always equal to zero.
+        # It it is a part of cluster, it is a signed distance from the cluster's centerline
+        # to the way's centerline. Ways to the left from the cluster's centerline (relative
+        # to the direction of the centerline) have negative offset, otherwise they have positive offset.
+        self.offset = 0.
+        
+        # The width of the way.
+        self.width = None
+        
+        # The category of the way-section.
+        self.category = None
+        
+        # The left and right number of lanes, seen relative to the direction
+        # of the centerline. A tuple of integers. For one-way streets, only one
+        # integer with the number of lanes is in the tuple.
+        self.nrOfLanes = None
+        
+        # The OSM tags of the way-section.
+        self.tags = None
+
+
+class WayCluster:
+    
+    def __init__(self):
+        # The centerline of the cluster in forward direction. (first vertex is start.
+        # and last is end). A Python list of vertices of type <mathutils.Vector>.
+        # It is the centerline between the centerlines of the outermost ways in the cluster.
+        self.centerline = []
+        
+        # The distance from the cluster centerline to the centerline of the leftmost way,
+        # seen relative to the direction of the cluster centerline.
+        self.distToLeft = 0.
+        
+        # A Python list of way descriptors represented by instances of the class <TrimmedWaySection>.
+        # The way descriptors in this list are ordered from
+        # left to right relative to the centerline of the cluster.
+        self.waySections = []
+
 
 class IntersectionArea():
+    
     def __init__(self):
-        self.polygon = None         # The vertices of the polygon in counter-clockwise order. A Python
-                                    # list of vertices of type mathutils.Vector.
-        self.connectors = dict()    # The connectors of this polygon to the way-sections.
-                                    # A dictionary of tuples, where the key is the ID of the corresponding
-                                    # way-section key in the dictionary of TrimmedWaySection. The tuple has two
-                                    # elements, <indx> and <end>. <indx> is the first index in the intersection
-                                    # polygon for this connector, the second index is <indx>+1. <end> is
-                                    # the type 'S' for the start or 'E' for the end of the TrimmedWaySection
-                                    # connected here.
-        self.clusterConns = dict()  # The connectors of this polygon to the way-clusters. A dictionary of tuples,
-                                    # where the key is also the key of the corresponding way-cluster in the 
-                                    # dictionary <wayClusters> of The manager. The tuple has three elements, <indx>,
-                                    # <end> and <way>. <indx> is the first index in the intersection
-                                    # polygon for this connector, the second index is <indx>+1. <end> is
-                                    # the type 'S' for the start or 'E' for the end of the way cluster
-                                    # connected here. <way> is -1 if the whole way-cluster connects there,
-                                    # or the index in the list of way descriptors <wayDescriptors> in <WayCluster>,
-                                    # if only a single way of the cluster connects there.
+        # The vertices of the polygon in counter-clockwise order. A Python
+        # list of vertices of type mathutils.Vector.
+        self.polygon = None
+        
+        # The connectors of this polygon to the way-sections.
+        # A dictionary of tuples, where the key is the ID of the corresponding
+        # way-section key in the dictionary of TrimmedWaySection. The tuple has two
+        # elements, <indx> and <end>. <indx> is the first index in the intersection
+        # polygon for this connector, the second index is <indx>+1. <end> is
+        # the type 'S' for the start or 'E' for the end of the TrimmedWaySection
+        # connected here.
+        self.connectors = dict()
+        
+        # The connectors of this polygon to the way-clusters. A dictionary of tuples,
+        # where the key is also the key of the corresponding way-cluster in the 
+        # dictionary <wayClusters> of The manager. The tuple has three elements, <indx>,
+        # <end> and <way>. <indx> is the first index in the intersection
+        # polygon for this connector, the second index is <indx>+1. <end> is
+        # the type 'S' for the start or 'E' for the end of the way cluster
+        # connected here. <way> is -1 if the whole way-cluster connects there,
+        # or the index in the list of way descriptors <waySections> in <WayCluster>,
+        # if only a single way of the cluster connects there.
+        self.clusterConns = dict()
+
+
 # helper functions -----------------------------------------------
 def pairs(iterable):
     # iterable -> (p0,p1), (p1,p2), (p2, p3), ...
@@ -100,6 +124,14 @@ def isEdgy(polyline):
         if abs(v1.cross(v2)) > 0.65:
             return True
     return False
+
+def createWaySection(offset, width, nrOfLanes, category, tags):
+    waySection = TrimmedWaySection()
+    
+    waySection.offset, waySection.width, waySection.nrOfLanes, waySection.category, waySection.tags =\
+        offset, width, nrOfLanes, category, tags
+    
+    return waySection
 # ----------------------------------------------------------------
 
 class StreetGenerator():
@@ -585,13 +617,13 @@ class StreetGenerator():
                         nrOfLanes = (section.nrRightLanes)
                     else:
                         nrOfLanes = (section.nrLeftLanes, section.nrRightLanes) if fwd else (section.nrRightLanes, section.nrLeftLanes)
-                    wayCluster.wayDescriptors.append(
-                        (
+                    wayCluster.waySections.append(
+                        createWaySection(
                             0.,
                             section.rightWidth+section.leftWidth,
                             nrOfLanes,
                             section.originalSection.category,
-                            section.originalSection.tags,
+                            section.originalSection.tags
                         )
                     )
                     # cleanup
