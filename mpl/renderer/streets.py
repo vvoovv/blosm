@@ -41,17 +41,17 @@ class StreetRenderer(Renderer):
             centerlinClust = PolyLine(cluster.centerline)
             centerlinClust.plot('m',1)         
 
-            leftWay = centerlinClust.parallelOffset(cluster.distToLeft)
-            leftDesc = cluster.wayDescriptors[0]
-            leftPoly = leftWay.buffer(leftDesc[1]/2.,leftDesc[1]/2.)
+            leftSect = cluster.waySections[0]
+            leftWay = centerlinClust.parallelOffset(-leftSect.offset)
+            leftPoly = leftWay.buffer(leftSect.width/2.,leftSect.width/2.)
             plotPolygon(leftPoly,False,'g','g',1.,True,0.3,120)
 
-            rightWay = centerlinClust.parallelOffset(-cluster.distToLeft)
-            rightDesc = cluster.wayDescriptors[1]
-            rightPoly = rightWay.buffer(rightDesc[1]/2.,rightDesc[1]/2.)
+            rightSect = cluster.waySections[1]
+            rightWay = centerlinClust.parallelOffset(-rightSect.offset)
+            rightPoly = rightWay.buffer(rightSect.width/2.,rightSect.width/2.)
             plotPolygon(rightPoly,False,'g','g',1.,True,0.3,120)
 
-            poly = centerlinClust.buffer(cluster.distToLeft+leftDesc[1]/2,cluster.distToLeft+rightDesc[1]/2.)
+            poly = centerlinClust.buffer(cluster.distToLeft+leftSect.width/2.,cluster.distToLeft+rightSect.width/2.)
             plotPolygon(poly,False,'c','c',1,True,0.2,110)
 
             if self.debug:

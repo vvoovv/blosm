@@ -619,7 +619,7 @@ class StreetGenerator():
                         nrOfLanes = (section.nrLeftLanes, section.nrRightLanes) if fwd else (section.nrRightLanes, section.nrLeftLanes)
                     wayCluster.waySections.append(
                         createWaySection(
-                            0.,
+                            -cluster.clusterWidth/2. if wayID==cluster.leftWayID else cluster.clusterWidth/2.,
                             section.rightWidth+section.leftWidth,
                             nrOfLanes,
                             section.originalSection.category,
