@@ -35,6 +35,10 @@ class StreetRenderer(Renderer):
                 width = section_gn.width 
                 buffer = polyline.buffer(width/2,width/2)
                 plotPolygon(buffer,False,'k','b',1,True,0.1)
+                if not section_gn.startConnected:
+                    plt.plot(polyline[0][0],polyline[0][1],'cs',markersize=6)
+                if not section_gn.endConnected:
+                    plt.plot(polyline[-1][0],polyline[-1][1],'cs',markersize=6)
 
         for Id,cluster in manager.wayClusters.items(): 
             from lib.CompGeom.PolyLine import PolyLine 
@@ -53,6 +57,13 @@ class StreetRenderer(Renderer):
 
             poly = centerlinClust.buffer(cluster.distToLeft+leftSect.width/2.,cluster.distToLeft+rightSect.width/2.)
             plotPolygon(poly,False,'c','c',1,True,0.2,110)
+
+            if not cluster.startConnected:
+                # centerlinClust.plot('r',4)
+                plt.plot(cluster.centerline[0][0],cluster.centerline[0][1],'cs',markersize=6)
+            if not cluster.endConnected:
+                # centerlinClust.plot('r',4)
+                plt.plot(cluster.centerline[-1][0],cluster.centerline[-1][1],'cs',markersize=6)
 
             if self.debug:
                 plotWay(cluster.centerline,False,'b',2.)

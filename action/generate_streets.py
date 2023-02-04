@@ -51,6 +51,11 @@ class TrimmedWaySection:
         # The OSM tags of the way-section.
         self.tags = None
 
+        # True, if start of way is connected to other ways, else dead-end
+        self.startConnected = None
+
+        # True, if end of way is connected to other ways, else dead-end
+        self.endConnected = None
 
 class WayCluster:
     
@@ -68,6 +73,12 @@ class WayCluster:
         # The way descriptors in this list are ordered from
         # left to right relative to the centerline of the cluster.
         self.waySections = []
+
+        # True, if start of cluster is connected to other ways or clusters, else dead-end
+        self.startConnected = None
+
+        # True, if end of way is connected to other ways or clusters, else dead-end
+        self.endConnected = None
 
 
 class IntersectionArea():
@@ -718,12 +729,20 @@ class StreetGenerator():
                 isectArea.clusterConns = clustConnectors
                 self.intersectionAreas.append(isectArea)
 
+            else:
+                if clusterGroup[0][2] == 'end':
+                    clusterGroup[0][1].endConnected = False
+                else:
+                    clusterGroup[0][1].startConnected = False
+
     def createWayClusters(self):
         for longClusterWay in self.longClusterWays:
             for cluster in longClusterWay.clusterWays:
                 wayCluster = WayCluster()
                 wayCluster.centerline = cluster.centerline.trimmed(cluster.trimS,cluster.trimT)[:]
                 wayCluster.distToLeft = cluster.clusterWidth/2.
+                wayCluster.startConnected = cluster.startConnected
+                wayCluster.endConnected = cluster.endConnected
 
                 for wayID in [cluster.leftWayID, cluster.rightWayID]:
                     section = self.waySections[wayID]
@@ -892,6 +911,10 @@ class StreetGenerator():
             if section.trimT > section.trimS + 1.e-5:
                 waySlice = section.polyline.trimmed(section.trimS,section.trimT)
                 section_gn = TrimmedWaySection()
+
+                section_gn.startConnected = self.sectionNetwork.borderlessOrder(section.originalSection.s) != 1
+                section_gn.endConnected = self.sectionNetwork.borderlessOrder(section.originalSection.t) != 1
+
                 section_gn.centerline = waySlice.verts
                 section_gn.category = section.originalSection.category
                 if section.isOneWay:

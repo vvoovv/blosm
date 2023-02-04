@@ -102,6 +102,9 @@ class ClusterWay():
         self.startPoints = None
         self.endPoints = None
 
+        self.startConnected = True
+        self.endConnected = True
+
     # def transitionBecauseWidth(self):
     #     widthDiff = self.endWidth - self.startWidth
     #     if abs(widthDiff) > widthThresh:
