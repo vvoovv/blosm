@@ -48,7 +48,7 @@ class StreetRenderer:
             self.gnStreet, self.gnSidewalk, self.gnSeparator, self.gnLamps, self.gnTerrainPatches = data_to.node_groups
     
     def render(self, manager, data):
-        self.terrainRenderer = TerrainRenderer(self.gnTerrainPatches)
+        self.terrainRenderer = TerrainPatchesRenderer(self.gnTerrainPatches)
         
         # street sections without a cluster
         self.generateStreetSectionsSimple(manager.waySectionLines)
@@ -156,6 +156,8 @@ class StreetRenderer:
             bm.faces.new(
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
             )
+            
+            self.terrainRenderer.processIntersection(intersectionArea)
         
         setBmesh(self.intersectionAreasObj, bm) 
     
@@ -175,7 +177,7 @@ class StreetRenderer:
             return loadMaterialsFromFile(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_carriageway_with_sidewalks.blend"), False, name)[0]
         
 
-class TerrainRenderer:
+class TerrainPatchesRenderer:
     # A renderer for the terrain patches made between street graph cycles
     
     def __init__(self, gnTerrainPatches):
@@ -216,3 +218,37 @@ class TerrainRenderer:
                 self.obj.data.attributes["offset_l"].data[index].value = offsetL
                 self.obj.data.attributes["offset_r"].data[index].value = offsetR
                 index += 1
+    
+    def processIntersection(self, intersectionArea):
+        # Form a Python list of starting point of connectors with the adjacent way sections or
+        # way clusters
+        connectorStarts = []
+        if intersectionArea.connectors:
+            connectorStarts.extend(c[0] for c in intersectionArea.connectors.values())
+        if intersectionArea.clusterConns:
+            connectorStarts.extend(c[0] for c in intersectionArea.clusterConns.values())
+        
+        connectorStarts.sort()
+        
+        polygon = intersectionArea.polygon
+        
+        # all but the final segments
+        for i in range(len(connectorStarts)-1):
+            polylineStartIndex, polylineEndIndex = connectorStarts[i]+1, connectorStarts[i+1]
+            # Create a polyline out of <polygon> that starts at the polygon's point
+            # with the index <polylineStartIndex> and ends at the polygon's point
+            # with the index <polylineEndIndex>
+            prevVert = self.bm.verts.new((polygon[polylineStartIndex][0], polygon[polylineStartIndex][1], 0.))
+            for i in range(polylineStartIndex+1, polylineEndIndex+1):
+                vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
+                self.bm.edges.new((prevVert, vert))
+                prevVert = vert
+        
+        # the final segment
+        indices = list( range(connectorStarts[-1]+1, len(polygon)) )
+        indices.extend(i for i in range(connectorStarts[0]+1))
+        prevVert = self.bm.verts.new((polygon[indices[0]][0], polygon[indices[0]][1], 0.))
+        for i in indices:
+            vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
+            self.bm.edges.new((prevVert, vert))
+            prevVert = vert
