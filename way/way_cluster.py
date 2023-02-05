@@ -102,6 +102,9 @@ class ClusterWay():
         self.startPoints = None
         self.endPoints = None
 
+        self.startConnected = True
+        self.endConnected = True
+
     # def transitionBecauseWidth(self):
     #     widthDiff = self.endWidth - self.startWidth
     #     if abs(widthDiff) > widthThresh:
@@ -279,9 +282,18 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
     clustConnectors = dict()
     # find width of outgoing way
     id1, id2 = cluster1.leftWayID, cluster2.leftWayID
-    id3 = id1-1 if id1%2 else id1+1
-    id4 = id2-1 if id2%2 else id2+1
-    outWayID = [w.ID for w in cls.sectionNetwork.iterOutSegments(node) if w.ID not in (id1,id2,id3,id4)][0]
+    outWayID = [w.sectionId for w in cls.sectionNetwork.iterOutSegments(node) if w.sectionId not in (id1,id2)][0]
+
+    # print(id1,id2,outWayID)
+    # outways = [w for w in cls.sectionNetwork.iterOutSegments(node)]
+    # for w in outways:
+    #     p = w.path[-1]
+    #     plt.text(p[0],p[1],str(w.sectionId))
+    #     plotLine(w.path,False,'c',2)
+    # cls.waySections[id1].polyline.plot('m',4)
+    # # cls.waySections[id2].polyline.plot('k')
+    # cls.waySections[outWayID].polyline.plot('r',3)
+    # plotEnd()
 
     outLine, outWidth = widthAndLineFromID(cls,node,outWayID)
 
@@ -378,10 +390,23 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     wayConnectors = dict()
     clustConnectors = dict()
     # find width of outgoing way
-    id1, id2 = cluster1.leftWayID, cluster2.leftWayID
-    id3 = id1-1 if id1%2 else id1+1
-    id4 = id2-1 if id2%2 else id2+1
-    outWayID = [w.ID for w in cls.sectionNetwork.iterOutSegments(node) if w.ID not in (id1,id2,id3,id4)][0]
+    id1, id2 = cluster1.rightWayID, cluster2.rightWayID
+    outWayID = [w.sectionId for w in cls.sectionNetwork.iterOutSegments(node) if w.sectionId not in (id1,id2)][0]
+
+    # print(id1,id2,outWayID)
+    # plt.subplot(1,2,1)
+    # outways = [w for w in cls.sectionNetwork.iterOutSegments(node)]
+    # for w in outways:
+    #     p = w.path[-1]
+    #     plt.text(p[0],p[1],str(w.sectionId))
+    #     plotLine(w.path,False,'c',2)
+    # plt.gca().axis('equal')
+    # plt.subplot(1,2,2)
+    # cls.waySections[id1].polyline.plot('c')
+    # cls.waySections[id2].polyline.plot('c')
+    # cls.waySections[outWayID].polyline.plot('r',3)
+    # cluster2.centerline.plot('k',1,True)
+    # plotEnd()
 
     outLine, outWidth = widthAndLineFromID(cls,node,outWayID)
 

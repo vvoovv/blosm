@@ -1,12 +1,12 @@
 # A simple implementation of a density based scan, used to classify 
 # neighbor cluster endpoints by their neighborhood.
 def dbClusterScan(clusterEnds, eps, minP):
-    # vects:    # A list of endpoints, where the first element
-    #             of an endpoint is its position.
-    # eps:      # Threshold distance
-    # minP:     # Minimal number of points in cluster
-    # return:   # A Python list of lists, everyone containing neighbor
-    #           # endpoints or a single endpoint, when no neighbors.
+    # clusterEnds:  A list of endpoints, where the first element
+    #               of an endpoint is its position.
+    # eps:          Threshold distance
+    # minP:         Minimal number of points in cluster
+    # return:       A Python list of lists, everyone containing neighbor
+    #               endpoints or a single endpoint, when no neighbors.
  
     labels = [0]*len(clusterEnds) # -1: noise point, 0: not yet processed
     curLabel = 0            # index of current label
