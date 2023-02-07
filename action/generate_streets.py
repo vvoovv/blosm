@@ -209,12 +209,9 @@ class StreetGenerator():
     # Creates the network graph <self.sectionNetwork> for way-sctions (ways between crossings)
     def createWaySectionNetwork(self):
         wayManager = self.wayManager
-        # get border polygon (ounter-clockwise) of scene frame
-        minX, minY = self.app.projection.fromGeographic(wayManager.data.minLat, wayManager.data.minLon)
-        maxX, maxY = self.app.projection.fromGeographic(wayManager.data.maxLat, wayManager.data.maxLon)
 
         # prepare clipper for this frame
-        clipper = SCClipper(minX,maxX,minY,maxY)
+        clipper = SCClipper(self.app.minX, self.app.maxX, self.app.minY, self.app.maxY)
 
         # Not really used. This is a relict from way_clustering.py
         wayManager.junctions = (

@@ -152,6 +152,11 @@ class BaseApp:
         logger = self.logger
         if logger: logger.processStart()
         
+        # get Blender coordinates of the extent of the area of interest
+        data = self.managers[0].data
+        self.minX, self.minY = self.projection.fromGeographic(data.minLat, data.minLon)
+        self.maxX, self.maxY = self.projection.fromGeographic(data.maxLat, data.maxLon)
+        
         for m in self.managers:
             m.process()
         
