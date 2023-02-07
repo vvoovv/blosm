@@ -57,7 +57,7 @@ class StreetRenderer:
         self.renderIntersections(manager)
         
         self.terrainRenderer.processDeadEnds(manager.waySectionLines, manager.wayClusters)
-        
+        self.terrainRenderer.addExtent(self.app)
         self.terrainRenderer.setAttributes(manager.waySectionLines, manager.wayClusters)
     
     def generateStreetSection(self, streetSection, waySection, location):
@@ -316,6 +316,27 @@ class TerrainPatchesRenderer:
             self.bm.verts.new((v1[0], v1[1], 0.)),
             self.bm.verts.new((v2[0], v2[1], 0.))
         ))
+    
+    def addExtent(self, app):
+        # margin in meter
+        margin = 2.
+        
+        minX = app.minX - margin
+        minY = app.minY - margin
+        maxX = app.maxX + margin
+        maxY = app.maxY + margin
+        
+        # verts
+        v1 = self.bm.verts.new((minX, minY, 0.))
+        v2 = self.bm.verts.new((maxX, minY, 0.))
+        v3 = self.bm.verts.new((maxX, maxY, 0.))
+        v4 = self.bm.verts.new((minX, maxY, 0.))
+        
+        # edges
+        self.bm.edges.new((v1, v2))
+        self.bm.edges.new((v2, v3))
+        self.bm.edges.new((v3, v4))
+        self.bm.edges.new((v4, v1))
 
 
 def _getDirectionVector(point1, point2):
