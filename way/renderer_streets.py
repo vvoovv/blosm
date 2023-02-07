@@ -56,6 +56,8 @@ class StreetRenderer:
         self.generateStreetSectionsClusters(manager.wayClusters)
         self.renderIntersections(manager)
         
+        self.terrainRenderer.processDeadEnds(manager.waySectionLines, manager.wayClusters)
+        
         self.terrainRenderer.setAttributes(manager.waySectionLines, manager.wayClusters)
     
     def generateStreetSection(self, streetSection, waySection, location):
@@ -90,7 +92,7 @@ class StreetRenderer:
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
-            self.terrainRenderer.addStreetCenterline(streetSection.centerline)
+            self.terrainRenderer.processStreetCenterline(streetSection)
     
     def generateStreetSectionsClusters(self, streetSections):
         location = Vector((0., 0., 0.))
@@ -128,7 +130,7 @@ class StreetRenderer:
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
-            self.terrainRenderer.addStreetCenterline(streetSection.centerline)
+            self.terrainRenderer.processStreetCenterline(streetSection)
     
     def setModifierCarriageway(self, obj, waySection):
         m = addGeometryNodesModifier(obj, self.gnStreet, "Carriageway")
@@ -191,7 +193,9 @@ class TerrainPatchesRenderer:
         
         self.bm = getBmesh(obj)
     
-    def addStreetCenterline(self, centerline):
+    def processStreetCenterline(self, streetSection):
+        centerline = streetSection.centerline
+        
         prevVert = self.bm.verts.new((centerline[0][0], centerline[0][1], 0.))
         for i in range(1, len(centerline)):
             vert = self.bm.verts.new((centerline[i][0], centerline[i][1], 0.))
@@ -218,6 +222,53 @@ class TerrainPatchesRenderer:
                 self.obj.data.attributes["offset_l"].data[index].value = offsetL
                 self.obj.data.attributes["offset_r"].data[index].value = offsetR
                 index += 1
+    
+    def processDeadEnds(self, waySectionLines, wayClusters):
+        
+        for streetSection in waySectionLines.values():
+            centerline = streetSection.centerline
+            directionVector = None
+            if not streetSection.startConnected:
+                directionVector = _getDirectionVector(centerline[0], centerline[1])
+                
+                self.offsetEdgePoint(
+                    centerline[0],
+                    directionVector,
+                    0.5*streetSection.width
+                )
+            
+            if not streetSection.endConnected:
+                if len(centerline)>2 or not directionVector:
+                    directionVector = _getDirectionVector(centerline[-2], centerline[-1])
+                self.offsetEdgePoint(
+                    centerline[-1],
+                    directionVector,
+                    0.5*streetSection.width
+                )
+        
+        for streetSection in wayClusters.values():
+            centerline = streetSection.centerline
+            waySections = streetSection.waySections
+            directionVector = None
+            
+            if not streetSection.startConnected:
+                directionVector = _getDirectionVector(centerline[0], centerline[1])
+                self.offsetEdgePoint(
+                    centerline[0],
+                    directionVector,
+                    -waySections[0].offset + 0.5*waySections[0].width,
+                    waySections[-1].offset + 0.5*waySections[-1].width
+                )
+            
+            if not streetSection.endConnected:
+                if len(centerline)>2 or not directionVector:
+                    directionVector = _getDirectionVector(centerline[-2], centerline[-1])
+                self.offsetEdgePoint(
+                    centerline[-1],
+                    directionVector,
+                    -waySections[0].offset + 0.5*waySections[0].width,
+                    waySections[-1].offset + 0.5*waySections[-1].width
+                )
     
     def processIntersection(self, intersectionArea):
         # Form a Python list of starting point of connectors with the adjacent way sections or
@@ -252,3 +303,23 @@ class TerrainPatchesRenderer:
             vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
             self.bm.edges.new((prevVert, vert))
             prevVert = vert
+    
+    def offsetEdgePoint(self, point, directionVector, offsetLeft, offsetRight=None):
+        if offsetRight is None:
+            offsetRight = offsetLeft
+        
+        # point to left from the centerline
+        v1 = point - offsetLeft * directionVector
+        # point to right from the centerline
+        v2 = point + offsetRight * directionVector
+        self.bm.edges.new((
+            self.bm.verts.new((v1[0], v1[1], 0.)),
+            self.bm.verts.new((v2[0], v2[1], 0.))
+        ))
+
+
+def _getDirectionVector(point1, point2):
+    directionVector = point2 - point1
+    directionVector.normalize()
+    # vector perpendicular to <directionVector>
+    return Vector((directionVector[1], -directionVector[0]))
