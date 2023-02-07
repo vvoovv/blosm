@@ -340,186 +340,266 @@ class StreetGenerator():
                             self.waysForClusters.addSegment(Id,neighborID)
 
     def createLongClusterWays(self):
+        # for cIndx,wayIndxs in enumerate(self.waysForClusters):
+        #     # Get the sections included in this cluster
+        #     sections = [self.waySections[Id] for Id in wayIndxs]
+
+        #     # Find their endpoints (ends of the cluster)
+        #     # Note: Clusters may have common endpoints,
+        #     # which are not yet detected here.
+        #     sectionEnds = defaultdict(list)
+        #     for i,section in enumerate(sections):
+        #         s,t = section.originalSection.s, section.originalSection.t
+        #         sV, tV = section.sV, section.tV
+        #         Id = wayIndxs[i]
+        #         # Store the section ID, start- and endpoint, the vertices of the polyline and the
+        #         # direction vectors at start and end. The latter will be used to detect common endpoints.
+        #         sectionEnds[s].append({'ID':Id,'start':s,'end':t,'verts':section.polyline.verts,      'startV':sV,'endV':-tV})
+        #         sectionEnds[t].append({'ID':Id,'start':t,'end':s,'verts':section.polyline.verts[::-1],'startV':tV,'endV':-sV})
+        #     clusterEnds = [k for k, v in sectionEnds.items() if len(v) == 1]
+
+        #     if not clusterEnds:
+        #         continue
+
+        #     # Connect the segments to polylines for long clusters. Collect the section IDs
+        #     # and the intersections along these lines spearately in the same order.
+        #     endpoints = clusterEnds.copy()
+        #     lines = []
+        #     intersectionsAll = []
+        #     sectionsIDsAll = []
+        #     inClusterIsects = []
+        #     while endpoints:
+        #         ep = endpoints.pop()
+        #         line = []
+        #         intersectionsThis = []
+        #         sectionsIDs = []
+        #         currSec = sectionEnds[ep][0]
+        #         while True:
+        #             line.extend(currSec['verts'][:-1])  # The end of this section will be the start of the next section.
+        #             sectionsIDs.append(currSec['ID'])
+        #             end = currSec['end']
+        #             if len(sectionEnds[end]) == 2:
+        #                 newSec = [sec for sec in sectionEnds[end] if sec['end'] != currSec['start']][0]
+        #                 if currSec['endV'].dot(newSec['startV']) < 0.:
+        #                     # We have a common endpoint here that does not exist in <endpoints>.
+        #                     # We end the current line here and start a new one, that continues.
+        #                     # But remember this point as an additional possible cluster endpoint.
+        #                     # sectionsIDs.append(currSec['ID'])
+        #                     intersectionsThis.append(currSec['end'])
+        #                     line.append(end)
+        #                     inClusterIsects.append(end)
+        #                     lines.append(PolyLine(line))
+        #                     intersectionsAll.append(intersectionsThis)
+        #                     sectionsIDsAll.append(sectionsIDs)
+        #                     line = []
+        #                     intersectionsThis = []
+        #                     sectionsIDs = []
+        #                     currSec = newSec
+        #                 else:
+        #                     intersectionsThis.append(currSec['end'])
+        #                     currSec = newSec
+        #             else:
+        #                 if end in endpoints:
+        #                     endpoints.remove(end)
+        #                 break
+        #         line.append(end)    # Add the endpoint of the last section.
+        #         lines.append(PolyLine(line))
+        #         intersectionsAll.append(intersectionsThis)
+        #         sectionsIDsAll.append(sectionsIDs)
+
+        #     # All lines found should be ordered in the same direction. To realize this,
+        #     # find the longest polyline and project the first and last vertex of every line
+        #     # onto this reference polyline. The line parameter of the first vertex must
+        #     # then be smaller than the one of the last vertex. Store the line parameters
+        #     # for later use.
+        #     referenceLine = max( (line for line in lines), key=lambda x: x.length() )
+        #     params0 = []
+        #     params1 = []
+        #     for indx,line in enumerate(lines):
+        #         _,t0 = referenceLine.orthoProj(line[0])
+        #         _,t1 = referenceLine.orthoProj(line[-1])
+        #         if t0 > t1: # reverse this line, if True
+        #             lines[indx].toggleView()
+        #             params0.append(t1)
+        #             params1.append(t0)
+        #         else:
+        #             params0.append(t0)
+        #             params1.append(t1)
+
+        #     # Sometimes, there have been gaps left due to short way-sections.
+        #     # During cluster detection, lines shorter than <minTemplateLength>
+        #     # have been eliminated. We search now for gaps between start- and
+        #     # end-points of lines, that are shorter than this value.
+        #     perms = permutations(range(len(lines)),2)
+        #     possibleGaps = []
+        #     for i0,i1 in perms:
+        #         if params0[i1] < params1[i0]: # prevent short cluster to be merged
+        #             d = (lines[i0][0]-lines[i1][-1]).length
+        #             if d < minTemplateLength:
+        #                 possibleGaps.append( (i0,i1) )
+
+        #     # If there are such gaps, the corresponding lines are merged, if there
+        #     # exists a real way-section that can fill this gap.
+        #     if possibleGaps:
+        #         # In case of bifurcations, we connect only to one line. Clean
+        #         # possible gaps by removing duplicates in first or second index.
+        #         i0s, i1s = [], []
+        #         cleanedPossibleGaps = []
+        #         for i0,i1 in possibleGaps:
+        #             if i0 not in i0s and i1 not in i1s:
+        #                 cleanedPossibleGaps.append( (i0,i1) )
+        #                 i0s.append(i0)
+        #                 i1s.append(i1)
+
+        #         # Merge lines through gaps.
+        #         linesToRemove = []
+        #         for i0,i1 in cleanedPossibleGaps:
+        #             if lines[i0][0] in self.sectionNetwork and lines[i1][-1] in self.sectionNetwork:
+        #                 if lines[i1][-1] in self.sectionNetwork[lines[i0][0]]:
+        #                     sectionId = self.sectionNetwork[lines[i0][0]][lines[i1][-1]][0].sectionId
+        #                 elif lines[i0][0] in self.sectionNetwork[lines[i1][-1]]:
+        #                     sectionId = self.sectionNetwork[lines[i1][-1]][lines[i0][0]][0].sectionId
+        #                 else:
+        #                     print('Problem',i0,i1,cIndx)
+        #                     continue
+        #                 lines[i1] = PolyLine( lines[i1][:] + lines[i0][:])
+        #                 sectionsIDsAll[i1].extend(sectionsIDsAll[i0] + [sectionId])
+        #                 intersectionsAll[i1].extend(intersectionsAll[i0] + [lines[i0][0],lines[i1][-1]])
+        #                 linesToRemove.append(i0)
+
+        #         # Remove merged parts.
+        #         if linesToRemove:
+        #             for index in sorted(linesToRemove, reverse=True):
+        #                 del lines[index]                    
+
+        #     # We like to have the start points close together. The line ends that have a
+        #     # smaller median absolute deviation are selected as start points.
+        #     params0 = [referenceLine.orthoProj(line[0])[1] for line in lines]
+        #     params1 = [referenceLine.orthoProj(line[-1])[1] for line in lines]
+        #     mad0 = mad(params0)
+        #     mad1 = mad(params1)
+        #     if mad1 < mad0:
+        #         for indx,line in enumerate(lines):
+        #             lines[indx].toggleView()
+        #             sectionsIDsAll[indx] = sectionsIDsAll[indx][::-1]
+        #             intersectionsAll[indx] = intersectionsAll[indx][::-1]
+
+        #     # As last step, the lines have to be ordered from left to right.
+        #     # The first segment of an arbitrary line is turned perpendicularly
+        #     # to the right and all startpoints are projected onto this vector,
+        #     # delivering a line parameter t. The lines are the sorted by 
+        #     # increasing parameter values.
+        #     vec = lines[0][1] - lines[0][0] # first segment
+        #     p0 = lines[0][0]
+        #     perp = Vector((vec[1],-vec[0])) # perpendicular to the right
+        #     sIndx = [ i for i in range(len(lines))]
+        #     sIndx.sort(key=lambda x: (lines[x][0]-p0).dot(perp))
+
+        #     # From here, only the two outermost ways in the cluster are used,
+        #     # in order to be able the old 2-ways processes behind. This part
+        #     # will be refactored, when these processes ar eready.
+        #     left = lines[sIndx[0]]
+        #     right = lines[sIndx[-1]]
+        #     leftSectionIDs = sectionsIDsAll[sIndx[0]]
+        #     rightSectionIDs = sectionsIDsAll[sIndx[-1]]
+        #     intersectionsThis = [intersectionsAll[sIndx[0]], intersectionsAll[sIndx[-1]] ]
+
+        #     # Check ratio of endpoînt distances to decide if valid cluster
+        #     d0 = (left[0]-right[0]).length
+        #     d1 = (left[-1]-right[-1]).length
+        #     ratio = min(d0,d1)/max(d0,d1)
+
+        #     # Discard cluster if too asymetric ends.
+        #     # TODO: Will require more sophisticated test
+        #     if ratio < 0.5 or inClusterIsects:
+        #         continue
+
+        #     centerline = PolyLine( centerlineOf(left[:],right[:]) )
+
+        #     longCluster = LongClusterWay(self)
+        #     longCluster.leftSectionIDs = leftSectionIDs
+        #     longCluster.rightSectionIDs = rightSectionIDs
+        #     longCluster.intersectionsAll = intersectionsThis
+        #     longCluster.left = left
+        #     longCluster.right = right
+        #     longCluster.centerline = centerline
+
+        #     # Split the long cluster in smaller pieces of type <ClusterWay>,
+        #     # stored in <longCluster>.
+        #     longCluster.split()
+
+        #     self.longClusterWays.append(longCluster)
         for cIndx,wayIndxs in enumerate(self.waysForClusters):
             # Get the sections included in this cluster
             sections = [self.waySections[Id] for Id in wayIndxs]
 
             # Find their endpoints (ends of the cluster)
-            # Note: Clusters may have common endpoints,
-            # which are not yet detected here.
+            # TODO: In the general case, clusters may have common endpoints 
             sectionEnds = defaultdict(list)
-            for i,section in enumerate(sections):
+            for section in sections:
                 s,t = section.originalSection.s, section.originalSection.t
-                sV, tV = section.sV, section.tV
-                Id = wayIndxs[i]
-                # Store the section ID, start- and endpoint, the vertices of the polyline and the
-                # direction vectors at start and end. The latter will be used to detect common endpoints.
-                sectionEnds[s].append({'ID':Id,'start':s,'end':t,'verts':section.polyline.verts,      'startV':sV,'endV':-tV})
-                sectionEnds[t].append({'ID':Id,'start':t,'end':s,'verts':section.polyline.verts[::-1],'startV':tV,'endV':-sV})
-            clusterEnds = [k for k, v in sectionEnds.items() if len(v) == 1]
+                sectionEnds[s].append( section )
+                sectionEnds[t].append( section )
+            endpoints = [k for k, v in sectionEnds.items() if len(v) == 1]
 
-            if not clusterEnds:
-                continue
-
-            # Connect the segments to polylines for long clusters. Collect the section IDs
-            # and the intersections along these lines spearately in the same order.
-            endpoints = clusterEnds.copy()
+            # Collect adjacent way-sections and join them to lines
+            # TODO: Again, in the general case, clusters may have common endpoints
+            sectionIDs = wayIndxs.copy()
             lines = []
             intersectionsAll = []
             sectionsIDsAll = []
-            inClusterIsects = []
             while endpoints:
-                ep = endpoints.pop()
-                line = []
+                cur = endpoints.pop()
+                line = [cur]
                 intersectionsThis = []
                 sectionsIDs = []
-                currSec = sectionEnds[ep][0]
                 while True:
-                    line.extend(currSec['verts'][:-1])  # The end of this section will be the start of the next section.
-                    sectionsIDs.append(currSec['ID'])
-                    end = currSec['end']
-                    if len(sectionEnds[end]) == 2:
-                        newSec = [sec for sec in sectionEnds[end] if sec['end'] != currSec['start']][0]
-                        if currSec['endV'].dot(newSec['startV']) < 0.:
-                            # We have a common endpoint here that does not exist in <endpoints>.
-                            # We end the current line here and start a new one, that continues.
-                            # But remember this point as an additional possible cluster endpoint.
-                            # sectionsIDs.append(currSec['ID'])
-                            intersectionsThis.append(currSec['end'])
-                            line.append(end)
-                            inClusterIsects.append(end)
-                            lines.append(PolyLine(line))
-                            intersectionsAll.append(intersectionsThis)
-                            sectionsIDsAll.append(sectionsIDs)
-                            line = []
-                            intersectionsThis = []
-                            sectionsIDs = []
-                            currSec = newSec
-                        else:
-                            intersectionsThis.append(currSec['end'])
-                            currSec = newSec
-                    else:
-                        if end in endpoints:
-                            endpoints.remove(end)
+                    curID = next(filter(lambda x: cur in [self.waySections[x].originalSection.s,self.waySections[x].originalSection.t], sectionIDs) )
+                    curSec = self.waySections[curID]
+                    sectionIDs.remove(curID)
+                    sectVerts = curSec.polyline.verts if curSec.originalSection.s==cur else curSec.polyline.verts[::-1]
+                    line.extend(sectVerts[1:])
+                    sectionsIDs.append(curID)
+                    cur = sectVerts[-1]
+                    if cur in endpoints:
+                        endpoints.remove(cur)
+                        lines.append(line)
+                        intersectionsAll.append(intersectionsThis)
+                        sectionsIDsAll.append(sectionsIDs)
                         break
-                line.append(end)    # Add the endpoint of the last section.
-                lines.append(PolyLine(line))
-                intersectionsAll.append(intersectionsThis)
-                sectionsIDsAll.append(sectionsIDs)
+                    else:
+                        intersectionsThis.append(cur)
 
-            # All lines found should be ordered in the same direction. To realize this,
-            # find the longest polyline and project the first and last vertex of every line
-            # onto this reference polyline. The line parameter of the first vertex must
-            # then be smaller than the one of the last vertex. Store the line parameters
-            # for later use.
-            referenceLine = max( (line for line in lines), key=lambda x: x.length() )
-            params0 = []
-            params1 = []
-            for indx,line in enumerate(lines):
-                _,t0 = referenceLine.orthoProj(line[0])
-                _,t1 = referenceLine.orthoProj(line[-1])
-                if t0 > t1: # reverse this line, if True
-                    lines[indx].toggleView()
-                    params0.append(t1)
-                    params1.append(t0)
-                else:
-                    params0.append(t0)
-                    params1.append(t1)
-
-            # Sometimes, there have been gaps left due to short way-sections.
-            # During cluster detection, lines shorter than <minTemplateLength>
-            # have been eliminated. We search now for gaps between start- and
-            # end-points of lines, that are shorter than this value.
-            perms = permutations(range(len(lines)),2)
-            possibleGaps = []
-            for i0,i1 in perms:
-                if params0[i1] < params1[i0]: # prevent short cluster to be merged
-                    d = (lines[i0][0]-lines[i1][-1]).length
-                    if d < minTemplateLength:
-                        possibleGaps.append( (i0,i1) )
-
-            # If there are such gaps, the corresponding lines are merged, if there
-            # exists a real way-section that can fill this gap.
-            if possibleGaps:
-                # In case of bifurcations, we connect only to one line. Clean
-                # possible gaps by removing duplicates in first or second index.
-                i0s, i1s = [], []
-                cleanedPossibleGaps = []
-                for i0,i1 in possibleGaps:
-                    if i0 not in i0s and i1 not in i1s:
-                        cleanedPossibleGaps.append( (i0,i1) )
-                        i0s.append(i0)
-                        i1s.append(i1)
-
-                # Merge lines through gaps.
-                linesToRemove = []
-                for i0,i1 in cleanedPossibleGaps:
-                    if lines[i0][0] in self.sectionNetwork and lines[i1][-1] in self.sectionNetwork:
-                        if lines[i1][-1] in self.sectionNetwork[lines[i0][0]]:
-                            sectionId = self.sectionNetwork[lines[i0][0]][lines[i1][-1]][0].sectionId
-                        elif lines[i0][0] in self.sectionNetwork[lines[i1][-1]]:
-                            sectionId = self.sectionNetwork[lines[i1][-1]][lines[i0][0]][0].sectionId
-                        else:
-                            print('Problem',i0,i1,cIndx)
-                            continue
-                        lines[i1] = PolyLine( lines[i1][:] + lines[i0][:])
-                        sectionsIDsAll[i1].extend(sectionsIDsAll[i0] + [sectionId])
-                        intersectionsAll[i1].extend(intersectionsAll[i0] + [lines[i0][0],lines[i1][-1]])
-                        linesToRemove.append(i0)
-
-                # Remove merged parts.
-                if linesToRemove:
-                    for index in sorted(linesToRemove, reverse=True):
-                        del lines[index]                    
-
-            # We like to have the start points close together. The line ends that have a
-            # smaller median absolute deviation are selected as start points.
-            params0 = [referenceLine.orthoProj(line[0])[1] for line in lines]
-            params1 = [referenceLine.orthoProj(line[-1])[1] for line in lines]
-            mad0 = mad(params0)
-            mad1 = mad(params1)
-            if mad1 < mad0:
-                for indx,line in enumerate(lines):
-                    lines[indx].toggleView()
-                    sectionsIDsAll[indx] = sectionsIDsAll[indx][::-1]
-                    intersectionsAll[indx] = intersectionsAll[indx][::-1]
-
-            # As last step, the lines have to be ordered from left to right.
-            # The first segment of an arbitrary line is turned perpendicularly
-            # to the right and all startpoints are projected onto this vector,
-            # delivering a line parameter t. The lines are the sorted by 
-            # increasing parameter values.
-            vec = lines[0][1] - lines[0][0] # first segment
-            p0 = lines[0][0]
-            perp = Vector((vec[1],-vec[0])) # perpendicular to the right
-            sIndx = [ i for i in range(len(lines))]
-            sIndx.sort(key=lambda x: (lines[x][0]-p0).dot(perp))
-
-            # From here, only the two outermost ways in the cluster are used,
-            # in order to be able the old 2-ways processes behind. This part
-            # will be refactored, when these processes ar eready.
-            left = lines[sIndx[0]]
-            right = lines[sIndx[-1]]
-            leftSectionIDs = sectionsIDsAll[sIndx[0]]
-            rightSectionIDs = sectionsIDsAll[sIndx[-1]]
-            intersectionsThis = [intersectionsAll[sIndx[0]], intersectionsAll[sIndx[-1]] ]
+            # project endpoints of line0 onto line1 to find corresponding ends.
+            # Reverse line1, if required, so that both starts are on the same side.
+            line0, line1 = PolyLine(lines[0]), PolyLine(lines[1])
+            sectionsIDs0, sectionsIDs1 = sectionsIDsAll[0], sectionsIDsAll[1]
+            _,t0 = line1.orthoProj(line0[0])
+            _,t1 = line1.orthoProj(line0[-1])
+            if t1 < t0:
+                line1 = PolyLine(line1.verts[::-1])
+                sectionsIDs1 = sectionsIDs1[::-1]
 
             # Check ratio of endpoînt distances to decide if valid cluster
-            d0 = (left[0]-right[0]).length
-            d1 = (left[-1]-right[-1]).length
+            d0 = (line0[0]-line1[0]).length
+            d1 = (line0[-1]-line1[-1]).length
             ratio = min(d0,d1)/max(d0,d1)
 
             # Discard cluster if too asymetric ends.
-            # TODO: Will require more sophisticated test
-            if ratio < 0.5 or inClusterIsects:
+            # TODO: Will require moe sophisticated test
+            if ratio < 0.5:
                 continue
 
-            centerline = PolyLine( centerlineOf(left[:],right[:]) )
+            centerline = PolyLine( centerlineOf(line0.verts,line1.verts) )
+            # find order of lines from left to right
+            side = (line0[1]-line0[0]).cross(line1[0]-line0[0]) < 0.
+            left, right = (line0,line1) if side else (line1,line0)
+            leftSectionIDs, rightSectionIDs = (sectionsIDs0,sectionsIDs1) if side else (sectionsIDs1,sectionsIDs0)
 
             longCluster = LongClusterWay(self)
             longCluster.leftSectionIDs = leftSectionIDs
             longCluster.rightSectionIDs = rightSectionIDs
-            longCluster.intersectionsAll = intersectionsThis
+            longCluster.intersectionsAll = intersectionsAll
             longCluster.left = left
             longCluster.right = right
             longCluster.centerline = centerline
