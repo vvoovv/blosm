@@ -230,7 +230,11 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return {'CANCELLED'}
         
         createFlatTerrain = a.mode is a.realistic and a.forests
-        forceExtentCalculation = createFlatTerrain and a.osmSource == "file"
+        forceExtentCalculation = a.osmSource == "file" and\
+            (
+                createFlatTerrain or\
+                a.mode is a.realistic and a.highways
+            )
         
         setupScript = addon.setupScript
         if setupScript:

@@ -189,7 +189,7 @@ class Osm:
                 # If <self.projection> isn't set,
                 # it means we need to set <self.projection> here,
                 # using <bounds> from the OSM file
-                if not self.projection:
+                if not self.projection or forceExtentCalculation:
                     # also set the area extent
                     self.minLat = float(attrs["minlat"])
                     self.maxLat = float(attrs["maxlat"])
