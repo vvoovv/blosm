@@ -315,3 +315,17 @@ def useAttributeForGnInput(modifier, inputId, attributeName):
     modifier[inputId + "_use_attribute"] = 1
     # set "_attribute_name" to the related mesh attribute of the Blender object
     modifier[inputId + "_attribute_name"] = attributeName
+
+
+def createPolylineMesh(obj, bm, polyline):
+    if obj:
+        bm = getBmesh(obj)
+    
+    prevVert = bm.verts.new((polyline[0][0], polyline[0][1], 0.))
+    for i in range(1, len(polyline)):
+        vert = bm.verts.new((polyline[i][0], polyline[i][1], 0.))
+        bm.edges.new((prevVert, vert))
+        prevVert = vert
+    
+    if obj:
+        setBmesh(obj, bm)

@@ -2,10 +2,10 @@ import os
 import bpy
 
 from renderer import Renderer
-from renderer.curve_renderer import CurveRenderer
+#from renderer.curve_renderer import CurveRenderer
 
 from util.blender import createMeshObject, createCollection, getBmesh, setBmesh, loadMaterialsFromFile,\
-    addGeometryNodesModifier, useAttributeForGnInput
+    addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
 
 from mathutils import Vector
 
@@ -25,18 +25,26 @@ class StreetRenderer:
         )
         
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
-        _gnNameStreet = "blosm_street"
-        _gnNameSidewalk = "blosm_sidewalk"
-        _gnNameSeparator = "blosm_str_separator"
-        _gnNameLamps = "blosm_street_lamps"
-        _gnNameTerrainPatches = "blosm_terrain_patches"
+        _gnStreet = "blosm_street"
+        _gnSidewalk = "blosm_sidewalk"
+        _gnSeparator = "blosm_str_separator"
+        _gnLamps = "blosm_street_lamps"
+        _gnProjectStreets = "blosm_project_streets"
+        _gnTerrainPatches = "blosm_terrain_patches"
+        _gnProjectOnTerrain = "blosm_project_on_terrain"
+        _gnProjectTerrainPatches = "blosm_project_terrain_patches"
+        _gnMeshToCurve = "blosm_mesh_to_curve"
         node_groups = bpy.data.node_groups
-        if _gnNameStreet in node_groups:
-            self.gnStreet = node_groups[_gnNameStreet]
-            self.gnSidewalk = node_groups[_gnNameSidewalk]
-            self.gnSeparator = node_groups[_gnNameSeparator]
-            self.gnLamps = node_groups[_gnNameLamps]
-            self.gnTerrainPatches = node_groups[_gnNameTerrainPatches]
+        if _gnStreet in node_groups:
+            self.gnStreet = node_groups[_gnStreet]
+            self.gnSidewalk = node_groups[_gnSidewalk]
+            self.gnSeparator = node_groups[_gnSeparator]
+            self.gnLamps = node_groups[_gnLamps]
+            self.gnProjectStreets = node_groups[_gnProjectStreets]
+            self.gnTerrainPatches = node_groups[_gnTerrainPatches]
+            self.gnProjectOnTerrain = node_groups[_gnProjectOnTerrain]
+            self.gnProjectTerrainPatches = node_groups[_gnProjectTerrainPatches]
+            self.gnMeshToCurve = node_groups[_gnMeshToCurve]
         else:
             #
             # TEMPORARY CODE
@@ -44,11 +52,17 @@ class StreetRenderer:
             # load the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" from
             # the file <parent_directory of_<self.app.baseAssetPath>/prochitecture_carriageway_with_sidewalks.blend>
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
-                data_to.node_groups = [_gnNameStreet, _gnNameSidewalk, _gnNameSeparator, _gnNameLamps, _gnNameTerrainPatches]
-            self.gnStreet, self.gnSidewalk, self.gnSeparator, self.gnLamps, self.gnTerrainPatches = data_to.node_groups
+                data_to.node_groups = [
+                    _gnStreet, _gnSidewalk, _gnSeparator, _gnLamps,\
+                    _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
+                    _gnMeshToCurve
+                ]
+            self.gnStreet, self.gnSidewalk, self.gnSeparator, self.gnLamps,\
+                self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
+                self.gnProjectTerrainPatches, self.gnMeshToCurve = data_to.node_groups
     
     def render(self, manager, data):
-        self.terrainRenderer = TerrainPatchesRenderer(self.gnTerrainPatches)
+        self.terrainRenderer = TerrainPatchesRenderer(self)
         
         # street sections without a cluster
         self.generateStreetSectionsSimple(manager.waySectionLines)
@@ -61,18 +75,26 @@ class StreetRenderer:
         self.terrainRenderer.setAttributes(manager.waySectionLines, manager.wayClusters)
     
     def generateStreetSection(self, streetSection, waySection, location):
-        centerline = streetSection.centerline
-        
-        obj = CurveRenderer.createBlenderObject(
+        obj = createMeshObject(
             waySection.tags.get("name", "Street section"),
-            location,
-            self.streetSectionsCollection,
-            None
+            collection = self.streetSectionsCollection
         )
-        spline = obj.data.splines.new('POLY')
-        spline.points.add(len(centerline)-1)
-        for index,point in enumerate(centerline):
-            spline.points[index].co = (point[0], point[1], 0., 1.)
+        createPolylineMesh(obj, None, streetSection.centerline)
+        # project the polyline on the terrain if it's available
+        terrainObj = self.projectOnTerrain(obj, self.gnProjectStreets)
+        if not terrainObj:
+            addGeometryNodesModifier(obj, self.gnMeshToCurve, "Mesh to Curve")
+        
+        #obj = CurveRenderer.createBlenderObject(
+        #    waySection.tags.get("name", "Street section"),
+        #    location,
+        #    self.streetSectionsCollection,
+        #    None
+        #)
+        #spline = obj.data.splines.new('POLY')
+        #spline.points.add(len(centerline)-1)
+        #for index,point in enumerate(centerline):
+        #    spline.points[index].co = (point[0], point[1], 0., 1.)
         
         return obj
     
@@ -161,7 +183,25 @@ class StreetRenderer:
             
             self.terrainRenderer.processIntersection(intersectionArea)
         
-        setBmesh(self.intersectionAreasObj, bm) 
+        setBmesh(self.intersectionAreasObj, bm)
+        
+        self.projectOnTerrain(self.intersectionAreasObj, self.gnProjectOnTerrain)
+    
+    def projectOnTerrain(self, obj, gnModifier):
+        terrainObj = self.getTerrainObj()
+        if terrainObj:
+            m = addGeometryNodesModifier(obj, gnModifier, "Project on terrain")
+            m["Input_2"] = terrainObj
+        return terrainObj
+    
+    def getTerrainObj(self):
+        terrain = self.app.terrain
+        if terrain:
+            terrain = terrain.terrain
+            if terrain:
+                terrain.hide_viewport = True
+                terrain.hide_render = True
+                return terrain
     
     def finalize(self):
         return
@@ -182,25 +222,24 @@ class StreetRenderer:
 class TerrainPatchesRenderer:
     # A renderer for the terrain patches made between street graph cycles
     
-    def __init__(self, gnTerrainPatches):
-        self.obj = obj = createMeshObject("Terrain between streets", collection = Renderer.collection)
+    def __init__(self, streetRenderer):
+        self.obj = obj = createMeshObject("Terrain Patches", collection = Renderer.collection)
         obj.data.attributes.new("offset_l", 'FLOAT', 'POINT')
         obj.data.attributes.new("offset_r", 'FLOAT', 'POINT')
         
-        m = addGeometryNodesModifier(obj, gnTerrainPatches, "Terrain patches")
+        m = addGeometryNodesModifier(obj, streetRenderer.gnTerrainPatches, "Terrain patches")
         useAttributeForGnInput(m, "Input_2", "offset_l")
         useAttributeForGnInput(m, "Input_3", "offset_r")
+        
+        terrainObj = streetRenderer.getTerrainObj()
+        if terrainObj:
+            m = addGeometryNodesModifier(obj, streetRenderer.gnProjectTerrainPatches, "Project terrain patches")
+            m["Input_2"] = terrainObj
         
         self.bm = getBmesh(obj)
     
     def processStreetCenterline(self, streetSection):
-        centerline = streetSection.centerline
-        
-        prevVert = self.bm.verts.new((centerline[0][0], centerline[0][1], 0.))
-        for i in range(1, len(centerline)):
-            vert = self.bm.verts.new((centerline[i][0], centerline[i][1], 0.))
-            self.bm.edges.new((prevVert, vert))
-            prevVert = vert
+        createPolylineMesh(None, self.bm, streetSection.centerline)
     
     def setAttributes(self, waySectionLines, wayClusters):
         setBmesh(self.obj, self.bm)

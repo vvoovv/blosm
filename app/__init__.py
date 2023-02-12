@@ -203,7 +203,7 @@ class BaseApp:
                             self,
                             **self.layerKwargs
                         )
-                    else:  
+                    else:
                         self.createLayer(
                             layerId,
                             self.nodeLayerClass,
