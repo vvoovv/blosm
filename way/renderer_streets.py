@@ -107,10 +107,10 @@ class StreetRenderer:
             self.setModifierCarriageway(obj, streetSection)
             
             # sidewalk on the left
-            #self.setModifierSidewalk(obj, -0.5*streetSection.width, 5.)
+            self.setModifierSidewalk(obj, -0.5*streetSection.width, 5.)
             
             # sidewalk on the right
-            #self.setModifierSidewalk(obj, 0.5*streetSection.width, 5.)
+            self.setModifierSidewalk(obj, 0.5*streetSection.width, 5.)
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
@@ -129,18 +129,18 @@ class StreetRenderer:
                 self.setModifierCarriageway(obj, waySection)
 
             # sidewalk on the left
-            #self.setModifierSidewalk(
-            #    obj,
-            #    streetSection.waySections[0].offset - 0.5*streetSection.waySections[0].width,
-            #    5.
-            #)
+            self.setModifierSidewalk(
+                obj,
+                streetSection.waySections[0].offset - 0.5*streetSection.waySections[0].width,
+                5.
+            )
             
             # sidewalk on the right
-            #self.setModifierSidewalk(
-            #    obj,
-            #    streetSection.waySections[-1].offset + 0.5*streetSection.waySections[-1].width,
-            #    5.
-            #)
+            self.setModifierSidewalk(
+                obj,
+                streetSection.waySections[-1].offset + 0.5*streetSection.waySections[-1].width,
+                5.
+            )
             
             # separators between the carriageways
             for i in range(1, len(waySections)):
@@ -310,7 +310,7 @@ class TerrainPatchesRenderer:
                 )
     
     def processIntersection(self, intersectionArea):
-        # Form a Python list of starting point of connectors with the adjacent way sections or
+        # Form a Python list of starting points of connectors with the adjacent way sections or
         # way clusters
         connectorStarts = []
         if intersectionArea.connectors:
@@ -322,26 +322,36 @@ class TerrainPatchesRenderer:
         
         polygon = intersectionArea.polygon
         
+        #
         # all but the final segments
+        #
         for i in range(len(connectorStarts)-1):
             polylineStartIndex, polylineEndIndex = connectorStarts[i]+1, connectorStarts[i+1]
-            # Create a polyline out of <polygon> that starts at the polygon's point
-            # with the index <polylineStartIndex> and ends at the polygon's point
-            # with the index <polylineEndIndex>
-            prevVert = self.bm.verts.new((polygon[polylineStartIndex][0], polygon[polylineStartIndex][1], 0.))
-            for i in range(polylineStartIndex+1, polylineEndIndex+1):
+            # The condition below is used to exclude the case when a connector is directly
+            # followed by another connector
+            if polylineStartIndex != polylineEndIndex:
+                # Create a polyline out of <polygon> that starts at the polygon's point
+                # with the index <polylineStartIndex> and ends at the polygon's point
+                # with the index <polylineEndIndex>
+                prevVert = self.bm.verts.new((polygon[polylineStartIndex][0], polygon[polylineStartIndex][1], 0.))
+                for i in range(polylineStartIndex+1, polylineEndIndex+1):
+                    vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
+                    self.bm.edges.new((prevVert, vert))
+                    prevVert = vert
+        
+        #
+        # the final segment
+        #
+        # The condition below is used to exclude the case when a connector is directly
+        # followed by another connector
+        if connectorStarts[-1]!=len(polygon)-1 or connectorStarts[0]:
+            indices = list( range(connectorStarts[-1]+1, len(polygon)) )
+            indices.extend(i for i in range(connectorStarts[0]+1))
+            prevVert = self.bm.verts.new((polygon[indices[0]][0], polygon[indices[0]][1], 0.))
+            for i in indices:
                 vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
                 self.bm.edges.new((prevVert, vert))
                 prevVert = vert
-        
-        # the final segment
-        indices = list( range(connectorStarts[-1]+1, len(polygon)) )
-        indices.extend(i for i in range(connectorStarts[0]+1))
-        prevVert = self.bm.verts.new((polygon[indices[0]][0], polygon[indices[0]][1], 0.))
-        for i in indices:
-            vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
-            self.bm.edges.new((prevVert, vert))
-            prevVert = vert
     
     def offsetEdgePoint(self, point, directionVector, offsetLeft, offsetRight=None):
         if offsetRight is None:
