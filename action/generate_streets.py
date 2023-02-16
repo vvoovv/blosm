@@ -107,7 +107,33 @@ class IntersectionArea():
         # or the index in the list of way descriptors <waySections> in <WayCluster>,
         # if only a single way of the cluster connects there.
         self.clusterConns = dict()
-
+        
+        self.connectorsInfo = None
+    
+    def getConnectorsInfo(self):
+        """
+        Form a Python list of Python tuples with the following 3 elements:
+        * index in <self.polygon> of the starting point of the connector
+            to the adjacent way section or way cluster
+        * <True> if it's a connector to a street segment, <False> otherwise
+        * <segmentId>
+        """
+        if not self.connectorsInfo:
+            connectorsInfo = self.connectorsInfo = []
+            if self.connectors:
+                connectorsInfo.extend(
+                    # <False> means that it isn't a cluster of street segments
+                    (connectorInfo[0], False, segmentId, connectorInfo[1]) for segmentId, connectorInfo in self.connectors.items()
+                )
+            if self.clusterConns:
+                connectorsInfo.extend(
+                    # <True> means that it is a cluster of street segments
+                    (connectorInfo[0], True, segmentId, connectorInfo[1]) for segmentId, connectorInfo in self.clusterConns.items()
+                )
+        
+            connectorsInfo.sort()
+        
+        return self.connectorsInfo
 
 # helper functions -----------------------------------------------
 def pairs(iterable):

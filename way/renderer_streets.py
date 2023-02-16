@@ -181,6 +181,8 @@ class StreetRenderer:
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
             )
             
+            self.processIntersectionSidewalks(intersectionArea, manager)
+            
             self.terrainRenderer.processIntersection(intersectionArea)
         
         setBmesh(self.intersectionAreasObj, bm)
@@ -202,6 +204,37 @@ class StreetRenderer:
                 terrain.hide_viewport = True
                 terrain.hide_render = True
                 return terrain
+    
+    def processIntersectionSidewalks(self, intersection, manager):
+        """
+        Process sidewalks around <intersection>
+        """
+        connectorsInfo = intersection.getConnectorsInfo()
+        
+        # iterate through all but last connectors in <connectorsInfo>
+        for i in range(len(connectorsInfo)-1):
+            self.processIntersectionSidewalk(connectorsInfo[i], connectorsInfo[i+1], manager)
+        
+        self.processIntersectionSidewalk(connectorsInfo[-1], connectorsInfo[0], manager)
+    
+    def processIntersectionSidewalk(self, connectorInfo1, connectorInfo2, manager):
+        """
+        Create a mesh for the part of the sidewalk between the street sections attached to the connectors
+        described by <connectorInfo1> and <connectorInfo2>.
+        
+        Important note. The street section attached to the connector described by <connectorInfo2>
+        is to the right from the one described by <connectorInfo1>.
+        """
+        # get an instance for the street section attached to the connector described by <connectorInfo1>
+        streetSection1 = manager.wayClusters[connectorInfo1[2]]\
+            if connectorInfo1[1] else\
+            manager.waySectionLines[connectorInfo1[2]]
+        streetSection2 = manager.wayClusters[connectorInfo2[2]]\
+            if connectorInfo2[1] else\
+            manager.waySectionLines[connectorInfo2[2]]
+        
+        t = 0
+        
     
     def finalize(self):
         return
@@ -310,23 +343,15 @@ class TerrainPatchesRenderer:
                 )
     
     def processIntersection(self, intersectionArea):
-        # Form a Python list of starting points of connectors with the adjacent way sections or
-        # way clusters
-        connectorStarts = []
-        if intersectionArea.connectors:
-            connectorStarts.extend(c[0] for c in intersectionArea.connectors.values())
-        if intersectionArea.clusterConns:
-            connectorStarts.extend(c[0] for c in intersectionArea.clusterConns.values())
-        
-        connectorStarts.sort()
-        
         polygon = intersectionArea.polygon
+        
+        connectorsInfo = intersectionArea.getConnectorsInfo()
         
         #
         # all but the final segments
         #
-        for i in range(len(connectorStarts)-1):
-            polylineStartIndex, polylineEndIndex = connectorStarts[i]+1, connectorStarts[i+1]
+        for i in range(len(connectorsInfo)-1):
+            polylineStartIndex, polylineEndIndex = connectorsInfo[i][0]+1, connectorsInfo[i+1][0]
             # The condition below is used to exclude the case when a connector is directly
             # followed by another connector
             if polylineStartIndex != polylineEndIndex:
@@ -344,9 +369,9 @@ class TerrainPatchesRenderer:
         #
         # The condition below is used to exclude the case when a connector is directly
         # followed by another connector
-        if connectorStarts[-1]!=len(polygon)-1 or connectorStarts[0]:
-            indices = list( range(connectorStarts[-1]+1, len(polygon)) )
-            indices.extend(i for i in range(connectorStarts[0]+1))
+        if connectorsInfo[-1][0]!=len(polygon)-1 or connectorsInfo[0][0]:
+            indices = list( range(connectorsInfo[-1][0]+1, len(polygon)) )
+            indices.extend(i for i in range(connectorsInfo[0][0]+1))
             prevVert = self.bm.verts.new((polygon[indices[0]][0], polygon[indices[0]][1], 0.))
             for i in indices:
                 vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
