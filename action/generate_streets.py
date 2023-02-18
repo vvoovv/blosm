@@ -373,7 +373,7 @@ class StreetGenerator():
             # Note: Clusters may have common endpoints,
             # which are not yet detected here.
             sectionEnds = defaultdict(list)
-            for section in sections:
+            for i,section in enumerate(sections):
                 s,t = section.originalSection.s, section.originalSection.t
                 sV, tV = section.sV, section.tV
                 Id = wayIndxs[i]
@@ -654,15 +654,23 @@ class StreetGenerator():
                         del sectionsIDsAll[index]
 
             longCluster = LongClusterWay(self)
-            longCluster.leftSectionIDs = leftSectionIDs
-            longCluster.rightSectionIDs = rightSectionIDs
-            longCluster.intersectionsAll = intersectionsThis
-            longCluster.left = left
-            longCluster.right = right
-            longCluster.centerline = centerline
+            for i in [0,-1]:
+                longCluster.sectionIDs.append(sectionsIDsAll[i])
+                longCluster.intersections.append(intersectionsAll[i])
+                longCluster.polylines.append(lines[i])
+                longCluster.centerline = centerline
+                longCluster.clipped= clipped
 
-            # Split the long cluster in smaller pieces of type <ClusterWay>,
-            # stored in <longCluster>.
+            if len(lines) > 2:
+                innerIndxs = [i for i in range(len(lines))][1:-1]
+                for i in innerIndxs:
+                    self.waysCoveredByCluster.extend(sectionsIDsAll[i])
+
+            for Id in self.waysCoveredByCluster:
+                self.waySections[Id].isValid = False
+
+            # Split the long cluster in smaller subclusters of class <SubCluster>,
+            # stored in the instance of <longCluster>.
             longCluster.split()
 
             self.longClusterWays.append(longCluster)
@@ -883,7 +891,7 @@ class StreetGenerator():
             for cluster in longCluster.subClusters:
                 wayCluster = WayCluster()
                 wayCluster.centerline = cluster.centerline.trimmed(cluster.trimS,cluster.trimT)[:]
-                wayCluster.distToLeft = cluster.clusterWidth/2.
+                wayCluster.distToLeft = cluster.width/2.
 
                 for wayID in cluster.wayIDs:
                     section = self.waySections[wayID]
