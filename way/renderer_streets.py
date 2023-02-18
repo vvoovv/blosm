@@ -241,12 +241,10 @@ class StreetRenderer:
         # get an instance for the street section attached to the connector described by <connectorInfo1>
         streetSectionL = manager.wayClusters[connectorInfoL[2]]\
             if connectorInfoL[1] else\
-            manager.waySectionLines.get(connectorInfoL[2]) # FIXME: should be waySectionLines[..]
+            manager.waySectionLines[connectorInfoL[2]]
         streetSectionR = manager.wayClusters[connectorInfoR[2]]\
             if connectorInfoR[1] else\
-            manager.waySectionLines.get(connectorInfoR[2]) # FIXME: should be waySectionLines[..]
-        
-        if not streetSectionL or not streetSectionR: return # FIXME: a temporary code until the issue is fixed
+            manager.waySectionLines[connectorInfoR[2]]
         
         # index of the right point of the left connector
         indexL = (connectorInfoL[0] + 1) % intersection.numPoints

@@ -5,7 +5,7 @@ from lib.CompGeom.piecewise import piecewise
 from lib.CompGeom.centerline import centerlineOf
 from lib.CompGeom.PolyLine import PolyLine
 
-from osmPlot import *
+#from osmPlot import *
 
 def clipParallelPartold(lines):
     line1 = lines[0]    # left line
