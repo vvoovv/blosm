@@ -24,7 +24,22 @@ from lib.CompGeom.centerline import centerlineOf
 from lib.CompGeom.dbscan import dbClusterScan
 
 
-class TrimmedWaySection:
+class BaseWaySection:
+    
+    def getNormal(self, index, left):
+        centerline = self.centerline
+        
+        if index == 0:
+            vector = centerline[1] - centerline[0]
+        elif index == -1:
+            vector = centerline[-1] -  centerline[-2]
+        
+        vector.normalize()
+        
+        return Vector((-vector[1], vector[0])) if left else Vector((vector[1], -vector[0]))
+    
+
+class TrimmedWaySection(BaseWaySection):
     
     def __init__(self):
         # The trimmed centerline in forward direction (first vertex is start.
@@ -57,7 +72,8 @@ class TrimmedWaySection:
         # True, if end of way is connected to other ways, else dead-end
         self.endConnected = None
 
-class WayCluster:
+
+class WayCluster(BaseWaySection):
     
     def __init__(self):
         # The centerline of the cluster in forward direction. (first vertex is start.
@@ -108,6 +124,8 @@ class IntersectionArea():
         # if only a single way of the cluster connects there.
         self.clusterConns = dict()
         
+        self.numPoints = 0
+        
         self.connectorsInfo = None
     
     def getConnectorsInfo(self):
@@ -119,6 +137,8 @@ class IntersectionArea():
         * <segmentId>
         """
         if not self.connectorsInfo:
+            self.numPoints = len(self.polygon)
+            
             connectorsInfo = self.connectorsInfo = []
             if self.connectors:
                 connectorsInfo.extend(
@@ -134,6 +154,7 @@ class IntersectionArea():
             connectorsInfo.sort()
         
         return self.connectorsInfo
+
 
 # helper functions -----------------------------------------------
 def pairs(iterable):

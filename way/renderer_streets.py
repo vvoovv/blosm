@@ -1,5 +1,6 @@
 import os
 import bpy
+from mathutils.geometry import intersect_line_line_2d
 
 from renderer import Renderer
 #from renderer.curve_renderer import CurveRenderer
@@ -23,6 +24,12 @@ class StreetRenderer:
             "Intersections",
             collection = Renderer.collection
         )
+        
+        self.intersectionSidewalksObj = createMeshObject(
+            "Sidewalks around Intersections",
+            collection = Renderer.collection
+        )
+        self.intersectionSidewalksBm = getBmesh(self.intersectionSidewalksObj)
         
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
         _gnStreet = "blosm_street"
@@ -168,6 +175,7 @@ class StreetRenderer:
         m["Input_3"] = width
     
     def setModifierSidewalk(self, obj, offset, width):
+        return
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
@@ -186,6 +194,8 @@ class StreetRenderer:
             self.terrainRenderer.processIntersection(intersectionArea)
         
         setBmesh(self.intersectionAreasObj, bm)
+        
+        setBmesh(self.intersectionSidewalksObj, self.intersectionSidewalksBm)
         
         self.projectOnTerrain(self.intersectionAreasObj, self.gnProjectOnTerrain)
     
@@ -213,28 +223,67 @@ class StreetRenderer:
         
         # iterate through all but last connectors in <connectorsInfo>
         for i in range(len(connectorsInfo)-1):
-            self.processIntersectionSidewalk(connectorsInfo[i], connectorsInfo[i+1], manager)
+            self.processIntersectionSidewalk(intersection, connectorsInfo[i], connectorsInfo[i+1], manager)
         
-        self.processIntersectionSidewalk(connectorsInfo[-1], connectorsInfo[0], manager)
+        self.processIntersectionSidewalk(intersection, connectorsInfo[-1], connectorsInfo[0], manager)
     
-    def processIntersectionSidewalk(self, connectorInfo1, connectorInfo2, manager):
+    def processIntersectionSidewalk(self, intersection, connectorInfoL, connectorInfoR, manager):
         """
         Create a mesh for the part of the sidewalk between the street sections attached to the connectors
-        described by <connectorInfo1> and <connectorInfo2>.
+        described by <connectorInfoL> and <connectorInfoR>.
         
-        Important note. The street section attached to the connector described by <connectorInfo2>
-        is to the right from the one described by <connectorInfo1>.
+        Important note. The street section attached to the connector described by <connectorInfoR>
+        is to the right from the one described by <connectorInfoL>.
         """
+        
+        sidewalkWidth = 5.
+        
         # get an instance for the street section attached to the connector described by <connectorInfo1>
-        streetSection1 = manager.wayClusters[connectorInfo1[2]]\
-            if connectorInfo1[1] else\
-            manager.waySectionLines[connectorInfo1[2]]
-        streetSection2 = manager.wayClusters[connectorInfo2[2]]\
-            if connectorInfo2[1] else\
-            manager.waySectionLines[connectorInfo2[2]]
+        streetSectionL = manager.wayClusters[connectorInfoL[2]]\
+            if connectorInfoL[1] else\
+            manager.waySectionLines.get(connectorInfoL[2]) # FIXME: should be waySectionLines[..]
+        streetSectionR = manager.wayClusters[connectorInfoR[2]]\
+            if connectorInfoR[1] else\
+            manager.waySectionLines.get(connectorInfoR[2]) # FIXME: should be waySectionLines[..]
         
-        t = 0
+        if not streetSectionL or not streetSectionR: return # FIXME: a temporary code until the issue is fixed
         
+        # index of the right point of the left connector
+        indexL = (connectorInfoL[0] + 1) % intersection.numPoints
+        # index of the left point of the right connector
+        indexR = connectorInfoR[0]
+        
+        # The condition below means that the connectors described by <connectorInfoL> and <connectorInfoR>
+        # don't share a point
+        if indexL != indexR:
+            # intersection point for <indexL>
+            point1L = intersection.polygon[indexL]
+            normalL = streetSectionL.getNormal(
+                0 if connectorInfoL[3]=='S' else -1,
+                # <True> if normal is to the left, <False> if the normal is to the right
+                connectorInfoL[3]=='S'
+            )
+            point2L = point1L + sidewalkWidth*normalL
+            
+            # intersection point for <indexR>
+            point1R = intersection.polygon[indexR]
+            normalR = streetSectionR.getNormal(
+                0 if connectorInfoR[3]=='S' else -1,
+                # <True> if normal is to the left, <False> if the normal is to the right
+                not connectorInfoR[3]=='S'
+            )
+            point2R = point1R + sidewalkWidth*normalR
+            
+            # Check if the segments <point1L>-<point2L> and <point1R>-<point2R> intersect
+            if not intersect_line_line_2d(point1L, point2L, point1R, point2R):
+                bm = self.intersectionSidewalksBm
+                v1 = bm.verts.new((point1L[0], point1L[1], 0.))
+                v2 = bm.verts.new((point2L[0], point2L[1], 0.))
+                v3 = bm.verts.new((point2R[0], point2R[1], 0.))
+                v4 = bm.verts.new((point1R[0], point1R[1], 0.))
+                bm.edges.new((v1, v2))
+                bm.edges.new((v2, v3))
+                bm.edges.new((v3, v4))
     
     def finalize(self):
         return
@@ -342,10 +391,10 @@ class TerrainPatchesRenderer:
                     waySections[-1].offset + 0.5*waySections[-1].width
                 )
     
-    def processIntersection(self, intersectionArea):
-        polygon = intersectionArea.polygon
+    def processIntersection(self, intersection):
+        polygon = intersection.polygon
         
-        connectorsInfo = intersectionArea.getConnectorsInfo()
+        connectorsInfo = intersection.getConnectorsInfo()
         
         #
         # all but the final segments
@@ -369,8 +418,8 @@ class TerrainPatchesRenderer:
         #
         # The condition below is used to exclude the case when a connector is directly
         # followed by another connector
-        if connectorsInfo[-1][0]!=len(polygon)-1 or connectorsInfo[0][0]:
-            indices = list( range(connectorsInfo[-1][0]+1, len(polygon)) )
+        if connectorsInfo[-1][0] != intersection.numPoints-1 or connectorsInfo[0][0]:
+            indices = list( range(connectorsInfo[-1][0]+1, intersection.numPoints) )
             indices.extend(i for i in range(connectorsInfo[0][0]+1))
             prevVert = self.bm.verts.new((polygon[indices[0]][0], polygon[indices[0]][1], 0.))
             for i in indices:
