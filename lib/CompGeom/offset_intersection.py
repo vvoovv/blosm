@@ -49,6 +49,18 @@ def offsetIntersection(e0,e1,w0,w1,lim=1.e-3):
 def offsetPolylineIntersection(line0,line1,w0,w1,lim=1.e-3):
     # Find the intersection of a right polyline <line0>, offset by <w0> to the left, and
     # a left polyline <line1>, offset to the right by <w1>.
+    #           
+    #         line1 /  w1  /
+    #              /      /
+    #             /      /
+    #            /      /
+    #           /      /  X is <isect>
+    #          /      X----------------------
+    #         /
+    #        /                          w0
+    #       /
+    #      o--------------------------------- line0
+    #
     # Returns:
     # isect: Intersection point as mathutils.Vector.
     # type:  - String 'valid', if isect is valid.

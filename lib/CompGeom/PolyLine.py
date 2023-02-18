@@ -140,7 +140,7 @@ class PolyLine():
 
     def clone(self):
         # Create a copy of the polyLine
-        return PolyLine([v for v in self.verts])
+        return PolyLine(self[:])
 
     def __getitem__(self, indx):
         # Acces a vertex by index
@@ -340,9 +340,9 @@ class PolyLine():
         return None
 
     def intersectWithLine(self, p1, p2):
-        # Intersection of ths polyline with the infinite line
+        # Intersection of this polyline with the infinite line
         # given by p1 and p2
-        for v1,v2 in pairs(self.verts[self.view]):
+        for t0,(v1,v2) in enumerate(pairs(self.verts[self.view])):
             d1, d2 = v2-v1, p2-p1
             cross = d1.cross(d2)
             if cross == 0.:
@@ -351,7 +351,7 @@ class PolyLine():
             t1 = (d2[0]*d3[1] - d2[1]*d3[0])/cross
             # t2 = (d1[0]*d3[1] - d1[1]*d3[0])/cross
             if 0. <= t1 <= 1.:# and 0. <= t2 <= 1:
-                return v1 + d1*t1, t1
+                return v1 + d1*t1, t0+t1
         return None
 
     def parallelOffset(self, dist):
@@ -447,5 +447,5 @@ class PolyLine():
         plt.plot(x,y,color,linewidth=width,zorder=order)
         if showOrder:
             for i,(xx,yy) in enumerate(zip(x,y)):
-                plt.text(xx,yy,str(i),fontsize=12)
+                plt.text(xx,yy,' '+str(i),fontsize=12)
 

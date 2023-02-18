@@ -117,7 +117,6 @@ class CyrusBeckClipper():
     #   E cross V = ey*vx - ex*vy
     # Like this, the computation of the normal N can be avoided.
     def clipSegment(self, p0, p1):
-        import matplotlib.pyplot as plt
         assert p0 != p1, 'degenerated segment'
         D = p1 - p0
         tE, tL = 0., 1.
