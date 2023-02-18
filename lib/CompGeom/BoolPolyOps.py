@@ -223,13 +223,13 @@ def boolPolyOp(polyAv, polyBv, operation):
         outputV.append( [Vector(v).freeze() for v in s])
     return outputV
 
-def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
-    import matplotlib.pyplot as plt
-    x = [n[0] for n in poly] + [poly[0][0]]
-    y = [n[1] for n in poly] + [poly[0][1]]
-    if fill:
-        plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
-    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
-    if vertsOrder:
-        for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
-            plt.text(xx,yy,str(i),fontsize=12)
+# def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
+#     import matplotlib.pyplot as plt
+#     x = [n[0] for n in poly] + [poly[0][0]]
+#     y = [n[1] for n in poly] + [poly[0][1]]
+#     if fill:
+#         plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
+#     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
+#     if vertsOrder:
+#         for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
+#             plt.text(xx,yy,str(i),fontsize=12)

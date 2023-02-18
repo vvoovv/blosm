@@ -17,6 +17,7 @@ class WaySection():
         self.id = WaySection.ID
         self.turnParams = None  # parameters for turning lanes
         self.isValid = True
+        self.isClipped = False  # True, if part of a clipped cluster
         WaySection.ID += 1
         self.isOneWay = isOneWay(self.originalSection.tags)
         nrOfLanes = getLanes(self.originalSection.tags)

@@ -17,6 +17,8 @@ class StreetRenderer(Renderer):
             plotPolygon(isectArea.polygon,False,'r','r',2,True)
             if self.debug:
                 for id, connector in isectArea.connectors.items():
+                    if id==1066:
+                        plotPolygon(isectArea.polygon,False,'c','c',8,True,1.,999)
                     p = isectArea.polygon[connector[0]]
                     plt.text(p[0],p[1],str(id)+' '+connector[1])
                 for id, connector in isectArea.clusterConns.items():
@@ -69,6 +71,16 @@ class StreetRenderer(Renderer):
                 plotWay(cluster.centerline,False,'b',2.)
                 center = sum(cluster.centerline, Vector((0,0)))/len(cluster.centerline)
                 plt.text(center[0],center[1],str(Id),fontsize=22,zorder=130)
+
+        # # Check connector IDs
+        # for isectArea in manager.intersectionAreas:
+        #     for id, connector in isectArea.connectors.items():
+        #         if id not in manager.waySectionLines:
+        #             print(id)
+        #             plotPolygon(isectArea.polygon,False,'c','c',8,True,1.,999)
+        #     for id, connector in isectArea.clusterConns.items():
+        #         if id not in manager.wayClusters:
+        #             plotPolygon(isectArea.polygon,False,'g','g',8,True,1.,999)
 
 
 
