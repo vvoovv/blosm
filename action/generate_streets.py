@@ -23,6 +23,7 @@ from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
 from lib.CompGeom.centerline import centerlineOf
 from lib.CompGeom.dbscan import dbClusterScan
 from lib.CompGeom.clipParallelPart import clipParallelPart
+from lib.CompGeom.simplifyers import simplifyEnds,simplifyRDP
 
 class BaseWaySection:
     
@@ -647,8 +648,12 @@ class StreetGenerator():
                 else:
                     print('????')
 
-            centerline = PolyLine( centerlineOf(lines[0][:],lines[-1][:]) )
-
+            # Create and simplify cluster centerline
+            centerline = centerlineOf(lines[0][:],lines[-1][:])
+            centerline = simplifyRDP(centerline,0.1)
+            centerline = simplifyEnds(centerline,10.)
+            centerline = PolyLine( centerline)
+ 
             # If there are inner lines in clusters that are much shorter than the
             # outer lines, we remove them for now.
             if len(lines)>2:
