@@ -195,6 +195,8 @@ class StreetRenderer:
         
         setBmesh(self.intersectionAreasObj, bm)
         
+        #self.debugIntersectionArea(manager)
+        
         setBmesh(self.intersectionSidewalksObj, self.intersectionSidewalksBm)
         
         self.projectOnTerrain(self.intersectionAreasObj, self.gnProjectOnTerrain)
@@ -425,8 +427,12 @@ class TerrainPatchesRenderer:
             indices = list( range(connectorsInfo[-1][0]+1, intersection.numPoints) )
             indices.extend(i for i in range(connectorsInfo[0][0]+1))
             prevVert = self.bm.verts.new((polygon[indices[0]][0], polygon[indices[0]][1], 0.))
-            for i in indices:
-                vert = self.bm.verts.new((polygon[i][0], polygon[i][1], 0.))
+            for i in range(1, len(indices)):
+                vert = self.bm.verts.new((
+                    polygon[ indices[i] ][0],
+                    polygon[ indices[i] ][1],
+                    0.
+                ))
                 self.bm.edges.new((prevVert, vert))
                 prevVert = vert
     
