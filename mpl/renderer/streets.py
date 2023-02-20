@@ -13,12 +13,12 @@ class StreetRenderer(Renderer):
         return
     
     def render(self, manager, data):
-        for isectArea in manager.intersectionAreas:
+        for Id,isectArea in enumerate(manager.intersectionAreas):
             plotPolygon(isectArea.polygon,False,'r','r',2,True)
             if self.debug:
+                c = sum(isectArea.polygon,Vector((0,0)))/len(isectArea.polygon)
+                plt.text(c[0],c[1],str(Id),color='r',fontsize=18,zorder=130)
                 for id, connector in isectArea.connectors.items():
-                    if id==1066:
-                        plotPolygon(isectArea.polygon,False,'c','c',8,True,1.,999)
                     p = isectArea.polygon[connector[0]]
                     plt.text(p[0],p[1],str(id)+' '+connector[1])
                 for id, connector in isectArea.clusterConns.items():
