@@ -297,6 +297,11 @@ class StreetRenderer:
             return bpy.data.materials[name]
         else:
             return loadMaterialsFromFile(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_carriageway_with_sidewalks.blend"), False, name)[0]
+    
+    def debugIntersectionArea(self, manager):
+        self.intersectionAreasObj.data.attributes.new("idx", 'INT', 'FACE')
+        for idx,intersection in enumerate(manager.intersectionAreas):
+            self.intersectionAreasObj.data.attributes["idx"].data[idx].value = idx
         
 
 class TerrainPatchesRenderer:
