@@ -680,17 +680,17 @@ class StreetGenerator():
                         del sectionsIDsAll[index]
 
             longCluster = LongClusterWay(self)
-            for i in [0,-1]:
+            for i in range(len(lines)):
                 longCluster.sectionIDs.append(sectionsIDsAll[i])
                 longCluster.intersections.append(intersectionsAll[i])
                 longCluster.polylines.append(lines[i])
                 longCluster.centerline = centerline
                 longCluster.clipped= clipped
 
-            if len(lines) > 2:
-                innerIndxs = [i for i in range(len(lines))][1:-1]
-                for i in innerIndxs:
-                    self.waysCoveredByCluster.extend(sectionsIDsAll[i])
+            # if len(lines) > 2:
+            #     innerIndxs = [i for i in range(len(lines))][1:-1]
+            #     for i in innerIndxs:
+            #         self.waysCoveredByCluster.extend(sectionsIDsAll[i])
 
             for Id in self.waysCoveredByCluster:
                 self.waySections[Id].isValid = False
@@ -913,6 +913,16 @@ class StreetGenerator():
                 self.intersectionAreas.append(isectArea)
 
     def createWayClusters(self):
+        # Collect connection ids to set the connection ends.
+        startConnections = set()
+        endConnections = set()
+        for area in self.intersectionAreas:
+            for conId,con in area.clusterConns.items():
+                if con[1] == 'S':
+                    startConnections.add(conId)
+                else:
+                    endConnections.add(conId)
+
         for longCluster in self.longClusterWays:
             for cluster in longCluster.subClusters:
                 wayCluster = WayCluster()
@@ -938,6 +948,9 @@ class StreetGenerator():
                     # cleanup
                     if not section.isClipped: 
                         section.isValid = False
+                # Set connection types
+                wayCluster.startConnected = True if cluster.id in startConnections else False
+                wayCluster.endConnected = True if cluster.id in endConnections else False
                 self.wayClusters[cluster.id] = wayCluster
 
                 # Some bookkeeping

@@ -235,20 +235,6 @@ def createRightTransition(cls, cluster1, cluster2):
     area = []
     transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
 
-    # Construct area through cluster1 (counter-clockwise order)
-    transitionLength = transWidth1/transitionSlope
-    dTrans = cluster1.centerline.length() - transitionLength
-    tTrans = cluster1.centerline.d2t(dTrans)
-    cluster1.trimT = min(cluster1.trimT,tTrans)
-    # Two additional points due to transition
-    p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
-    area.append(p)
-    if cls.isectShape == 'common':
-        p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
-    elif cls.isectShape == 'separated':
-        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
-    area.append(p)
-
     # Construct area through cluster2 (counter-clockwise order)
     transitionLength = transWidth2/transitionSlope
     dTrans = transitionLength
@@ -256,16 +242,30 @@ def createRightTransition(cls, cluster1, cluster2):
     cluster2.trimS = max(cluster2.trimS,tTrans)
     # Two additional points due to transition
     if cls.isectShape == 'common':
-        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
     elif cls.isectShape == 'separated':
-        p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.inWR())
+        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
     area.append(p)
-    p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
+    p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
+    area.append(p)
+
+    # Construct area through cluster1 (counter-clockwise order)
+    transitionLength = transWidth1/transitionSlope
+    dTrans = cluster1.centerline.length() - transitionLength
+    tTrans = cluster1.centerline.d2t(dTrans)
+    cluster1.trimT = min(cluster1.trimT,tTrans)
+    # Two additional points due to transition
+    p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
+    area.append(p)
+    if cls.isectShape == 'common':
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
+    elif cls.isectShape == 'separated':
+        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
     area.append(p)
 
     clustConnectors = dict()
-    clustConnectors[cluster1.id] = ( 1, 'E', -1 if cls.isectShape == 'common' else 1)
-    clustConnectors[cluster2.id] = ( 3, 'S', -1 if cls.isectShape == 'common' else 1)
+    clustConnectors[cluster2.id] = ( 0, 'S', -1 if cls.isectShape == 'common' else 1)
+    clustConnectors[cluster1.id] = ( 2, 'E', -1 if cls.isectShape == 'common' else 1)
     return area, clustConnectors
 
 def createLeftIntersection(cls, cluster1, cluster2, node):
@@ -427,7 +427,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     # we start with the second cluster.
     if transWidth2: # If we need a width transition
         transitionLength = transWidth2/transitionSlope
-        dTrans = cluster2.centerline.length() - transitionLength
+        dTrans = transitionLength
         tTrans = cluster2.centerline.d2t(dTrans)
         cluster2.trimS = max(cluster2.trimS,tTrans)
         # Two additional points due to transition, <p4> on the right and <p5> on 
@@ -454,7 +454,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     # Construct area through cluster1 (counter-clockwise order)
     if transWidth1:
         transitionLength = transWidth1/transitionSlope
-        dTrans = transitionLength
+        dTrans = cluster1.centerline.length() - transitionLength
         tTrans = cluster1.centerline.d2t(dTrans)
         cluster1.trimT = min(cluster1.trimT,tTrans)
         # Two additional points due to transition, <p6> on the left and <p7> on 
