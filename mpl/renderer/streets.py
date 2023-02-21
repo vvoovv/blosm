@@ -1,7 +1,13 @@
 from mathutils import Vector
+from itertools import tee, islice, cycle
 import matplotlib.pyplot as plt
 from . import Renderer
 
+def cyclePair(iterable):
+    # iterable -> (p0,p1), (p1,p2), (p2, p3), ..., (pn, p0)
+    prevs, nexts = tee(iterable)
+    prevs = islice(cycle(prevs), len(iterable) - 1, None)
+    return zip(prevs,nexts)
 
 class StreetRenderer(Renderer):
     
@@ -72,15 +78,34 @@ class StreetRenderer(Renderer):
                 center = sum(cluster.centerline, Vector((0,0)))/len(cluster.centerline)
                 plt.text(center[0],center[1],str(Id),fontsize=22,zorder=130)
 
-        # # Check connector IDs
-        # for isectArea in manager.intersectionAreas:
-        #     for id, connector in isectArea.connectors.items():
-        #         if id not in manager.waySectionLines:
-        #             print(id)
-        #             plotPolygon(isectArea.polygon,False,'c','c',8,True,1.,999)
-        #     for id, connector in isectArea.clusterConns.items():
-        #         if id not in manager.wayClusters:
-        #             plotPolygon(isectArea.polygon,False,'g','g',8,True,1.,999)
+
+        if self.debug:
+            # Check connector IDs and counter-clockwose order
+            for isectArea in manager.intersectionAreas:
+                for id, connector in isectArea.connectors.items():
+                    if id not in manager.waySectionLines:
+                        print('missing id in waySectionLines',id)
+                        plotPolygon(isectArea.polygon,False,'c','c',8,True,1.,999)
+                area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in cyclePair(isectArea.polygon))
+                if area >= 0.:
+                    print('intersectionArea not counter-clockwise')
+                    plotPolygon(isectArea.polygon,True,'c','c',8,True,1.,999)
+                for id, connector in isectArea.clusterConns.items():
+                    if id not in manager.wayClusters:
+                        print('missing id in wayClusters',id)
+                        plotPolygon(isectArea.polygon,False,'g','g',8,True,1.,999)
+            # Check connections at ends
+            for sectionNr,section_gn in manager.waySectionLines.items():
+                if section_gn.startConnected is None:
+                    print('no endConnected in section',sectionNr)
+                if section_gn.startConnected is None:
+                    print('no endConnected in section',sectionNr)
+            for Id,cluster in manager.wayClusters.items():
+                if cluster.startConnected is None:
+                    print('no endConnected in cluster',Id)
+                if cluster.startConnected is None:
+                    print('no endConnected in cluster',Id)
+
 
 
 
