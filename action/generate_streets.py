@@ -454,6 +454,12 @@ class StreetGenerator():
                 intersectionsAll.append(intersectionsThis)
                 sectionsIDsAll.append(sectionsIDs)
 
+            # plotPureNetwork(self.sectionNetwork)
+            # for line in lines:
+            #     line.plot('r',2)
+            # plt.title('aligned')
+            # plotEnd()
+
            # In the next step, in-cluster intersections are processed. As a first
             # measure, ways, that have such intersections on both sides are removed.
             if inClusterIsects:
@@ -678,6 +684,13 @@ class StreetGenerator():
                         del intersectionsAll[index]
                         self.waysCoveredByCluster.extend(sectionsIDsAll[index])
                         del sectionsIDsAll[index]
+
+            # plotPureNetwork(self.sectionNetwork)
+            # for line in lines:
+            #     line.plot('r',2)
+            # centerline.plot('r')
+            # plt.title('for cluster')
+            # plotEnd()
 
             longCluster = LongClusterWay(self)
             for i in range(len(lines)):

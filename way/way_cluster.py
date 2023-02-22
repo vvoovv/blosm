@@ -309,12 +309,12 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
         tP = tP1
         wayConnectors[section.id] = ( 0, 'S' if fwd else 'E')
     if fwd:
-        section.trimS = tP
+        section.trimS = max(section.trimS,tP)
     else:
-        section.trimT = tP
+        section.trimT = min(section.trimT,len(outLine)-1-tP)
 
     # start area in counter-clockwise order, continue at end of cluster1
-    area = [p1,p2,p3]
+    area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3] 
 
     transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
 
@@ -389,8 +389,24 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     reverseCenterline = PolyLine(cluster1.centerline[::-1])
     outW = max(cluster1.outWR(),cluster2.outWR())
     p1, valid = offsetPolylineIntersection(reverseCenterline,outLine,outW,outWidth/2.)
+    # if valid!='valid':
+    #     plotPureNetwork(cls.sectionNetwork)
+    #     cluster1.centerline.plot('g:',3)
+    #     cluster2.centerline.plot('r',3)
+    #     plt.plot(p1[0],p1[1],'ro')
+    #     outLine.plot('k',3)
+    #     plotEnd()
+
     assert valid=='valid'
     p3, valid = offsetPolylineIntersection(outLine,cluster2.centerline,outWidth/2.,outW)
+    # if valid!='valid':
+    #     plotPureNetwork(cls.sectionNetwork)
+    #     cluster1.centerline.plot('g:',3)
+    #     cluster2.centerline.plot('r',3)
+    #     plt.plot(p3[0],p3[1],'ro')
+    #     outLine.plot('k',3)
+    #     plotEnd()
+
     assert valid=='valid'
 
     # Project these onto cluster centerlines to get initial trim values.
@@ -414,12 +430,12 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         tP = tP1
         wayConnectors[section.id] = ( 1, 'S' if fwd else 'E')
     if fwd:
-        section.trimS = tP
+        section.trimS = max(section.trimS,tP)
     else:
-        section.trimT = tP
+        section.trimT = min(section.trimT,len(outLine)-1-tP)
 
     # Start area in counter-clockwise order, <p1> is on cluster1
-    area = [p1,p2,p3]
+    area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3] 
 
     transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
 
@@ -434,7 +450,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         # the left of the cluster.
         p4 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
         area.append(p4)
-        clustConnectors[cluster2.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[cluster2.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
         if cls.isectShape == 'common':
             p5 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
         elif cls.isectShape == 'separated':
@@ -442,7 +458,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         area.append(p5)
     else:
         # No transistion, we construct directly <p5> on the left of the cluster.
-        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
         _,tP = cluster2.centerline.orthoProj(p3)
         cluster1.trimS = min(cluster1.trimS,tP)
         if cls.isectShape == 'common':
@@ -464,7 +480,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         elif cls.isectShape == 'separated':
             p6 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
         area.append(p6)
-        clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
         p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
         area.append(p7)
     else:
@@ -476,7 +492,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         elif cls.isectShape == 'separated':
             p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
         area.append(p7)
-        clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
     return area, clustConnectors, wayConnectors
 
 def createClippedEndArea(cls,longCluster,endsubCluster):
