@@ -25,20 +25,42 @@ from lib.CompGeom.dbscan import dbClusterScan
 from lib.CompGeom.clipParallelPart import clipParallelPart
 from lib.CompGeom.simplifyers import simplifyEnds,simplifyRDP
 
+
 class BaseWaySection:
     
     def getNormal(self, index, left):
         centerline = self.centerline
+        numPoints = len(centerline)
         
-        if index == 0:
+        if index == 0 or (index==-2 and numPoints==2):
             vector = centerline[1] - centerline[0]
-        elif index == -1:
-            vector = centerline[-1] -  centerline[-2]
+        elif index == -1 or (index==1 and numPoints==2):
+            vector = centerline[-1] - centerline[-2]
+        else:
+            # vector along <centerline> after the point with <index>
+            vectorAfter = centerline[index+1] - centerline[index]
+            vectorAfter.normalize()
+            # vector along <centerline> before the point with <index>
+            vectorBefore = centerline[index-1] - centerline[index]
+            vectorBefore.normalize()
+            # check if <vectorAfter> and <vectorBefore> are collinear and of the opposite direction
+            if abs(-1-vectorAfter.dot(vectorBefore)) < 0.001:
+                vector = vectorAfter
+            else:
+                vector = vectorBefore + vectorAfter
+                vector.normalize()
+                # check if <vector> is to the right or to the left relative to <vectorAfter>
+                return vector\
+                    if vector[0]*vectorAfter[1] - vector[1]*vectorAfter[0] > 0. else\
+                    -vector
         
         vector.normalize()
         
         return Vector((-vector[1], vector[0])) if left else Vector((vector[1], -vector[0]))
     
+    def offsetPoint(self, index, left, distance):
+        return self.centerline[index] + distance * self.getNormal(index, left)
+
 
 class TrimmedWaySection(BaseWaySection):
     
@@ -72,6 +94,12 @@ class TrimmedWaySection(BaseWaySection):
 
         # True, if end of way is connected to other ways, else dead-end
         self.endConnected = None
+    
+    def getLeftBorderDistance(self):
+        return 0.5*self.width
+    
+    def getRightBorderDistance(self):
+        return 0.5*self.width
 
 
 class WayCluster(BaseWaySection):
@@ -96,6 +124,12 @@ class WayCluster(BaseWaySection):
 
         # True, if end of way is connected to other ways or clusters, else dead-end
         self.endConnected = None
+    
+    def getLeftBorderDistance(self):
+        return -self.waySections[0].offset + 0.5*self.waySections[0].width
+    
+    def getRightBorderDistance(self):
+        return self.waySections[-1].offset + 0.5*self.waySections[-1].width
 
 
 class IntersectionArea():

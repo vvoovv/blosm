@@ -114,10 +114,10 @@ class StreetRenderer:
             self.setModifierCarriageway(obj, streetSection)
             
             # sidewalk on the left
-            self.setModifierSidewalk(obj, -0.5*streetSection.width, 5.)
+            self.setModifierSidewalk(obj, -streetSection.getLeftBorderDistance(), 5.)
             
             # sidewalk on the right
-            self.setModifierSidewalk(obj, 0.5*streetSection.width, 5.)
+            self.setModifierSidewalk(obj, streetSection.getRightBorderDistance(), 5.)
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
@@ -138,14 +138,14 @@ class StreetRenderer:
             # sidewalk on the left
             self.setModifierSidewalk(
                 obj,
-                streetSection.waySections[0].offset - 0.5*streetSection.waySections[0].width,
+                -streetSection.getLeftBorderDistance(),
                 5.
             )
             
             # sidewalk on the right
             self.setModifierSidewalk(
                 obj,
-                streetSection.waySections[-1].offset + 0.5*streetSection.waySections[-1].width,
+                streetSection.getLeftBorderDistance(),
                 5.
             )
             
@@ -183,7 +183,7 @@ class StreetRenderer:
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
         
-        for intersectionArea in manager.intersectionAreas:
+        for idx,intersectionArea in enumerate(manager.intersectionAreas): # FIXME: remove enumerate
             polygon = intersectionArea.polygon
             bm.faces.new(
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
@@ -195,7 +195,7 @@ class StreetRenderer:
         
         setBmesh(self.intersectionAreasObj, bm)
         
-        #self.debugIntersectionArea(manager)
+        self.debugIntersectionArea(manager) # FIXME
         
         setBmesh(self.intersectionSidewalksObj, self.intersectionSidewalksBm)
         
@@ -253,37 +253,46 @@ class StreetRenderer:
         # index of the left point of the right connector
         indexR = connectorInfoR[0]
         
-        # The condition below means that the connectors described by <connectorInfoL> and <connectorInfoR>
-        # don't share a point
-        if indexL != indexR:
-            # intersection point for <indexL>
-            point1L = intersection.polygon[indexL]
-            normalL = streetSectionL.getNormal(
-                0 if connectorInfoL[3]=='S' else -1,
-                # <True> if normal is to the left, <False> if the normal is to the right
-                connectorInfoL[3]=='S'
-            )
-            point2L = point1L + sidewalkWidth*normalL
-            
-            # intersection point for <indexR>
-            point1R = intersection.polygon[indexR]
-            normalR = streetSectionR.getNormal(
-                0 if connectorInfoR[3]=='S' else -1,
-                # <True> if normal is to the left, <False> if the normal is to the right
-                not connectorInfoR[3]=='S'
-            )
-            point2R = point1R + sidewalkWidth*normalR
-            
-            # Check if the segments <point1L>-<point2L> and <point1R>-<point2R> intersect
-            if not intersect_line_line_2d(point1L, point2L, point1R, point2R):
-                bm = self.intersectionSidewalksBm
-                v1 = bm.verts.new((point1L[0], point1L[1], 0.))
-                v2 = bm.verts.new((point2L[0], point2L[1], 0.))
-                v3 = bm.verts.new((point2R[0], point2R[1], 0.))
-                v4 = bm.verts.new((point1R[0], point1R[1], 0.))
-                bm.edges.new((v1, v2))
-                bm.edges.new((v2, v3))
-                bm.edges.new((v3, v4))
+        # Offset points for streetSectionL
+        point1L = streetSectionL.offsetPoint(
+            0 if connectorInfoL[3]=='S' else -1,
+            # <True> if the offset is to the left, <False> if the offet is to the right.
+            # That's relative to the direction of <streetSectionL.centerline>
+            connectorInfoL[3]=='S',
+            sidewalkWidth
+        )
+        point2L = streetSectionL.offsetPoint(
+            1 if connectorInfoL[3]=='S' else -2,
+            # <True> if the offset is to the left, <False> if the offet is to the right
+            # That's relative to the direction of <streetSectionL.centerline>
+            connectorInfoL[3]=='S',
+            sidewalkWidth
+        )
+        point1R = streetSectionR.offsetPoint(
+            0 if connectorInfoR[3]=='S' else -1,
+            # <True> if the offset is to the left, <False> if the offet is to the right.
+            # That's relative to the direction of <streetSectionR.centerline>
+            connectorInfoR[3]=='E',
+            sidewalkWidth
+        )
+        point2R = streetSectionR.offsetPoint(
+            1 if connectorInfoR[3]=='S' else -2,
+            # <True> if the offset is to the left, <False> if the offet is to the right
+            # That's relative to the direction of <streetSectionR.centerline>
+            connectorInfoR[3]=='E',
+            sidewalkWidth
+        )
+        
+        # Check if the segments <point1L>-<point2L> and <point1R>-<point2R> intersect
+        if not intersect_line_line_2d(point1L, point2L, point1R, point2R):
+            bm = self.intersectionSidewalksBm
+            v1 = bm.verts.new((intersection.polygon[indexL][0], intersection.polygon[indexL][1], 0.))
+            v2 = bm.verts.new((point1L[0], point1L[1], 0.))
+            v3 = bm.verts.new((point1R[0], point1R[1], 0.))
+            v4 = bm.verts.new((intersection.polygon[indexR][0], intersection.polygon[indexR][1], 0.))
+            bm.edges.new((v1, v2))
+            bm.edges.new((v2, v3))
+            bm.edges.new((v3, v4))
     
     def finalize(self):
         return
@@ -334,16 +343,16 @@ class TerrainPatchesRenderer:
         index = 0
         
         for streetSection in waySectionLines.values():
-            offsetL = -0.5*streetSection.width
-            offsetR = 0.5*streetSection.width
+            offsetL = -streetSection.getLeftBorderDistance()
+            offsetR = streetSection.getLeftBorderDistance()
             for _ in streetSection.centerline:
                 self.obj.data.attributes["offset_l"].data[index].value = offsetL
                 self.obj.data.attributes["offset_r"].data[index].value = offsetR
                 index += 1
         
         for streetSection in wayClusters.values():
-            offsetL = streetSection.waySections[0].offset - 0.5*streetSection.waySections[0].width
-            offsetR = streetSection.waySections[-1].offset + 0.5*streetSection.waySections[-1].width
+            offsetL = -streetSection.getLeftBorderDistance()
+            offsetR = streetSection.getRightBorderDistance()
             for _ in streetSection.centerline:
                 self.obj.data.attributes["offset_l"].data[index].value = offsetL
                 self.obj.data.attributes["offset_r"].data[index].value = offsetR
@@ -360,7 +369,7 @@ class TerrainPatchesRenderer:
                 self.offsetEdgePoint(
                     centerline[0],
                     directionVector,
-                    0.5*streetSection.width
+                    streetSection.getLeftBorderDistance()
                 )
             
             if not streetSection.endConnected:
@@ -369,12 +378,11 @@ class TerrainPatchesRenderer:
                 self.offsetEdgePoint(
                     centerline[-1],
                     directionVector,
-                    0.5*streetSection.width
+                    streetSection.getLeftBorderDistance()
                 )
         
         for streetSection in wayClusters.values():
             centerline = streetSection.centerline
-            waySections = streetSection.waySections
             directionVector = None
             
             if not streetSection.startConnected:
@@ -382,8 +390,8 @@ class TerrainPatchesRenderer:
                 self.offsetEdgePoint(
                     centerline[0],
                     directionVector,
-                    -waySections[0].offset + 0.5*waySections[0].width,
-                    waySections[-1].offset + 0.5*waySections[-1].width
+                    streetSection.getLeftBorderDistance(),
+                    streetSection.getRightBorderDistance()
                 )
             
             if not streetSection.endConnected:
@@ -392,8 +400,8 @@ class TerrainPatchesRenderer:
                 self.offsetEdgePoint(
                     centerline[-1],
                     directionVector,
-                    -waySections[0].offset + 0.5*waySections[0].width,
-                    waySections[-1].offset + 0.5*waySections[-1].width
+                    streetSection.getLeftBorderDistance(),
+                    streetSection.getRightBorderDistance()
                 )
     
     def processIntersection(self, intersection):
