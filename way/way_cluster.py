@@ -5,6 +5,8 @@ from way.way_properties import estimateWayWidth
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 
+# from osmPlot import *
+
 # helper functions -----------------------------------------------
 def pairs(iterable):
     # iterable -> (p0,p1), (p1,p2), (p2, p3), ...
@@ -78,7 +80,7 @@ class LongClusterWay():
             else:   # inner
                 clusterSplits.append( SplitDescriptor(t,'inner',isect,posC,[self.sectionIDs[k][i] for k,i in enumerate(wIs)]) )
 
-        # Finally, the split descriptor for the end of the long cluster has to be cosntructed.
+        # Finally, the split descriptor for the end of the long cluster has to be constructed.
         # At the end, the ways may have been clipped
         tEnd = len(self.centerline)
         if self.clipped:
@@ -86,7 +88,7 @@ class LongClusterWay():
             eR = self.sectionIDs[-1][-1]
             clusterSplits.append( SplitDescriptor(tEnd,self.clipped,left[-1],right[-1],[[eL,],[eR,]]) )
         else:
-            clusterSplits.append( SplitDescriptor(tEnd,'both',left[-1],right[-1],[None]) )
+            clusterSplits.append( SplitDescriptor(tEnd,'both',left[-1],right[-1],[ids[-1] for ids in self.sectionIDs]) )
         clusterSplits.sort(key=lambda x: x.t)
 
         # Create clusters, split them when there are intermdiate intersections

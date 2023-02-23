@@ -454,11 +454,12 @@ class StreetGenerator():
                 intersectionsAll.append(intersectionsThis)
                 sectionsIDsAll.append(sectionsIDs)
 
-            # plotPureNetwork(self.sectionNetwork)
-            # for line in lines:
-            #     line.plot('r',2)
-            # plt.title('aligned')
-            # plotEnd()
+            # if cIndx==5:
+            #     plotPureNetwork(self.sectionNetwork)
+            #     for line in lines:
+            #         line.plot('r',2)
+            #     plt.title('aligned')
+            #     plotEnd()
 
            # In the next step, in-cluster intersections are processed. As a first
             # measure, ways, that have such intersections on both sides are removed.
@@ -581,7 +582,7 @@ class StreetGenerator():
                             continue
                         isect0, isect1 = lines[i0][0],lines[i1][-1]
                         lines[i1] = PolyLine( lines[i1][:] + lines[i0][:])
-                        sectionsIDsAll[i1].extend(sectionsIDsAll[i0] + [sectionId])
+                        sectionsIDsAll[i1] += [sectionId] + sectionsIDsAll[i0]
                         intersectionsAll[i1].extend(intersectionsAll[i0] + [isect0, isect1])
                         linesToRemove.append(i0)
 
@@ -685,12 +686,14 @@ class StreetGenerator():
                         self.waysCoveredByCluster.extend(sectionsIDsAll[index])
                         del sectionsIDsAll[index]
 
-            # plotPureNetwork(self.sectionNetwork)
-            # for line in lines:
-            #     line.plot('r',2)
-            # centerline.plot('r')
-            # plt.title('for cluster')
-            # plotEnd()
+            # if cIndx==5:
+            #     plotPureNetwork(self.sectionNetwork,True)
+            #     print(sectionsIDsAll)
+            #     for line in lines:
+            #         line.plot('r',2)
+            #     centerline.plot('r')
+            #     plt.title('for cluster')
+            #     plotEnd()
 
             longCluster = LongClusterWay(self)
             for i in range(len(lines)):
@@ -809,6 +812,12 @@ class StreetGenerator():
                 else:
                     assert False, 'Should not happen'
 
+            # if cIndx==8:
+            #     plotPureNetwork(self.sectionNetwork)
+            #     for n in nodes:
+            #         plt.plot(n[0],n[1],'ro')
+            #     plotEnd()
+
             # Insert centerlines and widths of clusters to <IntersectionCluster>. Keep a map
             # <ID2Object> for the ID in <IntersectionCluster> to the inserted object.
             # Collect way IDs (key of <self.waySections>) so that the cluster ways may later
@@ -816,11 +825,12 @@ class StreetGenerator():
             wayIDs = []
             ID2Object = dict()
             for cluster in clusterGroup:
-                wayIDs.extend( cluster[1].startSplit.currWIds )
                 if cluster[2] == 'start':
+                    wayIDs.extend( cluster[1].startSplit.currWIds )
                     Id = isectCluster.addWay(cluster[1].centerline,cluster[1].outWL(),cluster[1].outWR())
                     ID2Object[Id] = cluster
                 elif cluster[2] == 'end':
+                    wayIDs.extend( cluster[1].endSplit.currWIds )
                     Id = isectCluster.addWay(PolyLine(cluster[1].centerline[::-1]),cluster[1].outWR(),cluster[1].outWL())
                     ID2Object[Id] = cluster
                 else:
@@ -846,6 +856,10 @@ class StreetGenerator():
                                 # way-sections that connect nodes internally in the cluster area.
                                 section.isValid = False
 
+            # if cIndx==8:
+            #     for ow in isectCluster.outWays:
+            #         ow.centerline.plot('k')
+            #     plotEnd()
             # An intersection area can only be constructed, when more than one way present.
             if len(isectCluster.outWays) > 1:
                 # Create the intersection area and their connectors5 
