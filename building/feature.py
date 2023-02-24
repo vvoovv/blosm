@@ -497,15 +497,20 @@ class ComplexConvex5(Feature):
         """
         Inherit the facade class from <self.startVector.edge>
         """
-        self.startEdge[0].cl = \
-        self.startNextVector.edge.cl = \
-        self.startVector.edge.cl
-        
-        self.middleEdge[0].cl = self.startVector.next.edge.cl
-        
-        self.endEdge[0].cl = \
-        self.endPrevVector.edge.cl = \
-        self.endVector.edge.cl
+        startVector, endVector = self.startVector, self.endVector
+        if self.endEdge:
+            self.startEdge[0].cl = \
+            self.startNextVector.edge.cl = \
+            startVector.edge.cl
+            
+            self.middleEdge[0].cl = startVector.next.edge.cl
+            
+            self.endEdge[0].cl = \
+            self.endPrevVector.edge.cl = \
+            endVector.edge.cl
+        else:
+            startVector.next.edge.cl = endVector.prev.prev.edge.cl = \
+                endVector.prev.edge.cl = endVector.edge.cl = startVector.edge.cl
 
 
 class ComplexConvex4(Feature):

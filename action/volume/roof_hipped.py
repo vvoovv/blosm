@@ -85,7 +85,7 @@ class RoofHipped(RoofLeveled):
             self.roofRenderer.render(roofItem)
     
     def generateRoofQuadrangle(self, footprint, roofItem, firstVertIndex):
-        verts = footprint.building.verts
+        verts = footprint.building.renderInfo.verts
         
         vector, length, cos, sin, distance = self.vector, self.length, self.cos, self.sin, self.distance
         # cleanup
@@ -157,8 +157,7 @@ class RoofHipped(RoofLeveled):
             roofItem.addRoofSide(
                 (firstVertIndex + minDistanceIndex1, firstVertIndex + minDistanceIndex1Next, vertIndex1),
                 ( (0., 0.), (length[minDistanceIndex1], 0.), (u1, v1) ) if self.setUvs else None,
-                minDistanceIndex1,
-                self.itemFactory
+                minDistanceIndex1
             )
             
             # Quadrangle of the hipped roof originating from the polygon edge
@@ -171,8 +170,7 @@ class RoofHipped(RoofLeveled):
                     (length[minDistanceIndex1Next] - u2, v2),
                     (length[minDistanceIndex1] - u1, v1)
                 ) if self.setUvs else None,
-                minDistanceIndex1Next,
-                self.itemFactory
+                minDistanceIndex1Next
             )
             
             # Triangle of the hipped roof originating from the polygon edge
@@ -180,8 +178,7 @@ class RoofHipped(RoofLeveled):
             roofItem.addRoofSide(
                 (firstVertIndex + minDistanceIndex2, firstVertIndex + minDistanceIndex2Next, vertIndex2),
                 ( (0., 0.), (length[minDistanceIndex2], 0.), (u2, v2) ) if self.setUvs else None,
-                minDistanceIndex2,
-                self.itemFactory
+                minDistanceIndex2
             )
             
             # Quadrangle of the hipped roof originating from the polygon edge
@@ -194,8 +191,7 @@ class RoofHipped(RoofLeveled):
                     (length[minDistanceIndex2Next] - u1, v1),
                     (length[minDistanceIndex2] - u2, v2)
                 ) if self.setUvs else None,
-                minDistanceIndex2Next,
-                self.itemFactory
+                minDistanceIndex2Next
             )
         return True
     
