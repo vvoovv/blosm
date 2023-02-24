@@ -53,7 +53,7 @@ class LongClusterWay():
     def split(self):
         # The long cluster has now to be split into subclusters. Reasons for split positons
         # are intersections on the outermost ways left and right and possble start and 
-        # end points of shortinner ways. Reference linse is the cluster's centerline. 
+        # end points of short inner ways. Reference line is the cluster's centerline. 
 
         # Find intersections on outermost (left and right) ways along cluster and create
         # their descriptors.
@@ -72,7 +72,7 @@ class LongClusterWay():
         for split in splits:
             lineNr,sectNr,isect, pos, t = split
             posC,_ = self.polylines[lineNr].intersectWithLine(isect,pos)
-            wIs[lineNr] = sectNr+1
+            wIs[lineNr] = wIs[lineNr]+1
             if lineNr == 0: # left              
                 clusterSplits.append( SplitDescriptor(t,'left',isect,posC,[self.sectionIDs[k][i] for k,i in enumerate(wIs)]) )
             elif lineNr == nrOfWays-1: # right
@@ -285,9 +285,23 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
     # with the left border of cluster 2.
     outW = max(cluster1.outWL(),cluster2.outWL())
     p1, valid = offsetPolylineIntersection(cluster2.centerline,outLine,outW,outWidth/2.)
+    # if valid!='valid':
+    #     plotPureNetwork(cls.sectionNetwork)
+    #     cluster1.centerline.plot('g:',3)
+    #     cluster2.centerline.plot('r',3)
+    #     plt.plot(p1[0],p1[1],'ro')
+    #     outLine.plot('c:',3)
+    #     plotEnd()
     assert valid=='valid'
     reverseCenterline = PolyLine(cluster1.centerline[::-1])
     p3, valid = offsetPolylineIntersection(outLine,reverseCenterline,outWidth/2.,outW)
+    # if valid!='valid':
+    #     plotPureNetwork(cls.sectionNetwork)
+    #     cluster1.centerline.plot('g:',3)
+    #     cluster2.centerline.plot('r',3)
+    #     plt.plot(p3[0],p3[1],'ro')
+    #     outLine.plot('c:',3)
+    #     plotEnd()
     assert valid=='valid'
 
     # Project these onto cluster centerlines to get initial trim values
@@ -396,17 +410,17 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     #     cluster1.centerline.plot('g:',3)
     #     cluster2.centerline.plot('r',3)
     #     plt.plot(p1[0],p1[1],'ro')
-    #     outLine.plot('k',3)
+    #     outLine.plot('c:',3)
     #     plotEnd()
 
     assert valid=='valid'
     p3, valid = offsetPolylineIntersection(outLine,cluster2.centerline,outWidth/2.,outW)
     # if valid!='valid':
-    #     plotPureNetwork(cls.sectionNetwork)
+    #     plotPureNetwork(cls.sectionNetwork,True)
     #     cluster1.centerline.plot('g:',3)
     #     cluster2.centerline.plot('r',3)
     #     plt.plot(p3[0],p3[1],'ro')
-    #     outLine.plot('k',3)
+    #     outLine.plot('c:',3)
     #     plotEnd()
 
     assert valid=='valid'
@@ -462,7 +476,7 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         # No transistion, we construct directly <p5> on the left of the cluster.
         clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
         _,tP = cluster2.centerline.orthoProj(p3)
-        cluster1.trimS = min(cluster1.trimS,tP)
+        cluster2.trimS = max(cluster2.trimS,tP)
         if cls.isectShape == 'common':
             p5 = cluster2.centerline.offsetPointAt(tP,cluster2.outWL())
         elif cls.isectShape == 'separated':

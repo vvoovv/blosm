@@ -1099,16 +1099,18 @@ class StreetGenerator():
             # its remaining connectors.
             mergedArea = IntersectionArea()
             mergedArea.polygon = mergedPoly
+            # Find duplicate connectors, which have to be removed.
+            connectorIDs = [id for indx in conflicting for id in self.intersectionAreas[indx].connectors]
+            seenIDs = set()
+            dupIDs = [x for x in connectorIDs if x in seenIDs or seenIDs.add(x)]
+
             for indx in conflicting:
                 conflictingArea = self.intersectionAreas[indx]
                 connectors = conflictingArea.connectors
                 for key,connector in connectors.items():
-                    # vertices of this connector
-                    v0 = conflictingArea.polygon[connector[0]]
-                    v1 = conflictingArea.polygon[connector[0]+1]
-                    # if both vertices of the connector are still here,
-                    # the connector has survived.
-                    if v0 in mergedPoly and v1 in mergedPoly:
+                    # Keep connectors that don't have duplicate IDs
+                    if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
+                        v0 = conflictingArea.polygon[connector[0]]
                         newConnector = (mergedPoly.index(v0),connector[1])
                         mergedArea.connectors[key] = newConnector
             mergedAreas.append(mergedArea)
