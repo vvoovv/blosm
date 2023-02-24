@@ -5,18 +5,6 @@ from itertools import tee,islice, cycle
 from lib.CompGeom.PolyLine import PolyLine
 from way.way_properties import estFilletRadius
 
-# import matplotlib.pyplot as plt
-# def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
-#     x = [n[0] for n in poly] + [poly[0][0]]
-#     y = [n[1] for n in poly] + [poly[0][1]]
-#     if fill:
-#         plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
-#     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
-#     if vertsOrder:
-#         for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
-#             plt.text(xx,yy,str(i),fontsize=12)
-
-
 # helper functions -----------------------------------------------
 def pairs(iterable):
     # s -> (s0,s1), (s1,s2), (s2, s3), ...
@@ -106,14 +94,9 @@ class Intersection():
         self.outWays = []
         self.order = 0
 
-        # plt.subplot(1,2,1)
-        # for p in positions:
-        #     plt.plot(p[0],p[1],'co',markersize=10)
-        # plt.plot(self.position[0],self.position[1],'cx',markersize=6)
         for node in positions:
             for net_section in network.iterOutSegments(node):
                 if net_section.category != 'scene_border':
-                    #waySections[net_section.sectionId].polyline.plot('k')
                     if net_section.s not in positions or net_section.t not in positions:
                         waySection = waySections[net_section.sectionId]
                         if waySection.isValid:
@@ -137,16 +120,6 @@ class Intersection():
                 else:
                     return angle, length
             self.outWays= sorted(self.outWays, key = sort_key)
-
-        # poly,_ = self.intersectionPoly_noFillet()
-        # for i,outway in enumerate(self.outWays):
-        #     outway.polyline.plot('k')
-        # # plotPolygon(poly,False,'c','k',3)
-
-        # import matplotlib.pyplot as plt
-        # plt.gca().axis('equal')
-        # plt.show()
-
 
     def addSection(self, position, waySection):
         # The polyline of the outgoing way of the intersection in <self.outWays> starts
@@ -179,14 +152,6 @@ class Intersection():
             else:
                 return angle, length
         self.outWays = sorted(self.outWays, key = sort_key)
-
-        # import matplotlib.pyplot as plt
-        # for i,outway in enumerate(self.outWays):
-        #     outway.polyline.plot('k')
-        #     p = outway.polyline[-1]
-        #     plt.text(p[0],p[1],str(i),fontsize=12)
-        # plt.gca().axis('equal')
-        # plt.show()
 
     def checkForConflicts(self):
         conflictingNodes = []
@@ -230,8 +195,6 @@ class Intersection():
                                 # points onto the center-lines of the ways.
         isectPoints = [None]*self.order
 
-        doDebug = False
-
         for (indx1, indx2), (way1,way2) in zip(cyclePair(range(self.order)),cyclePair(self.outWays)):
             # <way1> and <way2> are consecutive outgoing polylines in counter-clockwise order of the
             # intersection. These are the centerlines of the way-sections, <way1> is to the right
@@ -258,19 +221,10 @@ class Intersection():
             # left and the right border. <uVL> and <uVR> are the unit vectors of the intersecting
             # segments.
             isectParams = PolyLine.intersection(borderL,borderR)
-            if doDebug:
-                borderL.plot('g')
-                borderR.plot('r')
             if isectParams is None:
-                if doDebug:
-                    borderL.plot('c')
-                    borderR.plot('m')
                 # No intersection found
                 continue
             iP,_,_,_,_ = isectParams
-            if doDebug:
-                import matplotlib.pyplot as plt
-                plt.plot(iP[0],iP[1],'mx',markersize=10)
 
             # The line parameters of the intersection may be different from the line parameter of
             # the center-line. To get consistent and equal vertices for the way-polygon and the
@@ -336,8 +290,6 @@ class Intersection():
         isectPoints = [None]*self.order
         filletVertsList = [None]*self.order
 
-        doDebug = False
-
         for (indx1, indx2), (way1,way2) in zip(cyclePair(range(self.order)),cyclePair(self.outWays)):
             # <way1> and <way2> are consecutive outgoing polylines in counter-clockwise order of the
             # intersection. These are the centerlines of the way-sections, <way1> is to the right
@@ -364,19 +316,10 @@ class Intersection():
             # left and the right border. <uVL> and <uVR> are the unit vectors of the intersecting
             # segments.
             isectParams = PolyLine.intersection(borderL,borderR)
-            if doDebug:
-                borderL.plot('g')
-                borderR.plot('r')
             if isectParams is None:
-                if doDebug:
-                    borderL.plot('c')
-                    borderR.plot('m')
                 # No intersection found
                 continue
             iP,tL,tR,uVL,uVR = isectParams
-            if doDebug:
-                import matplotlib.pyplot as plt
-                plt.plot(iP[0],iP[1],'mx',markersize=10)
 
             # Now, the fillet of this intersection gets constructed.
             # Get the fillet radius between these ways based on the ways' categories.
@@ -421,9 +364,6 @@ class Intersection():
 
             # If a fillet arc with legs that fit onto the segments has been found.
             if origin:
-                if doDebug:
-                    plt.plot(pLegEndL[0],pLegEndL[1],'go',markersize=6)
-                    plt.plot(pLegEndR[0],pLegEndR[1],'ro',markersize=6)
                 # Create the vertices for the fillet.
                 filletVerts = filletLine(origin, pLegEndL, pLegEndR, radius)
 
@@ -488,7 +428,6 @@ class Intersection():
                     polygon.append(pR)
             else:
                 polygon.append(pR)
-            # plt.plot(pR[0],pR[1],'ro',markersize=10)
             connectors[way2.section.id] = ( len(polygon)-2, 'S' if way2.fwd else 'E')
 
         polygon = polygon[1:] + polygon[:1]
@@ -547,14 +486,11 @@ class Intersection():
         outT = outWay.polyline.d2t(transitionWidth)
         if inT is None or outT is None:
             pass
-            # plt.plot(self.position[0],self.position[1],'rx',markersize=20,zorder=950)
         else:
             assert inT is not None
             assert outT is not None
 
             # compute cornerpoints
-            # inLeft = inLine.polyline.offsetPointAt(inT,inLine.section.leftWidth)
-            # inRight = inLine.polyline.offsetPointAt(inT,-inLine.section.rightWidth)
             inLeft = inWay.polyline.offsetPointAt(inT,inWay.section.rightWidth)
             inRight = inWay.polyline.offsetPointAt(inT,-inWay.section.leftWidth)
             outLeftWidth = inWay.section.leftWidth if outWay.section.turnParams else outWay.section.leftWidth
@@ -732,22 +668,10 @@ class IntersectionCluster():
         edgesL = [-1]*self.order
         edgesR = [-1]*self.order
 
-        doDebug = False
-
-        if doDebug:
-            import matplotlib.pyplot as plt
-            x = [n[0] for n in self.clusterPoly] + [self.clusterPoly[0][0]]
-            y = [n[1] for n in self.clusterPoly] + [self.clusterPoly[0][1]]
-            plt.plot(x,y,'k:',linewidth=1,zorder=999)
-
         for indx, way in enumerate(self.outWays):
             borderL = way.polyline.parallelOffset(way.leftW)
             borderR = way.polyline.parallelOffset(way.rightW)
             # way.polyline.plot('k')
-
-            if doDebug:
-                borderL.plot('g')
-                borderR.plot('r')
 
             isectL = intersectLineWithClusterPoly(borderL)
             isectR = intersectLineWithClusterPoly(borderR)
@@ -757,20 +681,12 @@ class IntersectionCluster():
                 tmax[indx] = max(tmax[indx],tPL)
                 isectPointsL[indx] = way.polyline.offsetPointAt(tPL,way.leftW)
                 edgesL[indx] = isectL[2]
-                if doDebug:
-                    p = isectPointsL[indx]
-                    plt.plot(p[0],p[1],'go',markersize=6)
-                    plt.text(p[0],p[1],' '+str(isectL[2]))
 
             if isectR:
                 iPL,tPR = way.polyline.orthoProj(isectR[0])
                 tmax[indx] = max(tmax[indx],tPR)
                 isectPointsR[indx] = way.polyline.offsetPointAt(tPR,way.rightW)
                 edgesR[indx] = isectR[2]
-                if doDebug:
-                    p = isectPointsR[indx]
-                    plt.plot(p[0],p[1],'ro',markersize=6)
-                    plt.text(p[0],p[1],' '+str(isectR[2]))
 
         polygon = []
         # Construct the intersection area polygon

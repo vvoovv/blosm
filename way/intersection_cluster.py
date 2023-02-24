@@ -4,7 +4,7 @@ from mathutils import Vector
 from math import pi, atan2
 
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
-
+# from osmPlot import *
 _PI2 = 2.*pi
 
 # helper functions -----------------------------------------------
@@ -23,7 +23,7 @@ class ClusterOutWay():
         self.centerline = centerline
         self.leftWidth = leftWidth
         self.rightWidth = rightWidth
-        # self.firstV = centerline[1]-centerline[0]
+        self.v0 =  self.centerline[1] - self.centerline[0]
         self.trim_t = 0.
 
 class IntersectionCluster():
@@ -38,8 +38,8 @@ class IntersectionCluster():
     def sortOutWays(self):
         center = sum((way.centerline[0] for way in self.outWays),Vector((0,0)))/len(self.outWays)       
         def compare(way1,way2):
-            v1 = way1.centerline[-1] - center
-            v2 = way2.centerline[-1] - center
+            v1 = (way1.centerline[-2] if len(way1.centerline)>2 else way1.centerline[-1]) - center
+            v2 = (way2.centerline[-2] if len(way2.centerline)>2 else way2.centerline[-1]) - center
             angle1 = atan2(v1[1],v1[0])+(v1[1]<0)*_PI2
             angle2 = atan2(v2[1],v2[0])+(v2[1]<0)*_PI2
             if angle1 > angle2: return 1
@@ -49,6 +49,8 @@ class IntersectionCluster():
 
     def createArea(self):
         for way1,way2 in cyclePair(self.outWays):
+            if way1.v0.cross(way2.v0) < 0.:
+                continue
             p, type = offsetPolylineIntersection(way1.centerline,way2.centerline,way1.leftWidth,way2.rightWidth)
             if type == 'valid':
                 _,t1 = way1.centerline.orthoProj(p)
@@ -63,6 +65,11 @@ class IntersectionCluster():
 
     def create(self):
         self.sortOutWays()
+        # self.setVectors()
+        # for i,ow in enumerate(self.outWays):
+        #     ow.centerline.plot('k')
+        #     p = ow.centerline[-1]
+        #     plt.text(p[0],p[1],str(i))
         self.createArea()
         area = []
         connectors = []
@@ -81,4 +88,6 @@ class IntersectionCluster():
         if area[0] == area[-1]:
             area = area[:-1]
 
+        # plotPolygon(area,False,'r')
+        # plotEnd()
         return area, connectors
