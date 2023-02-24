@@ -11,6 +11,9 @@ from util.blender import createMeshObject, createCollection, getBmesh, setBmesh,
 from mathutils import Vector
 
 
+sidewalkWidth = 5.
+
+
 class StreetRenderer:
     
     def __init__(self, app):
@@ -114,10 +117,10 @@ class StreetRenderer:
             self.setModifierCarriageway(obj, streetSection)
             
             # sidewalk on the left
-            self.setModifierSidewalk(obj, -streetSection.getLeftBorderDistance(), 5.)
+            self.setModifierSidewalk(obj, -streetSection.getLeftBorderDistance(), sidewalkWidth)
             
             # sidewalk on the right
-            self.setModifierSidewalk(obj, streetSection.getRightBorderDistance(), 5.)
+            self.setModifierSidewalk(obj, streetSection.getRightBorderDistance(), sidewalkWidth)
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
@@ -139,14 +142,14 @@ class StreetRenderer:
             self.setModifierSidewalk(
                 obj,
                 -streetSection.getLeftBorderDistance(),
-                5.
+                sidewalkWidth
             )
             
             # sidewalk on the right
             self.setModifierSidewalk(
                 obj,
                 streetSection.getLeftBorderDistance(),
-                5.
+                sidewalkWidth
             )
             
             # separators between the carriageways
@@ -175,7 +178,6 @@ class StreetRenderer:
         m["Input_3"] = width
     
     def setModifierSidewalk(self, obj, offset, width):
-        return
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
@@ -238,8 +240,6 @@ class StreetRenderer:
         is to the right from the one described by <connectorInfoL>.
         """
         
-        sidewalkWidth = 5.
-        
         # get an instance for the street section attached to the connector described by <connectorInfo1>
         streetSectionL = manager.wayClusters[connectorInfoL[2]]\
             if connectorInfoL[1] else\
@@ -253,34 +253,39 @@ class StreetRenderer:
         # index of the left point of the right connector
         indexR = connectorInfoR[0]
         
+        offsetToLeft = connectorInfoL[3]=='S'
+        offsetDistance = (
+            streetSectionL.getLeftBorderDistance()
+            if offsetToLeft else
+            streetSectionL.getRightBorderDistance()
+        ) + sidewalkWidth
         # Offset points for streetSectionL
         point1L = streetSectionL.offsetPoint(
-            0 if connectorInfoL[3]=='S' else -1,
-            # <True> if the offset is to the left, <False> if the offet is to the right.
-            # That's relative to the direction of <streetSectionL.centerline>
-            connectorInfoL[3]=='S',
-            sidewalkWidth
+            0 if offsetToLeft else -1,
+            offsetToLeft,
+            offsetDistance
         )
         point2L = streetSectionL.offsetPoint(
-            1 if connectorInfoL[3]=='S' else -2,
-            # <True> if the offset is to the left, <False> if the offet is to the right
-            # That's relative to the direction of <streetSectionL.centerline>
-            connectorInfoL[3]=='S',
-            sidewalkWidth
+            1 if offsetToLeft else -2,
+            offsetToLeft,
+            offsetDistance
         )
+        
+        offsetToLeft = connectorInfoR[3]=='E'
+        offsetDistance = (
+            streetSectionR.getLeftBorderDistance()
+            if offsetToLeft else
+            streetSectionR.getRightBorderDistance()
+        ) + sidewalkWidth
         point1R = streetSectionR.offsetPoint(
-            0 if connectorInfoR[3]=='S' else -1,
-            # <True> if the offset is to the left, <False> if the offet is to the right.
-            # That's relative to the direction of <streetSectionR.centerline>
-            connectorInfoR[3]=='E',
-            sidewalkWidth
+            -1 if offsetToLeft else 0,
+            offsetToLeft,
+            offsetDistance
         )
         point2R = streetSectionR.offsetPoint(
-            1 if connectorInfoR[3]=='S' else -2,
-            # <True> if the offset is to the left, <False> if the offet is to the right
-            # That's relative to the direction of <streetSectionR.centerline>
-            connectorInfoR[3]=='E',
-            sidewalkWidth
+            -2 if offsetToLeft else 1,
+            offsetToLeft,
+            offsetDistance
         )
         
         # Check if the segments <point1L>-<point2L> and <point1R>-<point2R> intersect
