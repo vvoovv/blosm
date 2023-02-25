@@ -148,7 +148,7 @@ class StreetRenderer:
             # sidewalk on the right
             self.setModifierSidewalk(
                 obj,
-                streetSection.getLeftBorderDistance(),
+                streetSection.getRightBorderDistance(),
                 sidewalkWidth
             )
             
