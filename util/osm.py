@@ -23,6 +23,9 @@ def assignTags(obj, tags):
 
 
 def parseNumber(s, defaultValue=None):
+    s = s.rstrip()
+    if s[-1] == 'm':
+        s = s[:-1]
     try:
         n = float(s)
     except ValueError:
