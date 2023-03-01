@@ -1,12 +1,17 @@
 import os
 from time import time
 import bpy
-from manager import Manager
 from util.blender import loadSceneFromFile
 from util.blender_extra.material import setImage
 
 
 _exportTemplateFilename = "building_material_templates.blend"
+
+_renderFileFormats = {
+    ".png": "PNG",
+    ".jpg": "JPEG",
+    ".jpeg": "JPEG"   
+}
 
 
 class TextureExporter:
@@ -50,7 +55,11 @@ class TextureExporter:
         nodes = scene.node_tree.nodes
         fileOutputNode = nodes["File Output"]
         fileOutputNode.base_path = self.tmpTextureDir
-        fileOutputNode.file_slots[0].path = os.path.splitext(textureFilename)[0]
+        fileOutputNode.file_slots[0].path, extention = os.path.splitext(textureFilename)
+        # Set the correct file format for rendering
+        fileOutputNode.format.file_format = _renderFileFormats.get(
+            extention.lower(), 'PNG'
+        )
         return nodes
     
     def renderTexture(self, scene, textureFilepath):

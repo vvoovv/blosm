@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from parse.osm.relation.building import Building
 
 from manager import BaseManager, Linestring, Polygon, PolygonAcceptBroken, WayManager
+from building.gn_2d import GnBldg2dManager
 from renderer import Renderer2d
 from renderer.node_renderer import BaseNodeRenderer
 from renderer.curve_renderer import CurveRenderer
@@ -57,11 +58,11 @@ def setup(app, osm):
     #)
     
     if app.buildings:
-        if app.mode is app.twoD:
+        if app.mode is app.twoD:            
             osm.addCondition(
                 lambda tags, e: "building" in tags,
                 "buildings", 
-                polygon
+                GnBldg2dManager(app) if app.gnSetup2d != '-' else polygon
             )
         else: # 3D
             buildingParts = BuildingParts()

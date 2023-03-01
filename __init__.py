@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "blender-osm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 5, 1),
+    "version": (2, 6, 5),
     "blender": (2, 80, 0),
     "location": "Right side panel > \"osm\" tab",
     "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
@@ -98,12 +98,17 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
         description = "A string token to access overlays from Mapbox company"
     )
     
+    arcgisAccessToken: bpy.props.StringProperty(
+        name = "ArcGIS access token",
+        description = "A string token (API Key) to access satellite imagery from ArcGIS location service"
+    )
+    
     osmServer: bpy.props.EnumProperty(
         name = "OSM data server",
         items = (
-            ("overpass-api.de", "overpass-api.de: 8 cores, 128 GB RAM", "overpass-api.de: 8 cores, 96 GB RAM"),
-            ("openstreetmap.fr", "openstreetmap.fr: 8 cores, 16 GB RAM", "openstreetmap.fr: 8 cores, 16 GB RAM"),
-            ("kumi.systems", "kumi.systems: 20 cores, 256GB RAM", "kumi.systems: 20 cores, 256GB RAM")
+            ("overpass-api.de", "overpass-api.de: 8 cores, 128 GB RAM", "overpass-api.de: 8 cores, 128 GB RAM"),
+            ("vk maps", "VK Maps: 56 cores, 384 GB RAM", "VK Maps: 56 cores, 384 GB RAM"),
+            ("kumi.systems", "kumi.systems: 20 cores, 256 GB RAM", "kumi.systems: 20 cores, 256 GB RAM")
         ),
         description = "OSM data server if the default one is inaccessible",
         default = "overpass-api.de"
@@ -134,7 +139,12 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "assetsDir")
             
             layout.separator()
-            layout.box().label(text="Optional:")
+            layout.label(text="Paste one or more access tokens to get satellite imagery:")
+            
+            split = layout.split(factor=0.9)
+            split.prop(self, "arcgisAccessToken")
+            split.operator("blosm.get_arcgis_token", text="Get it!")
+            
             split = layout.split(factor=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
@@ -149,6 +159,20 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "enableExperimentalFeatures", text="Enable experimental features")
 
 blenderApp.app.addonName = BlosmPreferences.bl_idname
+
+
+class BLOSM_OT_GetArcgisToken(bpy.types.Operator):
+    bl_idname = "blosm.get_arcgis_token"
+    bl_label = ""
+    bl_description = "Get ArcGIS access token"
+    bl_options = {'INTERNAL'}
+    
+    url = "https://developers.arcgis.com/sign-up/"
+    
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
 
 
 class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
@@ -266,6 +290,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
             setLatLon = True
         else:
+            # This is the case if <a.osmSource == "file"> and if the first condition is not true
             setLatLon = True
         
         osm.parse(a.osmFilepath, forceExtentCalculation=forceExtentCalculation)
@@ -302,8 +327,10 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a.process()
         a.render()
         
-        # setting <lon> and <lat> attributes for <scene> if necessary
-        if setLatLon:
+        # Set <lon> and <lat> attributes for <scene> if necessary.
+        # <osm.projection> is set in <osm.setProjection(..)> along with <osm.lat> and <osm.lon>
+        # So we test if <osm.projection> is set, that also means that <osm.lat> and <osm.lon> are also set.
+        if setLatLon and osm.projection:
             # <osm.lat> and <osm.lon> have been set in osm.parse(..)
             self.setCenterLatLon(context, osm.lat, osm.lon)
         
@@ -616,6 +643,7 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
 
 _classes = (
     BlosmPreferences,
+    BLOSM_OT_GetArcgisToken,
     BLOSM_OT_GetMapboxToken,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,

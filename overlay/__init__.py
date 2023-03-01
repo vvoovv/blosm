@@ -16,10 +16,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import math, os, sys, ssl
-import numpy
+
+import math, os, sys
 from threading import Thread
+import numpy
 from urllib import request
+import ssl
+import bpy
+
+from util.blender import getBmesh, setBmesh, loadMaterialsFromFile
+from app.blender import app
 
 
 earthRadius = 6378137.
@@ -40,6 +46,19 @@ prohibitedCharacters = {
 }
 
 
+def getMapboxAccessToken(addonName):
+    prefs = bpy.context.preferences.addons
+    if addonName in prefs:
+        accessToken = prefs[addonName].preferences.mapboxAccessToken
+        if not accessToken:
+            raise Exception("An access token for Mapbox overlays isn't set in the addon preferences")
+    else:
+        j = os.path.join
+        with open(j( j(os.path.realpath(__file__), os.pardir), "mapbox_access_token.txt"), 'r') as file:
+            accessToken = file.read()
+    return accessToken
+
+
 class Overlay:
     
     minZoom = 1
@@ -55,40 +74,26 @@ class Overlay:
     # the name for the base UV map
     uvName = "UVMap"
     
-    # name of the default material
+    # relative path to default materials
+    materialPath = "assets/base.blend"
+    
+    # name of the default material from <Overlay.materialPath>
     defaultMaterial = "overlay"
     
-    def __init__(self, url, maxZoom, app):
+    def __init__(self, url, maxZoom, addonName):
         self.maxZoom = maxZoom
-        self.app = app
         self.subdomains = None
         self.numSubdomains = 0
         self.tileCounter = 0
         self.numTiles = 0
-        # four because of red, blue, green and opacity
-        self.numComponents = 4
         self.imageExtension = "png"
-        # Defines if the origin of an image is located at its top left corner (True) or
-        # bottom left corner (False)
-        self.originAtTop = False
-        
-        self.checkImageFormat = False 
-        
-        if app.overlayType == "custom":
-            if "jpg" in url:
-                self.imageExtension = "jpg"
-            elif "jpeg" in url:
-                self.imageExtension = "jpeg"
-            elif not "png" in url:
-                # The image tile format is unknown. We have to check it for the command line mode
-                self.checkImageFormat = True
         
         url = url.strip()
         
         if url.startswith("mapbox://styles/"):
             # the special case of a Mapbox style URL
             url = "https://api.mapbox.com/styles/v1/%s/tiles/256/{z}/{x}/{y}?access_token=%s" %\
-                (url[16:], self.app.getMapboxAccessToken())
+                (url[16:], getMapboxAccessToken(addonName))
         else:
             # check we have subdomains
             leftBracketPosition = url.find("[")
@@ -106,13 +111,12 @@ class Overlay:
                 if url[-1] != '/':
                     url = url + '/'
                 url = url + self.tileCoordsTemplate
-        
         self.url = url
     
     def prepareImport(self, left, bottom, right, top):
-        self.app.print("Preparing overlay for import...")
+        app.print("Preparing overlay for import...")
         
-        maxNumTiles = self.app.maxNumTiles
+        maxNumTiles = app.maxNumTiles
         # Convert the coordinates from degrees to spherical Mercator coordinate system
         # and move zero to the top left corner (that's why the 3d argument in the function below)
         b, l = Overlay.toSphericalMercator(bottom, left, True)
@@ -157,25 +161,20 @@ class Overlay:
         self.numTilesX = numTilesX = r - l + 1
         self.numTilesY = numTilesY = b - t + 1
         self.numTiles = numTilesX * numTilesY
-        self.initImageData()
+        # a numpy array for the resulting image stitched out of all tiles
+        self.imageData = numpy.zeros(4*numTilesX*self.tileWidth * numTilesY*self.tileHeight)
+        # four because of red, blue, green and opacity
+        self.w = 4 * self.tileWidth
         # <self.x> and <self.y> are the current tile coordinates
         self.x = l
         self.y = t
     
-    def initImageData(self):
-        self.w = self.numComponents * self.tileWidth
-        # a numpy array for the resulting image stitched out of all tiles
-        self.imageData = numpy.zeros(
-            self.w * self.numTilesX * self.numTilesY * self.tileHeight,
-            dtype = numpy.float64 if self.numComponents == 4 else numpy.uint8
-        )
-    
     def importNextTile(self):
+        w = self.w
         self.tileCounter += 1
         x = self.x
         y = self.y
         tileData = self.getTileData(self.zoom, x, y)
-        w = self.w
         if tileData is True or tileData is False:
             # Boolean in <tileData> means that we have to restart everything from the beginning since 
             # the tiles aren't available for the given zoom.
@@ -183,9 +182,7 @@ class Overlay:
             return tileData
         if not tileData is None:
             for _y in range(self.tileHeight):
-                i1 = w * ( (y-self.t) * self.tileHeight*self.numTilesX + _y*self.numTilesX + x - self.l )\
-                if self.originAtTop else\
-                w * ( (self.numTilesY-1-y+self.t) * self.tileHeight*self.numTilesX + _y*self.numTilesX + x - self.l )
+                i1 = w * ( (self.numTilesY-1-y+self.t) * self.tileHeight*self.numTilesX + _y*self.numTilesX + x - self.l )
                 self.imageData[i1:i1+w] = tileData[_y*w:(_y+1)*w]
         if y == self.b:
             if x == self.r:
@@ -197,22 +194,79 @@ class Overlay:
             self.y += 1
         return True
     
+    def finalizeImport(self):
+        if self.imageData is None:
+            return False 
+        app.print("Stitching tile images...")
+        
+        # create the resulting Blender image stitched out of all tiles
+        image = bpy.data.images.new(
+            self.blenderImageName,
+            width = (self.r - self.l + 1) * self.tileWidth,
+            height = (self.b - self.t + 1) * self.tileHeight
+        )
+        image.pixels = self.imageData
+        # cleanup
+        self.imageData = None
+        
+        image["tile_zoom"] = self.zoom
+        image["tile_left"] = self.l
+        image["tile_right"] = self.r
+        image["tile_bottom"] = self.b
+        image["tile_top"] = self.t
+        
+        if app.saveOverlayToFile:
+            path = os.path.join(app.dataDir, "texture", f"overlay.{image.file_format.lower()}")
+            image.save_render(path)
+            image.source = 'FILE'
+            image.filepath = path
+        else:
+            # pack the image into .blend file
+            image.pack()
+        
+        if app.terrain:
+            self.setUvForTerrain(
+                app.terrain.terrain,
+                Overlay.fromTileCoord(self.l, self.zoom) - halfEquator,
+                halfEquator - Overlay.fromTileCoord(self.b+1, self.zoom),
+                Overlay.fromTileCoord(self.r+1, self.zoom) - halfEquator,
+                halfEquator - Overlay.fromTileCoord(self.t, self.zoom)
+            )
+        # load and append the default material
+        if app.setOverlayMaterial:
+            materials = app.terrain.terrain.data.materials
+            material = loadMaterialsFromFile(
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    os.pardir,
+                    self.materialPath
+                ),
+                False, # i.e. append rather than link
+                self.defaultMaterial
+            )[0]
+            material.node_tree.nodes["Image Texture"].image = image
+            if materials:
+                # ensure that <material> is placed at the very first material slot
+                materials.append(None)
+                materials[-1] = materials[0]
+                materials[0] = material
+            else:
+                materials.append(material)
+        return True
+    
     def getTileData(self, zoom, x, y):
         # check if we the tile in the file cache
-        tileDir = os.path.join(self.overlayDir, str(zoom), str(x))
-        if self.checkImageFormat and os.path.exists(tileDir):
-            # Tile image format is unknown. We'll get from the the file extension
-            # of the tile image
-            self.getImageExtensionFromFile(tileDir)
-        tilePath = os.path.join(tileDir, "%s.%s" % (y, self.imageExtension))
+        j = os.path.join
+        tileDir = j(self.overlayDir, str(zoom), str(x))
+        tilePath = j(tileDir, "%s.%s" % (y, self.imageExtension))
         tileUrl = self.getTileUrl(zoom, x, y)
         if os.path.exists(tilePath):
-            self.app.print(
+            app.print(
                 "(%s of %s) Using the cached version of the tile image %s" %
                 (self.tileCounter, self.numTiles, tileUrl)
             )
         else:
-            self.app.print(
+            app.print(
                 "(%s of %s) Downloading the tile image %s" %
                 (self.tileCounter, self.numTiles, tileUrl)
             )
@@ -240,7 +294,7 @@ class Overlay:
                     # Returning Python boolean means that we have to restart everything from the beginning since 
                     # the tiles aren't available for the given zoom.
                     return True
-                self.app.print(
+                app.print(
                     "(%s of %s) Unable to download the tile image %s" %
                     (self.tileCounter, self.numTiles, tileUrl)
                 )
@@ -251,8 +305,13 @@ class Overlay:
             # save the tile to file cache
             with open(tilePath, 'wb') as f:
                 f.write(tileData)
-        
-        return self.getTileDataFromImage(tilePath)
+        # Create a temporary Blender image out of the tile image
+        # to create a numpy array out of the image raw data
+        tmpImage = bpy.data.images.load(tilePath)
+        tileData = numpy.array(tmpImage.pixels)
+        # delete the temporary Blender image
+        bpy.data.images.remove(tmpImage, do_unlink=True)
+        return tileData
     
     def getOverlaySubDir(self):
         url = self.url
@@ -277,6 +336,29 @@ class Overlay:
             ) if self.subdomains else\
             self.url.format(z=zoom, x=x, y=y)
     
+    def setUvForTerrain(self, terrain, l, b, r, t):
+        bm = getBmesh(terrain)
+        uv = bm.loops.layers.uv
+        
+        uvName = self.uvName
+        # create a data UV layer
+        if not uvName in uv:
+            uv.new(uvName)
+        
+        width = r - l
+        height = t - b
+        uvLayer = bm.loops.layers.uv[uvName]
+        worldMatrix = terrain.matrix_world
+        projection = app.projection
+        for vert in bm.verts:
+            for loop in vert.link_loops:
+                x, y = (worldMatrix @ vert.co)[:2]
+                lat, lon = projection.toGeographic(x, y)
+                lat, lon = Overlay.toSphericalMercator(lat, lon, False)
+                loop[uvLayer].uv = (lon - l)/width, (lat - b)/height
+        
+        setBmesh(terrain, bm)
+    
     @staticmethod
     def toSphericalMercator(lat, lon, moveToTopLeft=False):
         lat = earthRadius * math.log(math.tan(math.pi/4 + lat*math.pi/360))
@@ -286,14 +368,6 @@ class Overlay:
             lat = halfEquator - lat
             lon = lon + halfEquator
         return lat, lon
-    
-    @staticmethod
-    def fromSphericalMercator(lat, lon):
-        return\
-            math.degrees(
-                math.atan( math.exp(lat/earthRadius) ) * 2. - math.pi/2.
-            ),\
-            math.degrees(lon/earthRadius)
     
     @staticmethod
     def toTileCoord(coord, zoom):
@@ -315,34 +389,6 @@ class Overlay:
         Reversed to <Overlay.toTileCoord>
         """
         return coord * equator / math.pow(2., zoom)
-    
-    def fromTileCoordsToAppCoords(self):
-        # Convert tile coordinates to the coordinates in the spherical Mercator coordinate system
-        l = Overlay.fromTileCoord(self.l, self.zoom) - halfEquator
-        b = halfEquator - Overlay.fromTileCoord(self.b+1, self.zoom)
-        r = Overlay.fromTileCoord(self.r+1, self.zoom) - halfEquator
-        t = halfEquator - Overlay.fromTileCoord(self.t, self.zoom)
-        
-        # Convert the coordinates in the spherical Mercator coordinate system
-        # to geographical coordinates (latitude and longitude)
-        b, l = Overlay.fromSphericalMercator(b, l)
-        t, r = Overlay.fromSphericalMercator(t, r)
-        
-        # Convert the geographical coordinates to the coordinates in application's system of reference
-        l, b = self.app.projection.fromGeographic(b, l)
-        r, t = self.app.projection.fromGeographic(t, r)
-        
-        return (l, r, b, t)
-    
-    def getImageExtensionFromFile(self, tileDir):
-        images = os.listdir(tileDir)
-        if images:
-            # we use the extension of the first file in <tileDir>
-            self.imageExtension = os.path.splitext(images[0])[1][1:]
-            if self.imageExtension == "jpg":
-                self.numComponents = 3
-                self.initImageData()
-            self.checkImageFormat = False
 
 
 from .mapbox import Mapbox
@@ -354,5 +400,5 @@ overlayTypeData = {
     'arcgis-satellite': (Arcgis, "World_Imagery", 19),
     'osm-mapnik': (Overlay, "http://[a,b,c].tile.openstreetmap.org", 19),
     'mapbox-streets': (Overlay, "mapbox://styles/mapbox/streets-v11", 19),
-    'custom': (Overlay, '', 20)
+    'custom': (Overlay, '', 19)
 }

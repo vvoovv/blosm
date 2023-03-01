@@ -57,8 +57,7 @@ class BlenderApp(BaseApp):
     
     osmServers = {
         "overpass-api.de": "http://overpass-api.de",
-        "openstreetmap.ru": "http://overpass.openstreetmap.ru",
-        "openstreetmap.fr": "http://overpass.openstreetmap.fr",
+        "vk maps": "https://maps.mail.ru/osm/tools/overpass",
         "kumi.systems": "http://overpass.kumi.systems"
     }
     
@@ -240,6 +239,22 @@ class BlenderApp(BaseApp):
             self.assetStore = AssetStore(self.assetInfoFilepath)
             if self.preferMesh and not self.assetStore.hasMesh:
                 self.preferMesh = False
+        
+        if self.mode == BaseApp.twoD and self.gnSetup2d != '-':
+            filepath = os.path.realpath(
+                bpy.path.abspath(self.gnBlendFile2d)
+            )
+            try:
+                with bpy.data.libraries.load(filepath) as (data_from, data_to):
+                    data_to.node_groups = [self.gnSetup2d]
+            except Exception as _:
+                raise Exception(
+                    "Unable to load the Geometry Nodes setup with tha name \"" + self.gnSetup2d + "\"" +\
+                    "from the file " + filepath
+                )
+            # A Geometry Nodes setup with name <self.gnSetup2d> may alredy exist.
+            # That's why following line
+            self.gnSetup2d = data_to.node_groups[0].name 
     
     def validateAssetsDirContent(self, context):
         assetsDir = self.getAssetsDir(context)
