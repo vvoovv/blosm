@@ -2,6 +2,8 @@ from itertools import tee
 
 from defs.way_cluster_params import transitionLimit,transitionSlope
 from way.way_properties import estimateWayWidth
+from way.intersection_cluster import IntersectionCluster
+from way.way_section import WaySection
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 
@@ -21,11 +23,15 @@ def widthOrthoCenterline(centerline,left,right,p):
     return dL + dR
 # ----------------------------------------------------------------
 class SplitDescriptor():
+    ID = 0
     def __init__(self,t,type,posL,posR,currWIds):
+        self.id = SplitDescriptor.ID
+        SplitDescriptor.ID += 1
         self.t = t          # Parameter <t> on centerline
         self.type = type    # Type of split ('left','right','both','end','clipped',...)
-        self.posL = posL    # Position of vertex on left way
-        self.posR = posR    # Position of vertex on right way
+        self.posL = posL.freeze()   # Position of vertex on left way
+        self.posR = posR.freeze()   # Position of vertex on right way
+        self.posW = None            # List of positions of all ways
         self.currWIds = currWIds    # List of current way-IDs of way-sections
                                     # at split position in order left to right
 
@@ -96,13 +102,27 @@ class LongClusterWay():
         # Create clusters, split them when there are intermdiate intersections
         for cs0,cs1 in pairs(clusterSplits):
             subCluster = SubCluster(self.centerline.trimmed(cs0.t,cs1.t))
+            subCluster.length = subCluster.centerline.length()
             subCluster.longCluster = self
-            subCluster.startSplit = cs0
-            subCluster.endSplit = cs1
             subCluster.wayIDs = cs0.currWIds
-            subCluster.startWidth = widthOrthoCenterline(subCluster.centerline,left,right,subCluster.startSplit.posL)
-            subCluster.endWidth   = widthOrthoCenterline(subCluster.centerline,left,right,subCluster.endSplit.posL)
+            subCluster.startWidth = widthOrthoCenterline(subCluster.centerline,left,right,cs0.posL)
+            subCluster.endWidth   = widthOrthoCenterline(subCluster.centerline,left,right,cs1.posL)
          
+            # Prepare positions of all ways at splits
+            cs0.posW = [cs0.posL]
+            for line in self.polylines[1:-1]:
+                posC = line.orthoProj(subCluster.centerline[0])[0]
+                cs0.posW.append(posC)
+            cs0.posW.append(cs0.posR)
+            subCluster.startSplit = cs0
+
+            cs1.posW = [cs1.posL]
+            for line in self.polylines[1:-1]:
+                posC = line.orthoProj(subCluster.centerline[-1])[0]
+                cs1.posW.append(posC)
+            cs1.posW.append(cs1.posR)
+            subCluster.endSplit = cs1
+
             # prepare data eventually required for width transition
             widthDifference = abs(subCluster.startWidth - subCluster.endWidth)
             if widthDifference < transitionLimit:
@@ -139,12 +159,8 @@ class SubCluster():
         self.transitionPos = None
         self.trimS = 0.                      # trim factor for start
         self.trimT = len(self.centerline)-1  # trim factor for target
-        self.leftWayID = None
-        self.leftWayWidth = None
-        self.rightWayID = None
-        self.rightWayWidth = None
-        self.startPoints = None
-        self.endPoints = None
+        self.length = None
+        self.valid = True
 
     # def transitionBecauseWidth(self):
     #     widthDiff = self.endWidth - self.startWidth
@@ -188,7 +204,7 @@ def computeTransitionWidths(cluster1,cluster2):
     transWidth2 += cluster2.transitionWidth if cluster2.transitionPos == 'start' else 0.
     if abs(transWidth2) < transitionLimit: transWidth2 = 0.
 
-    return transWidth1, transWidth2
+    return max(transWidth1,0.1), max(transWidth2,0.1)
 
 def widthAndLineFromID(cls,node,ID):
     section = cls.waySections[ID]
@@ -274,14 +290,14 @@ def createRightTransition(cls, cluster1, cluster2):
     clustConnectors[cluster1.id] = ( 2, 'E', -1 if cls.isectShape == 'common' else 1)
     return area, clustConnectors
 
-def createLeftIntersection(cls, cluster1, cluster2, node):
-    cL = cluster1.longCluster.centerline
+def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
+    cL = cluster1.centerline + cluster2.centerline
     cLr = PolyLine(cL[::-1])
     wayConnectors = dict()
     clustConnectors = dict()
     # find width and line of outgoing way
-    id1, id2 = cluster1.wayIDs[0], cluster2.wayIDs[0] # left outermost ways of clusters
-    outWayID = [w.sectionId for w in cls.sectionNetwork.iterOutSegments(node) if w.sectionId not in (id1,id2)][0]
+    outWayID = [w.sectionId for w in cls.sectionNetwork.iterOutSegments(node) if w.sectionId not in blockedWayIDs \
+        and cls.waySections[w.sectionId].isValid][0]
     outLine, outWidth = widthAndLineFromID(cls,node,outWayID)
 
     # On the left side of the cluster, for an intersection area in counter-clockwise
@@ -298,6 +314,7 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
     #     cluster2.centerline.plot('r',3)
     #     plt.plot(p1[0],p1[1],'ro')
     #     outLine.plot('c:',3)
+    #     plt.title('createLeftIntersection, p1')
     #     plotEnd()
     assert valid=='valid'
     reverseCenterline = PolyLine(cluster1.centerline[::-1])
@@ -309,6 +326,7 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
     #     cluster2.centerline.plot('r',3)
     #     plt.plot(p3[0],p3[1],'ro')
     #     outLine.plot('c:',3)
+    #     plt.title('createLeftIntersection, p3')
     #     plotEnd()
     assert valid=='valid'
 
@@ -339,6 +357,17 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
 
     # start area in counter-clockwise order, continue at end of cluster1
     area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3] 
+
+    # cluster1.centerline.plot('g:',3)
+    # cluster2.centerline.plot('r:',3)
+    # plt.plot(p1[0],p1[1],'ro')
+    # plt.text(p1[0],p1[1],'p1')
+    # plt.plot(p2[0],p2[1],'ro')
+    # plt.text(p2[0],p2[1],'p2')
+    # plt.plot(p3[0],p3[1],'ro')
+    # plt.text(p3[0],p3[1],'p3')
+    # outLine.plot('c',4)
+
 
     transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
 
@@ -397,14 +426,14 @@ def createLeftIntersection(cls, cluster1, cluster2, node):
  
     return area, clustConnectors, wayConnectors
 
-def createRightIntersection(cls, cluster1, cluster2, node):
-    cL = cluster1.longCluster.centerline
+def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
+    cL = cluster1.centerline + cluster2.centerline
     cLr = PolyLine(cL[::-1])
     wayConnectors = dict()
     clustConnectors = dict()
     # find width and line of outgoing way
-    id1, id2 = cluster1.wayIDs[-1], cluster2.wayIDs[-1] # right outermost ways of clusters
-    outWayID = [w.sectionId for w in cls.sectionNetwork.iterOutSegments(node) if w.sectionId not in (id1,id2)][0]
+    outWayID = [w.sectionId for w in cls.sectionNetwork.iterOutSegments(node) if w.sectionId not in blockedWayIDs \
+                           and cls.waySections[w.sectionId].isValid][0]
     outLine, outWidth = widthAndLineFromID(cls,node,outWayID)
 
     # On the right side of the cluster, for an intersection area in counter-clockwise
@@ -422,17 +451,19 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     #     cluster2.centerline.plot('r',3)
     #     plt.plot(p1[0],p1[1],'ro')
     #     outLine.plot('c:',3)
+    #     plt.title('createRightIntersection, p1')
     #     plotEnd()
 
     assert valid=='valid'
     # p3, valid = offsetPolylineIntersection(outLine,cluster2.centerline,outWidth/2.,outW)
     p3, valid = offsetPolylineIntersection(outLine,cL,outWidth/2.,outW)
     # if valid!='valid':
-    #     plotPureNetwork(cls.sectionNetwork,True)
+    #     plotPureNetwork(cls.sectionNetwork)
     #     cluster1.centerline.plot('g:',3)
     #     cluster2.centerline.plot('r',3)
     #     plt.plot(p3[0],p3[1],'ro')
     #     outLine.plot('c:',3)
+    #     plt.title('createRightIntersection, p3')
     #     plotEnd()
 
     assert valid=='valid'
@@ -450,11 +481,11 @@ def createRightIntersection(cls, cluster1, cluster2, node):
     section = cls.waySections[outWayID]
     fwd = section.originalSection.s == node
     if tP3 > tP1:
-        p2 = outLine.offsetPointAt(tP3,outWidth/2.)
+        p2 = outLine.offsetPointAt(tP3,-outWidth/2.)
         tP = tP3
         wayConnectors[section.id] = ( 0, 'S' if fwd else 'E')
     else:
-        p2 = outLine.offsetPointAt(tP1,-outWidth/2.)
+        p2 = outLine.offsetPointAt(tP1,outWidth/2.)
         tP = tP1
         wayConnectors[section.id] = ( 1, 'S' if fwd else 'E')
     if fwd:
@@ -463,7 +494,17 @@ def createRightIntersection(cls, cluster1, cluster2, node):
         section.trimT = min(section.trimT,len(outLine)-1-tP)
 
     # Start area in counter-clockwise order, <p1> is on cluster1
-    area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3] 
+    area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3]
+
+    # cluster1.centerline.plot('g:',3)
+    # cluster2.centerline.plot('r:',3)
+    # plt.plot(p1[0],p1[1],'ro')
+    # plt.text(p1[0],p1[1],'p1')
+    # plt.plot(p2[0],p2[1],'ro')
+    # plt.text(p2[0],p2[1],'p2')
+    # plt.plot(p3[0],p3[1],'ro')
+    # plt.text(p3[0],p3[1],'p3')
+    # outLine.plot('c',4)
 
     transWidth1, transWidth2 = computeTransitionWidths(cluster1,cluster2)
 
@@ -533,6 +574,7 @@ def createClippedEndArea(cls,longCluster,endsubCluster):
                         return section,True   # forward = True
                     else:
                         return section, False # forward = False
+        return None, None
 
     def findPolyline(section, forward):
         # Trim centerline of way to the clipped position (end of cluster)
@@ -570,6 +612,8 @@ def createClippedEndArea(cls,longCluster,endsubCluster):
         else:               # unclipped section
             node = section.polyline[0]
             section, forward = findUnclippedOutWay(node,wID[-1])
+            if not section:
+                continue
             polyline,dim = findPolyline(section,forward)
         section.isValid = True
         polylines.append(polyline)
@@ -623,4 +667,113 @@ def createClippedEndArea(cls,longCluster,endsubCluster):
     clustConnectors[endsubCluster.id] = ( len(area)-2, 'E', -1)
 
     return area, clustConnectors, wayConnectors
+
+def createShortClusterIntersection(cls, cluster1, shortCluster, cluster2,blockedWayIDs):
+    # Replace the short cluster by an intersection area.
+    shortCluster.valid = False
+
+    # Create an instance of <IntersectionCluster>, which will form the
+    # cluster area and its connectors.
+    isectCluster = IntersectionCluster()
+
+    # Collect all intersection nodes of the way-sections at the cluster.
+    nodes = set()
+    nodes.update( [cluster1.endSplit.posL,cluster1.endSplit.posR] )
+    nodes.update( [cluster2.startSplit.posL,cluster2.startSplit.posR] )
+
+    # Insert centerlines and widths of clusters to <IntersectionCluster>. Keep a map
+    # <ID2Object> for the ID in <IntersectionCluster> to the inserted object.
+    ID2Object = dict()
+
+    # End of cluster before short cluster
+    Id = isectCluster.addWay(PolyLine(cluster1.centerline[::-1]),cluster1.outWR(),cluster1.outWL())
+    ID2Object[Id] = (cluster1.centerline[-1], cluster1, 'end', cluster1.longCluster.id)
+    # Start of cluster after  short cluster
+    Id = isectCluster.addWay(cluster2.centerline,cluster2.outWL(),cluster2.outWR())
+    ID2Object[Id] = (cluster2.centerline[0], cluster2, 'start', cluster2.longCluster.id)
+
+    # Find all outgoing way-sections that are connected to cluster nodes, but exlude
+    # those that belong to the clusters, using <wayIDs>. Insert them together with their
+    # widths into <IntersectionCluster>. Extend the map <ID2Object> for the ID in
+    # <IntersectionCluster> to the inserted object.
+    for node in nodes:
+        for net_section in cls.sectionNetwork.iterOutSegments(node):
+            if net_section.category != 'scene_border':
+                if net_section.sectionId not in blockedWayIDs and cls.waySections[net_section.sectionId].isValid:
+                    section = cls.waySections[net_section.sectionId]
+                    if not (net_section.s in nodes and net_section.t in nodes):                               
+                        if section.originalSection.s == node:
+                            Id = isectCluster.addWay(section.polyline,section.leftWidth,section.rightWidth)
+                            ID2Object[Id] = (section,True)  # forward = True
+                        else:
+                            Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
+                            ID2Object[Id] = (section,False) # forward = False
+                    else:
+                        # way-sections that connect nodes internally in the cluster area.
+                        section.isValid = False
+
+    # An intersection area can only be constructed, when more than one way present.
+    if len(isectCluster.outWays) > 1:
+        # # Create the intersection area and their connectors5 
+        area, connectors = isectCluster.create()
+
+        # Transfer the trim values to the objects
+        for outWay in isectCluster.outWays:
+            object = ID2Object[outWay.id]
+            if isinstance(object[0],WaySection):
+                if object[1]:   # if forward
+                    object[0].trimS = max(object[0].trimS,outWay.trim_t)
+                else:
+                    t = len(object[0].polyline)-1 - outWay.trim_t
+                    object[0].trimT = min(object[0].trimT, t)
+            else:   # it's a cluster way
+                if object[2] == 'start':
+                    object[1].trimS = max(object[1].trimS,outWay.trim_t)
+                else:
+                    t = len(object[1].centerline)-1 - outWay.trim_t
+                    object[1].trimT = min(object[1].trimT,t)
+
+        # Create connectors for this area.
+        clustConnectors = dict()
+        wayConnectors = dict()
+        conOffset = 0
+        for con in connectors:
+            object = ID2Object[con[2]]
+            if isinstance(object[0],WaySection):
+                wayConnectors[object[0].id] = ( con[0]+conOffset, 'S' if object[1] else 'E')
+            else:
+                if object[2] == object[1].transitionPos:
+                    if object[2] == 'start':
+                        transitionLength = object[1].transitionWidth/transitionSlope
+                        dTrans = transitionLength
+                        tTrans = object[1].centerline.d2t(dTrans)
+                        if tTrans > object[1].trimS:
+                            p1 = object[1].centerline.offsetPointAt(tTrans,-object[1].outWR())
+                            p2 = object[1].centerline.offsetPointAt(tTrans,object[1].outWL())
+                            object[1].trimS = max(object[1].trimS,tTrans)
+                            area.insert(con[0]+conOffset+1,p1)
+                            clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'S', -1)
+                            area.insert(con[0]+conOffset+2,p2)
+                            conOffset += 2
+                        else:
+                            clustConnectors[object[1].id] = ( con[0]+conOffset, 'S', -1)
+                    else:   # object[2] == 'end'
+                        transitionLength = object[1].transitionWidth/transitionSlope
+                        dTrans = object[1].centerline.length() - transitionLength
+                        tTrans = object[1].centerline.d2t(dTrans)
+                        if tTrans < object[1].trimT:
+                            p1 = object[1].centerline.offsetPointAt(tTrans,object[1].outWL())
+                            p2 = object[1].centerline.offsetPointAt(tTrans,-object[1].outWR())
+                            object[1].trimT = min(object[1].trimT,tTrans)
+                            area.insert(con[0]+conOffset+1,p1)
+                            clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'E', -1)
+                            area.insert(con[0]+conOffset+2,p2)
+                            conOffset += 2
+                        else:
+                            clustConnectors[object[1].id] = ( con[0]+conOffset, 'E', -1)
+                else:
+                    clustConnectors[object[1].id] = ( con[0]+conOffset, 'S' if object[2]=='start' else 'E', -1)
+
+    # plotPolygon(area,False,'r','r',2)
+    return area, wayConnectors, clustConnectors
 

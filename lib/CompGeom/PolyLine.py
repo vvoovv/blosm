@@ -127,7 +127,7 @@ class PolyLine():
         return Vector((xy.real,xy.imag))
 
     def d2v(self,d):
-        # Computes the vertex given by the line parameter <t>.
+        # Computes the vertex given by the line parameter <d>.
         xy = self.dInterp(d)
         return Vector((xy.real,xy.imag))
 
@@ -149,6 +149,11 @@ class PolyLine():
     def __iter__(self):
         # Iterator of the vertices list
         return iter(self.verts[self.view])
+
+    def __add__(self,other):
+        # Join polylines (the last vertex of <self>
+        # is assumed to be the first vertex of <other>)
+        return PolyLine(self.verts + other.verts[1:])
 
     def length(self):
         # Returns the total geomteric length of the polyline.
@@ -352,7 +357,7 @@ class PolyLine():
             # t2 = (d1[0]*d3[1] - d1[1]*d3[0])/cross
             if 0. <= t1 <= 1.:# and 0. <= t2 <= 1:
                 return v1 + d1*t1, t0+t1
-        return None
+        return None, None
 
     def parallelOffset(self, dist):
         # Returns the PolyLine that is offset perpendicularly by
