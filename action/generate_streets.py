@@ -50,8 +50,9 @@ class BaseWaySection:
                 vector = vectorBefore + vectorAfter
                 vector.normalize()
                 # check if <vector> is to the right or to the left relative to <vectorAfter>
+                crossProductPositive = vector[0]*vectorAfter[1] - vector[1]*vectorAfter[0] > 0.
                 return vector\
-                    if vector[0]*vectorAfter[1] - vector[1]*vectorAfter[0] > 0. else\
+                    if (left and not crossProductPositive) or (not left and crossProductPositive) else\
                     -vector
         
         vector.normalize()

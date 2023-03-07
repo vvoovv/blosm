@@ -291,13 +291,29 @@ class StreetRenderer:
         # Check if the segments <point1L>-<point2L> and <point1R>-<point2R> intersect
         if not intersect_line_line_2d(point1L, point2L, point1R, point2R):
             bm = self.intersectionSidewalksBm
-            v1 = bm.verts.new((intersection.polygon[indexL][0], intersection.polygon[indexL][1], 0.))
-            v2 = bm.verts.new((point1L[0], point1L[1], 0.))
-            v3 = bm.verts.new((point1R[0], point1R[1], 0.))
-            v4 = bm.verts.new((intersection.polygon[indexR][0], intersection.polygon[indexR][1], 0.))
-            bm.edges.new((v1, v2))
-            bm.edges.new((v2, v3))
-            bm.edges.new((v3, v4))
+            polygon = intersection.polygon
+            verts = [
+                bm.verts.new((polygon[indexL][0], polygon[indexL][1], 0.)),
+                bm.verts.new((point1L[0], point1L[1], 0.)),
+                bm.verts.new((point1R[0], point1R[1], 0.)),
+                bm.verts.new((polygon[indexR][0], polygon[indexR][1], 0.))
+            ]
+            if indexL < indexR:
+                if indexR - indexL > 1:
+                    verts.extend(
+                        bm.verts.new((polygon[i][0], polygon[i][1], 0.)) for i in range(indexR-1, indexL, -1)
+                    )
+            elif not (indexL==intersection.numPoints-1 and indexR==0):
+                indices = [] if indexL == intersection.numPoints-1 else\
+                    list( range(indexL+1, intersection.numPoints) )
+                if indexR == 1:
+                    indices.append(0)
+                elif indexR > 1:
+                    indices.extend(i for i in range(indexR-1))
+                verts.extend(
+                    bm.verts.new((polygon[i][0], polygon[i][1], 0.)) for i in reversed(indices)
+                )
+            bm.faces.new(verts)
     
     def finalize(self):
         return
