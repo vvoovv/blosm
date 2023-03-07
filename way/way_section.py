@@ -16,8 +16,8 @@ class WaySection():
         self.trimT = len(self.polyline)-1    # trim factor for target
         self.id = WaySection.ID
         self.turnParams = None  # parameters for turning lanes
-        self.isValid = True
-        self.isClipped = False  # True, if part of a clipped cluster
+        self._isValid = True
+        self._isClipped = False  # True, if part of a clipped cluster
         WaySection.ID += 1
         self.isOneWay = isOneWay(self.originalSection.tags)
         nrOfLanes = getLanes(self.originalSection.tags)
@@ -32,6 +32,22 @@ class WaySection():
             self.nrLeftLanes = 1
             self.nrRightLanes = 1
         self.processTurnLanes()
+
+    @property
+    def isClipped(self):
+        return self._isClipped
+
+    @isClipped.setter
+    def isClipped(self,val):
+        self._isClipped = val
+
+    @property
+    def isValid(self):
+        return self._isValid
+
+    @isValid.setter
+    def isValid(self,val):
+        self._isValid = val
 
     @property
     def sV(self):

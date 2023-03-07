@@ -6,8 +6,8 @@ from mathutils import Vector
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
-from way.way_cluster import LongClusterWay, createLeftTransition,createClippedEndArea,\
-                           createRightTransition, createLeftIntersection, createRightIntersection
+from way.way_cluster import LongClusterWay, createLeftTransition, createClippedEndArea, createRightTransition, \
+                           createLeftIntersection, createRightIntersection, createShortClusterIntersection
 from way.way_intersections import Intersection
 from way.intersection_cluster import IntersectionCluster
 from defs.road_polygons import ExcludedWayTags
@@ -20,7 +20,7 @@ from lib.CompGeom.BoolPolyOps import boolPolyOp
 from lib.CompGeom.GraphBasedAlgos import DisjointSets
 from lib.CompGeom.PolyLine import PolyLine, LinearInterpolator
 from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
-from lib.CompGeom.centerline import centerlineOf
+from lib.CompGeom.centerline import centerlineOf, pointInPolygon
 from lib.CompGeom.dbscan import dbClusterScan
 from lib.CompGeom.clipParallelPart import clipParallelPart
 from lib.CompGeom.simplifyers import simplifyEnds,simplifyRDP
@@ -489,12 +489,6 @@ class StreetGenerator():
                 intersectionsAll.append(intersectionsThis)
                 sectionsIDsAll.append(sectionsIDs)
 
-            # if cIndx==5:
-            #     plotPureNetwork(self.sectionNetwork)
-            #     for line in lines:
-            #         line.plot('r',2)
-            #     plt.title('aligned')
-            #     plotEnd()
 
            # In the next step, in-cluster intersections are processed. As a first
             # measure, ways, that have such intersections on both sides are removed.
@@ -531,6 +525,8 @@ class StreetGenerator():
             params0 = []
             params1 = []
             for indx,line in enumerate(lines):
+                # Project the first and last vertex of <line> onto reference. 
+                # Smaller parameter <tx> means closer to start of reference.
                 _,t0 = referenceLine.orthoProj(line[0])
                 _,t1 = referenceLine.orthoProj(line[-1])
                 if t0 > t1: # reverse this line, if True
@@ -563,19 +559,21 @@ class StreetGenerator():
             for i, (i0,i1) in enumerate(possibleGaps):
                 d0[i0].append(i)
                 d1[i1].append(i)
-            dupsS = { k: v for k, v in d0.items() if len(v) > 1 }   # duplicates of gap targets
-            dupsE = { k: v for k, v in d1.items() if len(v) > 1 }   # duplicates of gap sources
+            dupsS = { k:v for k, v in d0.items() if len(v) > 1 }   # duplicates of gap targets
+            dupsE = { k:v for k, v in d1.items() if len(v) > 1 }   # duplicates of gap sources
 
-            if dupsS:
+            if dupsS:   # The gap has one source (end of line) and two targets (starts of lines)
                 for source, targets in dupsS.items():
                     parallelity = [] 
                     for i,target in enumerate(targets):           
                         vGap = lines[target][0] - lines[source][-1]         # vector of gap
-                        vGap /= vGap.length
+                        vGap /= vGap.length                                 # make unit vector
                         vTarget = lines[target][1] - lines[target][0]       # first vector of target
-                        vTarget /= vTarget.length
-                        parallelity.append( (i,abs(vGap.cross(vTarget))) )  # cross product ~ sine of vectors
-                    linesToRemove.append( targets[ max( (p for p in parallelity), key=lambda x: x[1] )[0] ] )
+                        vTarget /= vTarget.length                           # make unit vector
+                        parallelity.append( (i,abs(vGap.cross(vTarget))) )  # cross product == sine of vectors
+                    removeIndx = targets[ max( (p for p in parallelity), key=lambda x: x[1] )[0] ]
+                    linesToRemove.append(removeIndx)
+                    self.waysCoveredByCluster.extend(sectionsIDsAll[removeIndx])
                     gapToRemove = (source,linesToRemove[-1])
                     possibleGaps.remove(gapToRemove)
 
@@ -584,11 +582,13 @@ class StreetGenerator():
                     parallelity = [] 
                     for i,source in enumerate(sources):           
                         vGap = lines[target][0] - lines[source][-1]         # vector of gap
-                        vGap /= vGap.length
+                        vGap /= vGap.length                                 # make unit vector
                         vTarget = lines[target][1] - lines[target][0]       # first vector of target
-                        vTarget /= vTarget.length
-                        parallelity.append( (i,abs(vGap.cross(vTarget))) )  # cross product ~ sine of vectors
-                    linesToRemove.append( targets[ max( (p for p in parallelity), key=lambda x: x[1] )[0] ] )
+                        vTarget /= vTarget.length                           # make unit vector
+                        parallelity.append( (i,abs(vGap.cross(vTarget))) )  # cross product == sine of vectors
+                    removeIndx = targets[ max( (p for p in parallelity), key=lambda x: x[1] )[0] ]
+                    linesToRemove.append(removeIndx)
+                    self.waysCoveredByCluster.extend(sectionsIDsAll[removeIndx])
                     gapToRemove = (source,linesToRemove[-1])
                     possibleGaps.remove(gapToRemove)
 
@@ -607,26 +607,29 @@ class StreetGenerator():
             
                 # Merge lines through gaps.
                 for i0,i1 in cleanedPossibleGaps:
-                    if lines[i0][0] in self.sectionNetwork and lines[i1][-1] in self.sectionNetwork:
-                        if lines[i1][-1] in self.sectionNetwork[lines[i0][0]]:
-                            sectionId = self.sectionNetwork[lines[i0][0]][lines[i1][-1]][0].sectionId
-                        elif lines[i0][0] in self.sectionNetwork[lines[i1][-1]]:
-                            sectionId = self.sectionNetwork[lines[i1][-1]][lines[i0][0]][0].sectionId
-                        else:
-                            # print('Problem',i0,i1,cIndx)
-                            continue
-                        isect0, isect1 = lines[i0][0],lines[i1][-1]
-                        lines[i1] = PolyLine( lines[i1][:] + lines[i0][:])
-                        sectionsIDsAll[i1] += [sectionId] + sectionsIDsAll[i0]
-                        intersectionsAll[i1].extend(intersectionsAll[i0] + [isect0, isect1])
-                        linesToRemove.append(i0)
+                    # Vertices of lines i0 and i1 become gap vertices
+                    gap0, gap1 = lines[i0][0], lines[i1][-1]
+                    # If gap vertices 
+                    # if i0Start in self.sectionNetwork and i1End in self.sectionNetwork:
+                    if gap1 in self.sectionNetwork[gap0]:
+                        sectionId = self.sectionNetwork[gap0][gap1][0].sectionId
+                    elif gap0 in self.sectionNetwork[gap1]:
+                        sectionId = self.sectionNetwork[gap1][gap0][0].sectionId
+                    else:
+                        print('Problem',i0,i1,cIndx)
+                        continue
 
-                # Remove merged parts.
+                    # Merge lines through gap
+                    lines[i1] = PolyLine( lines[i1][:] + lines[i0][:])
+                    sectionsIDsAll[i1] += [sectionId] + sectionsIDsAll[i0]
+                    intersectionsAll[i1].extend(intersectionsAll[i0] + [gap0, gap1])
+                    linesToRemove.append(i0)
+
+                # Book-keeping, remove merged parts.
                 if linesToRemove:
                     for index in sorted(linesToRemove, reverse=True):
                         del lines[index]                    
                         del intersectionsAll[index]
-                        self.waysCoveredByCluster.extend(sectionsIDsAll[index])
                         del sectionsIDsAll[index]
 
             # We like to have the start points close together. The line ends that have a
@@ -670,7 +673,7 @@ class StreetGenerator():
             ratio = min(d0,d1)/max(d0,d1)
 
             # check cluster for parallelity, if too asymetric ends.
-            clipped = None
+            clipped = False
             if ratio < 0.6:
                 lines, clipped = clipParallelPart(lines)
                 # Clean eventual intersections or way-sections, that have been clipped.
@@ -721,14 +724,78 @@ class StreetGenerator():
                         self.waysCoveredByCluster.extend(sectionsIDsAll[index])
                         del sectionsIDsAll[index]
 
-            # if cIndx==5:
-            #     plotPureNetwork(self.sectionNetwork,True)
-            #     print(sectionsIDsAll)
-            #     for line in lines:
-            #         line.plot('r',2)
-            #     centerline.plot('r')
-            #     plt.title('for cluster')
-            #     plotEnd()
+            # As a last book-keeping. Some ways have not been detected as cluster ways, because they
+            # have not been parallel, but they are covered by the cluster. They must be invalidated
+            # and their intersections removed.
+
+            # First find all true intersections (including line ends) and the line ends that have
+            # been clipped. Create a map <isect2line> with all line numbers that contain an intersection.
+            intersections = []
+            lineEnds = []
+            isect2line = defaultdict(set)
+            for i in range(len(lines)):
+                # True intersections in lines.
+                for isect in intersectionsAll[i]:
+                    isect2line[isect].add(i)
+                    intersections.append(isect)
+                # Line ends ...
+                for isect in [lines[i][0],lines[i][-1]]:
+                    # ... that are true intersections
+                    if isect in self.sectionNetwork:
+                        isect2line[isect].add(i)
+                        intersections.append(isect)
+                    # ... or that are clipped
+                    else:
+                        lineEnds.append(isect)
+
+            # Create the polygon around the cluster, that covers all ways inside.
+            clusterPoly = lines[0][:]
+            clusterPoly.extend([line[-1] for line in lines[1:-1]])
+            clusterPoly.extend(lines[-1][::-1])
+            clusterPoly.extend([line[0] for line in lines[1:-1][::-1]])
+            clusterPolyClipper = LinePolygonClipper(clusterPoly)
+
+            for node in intersections:
+                # for every intersection node, find its outgoing section
+                for seg in self.sectionNetwork.iterOutSegments(node):
+                    if seg.category=='scene_border':
+                        continue
+                    # Classify this section
+                    # seg.t is a line end.
+                    isLineEnd = seg.t in isect2line
+                    # The end-points of the segment are on different cluster lines
+                    differentLines = isLineEnd and not isect2line[seg.t].intersection(isect2line[node])
+                    # The end of the segment is in the cluster polygon, but not a line end
+                    polyVertex = not isLineEnd and pointInPolygon(clusterPoly,seg.t) == 'IN' and seg.t not in lineEnds
+                    # Most part of the segment is within the cluster polygon
+                    covered = clusterPolyClipper.clipLine(seg.path)[1] > 0.5*seg.length
+
+                    if isLineEnd:
+                      if differentLines and covered:
+                        # It is something like a diagonal. Invalidate it.
+                        self.waysCoveredByCluster.append(seg.sectionId)
+                        # ... and remove its intersections.
+                        if self.sectionNetwork.borderlessOrder(node) < 4:
+                            lineIndx = list(isect2line[node])[0]
+                            if node in intersectionsAll[lineIndx]: intersectionsAll[lineIndx].remove(node)
+                        if self.sectionNetwork.borderlessOrder(seg.t) < 4:
+                            lineIndx = list(isect2line[seg.t])[0]
+                            if seg.t in intersectionsAll[lineIndx]: intersectionsAll[lineIndx].remove(seg.t)
+                    elif polyVertex:
+                        # It starts a dangling way and must be invalidated.
+                        self.waysCoveredByCluster.append(seg.sectionId)
+                        # ... and remove its node
+                        if self.sectionNetwork.borderlessOrder(node) < 4:
+                            lineIndx = list(isect2line[node])[0]
+                            if node in intersectionsAll[lineIndx]: intersectionsAll[lineIndx].remove(node)
+                    elif not clipped and covered:
+                        # it intersects the polygon and has a significant length inside the polygon,
+                        # but is not a clipped cluster end. Invalidate it
+                        self.waysCoveredByCluster.append(seg.sectionId)
+                        # ... and remove its node
+                        if self.sectionNetwork.borderlessOrder(node) < 4:
+                            lineIndx = list(isect2line[node])[0]
+                            if node in intersectionsAll[lineIndx]: intersectionsAll[lineIndx].remove(node)
 
             longCluster = LongClusterWay(self)
             for i in range(len(lines)):
@@ -737,11 +804,6 @@ class StreetGenerator():
                 longCluster.polylines.append(lines[i])
                 longCluster.centerline = centerline
                 longCluster.clipped= clipped
-
-            # if len(lines) > 2:
-            #     innerIndxs = [i for i in range(len(lines))][1:-1]
-            #     for i in innerIndxs:
-            #         self.waysCoveredByCluster.extend(sectionsIDsAll[i])
 
             for Id in self.waysCoveredByCluster:
                 self.waySections[Id].isValid = False
@@ -756,23 +818,37 @@ class StreetGenerator():
         areas = []
         for nr,longClusterWay in enumerate(self.longClusterWays):
             if len(longClusterWay.subClusters) > 1:
-                for cluster1,cluster2 in pairs(longClusterWay.subClusters):
-                    clustConnectors = dict()
-                    wayConnectors = dict()
-                    if cluster1.endSplit.type == 'left':
-                        node = cluster1.endSplit.posL.freeze()
-                        order = self.sectionNetwork.borderlessOrder(node)
-                        if order == 2:
-                            area, clustConnectors = createLeftTransition(self,cluster1,cluster2)
-                        else:
-                            area, clustConnectors, wayConnectors = createLeftIntersection(self,cluster1,cluster2,node)
-                    elif cluster1.endSplit.type == 'right':
-                        node = cluster1.endSplit.posR.freeze()
-                        order = self.sectionNetwork.borderlessOrder(node)
-                        if order == 2:
-                            area, clustConnectors = createRightTransition(self,cluster1,cluster2)
-                        else:
-                            area, clustConnectors, wayConnectors = createRightIntersection(self,cluster1,cluster2,node)
+                blockedWayIDs = longClusterWay.sectionIDs[0] + longClusterWay.sectionIDs[-1]
+                skipSmall = False
+                for clust1Nr,(cluster1,cluster2) in enumerate(pairs(longClusterWay.subClusters)):
+                    if skipSmall: # Skip short cluster transition already handled by createMultiTransition()
+                        skipSmall = False
+                        continue
+                    if cluster2.length < 3.:   # Short cluster requires special treatement by createMultiTransition
+                        skipSmall = True
+                        area, wayConnectors, clustConnectors = createShortClusterIntersection(self,cluster1,cluster2,longClusterWay.subClusters[clust1Nr+2],blockedWayIDs)
+                    else:
+                        clustConnectors = dict()
+                        wayConnectors = dict()
+                        if cluster1.endSplit.type == 'left':
+                            node = cluster1.endSplit.posL.freeze()
+                            order = self.sectionNetwork.borderlessOrder(node)
+                            if order == 2:
+                                area, clustConnectors = createLeftTransition(self,cluster1,cluster2)
+                            else:
+                                area, clustConnectors, wayConnectors = createLeftIntersection(self,cluster1,cluster2,node,blockedWayIDs)
+                        elif cluster1.endSplit.type == 'right':
+                            node = cluster1.endSplit.posR.freeze()
+                            order = self.sectionNetwork.borderlessOrder(node)
+                            if order == 2:
+                                area, clustConnectors = createRightTransition(self,cluster1,cluster2)
+                            else:
+                                area, clustConnectors, wayConnectors = createRightIntersection(self,cluster1,cluster2,node,blockedWayIDs)
+                        elif cluster1.endSplit.type == 'inner':
+                            node = cluster1.endSplit.posR.freeze()
+                            order = self.sectionNetwork.borderlessOrder(node)
+                            if order == 2:
+                                area, clustConnectors = createRightTransition(self,cluster1,cluster2)
 
                     # Create the final cluster area instance
                     isectArea = IntersectionArea()
@@ -780,6 +856,16 @@ class StreetGenerator():
                     isectArea.connectors = wayConnectors
                     isectArea.clusterConns = clustConnectors
                     self.intersectionAreas.append(isectArea)
+
+                    # if cluster1.endSplit.type == 'inner':
+                    #     plotPureNetwork(self.sectionNetwork)
+                    #     poly = cluster1.centerline.buffer(cluster1.width/2.,cluster1.width/2.)
+                    #     plotPolygon(poly,False,'g','g',1.,True,0.3,120)
+                    #     poly = cluster2.centerline.buffer(cluster2.width/2.,cluster2.width/2.)
+                    #     plotPolygon(poly,False,'b','b',1.,True,0.3,120)
+                    #     plotPolygon(area,False,'r','r',1)
+                    #     plotEnd()
+                    #     plt.close()
 
                     areas.append(area)
 
@@ -880,6 +966,7 @@ class StreetGenerator():
                     if net_section.category != 'scene_border':
                         if net_section.sectionId not in wayIDs:
                             section = self.waySections[net_section.sectionId]
+                            # If one of the nodes is outside of the clusters
                             if not (net_section.s in nodes and net_section.t in nodes):                               
                                 if section.originalSection.s == node:
                                     Id = isectCluster.addWay(section.polyline,section.leftWidth,section.rightWidth)
@@ -887,9 +974,25 @@ class StreetGenerator():
                                 else:
                                     Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
                                     ID2Object[Id] = (section,False) # forward = False
-                            else:
-                                # way-sections that connect nodes internally in the cluster area.
-                                section.isValid = False
+                            else:   # Both nodes are in the clusters, add them if we don't have only 
+                                    # one single cluster end.
+                                if len(clusterGroup) > 1:
+                                    # way-section that connect nodes internally in the cluster area.
+                                    section.isValid = False
+                                else:
+                                    # We have a loop at the end of a single cluster. We insert only half of
+                                    # the polyline of this loop at each end
+                                    N = len(section.polyline)
+                                    if N >= 4:
+                                        N = N//2
+                                        if section.originalSection.s == node:
+                                            Id = isectCluster.addWay(PolyLine(section.polyline[:N]),section.leftWidth,section.rightWidth)
+                                            ID2Object[Id] = (section,True)  # forward = True
+                                        if section.originalSection.t == node:
+                                            Id = isectCluster.addWay(PolyLine(section.polyline[N:][::-1]),section.rightWidth,section.leftWidth)
+                                            ID2Object[Id] = (section,False) # forward = False
+                                    else:
+                                        section.isValid = False
 
             # if cIndx==8:
             #     for ow in isectCluster.outWays:
@@ -987,29 +1090,39 @@ class StreetGenerator():
 
         for longCluster in self.longClusterWays:
             for cluster in longCluster.subClusters:
+                if not cluster.valid:
+                    continue
                 wayCluster = WayCluster()
                 wayCluster.centerline = cluster.centerline.trimmed(cluster.trimS,cluster.trimT)[:]
                 wayCluster.distToLeft = cluster.width/2.
 
-                for wayID in cluster.wayIDs:
+                for lineNr,wayID in enumerate(cluster.wayIDs):
                     section = self.waySections[wayID]
                     fwd = section.originalSection.s == cluster.startSplit.posL
                     if section.isOneWay:
                         nrOfLanes = (section.nrRightLanes)
                     else:
                         nrOfLanes = (section.nrLeftLanes, section.nrRightLanes) if fwd else (section.nrRightLanes, section.nrLeftLanes)
+                    if lineNr == 0:
+                        offset = -cluster.width/2.
+                    elif lineNr == len(cluster.wayIDs)-1:
+                        offset = cluster.width/2.
+                    else:
+                        v = cluster.centerline[1] - cluster.centerline[0]
+                        v = Vector((-v[1],v[0])) / v.length
+                        p = cluster.startSplit.posW[lineNr]
+                        offset = -v.dot(p-cluster.centerline[0])
+
                     wayCluster.waySections.append(
                         createWaySection(
-                            -cluster.width/2. if wayID==cluster.wayIDs[0] else cluster.width/2.,
+                            offset,
                             section.rightWidth+section.leftWidth,
                             nrOfLanes,
                             section.originalSection.category,
                             section.originalSection.tags
                         )
                     )
-                    # cleanup
-                    if not section.isClipped: 
-                        section.isValid = False
+                    
                 # Set connection types
                 wayCluster.startConnected = True if cluster.id in startConnections else False
                 wayCluster.endConnected = True if cluster.id in endConnections else False
@@ -1023,8 +1136,20 @@ class StreetGenerator():
                 # for node in cluster.endPoints[1:3]:
                 for node in [cluster.endSplit.posL,cluster.endSplit.posR]:
                     self.processedNodes.add(node.freeze())
-        
-        # Remove ways that have been eliminated from clusters
+
+            # Cleanup cluster ways, except clipped ones
+            for wayIDs in longCluster.sectionIDs:
+                for wayID in wayIDs:
+                    section = self.waySections[wayID]
+                    if not section.isClipped:
+                        section.isValid = False
+
+            for wayIDs in longCluster.sectionIDs:
+                section = self.waySections[wayIDs[-1]]
+                if not section.isClipped:
+                    section.isValid = False
+
+        # Remove ways that have been covered by the cluster
         for wayID in self.waysCoveredByCluster:
             self.waySections[wayID].isValid=False
 
@@ -1034,6 +1159,10 @@ class StreetGenerator():
         for node in self.sectionNetwork:
             if node not in self.processedNodes:
                 intersection = Intersection(node, self.sectionNetwork, self.waySections)
+                if intersection.order < 1:
+                    # plotPureNetwork(self.sectionNetwork)
+                    # plt.plot(node[0],node[1],'ro',markersize=12)
+                    continue
                 conflictNodes = intersection.checkForConflicts()
                 if conflictNodes:
                     for conflict in conflictNodes:

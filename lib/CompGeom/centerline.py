@@ -35,7 +35,7 @@ class LinearInterpolator():
 #         on the Example of a Watercourse
 #         May 2020, International Journal of Geo-Information 9(5):304
 
-def _pointInPolygon(poly, p):
+def pointInPolygon(poly, p):
     # Location of a point vis a vis a polygon.
     #
     # poly:     Python list of vertices of type mathutils.Vector, arbitrary order
@@ -110,7 +110,7 @@ def centerlineOf(curve0, curve1):
 
     centerline = [(points[i1]+points[i2])/2. for i1,i2 in sorted(edges)]
     # Check if points are in polygon
-    centerline = [p for p in centerline if _pointInPolygon(poly,p) in ('IN','ON')]
+    centerline = [p for p in centerline if pointInPolygon(poly,p) in ('IN','ON')]
     return centerline
 
 def interpolateCurve(curve,sampleDist=10.):
@@ -148,5 +148,5 @@ def centerlineInterOf(curve0, curve1,sampleDist=10.):
 
     centerline = [(points[i1]+points[i2])/2. for i1,i2 in sorted(edges)]
     # Check if points are in polygon
-    centerline = [p for p in centerline if _pointInPolygon(poly,p) in ('IN','ON')]
+    centerline = [p for p in centerline if pointInPolygon(poly,p) in ('IN','ON')]
     return centerline

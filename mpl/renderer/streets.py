@@ -35,7 +35,7 @@ class StreetRenderer(Renderer):
             if self.debug:
                 plotWay(section_gn.centerline,True,'b',2.)
                 center = sum(section_gn.centerline, Vector((0,0)))/len(section_gn.centerline)
-                plt.text(center[0],center[1],str(sectionNr),zorder=120)
+                plt.text(center[0],center[1],str(sectionNr),color='blue',fontsize=14,zorder=120)
             else:
                 plotWay(section_gn.centerline,False,'b',2.)
                 from lib.CompGeom.PolyLine import PolyLine
@@ -51,19 +51,15 @@ class StreetRenderer(Renderer):
         for Id,cluster in manager.wayClusters.items(): 
             from lib.CompGeom.PolyLine import PolyLine 
             centerlinClust = PolyLine(cluster.centerline)
-            centerlinClust.plot('m',1)         
+            centerlinClust.plot('m',1)
 
-            leftSect = cluster.waySections[0]
-            leftWay = centerlinClust.parallelOffset(-leftSect.offset)
-            leftPoly = leftWay.buffer(leftSect.width/2.,leftSect.width/2.)
-            plotPolygon(leftPoly,False,'g','g',1.,True,0.3,120)
+            for sect in cluster.waySections:     
+                way = centerlinClust.parallelOffset(-sect.offset)
+                poly = way.buffer(sect.width/2.,sect.width/2.)
+                plotPolygon(poly,False,'g','g',1.,True,0.3,120)
 
-            rightSect = cluster.waySections[1]
-            rightWay = centerlinClust.parallelOffset(-rightSect.offset)
-            rightPoly = rightWay.buffer(rightSect.width/2.,rightSect.width/2.)
-            plotPolygon(rightPoly,False,'g','g',1.,True,0.3,120)
-
-            poly = centerlinClust.buffer(cluster.distToLeft+leftSect.width/2.,cluster.distToLeft+rightSect.width/2.)
+            poly = centerlinClust.buffer(cluster.distToLeft+cluster.waySections[0].width/2.,
+                                         cluster.distToLeft+cluster.waySections[-1].width/2.)
             plotPolygon(poly,False,'c','c',1,True,0.2,110)
 
             if not cluster.startConnected:
@@ -80,7 +76,7 @@ class StreetRenderer(Renderer):
 
 
         if self.debug:
-            # Check connector IDs and counter-clockwose order
+            # Check connector IDs and counter-clockwise order
             for isectArea in manager.intersectionAreas:
                 for id, connector in isectArea.connectors.items():
                     if id not in manager.waySectionLines:
@@ -89,11 +85,11 @@ class StreetRenderer(Renderer):
                 area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in cyclePair(isectArea.polygon))
                 if area >= 0.:
                     print('intersectionArea not counter-clockwise')
-                    plotPolygon(isectArea.polygon,True,'c','c',2,True,0.4,999)
+                    plotPolygon(isectArea.polygon,True,'c','c',10,True,0.4,999)
                 for id, connector in isectArea.clusterConns.items():
                     if id not in manager.wayClusters:
                         print('missing id in wayClusters',id)
-                        plotPolygon(isectArea.polygon,False,'g','g',2,True,0.4,999)
+                        plotPolygon(isectArea.polygon,False,'g','g',10,True,0.4,999)
             # Check connections at ends
             for sectionNr,section_gn in manager.waySectionLines.items():
                 if section_gn.startConnected is None:
