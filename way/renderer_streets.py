@@ -19,6 +19,7 @@ class StreetRenderer:
     def __init__(self, app):
         self.app = app
         self.streetSectionsCollection = None
+        self.streetSectionObjNames = []
     
     def prepare(self):
         self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
@@ -80,20 +81,43 @@ class StreetRenderer:
         self.generateStreetSectionsClusters(manager.wayClusters)
         self.renderIntersections(manager)
         
-        self.terrainRenderer.processDeadEnds(manager.waySectionLines, manager.wayClusters)
+        self.terrainRenderer.processDeadEnds(manager)
         self.terrainRenderer.addExtent(self.app)
-        self.terrainRenderer.setAttributes(manager.waySectionLines, manager.wayClusters)
+        self.terrainRenderer.setAttributes(manager, self)
     
     def generateStreetSection(self, streetSection, waySection, location):
         obj = createMeshObject(
             waySection.tags.get("name", "Street section"),
             collection = self.streetSectionsCollection
         )
+        # create an attribute "offset_weight" for <obj>
+        obj.data.attributes.new("offset_weight", 'FLOAT', 'POINT')
         createPolylineMesh(obj, None, streetSection.centerline)
+        # Set offset weights. An offset weight is equal to
+        # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
+        attributes = obj.data.attributes["offset_weight"].data
+        attributes[0].value = attributes[-1].value = 1.
+        
+        centerline = streetSection.centerline
+        numPoints = len(centerline)
+        if numPoints > 2:
+            vec1 = centerline[0] - centerline[1]
+            vec1.normalize()
+            for i in range(1, numPoints-1):
+                vec2 = centerline[i+1] - centerline[i]
+                vec2.normalize()
+                vec = vec1 + vec2
+                vec.normalize()
+                attributes[i].value = abs(1/vec.cross(vec2))
+                vec1 = -vec2
+        
         # project the polyline on the terrain if it's available
         terrainObj = self.projectOnTerrain(obj, self.gnProjectStreets)
         if not terrainObj:
             addGeometryNodesModifier(obj, self.gnMeshToCurve, "Mesh to Curve")
+        
+        # Add the name of <obj> to the list <self.streetSectionObjNames>
+        self.streetSectionObjNames.append(obj.name)
         
         #obj = CurveRenderer.createBlenderObject(
         #    waySection.tags.get("name", "Street section"),
@@ -168,6 +192,7 @@ class StreetRenderer:
         m = addGeometryNodesModifier(obj, self.gnStreet, "Carriageway")
         m["Input_2"] = waySection.offset
         m["Input_3"] = waySection.width
+        useAttributeForGnInput(m, "Input_4", "offset_weight")
         #m["Input_9"] = self.getMaterial("blosm_carriageway")
         #m["Input_24"] = self.getMaterial("blosm_sidewalk")
         #m["Input_28"] = self.getMaterial("blosm_zebra")
@@ -176,11 +201,13 @@ class StreetRenderer:
         m = addGeometryNodesModifier(obj, self.gnSeparator, "Carriageway separator")
         m["Input_2"] = offset
         m["Input_3"] = width
+        useAttributeForGnInput(m, "Input_4", "offset_weight")
     
     def setModifierSidewalk(self, obj, offset, width):
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
+        useAttributeForGnInput(m, "Input_5", "offset_weight")
     
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
@@ -315,6 +342,18 @@ class StreetRenderer:
                 )
             bm.faces.new(verts)
     
+    def setAttributeOffsetWeight(self, inputObj, streetSection, streetSectionIndex, startIndex):
+        if self.streetSectionObjNames:
+            streetSectionObjData = bpy.data.objects[ self.streetSectionObjNames[streetSectionIndex] ].data.attributes["offset_weight"].data
+            inputObjData = inputObj.data.attributes["offset_weight"].data
+            # "ss" stands for "street section"
+            for inputObjIndex, ssObjIndex in zip(
+                    range(startIndex, startIndex+len(streetSection.centerline)),
+                    range(len(streetSection.centerline))
+                ):
+                # Copy the values of the attribute "offset_weight" from the street section object to <inputObj>
+                inputObjData[inputObjIndex].value = streetSectionObjData[ssObjIndex].value
+    
     def finalize(self):
         return
     
@@ -343,6 +382,7 @@ class TerrainPatchesRenderer:
         self.obj = obj = createMeshObject("Terrain Patches", collection = Renderer.collection)
         obj.data.attributes.new("offset_l", 'FLOAT', 'POINT')
         obj.data.attributes.new("offset_r", 'FLOAT', 'POINT')
+        obj.data.attributes.new("offset_weight", 'FLOAT', 'POINT')
         
         m = addGeometryNodesModifier(obj, streetRenderer.gnTerrainPatches, "Terrain patches")
         useAttributeForGnInput(m, "Input_2", "offset_l")
@@ -358,30 +398,35 @@ class TerrainPatchesRenderer:
     def processStreetCenterline(self, streetSection):
         createPolylineMesh(None, self.bm, streetSection.centerline)
     
-    def setAttributes(self, waySectionLines, wayClusters):
+    def setAttributes(self, manager, renderer):
         setBmesh(self.obj, self.bm)
         
-        index = 0
+        pointIndex = 0
+        streetSectionIndex = 0
         
-        for streetSection in waySectionLines.values():
+        for streetSection in manager.waySectionLines.values():
             offsetL = -streetSection.getLeftBorderDistance()
             offsetR = streetSection.getLeftBorderDistance()
+            renderer.setAttributeOffsetWeight(self.obj, streetSection, streetSectionIndex, pointIndex)
             for _ in streetSection.centerline:
-                self.obj.data.attributes["offset_l"].data[index].value = offsetL
-                self.obj.data.attributes["offset_r"].data[index].value = offsetR
-                index += 1
+                self.obj.data.attributes["offset_l"].data[pointIndex].value = offsetL
+                self.obj.data.attributes["offset_r"].data[pointIndex].value = offsetR
+                pointIndex += 1
+            streetSectionIndex += 1
         
-        for streetSection in wayClusters.values():
+        for streetSection in manager.wayClusters.values():
             offsetL = -streetSection.getLeftBorderDistance()
             offsetR = streetSection.getRightBorderDistance()
+            renderer.setAttributeOffsetWeight(self.obj, streetSection, streetSectionIndex, pointIndex)
             for _ in streetSection.centerline:
-                self.obj.data.attributes["offset_l"].data[index].value = offsetL
-                self.obj.data.attributes["offset_r"].data[index].value = offsetR
-                index += 1
+                self.obj.data.attributes["offset_l"].data[pointIndex].value = offsetL
+                self.obj.data.attributes["offset_r"].data[pointIndex].value = offsetR
+                pointIndex += 1
+            streetSectionIndex += 1
     
-    def processDeadEnds(self, waySectionLines, wayClusters):
+    def processDeadEnds(self, manager):
         
-        for streetSection in waySectionLines.values():
+        for streetSection in manager.waySectionLines.values():
             centerline = streetSection.centerline
             directionVector = None
             if not streetSection.startConnected:
@@ -402,7 +447,7 @@ class TerrainPatchesRenderer:
                     streetSection.getLeftBorderDistance()
                 )
         
-        for streetSection in wayClusters.values():
+        for streetSection in manager.wayClusters.values():
             centerline = streetSection.centerline
             directionVector = None
             
