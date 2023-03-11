@@ -38,7 +38,7 @@ class StreetRenderer:
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
         _gnStreet = "blosm_street"
         _gnSidewalk = "blosm_sidewalk"
-        _gnSeparator = "blosm_str_separator"
+        _gnSeparator = "blosm_street_separator"
         _gnLamps = "blosm_street_lamps"
         _gnProjectStreets = "blosm_project_streets"
         _gnTerrainPatches = "blosm_terrain_patches"
@@ -387,6 +387,7 @@ class TerrainPatchesRenderer:
         m = addGeometryNodesModifier(obj, streetRenderer.gnTerrainPatches, "Terrain patches")
         useAttributeForGnInput(m, "Input_2", "offset_l")
         useAttributeForGnInput(m, "Input_3", "offset_r")
+        useAttributeForGnInput(m, "Input_4", "offset_weight")
         
         terrainObj = streetRenderer.getTerrainObj()
         if terrainObj:
