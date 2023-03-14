@@ -280,43 +280,69 @@ class StreetRenderer:
         # index of the left point of the right connector
         indexR = connectorInfoR[0]
         
-        offsetToLeft = connectorInfoL[3]=='S'
+        offsetToLeftL = connectorInfoL[3]=='S'
         offsetDistance = (
             streetSectionL.getLeftBorderDistance()
-            if offsetToLeft else
+            if offsetToLeftL else
             streetSectionL.getRightBorderDistance()
         ) + sidewalkWidth
         # Offset points for streetSectionL
         point1L = streetSectionL.offsetPoint(
-            0 if offsetToLeft else -1,
-            offsetToLeft,
+            0 if offsetToLeftL else -1,
+            offsetToLeftL,
             offsetDistance
         )
         point2L = streetSectionL.offsetPoint(
-            1 if offsetToLeft else -2,
-            offsetToLeft,
+            1 if offsetToLeftL else -2,
+            offsetToLeftL,
             offsetDistance
         )
+        vectorL = point2L - point1L
+        lengthL = vectorL.length
         
-        offsetToLeft = connectorInfoR[3]=='E'
+        offsetToLeftR = connectorInfoR[3]=='E'
         offsetDistance = (
             streetSectionR.getLeftBorderDistance()
-            if offsetToLeft else
+            if offsetToLeftR else
             streetSectionR.getRightBorderDistance()
         ) + sidewalkWidth
         point1R = streetSectionR.offsetPoint(
-            -1 if offsetToLeft else 0,
-            offsetToLeft,
+            -1 if offsetToLeftR else 0,
+            offsetToLeftR,
             offsetDistance
         )
         point2R = streetSectionR.offsetPoint(
-            -2 if offsetToLeft else 1,
-            offsetToLeft,
+            -2 if offsetToLeftR else 1,
+            offsetToLeftR,
             offsetDistance
         )
+        vectorR = point2R - point1R
+        lengthR = vectorR.length
         
-        # Check if the segments <point1L>-<point2L> and <point1R>-<point2R> intersect
-        if not intersect_line_line_2d(point1L, point2L, point1R, point2R):
+        # Check if the ray with the origin at <point1L> and the direction towards <point2L> intersects
+        # with the ray with the origin at <point1R> and the direction towards <point2R>.
+        # Actually instead of calculating if the above rays intersect we simply enlarge the segments
+        # <point1L>-<point2L> and <point1R>-<point2R> to the length <rayLength> and check if those
+        # enlarged segments intersect.
+        rayLength = 100.
+        intersectionPoint = intersect_line_line_2d(
+            point1L,
+            point1L + rayLength/lengthL*vectorL,
+            point1R,
+            point1R + rayLength/lengthR*vectorR
+        )
+        if intersectionPoint:
+            # The rays do intersect.
+            
+            # Check if the intersection point on the rays belongs to
+            # the segment <point1L>-<point2L>
+            if (intersectionPoint - point1L).length_squared <= lengthL*lengthL:
+                pass
+            # Check if the intersection point on the rays belongs to
+            # the segment <point1R>-<point2R>
+            if (intersectionPoint - point1R).length_squared <= lengthR*lengthR:
+                pass
+        else:
             bm = self.intersectionSidewalksBm
             polygon = intersection.polygon
             verts = [
