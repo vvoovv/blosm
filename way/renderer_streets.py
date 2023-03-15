@@ -281,40 +281,52 @@ class StreetRenderer:
         indexR = connectorInfoR[0]
         
         offsetToLeftL = connectorInfoL[3]=='S'
+        index1L = 0 if offsetToLeftL else -1
+        index2L = 1 if offsetToLeftL else -2
         offsetDistance = (
             streetSectionL.getLeftBorderDistance()
             if offsetToLeftL else
             streetSectionL.getRightBorderDistance()
         ) + sidewalkWidth
         # Offset points for streetSectionL
+        normal1L = streetSectionL.getNormal(index1L, offsetToLeftL)
         point1L = streetSectionL.offsetPoint(
-            0 if offsetToLeftL else -1,
+            index1L,
             offsetToLeftL,
-            offsetDistance
+            offsetDistance,
+            normal1L
         )
+        normal2L = streetSectionL.getNormal(index2L, offsetToLeftL)
         point2L = streetSectionL.offsetPoint(
-            1 if offsetToLeftL else -2,
+            index2L,
             offsetToLeftL,
-            offsetDistance
+            offsetDistance,
+            normal2L
         )
         vectorL = point2L - point1L
         lengthL = vectorL.length
         
         offsetToLeftR = connectorInfoR[3]=='E'
+        index1R = -1 if offsetToLeftR else 0
+        index2R = -2 if offsetToLeftR else 1
         offsetDistance = (
             streetSectionR.getLeftBorderDistance()
             if offsetToLeftR else
             streetSectionR.getRightBorderDistance()
         ) + sidewalkWidth
+        normal1R = streetSectionR.getNormal(index1R, offsetToLeftR)
         point1R = streetSectionR.offsetPoint(
-            -1 if offsetToLeftR else 0,
+            index1R,
             offsetToLeftR,
-            offsetDistance
+            offsetDistance,
+            normal1R
         )
+        normal2R = streetSectionR.getNormal(index2R, offsetToLeftR)
         point2R = streetSectionR.offsetPoint(
-            -2 if offsetToLeftR else 1,
+            index2R,
             offsetToLeftR,
-            offsetDistance
+            offsetDistance,
+            normal2R
         )
         vectorR = point2R - point1R
         lengthR = vectorR.length

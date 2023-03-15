@@ -59,8 +59,8 @@ class BaseWaySection:
         
         return Vector((-vector[1], vector[0])) if left else Vector((vector[1], -vector[0]))
     
-    def offsetPoint(self, index, left, distance):
-        return self.centerline[index] + distance * self.getNormal(index, left)
+    def offsetPoint(self, index, left, distance, normal=None):
+        return self.centerline[index] + distance * (normal or self.getNormal(index, left))
 
 
 class TrimmedWaySection(BaseWaySection):
