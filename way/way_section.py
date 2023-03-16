@@ -3,7 +3,7 @@ from way.way_properties import estimateWayWidth, getLanes, isOneWay
 
 
 class WaySection():
-    ID = 0
+    ID = 1  # Must not start with zero to get unambiguous connector indices!
     def __init__(self,net_section,network):
         self.network = network
         self.originalSection = net_section

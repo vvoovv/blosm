@@ -10,6 +10,7 @@ from way.way_cluster import LongClusterWay, createLeftTransition, createClippedE
                            createLeftIntersection, createRightIntersection, createShortClusterIntersection
 from way.way_intersections import Intersection
 from way.intersection_cluster import IntersectionCluster
+from way.overlap_handler import OverlapHandler
 from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
@@ -106,23 +107,21 @@ class IntersectionArea():
         self.polygon = None
         
         # The connectors of this polygon to the way-sections.
-        # A dictionary of tuples, where the key is the ID of the corresponding
-        # way-section key in the dictionary of TrimmedWaySection. The tuple has two
-        # elements, <indx> and <end>. <indx> is the first index in the intersection
-        # polygon for this connector, the second index is <indx>+1. <end> is
-        # the type 'S' for the start or 'E' for the end of the TrimmedWaySection
-        # connected here.
+        # A dictionary of indices, where the key is the corresponding
+        # way-section key in the dictionary of TrimmedWaySection. The key is
+        # positive, when the start of the way-section connects to the area, and
+        # negative, when the way-section ends here. The value <index> in the
+        # dictionary value is the the first index in the intersection polygon
+        # for this connector. The way connects between <index> and <index>+1. 
         self.connectors = dict()
         
-        # The connectors of this polygon to the way-clusters. A dictionary of tuples,
-        # where the key is also the key of the corresponding way-cluster in the 
-        # dictionary <wayClusters> of The manager. The tuple has three elements, <indx>,
-        # <end> and <way>. <indx> is the first index in the intersection
-        # polygon for this connector, the second index is <indx>+1. <end> is
-        # the type 'S' for the start or 'E' for the end of the way cluster
-        # connected here. <way> is -1 if the whole way-cluster connects there,
-        # or the index in the list of way descriptors <waySections> in <WayCluster>,
-        # if only a single way of the cluster connects there.
+        # The connectors of this polygon to the way-clusters.
+        # A dictionary of indices, where the key is the corresponding way-cluster
+        # in the dictionary <wayClusters> of The manager. The key is positive, when
+        # the start of the way-cluster connects to the area, and negative, when the
+        # way-cluster ends here. The value <index> in the dictionary value is the
+        # first index in the intersection polygon for this connector. The way-cluster
+        # connects between <index> and <index>+1.
         self.clusterConns = dict()
         
         self.numPoints = 0
@@ -144,12 +143,12 @@ class IntersectionArea():
             if self.connectors:
                 connectorsInfo.extend(
                     # <False> means that it isn't a cluster of street segments
-                    (connectorInfo[0], False, segmentId, connectorInfo[1]) for segmentId, connectorInfo in self.connectors.items()
+                    (polyIndex, False, abs(segmentId), 'S' if segmentId>0 else 'E') for segmentId, polyIndex in self.connectors.items()
                 )
             if self.clusterConns:
                 connectorsInfo.extend(
                     # <True> means that it is a cluster of street segments
-                    (connectorInfo[0], True, segmentId, connectorInfo[1]) for segmentId, connectorInfo in self.clusterConns.items()
+                    (polyIndex, True, abs(segmentId),  'S' if segmentId>0 else 'E') for segmentId, polyIndex in self.clusterConns.items()
                 )
         
             connectorsInfo.sort()
@@ -199,12 +198,10 @@ def createWaySection(offset, width, nrOfLanes, category, tags):
     
     return waySection
 # ----------------------------------------------------------------
-
+# from osmPlot import *
 class StreetGenerator():
     
-    def __init__(self,isectShape='common'): # isectShape -> 'common' or 'separated'
-        self.isectShape = isectShape
-
+    def __init__(self): 
         # Interface via manager
         self.intersectionAreas = None
         self.wayClusters = None
@@ -215,9 +212,8 @@ class StreetGenerator():
         # Internal use
         self.waySections = dict()
         self.intersections = dict()
-        self.waysForClusters = None
+        self.waysForClusters = []
         self.longClusterWays = []
-        self.virtualWayIndx = -1
         self.processedNodes = set()
         self.waysCoveredByCluster = []
 
@@ -454,7 +450,6 @@ class StreetGenerator():
                 intersectionsAll.append(intersectionsThis)
                 sectionsIDsAll.append(sectionsIDs)
 
-
            # In the next step, in-cluster intersections are processed. As a first
             # measure, ways, that have such intersections on both sides are removed.
             if inClusterIsects:
@@ -551,10 +546,10 @@ class StreetGenerator():
                         vTarget = lines[target][1] - lines[target][0]       # first vector of target
                         vTarget /= vTarget.length                           # make unit vector
                         parallelity.append( (i,abs(vGap.cross(vTarget))) )  # cross product == sine of vectors
-                    removeIndx = targets[ max( (p for p in parallelity), key=lambda x: x[1] )[0] ]
+                    removeIndx = sources[ max( (p for p in parallelity), key=lambda x: x[1] )[0] ]
                     linesToRemove.append(removeIndx)
                     self.waysCoveredByCluster.extend(sectionsIDsAll[removeIndx])
-                    gapToRemove = (source,linesToRemove[-1])
+                    gapToRemove = (linesToRemove[-1],target)
                     possibleGaps.remove(gapToRemove)
 
             # If there are such gaps, the corresponding lines are merged, if there
@@ -569,7 +564,7 @@ class StreetGenerator():
                         cleanedPossibleGaps.append( (i0,i1) )
                         i0s.append(i0)
                         i1s.append(i1)
-            
+
                 # Merge lines through gaps.
                 for i0,i1 in cleanedPossibleGaps:
                     # Vertices of lines i0 and i1 become gap vertices
@@ -781,7 +776,7 @@ class StreetGenerator():
 
     def createClusterTransitionAreas(self):
         areas = []
-        for nr,longClusterWay in enumerate(self.longClusterWays):
+        for longClusterWay in self.longClusterWays:
             if len(longClusterWay.subClusters) > 1:
                 blockedWayIDs = longClusterWay.sectionIDs[0] + longClusterWay.sectionIDs[-1]
                 skipSmall = False
@@ -833,33 +828,6 @@ class StreetGenerator():
                     #     plt.close()
 
                     areas.append(area)
-
-                    # Eventually we need to create a short way at a transition
-                    if self.isectShape == 'separated':
-                        if cluster1.endSplit.type == 'left':
-                            s1 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.clusterWidth/2.)
-                            s2 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.clusterWidth/2.) 
-                            Id = cluster1.rightWayID    # cluster1.rightWayID == cluster2.rightWayID)
-                        if cluster1.endSplit.type == 'right':
-                            s1 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.clusterWidth/2.)
-                            s2 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.clusterWidth/2.) 
-                            Id = cluster1.leftWayID     # cluster1.leftWayID == cluster2.leftWayID)
-
-                        section = self.waySections[Id]
-                        section_gn = TrimmedWaySection()
-                        section_gn.centerline = [s1,s2]
-                        section_gn.category = section.originalSection.category
-                        if section.isOneWay:
-                            section_gn.nrOfLanes = (section.nrRightLanes)
-                        else:
-                            section_gn.nrOfLanes = (section.nrLeftLanes, section.nrRightLanes)
-                        section_gn.endWidths = section_gn.startWidths = (section.leftWidth, section.rightWidth)
-                        section_gn.tags = section.originalSection.tags
-                        if section.turnParams:
-                            section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
-                        self.waySectionLines[self.virtualWayIndx] = section_gn
-                        self.virtualWayIndx -= 1    # Use negative index to avoid conflicts with ordinary ways
-
             else:   # only one cluster way
                 pass
 
@@ -883,6 +851,21 @@ class StreetGenerator():
 
         # Create an intersection cluster area for every <clusterGroup>
         for clusterGroup in clusterGroups:
+            # If there is only one cluster in the group, we have an cluster end.
+            # Because clusters can only be clipped at the end and are excluded by
+            # the loop above, they don't appear here. Ends of clusters have require
+            # a special handling, if they have overlapping outways.           
+            if len(clusterGroup) == 1:
+                if not clusterGroup[0][1].longCluster.clipped:
+                    overlapHandler = OverlapHandler(self,clusterGroup[0][1], clusterGroup[0][2])
+                    if overlapHandler.hadOverlaps:
+                        isectArea = IntersectionArea()
+                        isectArea.polygon = overlapHandler.area
+                        isectArea.connectors = overlapHandler.wayConnectors
+                        isectArea.clusterConns = overlapHandler.clustConnectors
+                        self.intersectionAreas.append(isectArea)
+                        continue
+
             # Create an instance of <IntersectionCluster>, which will form the
             # cluster area and its connectors.
             isectCluster = IntersectionCluster()
@@ -991,7 +974,8 @@ class StreetGenerator():
                 for con in connectors:
                     object = ID2Object[con[2]]
                     if isinstance(object[0],WaySection):
-                        wayConnectors[object[0].id] = ( con[0]+conOffset, 'S' if object[1] else 'E')
+                        Id = object[0].id if object[1] else -object[0].id
+                        wayConnectors[Id] = con[0]+conOffset
                     else:
                         if object[2] == object[1].transitionPos:
                             if object[2] == 'start':
@@ -1003,11 +987,11 @@ class StreetGenerator():
                                     p2 = object[1].centerline.offsetPointAt(tTrans,object[1].outWL())
                                     object[1].trimS = max(object[1].trimS,tTrans)
                                     area.insert(con[0]+conOffset+1,p1)
-                                    clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'S', -1)
+                                    clustConnectors[object[1].id] = con[0]+conOffset+1
                                     area.insert(con[0]+conOffset+2,p2)
                                     conOffset += 2
                                 else:
-                                    clustConnectors[object[1].id] = ( con[0]+conOffset, 'S', -1)
+                                    clustConnectors[object[1].id] = con[0]+conOffset
                             else:   # object[2] == 'end'
                                 transitionLength = object[1].transitionWidth/transitionSlope
                                 dTrans = object[1].centerline.length() - transitionLength
@@ -1017,13 +1001,14 @@ class StreetGenerator():
                                     p2 = object[1].centerline.offsetPointAt(tTrans,-object[1].outWR())
                                     object[1].trimT = min(object[1].trimT,tTrans)
                                     area.insert(con[0]+conOffset+1,p1)
-                                    clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'E', -1)
+                                    clustConnectors[-object[1].id] = con[0]+conOffset+1
                                     area.insert(con[0]+conOffset+2,p2)
                                     conOffset += 2
                                 else:
-                                    clustConnectors[object[1].id] = ( con[0]+conOffset, 'E', -1)
+                                    clustConnectors[-object[1].id] = con[0]+conOffset
                         else:
-                            clustConnectors[object[1].id] = ( con[0]+conOffset, 'S' if object[2]=='start' else 'E', -1)
+                            Id = object[1].id if object[2]=='start' else -object[1].id
+                            clustConnectors[Id] = con[0]+conOffset
 
                 isectArea = IntersectionArea()
                 isectArea.polygon = area
@@ -1048,7 +1033,7 @@ class StreetGenerator():
         endConnections = set()
         for area in self.intersectionAreas:
             for conId,con in area.clusterConns.items():
-                if con[1] == 'S':
+                if conId>0:
                     startConnections.add(conId)
                 else:
                     endConnections.add(conId)
@@ -1224,32 +1209,33 @@ class StreetGenerator():
             if area > 0.:
                 mergedPoly.reverse()
 
-            # An instance of IntersectionArea is now constrcuted with
+            # An instance of IntersectionArea is now constructed with
             # its remaining connectors.
             mergedArea = IntersectionArea()
             mergedArea.polygon = mergedPoly
             # Find duplicate connectors, which have to be removed.
-            connectorIDs = [id for indx in conflicting for id in self.intersectionAreas[indx].connectors]
+            connectorIDs = [abs(id) for indx in conflicting for id in self.intersectionAreas[indx].connectors]
             seenIDs = set()
             dupIDs = [x for x in connectorIDs if x in seenIDs or seenIDs.add(x)]
 
             for indx in conflicting:
                 conflictingArea = self.intersectionAreas[indx]
                 connectors = conflictingArea.connectors
-                for key,connector in connectors.items():
+                for signedKey,connector in connectors.items():
+                    key = abs(signedKey)
                     # Keep connectors that don't have duplicate IDs
                     if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
-                        v0 = conflictingArea.polygon[connector[0]]
-                        newConnector = (mergedPoly.index(v0),connector[1])
-                        mergedArea.connectors[key] = newConnector
+                        v0 = conflictingArea.polygon[connector]
+                        newConnector = mergedPoly.index(v0)
+                        mergedArea.connectors[signedKey] = newConnector
             mergedAreas.append(mergedArea)
 
             # avoid a connector to reach over polygon end point index
-            mc = max(c[0] for c in mergedArea.connectors.values())
+            mc = max(c for c in mergedArea.connectors.values())
             if mc >= len(mergedArea.polygon)-1:
                 mergedArea.polygon = mergedArea.polygon[1:] + mergedArea.polygon[:1]
                 for key,connector in mergedArea.connectors.items():
-                    mergedArea.connectors[key] = (connector[0]-1,connector[1])
+                    mergedArea.connectors[key] = connector-1
 
         # Now remove conflicting areas from list and add the merged areas
         for i in sorted(conflictingAreasIndcs, reverse = True):
