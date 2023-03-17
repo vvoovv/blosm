@@ -79,6 +79,7 @@ class StreetRenderer:
         self.generateStreetSectionsSimple(manager.waySectionLines)
         # street sections clustered
         self.generateStreetSectionsClusters(manager.wayClusters)
+        # intersections
         self.renderIntersections(manager)
         
         self.terrainRenderer.processDeadEnds(manager)
@@ -116,6 +117,8 @@ class StreetRenderer:
         if not terrainObj:
             addGeometryNodesModifier(obj, self.gnMeshToCurve, "Mesh to Curve")
         
+        # remember the index of <streetSection>'s entry in <self.streetSectionObjNames>
+        streetSection.index = len(self.streetSectionObjNames)
         # Add the name of <obj> to the list <self.streetSectionObjNames>
         self.streetSectionObjNames.append(obj.name)
         
@@ -141,10 +144,14 @@ class StreetRenderer:
             self.setModifierCarriageway(obj, streetSection)
             
             # sidewalk on the left
-            self.setModifierSidewalk(obj, -streetSection.getLeftBorderDistance(), sidewalkWidth)
+            streetSection.sidewalkL = self.setModifierSidewalk(
+                obj, -streetSection.getLeftBorderDistance(), sidewalkWidth
+            )
             
             # sidewalk on the right
-            self.setModifierSidewalk(obj, streetSection.getRightBorderDistance(), sidewalkWidth)
+            streetSection.sidewalkR = self.setModifierSidewalk(
+                obj, streetSection.getRightBorderDistance(), sidewalkWidth
+            )
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
@@ -163,14 +170,14 @@ class StreetRenderer:
                 self.setModifierCarriageway(obj, waySection)
 
             # sidewalk on the left
-            self.setModifierSidewalk(
+            streetSection.sidewalkL = self.setModifierSidewalk(
                 obj,
                 -streetSection.getLeftBorderDistance(),
                 sidewalkWidth
             )
             
             # sidewalk on the right
-            self.setModifierSidewalk(
+            streetSection.sidewalkR = self.setModifierSidewalk(
                 obj,
                 streetSection.getRightBorderDistance(),
                 sidewalkWidth
@@ -208,6 +215,7 @@ class StreetRenderer:
         m["Input_3"] = offset
         m["Input_4"] = width
         useAttributeForGnInput(m, "Input_5", "offset_weight")
+        return m
     
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
@@ -267,6 +275,10 @@ class StreetRenderer:
         is to the right from the one described by <connectorInfoL>.
         """
         
+        bm = self.intersectionSidewalksBm
+        polygon = intersection.polygon
+        verts = None
+        
         # get an instance for the street section attached to the connector described by <connectorInfo1>
         streetSectionL = manager.wayClusters[connectorInfoL[2]]\
             if connectorInfoL[1] else\
@@ -300,7 +312,7 @@ class StreetRenderer:
         point2L = streetSectionL.offsetPoint(
             index2L,
             offsetToLeftL,
-            offsetDistance,
+            offsetDistance * self.getOffsetWeight(streetSectionL, index2L),
             normal2L
         )
         vectorL = point2L - point1L
@@ -325,7 +337,7 @@ class StreetRenderer:
         point2R = streetSectionR.offsetPoint(
             index2R,
             offsetToLeftR,
-            offsetDistance,
+            offsetDistance * self.getOffsetWeight(streetSectionR, index2R),
             normal2R
         )
         vectorR = point2R - point1R
@@ -349,40 +361,85 @@ class StreetRenderer:
             # Check if the intersection point on the rays belongs to
             # the segment <point1L>-<point2L>
             if (intersectionPoint - point1L).length_squared <= lengthL*lengthL:
-                pass
+                # Calculate the foot of the perpendicular from <intersectionPoint> to
+                # the street segment with the indices <index1L> and <index2L> and
+                # offset at the border of the carriageway in direction defined by
+                # normals <normal1L> and <normal2L>
+                point1L -= sidewalkWidth*normal1L
+                point2L -= sidewalkWidth*normal2L
+                # Unit vector along the segment <point1L>-<point2L>
+                unitVector = vectorL/lengthL
+                # Distance from <point1L> to the foot of the perpendicular
+                trimLength = (intersectionPoint - point1L).dot(unitVector)
+                if trimLength*trimLength <= (point2L-point1L).length_squared:
+                    self.setTrimLength(
+                        streetSectionL,
+                        trimLength,
+                        offsetToLeftL,
+                        offsetToLeftL
+                    )
+                    # Vector to the foot of the perpendicular
+                    foot = point1L + trimLength*unitVector
+                    verts = [
+                        bm.verts.new((polygon[indexL][0], polygon[indexL][1], 0.)),
+                        bm.verts.new((foot[0], foot[1], 0.)),
+                        bm.verts.new((intersectionPoint[0], intersectionPoint[1], 0.)),
+                    ]
             # Check if the intersection point on the rays belongs to
             # the segment <point1R>-<point2R>
-            if (intersectionPoint - point1R).length_squared <= lengthR*lengthR:
-                pass
+            if verts and (intersectionPoint - point1R).length_squared <= lengthR*lengthR:
+                # Calculate the foot of the perpendicular from <intersectionPoint> to
+                # the street segment with the indices <index1R> and <index2R> and
+                # offset at the border of the carriageway in direction defined by
+                # normals <normal1R> and <normal2R>
+                point1R -= sidewalkWidth*normal1R
+                point2R -= sidewalkWidth*normal2R
+                # Unit vector along the segment <point1R>-<point2R>
+                unitVector = vectorR/lengthR
+                # Distance from <point1R> to the foot of the perpendicular
+                trimLength = (intersectionPoint - point1R).dot(unitVector)
+                if trimLength*trimLength <= (point2R-point1R).length_squared:
+                    self.setTrimLength(
+                        streetSectionR,
+                        trimLength,
+                        offsetToLeftR,
+                        not offsetToLeftR
+                    )
+                    # Vector to the foot of the perpendicular
+                    foot = point1R + trimLength*unitVector
+                    verts.append(bm.verts.new((foot[0], foot[1], 0.)))
+                
         else:
-            bm = self.intersectionSidewalksBm
-            polygon = intersection.polygon
             verts = [
                 bm.verts.new((polygon[indexL][0], polygon[indexL][1], 0.)),
                 bm.verts.new((point1L[0], point1L[1], 0.)),
-                bm.verts.new((point1R[0], point1R[1], 0.)),
-                bm.verts.new((polygon[indexR][0], polygon[indexR][1], 0.))
+                bm.verts.new((point1R[0], point1R[1], 0.))
             ]
-            if indexL < indexR:
-                if indexR - indexL > 1:
+        
+        if verts:
+            if indexL != indexR:
+                verts.append(bm.verts.new((polygon[indexR][0], polygon[indexR][1], 0.)))
+                
+                if indexL < indexR:
+                    if indexR - indexL > 1:
+                        verts.extend(
+                            bm.verts.new((polygon[i][0], polygon[i][1], 0.)) for i in range(indexR-1, indexL, -1)
+                        )
+                elif not (indexL==intersection.numPoints-1 and indexR==0):
+                    indices = [] if indexL == intersection.numPoints-1 else\
+                        list( range(indexL+1, intersection.numPoints) )
+                    if indexR == 1:
+                        indices.append(0)
+                    elif indexR > 1:
+                        indices.extend(i for i in range(indexR-1))
                     verts.extend(
-                        bm.verts.new((polygon[i][0], polygon[i][1], 0.)) for i in range(indexR-1, indexL, -1)
+                        bm.verts.new((polygon[i][0], polygon[i][1], 0.)) for i in reversed(indices)
                     )
-            elif not (indexL==intersection.numPoints-1 and indexR==0):
-                indices = [] if indexL == intersection.numPoints-1 else\
-                    list( range(indexL+1, intersection.numPoints) )
-                if indexR == 1:
-                    indices.append(0)
-                elif indexR > 1:
-                    indices.extend(i for i in range(indexR-1))
-                verts.extend(
-                    bm.verts.new((polygon[i][0], polygon[i][1], 0.)) for i in reversed(indices)
-                )
             bm.faces.new(verts)
     
-    def setAttributeOffsetWeight(self, inputObj, streetSection, streetSectionIndex, startIndex):
+    def setAttributeOffsetWeight(self, inputObj, streetSection, startIndex):
         if self.streetSectionObjNames:
-            streetSectionObjData = bpy.data.objects[ self.streetSectionObjNames[streetSectionIndex] ].data.attributes["offset_weight"].data
+            streetSectionObjData = bpy.data.objects[ self.streetSectionObjNames[streetSection.index] ].data.attributes["offset_weight"].data
             inputObjData = inputObj.data.attributes["offset_weight"].data
             # "ss" stands for "street section"
             for inputObjIndex, ssObjIndex in zip(
@@ -391,6 +448,15 @@ class StreetRenderer:
                 ):
                 # Copy the values of the attribute "offset_weight" from the street section object to <inputObj>
                 inputObjData[inputObjIndex].value = streetSectionObjData[ssObjIndex].value
+    
+    def getOffsetWeight(self, streetSection, index):
+        return bpy.data.objects[ self.streetSectionObjNames[streetSection.index] ].data.attributes["offset_weight"].data[index].value
+    
+    def setTrimLength(self, streetSection, trimLength, left, start):
+        if left:
+            streetSection.sidewalkL["Input_6" if start else "Input_7"] = trimLength
+        else:
+            streetSection.sidewalkR["Input_6" if start else "Input_7"] = trimLength
     
     def finalize(self):
         return
@@ -441,27 +507,24 @@ class TerrainPatchesRenderer:
         setBmesh(self.obj, self.bm)
         
         pointIndex = 0
-        streetSectionIndex = 0
         
         for streetSection in manager.waySectionLines.values():
             offsetL = -streetSection.getLeftBorderDistance()
             offsetR = streetSection.getLeftBorderDistance()
-            renderer.setAttributeOffsetWeight(self.obj, streetSection, streetSectionIndex, pointIndex)
+            renderer.setAttributeOffsetWeight(self.obj, streetSection, pointIndex)
             for _ in streetSection.centerline:
                 self.obj.data.attributes["offset_l"].data[pointIndex].value = offsetL
                 self.obj.data.attributes["offset_r"].data[pointIndex].value = offsetR
                 pointIndex += 1
-            streetSectionIndex += 1
         
         for streetSection in manager.wayClusters.values():
             offsetL = -streetSection.getLeftBorderDistance()
             offsetR = streetSection.getRightBorderDistance()
-            renderer.setAttributeOffsetWeight(self.obj, streetSection, streetSectionIndex, pointIndex)
+            renderer.setAttributeOffsetWeight(self.obj, streetSection, pointIndex)
             for _ in streetSection.centerline:
                 self.obj.data.attributes["offset_l"].data[pointIndex].value = offsetL
                 self.obj.data.attributes["offset_r"].data[pointIndex].value = offsetR
                 pointIndex += 1
-            streetSectionIndex += 1
     
     def processDeadEnds(self, manager):
         
