@@ -25,11 +25,13 @@ class StreetRenderer(Renderer):
                 c = sum(isectArea.polygon,Vector((0,0)))/len(isectArea.polygon)
                 plt.text(c[0],c[1],str(Id),color='r',fontsize=18,zorder=130)
                 for id, connector in isectArea.connectors.items():
-                    p = isectArea.polygon[connector[0]]
-                    plt.text(p[0],p[1],str(id)+' '+connector[1])
+                    side = 'S' if id>0 else 'E'
+                    p = isectArea.polygon[connector]
+                    plt.text(p[0],p[1],str(abs(id))+' '+side)
                 for id, connector in isectArea.clusterConns.items():
-                    p = isectArea.polygon[connector[0]]
-                    plt.text(p[0],p[1],'C'+str(id)+' '+connector[1]+' '+str(connector[2]))
+                    side = 'S' if id>0 else 'E'
+                    p = isectArea.polygon[connector]
+                    plt.text(p[0],p[1],'C'+str(abs(id))+' '+side)
 
         for sectionNr,section_gn in manager.waySectionLines.items():
             if self.debug:
@@ -79,7 +81,7 @@ class StreetRenderer(Renderer):
             # Check connector IDs and counter-clockwise order
             for isectArea in manager.intersectionAreas:
                 for id, connector in isectArea.connectors.items():
-                    if id not in manager.waySectionLines:
+                    if abs(id) not in manager.waySectionLines:
                         print('missing id in waySectionLines',id)
                         plotPolygon(isectArea.polygon,False,'c','c',2,True,0.4,999)
                 area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in cyclePair(isectArea.polygon))
@@ -87,7 +89,7 @@ class StreetRenderer(Renderer):
                     print('intersectionArea not counter-clockwise')
                     plotPolygon(isectArea.polygon,True,'c','c',10,True,0.4,999)
                 for id, connector in isectArea.clusterConns.items():
-                    if id not in manager.wayClusters:
+                    if abs(id) not in manager.wayClusters:
                         print('missing id in wayClusters',id)
                         plotPolygon(isectArea.polygon,False,'g','g',10,True,0.4,999)
             # Check connections at ends

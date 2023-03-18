@@ -279,7 +279,8 @@ class Intersection():
                     polygon.append(pR)
             else:
                 polygon.append(pR)
-            connectors[way2.section.id] = ( len(polygon)-2, 'S' if way2.fwd else 'E')
+            Id = way2.section.id if way2.fwd else -way2.section.id
+            connectors[Id] = len(polygon)-2
 
         polygon = polygon[1:] + polygon[:1]
         return polygon, connectors
@@ -428,7 +429,8 @@ class Intersection():
                     polygon.append(pR)
             else:
                 polygon.append(pR)
-            connectors[way2.section.id] = ( len(polygon)-2, 'S' if way2.fwd else 'E')
+            Id = way2.section.id if way2.fwd else -way2.section.id
+            connectors[Id] = len(polygon)-2
 
         polygon = polygon[1:] + polygon[:1]
         return polygon, connectors
@@ -528,8 +530,10 @@ class Intersection():
             if area > 0:
                 poly.reverse()
             connectors = dict()
-            connectors[inWay.section.id] = ( 0, 'S' if inWay.fwd else 'E')
-            connectors[outWay.section.id] = (10, 'S' if outWay.fwd else 'E')
+            Id = inWay.section.id if way2.fwd else -inWay.section.id
+            connectors[Id] = 0
+            Id = outWay.section.id if way2.fwd else -outWay.section.id
+            connectors[Id] = 10
             return poly, connectors
 
 

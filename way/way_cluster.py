@@ -162,21 +162,6 @@ class SubCluster():
         self.length = None
         self.valid = True
 
-    # def transitionBecauseWidth(self):
-    #     widthDiff = self.endWidth - self.startWidth
-    #     if abs(widthDiff) > widthThresh:
-    #         w = self.endWidth
-    #         d = self.centerline.length() - 
-    #         t = len(self.centerline)
-    #         pL = self.centerline.offsetPointAt(t,abs(w/2))
-    #         pR = self.centerline.offsetPointAt(t,-abs(w/2))
-    #         end = ('trans',pL,pR,self.leftWay,self.rightWay)
-    #         segCluster = ClusterWay(self.centerline)
-    #         segCluster.startPoints = self.startPoints
-    #         segCluster.endPoints = end
-    #         segCluster.leftWay = self.leftWay
-    #         segCluster.rightWay = self.rightWay
-    #         segCluster.startWidth = self.startWidth
 
     def outW(self):
         return self.width + (self.wayWidths[0]+self.wayWidths[-1])/2.
@@ -227,10 +212,7 @@ def createLeftTransition(cls, cluster1, cluster2):
     # Two additional points due to transition
     p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
     area.append(p)
-    if cls.isectShape == 'common':
-        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
-    elif cls.isectShape == 'separated':
-        p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.inWL())
+    p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
     area.append(p)
 
     # Construct area through cluster2 (counter-clockwise order)
@@ -240,17 +222,14 @@ def createLeftTransition(cls, cluster1, cluster2):
     tTrans = cluster2.centerline.d2t(dTrans)
     cluster2.trimS = max(cluster2.trimS,tTrans)
     # Two additional points due to transition
-    if cls.isectShape == 'common':
-        p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
-    elif cls.isectShape == 'separated':
-        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+    p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
     area.append(p)
     p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
     area.append(p)
 
     clustConnectors = dict()
-    clustConnectors[cluster1.id] = ( 0, 'E', -1 if cls.isectShape == 'common' else 0)
-    clustConnectors[cluster2.id] = ( 2, 'S', -1 if cls.isectShape == 'common' else 0)
+    clustConnectors[-cluster1.id] = 0
+    clustConnectors[cluster2.id] = 2
     return area, clustConnectors
 
 def createRightTransition(cls, cluster1, cluster2):
@@ -263,10 +242,7 @@ def createRightTransition(cls, cluster1, cluster2):
     tTrans = cluster2.centerline.d2t(dTrans)
     cluster2.trimS = max(cluster2.trimS,tTrans)
     # Two additional points due to transition
-    if cls.isectShape == 'common':
-        p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
-    elif cls.isectShape == 'separated':
-        p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+    p = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
     area.append(p)
     p = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
     area.append(p)
@@ -279,15 +255,12 @@ def createRightTransition(cls, cluster1, cluster2):
     # Two additional points due to transition
     p = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
     area.append(p)
-    if cls.isectShape == 'common':
-        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
-    elif cls.isectShape == 'separated':
-        p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
+    p = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
     area.append(p)
 
     clustConnectors = dict()
-    clustConnectors[cluster2.id] = ( 0, 'S', -1 if cls.isectShape == 'common' else 1)
-    clustConnectors[cluster1.id] = ( 2, 'E', -1 if cls.isectShape == 'common' else 1)
+    clustConnectors[cluster2.id] = 0
+    clustConnectors[-cluster1.id] = 2
     return area, clustConnectors
 
 def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
@@ -317,7 +290,6 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
     #     plt.title('createLeftIntersection, p1')
     #     plotEnd()
     assert valid=='valid'
-    reverseCenterline = PolyLine(cluster1.centerline[::-1])
     # p3, valid = offsetPolylineIntersection(outLine,reverseCenterline,outWidth/2.,outW)
     p3, valid = offsetPolylineIntersection(outLine,cLr,outWidth/2.,outW)
     # if valid!='valid':
@@ -345,11 +317,13 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
     if tP3 > tP1:
         p2 = outLine.offsetPointAt(tP3,-outWidth/2.)
         tP = tP3
-        wayConnectors[section.id] = ( 1, 'S' if fwd else 'E')
+        Id = section.id  if fwd else -section.id
+        wayConnectors[Id] = 1
     else:
         p2 = outLine.offsetPointAt(tP1,outWidth/2.)
         tP = tP1
-        wayConnectors[section.id] = ( 0, 'S' if fwd else 'E')
+        Id = section.id  if fwd else -section.id
+        wayConnectors[Id] = 0
     if fwd:
         section.trimS = max(section.trimS,tP)
     else:
@@ -382,21 +356,15 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
         # the right of the cluster.
         p4 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
         area.append(p4)
-        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 0)
-        if cls.isectShape == 'common':
-            p5 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
-        elif cls.isectShape == 'separated':
-            p5 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.inWL())
+        clustConnectors[-cluster1.id] = len(area)-1
+        p5 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
         area.append(p5)
     else:
         # No transistion, we construct directly <p5> on the right of the cluster.
-        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 0)
+        clustConnectors[-cluster1.id] = len(area)-1
         _,tP = cluster1.centerline.orthoProj(p3)
         cluster1.trimT = min(cluster1.trimT,tP)
-        if cls.isectShape == 'common':
-            p5 = cluster1.centerline.offsetPointAt(tP,-cluster1.outWR())
-        elif cls.isectShape == 'separated':
-            p5 = cluster1.centerline.offsetPointAt(tP,cluster1.inWL())
+        p5 = cluster1.centerline.offsetPointAt(tP,-cluster1.outWR())
         area.append(p5)
 
     # Construct area through cluster2 (counter-clockwise order)
@@ -406,24 +374,17 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
         tTrans = cluster2.centerline.d2t(dTrans)
         cluster2.trimS = max(cluster2.trimS,tTrans)
         # Two additional points due to transition
-        if cls.isectShape == 'common':
-            p6 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
-        elif cls.isectShape == 'separated':
-            p6 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+        p6 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
         area.append(p6)
-        clustConnectors[cluster2.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 0)
+        clustConnectors[cluster2.id] = len(area)-1
         p7 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
         area.append(p7)
     else:
         _,tP = cluster2.centerline.orthoProj(p1)
         cluster2.trimS = max(cluster2.trimS,tP)
-        if cls.isectShape == 'common':
-            p7 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
-        elif cls.isectShape == 'separated':
-            p7 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.inWL())
+        p7 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
         area.append(p7)
-        clustConnectors[cluster2.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 0)
- 
+        clustConnectors[cluster2.id] = len(area)-1
     return area, clustConnectors, wayConnectors
 
 def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
@@ -441,7 +402,6 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
 
     # Find intersections <p1> and <p3> of way borders left and right of the out-way
     # with the right border of cluster 2.
-    reverseCenterline = PolyLine(cluster1.centerline[::-1])
     outW = max(cluster1.outWR(),cluster2.outWR())
     # p1, valid = offsetPolylineIntersection(reverseCenterline,outLine,outW,outWidth/2.)
     p1, valid = offsetPolylineIntersection(cLr,outLine,outW,outWidth/2.)
@@ -483,11 +443,13 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
     if tP3 > tP1:
         p2 = outLine.offsetPointAt(tP3,-outWidth/2.)
         tP = tP3
-        wayConnectors[section.id] = ( 0, 'S' if fwd else 'E')
+        Id = section.id  if fwd else -section.id
+        wayConnectors[Id] = 0
     else:
         p2 = outLine.offsetPointAt(tP1,outWidth/2.)
         tP = tP1
-        wayConnectors[section.id] = ( 1, 'S' if fwd else 'E')
+        Id = section.id  if fwd else -section.id
+        wayConnectors[Id] = 1
     if fwd:
         section.trimS = max(section.trimS,tP)
     else:
@@ -519,21 +481,15 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         # the left of the cluster.
         p4 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
         area.append(p4)
-        clustConnectors[cluster2.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
-        if cls.isectShape == 'common':
-            p5 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
-        elif cls.isectShape == 'separated':
-            p5 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.inWR())
+        clustConnectors[cluster2.id] = len(area)-1
+        p5 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
         area.append(p5)
     else:
         # No transistion, we construct directly <p5> on the left of the cluster.
-        clustConnectors[cluster1.id] = ( len(area)-1, 'S', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[cluster1.id] = len(area)-1
         _,tP = cluster2.centerline.orthoProj(p3)
         cluster2.trimS = max(cluster2.trimS,tP)
-        if cls.isectShape == 'common':
-            p5 = cluster2.centerline.offsetPointAt(tP,cluster2.outWL())
-        elif cls.isectShape == 'separated':
-            p5 = cluster2.centerline.offsetPointAt(tP,-cluster2.inWR())
+        p5 = cluster2.centerline.offsetPointAt(tP,cluster2.outWL())
         area.append(p5)
 
     # Construct area through cluster1 (counter-clockwise order)
@@ -544,24 +500,18 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         cluster1.trimT = min(cluster1.trimT,tTrans)
         # Two additional points due to transition, <p6> on the left and <p7> on 
         # the right of the cluster.
-        if cls.isectShape == 'common':
-            p6 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
-        elif cls.isectShape == 'separated':
-            p6 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
+        p6 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
         area.append(p6)
-        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[-cluster1.id] = len(area)-1
         p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
         area.append(p7)
     else:
         # No transistion, we construct directly <p7> on the left of the cluster.
         _,tP = cluster1.centerline.orthoProj(p1)
         cluster1.trimT = min(cluster1.trimT,tP)
-        if cls.isectShape == 'common':
-            p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
-        elif cls.isectShape == 'separated':
-            p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.inWR())
+        p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
         area.append(p7)
-        clustConnectors[cluster1.id] = ( len(area)-1, 'E', -1 if cls.isectShape == 'common' else 1)
+        clustConnectors[-cluster1.id] = len(area)-1
     return area, clustConnectors, wayConnectors
 
 def createClippedEndArea(cls,longCluster,endsubCluster):
@@ -589,16 +539,17 @@ def createClippedEndArea(cls,longCluster,endsubCluster):
             dims = (section.rightWidth,section.leftWidth)
         return polyline,dims
 
-    type = endsubCluster.endSplit.type
+    # Find the clip type for every way.
+    clipType = endsubCluster.endSplit.type
     doClip = [False]*len(endsubCluster.endSplit.currWIds)
-    if type == 'clipL':
+    if clipType == 'clipL':
         doClip[0] = True
-    if type == 'clipR':
+    if clipType == 'clipR':
         doClip[-1] = True
-    if type == 'clipB':
+    if clipType == 'clipB':
         doClip = [True]*len(endsubCluster.endSplit.currWIds)
 
-    # Find outgoing polylines
+    # Find outgoing polylines.
     polylines = []
     dims = []
     fwds = []
@@ -610,7 +561,7 @@ def createClippedEndArea(cls,longCluster,endsubCluster):
             polyline,dim = findPolyline(section,forward)
             section.isClipped = True
         else:               # unclipped section
-            node = section.polyline[0]
+            node = longCluster.polylines[indx][-1]
             section, forward = findUnclippedOutWay(node,wID[-1])
             if not section:
                 continue
@@ -650,21 +601,24 @@ def createClippedEndArea(cls,longCluster,endsubCluster):
         if tP3 > tP1:
             p2 = line.offsetPointAt(tP3,-width)
             _,tS = section.polyline.orthoProj(p3)
-            wayConnectors[section.id] = ( len(area)+1, 'S' if fwd else 'E')
+            Id = section.id  if fwd else -section.id
+            wayConnectors[Id] = len(area)+1
         else:
             p2 = line.offsetPointAt(tP1,width)
             _,tS = section.polyline.orthoProj(p1)
-            wayConnectors[section.id] = ( len(area), 'S' if fwd else 'E')
+            Id = section.id  if fwd else -section.id
+            wayConnectors[Id] = len(area)
         if fwd:
             section.trimS = max(section.trimS,tS)
         else:
             section.trimT = min(section.trimT,tS)
+        # area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3]
         area.extend([p1,p2,p3])
 
     pL = endsubCluster.centerline.offsetPointAt(endsubCluster.trimT,endsubCluster.outWL())
     pR = endsubCluster.centerline.offsetPointAt(endsubCluster.trimT,-endsubCluster.outWR())
     area.extend([pL,pR])
-    clustConnectors[endsubCluster.id] = ( len(area)-2, 'E', -1)
+    clustConnectors[-endsubCluster.id] = len(area)-2
 
     return area, clustConnectors, wayConnectors
 
@@ -740,7 +694,8 @@ def createShortClusterIntersection(cls, cluster1, shortCluster, cluster2,blocked
         for con in connectors:
             object = ID2Object[con[2]]
             if isinstance(object[0],WaySection):
-                wayConnectors[object[0].id] = ( con[0]+conOffset, 'S' if object[1] else 'E')
+                Id = object[0].id  if object[1] else -object[0].id
+                wayConnectors[object[0].id] = con[0]+conOffset
             else:
                 if object[2] == object[1].transitionPos:
                     if object[2] == 'start':
@@ -752,11 +707,11 @@ def createShortClusterIntersection(cls, cluster1, shortCluster, cluster2,blocked
                             p2 = object[1].centerline.offsetPointAt(tTrans,object[1].outWL())
                             object[1].trimS = max(object[1].trimS,tTrans)
                             area.insert(con[0]+conOffset+1,p1)
-                            clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'S', -1)
+                            clustConnectors[object[1].id] = con[0]+conOffset+1
                             area.insert(con[0]+conOffset+2,p2)
                             conOffset += 2
                         else:
-                            clustConnectors[object[1].id] = ( con[0]+conOffset, 'S', -1)
+                            clustConnectors[object[1].id] = con[0]+conOffset
                     else:   # object[2] == 'end'
                         transitionLength = object[1].transitionWidth/transitionSlope
                         dTrans = object[1].centerline.length() - transitionLength
@@ -766,13 +721,14 @@ def createShortClusterIntersection(cls, cluster1, shortCluster, cluster2,blocked
                             p2 = object[1].centerline.offsetPointAt(tTrans,-object[1].outWR())
                             object[1].trimT = min(object[1].trimT,tTrans)
                             area.insert(con[0]+conOffset+1,p1)
-                            clustConnectors[object[1].id] = ( con[0]+conOffset+1, 'E', -1)
+                            clustConnectors[-object[1].id] = con[0]+conOffset+1
                             area.insert(con[0]+conOffset+2,p2)
                             conOffset += 2
                         else:
-                            clustConnectors[object[1].id] = ( con[0]+conOffset, 'E', -1)
+                            clustConnectors[-object[1].id] = con[0]+conOffset
                 else:
-                    clustConnectors[object[1].id] = ( con[0]+conOffset, 'S' if object[2]=='start' else 'E', -1)
+                    Id = object[1].id if object[2]=='start' else -object[1].id
+                    clustConnectors[Id] = con[0]+conOffset
 
     # plotPolygon(area,False,'r','r',2)
     return area, wayConnectors, clustConnectors
