@@ -36,7 +36,7 @@ class SplitDescriptor():
                                     # at split position in order left to right
 
 class LongClusterWay():
-    ID = 0
+    ID = 1
     def __init__(self,cls):
         self.id = LongClusterWay.ID
         LongClusterWay.ID += 1
@@ -142,7 +142,7 @@ class LongClusterWay():
             self.subClusters.append(subCluster)
 
 class SubCluster():
-    ID = 0
+    ID = 1
     def __init__(self,centerline):
         self.id = SubCluster.ID
         SubCluster.ID += 1
