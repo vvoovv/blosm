@@ -1069,9 +1069,9 @@ class StreetGenerator():
         for area in self.intersectionAreas:
             for conId,con in area.clusterConns.items():
                 if conId>0:
-                    startConnections.add(conId)
+                    startConnections.add(abs(conId))
                 else:
-                    endConnections.add(conId)
+                    endConnections.add(abs(conId))
 
         for longCluster in self.longClusterWays:
             for cluster in longCluster.subClusters:
