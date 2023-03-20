@@ -502,7 +502,8 @@ class Intersection():
 
             poly = []
             import numpy as np
-            t0 = np.linspace(0,1,10)
+            nrOfSplineVerts = 5
+            t0 = np.linspace(0,1,nrOfSplineVerts)
             p0, p1 = inRight, outLeft
             v0, v1 = p0 - inWay.polyline.unitEndVec(False)*transitionWidth, p1 - outWay.polyline.unitEndVec(False)*transitionWidth
             for t in t0:
@@ -530,9 +531,9 @@ class Intersection():
             if area > 0:
                 poly.reverse()
             connectors = dict()
-            Id = inWay.section.id if way2.fwd else -inWay.section.id
+            Id = inWay.section.id if inWay.fwd else -inWay.section.id
             connectors[Id] = 0
-            Id = outWay.section.id if way2.fwd else -outWay.section.id
+            Id = outWay.section.id if outWay.fwd else -outWay.section.id
             connectors[Id] = 10
             return poly, connectors
 
