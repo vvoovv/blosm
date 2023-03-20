@@ -292,9 +292,9 @@ class StreetRenderer:
         # index of the left point of the right connector
         indexR = connectorInfoR[0]
         
-        offsetToLeftL = connectorInfoL[3]=='S'
-        index1L = 0 if offsetToLeftL else -1
-        index2L = 1 if offsetToLeftL else -2
+        offsetToLeftL = not connectorInfoL[3]
+        index1L = connectorInfoL[3]
+        index2L = -2 if index1L else 1
         offsetDistance = (
             streetSectionL.getLeftBorderDistance()
             if offsetToLeftL else
@@ -318,9 +318,9 @@ class StreetRenderer:
         vectorL = point2L - point1L
         lengthL = vectorL.length
         
-        offsetToLeftR = connectorInfoR[3]=='E'
-        index1R = -1 if offsetToLeftR else 0
-        index2R = -2 if offsetToLeftR else 1
+        offsetToLeftR = bool(connectorInfoR[3])
+        index1R = connectorInfoR[3]
+        index2R = -2 if index1R else 1
         offsetDistance = (
             streetSectionR.getLeftBorderDistance()
             if offsetToLeftR else

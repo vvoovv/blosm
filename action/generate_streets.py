@@ -170,6 +170,7 @@ class IntersectionArea():
             to the adjacent way section or way cluster
         * <True> if it's a connector to a street segment, <False> otherwise
         * <segmentId>
+        * 0 if a street segment start at the connector -1 otherwise
         """
         if not self.connectorsInfo:
             self.numPoints = len(self.polygon)
@@ -178,12 +179,12 @@ class IntersectionArea():
             if self.connectors:
                 connectorsInfo.extend(
                     # <False> means that it isn't a cluster of street segments
-                    (polyIndex, False, abs(segmentId), 'S' if segmentId>0 else 'E') for segmentId, polyIndex in self.connectors.items()
+                    (polyIndex, False, abs(segmentId), 0 if segmentId>0 else -1) for segmentId, polyIndex in self.connectors.items()
                 )
             if self.clusterConns:
                 connectorsInfo.extend(
                     # <True> means that it is a cluster of street segments
-                    (polyIndex, True, abs(segmentId),  'S' if segmentId>0 else 'E') for segmentId, polyIndex in self.clusterConns.items()
+                    (polyIndex, True, abs(segmentId),  0 if segmentId>0 else -1) for segmentId, polyIndex in self.clusterConns.items()
                 )
         
             connectorsInfo.sort()
