@@ -534,7 +534,7 @@ class Intersection():
             Id = inWay.section.id if inWay.fwd else -inWay.section.id
             connectors[Id] = 0
             Id = outWay.section.id if outWay.fwd else -outWay.section.id
-            connectors[Id] = 10
+            connectors[Id] = nrOfSplineVerts
             return poly, connectors
 
 
