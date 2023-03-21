@@ -22,24 +22,27 @@ def pseudoangle(d):
     return 3 + p if d[1] < 0 else 1 - p 
 # ----------------------------------------------------------------
 
-from osmPlot import *
+from debugPlot import *
 
 def areaFromEndClusters(cls,ovH):
     # ovH is the overlapHandler
 
     nodeOutWays = []
-    for isect,inID in zip(ovH.outIsects,ovH.wIDs):
-        nodeOutWays.append( NodeOutWays(cls,ovH,isect,inID) )
+    n = len(ovH.outIsects)-1
+    for indx,(isect,inID) in enumerate(zip(ovH.outIsects,ovH.wIDs)):
+        wayPos = 'right' if indx==0 else 'left' if indx==n else 'mid'
+        nodeOutWays.append( NodeOutWays(cls,ovH,isect,inID,wayPos) )
     plotEnd()
     pass
 
 
 class NodeOutWays():
     ID = 0
-    def __init__(self,cls,ovH,isect,inID):
+    def __init__(self,cls,ovH,isect,inID,wayPos):
         self.id = NodeOutWays.ID
         NodeOutWays.ID += 1
         self.cls = cls
+        self.wayPos = wayPos
         self.ovH = ovH
 
         # Get the IDs of all way-sections that leave this node.
@@ -50,6 +53,16 @@ class NodeOutWays():
         if not outIds:
             self.valid = False
             return
+
+        # Filter out ways that are inside the cluster polygon
+        # (at least one ednpoint must be outside cluster).
+        filteredIDs = []
+        for Id in outIds:
+            section = cls.waySections[Id]
+            out0 = pointInPolygon(poly,section.polyline[0]) == 'OUT'
+            out1 = pointInPolygon(poly,section.polyline[-1]) == 'OUT'
+            if out0 or out1:
+                filteredIDs.append(Id)
 
         # Create vectors to the right and to the left of the outGoing inID
         s = cls.waySections 
@@ -77,20 +90,7 @@ class NodeOutWays():
         #     cls.waySections[Id].polyline.plot('k')
         # plotEnd()
 
-        # Filter out ways that are inside the cluster polygon
-        filteredIDs = []
-        for Id in outIds:
-            section = cls.waySections[Id]
-            out0 = pointInPolygon(poly,section.polyline[0]) == 'OUT'
-            out1 = pointInPolygon(poly,section.polyline[-1]) == 'OUT'
-            if out0 or out1:
-                filteredIDs.append(Id)
 
-        plotPolygon(poly,False,'g','g',1,True)
-        cls.waySections[inID].polyline.plot('r',3,True)
-        for Id in filteredIDs:
-            cls.waySections[Id].polyline.plot('k')
-        # plotEnd()
 
     def outVector(self,node, wayID):
         s = self.cls.waySections

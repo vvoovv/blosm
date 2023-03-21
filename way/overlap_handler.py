@@ -31,6 +31,7 @@ def pseudoangle(d):
 # ----------------------------------------------------------------
 
 # from osmPlot import *
+from debugPlot import *
 
 # This class holds all information to create the intersection area at one
 # of the ends of a way-subcluster when its outways overlap. It is then able to
