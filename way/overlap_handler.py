@@ -6,6 +6,8 @@ from lib.CompGeom.centerline import pointInPolygon
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 from defs.way_cluster_params import transitionSlope
 
+from way.overlap_handler_ext import areaFromEndClusters
+
 # helper functions -----------------------------------------------
 def cyclePair(iterable):
     # iterable -> (p0,p1), (p1,p2), (p2, p3), ..., (pn, p0)
@@ -56,6 +58,8 @@ class OverlapHandler():
         self.outIsects = split.posW if self.clustType=='start' else split.posW[::-1]       # from right to left
         self.wIDs = split.currWIds if self.clustType=='start' else split.currWIds[::-1]   # from right to left
 
+        area = areaFromEndClusters(cls,self)
+        return
         # for now, only the rightmost and leftmost sub-cluster is constructed.
         # TODO: Eventually add processing of intermediate sub-clusters?
         endSubClusterR = EndWaySubCluster(cls,self,self.outIsects[0],self.wIDs[0])
