@@ -54,36 +54,95 @@ class NodeOutWays():
             self.valid = False
             return
 
-        # Filter out ways that are inside the cluster polygon
-        # (at least one ednpoint must be outside cluster).
-        filteredIDs = []
-        for Id in outIds:
-            section = cls.waySections[Id]
-            out0 = pointInPolygon(poly,section.polyline[0]) == 'OUT'
-            out1 = pointInPolygon(poly,section.polyline[-1]) == 'OUT'
-            if out0 or out1:
-                filteredIDs.append(Id)
-
-        # Create vectors to the right and to the left of the outGoing inID
-        s = cls.waySections 
-
-        # Filter by direction of first segments.
-        outVInID = self.outVector(node,inID)
+        # A filtering is required to removw ways that pint into the cluster, wherever
+        # they came from. First we need to construct vectors that point to the right
+        # an to the left, perpendicularly to the way in the cluster.
+        outVInID = self.outVector(node,inID) # Vector of the way into hte cluster.
         perpVL = Vector((outVInID[1],-outVInID[0]))/outVInID.length
         perpVR = Vector((-outVInID[1],outVInID[0]))/outVInID.length
-        outVectors = [self.outVector(node, Id) for Id in outIds+[inID]]
 
-        # Sort
-        allVectors = outVectors + [outVInID,perpVL,perpVR]
-        # outWays = sorted(allVectors,key=lambda x: pseudoangle(x.polyline[1]-x.polyline[0]) )
-        outWays = sorted(allVectors,key=pseudoangle)
-        perpVLIndx = outWays.index(perpVL)
-        perpVRIndx = outWays.index(perpVR)
-        inIndx = outWays.index(outVInID)
-        test=1
+        # These vectors are inserted as first elements into a list of vectors of all
+        # ways leaving this node. The indices i in <allVectors> are as follows:
+        # 0: cluster-way
+        # 1: perp to the left
+        # 2: perp to the right
+        # 3: first vector in outIds: Id = i-3
+        # :
+        outVectors = [self.outVector(node, Id) for Id in outIds]
+        allVectors = [self.outVector(node, inID),perpVL,perpVR] + outVectors
+
+        # An argsort of the angles delivers a circular list of the above indices,
+        # where the angles of the vectors around the node are eorted counter-clockwise,
+        # and where the special vectors with indices 0 .. 2 are easily to find.
+        sortedIDs = sorted( range(len(allVectors)), key=lambda indx: pseudoangle(allVectors[indx]))
+
+        # plt.subplot(1,2,1)
+        # for i,outway in enumerate(outVectors):
+        #     plotLine([Vector((0,0)),outway])
+        #     plotText(outway,' '+str(i))
+        # plotLine([Vector((0,0)),self.outVector(node, inID)],'r')      
+        # plt.gca().axis('equal')
+
+        # Depending on the position of the node at the cluster end, only ways within an angle range
+        # are allowed. 
+        if wayPos == 'right':
+            # All ways between the cluster-way and the left perp are valid.
+            start = sortedIDs.index(0)  # index of cluster-way
+            shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
+            end = shifted.index(1)  # Index of left perp
+            filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
+        elif wayPos == 'left':
+            # All ways between the right perp and the cluster-way are valid.
+            start = sortedIDs.index(2)  # index of right perp
+            shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
+            end = shifted.index(0)  # Index of lcluster-way
+            filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
+        elif wayPos == 'mid': 
+            # All ways between the right perp and left perp are valid.
+            start = sortedIDs.index(2)  # index of right perp
+            shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
+            end = shifted.index(1)  # Index of left perp
+            filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
+
+        # plt.subplot(1,2,2)
+        for Id in filteredIDs:
+            outway = outVectors[Id-3]
+            plotLine([Vector((0,0)),outway])
+            plotText(outway,' '+str(Id-3))
+        plotLine([Vector((0,0)),self.outVector(node, inID)],'r')    
+        plt.title(wayPos)  
+        # plotEnd()
+
+        # # Create polygon of cluster border
+        # poly = self.ovH.subCluster.centerline.buffer(self.ovH.subCluster.outWL(),self.ovH.subCluster.outWR())
+
+        # for i,outway in enumerate(outWays):
+        #     plotLine([Vector((0,0)),outway])
+        #     plotText(outway,' '+str(i))
+        # plotLine([Vector((0,0)),outVInID],'r',4)
+        # plotLine([Vector((0,0)),perpVL],'green',4)
+        # plotLine([Vector((0,0)),perpVR],'orange',4)
+        # plt.title(wayPos)
+        # plotEnd()
+
+        # outWayIDs = sorted( range(len(allVectors)), key=lambda indx: pseudoangle(allVectors[indx]))
+        test = 1
+
+        # if wayPos == 'right':
+        #     # All ways between the way-cluster and the left perp are valid.
+        #     # Make the in-way as the first way.
+        #     self.outWays = self.outWays[clusterIndx:] + self.outWays[:clusterIndx]
 
 
-        poly = self.ovH.subCluster.centerline.buffer(self.ovH.subCluster.outWL(),self.ovH.subCluster.outWR())
+
+
+        # perpVLIndx = outWays.index(perpVL)
+        # perpVRIndx = outWays.index(perpVR)
+        # inIndx = outWays.index(outVInID)
+        # test=1
+
+
+        # poly = self.ovH.subCluster.centerline.buffer(self.ovH.subCluster.outWL(),self.ovH.subCluster.outWR())
         # plotPolygon(poly,False,'g','g',1,True)
         # cls.waySections[inID].polyline.plot('r',3,True)
         # for Id in outIds:
@@ -95,6 +154,7 @@ class NodeOutWays():
     def outVector(self,node, wayID):
         s = self.cls.waySections
         outV = s[wayID].polyline[1]-s[wayID].polyline[0] if s[wayID].polyline[0] == node else s[wayID].polyline[-2]-s[wayID].polyline[-1]
+        outV /= outV.length
         return outV
 
 
