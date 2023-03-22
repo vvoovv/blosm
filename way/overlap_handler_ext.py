@@ -3,6 +3,7 @@ from mathutils import Vector
 
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.centerline import pointInPolygon
+from lib.CompGeom.BoolPolyOps import boolPolyOp
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 from defs.way_cluster_params import transitionSlope
 
@@ -60,10 +61,9 @@ class EndWayHandler():
         for indx,(node,inID) in enumerate(zip(self.nodes,self.wIDs)):
             wayPos = 'right' if indx==0 else 'left' if indx==n else 'mid'
             nodeWays.append( NodeWays(cls,self,node,inID,wayPos) )
-        plotEnd()
         pass
 
-
+# This class holds the bundle of out-ways of a node (at the end of a way-cluster).
 class NodeWays():
     ID = 0
     def __init__(self,cls,handler,node,inID,wayPos):
@@ -71,15 +71,17 @@ class NodeWays():
         NodeWays.ID += 1
         self.cls = cls
         self.wayPos = wayPos
+        self.node = node
         self.handler = handler
+        self.outWays = []
+        self.hasWays = False
 
         # Get the IDs of all way-sections that leave this node.
         node.freeze()
-        outIds = self.getOutSectionIds(node,inID)
+        outSectionIDs = self.getOutSectionIds(node,inID)
 
         # If it was an end-node, there are no out-ways. Invalidate this instance.
-        if not outIds:
-            self.valid = False
+        if not outSectionIDs:
             return
 
         # A filtering is required to removw ways that pint into the cluster, wherever
@@ -90,13 +92,15 @@ class NodeWays():
         perpVR = Vector((-outVInID[1],outVInID[0]))/outVInID.length
 
         # These vectors are inserted as first elements into a list of vectors of all
-        # ways leaving this node. The indices i in <allVectors> are as follows:
+        # ways leaving this node. The indices <Id> in <allVectors> are as follows:
         # 0: cluster-way
         # 1: perp to the left
         # 2: perp to the right
-        # 3: first vector in outIds: Id = i-3
+        # 3: first vector, computed from outSectionIDs[0]
         # :
-        outVectors = [self.outVector(node, Id) for Id in outIds]
+        # Note that these are not the indices of waySections. These can be computed
+        # to as wayID = outSectionIDs[Id-3]
+        outVectors = [self.outVector(node, Id) for Id in outSectionIDs]
         allVectors = [self.outVector(node, inID),perpVL,perpVR] + outVectors
 
         # An argsort of the angles delivers a circular list of the above indices,
@@ -104,88 +108,43 @@ class NodeWays():
         # and where the special vectors with indices 0 .. 2 are easily to find.
         sortedIDs = sorted( range(len(allVectors)), key=lambda indx: pseudoangle(allVectors[indx]))
 
-        # plt.subplot(1,2,1)
-        # for i,outway in enumerate(outVectors):
-        #     plotLine([Vector((0,0)),outway])
-        #     plotText(outway,' '+str(i))
-        # plotLine([Vector((0,0)),self.outVector(node, inID)],'r')      
-        # plt.gca().axis('equal')
-
         # Depending on the position of the node at the cluster end, only ways within an angle range
         # are allowed. 
-        if wayPos == 'right':
+        if self.wayPos == 'right':
             # All ways between the cluster-way and the left perp are valid.
             start = sortedIDs.index(0)  # index of cluster-way
             shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
             end = shifted.index(1)  # Index of left perp
             filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
-        elif wayPos == 'left':
+        elif self.wayPos == 'left':
             # All ways between the right perp and the cluster-way are valid.
             start = sortedIDs.index(2)  # index of right perp
             shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
             end = shifted.index(0)  # Index of lcluster-way
             filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
-        elif wayPos == 'mid': 
+        elif self.wayPos == 'mid': 
             # All ways between the right perp and left perp are valid.
             start = sortedIDs.index(2)  # index of right perp
             shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
             end = shifted.index(1)  # Index of left perp
             filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
 
-        # plt.subplot(1,2,2)
+        # TODO: Shall the rejected ways be invalidated?
+
         for Id in filteredIDs:
-            outway = outVectors[Id-3]
-            plotLine([Vector((0,0)),outway])
-            plotText(outway,' '+str(Id-3))
-        plotLine([Vector((0,0)),self.outVector(node, inID)],'r')    
-        plt.title(wayPos)  
-        # plotEnd()
+            self.outWays.append( OutWay(self.cls, self.node, outSectionIDs[Id-3]) )
+        self.hasWays = True
 
-        # # Create polygon of cluster border
-        # poly = self.handler.subCluster.centerline.buffer(self.handler.subCluster.outWL(),self.handler.subCluster.outWR())
-
-        # for i,outway in enumerate(outWays):
-        #     plotLine([Vector((0,0)),outway])
-        #     plotText(outway,' '+str(i))
-        # plotLine([Vector((0,0)),outVInID],'r',4)
-        # plotLine([Vector((0,0)),perpVL],'green',4)
-        # plotLine([Vector((0,0)),perpVR],'orange',4)
-        # plt.title(wayPos)
-        # plotEnd()
-
-        # outWayIDs = sorted( range(len(allVectors)), key=lambda indx: pseudoangle(allVectors[indx]))
-        test = 1
-
-        # if wayPos == 'right':
-        #     # All ways between the way-cluster and the left perp are valid.
-        #     # Make the in-way as the first way.
-        #     self.outWays = self.outWays[clusterIndx:] + self.outWays[:clusterIndx]
-
-
-
-
-        # perpVLIndx = outWays.index(perpVL)
-        # perpVRIndx = outWays.index(perpVR)
-        # inIndx = outWays.index(outVInID)
-        # test=1
-
-
-        # poly = self.handler.subCluster.centerline.buffer(self.handler.subCluster.outWL(),self.handler.subCluster.outWR())
-        # plotPolygon(poly,False,'g','g',1,True)
-        # cls.waySections[inID].polyline.plot('r',3,True)
-        # for Id in outIds:
-        #     cls.waySections[Id].polyline.plot('k')
-        # plotEnd()
-
-
+        plotNodeWays(self)
+        plotEnd()
+        # Handle eventual overlaps between the way-sections.
+        self.handleOverlaps()
 
     def outVector(self,node, wayID):
         s = self.cls.waySections
         outV = s[wayID].polyline[1]-s[wayID].polyline[0] if s[wayID].polyline[0] == node else s[wayID].polyline[-2]-s[wayID].polyline[-1]
         outV /= outV.length
         return outV
-
-
 
     # Find the IDs of all way-sections that leave the <node>, but are not inside the way-cluster.
     def getOutSectionIds(self,node,inID):
@@ -209,3 +168,61 @@ class NodeWays():
                                 self.cls.waySections[net_section.sectionId].isValid = False
         return outSectionIDs    
 
+    # Recursively check for simple overlaps and handle them.
+    def handleOverlaps(self):
+        if len(self.outWays) == 1:
+            return
+
+        # The overlap detection is done by two tests. 
+        # 1. When one of the corners at the end of one way is inside the area of
+        #    the carriageway of the other way, we have eventually an overlap.
+        # 2. Executed only when the first test is True. When the union of the
+        # carriageway areas of both ways has a hole, then its not an overlap.
+        # Brute force, but there are only few ways!
+        perms = permutations(range(len(self.outWays)),2)
+        for i0,i1 in perms:
+            # Test 1
+            poly0 = self.outWays[i0].poly
+            outWay = self.outWays[i1]
+            if pointInPolygon(poly0,outWay.cornerL) == 'IN' or \
+                pointInPolygon(poly0,outWay.cornerR) == 'IN':
+                # Test 2
+                poly1 = self.outWays[i1].poly
+                union = boolPolyOp(poly0, poly1, 'union')
+                print(len(union))
+                if len(union) == 1:
+                    self.handleOverlappingWay(outWay)
+                # # Eventually one more overlap? Check recursively.
+                # self.handleOverlaps()
+
+
+# This class holds the data of a way leaving an end node
+class OutWay():
+    ID = 0
+    def __init__(self,cls,node,wayId):
+        self.id = OutWay.ID
+        OutWay.ID += 1
+        self.cls = cls
+        self.node = node
+        self.wayId = wayId
+
+        self.section = cls.waySections[wayId]
+        self.fwd = self.section.polyline[0] == node
+        self.polyline = self.section.polyline if self.fwd else PolyLine(self.section.polyline[::-1])
+        self.widthL = self.section.leftWidth if self.fwd else self.section.rightWidth
+        self.widthR = self.section.rightWidth if self.fwd else self.section.leftWidth
+
+    @property
+    # Polygon of the carriage way.
+    def poly(self):
+        return self.polyline.buffer(self.widthL,self.widthR)
+
+    @property
+    # Corner position of the left end of the carriage way.
+    def cornerL(self):
+        return self.polyline.offsetPointAt(len(self.polyline)-1,self.widthL)
+
+    @property
+    # Corner position of the right end of the carriage way.
+    def cornerR(self):
+        return self.polyline.offsetPointAt(len(self.polyline)-1,-self.widthR)
