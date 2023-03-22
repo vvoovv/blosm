@@ -10,7 +10,7 @@ from way.way_cluster import LongClusterWay, createLeftTransition, createClippedE
                            createLeftIntersection, createRightIntersection, createShortClusterIntersection
 from way.way_intersections import Intersection
 from way.intersection_cluster import IntersectionCluster
-from way.overlap_handler import OverlapHandler
+from way.overlap_handler_ext import EndWayHandler
 from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
@@ -893,12 +893,12 @@ class StreetGenerator():
             # a special handling, if they have overlapping outways.           
             if len(clusterGroup) == 1:
                 if not clusterGroup[0][1].longCluster.clipped:
-                    overlapHandler = OverlapHandler(self,clusterGroup[0][1], clusterGroup[0][2])
-                    if overlapHandler.hadOverlaps:
+                    endwayHandler = EndWayHandler(self,clusterGroup[0][1], clusterGroup[0][2])
+                    if endwayHandler.hadOverlaps:
                         isectArea = IntersectionArea()
-                        isectArea.polygon = overlapHandler.area
-                        isectArea.connectors = overlapHandler.wayConnectors
-                        isectArea.clusterConns = overlapHandler.clustConnectors
+                        isectArea.polygon = endwayHandler.area
+                        isectArea.connectors = endwayHandler.wayConnectors
+                        isectArea.clusterConns = endwayHandler.clustConnectors
                         self.intersectionAreas.append(isectArea)
                         continue
 

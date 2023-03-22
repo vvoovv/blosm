@@ -1,4 +1,10 @@
+from itertools import permutations, tee,islice,cycle
+from mathutils import Vector
+
+from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.centerline import pointInPolygon
+from lib.CompGeom.offset_intersection import offsetPolylineIntersection
+from defs.way_cluster_params import transitionSlope
 
 # helper functions -----------------------------------------------
 def cyclePair(iterable):
@@ -24,29 +30,51 @@ def pseudoangle(d):
 
 from debugPlot import *
 
-def areaFromEndClusters(cls,ovH):
-    # ovH is the overlapHandler
-
-    nodeOutWays = []
-    n = len(ovH.outIsects)-1
-    for indx,(isect,inID) in enumerate(zip(ovH.outIsects,ovH.wIDs)):
-        wayPos = 'right' if indx==0 else 'left' if indx==n else 'mid'
-        nodeOutWays.append( NodeOutWays(cls,ovH,isect,inID,wayPos) )
-    plotEnd()
-    pass
-
-
-class NodeOutWays():
+# This class holds all information to create the intersection area and end
+# of a way-subcluster.
+class EndWayHandler():
     ID = 0
-    def __init__(self,cls,ovH,isect,inID,wayPos):
-        self.id = NodeOutWays.ID
-        NodeOutWays.ID += 1
+    def __init__(self,cls,subCluster,clustType):
+        self.id = EndWayHandler.ID
+        EndWayHandler.ID += 1
+        self.cls = cls
+        self.subCluster = subCluster
+        self.clustType = clustType
+        self.hadOverlaps = False
+        self.clustConnectors = dict()
+        self.wayConnectors = dict()
+        self.area = []
+
+        # The area will be constructed in counter-clockwise order. Arange all data
+        # in this order and so, that all ways (including the way-cluster) are seen
+        # as outgoing ways of the area.
+        self.centerline = subCluster.centerline if self.clustType=='start' else PolyLine(subCluster.centerline[::-1])
+        self.widthL = subCluster.outWL() if self.clustType=='start' else subCluster.outWR()
+        self.widthR = subCluster.outWR() if self.clustType=='start' else subCluster.outWL()
+        split = subCluster.startSplit if self.clustType=='start' else subCluster.endSplit
+        self.nodes = split.posW if self.clustType=='start' else split.posW[::-1]       # from right to left
+        self.wIDs = split.currWIds if self.clustType=='start' else split.currWIds[::-1]   # from right to left
+
+        nodeWays = []
+        n = len(self.nodes)-1
+        for indx,(node,inID) in enumerate(zip(self.nodes,self.wIDs)):
+            wayPos = 'right' if indx==0 else 'left' if indx==n else 'mid'
+            nodeWays.append( NodeWays(cls,self,node,inID,wayPos) )
+        plotEnd()
+        pass
+
+
+class NodeWays():
+    ID = 0
+    def __init__(self,cls,handler,node,inID,wayPos):
+        self.id = NodeWays.ID
+        NodeWays.ID += 1
         self.cls = cls
         self.wayPos = wayPos
-        self.ovH = ovH
+        self.handler = handler
 
         # Get the IDs of all way-sections that leave this node.
-        node = isect.freeze()
+        node.freeze()
         outIds = self.getOutSectionIds(node,inID)
 
         # If it was an end-node, there are no out-ways. Invalidate this instance.
@@ -114,7 +142,7 @@ class NodeOutWays():
         # plotEnd()
 
         # # Create polygon of cluster border
-        # poly = self.ovH.subCluster.centerline.buffer(self.ovH.subCluster.outWL(),self.ovH.subCluster.outWR())
+        # poly = self.handler.subCluster.centerline.buffer(self.handler.subCluster.outWL(),self.handler.subCluster.outWR())
 
         # for i,outway in enumerate(outWays):
         #     plotLine([Vector((0,0)),outway])
@@ -142,7 +170,7 @@ class NodeOutWays():
         # test=1
 
 
-        # poly = self.ovH.subCluster.centerline.buffer(self.ovH.subCluster.outWL(),self.ovH.subCluster.outWR())
+        # poly = self.handler.subCluster.centerline.buffer(self.handler.subCluster.outWL(),self.handler.subCluster.outWR())
         # plotPolygon(poly,False,'g','g',1,True)
         # cls.waySections[inID].polyline.plot('r',3,True)
         # for Id in outIds:
@@ -167,13 +195,13 @@ class NodeOutWays():
                 if net_section.category != 'scene_border':
                     if net_section.sectionId != inID:
                         # If one of the nodes is outside of the clusters ...
-                        if not (net_section.s in self.ovH.outIsects and net_section.t in self.ovH.outIsects):                               
+                        if not (net_section.s in self.handler.nodes and net_section.t in self.handler.nodes):                               
                             outSectionIDs.append(net_section.sectionId)
                         else: # ... else we have to check if this section is inside or outside of the way-cluster.
                             nonNodeVerts = net_section.path[1:-1]
                             if len(nonNodeVerts): # There are vertices beside the nodes at the ends.
                                 # Check, if any of these vertices is outside of the way-cluster
-                                clusterPoly = self.ovH.subCluster.centerline.buffer(self.ovH.subCluster.endWidth/2.,self.ovH.subCluster.endWidth/2.)
+                                clusterPoly = self.handler.subCluster.centerline.buffer(self.handler.subCluster.endWidth/2.,self.handler.subCluster.endWidth/2.)
                                 if any( pointInPolygon(clusterPoly,vert) == 'OUT' for vert in nonNodeVerts ):
                                     outSectionIDs.append(net_section.sectionId) # There are, so keep this way ...
                                     continue
