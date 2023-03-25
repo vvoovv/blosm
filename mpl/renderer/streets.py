@@ -83,7 +83,9 @@ class StreetRenderer(Renderer):
                 for id, connector in isectArea.connectors.items():
                     if abs(id) not in manager.waySectionLines:
                         print('missing id in waySectionLines',id)
-                        plotPolygon(isectArea.polygon,False,'c','c',2,True,0.4,999)
+                        v0,v1 = isectArea.polygon[connector:connector+2]
+                        plt.plot([v0[0],v1[0]],[v0[1],v1[1]],'c',linewidth=10,zorder=999)
+                        # plotPolygon(isectArea.polygon,False,'c','c',2,True,0.4,999)
                 area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in cyclePair(isectArea.polygon))
                 if area >= 0.:
                     print('intersectionArea not counter-clockwise')

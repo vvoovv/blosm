@@ -10,7 +10,7 @@ from way.way_cluster import LongClusterWay, createLeftTransition, createClippedE
                            createLeftIntersection, createRightIntersection, createShortClusterIntersection
 from way.way_intersections import Intersection
 from way.intersection_cluster import IntersectionCluster
-from way.overlap_handler_ext import EndWayHandler
+from way.overlap_handler import EndWayHandler
 from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
@@ -894,13 +894,13 @@ class StreetGenerator():
             if len(clusterGroup) == 1:
                 if not clusterGroup[0][1].longCluster.clipped:
                     endwayHandler = EndWayHandler(self,clusterGroup[0][1], clusterGroup[0][2])
-                    if endwayHandler.hadOverlaps:
+                    if endwayHandler.hasValidWays:
                         isectArea = IntersectionArea()
                         isectArea.polygon = endwayHandler.area
                         isectArea.connectors = endwayHandler.wayConnectors
                         isectArea.clusterConns = endwayHandler.clustConnectors
                         self.intersectionAreas.append(isectArea)
-                        continue
+                    continue
 
             # Create an instance of <IntersectionCluster>, which will form the
             # cluster area and its connectors.
@@ -1078,41 +1078,87 @@ class StreetGenerator():
             for cluster in longCluster.subClusters:
                 if not cluster.valid:
                     continue
-                wayCluster = WayCluster()
-                wayCluster.centerline = cluster.centerline.trimmed(cluster.trimS,cluster.trimT)[:]
-                wayCluster.distToLeft = cluster.width/2.
+                # Special case first. The inetrsection areas on both sides of the
+                # cluster overlap. These areas are merged and the cluster is invalidated.
+                if cluster.trimS >= cluster.trimT:
+                    cluster.valid = False
+                    # Find and merge conflicting areas
+                    conflcitingIndxsAreas = [(indx,area) for indx,area in enumerate(self.intersectionAreas) for conId,_ in area.clusterConns.items() if abs(conId) == cluster.id]
+                    conflictingIndices = [ia[0] for ia in conflcitingIndxsAreas]
+                    conflcitingAreas = [ia[1] for ia in conflcitingIndxsAreas]
+                    try:
+                        ret = boolPolyOp(conflcitingAreas[0].polygon,conflcitingAreas[1].polygon,'union')
+                    except:
+                        print('Problem')
+                        break
+                    mergedPoly = ret[0]
+                    # The merged poygon is now in <mergedPoly>. Be sure that it 
+                    # is ordered counter-clockwise.
+                    area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(mergedPoly,mergedPoly[1:]+[mergedPoly[0]]))
+                    if area > 0.:
+                        mergedPoly.reverse()
+                    # An instance of IntersectionArea is now constructed with its remaining connectors.
+                    mergedArea = IntersectionArea()
+                    mergedArea.polygon = mergedPoly
 
-                for lineNr,wayID in enumerate(cluster.wayIDs):
-                    section = self.waySections[wayID]
-                    fwd = section.originalSection.s == cluster.startSplit.posL
-                    if section.isOneWay:
-                        nrOfLanes = (section.nrRightLanes)
-                    else:
-                        nrOfLanes = (section.nrLeftLanes, section.nrRightLanes) if fwd else (section.nrRightLanes, section.nrLeftLanes)
-                    if lineNr == 0:
-                        offset = -cluster.width/2.
-                    elif lineNr == len(cluster.wayIDs)-1:
-                        offset = cluster.width/2.
-                    else:
-                        v = cluster.centerline[1] - cluster.centerline[0]
-                        v = Vector((-v[1],v[0])) / v.length
-                        p = cluster.startSplit.posW[lineNr]
-                        offset = -v.dot(p-cluster.centerline[0])
+                    # Create connectors for merged area
+                    for conflictingArea in conflcitingAreas:
+                        connectors = conflictingArea.connectors
+                        for signedKey,connector in connectors.items():
+                            v0 = conflictingArea.polygon[connector]
+                            newConnector = mergedPoly.index(v0)
+                            mergedArea.connectors[signedKey] = newConnector
 
-                    wayCluster.waySections.append(
-                        createWaySection(
-                            offset,
-                            section.rightWidth+section.leftWidth,
-                            nrOfLanes,
-                            section.originalSection.category,
-                            section.originalSection.tags
+                        clusterConns = conflictingArea.clusterConns
+                        for signedKey,connector in clusterConns.items():
+                             # Keep connectors that are not for the conflicting cluster
+                            if abs(signedKey) != cluster.id:
+                                v0 = conflictingArea.polygon[connector]
+                                newConnector = mergedPoly.index(v0)
+                                mergedArea.clusterConns[signedKey] = newConnector
+
+                    # Now remove conflicting areas from list and add the merged area
+                    for i in sorted(conflictingIndices, reverse = True):
+                            del self.intersectionAreas[i]
+                    self.intersectionAreas.append(mergedArea)
+                
+                # Normal case. The cluster way is constructed.
+                else:
+                    wayCluster = WayCluster()
+                    wayCluster.centerline = cluster.centerline.trimmed(cluster.trimS,cluster.trimT)[:]
+                    wayCluster.distToLeft = cluster.width/2.
+
+                    for lineNr,wayID in enumerate(cluster.wayIDs):
+                        section = self.waySections[wayID]
+                        fwd = section.originalSection.s == cluster.startSplit.posL
+                        if section.isOneWay:
+                            nrOfLanes = (section.nrRightLanes)
+                        else:
+                            nrOfLanes = (section.nrLeftLanes, section.nrRightLanes) if fwd else (section.nrRightLanes, section.nrLeftLanes)
+                        if lineNr == 0:
+                            offset = -cluster.width/2.
+                        elif lineNr == len(cluster.wayIDs)-1:
+                            offset = cluster.width/2.
+                        else:
+                            v = cluster.centerline[1] - cluster.centerline[0]
+                            v = Vector((-v[1],v[0])) / v.length
+                            p = cluster.startSplit.posW[lineNr]
+                            offset = -v.dot(p-cluster.centerline[0])
+
+                        wayCluster.waySections.append(
+                            createWaySection(
+                                offset,
+                                section.rightWidth+section.leftWidth,
+                                nrOfLanes,
+                                section.originalSection.category,
+                                section.originalSection.tags
+                            )
                         )
-                    )
-                    
-                # Set connection types
-                wayCluster.startConnected = True if cluster.id in startConnections else False
-                wayCluster.endConnected = True if cluster.id in endConnections else False
-                self.wayClusters[cluster.id] = wayCluster
+                        
+                    # Set connection types
+                    wayCluster.startConnected = True if cluster.id in startConnections else False
+                    wayCluster.endConnected = True if cluster.id in endConnections else False
+                    self.wayClusters[cluster.id] = wayCluster
 
                 # Some bookkeeping
                 # TODO expand this for multiple ways

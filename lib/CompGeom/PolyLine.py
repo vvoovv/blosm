@@ -120,6 +120,7 @@ class PolyLine():
         self.tInterp = LinearInterpolator(vI,xy)
         self.dInterp = LinearInterpolator(vD,xy)
         self.dtInterp = LinearInterpolator(vD,vI)
+        self.tdInterp = LinearInterpolator(vI,vD)
 
     def t2v(self,t):
         # Computes the vertex given by the line parameter <t>.
@@ -133,6 +134,9 @@ class PolyLine():
 
     def d2t(self,d):
         return self.dtInterp(d)
+
+    def t2d(self,d):
+        return self.tdInterp(d)
 
     def __len__(self):
         # Return the length of the polyline

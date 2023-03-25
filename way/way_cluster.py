@@ -444,12 +444,12 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         p2 = outLine.offsetPointAt(tP3,-outWidth/2.)
         tP = tP3
         Id = section.id  if fwd else -section.id
-        wayConnectors[Id] = 0
+        wayConnectors[Id] = 1
     else:
         p2 = outLine.offsetPointAt(tP1,outWidth/2.)
         tP = tP1
         Id = section.id  if fwd else -section.id
-        wayConnectors[Id] = 1
+        wayConnectors[Id] = 0
     if fwd:
         section.trimS = max(section.trimS,tP)
     else:

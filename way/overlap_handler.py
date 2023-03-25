@@ -1,12 +1,12 @@
 from itertools import permutations, tee,islice,cycle
 from mathutils import Vector
+from math import sin,cos,pi
 
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.centerline import pointInPolygon
+from lib.CompGeom.BoolPolyOps import boolPolyOp
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 from defs.way_cluster_params import transitionSlope
-
-from way.overlap_handler_ext import areaFromEndClusters
 
 # helper functions -----------------------------------------------
 def cyclePair(iterable):
@@ -30,24 +30,23 @@ def pseudoangle(d):
     return 3 + p if d[1] < 0 else 1 - p 
 # ----------------------------------------------------------------
 
-# from osmPlot import *
 from debugPlot import *
 
-# This class holds all information to create the intersection area at one
-# of the ends of a way-subcluster when its outways overlap. It is then able to
-# create the intersection area and the corresponding clusters.
-class OverlapHandler():
+# This class holds all information to create the intersection area and end
+# of a way-subcluster.
+class EndWayHandler():
     ID = 0
     def __init__(self,cls,subCluster,clustType):
-        self.id = OverlapHandler.ID
-        OverlapHandler.ID += 1
+        self.id = EndWayHandler.ID
+        EndWayHandler.ID += 1
         self.cls = cls
         self.subCluster = subCluster
         self.clustType = clustType
-        self.hadOverlaps = False
         self.clustConnectors = dict()
         self.wayConnectors = dict()
         self.area = []
+        self.nodeWays = []
+        self.hasValidWays = False
 
         # The area will be constructed in counter-clockwise order. Arange all data
         # in this order and so, that all ways (including the way-cluster) are seen
@@ -56,200 +55,169 @@ class OverlapHandler():
         self.widthL = subCluster.outWL() if self.clustType=='start' else subCluster.outWR()
         self.widthR = subCluster.outWR() if self.clustType=='start' else subCluster.outWL()
         split = subCluster.startSplit if self.clustType=='start' else subCluster.endSplit
-        self.outIsects = split.posW if self.clustType=='start' else split.posW[::-1]       # from right to left
+        self.nodes = split.posW if self.clustType=='start' else split.posW[::-1]       # from right to left
         self.wIDs = split.currWIds if self.clustType=='start' else split.currWIds[::-1]   # from right to left
 
-        area = areaFromEndClusters(cls,self)
-        return
-        # for now, only the rightmost and leftmost sub-cluster is constructed.
-        # TODO: Eventually add processing of intermediate sub-clusters?
-        endSubClusterR = EndWaySubCluster(cls,self,self.outIsects[0],self.wIDs[0])
-        if endSubClusterR.valid:
-            if endSubClusterR.hasOverlaps:
-                self.hadOverlaps = True
+        # For every intersection (node) at the end of the cluster, a bundle of leaving ways
+        # is collected and preprocessed by the class NodeWays. <self.nodeWays> collects
+        # them from right to left.
+        n = len(self.nodes)-1
+        for indx,(node,inID) in enumerate(zip(self.nodes,self.wIDs)):
+            wayPos = 'right' if indx==0 else 'left' if indx==n else 'mid'
+            self.nodeWays.append( NodeWays(cls,self,node,inID,wayPos) )
 
-        endSubClusterL = EndWaySubCluster(cls,self,self.outIsects[-1],self.wIDs[-1])
-        if endSubClusterL.valid:
-            if endSubClusterL.hasOverlaps:
-                self.hadOverlaps = True
+        # During the preprocessing, some ways may have been invalidated by one node,
+        # while they have been accepted before by another one. This was like altering
+        # an iterable during the iteration in a for loop. We have to clean them here.
+        invalidatedWayIDs = []
+        for nodeWay in self.nodeWays:
+            for outWay in nodeWay.outWays:
+                if not cls.waySections[outWay.wayId].isValid:
+                    invalidatedWayIDs.append(outWay.wayId)
+        if invalidatedWayIDs:
+            for nodeWay in self.nodeWays:
+                for outWay in nodeWay.outWays:
+                    if outWay.wayId in invalidatedWayIDs:
+                        outWay.valid = False
 
-        # No overlaps: Let it be processed by createClusterIntersections() in generate_streets.py
-        if not self.hadOverlaps:
-            return
+        self.hasValidWays = any(outWay.valid for nodeWay in self.nodeWays for outWay in nodeWay.outWays)
 
-        # plotWay(subCluster.centerline,subCluster.outWL(),subCluster.outWR(),'g')
-        # if endSubClusterR.valid: endSubClusterR.plot()
-        # if endSubClusterL.valid: endSubClusterL.plot()
-        # plt.title('after overlap test')
-        # plotEnd()
+        if self.hasValidWays:
+            self.createArea()
 
-        # Construct intersection area and connectors.
+    def createArea(self):
         connectors = []
-        # Borders are different depending on the number of clusters
-        if endSubClusterR.valid and endSubClusterL.valid:
-            border, conns = endSubClusterR.createBorder('right')
-            self.area.extend(border)
-            connectors.extend(conns)
-            nextIndex = len(self.area)+1
-            border, conns = endSubClusterL.createBorder('left')
-            for conn in conns:
-                conn[0] += nextIndex
-            self.area.extend(border[:-2])
-            connectors.extend(conns[:-1])
-        elif endSubClusterR.valid:
-            border, conns = endSubClusterR.createBorder('right')
-            self.area.extend(border)
-            connectors.extend(conns)
-        elif endSubClusterL.valid:
-            border, conns = endSubClusterL.createBorder('left')
-            self.area.extend(border)
-            connectors.extend(conns)
+        borders = []
+        nextIndex = 0
+        for nodeWay in self.nodeWays:
+            if nodeWay.hasWays:
+                border, conns = nodeWay.createBorder()
+                for conn in conns:
+                    conn[0] += nextIndex
+                borders.extend(border)
+                connectors.extend(conns)
+                nextIndex = len(borders)
 
-        # plotWay(subCluster.centerline,subCluster.outWL(),subCluster.outWR(),'g')
-        # if endSubClusterR.valid: endSubClusterR.plot()
-        # if endSubClusterL.valid: endSubClusterL.plot()
-        # plotPolygon(self.area,False,'r','r',1,True,0.3)
-        # for conn in connectors:
-        #     object = conn[2]
-        #     Id = ''
-        #     if isinstance(object,OutWay):
-        #         Id = str( object.lastExtendingSection.id if object.isExtended else object.section.id )
-        #     p = conn[1]
-        #     wayType = conn[2].__class__.__name__
-        #     # plt.text(p[0],p[1],'Test',fontsize=12,color='k', rotation = -30,horizontalalignment='left',verticalalignment='top')
-        #     plt.text(p[0],p[1],' '+str(conn[0])+' '+wayType+' '+Id,fontsize=12,color='k', rotation = -45,horizontalalignment='left',verticalalignment='top')
-        # plt.title('area and connectors')
-        # plotEnd()
+        outCluster = OutCluster(self.cls,self.subCluster,self.clustType)
+        t_max = 0.
+        for p in borders:
+            _,t = outCluster.polyline.orthoProj(p)
+            t_max = max(t_max, t)
+        outCluster.trim_t = t_max
+        outCluster.trim()
 
-        # Create the final connectors.
-        conOffset = 0
+        # Create the final connectors for the ways.
         for conn in connectors:
-            object = conn[2]
-            if isinstance(object,OutWay):  # It's a way.
-                Id = object.lastExtendingSection.id if object.isExtended else object.section.id
-                Id = Id if object.fwd else -Id
-                self.wayConnectors[Id] = conn[0]+conOffset
-            else:   # It's a cluster. clustType
-                cluster = object.cluster
-                transWidth = cluster.transitionWidth if self.clustType == cluster.transitionPos else 0.1
-                if self.clustType == 'start':
-                    transitionLength = transWidth/transitionSlope
-                    dTrans = transitionLength
-                    tTrans = cluster.centerline.d2t(dTrans)
-                    if tTrans > cluster.trimS:
-                        p1 = cluster.centerline.offsetPointAt(tTrans,-cluster.outWR())
-                        p2 = cluster.centerline.offsetPointAt(tTrans,cluster.outWL())
-                        cluster.trimS = max(cluster.trimS,tTrans)
-                        self.area.insert(conn[0]+conOffset+1,p1)
-                        self.clustConnectors[cluster.id] = conn[0]+conOffset+1
-                        self.area.insert(conn[0]+conOffset+2,p2)
-                        conOffset += 2
-                    else:
-                        self.clustConnectors[cluster.id] = conn[0]+conOffset
-                else:   # clustType == 'end'
-                    transitionLength = transWidth/transitionSlope
-                    dTrans = cluster.centerline.length() - transitionLength
-                    tTrans = cluster.centerline.d2t(dTrans)
-                    if tTrans < cluster.trimT:
-                        p1 = cluster.centerline.offsetPointAt(tTrans,cluster.outWL())
-                        p2 = cluster.centerline.offsetPointAt(tTrans,-cluster.outWR())
-                        cluster.trimT = min(cluster.trimT,tTrans)
-                        self.area.insert(conn[0]+conOffset+1,p1)
-                        self.clustConnectors[-cluster.id] = conn[0]+conOffset+1
-                        self.area.insert(conn[0]+conOffset+2,p2)
-                        conOffset += 2
-                    else:
-                        self.clustConnectors[-cluster.id] = conn[0]+conOffset
+            p = conn[1]
+            way = conn[2]
+            Id = self.cls.waySections[way.wayId].id
+            Id = Id if way.fwd else -Id
+            self.wayConnectors[Id] = conn[0]
 
-# This class holds the out-way(s) from an end intersection of the cluster. It checks eventual overlaps,
-# adds more ways when overlaps are present and creates its sub-area border and their connectors. 
-class EndWaySubCluster():
+        # Create the connector for the way-cluster
+        cluster = outCluster.cluster
+        areaTrimDist = outCluster.polyline.t2d(outCluster.trim_t)
+        transWidth = cluster.transitionWidth if self.clustType == cluster.transitionPos else 0.
+        transitionLength = transWidth/transitionSlope + areaTrimDist + 0.1
+        dTrans = transitionLength
+        tTrans = outCluster.polyline.d2t(dTrans)
+        outCluster.trim_t = max(outCluster.trim_t,tTrans)
+        outCluster.trim()
+        p1 = outCluster.polyline.offsetPointAt(outCluster.trim_t,-outCluster.widthR)
+        p2 = outCluster.polyline.offsetPointAt(outCluster.trim_t,outCluster.widthL)
+        self.clustConnectors[cluster.id] = len(borders)
+        borders.append(p1)
+        borders.append(p2)
+
+        self.area = borders
+
+# This class holds the bundle of out-ways of a node (at the end of a way-cluster).
+class NodeWays():
     ID = 0
-    def __init__(self,cls,endCluster,isect,inID):
-        self.id = EndWaySubCluster.ID
-        EndWaySubCluster.ID += 1
+    def __init__(self,cls,handler,node,inID,wayPos):
+        self.id = NodeWays.ID
+        NodeWays.ID += 1
         self.cls = cls
-        self.endCluster = endCluster
-        self.valid = False
-        self.hasOverlaps = False
+        self.wayPos = wayPos
+        self.node = node
+        self.inID = inID
+        self.handler = handler
+        self.outWays = []
+        self.hasWays = False
 
         # Get the IDs of all way-sections that leave this node.
-        self.node = isect.freeze()  # Called node, because it is a node in the section network
-        outIds = self.getOutSectionIds(self.node,inID)
+        node.freeze()
+        outSectionIDs = self.getOutSectionIds(node,inID)
 
         # If it was an end-node, there are no out-ways. Invalidate this instance.
-        if not outIds:
-            self.valid = False
+        if not outSectionIDs:
             return
 
-        # Create an instance of <OutWay> for every leaving way-section
-        self.outWays = []
-        for Id in outIds:
-            self.outWays.append( OutWay(self.cls, self.node, Id) )
+        # A filtering is required to removw ways that pint into the cluster, wherever
+        # they came from. First we need to construct vectors that point to the right
+        # an to the left, perpendicularly to the way in the cluster.
+        outVInID = self.outVector(node,inID) # Vector of the way into the cluster.
+        perpVL = Vector((outVInID[1],-outVInID[0]))/outVInID.length
+        perpVR = Vector((-outVInID[1],outVInID[0]))/outVInID.length
+        alpha = 10./180.*pi
+        perpVL = Vector(( perpVL[0]*cos(alpha)-perpVL[1]*sin(alpha),perpVL[0]*sin(alpha)+perpVL[1]*cos(alpha) ))
+        perpVR = Vector(( perpVR[0]*cos(-alpha)-perpVR[1]*sin(-alpha),perpVR[0]*sin(-alpha)+perpVR[1]*cos(-alpha) ))
+
+        # These vectors are inserted as first elements into a list of vectors of all
+        # ways leaving this node. The indices <Id> in <allVectors> are as follows:
+        # 0: cluster-way
+        # 1: perp to the left
+        # 2: perp to the right
+        # 3: first vector, computed from outSectionIDs[0]
+        # :
+        # Note that these are not the indices of waySections. These can be computed
+        # to as wayID = outSectionIDs[Id-3]
+        outVectors = [self.outVector(node, Id) for Id in outSectionIDs]
+        allVectors = [self.outVector(node, inID),perpVL,perpVR] + outVectors
+
+        # An argsort of the angles delivers a circular list of the above indices,
+        # where the angles of the vectors around the node are eorted counter-clockwise,
+        # and where the special vectors with indices 0 .. 2 are easily to find.
+        sortedIDs = sorted( range(len(allVectors)), key=lambda indx: pseudoangle(allVectors[indx]))
+
+        # Depending on the position of the node at the cluster end, only ways within an angle range
+        # are allowed. 
+        if self.wayPos == 'right':
+            # All ways between the cluster-way and the left perp are valid.
+            start = sortedIDs.index(0)  # index of cluster-way
+            shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
+            end = shifted.index(1)  # Index of left perp
+            filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
+        elif self.wayPos == 'left':
+            # All ways between the right perp and the cluster-way are valid.
+            start = sortedIDs.index(2)  # index of right perp
+            shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
+            end = shifted.index(0)  # Index of lcluster-way
+            filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
+        elif self.wayPos == 'mid': 
+            # All ways between the right perp and left perp are valid.
+            start = sortedIDs.index(2)  # index of right perp
+            shifted = sortedIDs[start:] + sortedIDs[:start]  # shift this index as first element
+            end = shifted.index(1)  # Index of left perp
+            filteredIDs = [Id for Id in shifted[0:end] if Id not in [0,1,2]]
+
+        # Invalidate rejected ways.
+        invalidIds = [outSectionIDs[Id-3] for Id in shifted if Id not in filteredIDs + [0,1,2]]
+        for Id in invalidIds:
+            self.cls.waySections[Id].isValid = False
+
+        for Id in filteredIDs:
+            self.outWays.append( OutWay(self.cls, self.node, outSectionIDs[Id-3]) )
+        self.hasWays = True
 
         # Handle eventual overlaps between the way-sections.
         self.handleOverlaps()
-        self.valid = True
 
-
-    def createBorder(self,position):
-        # Add cluster as out-way
-        self.outWays.append(OutCluster(self.cls,self.endCluster.subCluster))
-
-        # Create unit vector perpendicular to the last segment of the clsuters centerline,
-        # pointing to the right.
-        cluster = self.endCluster.subCluster
-        fwd = cluster.startSplit.type == 'both'
-        centerline = cluster.centerline if fwd else PolyLine(cluster.centerline[::-1])
-        cV = centerline[0] - centerline[1]
-        self.perpCenterline = Vector((cV[1],-cV[0]))/cV.length
-
-        # Add dummy out-ways of given length from the node to the right and/or left.
-        dummyR = OutDummy(self.cls,centerline[0],centerline[0]+self.perpCenterline*100)
-        dummyL = OutDummy(self.cls,centerline[0],centerline[0]-self.perpCenterline*100)
-        if position == 'right':
-            self.outWays.append(dummyR)
-        else:
-            self.outWays.append(dummyL)
-
-        self.sortOutways()
-
-        # Find the out-way that is the cluster-way.
-        clusterIndx = [i for i,w in enumerate(self.outWays) if isinstance(w,OutCluster)][0]
-        if position == 'right':
-            # Make the cluster-way to be the first way.
-            self.outWays = self.outWays[clusterIndx:] + self.outWays[:clusterIndx]
-        else:
-            # Make the cluster-way to be the last way.
-            self.outWays = self.outWays[clusterIndx+1:] + self.outWays[:clusterIndx+1]
-
-        # plt.close()
-        # for i,way in enumerate(self.outWays):
-        #     plotWay(way.polyline,way.widthL,way.widthR,'k')
-        #     p = way.polyline[-1]
-        #     plt.text(p[0],p[1],'  '+str(i))
-        # plotEnd()
-
-        area, connectors = self.createArea()
-
-        # Make area transition along end of cluster
-        if position == 'right':
-            transistionLIne = dummyR.polyline.parallelOffset(1.)
-            p = transistionLIne.orthoProj(area[-1])[0]
-            area.append(p)
-        else:
-            transistionLIne = dummyR.polyline.parallelOffset(1.)
-            p = transistionLIne.orthoProj(area[0])[0]
-            area = [p] + area
-
-
-        # plotLine(area,True,'r',1)
-        # for conn in connectors:
-        #     p = conn[1]
-        #     wayType = conn[2].__class__.__name__
-        #     plt.text(p[0],p[1],'    '+str(conn[0])+' '+wayType,fontsize=16,color='r')
-        # plotEnd()
-        return area, connectors
+    def outVector(self,node, wayID):
+        s = self.cls.waySections
+        outV = s[wayID].polyline[1]-s[wayID].polyline[0] if s[wayID].polyline[0] == node else s[wayID].polyline[-2]-s[wayID].polyline[-1]
+        outV /= outV.length
+        return outV
 
     # Find the IDs of all way-sections that leave the <node>, but are not inside the way-cluster.
     def getOutSectionIds(self,node,inID):
@@ -259,13 +227,13 @@ class EndWaySubCluster():
                 if net_section.category != 'scene_border':
                     if net_section.sectionId != inID:
                         # If one of the nodes is outside of the clusters ...
-                        if not (net_section.s in self.endCluster.outIsects and net_section.t in self.endCluster.outIsects):                               
+                        if not (net_section.s in self.handler.nodes and net_section.t in self.handler.nodes):                               
                             outSectionIDs.append(net_section.sectionId)
                         else: # ... else we have to check if this section is inside or outside of the way-cluster.
                             nonNodeVerts = net_section.path[1:-1]
                             if len(nonNodeVerts): # There are vertices beside the nodes at the ends.
                                 # Check, if any of these vertices is outside of the way-cluster
-                                clusterPoly = self.endCluster.subCluster.centerline.buffer(self.endCluster.subCluster.endWidth/2.,self.endCluster.subCluster.endWidth/2.)
+                                clusterPoly = self.handler.subCluster.centerline.buffer(self.handler.subCluster.endWidth/2.,self.handler.subCluster.endWidth/2.)
                                 if any( pointInPolygon(clusterPoly,vert) == 'OUT' for vert in nonNodeVerts ):
                                     outSectionIDs.append(net_section.sectionId) # There are, so keep this way ...
                                     continue
@@ -273,71 +241,97 @@ class EndWaySubCluster():
                                 self.cls.waySections[net_section.sectionId].isValid = False
         return outSectionIDs    
 
-    # Recursively check for simple overlaps and handle them.
+    # Ceck for simple overlaps and iteratively handle them.
     def handleOverlaps(self):
         if len(self.outWays) == 1:
             return
-        # Brute force, but there are only few ways in an
-        perms = permutations(range(len(self.outWays)),2)
-        for i0,i1 in perms:
-            poly = self.outWays[i0].poly
-            outWay = self.outWays[i1]
-            if pointInPolygon(poly,outWay.cornerL) == 'IN' or \
-                pointInPolygon(poly,outWay.cornerR) == 'IN':
-                self.hasOverlaps = True
-                self.handleOverlappingWay(outWay)
-                # Eventually one more overlap? Check recursively.
-                self.handleOverlaps()
+
+        while True: # Do this process until no more overlaps have been detected.
+            noMoreOverlaps = True
+            # The overlap detection is done by two tests. 
+            # 1. When one of the corners at the end of one way is inside the area of
+            #    the carriageway of the other way, we have eventually an overlap.
+            # 2. Executed only when the first test is True. When the union of the
+            # carriageway areas of both ways has a hole, then it's not an overlap.
+            # Brute force, but there are only few ways!
+            perms = permutations(range(len(self.outWays)),2)
+            for i0,i1 in perms:
+                # Ways in outWays may be invalifated furing this process.
+                if self.outWays[i0].valid and self.outWays[i1].valid:
+                    # Test 1
+                    poly0 = self.outWays[i0].poly
+                    outWay = self.outWays[i1]
+                    if pointInPolygon(poly0,outWay.cornerL) == 'IN' or \
+                        pointInPolygon(poly0,outWay.cornerR) == 'IN':
+                        # Test 2
+                        poly1 = self.outWays[i1].poly
+                        union = boolPolyOp(poly0, poly1, 'union')
+                        if len(union) == 1:
+                            self.handleOverlappingWay(outWay)
+                            noMoreOverlaps = False
+            if noMoreOverlaps:
+                break
 
     def handleOverlappingWay(self,outWay):
-        # The endpoint of outWay is an intersection. Find its outgoing ways.
+        # The endpoint of outWay may be an intersection.
         endP = outWay.polyline[-1]
-        if outWay.isExtended:
-            outWay.lastExtendingSection.isValid = False
-            extendedIDs = self.getOutSectionIds(endP,outWay.lastExtendingID)
-        else:
+        # Find ways that leave this intersection.
+        leavingIDs = self.getOutSectionIds(endP,outWay.wayId)
+        # If there aren't leaving ways, this conflcitin way is invalidated.
+        if not leavingIDs:
             outWay.section.isValid = False
-            extendedIDs = self.getOutSectionIds(endP,outWay.wayId)
-        if not extendedIDs:
+            outWay.valid = False
             return
-        self.cls.processedNodes.add(endP)
-        # Create instances of <OutWay> for them.
-        extOutWays = []
-        for Id in extendedIDs:
-            extOutWays.append( OutWay(self.cls, endP, Id) )
 
-        # The way that best fits in angle is used to extend <outWay>.
-        bestID = min( (i for i in range(len(extOutWays))), key=lambda x: abs(extOutWays[x].vIn.cross(outWay.vOut)) )
-        # If it was already extended, invalidate the last extending section
-        if outWay.isExtended:
-            self.cls.waySections[outWay.lastExtendingID].isValid = False
+        self.cls.processedNodes.add(endP.freeze())
+        # Create instances of <OutWay> for leaving ways.
+        leavingWays = []
+        for Id in leavingIDs:
+            leavingWays.append( OutWay(self.cls, endP, Id) )
 
-        outWay.isExtended = True
-        outWay.lastExtendingSection = self.cls.waySections[extendedIDs[bestID]]
-        outWay.lastExtendingID = extendedIDs[bestID]
-        outWay.extendedLength = len(outWay.polyline)-1
-        outWay.polyline = outWay.polyline + extOutWays[bestID].polyline
-        extWidthL = extOutWays[bestID].section.leftWidth if extOutWays[bestID].fwd else extOutWays[bestID].section.rightWidth
-        extWidthR = extOutWays[bestID].section.rightWidth if extOutWays[bestID].fwd else extOutWays[bestID].section.leftWidth
-        outWay.widthL = max(outWay.widthL,extWidthL)
-        outWay.widthR =max(outWay.widthR,extWidthR)
+        # The leaving way who's first segment best fits to the last segment
+        # of the conflicting out-way <outWay> is selected to extend <outWay>.
+        bestFitID = min( (i for i in range(len(leavingWays))), key=lambda x: abs(leavingWays[x].vIn.cross(outWay.vOut)) )
+        outWay.extendBy(leavingIDs[bestFitID])
 
-        # outWay.polyline.plot('r',3)
-        # The remaining extending outways are added to the end-way subcluster
-        for i in range(len(extOutWays)):
-            if i != bestID:
-                self.outWays.append(extOutWays[i])
-        # self.plot()
-        # plt.title('found overlaps')
+        # The remaining leaving ways are added to the outWays.
+        for i in range(len(leavingWays)):
+            if i != bestFitID:
+                self.outWays.append(leavingWays[i])
+
+    def createBorder(self):
+        borderWays = self.outWays
+        # Add way that is within cluster
+        clusterWay =  OutWay(self.cls, self.node, self.inID)
+        borderWays.append( clusterWay )
+        borderWays = sorted(borderWays,key=lambda x: pseudoangle(x.polyline[1]-x.polyline[0]) )
+
+        # Roll clusterWay to the start of the list.
+        clusterWayIndx = [i for i,w in enumerate(borderWays) if w.id==clusterWay.id][0]
+        borderWays = borderWays[clusterWayIndx:] + borderWays[:clusterWayIndx]
+
+        area, connectors = self.createArea(borderWays)
+
+        border = area[1:] + [area[0]]
+        connectors = [[Id-1,pos,object] for (Id,pos,object) in connectors[1:]]
+
+        # for way in borderWays:
+        #     if way.valid:
+        #         plotPolygon(way.poly,'b',1,False,False,True)
+        # plotPoint(self.node,'r')
+        # clusterWay.polyline.plot('g',3)
+        # plotLine(border,'r',1,False,True)
+        # for connector in connectors:
+        #     p = connector[1]
+        #     plt.text(p[0],p[1],'     '+str(connector[2].id),fontsize=18,color='r')
         # plotEnd()
 
+        return border, connectors
 
-    def sortOutways(self):
-        self.outWays = sorted(self.outWays,key=lambda x: pseudoangle(x.polyline[1]-x.polyline[0]) )
-
-    def createArea(self):
+ 
+    def createArea(self, borderWays):
         # Find the intersections of the way borders.
-        for way1,way2 in pairs(self.outWays):
+        for way1,way2 in cyclePair(borderWays):
             p, type = offsetPolylineIntersection(way1.polyline,way2.polyline,way1.widthL,way2.widthR)
             if type == 'valid':
                 _,t1 = way1.polyline.orthoProj(p)
@@ -353,7 +347,7 @@ class EndWaySubCluster():
         # Create the intersection area and the connectors
         area = []
         connectors = []
-        for way in self.outWays:
+        for way in borderWays:
             wayType = way.__class__.__name__ 
             lp = way.polyline.offsetPointAt(way.trim_t,way.widthL)
             rp = way.polyline.offsetPointAt(way.trim_t,-way.widthR)
@@ -368,60 +362,54 @@ class EndWaySubCluster():
         if area[0] == area[-1]:
             area = area[:-1]
 
-        # Transfer the trim values to the objects
+        # # Transfer the trim values to the objects
         for outWay in self.outWays:
             outWay.trim()
 
         return area, connectors
 
-    # def plot(self):
-    #     for way in self.outWays:
-    #         if isinstance(way,OutDummy):
-    #             continue
-    #         if way.isExtended:
-    #             plotWay(way.polyline,way.widthL,way.widthR,'b')
-    #             # way.polyline.plot('r',3,True)
-    #         else:
-    #             plotWay(way.polyline,way.widthL,way.widthR,'b')
-    #             # way.polyline.plot('k',3,True)
-
-
-
-# This class holds all data of a way leaving an intersection.
+# This class holds the data of a way leaving an end node
 class OutWay():
     ID = 0
     def __init__(self,cls,node,wayId):
         self.id = OutWay.ID
         OutWay.ID += 1
         self.cls = cls
+        self.node = node
         self.wayId = wayId
+        self.valid = True
+
+        self.trimOrigin = 0.
+        self.trim_t = 0
 
         self.section = cls.waySections[wayId]
         self.fwd = self.section.polyline[0] == node
         self.polyline = self.section.polyline if self.fwd else PolyLine(self.section.polyline[::-1])
         self.widthL = self.section.leftWidth if self.fwd else self.section.rightWidth
         self.widthR = self.section.rightWidth if self.fwd else self.section.leftWidth
-        self.trim_t = 0.
-
-        self.isExtended = False
-        self.lastExtendingSection = None
-        self.lastExtendingID = None
-        self.extendedLength = 0
 
     def trim(self):
-        if self.isExtended:
-            t = self.trim_t - self.extendedLength
+            t0 = self.trim_t - self.trimOrigin
             if self.fwd:
-                self.lastExtendingSection.trimS = max(self.lastExtendingSection.trimS, t)
+                self.section.trimS = max(self.section.trimS, t0)
             else:
-                t = len(self.lastExtendingSection.polyline)-1 - t
-                self.lastExtendingSection.trimT = min(self.lastExtendingSection.trimT, t)
-        else:
-            if self.fwd:
-                self.section.trimS = max(self.section.trimS, self.trim_t)
-            else:
-                t = len(self.section.polyline)-1 - self.trim_t
+                t = len(self.section.polyline)-1 - t0
                 self.section.trimT = min(self.section.trimT, t)
+
+    @property
+    # Polygon of the carriage way.
+    def poly(self):
+        return self.polyline.buffer(self.widthL,self.widthR)
+
+    @property
+    # Corner position of the left end of the carriage way.
+    def cornerL(self):
+        return self.polyline.offsetPointAt(len(self.polyline)-1,self.widthL)
+
+    @property
+    # Corner position of the right end of the carriage way.
+    def cornerR(self):
+        return self.polyline.offsetPointAt(len(self.polyline)-1,-self.widthR)
 
     @property
     # Unit vector of the first segment, pointing inside.
@@ -441,53 +429,35 @@ class OutWay():
         # plt.plot(p[0],p[1],'co',markersize=8)
         return v/v.length
 
-    @property
-    # Polygon of the carriage way.
-    def poly(self):
-        return self.polyline.buffer(self.widthL,self.widthR)
+    def extendBy(self,leavingID):
+        ext_section = self.cls.waySections[leavingID]
+        ext_fwd = ext_section.polyline[0] == self.section.polyline[-1]
+        extPolyline = ext_section.polyline if ext_fwd else PolyLine(ext_section.polyline[::-1])
+        ext_widthL = ext_section.leftWidth if ext_fwd else ext_section.rightWidth
+        ext_widthR = ext_section.rightWidth if ext_fwd else ext_section.leftWidth
 
-    @property
-    # Corner position of the left end of the carriage way.
-    def cornerL(self):
-        return self.polyline.offsetPointAt(len(self.polyline)-1,self.widthL)
+        self.section.isValid = False
 
-    @property
-    # Corner position of the right end of the carriage way.
-    def cornerR(self):
-        return self.polyline.offsetPointAt(len(self.polyline)-1,-self.widthR)
-
-class OutDummy():
-    ID = 0
-    def __init__(self,cls,p0,p1):
-        self.id = OutWay.ID
-        OutWay.ID += 1
-        self.cls = cls
-
-        self.polyline = PolyLine([p0,p1])
-        self.widthL = 0.001
-        self.widthR = 0.001
-        self.trim_t = 0.
-
-    def trim(self):
-        pass
+        self.wayId = leavingID
+        self.section = ext_section
+        self.trimOrigin = len(self.polyline)-1
+        self.polyline = self.polyline + extPolyline
+        self.widthL = ext_widthL
+        self.widthR = ext_widthR
 
 class OutCluster():
     ID = 0
-    def __init__(self,cls,cluster):
+    def __init__(self,cls,cluster,clustType):
         self.id = OutWay.ID
         OutWay.ID += 1
         self.cls = cls
 
         self.cluster = cluster
-        self.fwd = cluster.startSplit.type == 'both'
+        self.fwd = clustType == 'start'
         self.polyline = cluster.centerline if self.fwd else PolyLine(cluster.centerline[::-1])
         self.widthL = cluster.outWL() if self.fwd else cluster.outWR()
         self.widthR = cluster.outWR() if self.fwd else cluster.outWL()
         self.trim_t = 0.
-
-        self.isExtended = False
-        self.lastExtendingSection = None
-        self.lastExtendingID = None
 
     def trim(self):
         if self.fwd:
