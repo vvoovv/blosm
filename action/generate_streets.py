@@ -495,7 +495,7 @@ class StreetGenerator():
                        (line[-1] in inClusterIsects  or len(sectionEnds[line[-1]]) > 2):
                         toRemove.append(i)
                 if toRemove:
-                    print('removed',toRemove)
+                    # print('removed',toRemove)
                     for i in sorted(toRemove, reverse = True):
                         p0 = lines[i][0]
                         if p0 in inClusterIsects: inClusterIsects.remove(p0)
@@ -950,33 +950,20 @@ class StreetGenerator():
                     if net_section.category != 'scene_border':
                         if net_section.sectionId not in wayIDs:
                             section = self.waySections[net_section.sectionId]
-                            # If one of the nodes is outside of the clusters
-                            if not (net_section.s in nodes and net_section.t in nodes):                               
+                            # If one of the section ends is not a node
+                            if not (net_section.s in nodes and net_section.t in nodes): 
+                                # If this section end is inside a cluster area, eliminate this section.
+                                endOfSection = section.originalSection.t if section.originalSection.s == node else section.originalSection.s
+                                if any(cluster[1].pointInCluster(endOfSection) for cluster in clusterGroup):
+                                    section.isValid = False  
+                                    self.processedNodes.add(endOfSection.freeze())
+                                    continue                           
                                 if section.originalSection.s == node:
                                     Id = isectCluster.addWay(section.polyline,section.leftWidth,section.rightWidth)
                                     ID2Object[Id] = (section,True)  # forward = True
                                 else:
                                     Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
                                     ID2Object[Id] = (section,False) # forward = False
-                            else:   # Both nodes are in the clusters, add them if we don't have only 
-                                    # one single cluster end.
-                                if len(clusterGroup) > 1:
-                                    # way-section that connect nodes internally in the cluster area.
-                                    section.isValid = False
-                                else:
-                                    # We have a loop at the end of a single cluster. We insert only half of
-                                    # the polyline of this loop at each end
-                                    N = len(section.polyline)
-                                    if N >= 4:
-                                        N = N//2
-                                        if section.originalSection.s == node:
-                                            Id = isectCluster.addWay(PolyLine(section.polyline[:N]),section.leftWidth,section.rightWidth)
-                                            ID2Object[Id] = (section,True)  # forward = True
-                                        if section.originalSection.t == node:
-                                            Id = isectCluster.addWay(PolyLine(section.polyline[N:][::-1]),section.rightWidth,section.leftWidth)
-                                            ID2Object[Id] = (section,False) # forward = False
-                                    else:
-                                        section.isValid = False
 
             # if cIndx==8:
             #     for ow in isectCluster.outWays:
@@ -1078,7 +1065,7 @@ class StreetGenerator():
             for cluster in longCluster.subClusters:
                 if not cluster.valid:
                     continue
-                # Special case first. The inetrsection areas on both sides of the
+                # Special case first. The intersection areas on both sides of the
                 # cluster overlap. These areas are merged and the cluster is invalidated.
                 if cluster.trimS >= cluster.trimT:
                     cluster.valid = False

@@ -30,7 +30,6 @@ def pseudoangle(d):
     return 3 + p if d[1] < 0 else 1 - p 
 # ----------------------------------------------------------------
 
-from debugPlot import *
 
 # This class holds all information to create the intersection area and end
 # of a way-subcluster.
@@ -125,7 +124,8 @@ class EndWayHandler():
         outCluster.trim()
         p1 = outCluster.polyline.offsetPointAt(outCluster.trim_t,-outCluster.widthR)
         p2 = outCluster.polyline.offsetPointAt(outCluster.trim_t,outCluster.widthL)
-        self.clustConnectors[cluster.id] = len(borders)
+        cID = cluster.id if self.clustType=='start' else -cluster.id
+        self.clustConnectors[cID] = len(borders)
         borders.append(p1)
         borders.append(p2)
 

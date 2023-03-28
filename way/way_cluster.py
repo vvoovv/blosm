@@ -6,6 +6,7 @@ from way.intersection_cluster import IntersectionCluster
 from way.way_section import WaySection
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
+from lib.CompGeom.centerline import pointInPolygon
 
 # from osmPlot import *
 
@@ -173,6 +174,10 @@ class SubCluster():
         return (self.width - self.wayWidths[0])/2.
     def inWR(self):
         return (self.width - self.wayWidths[-1])/2.
+
+    def pointInCluster(self,p):
+        clusterPoly = self.centerline.buffer(self.outWL(),self.outWR())
+        return pointInPolygon(clusterPoly,p) == 'IN'
 
 def computeTransitionWidths(cluster1,cluster2):
     # Inter-cluster transition width. Clusters have different widths. Positive if <cluster2 is
