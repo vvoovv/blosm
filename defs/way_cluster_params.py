@@ -4,7 +4,7 @@ minNeighborLength = 10.
 transitionLimit = 0.01
 transitionSlope = 0.3
 
-dbScanDist = 15.
+dbScanDist = 20.
 
 searchDist = {
         "motorway":      50., "motorway_link":  50., "trunk":      30., "trunk_link":    30., "primary":      30., "primary_link":  30.,

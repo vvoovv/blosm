@@ -110,18 +110,18 @@ class LongClusterWay():
             subCluster.endWidth   = widthOrthoCenterline(subCluster.centerline,left,right,cs1.posL)
          
             # Prepare positions of all ways at splits
-            cs0.posW = [cs0.posL]
+            cs0.posW = [cs0.posL.freeze()]
             for line in self.polylines[1:-1]:
                 posC = line.orthoProj(subCluster.centerline[0])[0]
-                cs0.posW.append(posC)
-            cs0.posW.append(cs0.posR)
+                cs0.posW.append(posC.freeze())
+            cs0.posW.append(cs0.posR.freeze())
             subCluster.startSplit = cs0
 
-            cs1.posW = [cs1.posL]
+            cs1.posW = [cs1.posL.freeze()]
             for line in self.polylines[1:-1]:
                 posC = line.orthoProj(subCluster.centerline[-1])[0]
-                cs1.posW.append(posC)
-            cs1.posW.append(cs1.posR)
+                cs1.posW.append(posC.freeze())
+            cs1.posW.append(cs1.posR.freeze())
             subCluster.endSplit = cs1
 
             # prepare data eventually required for width transition
