@@ -1,6 +1,5 @@
 import os
 import numpy
-# matplotlib is used to load an image
 import PIL.Image
 
 
@@ -14,10 +13,15 @@ class OverlayMixin:
     
     def getTileDataFromImage(self, tilePath):
         image = PIL.Image.open(tilePath)
+        if image.mode in ('P', 'PA'):
+            image = image.convert('RGBA')
+            # matplotlib requires the alpha component to be between 0. and 1.
+            tileData = numpy.array(image, numpy.float32)/255.
+        else:
+            tileData = numpy.array(image)
         imageFormat = image.format
-        tileData = numpy.array(image.getdata())
         image.close()
-        
+
         if self.checkImageFormat:
             # <self.imageExtension> is equal to <png> by defaul
             if imageFormat == "JPEG":
