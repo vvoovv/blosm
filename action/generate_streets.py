@@ -270,6 +270,7 @@ class StreetGenerator():
         self.createClusterIntersections()
         self.createClippedClusterEnds()
         self.createWayClusters()
+        self.cleanCoveredWays()
         self.createOutput()
 
     def findSelfIntersections(self):
@@ -345,7 +346,7 @@ class StreetGenerator():
     def detectWayClusters(self):
         # Create spatial index (R-tree) of way sections
         spatialIndex = StaticSpatialIndex()
-        indx2Id = dict()    # Dictionary from index to Id
+        spatialIndx2wayId = dict()    # Dictionary from index to Id
         boxes = dict()      # Bounding boxes of way-sections
         for Id, section in self.waySections.items():
             # exclusions by some criteria
@@ -359,7 +360,7 @@ class StreetGenerator():
             max_y = max(v[1] for v in section.polyline.verts)
             bbox = BBox(None,min_x,min_y,max_x,max_y)
             index = spatialIndex.add(min_x,min_y,max_x,max_y)
-            indx2Id[index] = Id
+            spatialIndx2wayId[index] = Id
             bbox.index = index
             boxes[Id] = (min_x,min_y,max_x,max_y)
         spatialIndex.finish()
@@ -386,7 +387,7 @@ class StreetGenerator():
 
                 # Now test all neighbors of the remplate for parallelism
                 for neigborIndx in neighbors:
-                    neighborID = indx2Id[neigborIndx]
+                    neighborID = spatialIndx2wayId[neigborIndx]
                     # The template is its own neighbor
                     if neighborID == Id: continue
 
@@ -810,6 +811,79 @@ class StreetGenerator():
 
             self.longClusterWays.append(longCluster)
 
+    def cleanCoveredWays(self):
+        # This process removes all way-sections, that are by whatever reason
+        # completely covered by cluster areas.
+
+        # Create spatial index (R-tree) of all valid way sections
+        spatialAllWayIndex = StaticSpatialIndex()
+        allSpatialIndx2wayId = dict()
+        for Id, section in self.waySections.items():
+            if section.isValid and Id not in self.waysCoveredByCluster:
+                min_x = min(v[0] for v in section.polyline.verts)
+                min_y = min(v[1] for v in section.polyline.verts)
+                max_x = max(v[0] for v in section.polyline.verts)
+                max_y = max(v[1] for v in section.polyline.verts)
+                index = spatialAllWayIndex.add(min_x,min_y,max_x,max_y)
+                allSpatialIndx2wayId[index] = Id
+        spatialAllWayIndex.finish()
+
+        # Find the IDs of all ways that have end-points covered by a way-cluster.
+        # At the same time, prepare a spatial index for the sub-clusters.
+        startEndIDs = set()
+        stopEndIDs = set()
+        spatialAllClustIndex = StaticSpatialIndex()
+        allSpatialIndx2Clust = dict()
+        for longCluster in self.longClusterWays:
+            for subCluster in longCluster.subClusters:
+                # create polygon of this subcluster, its bounding box and add that
+                # to the spatial index.
+                poly = subCluster.centerline.buffer(subCluster.outWL(),subCluster.outWR())
+                min_x = min(v[0] for v in poly)
+                min_y = min(v[1] for v in poly)
+                max_x = max(v[0] for v in poly)
+                max_y = max(v[1] for v in poly)
+                index = spatialAllClustIndex.add(min_x,min_y,max_x,max_y)
+                allSpatialIndx2Clust[index] = subCluster
+
+                # For every neighbor way of this sub-cluster, find those that have
+                # either a start- or an end-point in the cluster area.
+                results = stack = []
+                neighborWayIndices = spatialAllWayIndex.query(min_x,min_y,max_x,max_y,results,stack)
+                for wayIndx in neighborWayIndices:
+                    wayID = allSpatialIndx2wayId[wayIndx]
+                    section = self.waySections[wayID]
+                    if section.isValid:
+                        startPointInPoly = pointInPolygon(poly,section.polyline[0]) == 'IN'
+                        endPointInPoly = pointInPolygon(poly,section.polyline[-1]) == 'IN'
+
+                        # Store its ID if in polygon.
+                        if startPointInPoly:
+                            startEndIDs.add(wayID)
+                        if endPointInPoly:
+                            stopEndIDs.add(wayID)
+
+        spatialAllClustIndex.finish()
+
+        # For way-sections, that have both ends in a cluster area, we need 
+        # to check if all their vertices are in one of the cluster areas.
+        # Brute force, very costly, but there are only few such ways.
+        bothEndIDs = startEndIDs.intersection(stopEndIDs)
+        for Id in bothEndIDs:
+            isInCluster = True
+            for v in self.waySections[Id].polyline:
+                results = stack = []
+                neighborWayIndices = spatialAllClustIndex.query(v[0],v[1],v[0]+0.001,v[1]+0.001,results,stack)
+                clusters = [allSpatialIndx2Clust[indx] for indx in neighborWayIndices]
+                polygons = [ cl.centerline.buffer(cl.outWL(),cl.outWR()) for cl in clusters]
+                if all(pointInPolygon(poly,v) != 'IN' for poly in polygons):
+                    isInCluster = False
+                    break
+
+            # Clean this way, it is completely covered by cluster areas.
+            if isInCluster:
+                self.waySections[Id].isValid = False
+
     def createClusterTransitionAreas(self):
         areas = []
         for longClusterWay in self.longClusterWays:
@@ -988,6 +1062,10 @@ class StreetGenerator():
                                     else:
                                         Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
                                         ID2Object[Id] = (section,False) # forward = False
+                                else:
+                                    # It's a way between cluster nodes, so invalidate it. This should not
+                                    # be done at cluster-edns, but these are already excluded here.
+                                    section.isValid = False
 
             # An intersection area can only be constructed, when more than one way present.
             if len(isectCluster.outWays) > 1:
