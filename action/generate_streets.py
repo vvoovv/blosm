@@ -16,7 +16,7 @@ from defs.way_cluster_params import minTemplateLength, minNeighborLength, search
                                     canPair, dbScanDist, transitionSlope
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
-from lib.CompGeom.algorithms import SCClipper
+from lib.CompGeom.algorithms import SCClipper, orderAsPolygon
 from lib.CompGeom.BoolPolyOps import boolPolyOp
 from lib.CompGeom.GraphBasedAlgos import DisjointSets
 from lib.CompGeom.PolyLine import PolyLine, LinearInterpolator
@@ -887,6 +887,22 @@ class StreetGenerator():
 
         # Create an intersection cluster area for every <clusterGroup>
         for clusterGroup in clusterGroups:
+            # Sometimes there are mor than 4 cluster meeting at an intersection. As
+            # a heuristic, we assume that there is a cluster in the center of the
+            # intersection (example: osm_extracts/streets/taipei.osm). Then, start 
+            # and end of the same cluster are in the <clusterGroup>. Remove this
+            # cluster.
+            if len(clusterGroup) > 4:
+                # Find indices of duplicates using defaultdict
+                indxOfIDs = defaultdict(list)
+                for indx,cluster in enumerate(clusterGroup):
+                    indxOfIDs[cluster[1].id].append(indx)
+                for indices in indxOfIDs.values():
+                    if len(indices) > 1:
+                        clusterGroup[indices[0]][1].valid = False   # invalidate this subcluster
+                        for indx in sorted(indices,reverse=True):   # remove entries in clusterGroup
+                            del clusterGroup[indx]
+
             # If there is only one cluster in the group, we have an cluster end.
             # Because clusters can only be clipped at the end and are excluded by
             # the loop above, they don't appear here. Ends of clusters have require
@@ -911,17 +927,11 @@ class StreetGenerator():
             nodes = set()
             for cluster in clusterGroup:
                 if cluster[2] == 'start':
-                    nodes.update( [cluster[1].startSplit.posL,cluster[1].startSplit.posR])
+                    nodes.update( cluster[1].startSplit.posW )
                 elif cluster[2] == 'end':
-                    nodes.update( [cluster[1].endSplit.posL,cluster[1].endSplit.posR])
+                    nodes.update( cluster[1].endSplit.posW )
                 else:
                     assert False, 'Should not happen'
-
-            # if cIndx==8:
-            #     plotPureNetwork(self.sectionNetwork)
-            #     for n in nodes:
-            #         plt.plot(n[0],n[1],'ro')
-            #     plotEnd()
 
             # Insert centerlines and widths of clusters to <IntersectionCluster>. Keep a map
             # <ID2Object> for the ID in <IntersectionCluster> to the inserted object.
@@ -941,34 +951,44 @@ class StreetGenerator():
                 else:
                     assert False, 'Should not happen'
 
+            # If possible, create polygon from these nodes.
+            nodePoly = None
+            if len(nodes) > 3:
+                nodePoly = orderAsPolygon(nodes)
+
             # Find all outgoing way-sections that are connected to cluster nodes, but exlude
             # those that belong to the clusters, using <wayIDs>. Insert them together with their
             # widths into <IntersectionCluster>. Extend the map <ID2Object> for the ID in
             # <IntersectionCluster> to the inserted object.
             for node in nodes:
-                for net_section in self.sectionNetwork.iterOutSegments(node):
-                    if net_section.category != 'scene_border':
-                        if net_section.sectionId not in wayIDs:
-                            section = self.waySections[net_section.sectionId]
-                            # If one of the section ends is not a node
-                            if not (net_section.s in nodes and net_section.t in nodes): 
-                                # If this section end is inside a cluster area, eliminate this section.
-                                endOfSection = section.originalSection.t if section.originalSection.s == node else section.originalSection.s
-                                if any(cluster[1].pointInCluster(endOfSection) for cluster in clusterGroup):
-                                    section.isValid = False  
-                                    self.processedNodes.add(endOfSection.freeze())
-                                    continue                           
-                                if section.originalSection.s == node:
-                                    Id = isectCluster.addWay(section.polyline,section.leftWidth,section.rightWidth)
-                                    ID2Object[Id] = (section,True)  # forward = True
-                                else:
-                                    Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
-                                    ID2Object[Id] = (section,False) # forward = False
+                if node in self.sectionNetwork:
+                    for net_section in self.sectionNetwork.iterOutSegments(node):
+                        if net_section.category != 'scene_border':
+                            if net_section.sectionId not in wayIDs:
+                                section = self.waySections[net_section.sectionId]
+                                # If one of the section ends is not a node
+                                if not (net_section.s in nodes and net_section.t in nodes): 
+                                    # If this section end is inside a cluster area, eliminate this section.
+                                    endOfSection = section.originalSection.t if section.originalSection.s == node else section.originalSection.s
+                                    if any(cluster[1].pointInCluster(endOfSection) for cluster in clusterGroup):
+                                        section.isValid = False  
+                                        self.processedNodes.add(endOfSection.freeze())
+                                        continue   
+                                    # If this section end is inside the polygon built by the end nodes of
+                                    # the clusters, , eliminate this section.
+                                    if nodePoly and pointInPolygon(nodePoly,endOfSection) in ['IN','ON']:
+                                        section.isValid = False  
+                                        self.processedNodes.add(endOfSection.freeze())
+                                        continue   
 
-            # if cIndx==8:
-            #     for ow in isectCluster.outWays:
-            #         ow.centerline.plot('k')
-            #     plotEnd()
+                                    # Add this section to the intersection cluster.
+                                    if section.originalSection.s == node:
+                                        Id = isectCluster.addWay(section.polyline,section.leftWidth,section.rightWidth)
+                                        ID2Object[Id] = (section,True)  # forward = True
+                                    else:
+                                        Id = isectCluster.addWay(PolyLine(section.polyline[::-1]),section.rightWidth,section.leftWidth)
+                                        ID2Object[Id] = (section,False) # forward = False
+
             # An intersection area can only be constructed, when more than one way present.
             if len(isectCluster.outWays) > 1:
                 # Create the intersection area and their connectors5 

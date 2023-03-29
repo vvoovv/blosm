@@ -244,6 +244,15 @@ def repairSimpleSelfIntersection(poly):
             wasRepaired = True          
     return wasRepaired,poly
 
+def orderAsPolygon(points):
+    # Creates a polygon from a set of points by sorting angles
+    # seen from the  center of gravity.
+    def _pseudoangle(d):
+        p = d[0]/(abs(d[0])+abs(d[1])) # -1 .. 1 increasing with x
+        return 3 + p if d[1] < 0 else 1 - p 
+    centerOfGravity = sum( (p for p in points),Vector((0,0))) / len(points)
+    return sorted(points,key=lambda x: _pseudoangle(x-centerOfGravity))
+
 import sys
 def progress(count, total, status=''):
     bar_len = 60
