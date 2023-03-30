@@ -139,6 +139,11 @@ class BaseApp:
         if not os.path.isfile(assetInfoFilepath):
             raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
         self.assetInfoFilepath = assetInfoFilepath
+        
+        assetInfoFilepathStreet = os.path.join(assetPackageDir, "asset_info/street.json")
+        if not os.path.isfile(assetInfoFilepathStreet):
+            raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepathStreet)
+        self.assetInfoFilepathStreet = assetInfoFilepathStreet
     
     def loadSetupScript(self, setupScript):
         setupScript = os.path.realpath(setupScript)

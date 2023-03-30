@@ -4,9 +4,12 @@ from mathutils.geometry import intersect_line_line_2d
 
 from renderer import Renderer
 #from renderer.curve_renderer import CurveRenderer
+from .asset_store import AssetStore, AssetType, AssetPart
 
 from util.blender import createMeshObject, createCollection, getBmesh, setBmesh, loadMaterialsFromFile,\
     addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
+
+from item_renderer.util import getFilepath
 
 from mathutils import Vector
 
@@ -18,8 +21,13 @@ class StreetRenderer:
     
     def __init__(self, app):
         self.app = app
+        
+        self.assetsDir = app.assetsDir
+        self.assetPackageDir = app.assetPackageDir
+        
         self.streetSectionsCollection = None
         self.streetSectionObjNames = []
+        self.assetStore = AssetStore(app.assetInfoFilepathStreet)
     
     def prepare(self):
         self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
@@ -36,9 +44,9 @@ class StreetRenderer:
         self.intersectionSidewalksBm = getBmesh(self.intersectionSidewalksObj)
         
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
-        _gnStreet = "blosm_street"
+        _gnRoadway = "blosm_roadway"
         _gnSidewalk = "blosm_sidewalk"
-        _gnSeparator = "blosm_street_separator"
+        _gnSeparator = "blosm_roadway_separator"
         _gnLamps = "blosm_street_lamps"
         _gnProjectStreets = "blosm_project_streets"
         _gnTerrainPatches = "blosm_terrain_patches"
@@ -46,8 +54,8 @@ class StreetRenderer:
         _gnProjectTerrainPatches = "blosm_project_terrain_patches"
         _gnMeshToCurve = "blosm_mesh_to_curve"
         node_groups = bpy.data.node_groups
-        if _gnStreet in node_groups:
-            self.gnStreet = node_groups[_gnStreet]
+        if _gnRoadway in node_groups:
+            self.gnRoadway = node_groups[_gnRoadway]
             self.gnSidewalk = node_groups[_gnSidewalk]
             self.gnSeparator = node_groups[_gnSeparator]
             self.gnLamps = node_groups[_gnLamps]
@@ -60,15 +68,14 @@ class StreetRenderer:
             #
             # TEMPORARY CODE
             #
-            # load the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" from
-            # the file <parent_directory of_<self.app.baseAssetPath>/prochitecture_carriageway_with_sidewalks.blend>
+            # load the Geometry Nodes setup
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
                 data_to.node_groups = [
-                    _gnStreet, _gnSidewalk, _gnSeparator, _gnLamps,\
+                    _gnRoadway, _gnSidewalk, _gnSeparator, _gnLamps,\
                     _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
                     _gnMeshToCurve
                 ]
-            self.gnStreet, self.gnSidewalk, self.gnSeparator, self.gnLamps,\
+            self.gnRoadway, self.gnSidewalk, self.gnSeparator, self.gnLamps,\
                 self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
                 self.gnProjectTerrainPatches, self.gnMeshToCurve = data_to.node_groups
     
@@ -141,7 +148,7 @@ class StreetRenderer:
         for streetSection in streetSections.values():
             obj = self.generateStreetSection(streetSection, streetSection, location)
             
-            self.setModifierCarriageway(obj, streetSection)
+            self.setModifierRoadway(obj, streetSection)
             
             # sidewalk on the left
             streetSection.sidewalkL = self.setModifierSidewalk(
@@ -165,9 +172,9 @@ class StreetRenderer:
             
             waySections = streetSection.waySections
             
-            # carriageways
+            # roadways
             for waySection in waySections:
-                self.setModifierCarriageway(obj, waySection)
+                self.setModifierRoadway(obj, waySection)
 
             # sidewalk on the left
             streetSection.sidewalkL = self.setModifierSidewalk(
@@ -183,7 +190,7 @@ class StreetRenderer:
                 sidewalkWidth
             )
             
-            # separators between the carriageways
+            # separators between the roadways
             for i in range(1, len(waySections)):
                 self.setModifierSeparator(
                     obj,
@@ -195,17 +202,20 @@ class StreetRenderer:
             # from the street centerline
             self.terrainRenderer.processStreetCenterline(streetSection)
     
-    def setModifierCarriageway(self, obj, waySection):
-        m = addGeometryNodesModifier(obj, self.gnStreet, "Carriageway")
+    def setModifierRoadway(self, obj, waySection):
+        m = addGeometryNodesModifier(obj, self.gnRoadway, "Roadway")
         m["Input_2"] = waySection.offset
         m["Input_3"] = waySection.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        #m["Input_9"] = self.getMaterial("blosm_carriageway")
-        #m["Input_24"] = self.getMaterial("blosm_sidewalk")
-        #m["Input_28"] = self.getMaterial("blosm_zebra")
+        # get asset info for the material
+        assetInfo = self.assetStore.getAssetInfo(
+            AssetType.material, "demo", AssetPart.roadway, self.getClass(waySection)
+        )
+        # set material
+        m["Input_5"] = self.getMaterial(assetInfo)
     
     def setModifierSeparator(self, obj, offset, width):
-        m = addGeometryNodesModifier(obj, self.gnSeparator, "Carriageway separator")
+        m = addGeometryNodesModifier(obj, self.gnSeparator, "Roadway separator")
         m["Input_2"] = offset
         m["Input_3"] = width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
@@ -363,7 +373,7 @@ class StreetRenderer:
             if (intersectionPoint - point1L).length_squared <= lengthL*lengthL:
                 # Calculate the foot of the perpendicular from <intersectionPoint> to
                 # the street segment with the indices <index1L> and <index2L> and
-                # offset at the border of the carriageway in direction defined by
+                # offset at the border of the roadway in direction defined by
                 # normals <normal1L> and <normal2L>
                 point1L -= sidewalkWidth*normal1L
                 point2L -= sidewalkWidth*normal2L
@@ -390,7 +400,7 @@ class StreetRenderer:
             if verts and (intersectionPoint - point1R).length_squared <= lengthR*lengthR:
                 # Calculate the foot of the perpendicular from <intersectionPoint> to
                 # the street segment with the indices <index1R> and <index2R> and
-                # offset at the border of the carriageway in direction defined by
+                # offset at the border of the roadway in direction defined by
                 # normals <normal1R> and <normal2R>
                 point1R -= sidewalkWidth*normal1R
                 point2R -= sidewalkWidth*normal2R
@@ -464,14 +474,26 @@ class StreetRenderer:
     def cleanup(self):
         return
     
-    def getMaterial(self, name):
-        """
-        TEMPORARY CODE
-        """
-        if name in bpy.data.materials:
-            return bpy.data.materials[name]
-        else:
-            return loadMaterialsFromFile(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_carriageway_with_sidewalks.blend"), False, name)[0]
+    def getClass(self, waySection):
+        numLanes = waySection.nrOfLanes
+        if not isinstance(numLanes, int):
+            numLanes = numLanes[0] + numLanes[1]
+        return str(numLanes) + "_lanes"
+    
+    def getMaterial(self, assetInfo):
+        materialName = assetInfo["material"]
+        material = bpy.data.materials.get(materialName)
+        
+        if not material:
+            material = loadMaterialsFromFile(
+                getFilepath(self, assetInfo),
+                False,
+                materialName
+            )
+            if material:
+                material = material[0]
+            
+        return material
     
     def debugIntersectionArea(self, manager):
         self.intersectionAreasObj.data.attributes.new("idx", 'INT', 'FACE')
