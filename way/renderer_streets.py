@@ -53,6 +53,8 @@ class StreetRenderer:
         _gnProjectOnTerrain = "blosm_project_on_terrain"
         _gnProjectTerrainPatches = "blosm_project_terrain_patches"
         _gnMeshToCurve = "blosm_mesh_to_curve"
+        _gnPolygons = "blosm_polygons_uv_material"
+        
         node_groups = bpy.data.node_groups
         if _gnRoadway in node_groups:
             self.gnRoadway = node_groups[_gnRoadway]
@@ -64,6 +66,7 @@ class StreetRenderer:
             self.gnProjectOnTerrain = node_groups[_gnProjectOnTerrain]
             self.gnProjectTerrainPatches = node_groups[_gnProjectTerrainPatches]
             self.gnMeshToCurve = node_groups[_gnMeshToCurve]
+            self.gnPolygons = node_groups[_gnPolygons]
         else:
             #
             # TEMPORARY CODE
@@ -73,11 +76,11 @@ class StreetRenderer:
                 data_to.node_groups = [
                     _gnRoadway, _gnSidewalk, _gnSeparator, _gnLamps,\
                     _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
-                    _gnMeshToCurve
+                    _gnMeshToCurve, _gnPolygons
                 ]
             self.gnRoadway, self.gnSidewalk, self.gnSeparator, self.gnLamps,\
                 self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
-                self.gnProjectTerrainPatches, self.gnMeshToCurve = data_to.node_groups
+                self.gnProjectTerrainPatches, self.gnMeshToCurve, self.gnPolygons = data_to.node_groups
     
     def render(self, manager, data):
         self.terrainRenderer = TerrainPatchesRenderer(self)
@@ -241,6 +244,15 @@ class StreetRenderer:
             self.terrainRenderer.processIntersection(intersectionArea)
         
         setBmesh(self.intersectionAreasObj, bm)
+        
+        # apply the modifier <self.gnPolygons>
+        m = addGeometryNodesModifier(self.intersectionAreasObj, self.gnPolygons, "Intersections")
+        # get asset info for the material
+        assetInfo = self.assetStore.getAssetInfo(
+            AssetType.material, None, AssetPart.intersection, None
+        )
+        # set material
+        m["Input_2"] = self.getMaterial(assetInfo)
         
         self.debugIntersectionArea(manager) # FIXME
         

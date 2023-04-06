@@ -10,6 +10,7 @@ class AssetType:
 class AssetPart:
     roadway = "roadway"
     sidewalk = "sidewalk"
+    intersection = "intersection"
 
 _parts = [_part for _part in dir(AssetPart) if not _part.startswith('__')]
 
@@ -56,15 +57,14 @@ class AssetStore:
     def processNoGroupAsset(self, asset):
         cl = asset.get("class")
         
-        entries = self.materials if asset["type"] == "material" else None
+        entries = (self.materials if asset["type"] == "material" else None).get(asset["part"])
         
         if not cl in entries:
             entries[cl] = EntryList()
         entries[cl].addEntry(asset)
     
     def getAssetInfo(self, assetType, group, streetPart, cl):
-        if not cl:
-            return None
+        # <cl> equal to <None> is allowed
         
         if group:
             group = self.getGroup(group)
@@ -82,7 +82,7 @@ class AssetStore:
             if assetType == AssetType.material:
                 entries, cache = self.materials, self.materialCache
             # Check if an entry is available in <cache> for the given combination of <streetPart> and <cl>
-            key = str(streetPart) + "_" + cl
+            key = streetPart + ("_" + cl if cl else "_None")
             if key in cache:
                 assetInfo = cache[key]
             else:
