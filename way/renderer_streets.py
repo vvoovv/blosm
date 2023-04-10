@@ -543,6 +543,15 @@ class TerrainPatchesRenderer:
         useAttributeForGnInput(m, "Input_3", "offset_r")
         useAttributeForGnInput(m, "Input_4", "offset_weight")
         
+        # apply the modifier <self.gnPolygons>
+        m = addGeometryNodesModifier(obj, streetRenderer.gnPolygons, "Material for terrain patches")
+        # get asset info for the material
+        assetInfo = streetRenderer.assetStore.getAssetInfo(
+            AssetType.material, None, AssetPart.ground, "grass"
+        )
+        # set material
+        m["Input_2"] = streetRenderer.getMaterial(assetInfo)
+        
         terrainObj = streetRenderer.getTerrainObj()
         if terrainObj:
             m = addGeometryNodesModifier(obj, streetRenderer.gnProjectTerrainPatches, "Project terrain patches")
