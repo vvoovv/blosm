@@ -228,6 +228,12 @@ class StreetRenderer:
         m["Input_3"] = offset
         m["Input_4"] = width
         useAttributeForGnInput(m, "Input_5", "offset_weight")
+        # get asset info for the material
+        assetInfo = self.assetStore.getAssetInfo(
+            AssetType.material, "demo", AssetPart.sidewalk, None
+        )
+        # set material
+        m["Input_8"] = self.getMaterial(assetInfo)
         return m
     
     def renderIntersections(self, manager):
@@ -243,20 +249,30 @@ class StreetRenderer:
             
             self.terrainRenderer.processIntersection(intersectionArea)
         
-        setBmesh(self.intersectionAreasObj, bm)
         
+        setBmesh(self.intersectionAreasObj, bm)
         # apply the modifier <self.gnPolygons>
         m = addGeometryNodesModifier(self.intersectionAreasObj, self.gnPolygons, "Intersections")
         # get asset info for the material
         assetInfo = self.assetStore.getAssetInfo(
-            AssetType.material, None, AssetPart.intersection, None
+            AssetType.material, None, AssetPart.pavement, "asphalt"
         )
         # set material
         m["Input_2"] = self.getMaterial(assetInfo)
         
-        self.debugIntersectionArea(manager) # FIXME
         
         setBmesh(self.intersectionSidewalksObj, self.intersectionSidewalksBm)
+        # apply the modifier <self.gnPolygons>
+        m = addGeometryNodesModifier(self.intersectionSidewalksObj, self.gnPolygons, "Intersection Sidewalks")
+        # get asset info for the material
+        assetInfo = self.assetStore.getAssetInfo(
+            AssetType.material, None, AssetPart.pavement, None
+        )
+        # set material
+        m["Input_2"] = self.getMaterial(assetInfo)
+        
+        
+        self.debugIntersectionArea(manager) # FIXME
         
         self.projectOnTerrain(self.intersectionAreasObj, self.gnProjectOnTerrain)
     

@@ -10,7 +10,8 @@ class AssetType:
 class AssetPart:
     roadway = "roadway"
     sidewalk = "sidewalk"
-    intersection = "intersection"
+    pavement = "pavement"
+    ground = "ground"
 
 _parts = [_part for _part in dir(AssetPart) if not _part.startswith('__')]
 
