@@ -46,6 +46,7 @@ class StreetRenderer:
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
         _gnRoadway = "blosm_roadway"
         _gnSidewalk = "blosm_sidewalk"
+        _gnPedestrianCrossing = "blosm_pedestrian_crossing"
         _gnSeparator = "blosm_roadway_separator"
         _gnLamps = "blosm_street_lamps"
         _gnProjectStreets = "blosm_project_streets"
@@ -59,6 +60,7 @@ class StreetRenderer:
         if _gnRoadway in node_groups:
             self.gnRoadway = node_groups[_gnRoadway]
             self.gnSidewalk = node_groups[_gnSidewalk]
+            self.gnPedestrianCrossing = node_groups[_gnPedestrianCrossing]
             self.gnSeparator = node_groups[_gnSeparator]
             self.gnLamps = node_groups[_gnLamps]
             self.gnProjectStreets = node_groups[_gnProjectStreets]
@@ -74,11 +76,11 @@ class StreetRenderer:
             # load the Geometry Nodes setup
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
                 data_to.node_groups = [
-                    _gnRoadway, _gnSidewalk, _gnSeparator, _gnLamps,\
+                    _gnRoadway, _gnSidewalk, _gnPedestrianCrossing, _gnSeparator, _gnLamps,\
                     _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
                     _gnMeshToCurve, _gnPolygons
                 ]
-            self.gnRoadway, self.gnSidewalk, self.gnSeparator, self.gnLamps,\
+            self.gnRoadway, self.gnSidewalk, self.gnPedestrianCrossing, self.gnSeparator, self.gnLamps,\
                 self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
                 self.gnProjectTerrainPatches, self.gnMeshToCurve, self.gnPolygons = data_to.node_groups
     
@@ -175,6 +177,15 @@ class StreetRenderer:
             
             waySections = streetSection.waySections
             
+            stopLine = False
+            # pedestrian crossings
+            if streetSection.endConnected:
+                self.setModifierPedestrianCrossing(
+                    obj,
+                    3.6
+                )
+                stopLine = True
+            
             # roadways
             for waySection in waySections:
                 self.setModifierRoadway(obj, waySection)
@@ -222,6 +233,12 @@ class StreetRenderer:
         m["Input_2"] = offset
         m["Input_3"] = width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
+        # get asset info for the material
+        assetInfo = self.assetStore.getAssetInfo(
+            AssetType.material, None, AssetPart.ground, "grass"
+        )
+        # set material
+        m["Input_5"] = self.getMaterial(assetInfo)
     
     def setModifierSidewalk(self, obj, offset, width):
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
@@ -235,6 +252,10 @@ class StreetRenderer:
         # set material
         m["Input_8"] = self.getMaterial(assetInfo)
         return m
+    
+    def setModifierPedestrianCrossing(self, obj, width):
+        m = addGeometryNodesModifier(obj, self.gnPedestrianCrossing, "Pedestrian Crossing")
+        m["Input_2"] = width
     
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
