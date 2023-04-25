@@ -190,6 +190,94 @@ class Intersection():
 
         return conflictingNodes
 
+    def intersectionPoly_noFillet_noConflict(self):
+        from lib.CompGeom.offset_intersection import offsetPolylineIntersection
+        from defs.way_cluster_params import transitionSlope
+        def cycleTriples(iterable):
+            # iterable -> (pn-1,pn,p0), (pn,p0,p1), (p0,p1,p2), (p1,p2,p3), (p2,p3,p4), ... 
+            p1, p2, p3 = tee(iterable,3)
+            p1 = islice(cycle(p1), len(iterable) - 2, None)
+            p2 = islice(cycle(p2), len(iterable) - 1, None)
+            return zip(p1,p2,p3)
+
+        wayConnectors = dict()
+        area = []
+        debug = True
+        for rightWay,centerWay,leftWay in cycleTriples(self.outWays):
+            # if debug:
+            #     rightWay.polyline.plot('r',2)
+            #     centerWay.polyline.plot('b:',2)
+            #     leftWay.polyline.plot('g',2)
+            # Intersection at the right side of center-way
+            p1, type = offsetPolylineIntersection(rightWay.polyline,centerWay.polyline,rightWay.leftW,-centerWay.rightW,True,0.1)
+            if type == 'valid':
+                _,tP1 = centerWay.polyline.orthoProj(p1)
+            elif type == 'parallel':
+                transWidth =max(1.,abs(rightWay.leftW+centerWay.rightW)/transitionSlope)
+                tP1 = centerWay.polyline.d2t(transWidth)
+                p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
+            else: # out
+                print('out')
+                continue
+            # plt.plot(p1[0],p1[1],'kx')
+
+            # Intersection at the left side of center-way
+            p3, type = offsetPolylineIntersection(centerWay.polyline,leftWay.polyline,centerWay.leftW,-leftWay.rightW,True,0.1)
+            # plt.plot(p3[0],p3[1],'kx')
+            if type == 'valid':
+                _,tP3 = centerWay.polyline.orthoProj(p3)
+            elif type == 'parallel':
+                transWidth =max(1.,abs(centerWay.leftW+leftWay.rightW)/transitionSlope)
+                tP3 = centerWay.polyline.d2t(transWidth)
+                p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.leftW)
+            else: # out
+                print('out')
+                continue
+
+            # Project these onto the centerline of the out-way and create intermediate
+            # polygon point <p2>.# _,tP1 = centerWay.polyline.orthoProj(p1)
+            # _,tP3 = centerWay.polyline.orthoProj(p3)
+            Id = centerWay.section.id  if centerWay.fwd else -centerWay.section.id
+            t0 = 0.
+            if tP3 > tP1:
+                p2 = centerWay.polyline.offsetPointAt(tP3,centerWay.rightW)
+                t0 = tP3
+                wayConnectors[Id] = len(area)+1
+            else:
+                p2 = centerWay.polyline.offsetPointAt(tP1,centerWay.leftW)
+                t0 = tP1
+                wayConnectors[Id] = len(area)
+
+            if centerWay.fwd:
+                centerWay.section.trimS = max(centerWay.section.trimS, t0)
+            else:
+                t = len(centerWay.section.polyline)-1 - t0
+                centerWay.section.trimT = min(centerWay.section.trimT, t)            
+
+            if area and (p1-area[-1]).length > 0.01:
+                area = area[:-1]
+                wayConnectors[Id] -= 1
+            if p1==p2 or p2==p3: # way is perpendicular
+                area.extend([p1,p3])
+            else:
+                area.extend([p1,p2,p3])
+            # if debug:
+            #     plotLine([p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3],True,'m')
+            #     plotEnd()
+        test = (area[0]-area[-1]).length < 0.001
+        area = area[:-1] if (area[0]-area[-1]).length < 0.001 else area
+        # area = area[1:] + area[:1]
+        # plotPolygon(area,False,'r')
+        # for i,c in enumerate(wayConnectors.values()):
+        #     p = area[c]
+        #     plt.text(p[0],p[1],str(i),color = 'r',fontsize = 14)
+        # for way in self.outWays:
+        #     way.polyline.plot('k')
+        # plotEnd()
+        return area, wayConnectors
+
+
+
     def intersectionPoly_noFillet(self):
         tmax = [0.]*self.order  # List of maximum line parameters of the projections of the intersection
                                 # points onto the center-lines of the ways.

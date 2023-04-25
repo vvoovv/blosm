@@ -818,6 +818,7 @@ class StreetGenerator():
         # Create spatial index (R-tree) of all valid way sections
         spatialAllWayIndex = StaticSpatialIndex()
         allSpatialIndx2wayId = dict()
+        boxes = dict()      # Bounding boxes of way-sections
         for Id, section in self.waySections.items():
             if section.isValid and Id not in self.waysCoveredByCluster:
                 min_x = min(v[0] for v in section.polyline.verts)
@@ -826,6 +827,9 @@ class StreetGenerator():
                 max_y = max(v[1] for v in section.polyline.verts)
                 index = spatialAllWayIndex.add(min_x,min_y,max_x,max_y)
                 allSpatialIndx2wayId[index] = Id
+                bbox = BBox(None,min_x,min_y,max_x,max_y)
+                bbox.index = index
+                boxes[Id] = (min_x,min_y,max_x,max_y)
         spatialAllWayIndex.finish()
 
         # Find the IDs of all ways that have end-points covered by a way-cluster.
@@ -833,18 +837,23 @@ class StreetGenerator():
         startEndIDs = set()
         stopEndIDs = set()
         spatialAllClustIndex = StaticSpatialIndex()
-        allSpatialIndx2Clust = dict()
+        allSpatialIndx2Poly = dict()
         for longCluster in self.longClusterWays:
+            if longCluster.clipped:
+                continue
             for subCluster in longCluster.subClusters:
+                if not subCluster.valid:
+                    continue
                 # create polygon of this subcluster, its bounding box and add that
                 # to the spatial index.
-                poly = subCluster.centerline.buffer(subCluster.outWL(),subCluster.outWR())
+                trimmedCenterline = subCluster.centerline.trimmed(subCluster.trimS,subCluster.trimT)
+                poly = trimmedCenterline.buffer(subCluster.outWL(),subCluster.outWR())
                 min_x = min(v[0] for v in poly)
                 min_y = min(v[1] for v in poly)
                 max_x = max(v[0] for v in poly)
                 max_y = max(v[1] for v in poly)
                 index = spatialAllClustIndex.add(min_x,min_y,max_x,max_y)
-                allSpatialIndx2Clust[index] = subCluster
+                allSpatialIndx2Poly[index] = poly
 
                 # For every neighbor way of this sub-cluster, find those that have
                 # either a start- or an end-point in the cluster area.
@@ -873,9 +882,8 @@ class StreetGenerator():
             isInCluster = True
             for v in self.waySections[Id].polyline:
                 results = stack = []
-                neighborWayIndices = spatialAllClustIndex.query(v[0],v[1],v[0]+0.001,v[1]+0.001,results,stack)
-                clusters = [allSpatialIndx2Clust[indx] for indx in neighborWayIndices]
-                polygons = [ cl.centerline.buffer(cl.outWL(),cl.outWR()) for cl in clusters]
+                neighborPolyIndices = spatialAllClustIndex.query(v[0],v[1],v[0]+0.001,v[1]+0.001,results,stack)
+                polygons = [allSpatialIndx2Poly[indx] for indx in neighborPolyIndices]
                 if all(pointInPolygon(poly,v) != 'IN' for poly in polygons):
                     isInCluster = False
                     break
@@ -883,6 +891,25 @@ class StreetGenerator():
             # Clean this way, it is completely covered by cluster areas.
             if isInCluster:
                 self.waySections[Id].isValid = False
+
+        # There are some stubborn ways where a long part, but not the
+        # whole way, is inside a way cluster. There is nothing left but
+        # to find the total length 'within' the cluster and set a limit.
+        # Example: milano_01.osm.
+        for Id, section in self.waySections.items():
+            if section.isValid:
+                min_x,min_y,max_x,max_y = boxes[Id]
+                results = stack = []
+                neighborPolyIndices = spatialAllClustIndex.query(min_x,min_y,max_x,max_y,results,stack)
+                polygons = [allSpatialIndx2Poly[indx] for indx in neighborPolyIndices]
+                lenSum = 0.
+                for poly in polygons:
+                    clipper = LinePolygonClipper(poly)
+                    _, totalLength, _ = clipper.clipLine(section.polyline)
+                    lenSum += totalLength
+                if lenSum > 30:
+                    self.waySections[Id].isValid = False
+
 
     def createClusterTransitionAreas(self):
         areas = []
@@ -960,7 +987,7 @@ class StreetGenerator():
         # [centerline-endpoint, cluster-way, type ('start' or 'end')]
 
         # Create an intersection cluster area for every <clusterGroup>
-        for clusterGroup in clusterGroups:
+        for cnt,clusterGroup in enumerate(clusterGroups):
             # Sometimes there are mor than 4 cluster meeting at an intersection. As
             # a heuristic, we assume that there is a cluster in the center of the
             # intersection (example: osm_extracts/streets/taipei.osm). Then, start 
@@ -1320,7 +1347,7 @@ class StreetGenerator():
                         pass
                 else:
                     try:
-                        polygon, connectors = intersection.intersectionPoly_noFillet()
+                        polygon, connectors = intersection.intersectionPoly_noFillet_noConflict()
                     except:
                         pass
                 if polygon:
@@ -1393,8 +1420,13 @@ class StreetGenerator():
                     # Keep connectors that don't have duplicate IDs
                     if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
                         v0 = conflictingArea.polygon[connector]
-                        newConnector = mergedPoly.index(v0)
-                        mergedArea.connectors[signedKey] = newConnector
+                        if v0 in mergedPoly:
+                            newConnector = mergedPoly.index(v0)
+                            mergedArea.connectors[signedKey] = newConnector
+                        # else:
+                        #     plotPolygon(conflictingArea.polygon,True,'m','m',4)
+
+
             mergedAreas.append(mergedArea)
 
             # avoid a connector to reach over polygon end point index
@@ -1404,10 +1436,59 @@ class StreetGenerator():
                 for key,connector in mergedArea.connectors.items():
                     mergedArea.connectors[key] = connector-1
 
-        # Now remove conflicting areas from list and add the merged areas
+        # Now remove conflicting (overlapping) areas from list and add the merged areas
         for i in sorted(conflictingAreasIndcs, reverse = True):
                 del self.intersectionAreas[i]
         self.intersectionAreas.extend(mergedAreas)
+
+        # # Find overlapping areas using collision detection. 
+        # # First create static spatial index for these areas
+        # areaIndex = StaticSpatialIndex()
+        # areaIndx2Indx = dict()
+        # boxes = dict()
+        # for indx,area in enumerate(self.intersectionAreas):
+        #     min_x = min(v[0] for v in area.polygon)
+        #     min_y = min(v[1] for v in area.polygon)
+        #     max_x = max(v[0] for v in area.polygon)
+        #     max_y = max(v[1] for v in area.polygon)
+        #     bbox = BBox(None,min_x,min_y,max_x,max_y)
+        #     index = areaIndex.add(min_x,min_y,max_x,max_y)
+        #     areaIndx2Indx[index] = indx
+        #     bbox.index = index
+        #     boxes[indx] = (min_x,min_y,max_x,max_y)
+        # areaIndex.finish()
+
+        # # Check all areas for collisions
+        # collidingAreas = DisjointSets()
+        # for indx in range(len(self.intersectionAreas)):
+        #     results = stack = []
+        #     neighborIndxs = areaIndex.query(*boxes[indx],results,stack)
+        #     if neighborIndxs:
+        #         poly1 = self.intersectionAreas[indx]
+        #         clipper = LinePolygonClipper(poly1.polygon)
+        #         for neighIndx in neighborIndxs:
+        #             if neighIndx != indx:
+        #                 poly2 = self.intersectionAreas[neighIndx]
+        #                 fragments, totalLength, nrOfON = clipper.clipLine(poly2.polygon + [poly2.polygon[0]])
+        #                 if fragments:
+        #                     collidingAreas.addSegment(indx,neighIndx)
+        #                 # opres = boolPolyOp(poly1.polygon,poly2.polygon, 'intersection')
+        #                 # if boolPolyOp(poly1.polygon,poly2.polygon,'intersection'):#polyCollision(poly1.polygon,poly2.polygon):
+        #                 #     collidingAreas.addSegment(indx,neighIndx)
+        #                 #     # opres = boolPolyOp(poly1.polygon,poly2.polygon,'intersection')
+        #                 test=1
+
+        # for colliding in collidingAreas:
+        #     for i in colliding:
+        #         plotPolygon(self.intersectionAreas[i].polygon,'c',3,False,False,True,0.9,999)
+        #         print('had overlaps')
+        #     # plotEnd()
+
+
+
+
+
+
 
         # Finally, the trimmed centerlines of the ways are constructed
         for section in self.waySections.values():

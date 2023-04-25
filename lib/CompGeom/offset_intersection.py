@@ -46,7 +46,7 @@ def offsetIntersection(e0,e1,w0,w1,lim=1.e-3):
     valid = ccw(e0[1],e0[1]+n0,isect) and not ccw(e1[1],e1[1]+n1,isect)
     return isect, 'valid' if valid else 'out'
 
-def offsetPolylineIntersection(line0,line1,w0,w1,lim=1.e-3):
+def offsetPolylineIntersection(line0,line1,w0,w1,exitOnParallel=False,lim=1.e-3):
     # Find the intersection of a right polyline <line0>, offset by <w0> to the left, and
     # a left polyline <line1>, offset to the right by <w1>.
     #           
@@ -63,7 +63,7 @@ def offsetPolylineIntersection(line0,line1,w0,w1,lim=1.e-3):
     #
     # Returns:
     # isect: Intersection point as mathutils.Vector.
-    # type:  - String 'valid', if isect is valid.
+    # kind:  - String 'valid', if isect is valid.
     #        - String 'out', if intersection is out of normals at the upper
     #          end of the lines.
     #        - String 'parallel', if angle between the lines is less than
@@ -71,10 +71,11 @@ def offsetPolylineIntersection(line0,line1,w0,w1,lim=1.e-3):
     segs0, segs1 = line0.segments(),line1.segments()
     combinations = list(product(range(len(segs0)),range(len(segs1))))
     combinations = sorted(combinations,key=lambda x: sum(x))
+    breakCond, contCond = (['valid','parallel'],['out']) if exitOnParallel else (['valid'],['out','parallel'])
     for i0,i1 in combinations:
-        isect, type = offsetIntersection(segs0[i0],segs1[i1],w0,w1,lim)
-        if type == 'valid': break
-        if type in ['out','parallel']: continue
+        isect, kind = offsetIntersection(segs0[i0],segs1[i1],w0,w1,lim)
+        if kind in breakCond: break
+        if kind in contCond: continue
 
-    return isect, type
+    return isect, kind
 
