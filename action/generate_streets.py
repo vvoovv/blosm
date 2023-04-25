@@ -987,7 +987,7 @@ class StreetGenerator():
         # [centerline-endpoint, cluster-way, type ('start' or 'end')]
 
         # Create an intersection cluster area for every <clusterGroup>
-        for clusterGroup in clusterGroups:
+        for cnt,clusterGroup in enumerate(clusterGroups):
             # Sometimes there are mor than 4 cluster meeting at an intersection. As
             # a heuristic, we assume that there is a cluster in the center of the
             # intersection (example: osm_extracts/streets/taipei.osm). Then, start 
@@ -1347,7 +1347,7 @@ class StreetGenerator():
                         pass
                 else:
                     try:
-                        polygon, connectors = intersection.intersectionPoly_noFillet()
+                        polygon, connectors = intersection.intersectionPoly_noFillet_noConflict()
                     except:
                         pass
                 if polygon:
@@ -1420,8 +1420,13 @@ class StreetGenerator():
                     # Keep connectors that don't have duplicate IDs
                     if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
                         v0 = conflictingArea.polygon[connector]
-                        newConnector = mergedPoly.index(v0)
-                        mergedArea.connectors[signedKey] = newConnector
+                        if v0 in mergedPoly:
+                            newConnector = mergedPoly.index(v0)
+                            mergedArea.connectors[signedKey] = newConnector
+                        # else:
+                        #     plotPolygon(conflictingArea.polygon,True,'m','m',4)
+
+
             mergedAreas.append(mergedArea)
 
             # avoid a connector to reach over polygon end point index

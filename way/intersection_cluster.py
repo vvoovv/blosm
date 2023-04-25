@@ -77,7 +77,7 @@ class IntersectionCluster():
         for i,way in enumerate(self.outWays):
             lp = way.centerline.offsetPointAt(way.trim_t,way.leftWidth)
             rp = way.centerline.offsetPointAt(way.trim_t,-way.rightWidth)
-            if not area or rp != area[-1]:
+            if not area or (rp-area[-1]).length > 0.01:
                 area.extend([rp,lp])
                 connectors.append( (len(area)-2,rp, way.id) )
                 connNr += 2
@@ -85,7 +85,7 @@ class IntersectionCluster():
                 connectors.append( (connNr-1,rp, way.id) )
                 area.append(lp)
                 connNr += 1
-        if area[0] == area[-1]:
+        if (area[0]-area[-1]).length < 0.001:
             area = area[:-1]
 
         # plotPolygon(area,False,'r')

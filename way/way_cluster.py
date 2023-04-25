@@ -335,7 +335,8 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
         section.trimT = min(section.trimT,len(outLine)-1-tP)
 
     # start area in counter-clockwise order, continue at end of cluster1
-    area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3] 
+    area = [p1,p2,p3] if (p1-p2).length>0.001 and (p3-p2).length>0.001 else [p1,p3]
+    # area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3] 
 
     # cluster1.centerline.plot('g:',3)
     # cluster2.centerline.plot('r:',3)
@@ -360,7 +361,8 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
         # Two additional points due to transition, <p4> on the left and <p5> on 
         # the right of the cluster.
         p4 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
-        area.append(p4)
+        if (p3-p4).length>0.001:
+            area.append(p4)
         clustConnectors[-cluster1.id] = len(area)-1
         p5 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
         area.append(p5)
@@ -380,7 +382,8 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
         cluster2.trimS = max(cluster2.trimS,tTrans)
         # Two additional points due to transition
         p6 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
-        area.append(p6)
+        if (p5-p6).length>0.001:
+            area.append(p6)
         clustConnectors[cluster2.id] = len(area)-1
         p7 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
         area.append(p7)
@@ -390,6 +393,8 @@ def createLeftIntersection(cls, cluster1, cluster2, node,blockedWayIDs):
         p7 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
         area.append(p7)
         clustConnectors[cluster2.id] = len(area)-1
+    if (area[0]-area[-1]).length < 0.001:
+        area = area[:-1]
     return area, clustConnectors, wayConnectors
 
 def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
@@ -412,10 +417,16 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
     p1, valid = offsetPolylineIntersection(cLr,outLine,outW,outWidth/2.)
     # if valid!='valid':
     #     plotPureNetwork(cls.sectionNetwork)
-    #     cluster1.centerline.plot('g:',3)
-    #     cluster2.centerline.plot('r',3)
-    #     plt.plot(p1[0],p1[1],'ro')
-    #     outLine.plot('c:',3)
+    #     poly1 = cluster1.centerline.buffer(cluster1.outWL(),cluster1.outWR())
+    #     plotPolygon(poly1,False,'g','g',1,True)
+    #     poly2 = cluster2.centerline.buffer(cluster2.outWL(),cluster2.outWR())
+    #     plotPolygon(poly2,False,'g','g',1,True)
+    #     # cluster1.centerline.plot('g:',3)
+    #     # cluster2.centerline.plot('r',3)
+    #     # plt.plot(p1[0],p1[1],'ro')
+    #     poly3 = outLine.buffer(outWidth/2.,outWidth/2.)
+    #     plotPolygon(poly3,False,'b','b',1,True)
+    #     # outLine.plot('c:',3)
     #     plt.title('createRightIntersection, p1')
     #     plotEnd()
 
@@ -461,7 +472,7 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         section.trimT = min(section.trimT,len(outLine)-1-tP)
 
     # Start area in counter-clockwise order, <p1> is on cluster1
-    area = [p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3]
+    area = [p1,p2,p3] if (p1-p2).length>0.001 and (p3-p2).length>0.001 else [p1,p3]
 
     # cluster1.centerline.plot('g:',3)
     # cluster2.centerline.plot('r:',3)
@@ -485,7 +496,8 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         # Two additional points due to transition, <p4> on the right and <p5> on 
         # the left of the cluster.
         p4 = cluster2.centerline.offsetPointAt(cluster2.trimS,-cluster2.outWR())
-        area.append(p4)
+        if (p3-p4).length>0.001:
+            area.append(p4)
         clustConnectors[cluster2.id] = len(area)-1
         p5 = cluster2.centerline.offsetPointAt(cluster2.trimS,cluster2.outWL())
         area.append(p5)
@@ -506,7 +518,8 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         # Two additional points due to transition, <p6> on the left and <p7> on 
         # the right of the cluster.
         p6 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
-        area.append(p6)
+        if (p5-p6).length>0.001:
+            area.append(p6)
         clustConnectors[-cluster1.id] = len(area)-1
         p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,-cluster1.outWR())
         area.append(p7)
@@ -517,6 +530,8 @@ def createRightIntersection(cls, cluster1, cluster2, node, blockedWayIDs):
         p7 = cluster1.centerline.offsetPointAt(cluster1.trimT,cluster1.outWL())
         area.append(p7)
         clustConnectors[-cluster1.id] = len(area)-1
+    if (area[0]-area[-1]).length < 0.001:
+        area = area[:-1]
     return area, clustConnectors, wayConnectors
 
 def createClippedEndArea(cls,longCluster,endsubCluster):

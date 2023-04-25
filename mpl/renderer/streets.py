@@ -2,6 +2,7 @@ from mathutils import Vector
 from itertools import tee, islice, cycle
 import matplotlib.pyplot as plt
 from . import Renderer
+from lib.CompGeom.BoolPolyOps import _isectSegSeg
 
 def cyclePair(iterable):
     # iterable -> (p0,p1), (p1,p2), (p2, p3), ..., (pn, p0)
@@ -33,6 +34,22 @@ class StreetRenderer(Renderer):
                     p = isectArea.polygon[connector]
                     plt.text(p[0],p[1],'C'+str(abs(id))+' '+side)
 
+                # # check for self-intersections
+                def iterCircular(iterable):
+                    A,B,C,D = tee(iterable, 4)
+                    B = islice(cycle(B), 1, None)
+                    C = islice(cycle(C), 2, None)
+                    D = islice(cycle(D), 3, None)
+                    return zip(A, B, C, D)
+                polyIndx = range(len(isectArea.polygon)) 
+                for a,b,c,d in iterCircular(polyIndx):
+                    p = _isectSegSeg(isectArea.polygon[a],isectArea.polygon[b],isectArea.polygon[c],isectArea.polygon[d])
+                    if p:
+                        print( 'isectArea.polygon had self-intersection')
+                        plt.plot(p[0],p[1],'ro',markersize=12)
+                        plotPolygon(isectArea.polygon,True,'k','k',2,True,0.1,999)
+                        break
+                
         for sectionNr,section_gn in manager.waySectionLines.items():
             if self.debug:
                 plotWay(section_gn.centerline,True,'b',2.)
