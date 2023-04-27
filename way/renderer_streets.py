@@ -15,6 +15,10 @@ from mathutils import Vector
 
 
 sidewalkWidth = 5.
+pedestrianCrossingWidth = 3.6
+stopLineWidth = 1.5
+# <p>edestrian <c>rossing and <s>top <l>ine
+pcslWidth = pedestrianCrossingWidth + stopLineWidth
 
 
 class StreetRenderer:
@@ -153,7 +157,12 @@ class StreetRenderer:
         for streetSection in streetSections.values():
             obj = self.generateStreetSection(streetSection, streetSection, location)
             
-            self.setModifierRoadway(obj, streetSection)
+            self.setModifierRoadway(
+                obj, 
+                streetSection,
+                pcslWidth,
+                pcslWidth
+            )
             
             # sidewalk on the left
             streetSection.sidewalkL = self.setModifierSidewalk(
@@ -177,18 +186,14 @@ class StreetRenderer:
             
             waySections = streetSection.waySections
             
-            stopLine = False
-            # pedestrian crossings
-            if streetSection.endConnected:
-                self.setModifierPedestrianCrossing(
-                    obj,
-                    3.6
-                )
-                stopLine = True
-            
             # roadways
             for waySection in waySections:
-                self.setModifierRoadway(obj, waySection)
+                self.setModifierRoadway(
+                    obj,
+                    waySection,
+                    pcslWidth,
+                    pcslWidth
+                )
 
             # sidewalk on the left
             streetSection.sidewalkL = self.setModifierSidewalk(
@@ -216,7 +221,7 @@ class StreetRenderer:
             # from the street centerline
             self.terrainRenderer.processStreetCenterline(streetSection)
     
-    def setModifierRoadway(self, obj, waySection):
+    def setModifierRoadway(self, obj, waySection, trimLengthStart, trimLengthEnd):
         m = addGeometryNodesModifier(obj, self.gnRoadway, "Roadway")
         m["Input_2"] = waySection.offset
         m["Input_3"] = waySection.width
@@ -227,6 +232,9 @@ class StreetRenderer:
         )
         # set material
         m["Input_5"] = self.getMaterial(assetInfo)
+        # set trim lengths
+        m["Input_6"] = trimLengthStart
+        m["Input_7"] = trimLengthEnd
     
     def setModifierSeparator(self, obj, offset, width):
         m = addGeometryNodesModifier(obj, self.gnSeparator, "Roadway separator")
