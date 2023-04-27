@@ -202,7 +202,7 @@ class Intersection():
 
         wayConnectors = dict()
         area = []
-        debug = True
+        # debug = True
         for rightWay,centerWay,leftWay in cycleTriples(self.outWays):
             # if debug:
             #     rightWay.polyline.plot('r',2)
@@ -213,17 +213,17 @@ class Intersection():
             if type == 'valid':
                 _,tP1 = centerWay.polyline.orthoProj(p1)
             elif type == 'parallel':
-                transWidth =max(1.,abs(rightWay.leftW+centerWay.rightW)/transitionSlope)
+                transWidth = max(1.,abs(rightWay.leftW+centerWay.rightW)/transitionSlope)
                 tP1 = centerWay.polyline.d2t(transWidth)
                 p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
             else: # out
                 print('out')
                 continue
             # plt.plot(p1[0],p1[1],'kx')
+            # plt.text(p1[0],p1[1],'   p1')
 
             # Intersection at the left side of center-way
             p3, type = offsetPolylineIntersection(centerWay.polyline,leftWay.polyline,centerWay.leftW,-leftWay.rightW,True,0.1)
-            # plt.plot(p3[0],p3[1],'kx')
             if type == 'valid':
                 _,tP3 = centerWay.polyline.orthoProj(p3)
             elif type == 'parallel':
@@ -233,6 +233,8 @@ class Intersection():
             else: # out
                 print('out')
                 continue
+            # plt.plot(p3[0],p3[1],'kx')
+            # plt.text(p3[0],p3[1],'   p3')
 
             # Project these onto the centerline of the out-way and create intermediate
             # polygon point <p2>.# _,tP1 = centerWay.polyline.orthoProj(p1)
@@ -247,6 +249,8 @@ class Intersection():
                 p2 = centerWay.polyline.offsetPointAt(tP1,centerWay.leftW)
                 t0 = tP1
                 wayConnectors[Id] = len(area)
+            # plt.plot(p2[0],p2[1],'kx')
+            # plt.text(p2[0],p2[1],'   p2')
 
             if centerWay.fwd:
                 centerWay.section.trimS = max(centerWay.section.trimS, t0)
@@ -254,7 +258,7 @@ class Intersection():
                 t = len(centerWay.section.polyline)-1 - t0
                 centerWay.section.trimT = min(centerWay.section.trimT, t)            
 
-            if area and (p1-area[-1]).length > 0.01:
+            if area and (p1-area[-1]).length < 0.01:
                 area = area[:-1]
                 wayConnectors[Id] -= 1
             if p1==p2 or p2==p3: # way is perpendicular
@@ -263,6 +267,7 @@ class Intersection():
                 area.extend([p1,p2,p3])
             # if debug:
             #     plotLine([p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3],True,'m')
+            #     plotPolygon(area,True,'r')
             #     plotEnd()
         test = (area[0]-area[-1]).length < 0.001
         area = area[:-1] if (area[0]-area[-1]).length < 0.001 else area
