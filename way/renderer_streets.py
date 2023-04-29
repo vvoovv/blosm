@@ -15,10 +15,10 @@ from mathutils import Vector
 
 
 sidewalkWidth = 5.
-pedestrianCrossingWidth = 3.6
+crosswalkWidth = 3.6
 stopLineWidth = 1.5
-# <p>edestrian <c>rossing and <s>top <l>ine
-pcslWidth = pedestrianCrossingWidth + stopLineWidth
+# <c>rosswalk and <s>top <l>ine width
+cslWidth = crosswalkWidth + stopLineWidth
 
 
 class StreetRenderer:
@@ -50,7 +50,7 @@ class StreetRenderer:
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
         _gnRoadway = "blosm_roadway"
         _gnSidewalk = "blosm_sidewalk"
-        _gnPedestrianCrossing = "blosm_pedestrian_crossing"
+        _gnCrosswalk = "blosm_crosswalk"
         _gnSeparator = "blosm_roadway_separator"
         _gnLamps = "blosm_street_lamps"
         _gnProjectStreets = "blosm_project_streets"
@@ -64,7 +64,7 @@ class StreetRenderer:
         if _gnRoadway in node_groups:
             self.gnRoadway = node_groups[_gnRoadway]
             self.gnSidewalk = node_groups[_gnSidewalk]
-            self.gnPedestrianCrossing = node_groups[_gnPedestrianCrossing]
+            self.gnCrosswalk = node_groups[_gnCrosswalk]
             self.gnSeparator = node_groups[_gnSeparator]
             self.gnLamps = node_groups[_gnLamps]
             self.gnProjectStreets = node_groups[_gnProjectStreets]
@@ -80,11 +80,11 @@ class StreetRenderer:
             # load the Geometry Nodes setup
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
                 data_to.node_groups = [
-                    _gnRoadway, _gnSidewalk, _gnPedestrianCrossing, _gnSeparator, _gnLamps,\
+                    _gnRoadway, _gnSidewalk, _gnCrosswalk, _gnSeparator, _gnLamps,\
                     _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
                     _gnMeshToCurve, _gnPolygons
                 ]
-            self.gnRoadway, self.gnSidewalk, self.gnPedestrianCrossing, self.gnSeparator, self.gnLamps,\
+            self.gnRoadway, self.gnSidewalk, self.gnCrosswalk, self.gnSeparator, self.gnLamps,\
                 self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
                 self.gnProjectTerrainPatches, self.gnMeshToCurve, self.gnPolygons = data_to.node_groups
     
@@ -158,10 +158,28 @@ class StreetRenderer:
             obj = self.generateStreetSection(streetSection, streetSection, location)
             
             self.setModifierRoadway(
-                obj, 
+                obj,
                 streetSection,
-                pcslWidth,
-                pcslWidth
+                cslWidth,
+                cslWidth
+            )
+            
+            # crosswalk at the beginning of the way
+            self.setModifierCrosswalk(
+                obj,
+                streetSection,
+                0.,
+                crosswalkWidth,
+                True
+            )
+            
+            # crosswalk at the end of the way
+            self.setModifierCrosswalk(
+                obj,
+                streetSection,
+                crosswalkWidth,
+                0.,
+                False
             )
             
             # sidewalk on the left
@@ -191,8 +209,24 @@ class StreetRenderer:
                 self.setModifierRoadway(
                     obj,
                     waySection,
-                    pcslWidth,
-                    pcslWidth
+                    cslWidth,
+                    cslWidth
+                )
+                # crosswalk at the beginning of the way
+                self.setModifierCrosswalk(
+                    obj,
+                    waySection,
+                    0.,
+                    crosswalkWidth,
+                    True
+                )
+                # crosswalk at the end of the way
+                self.setModifierCrosswalk(
+                    obj,
+                    waySection,
+                    crosswalkWidth,
+                    0.,
+                    False
                 )
 
             # sidewalk on the left
@@ -261,9 +295,13 @@ class StreetRenderer:
         m["Input_8"] = self.getMaterial(assetInfo)
         return m
     
-    def setModifierPedestrianCrossing(self, obj, width):
-        m = addGeometryNodesModifier(obj, self.gnPedestrianCrossing, "Pedestrian Crossing")
-        m["Input_2"] = width
+    def setModifierCrosswalk(self, obj, waySection, positionStart, positionEnd, positionFromStart):
+        m = addGeometryNodesModifier(obj, self.gnCrosswalk, "Crosswalk")
+        m["Input_2"] = waySection.offset
+        m["Input_4"] = waySection.width
+        m["Input_5"] = positionStart
+        m["Input_6"] = positionEnd
+        m["Input_7"] = positionFromStart
     
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
