@@ -16,7 +16,7 @@ from mathutils import Vector
 
 sidewalkWidth = 5.
 crosswalkWidth = 3.6
-stopLineWidth = 1.5
+stopLineWidth = 0.#1.5
 # <c>rosswalk and <s>top <l>ine width
 cslWidth = crosswalkWidth + stopLineWidth
 
@@ -50,7 +50,7 @@ class StreetRenderer:
         # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
         _gnRoadway = "blosm_roadway"
         _gnSidewalk = "blosm_sidewalk"
-        _gnCrosswalk = "blosm_crosswalk"
+        _gnLineItem = "blosm_line_item"
         _gnSeparator = "blosm_roadway_separator"
         _gnLamps = "blosm_street_lamps"
         _gnProjectStreets = "blosm_project_streets"
@@ -64,7 +64,7 @@ class StreetRenderer:
         if _gnRoadway in node_groups:
             self.gnRoadway = node_groups[_gnRoadway]
             self.gnSidewalk = node_groups[_gnSidewalk]
-            self.gnCrosswalk = node_groups[_gnCrosswalk]
+            self.gnLineItem = node_groups[_gnLineItem]
             self.gnSeparator = node_groups[_gnSeparator]
             self.gnLamps = node_groups[_gnLamps]
             self.gnProjectStreets = node_groups[_gnProjectStreets]
@@ -80,11 +80,11 @@ class StreetRenderer:
             # load the Geometry Nodes setup
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
                 data_to.node_groups = [
-                    _gnRoadway, _gnSidewalk, _gnCrosswalk, _gnSeparator, _gnLamps,\
+                    _gnRoadway, _gnSidewalk, _gnLineItem, _gnSeparator, _gnLamps,\
                     _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
                     _gnMeshToCurve, _gnPolygons
                 ]
-            self.gnRoadway, self.gnSidewalk, self.gnCrosswalk, self.gnSeparator, self.gnLamps,\
+            self.gnRoadway, self.gnSidewalk, self.gnLineItem, self.gnSeparator, self.gnLamps,\
                 self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
                 self.gnProjectTerrainPatches, self.gnMeshToCurve, self.gnPolygons = data_to.node_groups
     
@@ -172,6 +172,14 @@ class StreetRenderer:
                 crosswalkWidth,
                 True
             )
+            # stop line at the beginning of the way
+            self.setModifierStopLine(
+                obj,
+                streetSection,
+                crosswalkWidth,
+                cslWidth,
+                True
+            )
             
             # crosswalk at the end of the way
             self.setModifierCrosswalk(
@@ -179,6 +187,14 @@ class StreetRenderer:
                 streetSection,
                 crosswalkWidth,
                 0.,
+                False
+            )
+            # stop line at the end of the way
+            self.setModifierStopLine(
+                obj,
+                streetSection,
+                cslWidth,
+                crosswalkWidth,
                 False
             )
             
@@ -220,12 +236,29 @@ class StreetRenderer:
                     crosswalkWidth,
                     True
                 )
+                # stop line at the beginning of the way
+                self.setModifierStopLine(
+                    obj,
+                    waySection,
+                    crosswalkWidth,
+                    cslWidth,
+                    True
+                )
+                
                 # crosswalk at the end of the way
                 self.setModifierCrosswalk(
                     obj,
                     waySection,
                     crosswalkWidth,
                     0.,
+                    False
+                )
+                # stop line at the end of the way
+                self.setModifierStopLine(
+                    obj,
+                    waySection,
+                    cslWidth,
+                    crosswalkWidth,
                     False
                 )
 
@@ -260,12 +293,7 @@ class StreetRenderer:
         m["Input_2"] = waySection.offset
         m["Input_3"] = waySection.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            AssetType.material, "demo", AssetPart.roadway, self.getClass(waySection)
-        )
-        # set material
-        m["Input_5"] = self.getMaterial(assetInfo)
+        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, self.getClass(waySection))
         # set trim lengths
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
@@ -275,28 +303,33 @@ class StreetRenderer:
         m["Input_2"] = offset
         m["Input_3"] = width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            AssetType.material, None, AssetPart.ground, "grass"
-        )
-        # set material
-        m["Input_5"] = self.getMaterial(assetInfo)
+        self.setMaterial(m, "Input_5", AssetType.material, None, AssetPart.ground, "grass")
     
     def setModifierSidewalk(self, obj, offset, width):
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
         useAttributeForGnInput(m, "Input_5", "offset_weight")
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            AssetType.material, "demo", AssetPart.sidewalk, None
-        )
-        # set material
-        m["Input_8"] = self.getMaterial(assetInfo)
+        self.setMaterial(m, "Input_8", AssetType.material, "demo", AssetPart.sidewalk, None)
         return m
     
     def setModifierCrosswalk(self, obj, waySection, positionStart, positionEnd, positionFromStart):
-        m = addGeometryNodesModifier(obj, self.gnCrosswalk, "Crosswalk")
+        m = addGeometryNodesModifier(obj, self.gnLineItem, "Crosswalk")
+        m["Input_2"] = waySection.offset
+        m["Input_4"] = waySection.width
+        m["Input_5"] = positionStart
+        m["Input_6"] = positionEnd
+        m["Input_7"] = positionFromStart
+        self.setMaterial(m, "Input_8", AssetType.material, "demo", AssetPart.crosswalk, "zebra")
+        # set the number of lanes
+        numLanes = waySection.nrOfLanes
+        m["Input_9"] = float(
+            numLanes if isinstance(numLanes, int) else numLanes[0] + numLanes[1]
+        )
+    
+    def setModifierStopLine(self, obj, waySection, positionStart, positionEnd, positionFromStart):
+        return
+        m = addGeometryNodesModifier(obj, self.gnLineItem, "Stop line")
         m["Input_2"] = waySection.offset
         m["Input_4"] = waySection.width
         m["Input_5"] = positionStart
@@ -306,7 +339,7 @@ class StreetRenderer:
     def renderIntersections(self, manager):
         bm = getBmesh(self.intersectionAreasObj)
         
-        for idx,intersectionArea in enumerate(manager.intersectionAreas): # FIXME: remove enumerate
+        for intersectionArea in manager.intersectionAreas:
             polygon = intersectionArea.polygon
             bm.faces.new(
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
@@ -320,23 +353,12 @@ class StreetRenderer:
         setBmesh(self.intersectionAreasObj, bm)
         # apply the modifier <self.gnPolygons>
         m = addGeometryNodesModifier(self.intersectionAreasObj, self.gnPolygons, "Intersections")
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            AssetType.material, None, AssetPart.pavement, "asphalt"
-        )
-        # set material
-        m["Input_2"] = self.getMaterial(assetInfo)
-        
+        self.setMaterial(m, "Input_2", AssetType.material, None, AssetPart.pavement, "asphalt")
         
         setBmesh(self.intersectionSidewalksObj, self.intersectionSidewalksBm)
         # apply the modifier <self.gnPolygons>
         m = addGeometryNodesModifier(self.intersectionSidewalksObj, self.gnPolygons, "Intersection Sidewalks")
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            AssetType.material, None, AssetPart.pavement, None
-        )
-        # set material
-        m["Input_2"] = self.getMaterial(assetInfo)
+        self.setMaterial(m, "Input_2", AssetType.material, None, AssetPart.pavement, None)
         
         
         self.debugIntersectionArea(manager) # FIXME
@@ -575,6 +597,17 @@ class StreetRenderer:
             numLanes = numLanes[0] + numLanes[1]
         return str(numLanes) + "_lanes"
     
+    def setMaterial(self, modifier, modifierAttr, assetType, group, streetPart, cl):
+        # get asset info for the material
+        assetInfo = self.assetStore.getAssetInfo(
+            assetType, group, streetPart, cl
+        )
+        if assetInfo:
+            # set material
+            material = self.getMaterial(assetInfo)
+            if material:
+                modifier[modifierAttr] = material
+    
     def getMaterial(self, assetInfo):
         materialName = assetInfo["material"]
         material = bpy.data.materials.get(materialName)
@@ -585,8 +618,7 @@ class StreetRenderer:
                 False,
                 materialName
             )
-            if material:
-                material = material[0]
+            material = material[0] if material else None
             
         return material
     
@@ -612,12 +644,7 @@ class TerrainPatchesRenderer:
         
         # apply the modifier <self.gnPolygons>
         m = addGeometryNodesModifier(obj, streetRenderer.gnPolygons, "Material for terrain patches")
-        # get asset info for the material
-        assetInfo = streetRenderer.assetStore.getAssetInfo(
-            AssetType.material, None, AssetPart.ground, "grass"
-        )
-        # set material
-        m["Input_2"] = streetRenderer.getMaterial(assetInfo)
+        streetRenderer.setMaterial(m, "Input_2", AssetType.material, None, AssetPart.ground, "grass")
         
         terrainObj = streetRenderer.getTerrainObj()
         if terrainObj:
