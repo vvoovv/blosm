@@ -57,13 +57,29 @@ class OutgoingWay():
 
     @property
     def leftW(self):
-        return self.section.leftWidth if self.fwd else self.section.rightWidth
+        if self.fwd:
+            if bool(self.section.fwdLaneL) or bool(self.section.bwdLaneR):
+                return self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
+            else:
+                return self.section.width/2
+        else:
+            if bool(self.section.bwdLaneL) or bool(self.section.fwdLaneR):
+                return self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
+            else:
+                return self.section.width/2
 
     @property
     def rightW(self):
-        # negative, so that the offset in PolyLine's offset methods starts at the
-        # beginning (where the intersection is) of the polyline
-        return -self.section.rightWidth if self.fwd else -self.section.leftWidth
+        if self.fwd:
+            if bool(self.section.bwdLaneL) or bool(self.section.fwdLaneR):
+                return -self.section.width/2 - self.section.offset#if self.fwd else self.section.width/2
+            else:
+                return -self.section.width/2
+        else:
+            if bool(self.section.fwdLaneL) or bool(self.section.bwdLaneR):
+                return -self.section.width/2 - self.section.offset#if self.fwd else self.section.width/2
+            else:
+                return -self.section.width/2
 
     def setTrim(self,trim):
         if self.fwd:

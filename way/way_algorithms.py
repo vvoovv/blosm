@@ -1,6 +1,8 @@
 from collections import deque
 import heapq
 from way.way_network import WayNetwork, NetSection
+from mathutils import Vector
+
 
 class PriorityQueue:
     def __init__(self):
@@ -28,8 +30,8 @@ class Junction():
     def __iter__(self):
         return iter(self.nodes)
 
-def createSectionNetwork(network):
-    sectionNetwork = WayNetwork()
+def createSectionNetwork(network,rightHandTraffic):
+    sectionNetwork = WayNetwork(rightHandTraffic)
     # Intialize a container with all nodes that are intersections or ends (degree != 2)
     # or nodes where the way type changes. 
     # For each node <sectionStart> in this container:

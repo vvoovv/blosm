@@ -49,8 +49,27 @@ class StreetRenderer(Renderer):
                         plt.plot(p[0],p[1],'ro',markersize=12)
                         plotPolygon(isectArea.polygon,True,'k','k',2,True,0.1,999)
                         break
-                
+
+        processedWaySections = set()     
+        for sideLane in manager.transitionSideLanes:
+            processedWaySections.update([abs(sideLane.ways[0]),abs(sideLane.ways[1])])
+            way1 = manager.waySectionLines[abs(sideLane.ways[0])]
+            way2 = manager.waySectionLines[abs(sideLane.ways[1])]
+            smallWay, wideWay = (way1, way2) if (way1.forwardLanes+way1.backwardLanes) < (way2.forwardLanes+way2.backwardLanes) else (way2, way1)
+            plotSideLaneWay(smallWay,wideWay,'R' if wideWay.laneR else 'L','orange')
+            if self.debug:
+                center = sum(smallWay.centerline, Vector((0,0)))/len(smallWay.centerline)
+                plt.text(center[0],center[1],str(abs(sideLane.ways[0])),color='blue',fontsize=14,zorder=120)
+                center = sum(wideWay.centerline, Vector((0,0)))/len(wideWay.centerline)
+                plt.text(center[0],center[1],str(abs(sideLane.ways[1])),color='blue',fontsize=14,zorder=120)
+
+        for symLane in manager.transitionSymLanes:
+            plotPolygon(symLane.polygon,False,'firebrick','firebrick',2,True,0.4)
+
+
         for sectionNr,section_gn in manager.waySectionLines.items():
+            if sectionNr in processedWaySections:
+                continue
             if self.debug:
                 plotWay(section_gn.centerline,True,'b',2.)
                 center = sum(section_gn.centerline, Vector((0,0)))/len(section_gn.centerline)
@@ -67,61 +86,61 @@ class StreetRenderer(Renderer):
                 if not section_gn.endConnected:
                     plt.plot(polyline[-1][0],polyline[-1][1],'cs',markersize=6)
 
-        for Id,cluster in manager.wayClusters.items(): 
-            from lib.CompGeom.PolyLine import PolyLine 
-            centerlinClust = PolyLine(cluster.centerline)
-            centerlinClust.plot('m',1)
+        # for Id,cluster in manager.wayClusters.items(): 
+        #     from lib.CompGeom.PolyLine import PolyLine 
+        #     centerlinClust = PolyLine(cluster.centerline)
+        #     centerlinClust.plot('m',1)
 
-            for sect in cluster.waySections:     
-                way = centerlinClust.parallelOffset(-sect.offset)
-                poly = way.buffer(sect.width/2.,sect.width/2.)
-                plotPolygon(poly,False,'g','g',1.,True,0.3,120)
+        #     for sect in cluster.waySections:     
+        #         way = centerlinClust.parallelOffset(-sect.offset)
+        #         poly = way.buffer(sect.width/2.,sect.width/2.)
+        #         plotPolygon(poly,False,'g','g',1.,True,0.3,120)
 
-            poly = centerlinClust.buffer(cluster.distToLeft+cluster.waySections[0].width/2.,
-                                         cluster.distToLeft+cluster.waySections[-1].width/2.)
-            plotPolygon(poly,False,'c','c',1,True,0.2,110)
+        #     poly = centerlinClust.buffer(cluster.distToLeft+cluster.waySections[0].width/2.,
+        #                                  cluster.distToLeft+cluster.waySections[-1].width/2.)
+        #     plotPolygon(poly,False,'c','c',1,True,0.2,110)
 
-            if not cluster.startConnected:
-                # centerlinClust.plot('r',4)
-                plt.plot(cluster.centerline[0][0],cluster.centerline[0][1],'cs',markersize=6)
-            if not cluster.endConnected:
-                # centerlinClust.plot('r',4)
-                plt.plot(cluster.centerline[-1][0],cluster.centerline[-1][1],'cs',markersize=6)
+        #     if not cluster.startConnected:
+        #         # centerlinClust.plot('r',4)
+        #         plt.plot(cluster.centerline[0][0],cluster.centerline[0][1],'cs',markersize=6)
+        #     if not cluster.endConnected:
+        #         # centerlinClust.plot('r',4)
+        #         plt.plot(cluster.centerline[-1][0],cluster.centerline[-1][1],'cs',markersize=6)
 
-            if self.debug:
-                plotWay(cluster.centerline,False,'b',2.)
-                center = sum(cluster.centerline, Vector((0,0)))/len(cluster.centerline)
-                plt.text(center[0],center[1],str(Id),fontsize=22,zorder=130)
+        #     if self.debug:
+        #         plotWay(cluster.centerline,False,'b',2.)
+        #         center = sum(cluster.centerline, Vector((0,0)))/len(cluster.centerline)
+        #         plt.text(center[0],center[1],str(Id),fontsize=22,zorder=130)
 
 
-        if self.debug:
-            # Check connector IDs and counter-clockwise order
-            for isectArea in manager.intersectionAreas:
-                for id, connector in isectArea.connectors.items():
-                    if abs(id) not in manager.waySectionLines:
-                        print('missing id in waySectionLines',id)
-                        v0,v1 = isectArea.polygon[connector:connector+2]
-                        plt.plot([v0[0],v1[0]],[v0[1],v1[1]],'c',linewidth=10,zorder=999)
-                        # plotPolygon(isectArea.polygon,False,'c','c',2,True,0.4,999)
-                area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in cyclePair(isectArea.polygon))
-                if area >= 0.:
-                    print('intersectionArea not counter-clockwise')
-                    plotPolygon(isectArea.polygon,True,'c','c',10,True,0.4,999)
-                for id, connector in isectArea.clusterConns.items():
-                    if abs(id) not in manager.wayClusters:
-                        print('missing id in wayClusters',id)
-                        plotPolygon(isectArea.polygon,False,'g','g',10,True,0.4,999)
-            # Check connections at ends
-            for sectionNr,section_gn in manager.waySectionLines.items():
-                if section_gn.startConnected is None:
-                    print('no endConnected in section',sectionNr)
-                if section_gn.startConnected is None:
-                    print('no endConnected in section',sectionNr)
-            for Id,cluster in manager.wayClusters.items():
-                if cluster.startConnected is None:
-                    print('no endConnected in cluster',Id)
-                if cluster.startConnected is None:
-                    print('no endConnected in cluster',Id)
+        # if self.debug:
+        #     # Check connector IDs and counter-clockwise order
+        #     for isectArea in manager.intersectionAreas:
+        #         for id, connector in isectArea.connectors.items():
+        #             if abs(id) not in manager.waySectionLines:
+        #                 print('missing id in waySectionLines',id)
+        #                 v0,v1 = isectArea.polygon[connector:connector+2]
+        #                 plt.plot([v0[0],v1[0]],[v0[1],v1[1]],'c',linewidth=10,zorder=999)
+        #                 # plotPolygon(isectArea.polygon,False,'c','c',2,True,0.4,999)
+        #         area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in cyclePair(isectArea.polygon))
+        #         if area >= 0.:
+        #             print('intersectionArea not counter-clockwise')
+        #             plotPolygon(isectArea.polygon,True,'c','c',10,True,0.4,999)
+        #         for id, connector in isectArea.clusterConns.items():
+        #             if abs(id) not in manager.wayClusters:
+        #                 print('missing id in wayClusters',id)
+        #                 plotPolygon(isectArea.polygon,False,'g','g',10,True,0.4,999)
+        #     # Check connections at ends
+        #     for sectionNr,section_gn in manager.waySectionLines.items():
+        #         if section_gn.startConnected is None:
+        #             print('no endConnected in section',sectionNr)
+        #         if section_gn.startConnected is None:
+        #             print('no endConnected in section',sectionNr)
+        #     for Id,cluster in manager.wayClusters.items():
+        #         if cluster.startConnected is None:
+        #             print('no endConnected in cluster',Id)
+        #         if cluster.startConnected is None:
+        #             print('no endConnected in cluster',Id)
 
 
 
@@ -143,6 +162,19 @@ def plotWay(way,vertsOrder,lineColor='k',width=1.,order=100):
     if vertsOrder:
         for i,(xx,yy) in enumerate(zip(x,y)):
             plt.text(xx,yy,str(i),fontsize=12)
+
+def plotSideLaneWay(smallWay,wideWay,direction,color):
+    from lib.CompGeom.PolyLine import PolyLine
+    smallLine = PolyLine(smallWay.centerline)
+    wideLine = PolyLine(wideWay.centerline)
+    if direction=='R':
+        wideLine = wideLine.parallelOffset(-wideWay.offset)
+    else:
+        wideLine = wideLine.parallelOffset(wideWay.offset)
+    poly = wideLine.buffer(wideWay.width/2.,wideWay.width/2.)
+    plotPolygon(poly,False,color,color,1.,True,0.3,120)
+    poly = smallLine.buffer(smallWay.width/2.,smallWay.width/2.)
+    plotPolygon(poly,False,color,color,1.,True,0.3,120)
 
 def plotEnd():
     plt.gca().axis('equal')

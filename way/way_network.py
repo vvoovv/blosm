@@ -3,7 +3,9 @@ from functools import cmp_to_key
 from math import atan2, pi
 
 from defs.way import allRoadwayCategoriesRank
+from way.way_properties import lanePattern
 
+# from osmPlot import *
 PI2 = 2.*pi
 
 class NetSection():
@@ -82,7 +84,8 @@ class NetSection():
 
 class WayNetwork(dict):
     # undirected multigraph
-    def __init__(self):
+    def __init__(self,rightHandTraffic):
+        self.rightHandTraffic = rightHandTraffic
         # only used in search for cycles
         self.counterClockEmbedding = None
 
@@ -197,40 +200,36 @@ class WayNetwork(dict):
             if len(self[source]) != 2: # order of node != 2
                 yield source
 
+    @staticmethod
+    def doesWayTypeChange(category0,category1,tags0,tags1,rightHandTraffic):
+        if category0 != category1: return True
+        if tags0 and tags1: # category 'scene_border' has no tags
+            isOneWay0,fwdPattern0,bwdPattern0,_ = lanePattern(category0,tags0,rightHandTraffic)
+            isOneWay1,fwdPattern1,bwdPattern1,_ = lanePattern(category1,tags1,rightHandTraffic)
+            if len(fwdPattern0) != len(fwdPattern1) or len(bwdPattern0) != len(bwdPattern1) or isOneWay0 != isOneWay1:
+                return True
+        return False
+
     def iterAllChangeWayTypeNodes(self):
         # iterator for all nodes that form an type change
         for source in self.iterNodes():
-            if len(self[source]) == 2: # order of node != 2
-                # for target in self[source]:
+            if len(self[source]) == 2: # order of node == 2
                 segments = [segment for target in self[source] for segment in self[source][target]]
-                if segments[0].category != segments[1].category:
+                if WayNetwork.doesWayTypeChange(segments[0].category,segments[1].category,
+                                                segments[0].tags,segments[1].tags,self.rightHandTraffic):
                     yield source
-                if segments[0].tags and segments[1].tags: # category 'scene_border' has no tags
-                    if segments[0].tags.get('lanes') != segments[1].tags.get('lanes'):
-                        yield source
-                    if segments[0].tags.get('oneway') != segments[1].tags.get('oneway'):
-                        yield source
-
 
     def iterAlongWay(self,segment):
         # Generator for nodes that follow the way in the direction given by the
         # <segment>, until a crossing occurs, an end-point is reached or the 
         # way-type changes. The first return is <segment>.
-        def changedWayType(category1,category2,tags1,tags2):
-            if category1 != category2: return True
-            if tags1 and tags2: # category 'scene_border' has no tags
-                if tags1.get('lanes') != tags2.get('lanes'): return True
-                if tags1.get('oneway') != tags2.get('oneway'): return True
-                # if tags1.get('bridge') != tags2.get('bridge'): return True
-            return False
-
         firstCategory = segment.category
         firstTags = segment.tags
         current = segment
         yield current
         while len(self[current.t]) == 2: # order of node == 2 -> no crossing or end-point
             current = [self[current.t][source] for source in self[current.t] if source != current.s][0][0]
-            if changedWayType(firstCategory,current.category,firstTags,current.tags):
+            if WayNetwork.doesWayTypeChange(firstCategory,current.category,firstTags,current.tags,self.rightHandTraffic):
                 break
             yield current
 
