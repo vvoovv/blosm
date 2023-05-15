@@ -24,6 +24,8 @@ class WayManager:
         # <self.intersectionAreas>, <self.wayClusters> and <self.waySectionLines>
         # are used for realistic rendering of streets
         self.intersectionAreas = []
+        self.transitionSymLanes = []
+        self.transitionSideLanes = []
         # street sections and clusters
         self.waySectionLines = dict()
         self.wayClusters = dict()

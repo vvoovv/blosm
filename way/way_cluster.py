@@ -1,7 +1,7 @@
 from itertools import tee
 
 from defs.way_cluster_params import transitionLimit,transitionSlope
-from way.way_properties import estimateWayWidth
+from way.way_properties import estimateWayWidths
 from way.intersection_cluster import IntersectionCluster
 from way.way_section import WaySection
 from lib.CompGeom.PolyLine import PolyLine
