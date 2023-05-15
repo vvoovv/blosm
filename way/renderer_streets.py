@@ -281,7 +281,9 @@ class StreetRenderer:
                 self.setModifierSeparator(
                     obj,
                     0.5*(waySections[i-1].offset + 0.5*waySections[i-1].width + waySections[i].offset - 0.5*waySections[i].width),
-                    waySections[i].offset - 0.5*waySections[i].width - (waySections[i-1].offset + 0.5*waySections[i-1].width)
+                    waySections[i].offset - 0.5*waySections[i].width - (waySections[i-1].offset + 0.5*waySections[i-1].width),
+                    crosswalkWidth,
+                    crosswalkWidth
                 )
             
             # Use the street centerlines to create terrain patches to the left and to the right
@@ -298,12 +300,14 @@ class StreetRenderer:
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
     
-    def setModifierSeparator(self, obj, offset, width):
+    def setModifierSeparator(self, obj, offset, width, trimLengthStart, trimLengthEnd):
         m = addGeometryNodesModifier(obj, self.gnSeparator, "Roadway separator")
         m["Input_2"] = offset
         m["Input_3"] = width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
         self.setMaterial(m, "Input_5", AssetType.material, None, AssetPart.ground, "grass")
+        m["Input_6"] = trimLengthStart
+        m["Input_7"] = trimLengthEnd
     
     def setModifierSidewalk(self, obj, offset, width):
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
