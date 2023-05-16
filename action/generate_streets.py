@@ -1456,15 +1456,15 @@ class StreetGenerator():
 
         node2isectArea = dict()
         # Transitions have to be processed first, because way widths may be altered.
-        for node,intersection in self.intersections.items():
-            if intersection.order == 2:
-                polygon, connectors = intersection.findTransitionPoly()
-                if polygon:
-                    isectArea = IntersectionArea()
-                    isectArea.polygon = polygon
-                    isectArea.connectors = connectors
-                    node2isectArea[node] = len(self.intersectionAreas)
-                    self.intersectionAreas.append(isectArea)
+        # for node,intersection in self.intersections.items():
+        #     if intersection.order == 2:
+        #         polygon, connectors = intersection.findTransitionPoly()
+        #         if polygon:
+        #             isectArea = IntersectionArea()
+        #             isectArea.polygon = polygon
+        #             isectArea.connectors = connectors
+        #             node2isectArea[node] = len(self.intersectionAreas)
+        #             self.intersectionAreas.append(isectArea)
 
         # Now, the normal intersection areas are constructed
         for node,intersection in self.intersections.items():
