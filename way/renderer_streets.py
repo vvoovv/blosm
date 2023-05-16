@@ -98,9 +98,9 @@ class StreetRenderer:
         # intersections
         self.renderIntersections(manager)
         
-        self.terrainRenderer.processDeadEnds(manager)
-        self.terrainRenderer.addExtent(self.app)
-        self.terrainRenderer.setAttributes(manager, self)
+        #self.terrainRenderer.processDeadEnds(manager) FIXME
+        #self.terrainRenderer.addExtent(self.app) FIXME
+        #self.terrainRenderer.setAttributes(manager, self) FIXME
     
     def generateStreetSection(self, streetSection, waySection, location):
         obj = createMeshObject(
@@ -154,8 +154,10 @@ class StreetRenderer:
     def generateStreetSectionsSimple(self, streetSections):
         location = Vector((0., 0., 0.))
         
-        for streetSection in streetSections.values():
+        #for streetSection in streetSections.values():
+        for idx,streetSection in enumerate(streetSections.values()): # FIXME remove this line
             obj = self.generateStreetSection(streetSection, streetSection, location)
+            obj["idx"] = idx
             
             self.setModifierRoadway(
                 obj,
@@ -210,7 +212,7 @@ class StreetRenderer:
             
             # Use the street centerlines to create terrain patches to the left and to the right
             # from the street centerline
-            self.terrainRenderer.processStreetCenterline(streetSection)
+            #self.terrainRenderer.processStreetCenterline(streetSection) FIXME
     
     def generateStreetSectionsClusters(self, streetSections):
         location = Vector((0., 0., 0.))
@@ -310,6 +312,7 @@ class StreetRenderer:
         m["Input_7"] = trimLengthEnd
     
     def setModifierSidewalk(self, obj, offset, width):
+        return # FIXME
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
@@ -326,10 +329,7 @@ class StreetRenderer:
         m["Input_7"] = positionFromStart
         self.setMaterial(m, "Input_8", AssetType.material, "demo", AssetPart.crosswalk, "zebra")
         # set the number of lanes
-        numLanes = waySection.nrOfLanes
-        m["Input_9"] = float(
-            numLanes if isinstance(numLanes, int) else numLanes[0] + numLanes[1]
-        )
+        m["Input_9"] = float(waySection.forwardLanes + waySection.backwardLanes)
     
     def setModifierStopLine(self, obj, waySection, positionStart, positionEnd, positionFromStart):
         return
@@ -349,9 +349,9 @@ class StreetRenderer:
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
             )
             
-            self.processIntersectionSidewalks(intersectionArea, manager)
+            #self.processIntersectionSidewalks(intersectionArea, manager) FIXME
             
-            self.terrainRenderer.processIntersection(intersectionArea)
+            #self.terrainRenderer.processIntersection(intersectionArea) FIXME
         
         
         setBmesh(self.intersectionAreasObj, bm)
@@ -596,9 +596,7 @@ class StreetRenderer:
         return
     
     def getClass(self, waySection):
-        numLanes = waySection.nrOfLanes
-        if not isinstance(numLanes, int):
-            numLanes = numLanes[0] + numLanes[1]
+        numLanes = waySection.forwardLanes + waySection.backwardLanes
         return str(numLanes) + "_lanes"
     
     def setMaterial(self, modifier, modifierAttr, assetType, group, streetPart, cl):
