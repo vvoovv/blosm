@@ -72,12 +72,12 @@ class OutgoingWay():
     def rightW(self):
         if self.fwd:
             if bool(self.section.bwdLaneL) or bool(self.section.fwdLaneR):
-                return -self.section.width/2 - self.section.offset#if self.fwd else self.section.width/2
+                return -self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
             else:
                 return -self.section.width/2
         else:
             if bool(self.section.fwdLaneL) or bool(self.section.bwdLaneR):
-                return -self.section.width/2 - self.section.offset#if self.fwd else self.section.width/2
+                return -self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
             else:
                 return -self.section.width/2
 
@@ -225,6 +225,7 @@ class Intersection():
             #     centerWay.polyline.plot('b:',2)
             #     leftWay.polyline.plot('g',2)
             # Intersection at the right side of center-way
+            # outIsects = 0
             p1, type = offsetPolylineIntersection(rightWay.polyline,centerWay.polyline,rightWay.leftW,-centerWay.rightW,True,0.1)
             if type == 'valid':
                 _,tP1 = centerWay.polyline.orthoProj(p1)
@@ -233,6 +234,11 @@ class Intersection():
                 tP1 = centerWay.polyline.d2t(transWidth)
                 p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
             else: # out
+                # rightWay.polyline.plot('r',4)
+                # centerWay.polyline.plot('b:',2)
+                # leftWay.polyline.plot('g',2)
+                # # plotEnd()
+                # outIsect += 1
                 print('out')
                 continue
             # plt.plot(p1[0],p1[1],'kx')
@@ -247,6 +253,11 @@ class Intersection():
                 tP3 = centerWay.polyline.d2t(transWidth)
                 p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.leftW)
             else: # out
+                # rightWay.polyline.plot('r',4)
+                # centerWay.polyline.plot('b:',2)
+                # leftWay.polyline.plot('g',2)
+                # # plotEnd()
+                # outIsect += 1
                 print('out')
                 continue
             # plt.plot(p3[0],p3[1],'kx')
@@ -273,6 +284,14 @@ class Intersection():
             else:
                 t = len(centerWay.section.polyline)-1 - t0
                 centerWay.section.trimT = min(centerWay.section.trimT, t)            
+            # else:   # no intersections on both sides, set points to start of the way.
+            #     if centerWay.fwd:
+            #         p1 = p2 = centerWay.polyline.offsetPointAt(0.,centerWay.leftW)
+            #         p3 = centerWay.polyline.offsetPointAt(0.,centerWay.rightW)
+            #     else:
+            #         t = len(centerWay.section.polyline)-1
+            #         p1 = p2 = centerWay.polyline.offsetPointAt(t,centerWay.leftW)
+            #         p3 = centerWay.polyline.offsetPointAt(t,centerWay.rightW)
 
             if area and (p1-area[-1]).length < 0.01:
                 area = area[:-1]

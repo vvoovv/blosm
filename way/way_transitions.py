@@ -34,7 +34,8 @@ def createSideLaneData(node,way1,way2):
         laneR = bool(fwdR)
         wideWay.fwdLaneR = fwdR
         wideWay.fwdLaneL = fwdL
-        wideWay.offset = wideWay.laneWidth/2.
+        if laneL or laneR:
+            wideWay.offset = wideWay.laneWidth/2. if laneR else -wideWay.laneWidth/2.
     else: # two-ways
         fwdL, fwdR = turnsFromPatterns(wideWay.lanePatterns[0],smallWay.lanePatterns[0])
         bwdL, bwdR = turnsFromPatterns(wideWay.lanePatterns[1],smallWay.lanePatterns[1])
@@ -44,13 +45,14 @@ def createSideLaneData(node,way1,way2):
         wideWay.fwdLaneL = fwdL
         wideWay.bwdLaneR = bwdR
         wideWay.bwdLaneL = bwdL
-        wideWay.offset = wideWay.laneWidth/2.
+        if laneL or laneR:
+            wideWay.offset = wideWay.laneWidth/2. if laneR else -wideWay.laneWidth/2.
     return wayIDs, laneL, laneR
 
 def createSymLaneData(node,way1,way2):
-    fwdWidthDiff = abs(way1.forwardWidth - way2.forwardWidth)
-    bwdWidthDiff = abs(way1.backwardWidth - way2.backwardWidth)
-    transitionLength = max( (fwdWidthDiff+bwdWidthDiff)/transitionSlope, 1. ) / 2.
+    fwdWidthDiff = way1.forwardWidth - way2.forwardWidth
+    bwdWidthDiff = way1.backwardWidth - way2.backwardWidth
+    transitionLength = max( abs(fwdWidthDiff+bwdWidthDiff)/transitionSlope, 1. ) / 2.
  
     area = []
     fwd1, fwd2 = False, False
