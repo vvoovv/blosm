@@ -159,46 +159,51 @@ class StreetRenderer:
             obj = self.generateStreetSection(streetSection, streetSection, location)
             obj["idx"] = idx
             
+            crosswalkStart = False
+            crosswalkEnd = False
+            
             self.setModifierRoadway(
                 obj,
                 streetSection,
-                cslWidth,
-                cslWidth
+                cslWidth if crosswalkStart else 0.,
+                cslWidth if crosswalkEnd else 0.
             )
             
-            # crosswalk at the beginning of the way
-            self.setModifierCrosswalk(
-                obj,
-                streetSection,
-                0.,
-                crosswalkWidth,
-                True
-            )
-            # stop line at the beginning of the way
-            self.setModifierStopLine(
-                obj,
-                streetSection,
-                crosswalkWidth,
-                cslWidth,
-                True
-            )
+            if crosswalkStart:
+                # crosswalk at the beginning of the way
+                self.setModifierCrosswalk(
+                    obj,
+                    streetSection,
+                    0.,
+                    crosswalkWidth,
+                    True
+                )
+                # stop line at the beginning of the way
+                self.setModifierStopLine(
+                    obj,
+                    streetSection,
+                    crosswalkWidth,
+                    cslWidth,
+                    True
+                )
             
-            # crosswalk at the end of the way
-            self.setModifierCrosswalk(
-                obj,
-                streetSection,
-                crosswalkWidth,
-                0.,
-                False
-            )
-            # stop line at the end of the way
-            self.setModifierStopLine(
-                obj,
-                streetSection,
-                cslWidth,
-                crosswalkWidth,
-                False
-            )
+            if crosswalkEnd:
+                # crosswalk at the end of the way
+                self.setModifierCrosswalk(
+                    obj,
+                    streetSection,
+                    crosswalkWidth,
+                    0.,
+                    False
+                )
+                # stop line at the end of the way
+                self.setModifierStopLine(
+                    obj,
+                    streetSection,
+                    cslWidth,
+                    crosswalkWidth,
+                    False
+                )
             
             # sidewalk on the left
             streetSection.sidewalkL = self.setModifierSidewalk(
