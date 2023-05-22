@@ -91,6 +91,8 @@ class StreetRenderer:
     def render(self, manager, data):
         self.terrainRenderer = TerrainPatchesRenderer(self)
         
+        self.tmpPrepare(manager) # FXME
+        
         # street sections without a cluster
         self.generateStreetSectionsSimple(manager.waySectionLines)
         # street sections clustered
@@ -633,6 +635,20 @@ class StreetRenderer:
         self.intersectionAreasObj.data.attributes.new("idx", 'INT', 'FACE')
         for idx,intersection in enumerate(manager.intersectionAreas):
             self.intersectionAreasObj.data.attributes["idx"].data[idx].value = idx
+
+    def tmpPrepare(self, manager):
+        for transition in manager.transitionSideLanes:
+            way = manager.waySectionLines[abs(transition.ways[0])-1]
+            if transition.ways[0] > 0:
+                way.start = transition
+            else:
+                way.end = transition
+            way = manager.waySectionLines[abs(transition.ways[1])-1]
+            if transition.ways[1] > 0:
+                way.start = transition
+            else:
+                way.end = transition
+            
         
 
 class TerrainPatchesRenderer:
