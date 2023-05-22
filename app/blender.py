@@ -61,7 +61,7 @@ class BlenderApp(BaseApp):
     
     devOsmServer = "overpass-api.de"
     
-    terrainUrl = "http://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
+    terrainUrl = "https://s3.amazonaws.com/elevation-tiles-prod/skadi/%s/%s"
     
     osmDir = "osm"
     
