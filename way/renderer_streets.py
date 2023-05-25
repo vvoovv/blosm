@@ -280,7 +280,8 @@ class StreetRenderer:
                 streetSection,
                 0.,
                 crosswalkWidth,
-                True
+                True,
+                streetSectionIndex
             )
             # stop line at the beginning of the way
             self.setModifierStopLine(
@@ -298,7 +299,8 @@ class StreetRenderer:
                 streetSection,
                 crosswalkWidth,
                 0.,
-                False
+                False,
+                streetSectionIndex
             )
             # stop line at the end of the way
             self.setModifierStopLine(
@@ -339,7 +341,7 @@ class StreetRenderer:
         self.setMaterial(m, "Input_8", AssetType.material, "demo", AssetPart.sidewalk, None)
         return m
     
-    def setModifierCrosswalk(self, obj, waySection, positionStart, positionEnd, positionFromStart):
+    def setModifierCrosswalk(self, obj, waySection, positionStart, positionEnd, positionFromStart, streetSectionIndex):
         m = addGeometryNodesModifier(obj, self.gnLineItem, "Crosswalk")
         m["Input_2"] = waySection.offset
         m["Input_4"] = waySection.width
@@ -349,6 +351,8 @@ class StreetRenderer:
         self.setMaterial(m, "Input_8", AssetType.material, "demo", AssetPart.crosswalk, "zebra")
         # set the number of lanes
         m["Input_9"] = float(waySection.forwardLanes + waySection.backwardLanes)
+        if streetSectionIndex:
+            m["Input_10"] = streetSectionIndex
     
     def setModifierStopLine(self, obj, waySection, positionStart, positionEnd, positionFromStart):
         return
