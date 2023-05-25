@@ -1,14 +1,15 @@
 import os
 import bpy
-from mathutils.geometry import intersect_line_line_2d
 
 from renderer import Renderer
 #from renderer.curve_renderer import CurveRenderer
 from .asset_store import AssetStore, AssetType, AssetPart
+from action.generate_streets import TransitionSideLane, TransitionSymLane, IntersectionArea
 
 from util.blender import createMeshObject, createCollection, getBmesh, setBmesh, loadMaterialsFromFile,\
     addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
 
+from mathutils.geometry import intersect_line_line_2d
 from item_renderer.util import getFilepath
 
 from mathutils import Vector
@@ -94,9 +95,9 @@ class StreetRenderer:
         self.tmpPrepare(manager) # FXME
         
         # street sections without a cluster
-        self.generateStreetSectionsSimple(manager.waySectionLines)
+        self.generateStreetSectionsSimple(manager)
         # street sections clustered
-        self.generateStreetSectionsClusters(manager.wayClusters)
+        #self.generateStreetSectionsClusters(manager.wayClusters)
         # intersections
         self.renderIntersections(manager)
         
@@ -104,36 +105,38 @@ class StreetRenderer:
         #self.terrainRenderer.addExtent(self.app) FIXME
         #self.terrainRenderer.setAttributes(manager, self) FIXME
     
-    def generateStreetSection(self, streetSection, waySection, location):
-        obj = createMeshObject(
-            waySection.tags.get("name", "Street section"),
-            collection = self.streetSectionsCollection
-        )
-        # create an attribute "offset_weight" for <obj>
-        obj.data.attributes.new("offset_weight", 'FLOAT', 'POINT')
-        createPolylineMesh(obj, None, streetSection.centerline)
-        # Set offset weights. An offset weight is equal to
-        # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
-        attributes = obj.data.attributes["offset_weight"].data
-        attributes[0].value = attributes[-1].value = 1.
+    def generateStreetSection(self, manager, obj, streetSection, waySection):
+        bm = getBmesh(obj)
         
-        centerline = streetSection.centerline
-        numPoints = len(centerline)
-        if numPoints > 2:
-            vec1 = centerline[0] - centerline[1]
-            vec1.normalize()
-            for i in range(1, numPoints-1):
-                vec2 = centerline[i+1] - centerline[i]
-                vec2.normalize()
-                vec = vec1 + vec2
-                vec.normalize()
-                attributes[i].value = abs(1/vec.cross(vec2))
-                vec1 = -vec2
+        if streetSection.chunkedRoadway:
+            for _streetSection in streetSection.chunkedRoadway:
+                createPolylineMesh(None, bm, _streetSection.centerline)
+                _streetSection.rendered = True
+        else:
+            createPolylineMesh(None, bm, streetSection.centerline)
+        
+        setBmesh(obj, bm)
         
         # project the polyline on the terrain if it's available
         terrainObj = self.projectOnTerrain(obj, self.gnProjectStreets)
         if not terrainObj:
             addGeometryNodesModifier(obj, self.gnMeshToCurve, "Mesh to Curve")
+        
+        if streetSection.chunkedRoadway:
+            pointIndexOffset = 0
+            for streetSectionIndex, _streetSection in enumerate(streetSection.chunkedRoadway):
+                # the number of points in <_streetSection.centerline>
+                numPoints = len(_streetSection.centerline)
+                # set the index of the street section
+                for pointIndex in range(pointIndexOffset, pointIndexOffset+numPoints):
+                    obj.data.attributes['section_index'].data[pointIndex].value = streetSectionIndex+1
+                
+                self.setOffsetWeights(obj, _streetSection, pointIndexOffset)
+                self.generateRoadwaySection(obj, _streetSection, streetSectionIndex+1)
+                pointIndexOffset += numPoints
+        else:
+            self.setOffsetWeights(obj, streetSection, 0)
+            self.generateRoadwaySection(obj, streetSection, 0)
         
         # remember the index of <streetSection>'s entry in <self.streetSectionObjNames>
         streetSection.index = len(self.streetSectionObjNames)
@@ -153,59 +156,16 @@ class StreetRenderer:
         
         return obj
     
-    def generateStreetSectionsSimple(self, streetSections):
+    def generateStreetSectionsSimple(self, manager):
         location = Vector((0., 0., 0.))
         
         #for streetSection in streetSections.values():
-        for idx,streetSection in enumerate(streetSections.values()): # FIXME remove this line
-            obj = self.generateStreetSection(streetSection, streetSection, location)
-            obj["idx"] = idx
+        for idx,streetSection in manager.waySectionLines.items(): # FIXME remove this line
+            if streetSection.rendered:
+                continue
             
-            crosswalkStart = False
-            crosswalkEnd = False
-            
-            self.setModifierRoadway(
-                obj,
-                streetSection,
-                cslWidth if crosswalkStart else 0.,
-                cslWidth if crosswalkEnd else 0.
-            )
-            
-            if crosswalkStart:
-                # crosswalk at the beginning of the way
-                self.setModifierCrosswalk(
-                    obj,
-                    streetSection,
-                    0.,
-                    crosswalkWidth,
-                    True
-                )
-                # stop line at the beginning of the way
-                self.setModifierStopLine(
-                    obj,
-                    streetSection,
-                    crosswalkWidth,
-                    cslWidth,
-                    True
-                )
-            
-            if crosswalkEnd:
-                # crosswalk at the end of the way
-                self.setModifierCrosswalk(
-                    obj,
-                    streetSection,
-                    crosswalkWidth,
-                    0.,
-                    False
-                )
-                # stop line at the end of the way
-                self.setModifierStopLine(
-                    obj,
-                    streetSection,
-                    cslWidth,
-                    crosswalkWidth,
-                    False
-                )
+            obj = self.getStreetSectionObj(streetSection, location)
+            self.generateStreetSection(manager, obj, streetSection, streetSection)
             
             # sidewalk on the left
             streetSection.sidewalkL = self.setModifierSidewalk(
@@ -299,15 +259,67 @@ class StreetRenderer:
             # from the street centerline
             self.terrainRenderer.processStreetCenterline(streetSection)
     
-    def setModifierRoadway(self, obj, waySection, trimLengthStart, trimLengthEnd):
+    def generateRoadwaySection(self, obj, streetSection, streetSectionIndex):
+        # Crosswalks are not generated for transitions (TransitionSideLane, TransitionSymLane)
+        # and dead-ends (None)
+        crosswalkStart = isinstance(streetSection.start, (IntersectionArea))
+        crosswalkEnd = isinstance(streetSection.end, (IntersectionArea))
+        
+        self.setModifierRoadway(
+            obj,
+            streetSection,
+            cslWidth if crosswalkStart else 0.,
+            cslWidth if crosswalkEnd else 0.,
+            streetSectionIndex
+        )
+        
+        if crosswalkStart:
+            # crosswalk at the beginning of the way
+            self.setModifierCrosswalk(
+                obj,
+                streetSection,
+                0.,
+                crosswalkWidth,
+                True
+            )
+            # stop line at the beginning of the way
+            self.setModifierStopLine(
+                obj,
+                streetSection,
+                crosswalkWidth,
+                cslWidth,
+                True
+            )
+        
+        if crosswalkEnd:
+            # crosswalk at the end of the way
+            self.setModifierCrosswalk(
+                obj,
+                streetSection,
+                crosswalkWidth,
+                0.,
+                False
+            )
+            # stop line at the end of the way
+            self.setModifierStopLine(
+                obj,
+                streetSection,
+                cslWidth,
+                crosswalkWidth,
+                False
+            )
+    
+    def setModifierRoadway(self, obj, streetSection, trimLengthStart, trimLengthEnd, streetSectionIndex):
         m = addGeometryNodesModifier(obj, self.gnRoadway, "Roadway")
-        m["Input_2"] = waySection.offset
-        m["Input_3"] = waySection.width
+        m["Input_2"] = streetSection.offset
+        m["Input_3"] = streetSection.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, self.getClass(waySection))
+        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, self.getClass(streetSection))
         # set trim lengths
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
+        if streetSectionIndex:
+            m["Input_9"] = streetSectionIndex
     
     def setModifierSeparator(self, obj, offset, width, trimLengthStart, trimLengthEnd):
         m = addGeometryNodesModifier(obj, self.gnSeparator, "Roadway separator")
@@ -596,6 +608,25 @@ class StreetRenderer:
         else:
             streetSection.sidewalkR["Input_6" if start else "Input_7"] = trimLength
     
+    def setOffsetWeights(self, obj, streetSection, pointIndexOffset):
+        # Set offset weights. An offset weight is equal to
+        # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
+        attributes = obj.data.attributes["offset_weight"].data
+        attributes[pointIndexOffset].value = attributes[pointIndexOffset-1].value = 1.
+        
+        centerline = streetSection.centerline
+        numPoints = len(centerline)
+        if numPoints > 2:
+            vec1 = centerline[0] - centerline[1]
+            vec1.normalize()
+            for centerlineIndex, pointIndex in zip(range(1, numPoints-1), range(pointIndexOffset+1, pointIndexOffset+numPoints-1)):
+                vec2 = centerline[centerlineIndex+1] - centerline[centerlineIndex]
+                vec2.normalize()
+                vec = vec1 + vec2
+                vec.normalize()
+                attributes[pointIndex].value = abs(1/vec.cross(vec2))
+                vec1 = -vec2
+    
     def finalize(self):
         return
     
@@ -631,23 +662,96 @@ class StreetRenderer:
             
         return material
     
+    def getStreetSectionObj(self, streetSection, location):
+        obj = createMeshObject(
+            streetSection.tags.get("name", "Street section"),
+            location = location,
+            collection = self.streetSectionsCollection
+        )
+        # create an attribute "offset_weight" for <obj>
+        obj.data.attributes.new("offset_weight", 'FLOAT', 'POINT')
+        # create an attribute for the index of the street section (or curve's spline)
+        obj.data.attributes.new("section_index", 'INT', 'POINT')
+        return obj
+    
     def debugIntersectionArea(self, manager):
         self.intersectionAreasObj.data.attributes.new("idx", 'INT', 'FACE')
         for idx,intersection in enumerate(manager.intersectionAreas):
             self.intersectionAreasObj.data.attributes["idx"].data[idx].value = idx
 
     def tmpPrepare(self, manager):
+        _tmpList = []
+        for streetSection in manager.waySectionLines.values():
+            streetSection.start = streetSection.end = None
+            streetSection.rendered = False
+            streetSection.chunkedRoadway = _tmpList
+        
         for transition in manager.transitionSideLanes:
-            way = manager.waySectionLines[abs(transition.ways[0])-1]
+            streetSection = manager.waySectionLines[abs(transition.ways[0])]
             if transition.ways[0] > 0:
-                way.start = transition
+                streetSection.start = transition
             else:
-                way.end = transition
-            way = manager.waySectionLines[abs(transition.ways[1])-1]
+                streetSection.end = transition
+            
+            streetSection = manager.waySectionLines[abs(transition.ways[1])]
             if transition.ways[1] > 0:
-                way.start = transition
+                streetSection.start = transition
             else:
-                way.end = transition
+                streetSection.end = transition
+
+        for transition in manager.transitionSymLanes:
+            for streetSectionIdx in transition.connectors:
+                streetSection = manager.waySectionLines[abs(streetSectionIdx)]
+                if streetSectionIdx > 0:
+                    streetSection.start = transition
+                else:
+                    streetSection.end = transition
+        
+        for intersection in manager.intersectionAreas:
+            for streetSectionIdx in intersection.connectors:
+                streetSection = manager.waySectionLines[abs(streetSectionIdx)]
+                if streetSectionIdx > 0:
+                    streetSection.start = intersection
+                else:
+                    streetSection.end = intersection
+        
+        for streetSection in manager.waySectionLines.values():
+            if streetSection.chunkedRoadway:
+                # <streetSection> was already visited
+                continue
+            # Check if a roadway is composed of several chunks or only a single one.
+            singleChunk = ( streetSection.start is None or isinstance(streetSection.start, IntersectionArea) )\
+                and ( streetSection.end is None or isinstance(streetSection.end, IntersectionArea) )
+            
+            if singleChunk:
+                streetSection.chunkedRoadway = None
+            else:
+                curStreetSection = streetSection
+                # find the start of the chunked roadway
+                while not ( curStreetSection.start is None or isinstance(curStreetSection.start, IntersectionArea) ):
+                    if isinstance(curStreetSection.start, TransitionSideLane):
+                        ways = curStreetSection.start.ways
+                        curStreetSection = manager.waySectionLines[-ways[0] if ways[0]<0 else -ways[1]]
+                    else: #TransitionSymLane
+                        for streetSectionIdx in curStreetSection.start.connectors:
+                            if streetSectionIdx < 0:
+                                curStreetSection = manager.waySectionLines[-streetSectionIdx]
+                                break
+                
+                chunkedRoadway = [curStreetSection]
+                # walk from the start to the end of the chunked roadway
+                while not ( curStreetSection.end is None or isinstance(curStreetSection.end, IntersectionArea) ):
+                    if isinstance(curStreetSection.end, TransitionSideLane):
+                        ways = curStreetSection.end.ways
+                        curStreetSection = manager.waySectionLines[ways[0] if ways[0]>0 else ways[1]]
+                    else: #TransitionSymLane
+                        for streetSectionIdx in curStreetSection.end.connectors:
+                            if streetSectionIdx > 0:
+                                curStreetSection = manager.waySectionLines[streetSectionIdx]
+                                break
+                    chunkedRoadway.append(curStreetSection)
+                
+                streetSection.chunkedRoadway = chunkedRoadway
             
         
 
