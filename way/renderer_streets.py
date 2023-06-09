@@ -357,7 +357,7 @@ class StreetRenderer:
         m["Input_7"] = positionFromStart
         self.setMaterial(m, "Input_8", AssetType.material, "demo", AssetPart.crosswalk, "zebra")
         # set the number of lanes
-        m["Input_9"] = float(waySection.forwardLanes + waySection.backwardLanes)
+        m["Input_9"] = float(waySection.totalLanes)
         if streetSectionIndex:
             m["Input_10"] = streetSectionIndex
     
@@ -644,9 +644,8 @@ class StreetRenderer:
     def cleanup(self):
         return
     
-    def getClass(self, waySection):
-        numLanes = waySection.forwardLanes + waySection.backwardLanes
-        return str(numLanes) + "_lanes"
+    def getClass(self, streetSection):
+        return str(streetSection.totalLanes) + "_lanes"
     
     def setMaterial(self, modifier, modifierAttr, assetType, group, streetPart, cl):
         # get asset info for the material
@@ -693,6 +692,7 @@ class StreetRenderer:
     def tmpPrepare(self, manager):
         _tmpList = []
         for streetSection in manager.waySectionLines.values():
+            streetSection.totalLanes = streetSection.forwardLanes + streetSection.backwardLanes + streetSection.bothLanes
             streetSection.start = streetSection.end = None
             streetSection.rendered = False
             streetSection.chunkedRoadway = _tmpList
@@ -834,13 +834,10 @@ class StreetRenderer:
         """
         transition = streetSection1.end
         
-        numLanes1 = streetSection1.forwardLanes + streetSection1.backwardLanes
-        
         # <streetSection1> precedes <streetSection2>
         streetSection2 = transition.outgoing
-        numLanes2 = streetSection2.forwardLanes + streetSection2.backwardLanes
         
-        if numLanes2 > numLanes1:
+        if streetSection2.totalLanes > streetSection1.totalLanes:
             centerline2 = streetSection2.centerline
             accumulatedLength = 0.
             for i in range(1, len(centerline2)):
