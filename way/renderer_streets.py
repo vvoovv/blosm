@@ -111,7 +111,7 @@ class StreetRenderer:
         if streetSection.chunkedRoadway:
             for _streetSection in streetSection.chunkedRoadway:
                 if isinstance(_streetSection.end, TransitionSideLane):
-                    self.modifyStreetSectionsWithTransition(_streetSection)
+                    self.prepareModificationsForStreetSections(_streetSection)
                     self.createModifiedPolylineMesh(bm, _streetSection)
                 elif isinstance(_streetSection.start, TransitionSideLane):
                     # the last street section in <streetSection.chunkedRoadway>
@@ -132,15 +132,13 @@ class StreetRenderer:
         if streetSection.chunkedRoadway:
             pointIndexOffset = 0
             for streetSectionIndex, _streetSection in enumerate(streetSection.chunkedRoadway):
-                # the number of points in <_streetSection.centerline>
-                numPoints = self.getStreetSectionLength(_streetSection)
                 # set the index of the street section
-                for pointIndex in range(pointIndexOffset, pointIndexOffset+numPoints):
+                for pointIndex in range(pointIndexOffset, pointIndexOffset + _streetSection.numPoints):
                     obj.data.attributes['section_index'].data[pointIndex].value = streetSectionIndex+1
                 
                 self.setOffsetWeights(obj, _streetSection, pointIndexOffset)
                 self.generateRoadwaySection(obj, _streetSection, streetSectionIndex+1)
-                pointIndexOffset += numPoints
+                pointIndexOffset += _streetSection.numPoints
         else:
             self.setOffsetWeights(obj, streetSection, 0)
             self.generateRoadwaySection(obj, streetSection, 0)
@@ -692,6 +690,7 @@ class StreetRenderer:
     def tmpPrepare(self, manager):
         _tmpList = []
         for streetSection in manager.waySectionLines.values():
+            streetSection.numPoints = len(streetSection.centerline)
             streetSection.totalLanes = streetSection.forwardLanes + streetSection.backwardLanes + streetSection.bothLanes
             streetSection.start = streetSection.end = None
             streetSection.rendered = False
@@ -717,6 +716,11 @@ class StreetRenderer:
             else:
                 streetSection.end = transition
                 transition.incoming = streetSection
+            
+            # The attribute <totalLanesIncreased> indicates if the total number of lanes
+            # in <transition.outgoing> is greater than the total number of lanes
+            # in <transition.incoming>
+            transition.totalLanesIncreased = transition.outgoing.totalLanes > transition.incoming.totalLanes
 
         for transition in manager.transitionSymLanes:
             for streetSectionIdx in transition.connectors:
@@ -824,7 +828,7 @@ class StreetRenderer:
             point = transitionEnd.offsetData[2]
             bm.edges.new(( prevVert, bm.verts.new((point[0], point[1], 0.)) ))
     
-    def modifyStreetSectionsWithTransition(self, streetSection1):
+    def prepareModificationsForStreetSections(self, streetSection1):
         """
         Prepare data for modification of the street sections with side-lane transition.
         Lengthen the street section with the smaller number of lanes and
@@ -837,7 +841,7 @@ class StreetRenderer:
         # <streetSection1> precedes <streetSection2>
         streetSection2 = transition.outgoing
         
-        if streetSection2.totalLanes > streetSection1.totalLanes:
+        if transition.totalLanesIncreased:
             centerline2 = streetSection2.centerline
             accumulatedLength = 0.
             for i in range(1, len(centerline2)):
@@ -851,12 +855,16 @@ class StreetRenderer:
                         i,
                         centerline2[i-1] + (transition.lengthOffset - accumulatedLength)/l * vec
                     )
+                    # update the number of points in <streetSection1> and <streetSection2>
+                    streetSection1.numPoints += i
+                    if i > 1:
+                        streetSection2.numPoints -= i-1
                     break
                 accumulatedLength += l
         else:
             centerline1 = streetSection1.centerline
             accumulatedLength = 0.
-            for i in range(len(centerline1)-2, -1, -1):
+            for i in range(streetSection1.numPoints-2, -1, -1):
                 vec = centerline1[i+1] - centerline1[i]
                 # length of the current segment
                 l = vec.length
@@ -867,39 +875,11 @@ class StreetRenderer:
                         i,
                         centerline1[i] + (transition.lengthOffset - accumulatedLength)/l * vec
                     )
+                    # update the number of points in <streetSection1> and <streetSection2>
+                    streetSection2.numPoints += streetSection1.numPoints-i-1
+                    streetSection1.numPoints = i+2
                     break
                 accumulatedLength += l
-    
-    def getStreetSectionLength(self, streetSection):
-        """
-        Calculate the length of <streetSection> taking into account modifications
-        due to side-lane transitions.
-        """
-        transitionStart = streetSection.start\
-            if isinstance(streetSection.start, TransitionSideLane) else None
-
-        transitionEnd = streetSection.end\
-            if isinstance(streetSection.end, TransitionSideLane) else None
-        
-        l = len(streetSection.centerline)
-        
-        if transitionStart:
-            if transitionStart.offsetData[0]:
-                # there is a side-lane transition and offset in the direction of <streetSection>
-                l -= transitionStart.offsetData[1] - 1
-            else:
-                # there is a side-lane transition and offset in the direction of <transitionStart.incoming>
-                l += len(transitionStart.incoming.centerline) - transitionStart.offsetData[1]
-        
-        if transitionEnd:
-            if transitionEnd.offsetData[0]:
-                # there is a side-lane transition and offset in the direction of <transitionEnd.outgoing>
-                l += transitionEnd.offsetData[1]
-            else:
-                # there is a side-lane transition and offset in the direction of <streetSection>
-                l -= len(streetSection.centerline) - transitionEnd.offsetData[1] + 1
-        
-        return l
 
 
 class TerrainPatchesRenderer:
