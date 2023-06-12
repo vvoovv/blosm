@@ -335,7 +335,7 @@ class StreetRenderer:
         m["Input_2"] = streetSection.offset
         m["Input_3"] = streetSection.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, self.getClass(streetSection))
+        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, self.getRoadwayClass(streetSection))
         # set trim lengths
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
@@ -347,7 +347,7 @@ class StreetRenderer:
         m["Input_2"] = offset
         m["Input_3"] = width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, None, AssetPart.ground, "grass")
+        self.setMaterial(m, "Input_5", AssetType.material, None, AssetPart.ground, "default")
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
     
@@ -656,7 +656,7 @@ class StreetRenderer:
     def cleanup(self):
         return
     
-    def getClass(self, streetSection):
+    def getRoadwayClass(self, streetSection):
         return str(streetSection.totalLanes) + "_lanes"
     
     def setMaterial(self, modifier, modifierAttr, assetType, group, streetPart, cl):
@@ -905,9 +905,9 @@ class StreetRenderer:
         m = addGeometryNodesModifier(obj, self.gnSideLaneTransition, "Side-Lane Transition")
         m["Input_2"] = transition.length
         m["Input_3"] = streetSectionMoreLanes.width - streetSection.width
-        m["Input_4"] = streetSection.width/2.
+        m["Input_4"] = streetSection.width
         m["Input_5"] = streetSection.offset
-        self.setMaterial(m, "Input_7", AssetType.material, "demo", AssetPart.roadway, self.getClass(streetSection))
+        self.setMaterial(m, "Input_7", AssetType.material, "demo", AssetPart.side_lane_transition, "default")
         m["Input_8"] = streetSection.streetSectionIndex
         useAttributeForGnInput(m, "Input_9", "offset_weight")
 
