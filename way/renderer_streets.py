@@ -137,6 +137,7 @@ class StreetRenderer:
         
         if streetSection.chunkedRoadway:
             pointIndexOffset = 0
+            transitionStart = None
             for streetSectionIndex, _streetSection in zip(range(1, len(streetSection.chunkedRoadway)+1), streetSection.chunkedRoadway):
                 _streetSection.streetSectionIndex = streetSectionIndex
                 #
@@ -147,11 +148,24 @@ class StreetRenderer:
                 #    
                 # add side-lane transitions if it's provided
                 #
-                if isinstance(_streetSection.end, TransitionSideLane):
-                    self.generateSideLaneTransition(obj, _streetSection.end)
+                transitionEnd = _streetSection.end if isinstance(_streetSection.end, TransitionSideLane) else None
                 
-                self.setOffsetWeights(obj, _streetSection, pointIndexOffset)
+                if transitionStart or transitionEnd:
+                    self.setOffsetWeightsChunked(obj, _streetSection, pointIndexOffset, transitionStart, transitionEnd)
+                else:
+                    self.setOffsetWeights(obj, _streetSection, pointIndexOffset)
+                
                 self.generateRoadwaySection(obj, _streetSection)
+                
+                if transitionEnd:
+                    if transitionEnd.laneR:
+                        self.generateSideLaneTransition(obj, transitionEnd, True)
+                    if transitionEnd.laneL:
+                        self.generateSideLaneTransition(obj, transitionEnd, False)
+                    transitionStart = transitionEnd
+                elif transitionStart:
+                    transitionStart = None
+                
                 pointIndexOffset += _streetSection.numPoints
         else:
             self.setOffsetWeights(obj, streetSection, 0)
@@ -635,15 +649,88 @@ class StreetRenderer:
         # Set offset weights. An offset weight is equal to
         # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
         attributes = obj.data.attributes["offset_weight"].data
-        attributes[pointIndexOffset].value = attributes[pointIndexOffset-1].value = 1.
-        
         centerline = streetSection.centerline
         numPoints = len(centerline)
+        attributes[pointIndexOffset].value = attributes[pointIndexOffset+numPoints-1].value = 1.
+        
         if numPoints > 2:
             vec1 = centerline[0] - centerline[1]
             vec1.normalize()
             for centerlineIndex, pointIndex in zip(range(1, numPoints-1), range(pointIndexOffset+1, pointIndexOffset+numPoints-1)):
                 vec2 = centerline[centerlineIndex+1] - centerline[centerlineIndex]
+                vec2.normalize()
+                vec = vec1 + vec2
+                vec.normalize()
+                attributes[pointIndex].value = abs(1/vec.cross(vec2))
+                vec1 = -vec2
+    
+    def setOffsetWeightsChunked(self, obj, streetSection, pointIndexOffset, transitionStart, transitionEnd):
+        # Set offset weights. An offset weight is equal to
+        # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
+        attributes = obj.data.attributes["offset_weight"].data
+        centerline = streetSection.centerline
+        numPoints = streetSection.numPoints
+        pointIndex = pointIndexOffset
+        attributes[pointIndex].value = attributes[pointIndex+numPoints-1].value = 1.
+        
+        if numPoints <=2:
+            return
+        
+        # initialize variables
+        index1 = 0
+        vec1 = None
+        
+        if transitionStart and not transitionStart.offsetData[0]:
+            # there is a side-lane transition and offset in the direction of <transitionStart.incoming>
+            centerlinePrev = transitionStart.incoming.centerline
+            numPointsPrev = len(centerlinePrev)
+            index1 = transitionStart.offsetData[1]+1
+            vec1 = centerlinePrev[index1-1] - centerlinePrev[index1]
+            vec1.normalize()
+            for centerlineIndex, pointIndex in zip(
+                    range(index1, numPointsPrev-1),
+                    range(pointIndex+1, pointIndex+numPointsPrev-index1)
+                ):
+                vec2 = centerlinePrev[centerlineIndex+1] - centerlinePrev[centerlineIndex]
+                vec2.normalize()
+                vec = vec1 + vec2
+                vec.normalize()
+                attributes[pointIndex].value = abs(1/vec.cross(vec2))
+                vec1 = -vec2
+            index1 = 0
+        else:
+            # The condition in the expession below means:
+            # there is a side-lane transition and offset in the direction of <streetSection>
+            index1 = transitionStart.offsetData[1]\
+                if transitionStart and transitionStart.offsetData[0] else 1
+            vec1 = centerline[index1-1] - centerline[index1]
+            vec1.normalize()
+        
+        # The condition in the expession below means:
+        # there is a side-lane transition and offset in the direction of <streetSection>
+        index2 = transitionEnd.offsetData[1]\
+            if transitionEnd and not transitionEnd.offsetData[0] else len(streetSection.centerline)-1
+        
+        for centerlineIndex, pointIndex in zip(
+                range(index1, index2),
+                range(pointIndex+1, pointIndex+index2-index1+1)
+            ):
+            vec2 = centerline[centerlineIndex+1] - centerline[centerlineIndex]
+            vec2.normalize()
+            vec = vec1 + vec2
+            vec.normalize()
+            attributes[pointIndex].value = abs(1/vec.cross(vec2))
+            vec1 = -vec2
+        
+        if transitionEnd and transitionEnd.offsetData[0]:
+            # there is a side-lane transition and offset in the direction of <transitionEnd.outgoing>
+            centerlineNext = transitionEnd.outgoing.centerline
+            index2 = transitionEnd.offsetData[1]
+            for centerlineIndex, pointIndex in zip(
+                    range(0, index2),
+                    range(pointIndex+1, pointIndex+index2+1)
+                ):
+                vec2 = centerlineNext[centerlineIndex+1] - centerlineNext[centerlineIndex]
                 vec2.normalize()
                 vec = vec1 + vec2
                 vec.normalize()
@@ -895,7 +982,7 @@ class StreetRenderer:
                     break
                 accumulatedLength += l
     
-    def generateSideLaneTransition(self, obj, transition):
+    def generateSideLaneTransition(self, obj, transition, laneOnRight):
         # get the street section <streetSection> for which the side-lane transition will be generated
         streetSection, streetSectionMoreLanes =\
             (transition.incoming, transition.outgoing)\
@@ -907,6 +994,7 @@ class StreetRenderer:
         m["Input_3"] = streetSectionMoreLanes.width - streetSection.width
         m["Input_4"] = streetSection.width
         m["Input_5"] = streetSection.offset
+        m["Input_6"] = laneOnRight
         self.setMaterial(m, "Input_7", AssetType.material, "demo", AssetPart.side_lane_transition, "default")
         m["Input_8"] = streetSection.streetSectionIndex
         useAttributeForGnInput(m, "Input_9", "offset_weight")
