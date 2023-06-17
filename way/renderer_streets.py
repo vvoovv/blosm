@@ -684,7 +684,7 @@ class StreetRenderer:
             # there is a side-lane transition and offset in the direction of <transitionStart.incoming>
             centerlinePrev = transitionStart.incoming.centerline
             numPointsPrev = len(centerlinePrev)
-            index1 = transitionStart.offsetData[1]+1
+            index1 = transitionStart.offsetData[1]
             vec1 = centerlinePrev[index1-1] - centerlinePrev[index1]
             vec1.normalize()
             for centerlineIndex, pointIndex in zip(
@@ -945,7 +945,7 @@ class StreetRenderer:
         if transition.totalLanesIncreased:
             centerline2 = streetSection2.centerline
             accumulatedLength = 0.
-            for i in range(1, len(centerline2)):
+            for i in range(1, streetSection2.numPoints):
                 vec = centerline2[i] - centerline2[i-1]
                 # length of the current segment
                 l = vec.length
@@ -973,8 +973,8 @@ class StreetRenderer:
                     transition.offsetData = (
                         # offset in the direction of <centerline1> (i.e. in the incoming direction)
                         False,
-                        i,
-                        centerline1[i] + (transition.lengthOffset - accumulatedLength)/l * vec
+                        i+1,
+                        centerline1[i] + (l-transition.lengthOffset + accumulatedLength)/l * vec
                     )
                     # update the number of points in <streetSection1> and <streetSection2>
                     streetSection2.numPoints += streetSection1.numPoints-i-1
