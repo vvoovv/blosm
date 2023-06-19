@@ -113,7 +113,9 @@ class StreetRenderer:
         
         if streetSection.chunkedRoadway:
             transitionStart = None
-            for _streetSection in streetSection.chunkedRoadway:
+            for streetSectionIndex, _streetSection in zip(range(1, len(streetSection.chunkedRoadway)+1), streetSection.chunkedRoadway):
+                # remember <streetSectionIndex> for the future use
+                _streetSection.streetSectionIndex = streetSectionIndex
                 transitionEnd = _streetSection.end if isinstance(_streetSection.end, TransitionSideLane) else None
                 if transitionEnd:
                     self.prepareModificationsForStreetSections(transitionEnd)
@@ -138,11 +140,11 @@ class StreetRenderer:
         if streetSection.chunkedRoadway:
             pointIndexOffset = 0
             transitionStart = None
-            for streetSectionIndex, _streetSection in zip(range(1, len(streetSection.chunkedRoadway)+1), streetSection.chunkedRoadway):
-                _streetSection.streetSectionIndex = streetSectionIndex
+            for _streetSection in streetSection.chunkedRoadway:
                 #
                 # set the index of the street section
                 #
+                streetSectionIndex = _streetSection.streetSectionIndex
                 for pointIndex in range(pointIndexOffset, pointIndexOffset + _streetSection.numPoints):
                     obj.data.attributes['section_index'].data[pointIndex].value = streetSectionIndex
                 #    
@@ -994,10 +996,13 @@ class StreetRenderer:
         m["Input_3"] = streetSectionMoreLanes.width - streetSection.width
         m["Input_4"] = streetSection.width
         m["Input_5"] = streetSection.offset
-        m["Input_6"] = laneOnRight
+        # Reverse the position of the transition lane from right to left or from left to right
+        # if the total number of lanes is decreased
+        m["Input_6"] = laneOnRight if transition.totalLanesIncreased else not laneOnRight
         self.setMaterial(m, "Input_7", AssetType.material, "demo", AssetPart.side_lane_transition, "default")
         m["Input_8"] = streetSection.streetSectionIndex
         useAttributeForGnInput(m, "Input_9", "offset_weight")
+        m["Input_10"] = transition.totalLanesIncreased
 
 
 class TerrainPatchesRenderer:
