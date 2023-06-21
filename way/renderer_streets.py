@@ -407,6 +407,12 @@ class StreetRenderer:
                 bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
             )
             
+        for transition in manager.transitionSymLanes:
+            polygon = transition.polygon
+            bm.faces.new(
+                bm.verts.new(Vector((vert[0], vert[1], 0.))) for vert in polygon
+            )
+            
             #self.processIntersectionSidewalks(intersectionArea, manager) FIXME
             
             #self.terrainRenderer.processIntersection(intersectionArea) FIXME
