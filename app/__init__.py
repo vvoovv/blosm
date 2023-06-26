@@ -131,19 +131,21 @@ class BaseApp:
             raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
         self.pmlFilepath = pmlFilepath
         
-        assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/asset_info.json")
-        if self.enableExperimentalFeatures and self.importForExport:
-            _assetInfoFilepath = "%s_export.json" % assetInfoFilepath[:-5]
-            if os.path.isfile(_assetInfoFilepath):
-                assetInfoFilepath = _assetInfoFilepath
-        if not os.path.isfile(assetInfoFilepath):
-            raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
-        self.assetInfoFilepath = assetInfoFilepath
+        if self.buildings:
+            assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/asset_info.json")
+            if self.enableExperimentalFeatures and self.importForExport:
+                _assetInfoFilepath = "%s_export.json" % assetInfoFilepath[:-5]
+                if os.path.isfile(_assetInfoFilepath):
+                    assetInfoFilepath = _assetInfoFilepath
+            if not os.path.isfile(assetInfoFilepath):
+                raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepath)
+            self.assetInfoFilepath = assetInfoFilepath
         
-        assetInfoFilepathStreet = os.path.join(assetPackageDir, "asset_info/street.json")
-        if not os.path.isfile(assetInfoFilepathStreet):
-            raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepathStreet)
-        self.assetInfoFilepathStreet = assetInfoFilepathStreet
+        if self.highways:
+            assetInfoFilepathStreet = os.path.join(assetPackageDir, "asset_info/street.json")
+            if not os.path.isfile(assetInfoFilepathStreet):
+                raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepathStreet)
+            self.assetInfoFilepathStreet = assetInfoFilepathStreet
     
     def loadSetupScript(self, setupScript):
         setupScript = os.path.realpath(setupScript)

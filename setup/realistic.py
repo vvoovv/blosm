@@ -17,14 +17,15 @@ def setup(app, osm):
     # Reason: instances of way.Way must be already initialized when actions for the building manager
     # are processed
     
-    if app.highways or app.railways:
+    if app.highways or app.railways or classifyFacades:
         setup.skipWays()
         
-        from action.generate_streets import StreetGenerator
-        from way.renderer_streets import StreetRenderer
         wayManager = setup.getWayManager()
-        wayManager.addAction(StreetGenerator())
-        wayManager.addRenderer(StreetRenderer(app))
+        if app.highways or app.railways:
+            from action.generate_streets import StreetGenerator
+            from way.renderer_streets import StreetRenderer
+            wayManager.addAction(StreetGenerator())
+            wayManager.addRenderer(StreetRenderer(app))
     
         if app.highways:
             setup.roadsAndPaths()
@@ -32,8 +33,8 @@ def setup(app, osm):
         if app.railways:
             setup.railways()
         
-        if app.forests:
-            setup_forests(app, osm)
+    if app.forests:
+        setup_forests(app, osm)
     
     if app.buildings:
         setup.buildingsRealistic(getStyle=getStyle)

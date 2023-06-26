@@ -54,7 +54,7 @@ class FacadeVisibility:
     
     def do(self, manager):
         # check if have a way manager
-        if not self.app.managersById["ways"]:
+        if not self.app.managersById.get("ways"):
             return
         
         buildings = manager.buildings
