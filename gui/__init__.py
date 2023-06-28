@@ -34,6 +34,7 @@ def getDataTypes():
             ("osm", "OpenStreetMap", "OpenStreetMap"),
             ("terrain", "terrain", "Terrain"),
             ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"),
+            ("google-3d-tiles", "Google 3D Tiles", "Photorealistic 3D Tiles by Google"),
             ("gpx", "gpx", "GPX tracks")
         ]
         if app.has(Keys.geojson):
@@ -283,7 +284,7 @@ class BLOSM_OT_LevelsDelete(bpy.types.Operator):
 
 
 class BLOSM_PT_Extent(bpy.types.Panel):
-    bl_label = "blender-osm"
+    bl_label = "Blosm"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
@@ -296,6 +297,7 @@ class BLOSM_PT_Extent(bpy.types.Panel):
         if (addon.dataType == "osm" and addon.osmSource == "server") or\
             (addon.dataType == "overlay" and not bpy.data.objects.get(addon.terrainObject)) or\
             addon.dataType == "terrain" or\
+            addon.dataType == "google-3d-tiles" or\
             (addon.dataType == "geojson" and addon.coordinatesAsFilter):
             box = layout.box()
             row = box.row()
@@ -367,6 +369,8 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             self.drawTerrain(context)
         elif dataType == "overlay":
             self.drawOverlay(context)
+        elif dataType == "google-3d-tiles":
+            self.drawGoogle3dTiles(context)
         elif dataType == "gpx":
             self.drawGpx(context)
         elif dataType == "geojson":
@@ -533,6 +537,12 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         split.prop(addon, "maxNumTiles", text="")
         _squreTextureSize = 256 * round( math.sqrt(addon.maxNumTiles) )
         box.label(text="Like a square texture {:,d}x{:,d} px".format(_squreTextureSize, _squreTextureSize))
+    
+    def drawGoogle3dTiles(self, context):
+        layout = self.layout
+        addon = context.scene.blosm
+        
+        layout.prop(addon, "threeDTilesLod")
     
     def drawGpx(self, context):
         layout = self.layout
@@ -872,6 +882,23 @@ class BlosmProperties(bpy.types.PropertyGroup):
     )
     
     ####################################
+    # Settings for the 3D Tiles import
+    ####################################
+    
+    threeDTilesLod: bpy.props.EnumProperty(
+        name = "Level of details",
+        items = (
+            ("1", "1", "1"),
+            ("2", "2", "2"),
+            ("3", "3", "3"),
+            ("4", "4", "4"),
+            ("5", "5", "5")
+        ),
+        description = "Import as Blender curve or mesh",
+        default = "4"
+    )
+    
+    ####################################
     # Settings for the GPX track import
     ####################################
     
@@ -1029,7 +1056,7 @@ _classes = (
 def register():
     for c in _classes:
         bpy.utils.register_class(c)
-    # a group for all GUI attributes related to blender-osm
+    # a group for all GUI attributes related to Blosm
     bpy.types.Scene.blosm = bpy.props.PointerProperty(type=BlosmProperties)
     bpy.app.timers.register(_onRegister280, first_interval=2)
     # see the notes near the code for <_onFileLoaded>

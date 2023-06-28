@@ -103,6 +103,11 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
         description = "A string token (API Key) to access satellite imagery from ArcGIS location service"
     )
     
+    googleMapsApiKey: bpy.props.StringProperty(
+        name = "Google 3D Tiles Key",
+        description = "A string token (API Key) to access 3D Tiles by Google"
+    )
+    
     osmServer: bpy.props.EnumProperty(
         name = "OSM data server",
         items = (
@@ -149,6 +154,10 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
             
+            split = layout.split(factor=0.9)
+            split.prop(self, "googleMapsApiKey")
+            split.operator("blosm.get_google_maps_api_key", text="Get it!")
+            
             layout.separator()
             layout.box().label(text="Advanced settings:")
             # Extensions might come later
@@ -182,6 +191,20 @@ class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     url = "https://www.mapbox.com/account/access-tokens"
+    
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
+
+
+class BLOSM_OT_GetGoogleMapsApiKey(bpy.types.Operator):
+    bl_idname = "blosm.get_google_maps_api_key"
+    bl_label = ""
+    bl_description = "Get Google 3D Tiles Key"
+    bl_options = {'INTERNAL'}
+    
+    url = "https://developers.google.com/maps/documentation/tile/get-api-key"
     
     def execute(self, context):
         import webbrowser
@@ -229,6 +252,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return self.importOverlay(context)
         elif dataType == "gpx":
             return self.importGpx(context)
+        elif dataType == "google-3d-tiles":
+            return self.importGoogle3dTiles(context)
         elif dataType == "geojson":
             return self.importGeoJson(context)
         
@@ -438,6 +463,35 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         return {'FINISHED'}
     
+    def importGoogle3dTiles(self, context):
+        from threed_tiles.manager import BaseManager
+        from threed_tiles.blender import BlenderRenderer
+        
+        renderer = BlenderRenderer()
+        manager = BaseManager("https://tile.googleapis.com/v1/3dtiles/root.json", renderer)
+        
+        a = blenderApp.app
+        try:
+            a.init3dTiles(context, manager, "google")
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+        
+        manager.centerLat, manager.centerLon, setLatLonHeight = self.getCenterLatLon(context)
+        sceneHasHeight = "height" in context.scene
+        if not setLatLonHeight and sceneHasHeight:
+            manager.centerHeight = context.scene["height"]
+        else:
+            manager.calculateCenterHeight = True
+        
+        manager.render(a.minLon, a.minLat, a.maxLon, a.maxLat)
+        
+        if setLatLonHeight:
+            context.scene["lat"] = manager.centerLat
+            context.scene["lon"] = manager.centerLon
+        
+        return {'FINISHED'}
+    
     def importGpx(self, context):
         from parse.gpx import Gpx
         from gpx import GpxRenderer
@@ -641,6 +695,7 @@ _classes = (
     BlosmPreferences,
     BLOSM_OT_GetArcgisToken,
     BLOSM_OT_GetMapboxToken,
+    BLOSM_OT_GetGoogleMapsApiKey,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,
     BLOSM_OT_ControlOverlay

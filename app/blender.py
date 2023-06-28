@@ -333,6 +333,28 @@ class BlenderApp(BaseApp):
         
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
     
+    def init3dTiles(self, context, manager, subdirName):
+        addonName = self.addonName
+        
+        self.setDataDir(context, self.basePath, addonName)
+        tilesDir = os.path.join(self.dataDir, "3d_tiles", subdirName)
+        if not os.path.exists(tilesDir):
+            os.makedirs(tilesDir)
+        manager.tilesDir = tilesDir
+        
+        prefs = bpy.context.preferences.addons
+        if addonName in prefs:
+            googleMapsApiKey = prefs[addonName].preferences.googleMapsApiKey
+            if not googleMapsApiKey:
+                raise Exception("A Google 3D Tiles Key isn't set in the addon preferences")
+        else:
+            with open(os.path.realpath(os.path.join( __file__, os.pardir, os.pardir, "threed_tiles", "google_maps_api_key.txt" )), 'r') as file:
+                googleMapsApiKey = file.read()
+        
+        manager.rootUri = manager.rootUri + "?key=" + googleMapsApiKey
+        manager.constantUriQuery = "key=" + googleMapsApiKey
+        manager.setGeometricErrorRange(self.threeDTilesLod)
+    
     def initGpx(self, context, addonName):
         gpxFilepath = os.path.realpath(bpy.path.abspath(self.gpxFilepath))
         if not os.path.isfile(gpxFilepath):
