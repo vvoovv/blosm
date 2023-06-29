@@ -542,7 +542,8 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         layout = self.layout
         addon = context.scene.blosm
         
-        layout.prop(addon, "threeDTilesLod")
+        layout.prop(addon, "threedTilesLod")
+        layout.prop(addon, "join3dTilesObjects")
     
     def drawGpx(self, context):
         layout = self.layout
@@ -885,7 +886,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
     # Settings for the 3D Tiles import
     ####################################
     
-    threeDTilesLod: bpy.props.EnumProperty(
+    threedTilesLod: bpy.props.EnumProperty(
         name = "Level of details",
         items = (
             ("1", "1", "1"),
@@ -896,6 +897,12 @@ class BlosmProperties(bpy.types.PropertyGroup):
         ),
         description = "Import as Blender curve or mesh",
         default = "4"
+    )
+    
+    join3dTilesObjects: bpy.props.BoolProperty(
+        name = "Join 3D Tiles objects",
+        description = "Join 3D Tiles objects and remove double vertices",
+        default = True
     )
     
     ####################################

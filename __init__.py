@@ -467,7 +467,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         from threed_tiles.manager import BaseManager
         from threed_tiles.blender import BlenderRenderer
         
-        renderer = BlenderRenderer()
+        renderer = BlenderRenderer("Google 3D Tiles", context.scene.blosm.join3dTilesObjects)
         manager = BaseManager("https://tile.googleapis.com/v1/3dtiles/root.json", renderer)
         
         a = blenderApp.app
