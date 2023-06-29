@@ -353,7 +353,7 @@ class BlenderApp(BaseApp):
         
         manager.rootUri = manager.rootUri + "?key=" + googleMapsApiKey
         manager.constantUriQuery = "key=" + googleMapsApiKey
-        manager.setGeometricErrorRange(self.threedTilesLod)
+        manager.setGeometricErrorRange(self.lodOf3dTiles)
     
     def initGpx(self, context, addonName):
         gpxFilepath = os.path.realpath(bpy.path.abspath(self.gpxFilepath))

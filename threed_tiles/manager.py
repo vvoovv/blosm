@@ -8,11 +8,11 @@ from mathutils import Vector
 
 
 _geometricErrorRanges = {
-    '1': (60., 200.),
-    '2': (30., 60.),
-    '3': (15., 30),
-    '4': (7., 15.),
-    '5': (0., 7)
+    'lod1': (60., 200.),
+    'lod2': (30., 60.),
+    'lod3': (15., 30),
+    'lod4': (7., 15.),
+    'lod5': (0., 7)
 }
 
 # heights above the sea level

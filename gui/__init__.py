@@ -534,7 +534,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         box.label(text="[Advanced]")
         split = box.split(factor=0.7)
         split.label(text="Max number of tiles:")
-        split.prop(addon, "maxNumTiles", text="")
+        split.prop(addon, "maxNumTiles", text='')
         _squreTextureSize = 256 * round( math.sqrt(addon.maxNumTiles) )
         box.label(text="Like a square texture {:,d}x{:,d} px".format(_squreTextureSize, _squreTextureSize))
     
@@ -542,7 +542,9 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         layout = self.layout
         addon = context.scene.blosm
         
-        layout.prop(addon, "threedTilesLod")
+        box = layout.box()
+        box.label(text="Level of details:")
+        box.prop(addon, "lodOf3dTiles", text='')
         layout.prop(addon, "join3dTilesObjects")
     
     def drawGpx(self, context):
@@ -886,17 +888,17 @@ class BlosmProperties(bpy.types.PropertyGroup):
     # Settings for the 3D Tiles import
     ####################################
     
-    threedTilesLod: bpy.props.EnumProperty(
+    lodOf3dTiles: bpy.props.EnumProperty(
         name = "Level of details",
         items = (
-            ("1", "1", "1"),
-            ("2", "2", "2"),
-            ("3", "3", "3"),
-            ("4", "4", "4"),
-            ("5", "5", "5")
+            ("lod1", "whole city", "whole city"),
+            ("lod2", "districts", "districts"),
+            ("lod3", "groups of buildings", "groups of buildings"),
+            ("lod4", "separate buildings", "separate buildings"),
+            ("lod5", "buildings with details", "buildings with details")
         ),
-        description = "Import as Blender curve or mesh",
-        default = "4"
+        description = "Choose a level of details (LoD)",
+        default = "lod3"
     )
     
     join3dTilesObjects: bpy.props.BoolProperty(
