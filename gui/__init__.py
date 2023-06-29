@@ -283,12 +283,27 @@ class BLOSM_OT_LevelsDelete(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class BLOSM_PT_Copyright(bpy.types.Panel):
+    bl_label = "Copyright"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_context = "objectmode"
+    bl_category = "Blosm"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.blosm.copyright
+    
+    def draw(self, context):
+        self.layout.label(text = context.scene.blosm.copyright)
+
+
 class BLOSM_PT_Extent(bpy.types.Panel):
     bl_label = "Blosm"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
 
     def draw(self, context):
         layout = self.layout
@@ -329,7 +344,7 @@ class PanelRealisticTools():#(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     #bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
     
     @classmethod
     def poll(cls, context):
@@ -357,7 +372,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
     
     def draw(self, context):
         addon = context.scene.blosm
@@ -418,7 +433,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             layout.box().prop(addon, "singleObject")
             
-            layout.box().prop(addon, "ignoreGeoreferencing")
+            layout.box().prop(addon, "relativeToInitialImport")
             
             box = layout.box()
             box.label(text = "[Advanced]:")
@@ -467,7 +482,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
                 if addon.gnSetup2d != '-':
                     self._drawDefaultLevels(box, addon)
             
-            layout.box().prop(addon, "ignoreGeoreferencing")
+            layout.box().prop(addon, "relativeToInitialImport")
             
             box = layout.box()
             box.label(text = "[Advanced]:")
@@ -499,7 +514,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
     def drawTerrain(self, context):
         addon = context.scene.blosm
         
-        self.layout.box().prop(addon, "ignoreGeoreferencing")
+        self.layout.box().prop(addon, "relativeToInitialImport")
         
         # Vertex reduction: reduction ratio selection + total vertex computation
         count = 3600 // int(addon.terrainResolution)
@@ -546,6 +561,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         box.label(text="Level of details:")
         box.prop(addon, "lodOf3dTiles", text='')
         layout.prop(addon, "join3dTilesObjects")
+        layout.prop(addon, "relativeToInitialImport")
     
     def drawGpx(self, context):
         layout = self.layout
@@ -557,7 +573,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         
         layout.box().prop(addon, "gpxProjectOnTerrain")
         
-        layout.box().prop(addon, "ignoreGeoreferencing")
+        layout.box().prop(addon, "relativeToInitialImport")
 
 
 class BLOSM_PT_BpyProj(bpy.types.Panel):
@@ -565,7 +581,7 @@ class BLOSM_PT_BpyProj(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
     
     @classmethod
     def poll(cls, context):
@@ -744,10 +760,10 @@ class BlosmProperties(bpy.types.PropertyGroup):
         default = True
     )
 
-    ignoreGeoreferencing: bpy.props.BoolProperty(
-        name = "Ignore existing georeferencing",
-        description = "Ignore existing georeferencing and make a new one",
-        default = False
+    relativeToInitialImport: bpy.props.BoolProperty(
+        name = "Relative to initial import",
+        description = "Import relative to the initial import if it is available",
+        default = True
     )
     
     levelHeight: bpy.props.FloatProperty(
@@ -895,7 +911,8 @@ class BlosmProperties(bpy.types.PropertyGroup):
             ("lod2", "districts", "districts"),
             ("lod3", "groups of buildings", "groups of buildings"),
             ("lod4", "separate buildings", "separate buildings"),
-            ("lod5", "buildings with details", "buildings with details")
+            ("lod5", "buildings with details", "buildings with details"),
+            ("lod6", "buildings with more details", "buildings with more details")
         ),
         description = "Choose a level of details (LoD)",
         default = "lod3"
@@ -905,6 +922,24 @@ class BlosmProperties(bpy.types.PropertyGroup):
         name = "Join 3D Tiles objects",
         description = "Join 3D Tiles objects and remove double vertices",
         default = True
+    )
+    
+    copyright: bpy.props.StringProperty(
+        name = "Copyright message",
+        description = "Copyright for the imported content",
+        default = ''
+    )
+    
+    cacheJsonFiles: bpy.props.BoolProperty(
+        name = "Cache JSON Files",
+        description = "Cache JSON Files that define tilesets",
+        default = True
+    )
+    
+    cache3dFiles: bpy.props.BoolProperty(
+        name = "Cache 3D Files",
+        description = "Cache 3D Files (for example in .glb format)",
+        default = False
     )
     
     ####################################
@@ -1056,6 +1091,7 @@ _classes = (
     BLOSM_OT_Gn2d_Info,
     BLOSM_OT_LevelsAdd,
     BLOSM_OT_LevelsDelete,
+    BLOSM_PT_Copyright,
     BLOSM_PT_Extent,
     BLOSM_PT_Settings,
     BLOSM_PT_BpyProj,

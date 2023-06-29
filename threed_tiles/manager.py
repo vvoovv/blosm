@@ -12,7 +12,8 @@ _geometricErrorRanges = {
     'lod2': (30., 60.),
     'lod3': (15., 30),
     'lod4': (7., 15.),
-    'lod5': (0., 7)
+    'lod5': (3., 7),
+    'lod6': (0., 3)
 }
 
 # heights above the sea level
@@ -30,12 +31,6 @@ _radiiSquared = _wgs84RadiiSquared = (
     _radii[1] * _radii[1],
     _radii[2] * _radii[2]
 )
-
-
-class BboxesRelativePosition:
-    intersect = 1
-    dontIntersect = 2
-    inside = 3
 
 
 class BaseManager:
@@ -56,7 +51,7 @@ class BaseManager:
         self.tilesDir = ''
         
         self.cacheJsonFiles = True
-        self.cache3dFiles = True
+        self.cache3dFiles = False
     
     def setGeometricErrorRange(self, rangeId):
         self.geometricErrorMin, self.geometricErrorMax = _geometricErrorRanges[rangeId]
@@ -98,7 +93,6 @@ class BaseManager:
                         self.renderChildren(_children)
                     elif "content" in tile:
                         self.renderTile(tile, jsonOnly=True)
-            t = 0
         
     def renderTile(self, tile, jsonOnly):
         uriComponents = urlparse(tile["content"]["uri"])

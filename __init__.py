@@ -305,7 +305,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a.createLayers(osm)
         
         setLatLon = False
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             osm.setProjection(scene["lat"], scene["lon"])
         elif a.osmSource == "server":
             osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
@@ -362,7 +362,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
     def getCenterLatLon(self, context):
         a = blenderApp.app
         scene = context.scene
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             lat = scene["lat"]
             lon = scene["lon"]
             setLatLon = False
@@ -467,8 +467,13 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         from threed_tiles.manager import BaseManager
         from threed_tiles.blender import BlenderRenderer
         
-        renderer = BlenderRenderer("Google 3D Tiles", context.scene.blosm.join3dTilesObjects)
+        addon = context.scene.blosm
+        
+        renderer = BlenderRenderer("Google 3D Tiles", addon.join3dTilesObjects)
         manager = BaseManager("https://tile.googleapis.com/v1/3dtiles/root.json", renderer)
+        
+        manager.cacheJsonFiles = addon.cacheJsonFiles
+        manager.cache3dFiles = addon.cache3dFiles
         
         a = blenderApp.app
         try:
@@ -478,17 +483,20 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return {'CANCELLED'}
         
         manager.centerLat, manager.centerLon, setLatLonHeight = self.getCenterLatLon(context)
-        sceneHasHeight = "height" in context.scene
-        if not setLatLonHeight and sceneHasHeight:
-            manager.centerHeight = context.scene["height"]
+        
+        if not setLatLonHeight and "height_offset" in context.scene:
+            renderer.heightOffset = context.scene["height_offset"]
         else:
-            manager.calculateCenterHeight = True
+            renderer.calculateHeightOffset = True
         
         manager.render(a.minLon, a.minLat, a.maxLon, a.maxLat)
         
         if setLatLonHeight:
             context.scene["lat"] = manager.centerLat
             context.scene["lon"] = manager.centerLon
+        
+        if renderer.calculateHeightOffset:
+            context.scene["height_offset"] = renderer.heightOffset
         
         return {'FINISHED'}
     
@@ -510,7 +518,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         gpx = Gpx(a)
         
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             gpx.setProjection(scene["lat"], scene["lon"])
             setLatLon = False
         else:
@@ -576,7 +584,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a.createLayers(data)
         
         setLatLon = False
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             a.setProjection(scene["lat"], scene["lon"])
         elif a.coordinatesAsFilter:
             a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
