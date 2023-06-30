@@ -1,6 +1,6 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2018 Vladimir Elistratov
+This file is part of Blosm addon for Blender.
+Copyright (C) 2014-2023 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -18,12 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 bl_info = {
-    "name": "blender-osm",
+    "name": "Blosm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 6, 6),
-    "blender": (2, 80, 0),
-    "location": "Right side panel > \"osm\" tab",
-    "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
+    "version": (2, 7, 0),
+    "blender": (3, 0, 0),
+    "location": "Right side panel > \"Blosm\" tab",
+    "description": "A few clicks import of OpenStreetMap, Google 3D cities, terrain, satellite imagery, web maps",
     "warning": "",
     "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
     "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
@@ -36,8 +36,10 @@ import os, sys, json, textwrap
 
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
-        "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
-        "renderer", "terrain", "util", "defs", "setup", "ape"
+        "action", "ape", "app", "building", "building2", "defs", "gpx", "grammar", "gui",
+        "item", "item_renderer", "lib", "manager", "material", "mpl", "overlay", "parse",
+        "pml", "realistic", "renderer", "script", "setup", "style", "terrain",
+        "threed_tiles", "util", "way"
     ]:
     sys.modules.pop(m, 0)
 
@@ -215,7 +217,7 @@ class BLOSM_OT_GetGoogleMapsApiKey(bpy.types.Operator):
 class BLOSM_OT_LoadExtensions(bpy.types.Operator):
     bl_idname = "blosm.load_extensions"
     bl_label = ""
-    bl_description = "Scan Blender addons, find extensions for blender-osm and load them"
+    bl_description = "Scan Blender addons, find extensions for Blosm and load them"
     bl_options = {'INTERNAL'}
     
     def execute(self, context):
@@ -231,8 +233,8 @@ class BLOSM_OT_LoadExtensions(bpy.types.Operator):
 class BLOSM_OT_ImportData(bpy.types.Operator):
     """Import data: OpenStreetMap or terrain"""
     bl_idname = "blosm.import_data"  # important since its how bpy.ops.blosm.import_data is constructed
-    bl_label = "blender-osm"
-    bl_description = "Import data of the selected type (OpenStreetMap or terrain)"
+    bl_label = "Blosm"
+    bl_description = "Import data of the selected type (OpenStreetMap, Google 3D Tiles, terrain, etc)"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):

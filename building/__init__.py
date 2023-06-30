@@ -1,5 +1,5 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
+This file is part of Blosm addon for Blender.
 Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
