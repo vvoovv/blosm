@@ -233,6 +233,10 @@ class BLOSM_OT_ExtentFromActive(bpy.types.Operator):
         scene = context.scene
         addon = scene.blosm
         
+        if not app.projection:
+            from util.transverse_mercator import TransverseMercator
+            app.projection = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
+        
         addon.minLon, addon.minLat, addon.maxLon, addon.maxLat = app.getExtentFromObject(
             context.object,
             context

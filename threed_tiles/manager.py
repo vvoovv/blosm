@@ -67,7 +67,7 @@ class BaseManager:
             self.renderTileset(tileset)
         except Exception as e:
             # return only a critical error
-            return ("Unable to process the root URI: %s" % str(e),)
+            return ("Unable to process the root URI of the 3D Tiles: %s" % str(e),)
         
         numRenderedTiles = self.renderer.finalize(self)
         
