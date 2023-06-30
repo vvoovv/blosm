@@ -1,5 +1,5 @@
 """
-This file is part of Blosm addon for Blender.
+This file is a part of Blosm addon for Blender.
 Copyright (C) 2014-2023 Vladimir Elistratov
 prokitektura+support@gmail.com
 
@@ -25,8 +25,8 @@ bl_info = {
     "location": "Right side panel > \"Blosm\" tab",
     "description": "A few clicks import of OpenStreetMap, Google 3D cities, terrain, satellite imagery, web maps",
     "warning": "",
-    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
-    "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
+    "wiki_url": "https://github.com/vvoovv/blosm/wiki/Premium-Version",
+    "tracker_url": "https://github.com/vvoovv/blosm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
     "blosmAssets": "2021.05.07"

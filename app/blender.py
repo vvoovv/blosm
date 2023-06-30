@@ -1,5 +1,5 @@
 """
-This file is part of Blosm addon for Blender.
+This file is a part of Blosm addon for Blender.
 Copyright (C) 2014-2020 Vladimir Elistratov, Alain (al1brn)
 prokitektura+support@gmail.com
 

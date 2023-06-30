@@ -8,7 +8,7 @@ from .geometry.rectangle import RectangleFRA
 from util import zero, zAxis
 
 
-# Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
+# Use https://raw.githubusercontent.com/wiki/vvoovv/blosm/assets/roof_profiles.blend
 # to generate values for a specific profile
 roofDataGabled = (
     (
@@ -175,7 +175,7 @@ class Slot:
     An instance of the class is created for each profile point.
     The class is used to form faces for the profiled roof.
     
-    See https://github.com/vvoovv/blender-osm/wiki/Profiled-roofs for description and illustration
+    See https://github.com/vvoovv/blosm/wiki/Profiled-roofs for description and illustration
     of concepts and algorithms used in the code. Specifically, the image <Main> from that webpage is
     used a number of times to illustrate the code.
     """

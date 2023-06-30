@@ -1,7 +1,7 @@
 from .roof_profile import RoofProfile
 
 
-# Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
+# Use https://raw.githubusercontent.com/wiki/vvoovv/blosm/assets/roof_profiles.blend
 # to generate values for a specific profile
 _gabledRoof = (
     (

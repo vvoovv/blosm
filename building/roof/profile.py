@@ -1,5 +1,5 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
+This file is a part of Blosm addon for Blender.
 Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
@@ -24,7 +24,7 @@ from util import zero
 from util.osm import parseNumber
 
 
-# Use https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/assets/roof_profiles.blend
+# Use https://raw.githubusercontent.com/wiki/vvoovv/blosm/assets/roof_profiles.blend
 # to generate values for a specific profile
 gabledRoof = (
     (
@@ -191,7 +191,7 @@ class Slot:
     An instance of the class is created for each profile point.
     The class is used to form faces for the profiled roof.
     
-    See https://github.com/vvoovv/blender-osm/wiki/Profiled-roofs for description and illustration
+    See https://github.com/vvoovv/blosm/wiki/Profiled-roofs for description and illustration
     of concepts and algorithms used in the code. Specifically, the image <Main> from that webpage is
     used a number of times to illustrate the code.
     """
@@ -492,7 +492,7 @@ class RoofProfile(Roof):
     The class deals with so called profiled roofs (i.e. roofs defined be a profile):
     gabled, round, gambrel, saltbox
     
-    See https://github.com/vvoovv/blender-osm/wiki/Profiled-roofs for description and illustration
+    See https://github.com/vvoovv/blosm/wiki/Profiled-roofs for description and illustration
     of concepts and algorithms used in the code. Specifically, the image <Main> from that webpage is
     used a number of times to illustrate the code.
     """

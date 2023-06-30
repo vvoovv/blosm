@@ -1,6 +1,6 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2020 Vladimir Elistratov, Alain (al1brn)
+This file is a part of Blosm addon for Blender.
+Copyright (C) 2014-2023 Vladimir Elistratov, Alain (al1brn)
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -183,7 +183,7 @@ class BLOSM_OT_SelectExtent(bpy.types.Operator):
         av = app.version
         isPremium = "premium" if app.isPremium else ""
         webbrowser.open_new_tab(
-            "%s?blender_version=%s.%s&addon=blender-osm&addon_version=%s%s.%s.%s" %
+            "%s?blender_version=%s.%s&addon=blosm&addon_version=%s%s.%s.%s" %
             (self.url, bv[0], bv[1], isPremium, av[0], av[1], av[2])
         )
         return {'FINISHED'}
@@ -248,7 +248,7 @@ class BLOSM_OT_Gn2d_Info(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def invoke(self, context, event):
-        webbrowser.open_new_tab("https://github.com/vvoovv/blender-osm/wiki/Applying-Geometry-Nodes-to-Building-Footprints")
+        webbrowser.open_new_tab("https://github.com/vvoovv/blosm/wiki/Applying-Geometry-Nodes-to-Building-Footprints")
         return {'FINISHED'}
 
 

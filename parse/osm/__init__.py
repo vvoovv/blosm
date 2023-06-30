@@ -1,5 +1,5 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
+This file is a part of Blosm addon for Blender.
 Copyright (C) 2014-2018 Vladimir Elistratov
 prokitektura+support@gmail.com
 
@@ -202,7 +202,7 @@ class Osm:
         # The condition <self.firstPoint> means that the method <updateBounds(..)> was never called
         # and there was no OSM way with tags that satisfy <self.conditions>. There were
         # only incomplete relations available that satisfy <self.conditions>.
-        # So <self.projection> will be set in blender-osm/__init__.py after
+        # So <self.projection> will be set in blosm/__init__.py after
         # the call to <app.processIncompleteRelations(..)>
         if not self.projection and not self.firstPoint:
             # set projection using the calculated bounds (self.minLat, self.maxLat, self.minLon, self.maxLon)
