@@ -405,7 +405,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             a.initTerrain(context)
         except Exception as e:
             self.report({'ERROR'}, str(e))
-            return {'FINISHED'}
+            return {'CANCELLED'}
         
         lat, lon, setLatLon = self.getCenterLatLon(context)
         a.setProjection(lat, lon)
@@ -489,14 +489,39 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         else:
             renderer.calculateHeightOffset = True
         
-        manager.render(a.minLon, a.minLat, a.maxLon, a.maxLat)
+        result = manager.render(a.minLon, a.minLat, a.maxLon, a.maxLat)
         
-        if setLatLonHeight:
-            context.scene["lat"] = manager.centerLat
-            context.scene["lon"] = manager.centerLon
+        if len(result) == 1:
+            # a critical error happend
+            self.report({'ERROR'}, result[0])
+            return {'CANCELLED'}
         
-        if renderer.calculateHeightOffset:
-            context.scene["height_offset"] = renderer.heightOffset
+        numImportedTiles, errors = result
+        if numImportedTiles:
+            if setLatLonHeight:
+                context.scene["lat"] = manager.centerLat
+                context.scene["lon"] = manager.centerLon
+            
+            if renderer.calculateHeightOffset:
+                context.scene["height_offset"] = renderer.heightOffset
+                
+            self.report(
+                {'INFO'},
+                "Imported %s 3D Tiles. %s errors occured during the import. " & (numImportedTiles, len(errors)) +\
+                "See the System Console."\
+                    if errors else\
+                    "Successfully Imported %s 3D Tiles." % numImportedTiles
+            )
+        else:
+            self.report(
+                {'INFO'},
+                "No tiles were reported. %s errors occured during the import. " & len(errors) +\
+                "See the System Console."
+            )
+        
+        if errors:
+            for error in errors:
+                print(error)
         
         return {'FINISHED'}
     

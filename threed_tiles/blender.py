@@ -92,10 +92,12 @@ class BlenderRenderer:
             )
         )
         
+        numImportedTiles = len(self.importedObjects)
+        
         self.importedObjects.clear()
         self.collection = None
         
-        print("Import is finished!")
+        return numImportedTiles
     
     def renderGlb(self, manager, uri, path, cacheContent):
         context = bpy.context

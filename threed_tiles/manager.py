@@ -57,14 +57,22 @@ class BaseManager:
         self.geometricErrorMin, self.geometricErrorMax = _geometricErrorRanges[rangeId]
     
     def render(self, minLon, minLat, maxLon, maxLat):
+        self.errors = []
         self.areaBbox = BaseManager.getAreaBbox(minLon, minLat, maxLon, maxLat)
         
         self.renderer.prepare(self)
         
-        tileset = self.getJsonFile(self.rootUri, None, False)
-        self.renderTileset(tileset)
+        try:
+            tileset = self.getJsonFile(self.rootUri, None, False)
+            self.renderTileset(tileset)
+        except Exception as e:
+            # return only a critical error
+            return ("Unable to process the root URI: %s" % str(e),)
         
-        self.renderer.finalize(self)
+        numRenderedTiles = self.renderer.finalize(self)
+        
+        # return the number of rendered tiles and uncritical errors
+        return numRenderedTiles, self.errors
     
     def renderTileset(self, tileset):
         tileset = tileset["root"]
@@ -107,11 +115,14 @@ class BaseManager:
         
         uri = self.getUri(uriComponents)
         
-        if contentExtension == ".json":
-            tileset = self.getJsonFile(uri, uriComponents.path, self.cacheJsonFiles)
-            self.renderTileset(tileset)
-        elif contentExtension == ".glb":
-            self.renderer.renderGlb(self, uri, uriComponents.path, self.cache3dFiles)
+        try:
+            if contentExtension == ".json":
+                tileset = self.getJsonFile(uri, uriComponents.path, self.cacheJsonFiles)
+                self.renderTileset(tileset)
+            elif contentExtension == ".glb":
+                self.renderer.renderGlb(self, uri, uriComponents.path, self.cache3dFiles)
+        except Exception as e:
+            self.processError(e, uri)
     
     def getUri(self, uriComponents):
         uri = (self.uriServer if self.uriServer else uriComponents.scheme + "://" + uriComponents.netloc) +\
@@ -238,3 +249,8 @@ class BaseManager:
             bbox1[1][1] >= bbox2[0][1] and bbox2[1][1] >= bbox1[0][1]\
             and\
             bbox1[1][2] >= bbox2[0][2] and bbox2[1][2] >= bbox1[0][2]
+    
+    def processError(self, e, uri):
+        self.errors.append(
+            "There was an error when processing the URI %s: %s" % (uri, str(e))
+        )
