@@ -1,5 +1,5 @@
 # Blosm for Blender: OpenStreetMap, Google 3D cities, terrain
-**Blosm** (formerly known as Blender-OSM) provides one click download and import of OpenStreetMap and real world terrain data for Blender with global coverage. Two versions of the addon are available:
+**Blosm** addon for Blender (formerly known as Blender-OSM) provides a few clicks download and import of OpenStreetMap, Google 3D cities and real world terrain data with global coverage. Two versions of the addon are available:
 * [Blosm (premium)](https://prochitecture.gumroad.com/l/blosm)
 * [Blosm](https://prochitecture.gumroad.com/l/blender-osm) (the base version, it can be downloaded for free)
 
