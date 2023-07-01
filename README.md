@@ -1,11 +1,11 @@
-# blender-osm: OpenStreetMap and terrain for Blender
-**blender-osm** provides one click download and import of OpenStreetMap and real world terrain data for Blender with global coverage. Two versions of the addon are available:
-* [blender-osm (premium)](https://prochitecture.gumroad.com/l/blosm)
-* [blender-osm](https://prochitecture.gumroad.com/l/blender-osm) (the base version, available for free)
+# Blosm for Blender: OpenStreetMap, Google 3d cities, terrain
+**Blosm** (formerly known as Blender-OSM) provides one click download and import of OpenStreetMap and real world terrain data for Blender with global coverage. Two versions of the addon are available:
+* [Blosm (premium)](https://prochitecture.gumroad.com/l/blosm)
+* [Blosm](https://prochitecture.gumroad.com/l/blender-osm) (the base version, it can be downloaded for free)
 
 They are briefly described below.
 
-## [blender-osm (premium)](https://prochitecture.gumroad.com/l/blosm)
+## [Blosm (premium)](https://prochitecture.gumroad.com/l/blosm)
 [![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm.png)](https://prochitecture.gumroad.com/l/blosm)
 
 In addition to the features of the base version, the premium one provides:
@@ -19,8 +19,8 @@ Buy the addon at [gumroad.com](https://prochitecture.gumroad.com/l/blosm)! By [p
 
 The detailed documentation is available [here](https://github.com/vvoovv/blender-osm/wiki/Premium-Version).
 
-## [blender-osm](https://prochitecture.gumroad.com/l/blender-osm) (the base version)
-[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender-osm.png)](https://prochitecture.gumroad.com/l/blender-osm)
+## [Blosm](https://prochitecture.gumroad.com/l/blender-osm) (the base version)
+[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender_main.png)](https://prochitecture.gumroad.com/l/blender-osm)
 
 * **blender-osm** imports buildings from OpenStreetMap _without_ any texture applied. Building height and number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed. A large number of roof shapes is supported. If a terrain is provided, buildings are placed on the terrain automatically.
 * **blender-osm** downloads and imports real world terrain data with resolution about 30 meter.
