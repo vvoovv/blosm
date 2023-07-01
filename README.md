@@ -20,7 +20,7 @@ Buy the addon at [gumroad.com](https://prochitecture.gumroad.com/l/blosm)! By [p
 The detailed documentation is available [here](https://github.com/vvoovv/blender-osm/wiki/Premium-Version).
 
 ## [Blosm](https://prochitecture.gumroad.com/l/blender-osm) (the base version)
-[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blender_main.png)](https://prochitecture.gumroad.com/l/blender-osm)
+[![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm_main.png)](https://prochitecture.gumroad.com/l/blender-osm)
 
 * **blender-osm** imports buildings from OpenStreetMap _without_ any texture applied. Building height and number of floors are used to create the final scene. Composition into 3D parts for a building with the complex structure is also processed. A large number of roof shapes is supported. If a terrain is provided, buildings are placed on the terrain automatically.
 * **blender-osm** downloads and imports real world terrain data with resolution about 30 meter.
