@@ -509,15 +509,15 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
                 
             self.report(
                 {'INFO'},
-                "Imported %s 3D Tiles. %s errors occured during the import. " & (numImportedTiles, len(errors)) +\
+                "Imported %s 3D Tiles. %s errors occured during the import. " % (numImportedTiles, len(errors)) +\
                 "See the System Console."\
                     if errors else\
                     "Successfully Imported %s 3D Tiles." % numImportedTiles
             )
         else:
             self.report(
-                {'INFO'},
-                "No tiles were reported. %s errors occured during the import. " & len(errors) +\
+                {'ERROR'},
+                "No 3D tiles were imported. %s errors occured during the import. " % len(errors) +\
                 "See the System Console."
             )
         
@@ -525,7 +525,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             for error in errors:
                 print(error)
         
-        return {'FINISHED'}
+        return {'FINISHED'} if numImportedTiles else {'CANCELLED'}
     
     def importGpx(self, context):
         from parse.gpx import Gpx
