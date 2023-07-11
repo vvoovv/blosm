@@ -1,6 +1,6 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2020 Vladimir Elistratov, Alain (al1brn)
+This file is a part of Blosm addon for Blender.
+Copyright (C) 2014-2023 Vladimir Elistratov, Alain (al1brn)
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@ def getDataTypes():
             ("osm", "OpenStreetMap", "OpenStreetMap"),
             ("terrain", "terrain", "Terrain"),
             ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"),
+            ("google-3d-tiles", "Google 3D Tiles", "Photorealistic 3D Tiles by Google"),
             ("gpx", "gpx", "GPX tracks")
         ]
         if app.has(Keys.geojson):
@@ -182,7 +183,7 @@ class BLOSM_OT_SelectExtent(bpy.types.Operator):
         av = app.version
         isPremium = "premium" if app.isPremium else ""
         webbrowser.open_new_tab(
-            "%s?blender_version=%s.%s&addon=blender-osm&addon_version=%s%s.%s.%s" %
+            "%s?blender_version=%s.%s&addon=blosm&addon_version=%s%s.%s.%s" %
             (self.url, bv[0], bv[1], isPremium, av[0], av[1], av[2])
         )
         return {'FINISHED'}
@@ -232,6 +233,10 @@ class BLOSM_OT_ExtentFromActive(bpy.types.Operator):
         scene = context.scene
         addon = scene.blosm
         
+        if not app.projection:
+            from util.transverse_mercator import TransverseMercator
+            app.projection = TransverseMercator(lat=scene["lat"], lon=scene["lon"])
+        
         addon.minLon, addon.minLat, addon.maxLon, addon.maxLat = app.getExtentFromObject(
             context.object,
             context
@@ -247,7 +252,7 @@ class BLOSM_OT_Gn2d_Info(bpy.types.Operator):
     bl_options = {'INTERNAL'}
     
     def invoke(self, context, event):
-        webbrowser.open_new_tab("https://github.com/vvoovv/blender-osm/wiki/Applying-Geometry-Nodes-to-Building-Footprints")
+        webbrowser.open_new_tab("https://github.com/vvoovv/blosm/wiki/Applying-Geometry-Nodes-to-Building-Footprints")
         return {'FINISHED'}
 
 
@@ -282,12 +287,27 @@ class BLOSM_OT_LevelsDelete(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class BLOSM_PT_Extent(bpy.types.Panel):
-    bl_label = "blender-osm"
+class BLOSM_PT_Copyright(bpy.types.Panel):
+    bl_label = "Copyright"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.blosm.copyright
+    
+    def draw(self, context):
+        self.layout.label(text = context.scene.blosm.copyright)
+
+
+class BLOSM_PT_Extent(bpy.types.Panel):
+    bl_label = "Blosm"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_context = "objectmode"
+    bl_category = "Blosm"
 
     def draw(self, context):
         layout = self.layout
@@ -296,6 +316,7 @@ class BLOSM_PT_Extent(bpy.types.Panel):
         if (addon.dataType == "osm" and addon.osmSource == "server") or\
             (addon.dataType == "overlay" and not bpy.data.objects.get(addon.terrainObject)) or\
             addon.dataType == "terrain" or\
+            addon.dataType == "google-3d-tiles" or\
             (addon.dataType == "geojson" and addon.coordinatesAsFilter):
             box = layout.box()
             row = box.row()
@@ -327,7 +348,7 @@ class PanelRealisticTools():#(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "TOOLS"
     #bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
     
     @classmethod
     def poll(cls, context):
@@ -355,7 +376,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
     
     def draw(self, context):
         addon = context.scene.blosm
@@ -367,6 +388,8 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             self.drawTerrain(context)
         elif dataType == "overlay":
             self.drawOverlay(context)
+        elif dataType == "google-3d-tiles":
+            self.drawGoogle3dTiles(context)
         elif dataType == "gpx":
             self.drawGpx(context)
         elif dataType == "geojson":
@@ -417,7 +440,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             
             layout.box().prop(addon, "singleObject")
             
-            layout.box().prop(addon, "ignoreGeoreferencing")
+            layout.box().prop(addon, "relativeToInitialImport")
             
             box = layout.box()
             box.label(text = "[Advanced]:")
@@ -466,7 +489,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
                 if addon.gnSetup2d != '-':
                     self._drawDefaultLevels(box, addon)
             
-            layout.box().prop(addon, "ignoreGeoreferencing")
+            layout.box().prop(addon, "relativeToInitialImport")
             
             box = layout.box()
             box.label(text = "[Advanced]:")
@@ -498,7 +521,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
     def drawTerrain(self, context):
         addon = context.scene.blosm
         
-        self.layout.box().prop(addon, "ignoreGeoreferencing")
+        self.layout.box().prop(addon, "relativeToInitialImport")
         
         # Vertex reduction: reduction ratio selection + total vertex computation
         count = 3600 // int(addon.terrainResolution)
@@ -533,9 +556,19 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         box.label(text="[Advanced]")
         split = box.split(factor=0.7)
         split.label(text="Max number of tiles:")
-        split.prop(addon, "maxNumTiles", text="")
+        split.prop(addon, "maxNumTiles", text='')
         _squreTextureSize = 256 * round( math.sqrt(addon.maxNumTiles) )
         box.label(text="Like a square texture {:,d}x{:,d} px".format(_squreTextureSize, _squreTextureSize))
+    
+    def drawGoogle3dTiles(self, context):
+        layout = self.layout
+        addon = context.scene.blosm
+        
+        box = layout.box()
+        box.label(text="Level of details:")
+        box.prop(addon, "lodOf3dTiles", text='')
+        layout.prop(addon, "join3dTilesObjects")
+        layout.prop(addon, "relativeToInitialImport")
     
     def drawGpx(self, context):
         layout = self.layout
@@ -547,7 +580,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         
         layout.box().prop(addon, "gpxProjectOnTerrain")
         
-        layout.box().prop(addon, "ignoreGeoreferencing")
+        layout.box().prop(addon, "relativeToInitialImport")
 
 
 class BLOSM_PT_BpyProj(bpy.types.Panel):
@@ -555,7 +588,7 @@ class BLOSM_PT_BpyProj(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_context = "objectmode"
-    bl_category = "osm"
+    bl_category = "Blosm"
     
     @classmethod
     def poll(cls, context):
@@ -734,10 +767,10 @@ class BlosmProperties(bpy.types.PropertyGroup):
         default = True
     )
 
-    ignoreGeoreferencing: bpy.props.BoolProperty(
-        name = "Ignore existing georeferencing",
-        description = "Ignore existing georeferencing and make a new one",
-        default = False
+    relativeToInitialImport: bpy.props.BoolProperty(
+        name = "Relative to initial import",
+        description = "Import relative to the initial import if it is available",
+        default = True
     )
     
     levelHeight: bpy.props.FloatProperty(
@@ -872,6 +905,48 @@ class BlosmProperties(bpy.types.PropertyGroup):
         min = 128,
         default = 256,
         description = "Maximum number of overlay tiles. Each tile has dimensions 256x256 pixels"
+    )
+    
+    ####################################
+    # Settings for the 3D Tiles import
+    ####################################
+    
+    lodOf3dTiles: bpy.props.EnumProperty(
+        name = "Level of details",
+        items = (
+            ("lod1", "whole city", "whole city"),
+            ("lod2", "districts", "districts"),
+            ("lod3", "groups of buildings", "groups of buildings"),
+            ("lod4", "separate buildings", "separate buildings"),
+            ("lod5", "buildings with details", "buildings with details"),
+            ("lod6", "buildings with more details", "buildings with more details")
+        ),
+        description = "Choose a level of details (LoD)",
+        default = "lod3"
+    )
+    
+    join3dTilesObjects: bpy.props.BoolProperty(
+        name = "Join 3D Tiles objects",
+        description = "Join 3D Tiles objects and remove double vertices",
+        default = True
+    )
+    
+    copyright: bpy.props.StringProperty(
+        name = "Copyright message",
+        description = "Copyright for the imported content",
+        default = ''
+    )
+    
+    cacheJsonFiles: bpy.props.BoolProperty(
+        name = "Cache JSON Files",
+        description = "Cache JSON Files that define tilesets",
+        default = True
+    )
+    
+    cache3dFiles: bpy.props.BoolProperty(
+        name = "Cache 3D Files",
+        description = "Cache 3D Files (for example in .glb format)",
+        default = False
     )
     
     ####################################
@@ -1023,6 +1098,7 @@ _classes = (
     BLOSM_OT_Gn2d_Info,
     BLOSM_OT_LevelsAdd,
     BLOSM_OT_LevelsDelete,
+    BLOSM_PT_Copyright,
     BLOSM_PT_Extent,
     BLOSM_PT_Settings,
     BLOSM_PT_BpyProj,
@@ -1032,7 +1108,7 @@ _classes = (
 def register():
     for c in _classes:
         bpy.utils.register_class(c)
-    # a group for all GUI attributes related to blender-osm
+    # a group for all GUI attributes related to Blosm
     bpy.types.Scene.blosm = bpy.props.PointerProperty(type=BlosmProperties)
     bpy.app.timers.register(_onRegister280, first_interval=2)
     # see the notes near the code for <_onFileLoaded>

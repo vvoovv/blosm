@@ -1,6 +1,6 @@
 """
-This file is part of blender-osm (OpenStreetMap importer for Blender).
-Copyright (C) 2014-2018 Vladimir Elistratov
+This file is a part of Blosm addon for Blender.
+Copyright (C) 2014-2023 Vladimir Elistratov
 prokitektura+support@gmail.com
 
 This program is free software: you can redistribute it and/or modify
@@ -18,15 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 bl_info = {
-    "name": "blender-osm",
+    "name": "Blosm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 6, 6),
-    "blender": (2, 80, 0),
-    "location": "Right side panel > \"osm\" tab",
-    "description": "One click download and import of OpenStreetMap, terrain, satellite imagery, web maps",
+    "version": (2, 7, 1),
+    "blender": (3, 0, 0),
+    "location": "Right side panel > \"Blosm\" tab",
+    "description": "A few clicks import of OpenStreetMap, Google 3D cities, terrain, satellite imagery, web maps",
     "warning": "",
-    "wiki_url": "https://github.com/vvoovv/blender-osm/wiki/Premium-Version",
-    "tracker_url": "https://github.com/vvoovv/blender-osm/issues",
+    "wiki_url": "https://github.com/vvoovv/blosm/wiki/Premium-Version",
+    "tracker_url": "https://github.com/vvoovv/blosm/issues",
     "support": "COMMUNITY",
     "category": "Import-Export",
     "blosmAssets": "2021.05.07"
@@ -36,8 +36,10 @@ import os, sys, json, textwrap
 
 # force cleanup of sys.modules to avoid conflicts with the other addons for Blender
 for m in [
-        "app", "building", "gui", "manager", "material", "parse", "realistic", "overlay",
-        "renderer", "terrain", "util", "defs", "setup", "ape"
+        "action", "ape", "app", "building", "building2", "defs", "gpx", "grammar", "gui",
+        "item", "item_renderer", "lib", "manager", "material", "mpl", "overlay", "parse",
+        "pml", "realistic", "renderer", "script", "setup", "style", "terrain",
+        "threed_tiles", "util", "way"
     ]:
     sys.modules.pop(m, 0)
 
@@ -103,6 +105,11 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
         description = "A string token (API Key) to access satellite imagery from ArcGIS location service"
     )
     
+    googleMapsApiKey: bpy.props.StringProperty(
+        name = "Google 3D Tiles Key",
+        description = "A string token (API Key) to access 3D Tiles by Google"
+    )
+    
     osmServer: bpy.props.EnumProperty(
         name = "OSM data server",
         items = (
@@ -149,6 +156,10 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
             
+            split = layout.split(factor=0.9)
+            split.prop(self, "googleMapsApiKey")
+            split.operator("blosm.get_google_maps_api_key", text="Get it!")
+            
             layout.separator()
             layout.box().label(text="Advanced settings:")
             # Extensions might come later
@@ -188,11 +199,25 @@ class BLOSM_OT_GetMapboxToken(bpy.types.Operator):
         webbrowser.open_new_tab(self.url)
         return {'FINISHED'}
 
+
+class BLOSM_OT_GetGoogleMapsApiKey(bpy.types.Operator):
+    bl_idname = "blosm.get_google_maps_api_key"
+    bl_label = ""
+    bl_description = "Get Google 3D Tiles Key"
+    bl_options = {'INTERNAL'}
+    
+    url = "https://developers.google.com/maps/documentation/tile/get-api-key"
+    
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
+
 """
 class BLOSM_OT_LoadExtensions(bpy.types.Operator):
     bl_idname = "blosm.load_extensions"
     bl_label = ""
-    bl_description = "Scan Blender addons, find extensions for blender-osm and load them"
+    bl_description = "Scan Blender addons, find extensions for Blosm and load them"
     bl_options = {'INTERNAL'}
     
     def execute(self, context):
@@ -208,8 +233,8 @@ class BLOSM_OT_LoadExtensions(bpy.types.Operator):
 class BLOSM_OT_ImportData(bpy.types.Operator):
     """Import data: OpenStreetMap or terrain"""
     bl_idname = "blosm.import_data"  # important since its how bpy.ops.blosm.import_data is constructed
-    bl_label = "blender-osm"
-    bl_description = "Import data of the selected type (OpenStreetMap or terrain)"
+    bl_label = "Blosm"
+    bl_description = "Import data of the selected type (OpenStreetMap, Google 3D Tiles, terrain, etc)"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
@@ -229,6 +254,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return self.importOverlay(context)
         elif dataType == "gpx":
             return self.importGpx(context)
+        elif dataType == "google-3d-tiles":
+            return self.importGoogle3dTiles(context)
         elif dataType == "geojson":
             return self.importGeoJson(context)
         
@@ -284,7 +311,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a.createLayers(osm)
         
         setLatLon = False
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             osm.setProjection(scene["lat"], scene["lon"])
         elif a.osmSource == "server":
             osm.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
@@ -341,7 +368,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
     def getCenterLatLon(self, context):
         a = blenderApp.app
         scene = context.scene
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             lat = scene["lat"]
             lon = scene["lon"]
             setLatLon = False
@@ -384,7 +411,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             a.initTerrain(context)
         except Exception as e:
             self.report({'ERROR'}, str(e))
-            return {'FINISHED'}
+            return {'CANCELLED'}
         
         lat, lon, setLatLon = self.getCenterLatLon(context)
         a.setProjection(lat, lon)
@@ -442,6 +469,68 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         return {'FINISHED'}
     
+    def importGoogle3dTiles(self, context):
+        from threed_tiles.manager import BaseManager
+        from threed_tiles.blender import BlenderRenderer
+        
+        addon = context.scene.blosm
+        
+        renderer = BlenderRenderer("Google 3D Tiles", addon.join3dTilesObjects)
+        manager = BaseManager("https://tile.googleapis.com/v1/3dtiles/root.json", renderer)
+        
+        manager.cacheJsonFiles = addon.cacheJsonFiles
+        manager.cache3dFiles = addon.cache3dFiles
+        
+        a = blenderApp.app
+        try:
+            a.init3dTiles(context, manager, "google")
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+        
+        manager.centerLat, manager.centerLon, setLatLonHeight = self.getCenterLatLon(context)
+        
+        if not setLatLonHeight and "height_offset" in context.scene:
+            renderer.heightOffset = context.scene["height_offset"]
+        else:
+            renderer.calculateHeightOffset = True
+        
+        result = manager.render(a.minLon, a.minLat, a.maxLon, a.maxLat)
+        
+        if len(result) == 1:
+            # a critical error happend
+            self.report({'ERROR'}, result[0])
+            return {'CANCELLED'}
+        
+        numImportedTiles, errors = result
+        if numImportedTiles:
+            if setLatLonHeight:
+                context.scene["lat"] = manager.centerLat
+                context.scene["lon"] = manager.centerLon
+            
+            if renderer.calculateHeightOffset:
+                context.scene["height_offset"] = renderer.heightOffset
+                
+            self.report(
+                {'INFO'},
+                "Imported %s 3D Tiles. %s errors occured during the import. " % (numImportedTiles, len(errors)) +\
+                "See the System Console."\
+                    if errors else\
+                    "Successfully Imported %s 3D Tiles." % numImportedTiles
+            )
+        else:
+            self.report(
+                {'ERROR'},
+                "No 3D tiles were imported. %s errors occured during the import. " % len(errors) +\
+                "See the System Console."
+            )
+        
+        if errors:
+            for error in errors:
+                print(error)
+        
+        return {'FINISHED'} if numImportedTiles else {'CANCELLED'}
+    
     def importGpx(self, context):
         from parse.gpx import Gpx
         from gpx import GpxRenderer
@@ -460,7 +549,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         gpx = Gpx(a)
         
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             gpx.setProjection(scene["lat"], scene["lon"])
             setLatLon = False
         else:
@@ -526,7 +615,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         a.createLayers(data)
         
         setLatLon = False
-        if "lat" in scene and "lon" in scene and not a.ignoreGeoreferencing:
+        if "lat" in scene and "lon" in scene and a.relativeToInitialImport:
             a.setProjection(scene["lat"], scene["lon"])
         elif a.coordinatesAsFilter:
             a.setProjection( (a.minLat+a.maxLat)/2., (a.minLon+a.maxLon)/2. )
@@ -645,6 +734,7 @@ _classes = (
     BlosmPreferences,
     BLOSM_OT_GetArcgisToken,
     BLOSM_OT_GetMapboxToken,
+    BLOSM_OT_GetGoogleMapsApiKey,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,
     BLOSM_OT_ControlOverlay
