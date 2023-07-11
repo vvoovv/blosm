@@ -3,6 +3,8 @@ import os, json
 
 _parts = ("facade", "level", "groundlevel", "entrance", "corner", "top", "bottom")
 
+"""
+# obsolete structures
 _uses = (
     "any", "apartments", "single_family", "office", "mall", "retail", "hotel", "school", "university"
 )
@@ -10,6 +12,7 @@ _uses = (
 _facades = (
     "front", "side", "back", "shared", "all"
 )
+"""
 
 _claddings = (
     "brick",
@@ -27,44 +30,44 @@ class AssetStore:
     def __init__(self, assetInfoFilepath):
         #
         # For assets representing building parts:
-        # collection -> part -> class
+        # group -> part -> class
         #
         # For cladding assets:
-        # collection -> cladding -> class
+        # group -> cladding -> class
         # 
         self.baseDir = os.path.dirname(os.path.dirname(assetInfoFilepath))
         
-        self.collections = {}
+        self.groups = {}
         
-        # building parts without collections
-        self.textureParts = self.initPartsNoCols()
-        # cladding without collections
-        self.textureCladdings = self.initCladdingsNoCols()
+        # building parts without groups
+        self.textureParts = self.initPartsNoGroups()
+        # cladding without groups
+        self.textureCladdings = self.initCladdingsNoGroups()
         
-        # building parts without collections
-        self.meshParts = self.initPartsNoCols()
+        # building parts without groups
+        self.meshParts = self.initPartsNoGroups()
         
         self.hasMesh = self.hasTexture = False
 
         with open(assetInfoFilepath, 'r') as jsonFile:
-            # getting asset entries for collections
-            collections = json.load(jsonFile)["collections"]
+            # getting asset entries for groups
+            groups = json.load(jsonFile)["groups"]
             
-            for collection in collections:
-                assets = collection["assets"]
+            for group in groups:
+                assets = group["assets"]
                 if len(assets) == 1:
-                    self.processNoCollectionAsset(assets[0])
+                    self.processNoGroupAsset(assets[0])
                 else:
-                    collectionName = collection["name"]
-                    collection = Collection()
-                    if not collectionName in self.collections:
-                        self.collections[collectionName] = EntryList()
-                    self.collections[collectionName].addEntry(collection)
+                    groupName = group["name"]
+                    group = Group()
+                    if not groupName in self.groups:
+                        self.groups[groupName] = EntryList()
+                    self.groups[groupName].addEntry(group)
                     
                     for asset in assets:
-                        self.processCollectionAsset(asset, collection)
+                        self.processGroupAsset(asset, group)
     
-    def processCollectionAsset(self, asset, collection):
+    def processGroupAsset(self, asset, group):
         category = asset["category"]
         tp = asset["type"]
         cl = asset.get("class")
@@ -72,16 +75,16 @@ class AssetStore:
         if category == "part":
             if not cl:
                 return
-            parts = collection.meshParts if tp == "mesh" else collection.textureParts
+            parts = group.meshParts if tp == "mesh" else group.textureParts
             parts[ asset["part"] ][cl] = asset
         else: # cladding
-            cladding = collection.textureCladdings[ asset["cladding"] ]
+            cladding = group.textureCladdings[ asset["cladding"] ]
             # None is allowed for <cl>. The previous value for <cladding[None]> will be overriden
             cladding[cl] = asset
         
         self.processHasMeshOrTexture(tp)
     
-    def processNoCollectionAsset(self, asset):
+    def processNoGroupAsset(self, asset):
         category = asset["category"]
         tp = asset["type"]
         cl = asset.get("class")
@@ -112,7 +115,7 @@ class AssetStore:
             if not self.hasTexture:
                 self.hasTexture = True
     
-    def initPartsNoCols(self):
+    def initPartsNoGroups(self):
         parts = {}
         
         for _part in _parts:
@@ -120,7 +123,7 @@ class AssetStore:
         
         return parts
     
-    def initCladdingsNoCols(self):
+    def initCladdingsNoGroups(self):
         claddings = {}
         
         for _cladding in _claddings:
@@ -128,12 +131,12 @@ class AssetStore:
         
         return claddings
     
-    def getCollection(self, collection, key, cache):
+    def getGroup(self, group, key, cache):
         """
-        Check if <collection> is available in <cache> using <key>.
+        Check if <group> is available in <cache> using <key>.
         
         Returns:
-            The value available in <cache> or a value from <self.collections> (including None).
+            The value available in <cache> or a value from <self.groups> (including None).
             In the latter case the value is set in <cache> for <key>.
         """
         
@@ -141,33 +144,33 @@ class AssetStore:
             return cache[key]
         else:
             # get an instance of <EntryList>
-            collection = self.collections.get(collection)
-            if collection:
-                collection = collection.getEntry()
-            # Save the resulting value in <cache>. Next time a collection with
-            # the name <collection> is needed for this building, the one saved in <cache[key]> will be used
-            cache[key] = collection
+            group = self.groups.get(group)
+            if group:
+                group = group.getEntry()
+            # Save the resulting value in <cache>. Next time a group with
+            # the name <group> is needed for this building, the one saved in <cache[key]> will be used
+            cache[key] = group
         
-        return collection
+        return group
     
-    def getAssetInfo(self, meshType, building, collection, buildingPart, cl):
+    def getAssetInfo(self, meshType, building, group, buildingPart, cl):
         if not cl:
             return None
         
         cache = building.renderInfo._cache
         
-        if collection:
-            collection = self.getCollection(collection, "col_"+collection, cache)
+        if group:
+            group = self.getGroup(group, "gr_"+group, cache)
             
-            if collection:
-                assetInfo = ( collection.meshParts[buildingPart] if meshType else collection.textureParts[buildingPart] ).get(cl)
+            if group:
+                assetInfo = ( group.meshParts[buildingPart] if meshType else group.textureParts[buildingPart] ).get(cl)
                 if assetInfo:
                     return assetInfo
                 else:
-                    # try to get an asset info without a collection in the code below
-                    collection = None
+                    # try to get an asset info without a group in the code below
+                    group = None
         
-        if not collection:
+        if not group:
             # Check if an entry is available in <cache> for the given combination of <buildingPart> and <cl>
             # <pcl> stands for "(building) part" and "class"
             key = "pcl_" + buildingPart + cl
@@ -183,23 +186,23 @@ class AssetStore:
         
         return assetInfo
     
-    def getAssetInfoCladdingTexture(self, building, collection, cladding, cl):
+    def getAssetInfoCladdingTexture(self, building, group, cladding, cl):
         # <None> is allowed for <cl>
         
         cache = building.renderInfo._cache
         
-        if collection:
-            collection = self.getCollection(collection, "col_"+collection, cache)
+        if group:
+            group = self.getGroup(group, "gr_"+group, cache)
             
-            if collection:
-                assetInfo = collection.textureCladdings[cladding].get(cl)
+            if group:
+                assetInfo = group.textureCladdings[cladding].get(cl)
                 if assetInfo:
                     return assetInfo
                 else:
-                    # try to get an asset info without a collection in the code below
-                    collection = None
+                    # try to get an asset info without a group in the code below
+                    group = None
         
-        if not collection:
+        if not group:
             # Check if an entry is available in <cache> for the given combination of <cladding> and <cl>
             # <pcl> stands for "cladding" and "class"
             key = "ccl_" + (cladding + cl if cl else cladding)
@@ -216,7 +219,7 @@ class AssetStore:
         return assetInfo
 
 
-class Collection:
+class Group:
     
     __slots__ = (
         "textureParts",

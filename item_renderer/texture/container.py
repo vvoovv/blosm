@@ -545,13 +545,13 @@ class Container(ItemRendererTexture):
                 _vertLocation[2] += levelGroup.levelHeight
     
     def getAssetInfoCorner(self, item, baseClass):
-        building, collection =\
-            item.building, item.getStyleBlockAttrDeep("collection")
+        building, group =\
+            item.building, item.getStyleBlockAttrDeep("group")
         
         return self.app.assetStore.getAssetInfo(
             True,
             building,
-            collection,
+            group,
             "corner",
             baseClass + "_corner"
         )

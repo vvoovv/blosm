@@ -97,7 +97,7 @@ class ItemRenderer:
         
         return self.app.assetStore.getAssetInfoCladdingTexture(
             item.building,
-            item.getStyleBlockAttrDeep("collection"),
+            item.getStyleBlockAttrDeep("group"),
             claddingMaterial,
             item.getStyleBlockAttrDeep("claddingClass")
         )
@@ -196,15 +196,15 @@ class ItemRenderer:
         )
     
     def getAssetInfo(self, item):
-        building, collection, part, cl =\
-            item.building, item.getStyleBlockAttrDeep("collection"), item.getBuildingPart(), item.getClass()
+        building, group, part, cl =\
+            item.building, item.getStyleBlockAttrDeep("group"), item.getBuildingPart(), item.getClass()
         
         assetInfo = None
         if self.app.preferMesh:
             assetInfo = self.app.assetStore.getAssetInfo(
                 True,
                 building,
-                collection,
+                group,
                 part,
                 cl
             )
@@ -217,7 +217,7 @@ class ItemRenderer:
             assetInfo = self.app.assetStore.getAssetInfo(
                 False,
                 building,
-                collection,
+                group,
                 part,
                 cl
             )
