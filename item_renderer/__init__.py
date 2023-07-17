@@ -131,7 +131,7 @@ class ItemRenderer:
                         layer,
                         layer.uvLayerNameFacade
                     )
-                    self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
+                    self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, item.uvs)
                     self.r.setMaterial(layer, face, item.materialId)
                 else:
                     self.renderCladding(item, face, uvs)
