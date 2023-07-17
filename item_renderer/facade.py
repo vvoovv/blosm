@@ -23,12 +23,7 @@ class Facade:
                             if (minWidth and facade.width > minWidth) or not minWidth:
                                 facadeClass = facade.getStyleBlockAttr("cl")
                                 if facadeClass:
-                                    self.renderClass(
-                                        facade,
-                                        facadeClass,
-                                        r.createFace(footprint, facade.indices),
-                                        facade.uvs
-                                    )
+                                    self.renderClass(facade)
                                     break
                                 elif styleBlock.markup:
                                     self.renderMarkup(facade)

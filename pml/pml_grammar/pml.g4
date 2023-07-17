@@ -62,7 +62,7 @@ function
     | 'bldgAttr' LPAREN string_literal RPAREN                   #BUILDATTR
     | 'random_normal' LPAREN NUMBER RPAREN                      #RANDN
     | 'random_weighted' nested_list                             #RANDW
-    | 'if' LPAREN conditional RPAREN (function | alternatives)  #COND
+    | 'if' LPAREN conditional RPAREN (function )                #COND
     | 'use_from' LPAREN IDENTIFIER RPAREN                       #USEFROM
     | 'per_building' LPAREN (function | alternatives) RPAREN    #PERBUILD
     | 'rgb' LPAREN NUMBER COMMA NUMBER COMMA NUMBER RPAREN      #RGB

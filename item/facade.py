@@ -73,3 +73,8 @@ class Facade(Div):
         The neighbor of the facade from the right
         """
         return self.vector.next.facade
+    
+    @property
+    def gable(self):
+        # just a simple check of the number of the vertices
+        return len(self.indices) > 4 or self.footprint.noWalls

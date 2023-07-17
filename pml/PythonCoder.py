@@ -249,7 +249,7 @@ class PythonCoder():
         self.alternativesContext = True
         # self.inFunctionStack.append('inFunction')
         self.functionContext = True
-        self.write("Value(Alternatives(\n")
+        self.write(" Value(Alternatives(\n")
         self.alterCommaStack.append("")
         self.indents +=1
 

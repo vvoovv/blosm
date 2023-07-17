@@ -170,6 +170,9 @@ class TrapezoidRV(Geometry):
     
     def join(self, facade, _facade):
         return
+    
+    def renderLevelGroups(self, a, b):
+        pass
 
 
 class TrapezoidChainedRV(Geometry):
@@ -337,3 +340,6 @@ class TrapezoidChainedRV(Geometry):
     
     def join(self, facade, _facade):
         return
+    
+    def renderLevelGroups(self, a, b):
+        pass

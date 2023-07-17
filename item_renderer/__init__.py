@@ -8,18 +8,6 @@ from util.blender_extra.material import createMaterialFromTemplate, setImage
 _materialTemplateFilename = "building_material_templates.blend"
 
 
-def _setAssetInfoCache(building, assetInfo, key):
-    if assetInfo:
-        renderInfo = building.renderInfo
-        renderInfo.assetInfoBldgIndex = assetInfo["_bldgIndex"]
-        # Save building index from <assetInfo>, so later we can get
-        # the buildings index for the given building part and class
-        # and get an asset info for sure. We don't save <assetInfo> itself
-        # in the cache since there may be several asset infos for the given building and
-        # building part and class.
-        renderInfo._cache[key] = renderInfo.assetInfoBldgIndex
-    
-
 class ItemRenderer:
     
     def __init__(self, exportMaterials):
@@ -102,87 +90,67 @@ class ItemRenderer:
             item.getStyleBlockAttrDeep("claddingClass")
         )
     
-    def renderClass(self, item, itemClass, face, uvs):
-        building = item.building
-        if building.assetInfoBldgIndex is None:
-            mainTextureInfo = self.r.assetStore.getAssetInfoByClass(
-                item.building, item.buildingPart, "texture", None, itemClass
-            )
-            _setAssetInfoCache(
-                building,
-                mainTextureInfo,
-                # here <p> is for part, <c> is for class
-                "pc%s%s" % (item.buildingPart, itemClass)
-            )
-        else:
-            key = "pc%s%s" % (item.buildingPart, itemClass)
-            # If <key> is available in <building._cache>, that means we'll get <assetInfo> for sure
-            mainTextureInfo = self.r.assetStore.getAssetInfoByBldgIndexAndClass(
-                building._cache[key] if key in building._cache else building.assetInfoBldgIndex,
-                item.buildingPart,
-                "texture",
-                itemClass
-            )
-            if not mainTextureInfo:
-                # <key> isn't available in <building._cache>, so <building.assetInfoBldgIndex> was used
-                # in the call above. No we try to get <assetInfo> without <building.assetInfoBldgIndex>
-                mainTextureInfo = self.r.assetStore.getAssetInfoByClass(
-                    item.building, item.buildingPart, "texture", None, itemClass
-                )
-                _setAssetInfoCache(building, mainTextureInfo, key)
-        if mainTextureInfo:
-            if item.materialId is None:
-                claddingTextureInfo = self.getCladdingTextureInfo(item)\
-                    if mainTextureInfo.get("cladding") and self.claddingTexture else\
-                    None
-                self.setClassMaterialId(item, mainTextureInfo, claddingTextureInfo)
-            if item.materialId:
-                # Сonvert image coordinates in pixels to UV-coordinates between 0. and 1.
-                
+    def renderClass(self, item):
+        
+        # asset info could have been set in the call to item.getWidth(..)
+        assetInfo = item.assetInfo
+        # if <assetInfo=0>, then it was already queried in the asset store and nothing was found
+        if assetInfo is None:
+            assetInfo = self.getAssetInfo(item)
+        
+        face = self.r.createFace(item.footprint, item.indices)
+        
+        if assetInfo:
+            if assetInfo["type"] == "texture":
                 # width and height of the whole image:
-                imageWidth, imageHeight = mainTextureInfo["textureSize"]
-                if "offsetXPx" in mainTextureInfo:
-                    texUl = mainTextureInfo["offsetXPx"]/imageWidth
-                    texUr = texUl + mainTextureInfo["textureWidthPx"]/imageWidth
+                imageWidth, imageHeight = assetInfo["textureSize"]
+                if "offsetXPx" in assetInfo:
+                    texUl = assetInfo["offsetXPx"]/imageWidth
+                    texUr = texUl + assetInfo["textureWidthPx"]/imageWidth
                 else:
                     texUl, texUr = 0., 1.
-                if "offsetYPx" in mainTextureInfo:
-                    texVt = 1. - mainTextureInfo["offsetYPx"]/imageHeight
-                    texVb = texVt - mainTextureInfo["textureHeightPx"]/imageHeight
+                if "offsetYPx" in assetInfo:
+                    texVt = 1. - assetInfo["offsetYPx"]/imageHeight
+                    texVb = texVt - assetInfo["textureHeightPx"]/imageHeight
                 else:
                     texVb, texVt = 0., 1.
+                uvs = item.geometry.getClassUvs(texUl, texVb, texUr, texVt, item.uvs)
                 
-                self.setClassUvs(item, face, uvs, texUl, texVb, texUr, texVt)
-                # uv for cladding and vertex color
-                self.renderExtra(item, face, mainTextureInfo, claddingTextureInfo, uvs)
-            self.r.setMaterial(face, item.materialId)
-        else:
-            # no <assetInfo>, so we try to render cladding only
+                if item.materialId is None:
+                    self.setMaterialId(
+                        item,
+                        assetInfo,
+                        uvs
+                    )
+                if item.materialId:
+                    facadeTextureInfo, claddingTextureInfo = item.materialData
+                    layer = item.building.element.l
+                    self.r.setUvs(
+                        face,
+                        uvs,
+                        layer,
+                        layer.uvLayerNameFacade
+                    )
+                    self.renderExtra(item, face, facadeTextureInfo, claddingTextureInfo, uvs)
+                    self.r.setMaterial(layer, face, item.materialId)
+                else:
+                    self.renderCladding(item, face, uvs)
+            else:
+                # Mesh assets are not considired at the moment
+                assetInfo = None
+                
+        if not assetInfo:
             self.renderCladding(
                 item,
                 face,
                 item.uvs
             )
-    
-    def setClassMaterialId(self, item, mainTextureInfo, claddingTextureInfo):        
-        materialId = self.getFacadeMaterialId(item, mainTextureInfo, claddingTextureInfo)
-        
-        if self.createFacadeMaterial(item, materialId, mainTextureInfo, claddingTextureInfo, None):
-            item.materialId = materialId
-        else:
             item.materialId = ""
 
     def getFacadeMaterialId(self, item, facadeTextureInfo, claddingTextureInfo):
         return facadeTextureInfo["name"] + "_" +claddingTextureInfo["name"]\
             if claddingTextureInfo\
             else facadeTextureInfo["name"]
-    
-    def setClassUvs(self, item, face, uvs, texUl, texVb, texUr, texVt):
-        self.r.setUvs(
-            face,
-            item.geometry.getClassUvs(texUl, texVb, texUr, texVt, item.uvs),
-            self.r.layer.uvLayerNameFacade
-        )
     
     def _setRoofClassUvs(self, face, uvs, texUl, texVb, texUr, texVt):
         minU = min(uv[0] for uv in uvs)
