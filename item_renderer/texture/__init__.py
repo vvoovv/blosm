@@ -18,8 +18,12 @@ class ItemRendererTexture(ItemRenderer):
         )
         if image:
             textureSize = assetInfo["textureSize"] = tuple(image.size)
-            assetInfo["tileWidthM"] = textureSize[0]/\
-                (assetInfo["featureRpx"] - assetInfo["featureLpx"])*\
-                assetInfo["featureWidthM"] / assetInfo["numTilesU"]
+            # If <withoutRepeat> is set in a style block,
+            # then the style block should not have <featureWidthM> and
+            # the other attributes from the if-clause below
+            if "featureWidthM" in assetInfo:
+                assetInfo["tileWidthM"] = textureSize[0]/\
+                    (assetInfo["featureRpx"] - assetInfo["featureLpx"])*\
+                    assetInfo["featureWidthM"] / assetInfo["numTilesU"]
         return assetInfo
             

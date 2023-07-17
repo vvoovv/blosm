@@ -49,6 +49,9 @@ class Facade(Div):
         # <volumeGenerator> knows which geometry the facade items have and how to map UV-coordinates
         volumeGenerator.initFacadeItem(self)
     
+    def getBuildingPart(self):
+        return self.buildingPart
+    
     def setClass(self, cl):
         self.cl = cl
         if cl == FacadeClass.front:
