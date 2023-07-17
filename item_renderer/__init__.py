@@ -90,7 +90,7 @@ class ItemRenderer:
             item.getStyleBlockAttrDeep("claddingClass")
         )
     
-    def renderClass(self, item):
+    def renderWithoutRepeat(self, item):
         
         # asset info could have been set in the call to item.getWidth(..)
         assetInfo = item.assetInfo

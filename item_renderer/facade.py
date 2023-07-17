@@ -21,9 +21,8 @@ class Facade:
                             # check if <minWidth> attribute is given in the styleBlock
                             minWidth = facade.getStyleBlockAttr("minWidth")
                             if (minWidth and facade.width > minWidth) or not minWidth:
-                                facadeClass = facade.getStyleBlockAttr("cl")
-                                if facadeClass:
-                                    self.renderClass(facade)
+                                if facade.getStyleBlockAttr("withoutRepeat") and facade.getStyleBlockAttrDeep("cl"):
+                                    self.renderWithoutRepeat(facade)
                                     break
                                 elif styleBlock.markup:
                                     self.renderMarkup(facade)
