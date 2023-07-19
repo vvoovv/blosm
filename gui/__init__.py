@@ -245,6 +245,71 @@ class BLOSM_OT_ExtentFromActive(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class BLOSM_OT_ReplaceMaterials(bpy.types.Operator):
+    bl_idname = "blosm.replace_materials"
+    bl_label = "Replace Materials"
+    bl_description = "Replace materials for the selected objects"
+    bl_options = {'INTERNAL', 'UNDO'}
+    
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects
+    
+    def invoke(self, context, event):
+        addon = context.scene.blosm
+        if addon.replaceMaterialsWith == "export-ready":
+            self.replaceWithExportReadyMaterials(context)
+        else: # if addon.replaceMaterialsWith == "custom":
+            materialName = addon.replacementMaterial
+            if not materialName:
+                self.report({'ERROR'}, "Material for the replacement is not set!")
+                return {'CANCELLED'}
+            elif not materialName in bpy.data.materials:
+                self.report({'ERROR'}, "Material name for the replacement is not correct!")
+                return {'CANCELLED'}
+            
+            templateMaterial = bpy.data.materials[materialName]
+            imageTextureNodeName = ''
+            if templateMaterial.use_nodes and templateMaterial.node_tree.nodes:
+                # # check if there is an Image Texture node with the label "BASE COLOR"
+                for node in templateMaterial.node_tree.nodes:
+                    if node.type == 'TEX_IMAGE' and node.label == "BASE COLOR":
+                        imageTextureNodeName = node.name
+                        break
+            self.replaceMaterialsWithTemplate(templateMaterial, imageTextureNodeName, context)
+            
+        return {'FINISHED'}
+    
+    def replaceWithExportReadyMaterials(self, context):
+        # create a template material for export
+        templateMaterial = bpy.data.materials.new("Material for Export")
+        templateMaterial.use_nodes = True
+        imageTextureNode = templateMaterial.node_tree.nodes.new('ShaderNodeTexImage')
+        imageTextureNode.label = "BASE COLOR"
+        imageTextureNode.location = (-300, 300)
+        # create links
+        templateMaterial.node_tree.links.new(
+            templateMaterial.node_tree.nodes["Principled BSDF"].inputs['Base Color'],
+            imageTextureNode.outputs['Color']
+        )
+        
+        self.replaceMaterialsWithTemplate(templateMaterial, imageTextureNode.name, context)
+    
+    def replaceMaterialsWithTemplate(self, templateMaterial, imageTextureNodeName, context):
+        for obj in [obj for obj in context.selected_objects if obj.type == 'MESH']:
+            for slot in obj.material_slots:
+                if slot and slot.material:
+                    material = templateMaterial.copy()
+                    currentMaterial = slot.material
+                    if imageTextureNodeName and currentMaterial.use_nodes and currentMaterial.node_tree.nodes:
+                        # find the Image Texture node with the label "BASE COLOR"
+                        for node in currentMaterial.node_tree.nodes:
+                            if node.type == 'TEX_IMAGE' and node.label == "BASE COLOR":
+                                material.node_tree.nodes[imageTextureNodeName].image = node.image
+                                break
+                    slot.material = material
+
+
 class BLOSM_OT_Gn2d_Info(bpy.types.Operator):
     bl_idname = "blosm.gn2d_info"
     bl_label = "Geometry Nodes"
@@ -581,6 +646,28 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         layout.box().prop(addon, "gpxProjectOnTerrain")
         
         layout.box().prop(addon, "relativeToInitialImport")
+
+
+class BLOSM_PT_Tools(bpy.types.Panel):
+    bl_label = "Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_context = "objectmode"
+    bl_category = "Blosm"
+    
+    @classmethod
+    def poll(cls, context):
+        return context.scene.blosm.dataType == "google-3d-tiles" and context.selected_objects
+    
+    def draw(self, context):
+        layout = self.layout
+        addon = context.scene.blosm
+        
+        layout.label(text="Replace materials with")
+        layout.row().prop(addon, "replaceMaterialsWith", expand=True)
+        if addon.replaceMaterialsWith == "custom":
+            layout.prop_search(addon, "replacementMaterial", bpy.data, "materials")
+        layout.operator("blosm.replace_materials")
 
 
 class BLOSM_PT_BpyProj(bpy.types.Panel):
@@ -949,6 +1036,21 @@ class BlosmProperties(bpy.types.PropertyGroup):
         default = False
     )
     
+    replaceMaterialsWith: bpy.props.EnumProperty(
+        name = "Replace materials with",
+        items = (
+            ("export-ready", "export-ready", "replace with export-ready materials"),
+            ("custom", "custom", "replace with custom materials based on the given one")
+        ),
+        description = "Replace materials for the selected objects",
+        default = "export-ready"
+    )
+    
+    replacementMaterial: bpy.props.StringProperty(
+        name = "Material",
+        description = "A custom material to replace materials with for the selected objects"
+    )
+    
     ####################################
     # Settings for the GPX track import
     ####################################
@@ -1095,12 +1197,14 @@ _classes = (
     BLOSM_OT_SelectExtent,
     BLOSM_OT_PasteExtent,
     BLOSM_OT_ExtentFromActive,
+    BLOSM_OT_ReplaceMaterials,
     BLOSM_OT_Gn2d_Info,
     BLOSM_OT_LevelsAdd,
     BLOSM_OT_LevelsDelete,
     BLOSM_PT_Copyright,
     BLOSM_PT_Extent,
     BLOSM_PT_Settings,
+    BLOSM_PT_Tools,
     BLOSM_PT_BpyProj,
     BlosmProperties
 )

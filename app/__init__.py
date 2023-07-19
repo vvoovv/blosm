@@ -22,6 +22,9 @@ class BaseApp:
     
     osmUrlPath2 = "/api/interpreter"
     
+    def __init__(self):
+        self.projection = None
+    
     def initOsm(self):
         self.baseInit()
         
