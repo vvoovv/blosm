@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 bl_info = {
     "name": "Blosm",
     "author": "Vladimir Elistratov <prokitektura+support@gmail.com>",
-    "version": (2, 7, 1),
+    "version": (2, 7, 2),
     "blender": (3, 0, 0),
     "location": "Right side panel > \"Blosm\" tab",
     "description": "A few clicks import of OpenStreetMap, Google 3D cities, terrain, satellite imagery, web maps",
