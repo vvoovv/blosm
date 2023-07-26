@@ -11,6 +11,7 @@ class Dictionaries():
             '"building:material"': ["FromAttr.String, CladdingMaterials" ],
             '"building:colour"': [ "FromAttr.Color" ],
             '"building:part"': [ "FromAttr.String" ],
+            '"roof:levels"': [ "FromAttr.Integer, FromAttr.NonNegative" ],
             '"roof:material"': ["FromAttr.String, CladdingMaterials"],
             '"roof:colour"': [ "FromAttr.Color" ],
             '"roof:shape"': [ "FromAttr.String, RoofShapes" ],
