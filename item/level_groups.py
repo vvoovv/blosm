@@ -1,13 +1,17 @@
 
 
-_numGroups = 170
-
-
 class LevelGroups:
     
     def __init__(self, item):
         self.item = item
-        self.groups = tuple(LevelGroup() for _ in range(_numGroups))
+        totalNumLevels = item.footprint.numLevels + item.footprint.numRoofLevels
+        self.groups = [
+            LevelGroup() for _ in range(
+                totalNumLevels if totalNumLevels < 5 else (
+                    5 if totalNumLevels < 24 else totalNumLevels // 4
+                )
+            )
+        ]
         # a wrapper level group for the bottom
         self.bottomGroup = LevelGroup()
         # setting <singleLevel> to <True> is needed for correct height calculation of the level group
