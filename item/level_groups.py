@@ -74,10 +74,10 @@ class LevelGroups:
                         index1 += totalNumLevels
                     elif styleBlock.roof:
                         index1 += numLevels
-                    if index1 < minLevel:
+                    # sanity check
+                    if index1 < minLevel or index1 >= totalNumLevels:
                         continue
-                    group.index1 = index1
-                    group.index2 = index1
+                    group.index1 = group.index2 = index1
                     group.singleLevel = True
                 else:
                     if index1 < 0:
@@ -93,6 +93,11 @@ class LevelGroups:
                         continue
                     elif index1 < minLevel:
                         index1 = minLevel
+                    elif index1 >= totalNumLevels:
+                        continue
+                    elif index2 >= totalNumLevels:
+                        index2 = totalNumLevels-1
+                    
                     group.index1 = index1
                     group.index2 = index2
                 groupCounter += 1
