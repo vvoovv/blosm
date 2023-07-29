@@ -237,7 +237,7 @@ class LevelHeights:
         if footprint.roofHeight:
             # <roofHeight> is given or we have no roof levels
             factor = (totalHeight - footprint.roofHeight) /\
-                (levelsHeight - footprint.lastLevelOffset if footprint.lastLevelOffset else levelsHeight)
+                ( (levelsHeight - footprint.lastLevelOffset) if footprint.lastLevelOffset else levelsHeight)
         elif footprint.roofHeight is None:
             # <roofHeight> is not given but is greater than zero and
             # we must have <footprint.roofLevelsHeight> for that case
