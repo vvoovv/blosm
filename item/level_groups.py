@@ -4,7 +4,7 @@ class LevelGroups:
     
     def __init__(self, item):
         self.item = item
-        totalNumLevels = item.footprint.numLevels + item.footprint.numRoofLevels
+        totalNumLevels = item.footprint.totalNumLevels
         self.groups = [
             LevelGroup() for _ in range(
                 totalNumLevels if totalNumLevels < 5 else (
@@ -31,8 +31,7 @@ class LevelGroups:
         footprint = item.footprint
         lh = footprint.levelHeights
         numLevels = footprint.numLevels
-        numRoofLevels = footprint.numRoofLevels
-        totalNumLevels = numLevels + numRoofLevels
+        totalNumLevels = footprint.totalNumLevels
         minLevel = item.minLevel
         top = None
         bottom = None

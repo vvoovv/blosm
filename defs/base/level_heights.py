@@ -88,9 +88,12 @@ class LevelHeights:
             roofHeight = volumeGenerator.calculateRoofHeight(footprint)
             h += roofHeight
             if footprint.roofHeight is None:
-                footprint.roofHeight = roofHeight + footprint.lastLevelOffset\
+                # In that case <roofHeight> is the height of roof levels plus the top height 
+                footprint.roofHeight = (roofHeight + footprint.lastLevelOffset)\
                     if footprint.lastLevelOffset\
                     else roofHeight
+            elif footprint.lastLevelOffset:
+                h -= footprint.lastLevelOffset
         footprint.height = h
         return h
     

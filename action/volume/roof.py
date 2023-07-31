@@ -142,6 +142,8 @@ class Roof:
         
         footprint.roofVerticalPosition = z1 if footprint.noWalls else roofVerticalPosition
         
+        footprint.totalNumLevels = footprint.numLevels + footprint.numRoofLevels
+        
         self.validate(footprint)
     
     def processDirection(self, footprint):
@@ -202,7 +204,7 @@ class Roof:
                         # The following line means that we need to calculate
                         # the last level offset and the roof height later in the code
                         footprint.roofHeight = None
-                        return h
+                        return h + footprint.levelHeights.topHeight
                     else:
                         # default height of the roof
                         h = self.height
