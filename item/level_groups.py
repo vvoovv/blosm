@@ -101,8 +101,13 @@ class LevelGroups:
                     elif index2 >= totalNumLevels:
                         index2 = totalNumLevels-1
                     
-                    group.index1 = index1
-                    group.index2 = index2
+                    if index1 == index2:
+                        group.index1 = group.index2 = index1
+                        group.singleLevel = True
+                    else:
+                        group.index1 = index1
+                        group.index2 = index2
+                
                 groupCounter += 1
                 if begin:
                     if index1 > end.index2:
