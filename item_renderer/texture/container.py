@@ -292,7 +292,7 @@ class Container(ItemRendererTexture):
                         layer = item.building.element.l
                         self.r.setUvs(
                             face,
-                            self.getUvs(item, levelGroup, facadeTextureInfo),
+                            self.getUvs(item, levelGroup, facadeTextureInfo, uvs),
                             layer,
                             layer.uvLayerNameFacade
                         )
@@ -377,12 +377,13 @@ class Container(ItemRendererTexture):
         
         return obj
     
-    def getUvs(self, item, levelGroup, facadeTextureInfo):
+    def getUvs(self, item, levelGroup, facadeTextureInfo, uvs):
         return item.geometry.getFinalUvs(
             max( round(item.width/_getTileWidthM(facadeTextureInfo)), 1 ),
             self.getNumLevelsInFace(levelGroup),
             facadeTextureInfo["numTilesU"],
-            facadeTextureInfo["numTilesV"]
+            facadeTextureInfo["numTilesV"],
+            uvs
         )
     
     def getNumLevelsInFace(self, levelGroup):
