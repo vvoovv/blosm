@@ -135,7 +135,7 @@ class LevelGroups:
                         groupCounter += 1
                         group.item = begin.item
                         group.index1 = 0
-                        group.singleLevel = True
+                        group.makeSingleLevel()
                         group.next = begin
                         begin.prev = group
                         begin.index1 += 1
@@ -195,3 +195,7 @@ class LevelGroup:
             self.singleLevel = False
         if self.buildingPart:
             self.buildingPart = None
+    
+    def makeSingleLevel(self):
+        self.index2 = self.index1
+        self.singleLevel = True
