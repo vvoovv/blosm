@@ -1,3 +1,4 @@
+from math import floor
 from mathutils import Vector
 from util import zAxis
 
@@ -43,7 +44,7 @@ class RectangleFRA(Geometry):
         """
         return ( (0., 0.), (width, 0.), (width, height), (0., height) )
     
-    def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV):
+    def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, _):
         u = numItemsInFace/numTilesU
         v = numLevelsInFace/numTilesV
         return (
@@ -141,58 +142,9 @@ class RectangleFRA(Geometry):
             ( (texUl, texVb), (texUr, texVb), (texUr, texVt), (texUl, texVt) )
         )
     
-    def renderLevelGroups(self, parentItem, parentRenderer):
-        rs = parentRenderer.renderState
-        self.initRenderStateForLevels(rs, parentItem)
-        self.renderBottom(parentItem, parentRenderer, rs)
-        
-        levelGroups = parentItem.levelGroups
-        
-        if not levelGroups.begin:
-            # the case when only bottom is available (no levels)
-            texVt = parentItem.uvs[2][1]
-            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
-            # to be created out of <parentItem>
-            texUl = parentItem.uvs[0][0]
-            texUr = parentItem.uvs[1][0]
-            parentRenderer.renderCladding(
-                parentItem,
-                parentRenderer.r.createFace(
-                    parentItem.footprint,
-                    (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
-                ),
-                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-            )
-            return
-        
-        if levelGroups.begin.next:
-            # There are at least 2 level groups or one level group and the top
-            # Detach the end level group. It can be either the top or the last level group
-            lastLevelGroup = levelGroups.end
-            lastLevelGroup.prev.next = None
-            
-            levelGroup = levelGroups.begin
-            while levelGroup:
-                self.renderLevelGroup(
-                    parentItem, 
-                    levelGroup,
-                    levelGroup.item.getLevelRenderer(levelGroup, parentRenderer.itemRenderers),
-                    rs
-                )
-                levelGroup = levelGroup.next
-        else:
-            lastLevelGroup = levelGroups.begin
-        
-        self.renderLastLevelGroup(
-            parentItem, 
-            lastLevelGroup,
-            lastLevelGroup.item.getLevelRenderer(lastLevelGroup, parentRenderer.itemRenderers)\
-                if lastLevelGroup.item else parentRenderer,
-            rs
-        )
-    
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         verts = parentItem.building.renderInfo.verts
+        
         height = levelGroup.levelHeight\
             if levelGroup.singleLevel else\
             levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
@@ -230,6 +182,16 @@ class RectangleFRA(Geometry):
         rs.texVb = texVt
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+        footprint = parentItem.footprint
+        if footprint.numRoofLevels:
+            # available height in <parentItem>
+            availableHeight = parentItem.uvs[-1][1] - rs.texVb
+            # how many levels can fit in <availableHeight>
+            levels = floor(availableHeight/levelGroup.levelHeight)
+            if levels != levelGroup.index2 - levelGroup.index1 + 1:
+                levelGroup.index2 = levelGroup.index1 + levels - 1
+                # calculate what is left after adjusting <levelGroup.index2>
+        
         parentIndices = parentItem.indices
         texVt = parentItem.uvs[2][1]
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
@@ -315,3 +277,51 @@ class RectangleFRA(Geometry):
                 _facade.visible = False
             elif _z1 < z1 < z2 < _z2:
                 facade.visible = False
+    
+    def getMaxV(self, uvs):
+        return uvs[2][1]
+    
+    def renderCladdingAtTop(self, parentItem, parentRenderer):
+        rs = parentRenderer.renderState
+        
+        texVt = parentItem.uvs[2][1]
+        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
+        # to be created out of <parentItem>
+        texUl = parentItem.uvs[0][0]
+        texUr = parentItem.uvs[1][0]
+        parentRenderer.renderCladding(
+            parentItem,
+            parentRenderer.r.createFace(
+                parentItem.footprint,
+                (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
+            ),
+            ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+        )
+    
+    def renderCladdingStripAtMiddle(self, height, parentItem, parentRenderer):
+        rs = parentRenderer.renderState
+        verts = parentItem.building.renderInfo.verts
+        
+        # <indexTL> and <indexTR> are the indices of the left and right vertices on the top side of
+        # the rectangular cladding strip
+        indexTL = len(verts)
+        indexTR = indexTL + 1
+        # <texUl> and <texUr> are the left and right U-coordinates of the the rectangular cladding strip
+        texUl = parentItem.uvs[0][0]
+        texUr = parentItem.uvs[1][0]
+        verts.append(verts[rs.indexBL] + height*zAxis)
+        verts.append(verts[rs.indexBR] + height*zAxis)
+        texVt = rs.texVb + height
+        
+        parentRenderer.renderCladding(
+            parentItem,
+            parentRenderer.r.createFace(
+                parentItem.footprint,
+                (rs.indexBL, rs.indexBR, indexTR, indexTL)
+            ),
+            ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+        )
+        
+        rs.indexBL = indexTL
+        rs.indexBR = indexTR
+        rs.texVb = texVt

@@ -13,14 +13,21 @@ class TrapezoidRV(Geometry):
     def __init__(self):
         self.geometryRectangle = RectangleFRA()
     
-    def getFinalUvs(self, item, numLevelsInFace, numTilesU, numTilesV):
-        u = len(item.markup)/numTilesU
+    def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, itemUvs):
+        u = numItemsInFace/numTilesU
         v = numLevelsInFace/numTilesV
+        
+        # trapezoid height on the left and right
+        heightL = itemUvs[-1][1] - itemUvs[0][1]
+        heightR = itemUvs[ 2][1] - itemUvs[1][1]
+        
+        leftLargerRight = heightL > heightR
+        
         return (
-            (0., 0.),
+            (0., 0.,),
             (u, 0.),
-            (u, v),
-            (0, v)
+            (u, heightR*v/heightL if leftLargerRight else v),
+            (0., v if leftLargerRight else heightL*v/heightR)
         )
 
     def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
@@ -99,71 +106,78 @@ class TrapezoidRV(Geometry):
             ( (rs.texUl, texVb), (texUr, texVb), (texUr, parentItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
         )
 
-    def renderLevelGroup(self,
-            building, levelGroup, parentItem, levelRenderer, height,
-            rs
-        ):
-            verts = building.verts
-            parentIndices = parentItem.indices
-            
-            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
-            # to be created out of <parentItem>
-            texUl = parentItem.uvs[0][0]
-            texUr = parentItem.uvs[1][0]
-            
-            texVt = rs.texVb + height
-            
-            footprint = parentItem.footprint
-            numLevels = footprint.numLevels
-            numRoofLevels = footprint.numRoofLevels
-            
-            # the largest level index (i.e level number) plus one
-            upperIndexPlus1 = (levelGroup.index1 if levelGroup.singleLevel else levelGroup.index2) + 1
-            
-            if rs.tmpTriangle:
-                pass
-            elif upperIndexPlus1 < numLevels:
-                RectangleFRA.renderLevelGroup(self, building, levelGroup, parentItem, levelRenderer, height, rs)
-            elif upperIndexPlus1 == numLevels:
-                leftVertLower = parentItem.uvs[3][1] < parentItem.uvs[2][1]
-                minHeightVertIndex = 3 if leftVertLower else 2
-                texVtMin = parentItem.uvs[minHeightVertIndex][1]
-                # check if reached one of the upper vertices of the traprezoid
-                if texVt == texVtMin:
-                    if leftVertLower:
-                        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
-                        # an item with rectangular geometry to be created
-                        indexTL = parentIndices[3]
-                        indexTR = len(building.verts)
-                        verts.append(verts[rs.indexBR] + height*zAxis)
-                    else:
-                        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
-                        # an item with rectangular geometry to be created
-                        indexTL = len(building.verts)
-                        verts.append(verts[rs.indexBL] + height*zAxis)
-                        indexTR = parentIndices[2]
-                    if levelGroup:
-                        # we have a rectangle here
-                        levelGroup.item.geometry = self.geometryRectangle
-                    levelRenderer.renderLevelGroup(
-                        building, levelGroup, parentItem,
-                        (rs.indexBL, rs.indexBR, indexTR, indexTL),
-                        ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-                    )
-                    rs.tmpTriangle = True
-                    
-                    rs.indexBL = indexTL
-                    rs.indexBR = indexTR
-                    rs.texVb = texVt
-                elif texVt < texVtMin:
-                    RectangleFRA.renderLevelGroup(self, building, levelGroup, parentItem, levelRenderer, height, rs)
-                else:
-                    rs.tmpTriangle = True
-            else:
-                return
-    
-    def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
+    def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         return
+        verts = parentItem.building.renderInfo.verts
+        parentIndices = parentItem.indices
+        
+        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
+        # to be created out of <parentItem>
+        texUl = parentItem.uvs[0][0]
+        texUr = parentItem.uvs[1][0]
+        
+        texVt = rs.texVb + height
+        
+        footprint = parentItem.footprint
+        numLevels = footprint.numLevels
+        numRoofLevels = footprint.numRoofLevels
+        
+        # the largest level index (i.e level number) plus one
+        upperIndexPlus1 = (levelGroup.index1 if levelGroup.singleLevel else levelGroup.index2) + 1
+        
+        if rs.tmpTriangle:
+            pass
+        elif upperIndexPlus1 < numLevels:
+            RectangleFRA.renderLevelGroup(self, building, levelGroup, parentItem, levelRenderer, height, rs)
+        elif upperIndexPlus1 == numLevels:
+            leftVertLower = parentItem.uvs[3][1] < parentItem.uvs[2][1]
+            minHeightVertIndex = 3 if leftVertLower else 2
+            texVtMin = parentItem.uvs[minHeightVertIndex][1]
+            # check if reached one of the upper vertices of the traprezoid
+            if texVt == texVtMin:
+                if leftVertLower:
+                    # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+                    # an item with rectangular geometry to be created
+                    indexTL = parentIndices[3]
+                    indexTR = len(verts)
+                    verts.append(verts[rs.indexBR] + height*zAxis)
+                else:
+                    # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+                    # an item with rectangular geometry to be created
+                    indexTL = len(building.verts)
+                    verts.append(verts[rs.indexBL] + height*zAxis)
+                    indexTR = parentIndices[2]
+                if levelGroup:
+                    # we have a rectangle here
+                    levelGroup.item.geometry = self.geometryRectangle
+                levelRenderer.renderLevelGroup(
+                    building, levelGroup, parentItem,
+                    (rs.indexBL, rs.indexBR, indexTR, indexTL),
+                    ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                )
+                rs.tmpTriangle = True
+                
+                rs.indexBL = indexTL
+                rs.indexBR = indexTR
+                rs.texVb = texVt
+            elif texVt < texVtMin:
+                RectangleFRA.renderLevelGroup(self, building, levelGroup, parentItem, levelRenderer, height, rs)
+            else:
+                rs.tmpTriangle = True
+        else:
+            return
+    
+    def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+        if levelGroup.item:
+            levelGroup.item.geometry = parentItem.geometry
+        levelRenderer.renderLevelGroup(
+            levelGroup.item or parentItem,
+            levelGroup,
+            parentItem.indices,
+            parentItem.uvs
+            #(rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
+            #( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+        )
     
     def subtract(self, facade, _facade):
         return
@@ -171,8 +185,11 @@ class TrapezoidRV(Geometry):
     def join(self, facade, _facade):
         return
     
-    def renderLevelGroups(self, a, b):
-        pass
+    def getMaxV(self, uvs):
+        return uvs[2][1] if uvs[2][1] > uvs[3][1] else uvs[3][1]
+    
+    def renderCladdingAtTop(self, parentItem, parentRenderer):
+        return
 
 
 class TrapezoidChainedRV(Geometry):
@@ -183,6 +200,36 @@ class TrapezoidChainedRV(Geometry):
     
     def __init__(self):
         self.geometryTrapezoid = TrapezoidRV()
+        self.geometryRectangle = RectangleFRA()
+
+    def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, itemUvs):
+        offsetU, offsetV = itemUvs[0]
+        # Calculate the height of <item> as the difference between the largest V-coordinate and
+        # the smallest one
+        h = max(itemUvs[i][1] for i in range(3, len(itemUvs)-1)) - offsetV
+        # Calculate the width of <item> as the difference between the largest U-coordinate and
+        # the smallest one
+        w = itemUvs[1][0] - itemUvs[0][0]
+        
+        u = numItemsInFace/numTilesU
+        v = numLevelsInFace/numTilesV
+        
+        factorU, factorV = u/w, v/h
+        
+        uvs = [
+            (0., 0.,),
+            (u, 0.),
+            (u, (itemUvs[2][1] - offsetV)*factorV)
+        ]
+        uvs.extend(
+            ( (itemUvs[i][0]-offsetU)*factorU, (itemUvs[i][1]-offsetV)*factorV )\
+                for i in range(3, len(itemUvs)-1)
+        )
+        uvs.append(
+            (0., (itemUvs[-1][1] - offsetV)*factorV)
+        )
+        
+        return uvs
     
     def initRenderStateForDivs(self, rs, item):
         super().initRenderStateForDivs(rs, item)
@@ -313,14 +360,79 @@ class TrapezoidChainedRV(Geometry):
                 ( (rs.texUl, texVb), (texUr, texVb), (texUr, parenItem.uvs[2][1]), (rs.texUl, rs.texVlt) )
             )
     
-    def renderLevelGroup(self,
-            building, levelGroup, parentItem, levelRenderer, height,
-            rs
-        ):
+    def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         return
+        verts = parentItem.building.renderInfo.verts
+        height = levelGroup.levelHeight\
+            if levelGroup.singleLevel else\
+            levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
+        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
+        # an item with rectangular geometry to be created
+        indexTL = len(verts)
+        indexTR = indexTL + 1
+        parentIndices = parentItem.indices
+        parentUvs = parentItem.uvs
+        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
+        # to be created out of <parentItem>
+        texUl = parentUvs[0][0]
+        texUr = parentUvs[1][0]
+        verts.append(verts[rs.indexBL] + height*zAxis)
+        verts.append(verts[rs.indexBR] + height*zAxis)
+        texVt = rs.texVb + height
+        
+        item = levelGroup.item
+        
+        footprint = parentItem.footprint
+        # the largest level index (i.e level number) plus one
+        upperIndexPlus1 = (levelGroup.index1 if levelGroup.singleLevel else levelGroup.index2) + 1
+        
+        if upperIndexPlus1 < footprint.numLevels:
+            RectangleFRA.renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs)
+        if upperIndexPlus1 == footprint.numLevels:
+            if footprint.lastLevelOffset < 0.:
+                RectangleFRA.renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs)
+            elif footprint.lastLevelOffset == 0.:
+                #
+                # rectange
+                #
+                if item:
+                    item.geometry = self.geometryRectangle
+                # processing the top left vertex
+                if abs(texVt - parentUvs[-1]) < zero:
+                    # no need to create a new vertex, use the existing one
+                    indexTL = parentIndices[-1]
+                else:
+                    # create a new vertex
+                    indexTL = len(verts)
+                    verts.append(verts[rs.indexBL] + height*zAxis)
+                # processing the top right vertex
+                if abs(texVt - parentUvs[2]) < zero:
+                    # no need to create a new vertex, use the existing one
+                    indexTR = parentIndices[2]
+                else:
+                    # create a new vertex
+                    indexTR = len(verts)
+                    verts.append(verts[rs.indexBR] + height*zAxis)
+                levelRenderer.renderLevelGroup(
+                    item or parentItem,
+                    levelGroup,
+                    (rs.indexBL, rs.indexBR, indexTR, indexTL),
+                    ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                )
+        else:
+            pass
     
-    def renderLastLevelGroup(self, building, levelGroup, parentItem, levelRenderer, rs):
-        return
+    def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+        if levelGroup.item:
+            levelGroup.item.geometry = parentItem.geometry
+        levelRenderer.renderLevelGroup(
+            levelGroup.item or parentItem,
+            levelGroup,
+            parentItem.indices,
+            parentItem.uvs
+            #(rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
+            #( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+        )
     
     def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
         numVerts = len(uvs)
@@ -341,5 +453,8 @@ class TrapezoidChainedRV(Geometry):
     def join(self, facade, _facade):
         return
     
-    def renderLevelGroups(self, a, b):
-        pass
+    def getMaxV(self, uvs):
+        return max(uvs[i][1] for i in range(3, len(uvs)-1))
+    
+    def renderCladdingAtTop(self, parentItem, parentRenderer):
+        return
