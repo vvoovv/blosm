@@ -33,6 +33,8 @@ class Footprint(Item):
         self.facadeStyle = None
         self.facades = []
         self.levelHeights = LevelHeights(self)
+        # <self.rectangularWalls> defines if ALL walls in the volume extruded from the footprint are rectangles
+        self.rectangularWalls = False
     
     def attr(self, attr):
         return self.element.tags.get(attr)

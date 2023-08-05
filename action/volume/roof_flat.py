@@ -43,6 +43,8 @@ class RoofFlat(Roof):
         polygon = footprint.polygon
         numVerts = polygon.numEdges
         
+        footprint.rectangularWalls = True
+        
         # create vertices
         
         # verts for the lower cap
