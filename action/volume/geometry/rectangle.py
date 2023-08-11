@@ -152,14 +152,18 @@ class RectangleFRA(Geometry):
         # an item with rectangular geometry to be created
         indexTL = len(verts)
         indexTR = indexTL + 1
-        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
-        # to be created out of <parentItem>
-        texUl = parentItem.uvs[0][0]
-        texUr = parentItem.uvs[1][0]
         verts.append(verts[rs.indexBL] + height*zAxis)
         verts.append(verts[rs.indexBR] + height*zAxis)
         texVt = rs.texVb + height
         
+        self._renderLevelGroupRectangle(parentItem, levelGroup, levelRenderer, rs, indexTL, indexTR, texVt)
+    
+    def _renderLevelGroupRectangle(self, parentItem, levelGroup, levelRenderer, rs, indexTL, indexTR, texVt):
+        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
+        # to be created out of <parentItem>
+        texUl = parentItem.uvs[0][0]
+        texUr = parentItem.uvs[1][0]
+               
         item = levelGroup.item
         if item:
             # Set the geometry for the <levelGroup.item>;
@@ -182,16 +186,6 @@ class RectangleFRA(Geometry):
         rs.texVb = texVt
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        footprint = parentItem.footprint
-        if footprint.numRoofLevels:
-            # available height in <parentItem>
-            availableHeight = parentItem.uvs[-1][1] - rs.texVb
-            # how many levels can fit in <availableHeight>
-            levels = floor(availableHeight/levelGroup.levelHeight)
-            if levels != levelGroup.index2 - levelGroup.index1 + 1:
-                levelGroup.index2 = levelGroup.index1 + levels - 1
-                # calculate what is left after adjusting <levelGroup.index2>
-        
         parentIndices = parentItem.indices
         texVt = parentItem.uvs[2][1]
         # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items

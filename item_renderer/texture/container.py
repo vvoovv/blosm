@@ -59,6 +59,8 @@ class RenderState:
         # from the previous vertex.
         self.startIndex = 0
         
+        self.startIndexL = self.startIndexR = 0
+        
         self.tmpTriangle = True
 
 

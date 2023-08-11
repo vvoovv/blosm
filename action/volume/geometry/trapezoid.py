@@ -168,6 +168,7 @@ class TrapezoidRV(Geometry):
             return
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+        return
         if levelGroup.item:
             levelGroup.item.geometry = parentItem.geometry
         levelRenderer.renderLevelGroup(
@@ -201,6 +202,11 @@ class TrapezoidChainedRV(Geometry):
     def __init__(self):
         self.geometryTrapezoid = TrapezoidRV()
         self.geometryRectangle = RectangleFRA()
+    
+    def initRenderStateForLevels(self, rs, parentItem):
+        super().initRenderStateForLevels(rs, parentItem)
+        rs.startIndexL = -1
+        rs.startIndexR = 2
 
     def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, itemUvs):
         offsetU, offsetV = itemUvs[0]
@@ -361,78 +367,185 @@ class TrapezoidChainedRV(Geometry):
             )
     
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        return
+        if levelGroup.index2 < parentItem.footprint.numLevels-1:
+            # Comparison between the integers is faster than between floats.
+            # Treat it like a rectangle right away
+            self.geometryRectangle.renderLevelGroup(
+                parentItem, levelGroup, levelRenderer, rs
+            )
+            return
+        
         verts = parentItem.building.renderInfo.verts
+        parentIndices = parentItem.indices
+        parentUvs = parentItem.uvs
+        startIndexL, startIndexR = rs.startIndexL, rs.startIndexR
+        # initialize the variables <indexTL> and <indexTR>
+        indexTL = indexTR = 0
+        
         height = levelGroup.levelHeight\
             if levelGroup.singleLevel else\
             levelGroup.levelHeight * (levelGroup.index2 - levelGroup.index1 + 1)
-        # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
-        # an item with rectangular geometry to be created
-        indexTL = len(verts)
-        indexTR = indexTL + 1
-        parentIndices = parentItem.indices
-        parentUvs = parentItem.uvs
-        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular item
-        # to be created out of <parentItem>
-        texUl = parentUvs[0][0]
-        texUr = parentUvs[1][0]
-        verts.append(verts[rs.indexBL] + height*zAxis)
-        verts.append(verts[rs.indexBR] + height*zAxis)
         texVt = rs.texVb + height
         
-        item = levelGroup.item
+        # Note that even if <levelGroup.index2 == parentItem.numLevels>, the height of the last level
+        # with the index equal to <parentItem.numLevels> can eventually exceed the height of the vertices
+        # with the indices <-1> and <2> when <lastLevelOffsetFactor> is greater than zero.
         
-        footprint = parentItem.footprint
-        # the largest level index (i.e level number) plus one
-        upperIndexPlus1 = (levelGroup.index1 if levelGroup.singleLevel else levelGroup.index2) + 1
+        # <brasb> stands for Below Right Angle Side at the Bottom
+        brasbL = False
+        indicesL = None
+        uvsL = None
+        # Check the condition for the left side
+        if startIndexL == -1 and texVt <= parentUvs[-1][1] + zero:
+            brasbL = True
+            # initialize a UV coordinate to be used later 
+            _uv = None
+            if texVt >= parentUvs[-1][1] - zero:
+                # use existing vertex
+                indexTL = parentIndices[-1]
+                _uv = parentUvs[-1]
+                rs.startIndexL -= 1
+            else:
+                indexTL = len(verts)
+                verts.append(verts[rs.indexBL] + height*zAxis)
+                _uv = (0., texVt)
+            indicesL = [indexTL]
+            uvsL = [_uv]
+        else:
+            indicesL = [parentIndices[-1]]
+            uvsL = [parentUvs[-1]]
+            startIndexL = -2
+            while True:
+                if texVt <= parentUvs[startIndexL][1] + zero:
+                    if texVt >= parentUvs[startIndexL][1] - zero:
+                        # use existing vertex
+                        indexTL = parentIndices[startIndexL]
+                        uvsL.append(parentUvs[startIndexL])
+                        startIndexL -= 1
+                    else:
+                        indexTL = len(verts)
+                        # factor
+                        k = (parentUvs[startIndexL][1] - texVt) / (texVt - parentUvs[startIndexL+1][1])
+                        verts.append(
+                            (k*verts[parentIndices[startIndexL+1]] + verts[parentIndices[startIndexL]])/(1.+k)
+                        )
+                        uvsL.append((
+                            (k*parentUvs[startIndexL+1][0] + parentUvs[startIndexL][0])/(1.+k),
+                            (k*parentUvs[startIndexL+1][1] + parentUvs[startIndexL][1])/(1.+k)
+                        ))
+                    indicesL.append(indexTL)
+                    break
+                indicesL.append(parentIndices[startIndexL])
+                startIndexL -= 1
+
+        # Check the condition for the left side
+        # <brasb> stands for Below Right Angle Side at the Bottom
+        brasbR = False
+        indicesR = None
+        uvsR = None
+        if startIndexR == 2 and texVt <= parentUvs[2][1] + zero:
+            # the case of the right angle
+            brasbR = True
+            # initialize a UV coordinate to be used later 
+            _uv = None
+            if texVt >= parentUvs[2][1] - zero:
+                # use existing vertex
+                indexTR = parentIndices[2]
+                _uv = parentUvs[2]
+                startIndexR = 3
+            else:
+                indexTR = len(verts)
+                verts.append(verts[rs.indexBR] + height*zAxis)
+                _uv = (parentItem.uvs[1][0], texVt)
+            if not brasbL:
+                indicesR = [rs.indexBL, rs.indexBR, indexTR]
+                indicesR.extend(reversed(indicesL))
+                uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), _uv]
+                uvsR.extend(uvsL)
+        else:
+            indicesR = [rs.indexBL, rs.indexBR, parentIndices[2]]
+            uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), parentUvs[2]]
+            startIndexR = 3
+            while True:
+                if texVt <= parentUvs[startIndexR][1] + zero:
+                    if texVt >= parentUvs[startIndexR][1] - zero:
+                        # use existing vertex
+                        indexTR = parentIndices[startIndexR]
+                        uvsR.append(parentUvs[startIndexR])
+                        startIndexR += 1
+                    else:
+                        indexTR = len(verts)
+                        # factor
+                        k = (parentUvs[startIndexR][1] - texVt) / (texVt - parentUvs[startIndexR-1][1])
+                        verts.append(
+                            (k*verts[parentIndices[startIndexR-1]] + verts[parentIndices[startIndexR]])/(1.+k)
+                        )
+                        uvsR.append((
+                            (k*parentUvs[startIndexR-1][0] + parentUvs[startIndexR][0])/(1.+k),
+                            (k*parentUvs[startIndexR-1][1] + parentUvs[startIndexR][1])/(1.+k)
+                        ))
+                    indicesR.append(indexTR)
+                    break
+                indicesR.append(parentIndices[startIndexR])
+                startIndexR += 1
+            indicesR.extend(reversed(indicesL))
+            uvsR.extend(reversed(uvsL))
         
-        if upperIndexPlus1 < footprint.numLevels:
-            RectangleFRA.renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs)
-        if upperIndexPlus1 == footprint.numLevels:
-            if footprint.lastLevelOffset < 0.:
-                RectangleFRA.renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs)
-            elif footprint.lastLevelOffset == 0.:
-                #
-                # rectange
-                #
-                if item:
-                    item.geometry = self.geometryRectangle
-                # processing the top left vertex
-                if abs(texVt - parentUvs[-1]) < zero:
-                    # no need to create a new vertex, use the existing one
-                    indexTL = parentIndices[-1]
-                else:
-                    # create a new vertex
-                    indexTL = len(verts)
-                    verts.append(verts[rs.indexBL] + height*zAxis)
-                # processing the top right vertex
-                if abs(texVt - parentUvs[2]) < zero:
-                    # no need to create a new vertex, use the existing one
-                    indexTR = parentIndices[2]
-                else:
-                    # create a new vertex
-                    indexTR = len(verts)
-                    verts.append(verts[rs.indexBR] + height*zAxis)
+        if brasbL and brasbR:
+            # render <levelGroup> in a rectangular geometry
+            self.geometryRectangle._renderLevelGroupRectangle(
+                parentItem, levelGroup, levelRenderer, rs, indexTL, indexTR, texVt
+            )
+        else:
+            item = levelGroup.item
+            if item:
+                # Set the geometry for the <levelGroup.item>;
+                # division of a rectangle can only generate rectangles
+                item.geometry = self
+            
+            if item and item.markup:
+                item.indices = indicesR
+                item.uvs = uvsR
+                levelRenderer.renderDivs(item, levelGroup)
+            else:
                 levelRenderer.renderLevelGroup(
                     item or parentItem,
                     levelGroup,
-                    (rs.indexBL, rs.indexBR, indexTR, indexTL),
-                    ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                    indicesR,
+                    uvsR
                 )
-        else:
-            pass
+            rs.indexBL = indexTL
+            rs.indexBR = indexTR
+            rs.texVb = texVt
+            rs.startIndexL = startIndexL
+            rs.startIndexR = startIndexR
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+        return
+        parentIndices = parentItem.indices
+        texVt = parentItem.uvs[2][1]
+        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
+        # to be created out of <parentItem>
+        texUl = parentItem.uvs[0][0]
+        texUr = parentItem.uvs[1][0]
+        
+        item = levelGroup.item
         if levelGroup.item:
-            levelGroup.item.geometry = parentItem.geometry
-        levelRenderer.renderLevelGroup(
-            levelGroup.item or parentItem,
-            levelGroup,
-            parentItem.indices,
-            parentItem.uvs
-            #(rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
-            #( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-        )
+            # Set the geometry for the <group.item>;
+            # division of a rectangle can only generate rectangles
+            levelGroup.item.geometry = self
+            
+        if item and item.markup:
+            item.indices = (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3])
+            item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            levelRenderer.renderDivs(item, levelGroup)
+        else:
+            levelRenderer.renderLevelGroup(
+                item or parentItem,
+                levelGroup,
+                (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+            )
     
     def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
         numVerts = len(uvs)
