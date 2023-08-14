@@ -494,8 +494,11 @@ class RoofProfile(Roof):
         self.hasGable = True
         # geometries for wall faces
         self.geometryRectangle = RectangleFRA()
-        self.geometryTrapezoid = TrapezoidRV()
         self.geometryTrapezoidChained = TrapezoidChainedRV()
+        self.geometryTrapezoidL = TrapezoidRV(True) # Left is lower than right
+        self.geometryTrapezoidL.geometryTrapezoidChained = self.geometryTrapezoidChained
+        self.geometryTrapezoidR = TrapezoidRV(False) # Right is lower than left
+        self.geometryTrapezoidR.geometryTrapezoidChained = self.geometryTrapezoidChained
         
         self.hasRidge = True
         
@@ -1015,7 +1018,7 @@ class RoofProfile(Roof):
                 # flat vertices coordinates on the facade surface (i.e. on the rectangle)
                 uvs = geometry.getUvs(width, heightLeft)
             else:
-                geometry = self.geometryTrapezoid
+                geometry = self.geometryTrapezoidL if heightLeft < heightRight else self.geometryTrapezoidR
                 # flat vertices coordinates on the facade surface (i.e. on the trapezoid)
                 uvs = ( (0., 0.), (width, 0.), (width, heightRight), (0., heightLeft) )
         else:

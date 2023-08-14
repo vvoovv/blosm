@@ -13,6 +13,9 @@ class TrapezoidRV(Geometry):
     def __init__(self, leftIsLower):
         self.leftIsLower = leftIsLower
         self.geometryRectangle = RectangleFRA()
+        # <self.geometryTrapezoidChained> will be set in the initialization code
+        # to avoid endless recursion
+        self.geometryTrapezoidChained = None
     
     def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, itemUvs):
         u = numItemsInFace/numTilesU
@@ -136,7 +139,7 @@ class TrapezoidRV(Geometry):
             indexTR = len(verts)
             verts.append(verts[rs.indexBR] + height*zAxis)
             
-            if self.texVt <= parentUvs[3][1] + zero:
+            if texVt <= parentUvs[3][1] + zero:
                 # the case of rectangle
                 if texVt >= parentUvs[3][1] - zero:
                     # use existing vertex
@@ -191,15 +194,15 @@ class TrapezoidRV(Geometry):
         
         item = levelGroup.item
         if item:
-            # Set the geometry for the <levelGroup.item>;
-            # division of a rectangle can only generate rectangles
-            item.geometry = self
+            # Set the geometry for the <levelGroup.item>. Since the geometry
+            # has 5 points with the vertical sides, it is supposed to be <self.geometryTrapezoidChained>
+            item.geometry = self.geometryTrapezoidChained
         
         indices = (parentIndices[0], parentIndices[1], indexTR, indexTL, parentIndices[3])\
             if self.leftIsLower else\
             (parentIndices[0], parentIndices[1], parentIndices[2], indexTR, indexTL)
         
-        uvs = (parentUvs[0], parentUvs[1], (parentUvs[1], texVt), _uv, parentUvs[3])\
+        uvs = (parentUvs[0], parentUvs[1], (parentUvs[1][0], texVt), _uv, parentUvs[3])\
             if self.leftIsLower else\
             (parentUvs[0], parentUvs[1], parentUvs[2], _uv, (parentUvs[0][0], texVt))
         
@@ -251,7 +254,10 @@ class TrapezoidChainedRV(Geometry):
     """
     
     def __init__(self):
-        self.geometryTrapezoid = TrapezoidRV()
+        self.geometryTrapezoidL = TrapezoidRV(True) # Left is lower than right
+        self.geometryTrapezoidL.geometryTrapezoidChained = self
+        self.geometryTrapezoidR = TrapezoidRV(False) # Right is lower than left
+        self.geometryTrapezoidR.geometryTrapezoidChained = self
         self.geometryRectangle = RectangleFRA()
     
     def initRenderStateForLevels(self, rs, parentItem):
