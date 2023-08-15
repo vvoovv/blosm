@@ -518,7 +518,7 @@ class TrapezoidChainedRV(Geometry):
                 indicesR = [rs.indexBL, rs.indexBR, indexTR]
                 indicesR.extend(reversed(indicesL))
                 uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), _uv]
-                uvsR.extend(uvsL)
+                uvsR.extend(reversed(uvsL))
         else:
             indicesR = [rs.indexBL, rs.indexBR, parentIndices[2]]
             uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), parentUvs[2]]
