@@ -2,6 +2,7 @@ from util import zero, zAxis
 
 from . import Geometry
 from .rectangle import RectangleFRA
+from .triangle import Triangle
 
 
 class TrapezoidRV(Geometry):
@@ -13,6 +14,7 @@ class TrapezoidRV(Geometry):
     def __init__(self, leftIsLower):
         self.leftIsLower = leftIsLower
         self.geometryRectangle = RectangleFRA()
+        self.geometryTriangle = Triangle()
         # <self.geometryTrapezoidChained> will be set in the initialization code
         # to avoid endless recursion
         self.geometryTrapezoidChained = None
@@ -144,6 +146,12 @@ class TrapezoidRV(Geometry):
                 if texVt >= parentUvs[3][1] - zero:
                     # use existing vertex
                     indexTL = parentIndices[3]
+                    # the remaining geometry is a triangle
+                    rs.remainingGeometry = self.geometryTriangle
+                    rs.indices = (indexTL, indexTR, parentIndices[2])
+                    rs.uvs = (
+                        parentUvs[3], (parentUvs[1][0], texVt), parentUvs[2]
+                    )
                 else:
                     indexTL = len(verts)
                     verts.append(verts[rs.indexBL] + height*zAxis)
@@ -163,6 +171,12 @@ class TrapezoidRV(Geometry):
                     (k*parentUvs[3][0] + parentUvs[2][0])/(1.+k),
                     (k*parentUvs[3][1] + parentUvs[2][1])/(1.+k)
                 )
+                # the remaining geometry is a triangle
+                rs.remainingGeometry = self.geometryTriangle
+                rs.indices = (indexTL, indexTR, parentIndices[2])
+                rs.uvs = (
+                    _uv, (parentUvs[1][0], texVt), parentUvs[2]
+                )
         else:
             # create the top left vertex
             indexTL = len(verts)
@@ -172,6 +186,12 @@ class TrapezoidRV(Geometry):
                 if texVt >= parentUvs[2][1] - zero:
                     # use existing vertex
                     indexTR = parentIndices[2]
+                    # the remaining geometry is a triangle
+                    rs.remainingGeometry = self.geometryTriangle
+                    rs.indices = (indexTL, indexTR, parentIndices[3])
+                    rs.uvs = (
+                        (parentUvs[0][0], texVt), parentUvs[2], parentUvs[3]
+                    )
                 else:
                     indexTR = len(verts)
                     verts.append(verts[rs.indexBR] + height*zAxis)
@@ -190,6 +210,12 @@ class TrapezoidRV(Geometry):
                 _uv = (
                     (k*parentUvs[2][0] + parentUvs[3][0])/(1.+k),
                     (k*parentUvs[2][1] + parentUvs[3][1])/(1.+k)
+                )
+                # the remaining geometry is a triangle
+                rs.remainingGeometry = self.geometryTriangle
+                rs.indices = (indexTL, indexTR, parentIndices[3])
+                rs.uvs = (
+                    (parentUvs[0][0], texVt), _uv, parentUvs[3]
                 )
         
         item = levelGroup.item
@@ -222,17 +248,33 @@ class TrapezoidRV(Geometry):
         rs.texVb = texVt
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        return
-        if levelGroup.item:
-            levelGroup.item.geometry = parentItem.geometry
-        levelRenderer.renderLevelGroup(
-            levelGroup.item or parentItem,
-            levelGroup,
-            parentItem.indices,
-            parentItem.uvs
-            #(rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
-            #( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-        )
+        if rs.remainingGeometry:
+            rs.remainingGeometry.renderLastLevelGroup(parentItem, levelGroup, levelRenderer, rs)
+        else:
+            parentIndices = parentItem.indices
+            texVt = parentItem.uvs[2][1]
+            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
+            # to be created out of <parentItem>
+            texUl = parentItem.uvs[0][0]
+            texUr = parentItem.uvs[1][0]
+            
+            item = levelGroup.item
+            if levelGroup.item:
+                # Set the geometry for the <group.item>;
+                # division of a rectangle can only generate rectangles
+                levelGroup.item.geometry = self
+                
+            if item and item.markup:
+                item.indices = (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3])
+                item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                levelRenderer.renderDivs(item, levelGroup)
+            else:
+                levelRenderer.renderLevelGroup(
+                    item or parentItem,
+                    levelGroup,
+                    (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
+                    ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
+                )
     
     def subtract(self, facade, _facade):
         return
@@ -244,7 +286,23 @@ class TrapezoidRV(Geometry):
         return uvs[2][1] if uvs[2][1] > uvs[3][1] else uvs[3][1]
     
     def renderCladdingAtTop(self, parentItem, parentRenderer):
-        return
+        rs = parentRenderer.renderState
+        
+        if rs.remainingGeometry:
+            rs.remainingGeometry.renderCladdingAtTop(parentItem, parentRenderer)
+        else:
+            # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
+            # to be created out of <parentItem>
+            texUl = parentItem.uvs[0][0]
+            texUr = parentItem.uvs[1][0]
+            parentRenderer.renderCladding(
+                parentItem,
+                parentRenderer.r.createFace(
+                    parentItem.footprint,
+                    (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
+                ),
+                ( (texUl, rs.texVb), (texUr, rs.texVb), parentItem.uvs[2], parentItem.uvs[3] )
+            )
 
 
 class TrapezoidChainedRV(Geometry):
@@ -259,6 +317,7 @@ class TrapezoidChainedRV(Geometry):
         self.geometryTrapezoidR = TrapezoidRV(False) # Right is lower than left
         self.geometryTrapezoidR.geometryTrapezoidChained = self
         self.geometryRectangle = RectangleFRA()
+        self.geometryTriangle = Triangle()
     
     def initRenderStateForLevels(self, rs, parentItem):
         super().initRenderStateForLevels(rs, parentItem)
@@ -424,7 +483,10 @@ class TrapezoidChainedRV(Geometry):
             )
     
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        if levelGroup.index2 < parentItem.footprint.numLevels-1:
+        if rs.remainingGeometry:
+            rs.remainingGeometry.renderLastLevelGroup(parentItem, levelGroup, levelRenderer, rs)
+            return
+        elif levelGroup.index2 < parentItem.footprint.numLevels-1:
             # Comparison between the integers is faster than between floats.
             # Treat it like a rectangle right away
             self.geometryRectangle.renderLevelGroup(
@@ -500,6 +562,8 @@ class TrapezoidChainedRV(Geometry):
         brasbR = False
         indicesR = None
         uvsR = None
+        # the following variable is used if <rs.remainingGeometry> is set
+        _uvIndex = 0
         if startIndexR == 2 and texVt <= parentUvs[2][1] + zero:
             # the case of the right angle
             brasbR = True
@@ -518,6 +582,8 @@ class TrapezoidChainedRV(Geometry):
                 indicesR = [rs.indexBL, rs.indexBR, indexTR]
                 indicesR.extend(reversed(indicesL))
                 uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), _uv]
+                # set <uvsR> to the last index of <uvsR>
+                _uvIndex = 2
                 uvsR.extend(reversed(uvsL))
         else:
             indicesR = [rs.indexBL, rs.indexBR, parentIndices[2]]
@@ -545,6 +611,8 @@ class TrapezoidChainedRV(Geometry):
                     break
                 indicesR.append(parentIndices[startIndexR])
                 startIndexR += 1
+            # set <uvsR> to the last index of <uvsR>
+            _uvIndex = len(indicesR)-1
             indicesR.extend(reversed(indicesL))
             uvsR.extend(reversed(uvsL))
         
@@ -576,33 +644,44 @@ class TrapezoidChainedRV(Geometry):
             rs.texVb = texVt
             rs.startIndexL = startIndexL
             rs.startIndexR = startIndexR
+            
+            # the condition for a triangle as the remaining geometry
+            if len(parentIndices)+startIndexL == startIndexR:
+                rs.remainingGeometry = self.geometryTriangle
+                rs.indices = (indexTL, indexTR, parentIndices[startIndexR])
+                rs.uvs = (
+                    uvsR[_uvIndex], uvsR[_uvIndex+1], parentUvs[startIndexR]
+                )
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        return
-        parentIndices = parentItem.indices
-        texVt = parentItem.uvs[2][1]
-        # <texUl> and <texUr> are the left and right U-coordinates for the rectangular items
-        # to be created out of <parentItem>
-        texUl = parentItem.uvs[0][0]
-        texUr = parentItem.uvs[1][0]
-        
-        item = levelGroup.item
-        if levelGroup.item:
-            # Set the geometry for the <group.item>;
-            # division of a rectangle can only generate rectangles
-            levelGroup.item.geometry = self
-            
-        if item and item.markup:
-            item.indices = (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3])
-            item.uvs = ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-            levelRenderer.renderDivs(item, levelGroup)
+        if rs.remainingGeometry:
+            rs.remainingGeometry.renderLastLevelGroup(parentItem, levelGroup, levelRenderer, rs)
         else:
-            levelRenderer.renderLevelGroup(
-                item or parentItem,
-                levelGroup,
-                (rs.indexBL, rs.indexBR, parentIndices[2], parentIndices[3]),
-                ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
-            )
+            parentIndices = parentItem.indices
+            parentUvs = parentItem.uvs
+            
+            item = levelGroup.item
+            if levelGroup.item:
+                # Set the geometry for the <group.item>;
+                # division of a rectangle can only generate rectangles
+                levelGroup.item.geometry = self
+            
+            indices = [rs.indexBL, rs.indexBR]
+            indices.extend( parentIndices[i] for i in range(2, len(parentIndices)) )
+            uvs = [ (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb) ]
+            uvs.extend( parentUvs[i] for i in range(2, len(parentIndices)) )
+                
+            if item and item.markup:
+                item.indices = indices
+                item.uvs = uvs
+                levelRenderer.renderDivs(item, levelGroup)
+            else:
+                levelRenderer.renderLevelGroup(
+                    item or parentItem,
+                    levelGroup,
+                    indices,
+                    uvs
+                )
     
     def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
         numVerts = len(uvs)
@@ -627,4 +706,23 @@ class TrapezoidChainedRV(Geometry):
         return max(uvs[i][1] for i in range(3, len(uvs)-1))
     
     def renderCladdingAtTop(self, parentItem, parentRenderer):
-        return
+        rs = parentRenderer.renderState
+        
+        if rs.remainingGeometry:
+            rs.remainingGeometry.renderCladdingAtTop(parentItem, parentRenderer)
+        else:
+            parentIndices = parentItem.indices
+            parentUvs = parentItem.uvs
+            
+            indices = [rs.indexBL, rs.indexBR]
+            indices.extend( parentIndices[i] for i in range(2, len(parentIndices)) )
+            uvs = [ (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb) ]
+            uvs.extend( parentUvs[i] for i in range(2, len(parentIndices)) )
+            parentRenderer.renderCladding(
+                parentItem,
+                parentRenderer.r.createFace(
+                    parentItem.footprint,
+                    indices
+                ),
+                uvs
+            )

@@ -61,7 +61,11 @@ class RenderState:
         
         self.startIndexL = self.startIndexR = 0
         
-        self.tmpTriangle = True
+        self.remainingGeometry = None
+        # <self.indices> refers to <self.remainingGeometry>
+        self.indices = None
+        # <self.uvs> refers to <self.remainingGeometry>
+        self.uvs = None
 
 
 def getParamValue(param, item, obj):

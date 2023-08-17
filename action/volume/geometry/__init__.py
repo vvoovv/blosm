@@ -24,7 +24,14 @@ class Geometry:
         # <texVb> is the current V-coordinate for texturing the bottom vertices of
         # level items to be created out of <parentItem>
         rs.texVb = parentItem.uvs[0][1]
-
+        
+        if rs.remainingGeometry:
+            rs.remainingGeometry = None
+            # <rs.indices> refers to <rs.remainingGeometry>
+            rs.indices = None
+            # <rs.uvs> refers to <rs.remainingGeometry>
+            rs.uvs = None
+    
     def renderLevelGroups(self, parentItem, parentRenderer):
         rs = parentRenderer.renderState
         self.initRenderStateForLevels(rs, parentItem)
