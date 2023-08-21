@@ -3,6 +3,7 @@ from util import zero, zAxis
 from . import Geometry
 from .rectangle import RectangleFRA
 from .triangle import Triangle
+from .polygon import PolygonHB
 
 
 class TrapezoidH(Geometry):
@@ -131,7 +132,10 @@ class TrapezoidRV(Geometry):
         )
 
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        if levelGroup.index2 < parentItem.footprint.numLevels-1:
+        if rs.remainingGeometry:
+            rs.remainingGeometry.renderLevelGroup(parentItem, levelGroup, levelRenderer, rs)
+            return
+        elif levelGroup.index2 < parentItem.footprint.numLevels-1:
             # Comparison between the integers is faster than between floats.
             # Treat it like a rectangle right away
             self.geometryRectangle.renderLevelGroup(
@@ -338,6 +342,7 @@ class TrapezoidChainedRV(Geometry):
         self.geometryTrapezoidR.geometryTrapezoidChained = self
         self.geometryRectangle = RectangleFRA()
         self.geometryTriangle = Triangle(TrapezoidH())
+        self.geometryPolygon = PolygonHB(self.geometryTriangle)
     
     def initRenderStateForLevels(self, rs, parentItem):
         super().initRenderStateForLevels(rs, parentItem)
@@ -530,13 +535,14 @@ class TrapezoidChainedRV(Geometry):
         # with the index equal to <parentItem.numLevels> can eventually exceed the height of the vertices
         # with the indices <-1> and <2> when <lastLevelOffsetFactor> is greater than zero.
         
-        # <brasb> stands for Below Right Angle Side at the Bottom
-        brasbL = False
-        indicesL = None
-        uvsL = None
+        # <berasb> stands for Below or Equal Right Angle Side at the Bottom
+        berasbL = False
+        # <aerasb> stands for Above or Equal Right Angle Side at the Bottom
+        aerasbL = True
+        indicesL = uvsL = None
         # Check the condition for the left side
         if startIndexL == -1 and texVt <= parentUvs[-1][1] + zero:
-            brasbL = True
+            berasbL = True
             # initialize a UV coordinate to be used later 
             _uv = None
             if texVt >= parentUvs[-1][1] - zero:
@@ -545,6 +551,7 @@ class TrapezoidChainedRV(Geometry):
                 _uv = parentUvs[-1]
                 startIndexL = -2
             else:
+                aerasbL = False
                 indexTL = len(verts)
                 verts.append(verts[rs.indexBL] + height*zAxis)
                 _uv = (0., texVt)
@@ -575,18 +582,20 @@ class TrapezoidChainedRV(Geometry):
                     indicesL.append(indexTL)
                     break
                 indicesL.append(parentIndices[startIndexL])
+                uvsL.append(parentUvs[startIndexL])
                 startIndexL -= 1
 
         # Check the condition for the left side
-        # <brasb> stands for Below Right Angle Side at the Bottom
-        brasbR = False
-        indicesR = None
-        uvsR = None
+        # <berasb> stands for Below or Equal Right Angle Side at the Bottom
+        berasbR = False
+        # <aerasb> stands for Above or Equal Right Angle Side at the Bottom
+        aerasbR = True
+        indicesR = uvsR = None
         # the following variable is used if <rs.remainingGeometry> is set
         _uvIndex = 0
         if startIndexR == 2 and texVt <= parentUvs[2][1] + zero:
             # the case of the right angle
-            brasbR = True
+            berasbR = True
             # initialize a UV coordinate to be used later 
             _uv = None
             if texVt >= parentUvs[2][1] - zero:
@@ -595,16 +604,17 @@ class TrapezoidChainedRV(Geometry):
                 _uv = parentUvs[2]
                 startIndexR = 3
             else:
+                aerasbR = False
                 indexTR = len(verts)
                 verts.append(verts[rs.indexBR] + height*zAxis)
                 _uv = (parentItem.uvs[1][0], texVt)
-            if not brasbL:
-                indicesR = [rs.indexBL, rs.indexBR, indexTR]
-                indicesR.extend(reversed(indicesL))
-                uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), _uv]
-                # set <_uvIndex> to the last index of <uvsR>
-                _uvIndex = 2
-                uvsR.extend(reversed(uvsL))
+
+            indicesR = [rs.indexBL, rs.indexBR, indexTR]
+            indicesR.extend(reversed(indicesL))
+            uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), _uv]
+            # set <_uvIndex> to the last index of <uvsR>
+            _uvIndex = 2
+            uvsR.extend(reversed(uvsL))
         else:
             indicesR = [rs.indexBL, rs.indexBR, parentIndices[2]]
             uvsR = [(parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), parentUvs[2]]
@@ -630,13 +640,14 @@ class TrapezoidChainedRV(Geometry):
                     indicesR.append(indexTR)
                     break
                 indicesR.append(parentIndices[startIndexR])
+                uvsR.append(parentUvs[startIndexR])
                 startIndexR += 1
             # set <uvsR> to the last index of <uvsR>
             _uvIndex = len(indicesR)-1
             indicesR.extend(reversed(indicesL))
             uvsR.extend(reversed(uvsL))
         
-        if brasbL and brasbR:
+        if berasbL and berasbR:
             # render <levelGroup> in a rectangular geometry
             self.geometryRectangle._renderLevelGroupRectangle(
                 parentItem, levelGroup, levelRenderer, rs, indexTL, indexTR, texVt
@@ -649,7 +660,8 @@ class TrapezoidChainedRV(Geometry):
             item = levelGroup.item
             if item:
                 # Set the geometry for the <levelGroup.item>;
-                # division of a rectangle can only generate rectangles
+                # the lower part of <self> after a devision can be
+                # either a rectange (processed in the if-clause) or <self>
                 item.geometry = self
             
             if item and item.markup:
@@ -672,21 +684,23 @@ class TrapezoidChainedRV(Geometry):
         # the condition for a triangle as the remaining geometry
         if len(parentIndices)+startIndexL == startIndexR:
             rs.remainingGeometry = self.geometryTriangle
-            if uvsR:
-                rs.indices = (indexTL, indexTR, parentIndices[startIndexR])
-                rs.uvs = (
-                    uvsR[_uvIndex], uvsR[_uvIndex+1], parentUvs[startIndexR]
-                )
-            else:
-                # <uvsR> is None if <brasbL> is True and <brasbR> is True
-                # The only case when it's possible, if the trapezoid has 5 points,
-                # vertices at <parentIndices[4]> and <parentIndices[2]> have the same heignt
-                # and the remaining triangle geometry is composed of the vertices with the indices
-                # <parentIndices[4]>, <parentIndices[2]>, <parentIndices[3]>
-                rs.indices = (parentIndices[4], parentIndices[2], parentIndices[3])
-                rs.uvs = (
-                    parentUvs[4], parentUvs[2], parentUvs[3]
-                )
+            rs.indices = (indexTL, indexTR, parentIndices[startIndexR])
+            rs.uvs = (
+                uvsR[_uvIndex+1], uvsR[_uvIndex], parentUvs[startIndexR]
+            )
+        elif aerasbL or aerasbR:
+            rs.remainingGeometry = self.geometryPolygon
+            
+            indices = [indexTL, indexTR]
+            indices.extend( parentIndices[i] for i in range(startIndexR, len(parentIndices)+startIndexL+1) )
+            
+            uvs = [ uvsR[_uvIndex+1], uvsR[_uvIndex] ]
+            uvs.extend( parentUvs[i] for i in range(startIndexR, len(parentIndices)+startIndexL+1) )
+            
+            rs.indices = indices
+            rs.uvs = uvs
+            rs.startIndexL = -1
+            rs.startIndexR = 2
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         if rs.remainingGeometry:

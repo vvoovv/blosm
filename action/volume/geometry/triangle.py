@@ -1,7 +1,5 @@
 from . import Geometry
 
-from util import zAxis
-
 
 class Triangle(Geometry):
     
