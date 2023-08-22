@@ -20,7 +20,7 @@ class PolygonHB(Geometry):
             rs.remainingGeometry.renderLevelGroup(parentItem, levelGroup, levelRenderer, rs)
             return
 
-        # <rs.indices> and <rs.uvs> are used if <self.renderLastLevelGroup(..)> is called
+        # <rs.indices> and <rs.uvs> are used if <self.renderLevelGroup(..)> is called
         # from another geometry where <self> is the remaining geometry
         parentIndices = rs.indices or parentItem.indices
         parentUvs = rs.uvs or parentItem.uvs
@@ -151,3 +151,27 @@ class PolygonHB(Geometry):
         )
         
         return uvs
+    
+    def renderCladdingAtTop(self, parentItem, parentRenderer):
+        rs = parentRenderer.renderState
+        
+        if rs.remainingGeometry and not rs.remainingGeometry is self:
+            rs.remainingGeometry.renderCladdingAtTop(parentItem, parentRenderer)
+        else:
+            # <rs.indices> and <rs.uvs> are used if <self.renderCladdingAtTop(..)> is called
+            # from another geometry where <self> is the remaining geometry
+            parentIndices = rs.indices or parentItem.indices
+            parentUvs = rs.uvs or parentItem.uvs
+            
+            indices = [rs.indexBL, rs.indexBR]
+            indices.extend( parentIndices[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
+            uvs = [ parentUvs[0], parentUvs[1] ]
+            uvs.extend( parentUvs[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
+            parentRenderer.renderCladding(
+                parentItem,
+                parentRenderer.r.createFace(
+                    parentItem.footprint,
+                    indices
+                ),
+                uvs
+            )
