@@ -27,10 +27,6 @@ class Geometry:
         
         if rs.remainingGeometry:
             rs.remainingGeometry = None
-            # <rs.indices> refers to <rs.remainingGeometry>
-            rs.indices = None
-            # <rs.uvs> refers to <rs.remainingGeometry>
-            rs.uvs = None
     
     def renderLevelGroups(self, parentItem, parentRenderer):
         rs = parentRenderer.renderState

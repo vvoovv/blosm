@@ -59,13 +59,12 @@ class RenderState:
         # from the previous vertex.
         self.startIndex = 0
         
+        # some geometries use <self.startIndexL> and <self.startIndexR>
         self.startIndexL = self.startIndexR = 0
+        # some geometries use <self.uvBL> and <self.uvBR>
+        self.uvBL = self.uvBR = None
         
         self.remainingGeometry = None
-        # <self.indices> refers to <self.remainingGeometry>
-        self.indices = None
-        # <self.uvs> refers to <self.remainingGeometry>
-        self.uvs = None
 
 
 def getParamValue(param, item, obj):

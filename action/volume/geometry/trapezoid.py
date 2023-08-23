@@ -172,10 +172,9 @@ class TrapezoidRV(Geometry):
                     indexTL = parentIndices[3]
                     # the remaining geometry is a triangle
                     rs.remainingGeometry = self.geometryTriangle
-                    rs.indices = (indexTL, indexTR, parentIndices[2])
-                    rs.uvs = (
-                        parentUvs[3], (parentUvs[1][0], texVt), parentUvs[2]
-                    )
+                    # <rs.startIndexL> will be used as the index of the top vertex of the triangle
+                    rs.startIndexL = 2
+                    rs.uvBL, rs.uvBR = parentUvs[3], (parentUvs[1][0], texVt)
                 else:
                     indexTL = len(verts)
                     verts.append(verts[rs.indexBL] + height*zAxis)
@@ -197,10 +196,9 @@ class TrapezoidRV(Geometry):
                 )
                 # the remaining geometry is a triangle
                 rs.remainingGeometry = self.geometryTriangle
-                rs.indices = (indexTL, indexTR, parentIndices[2])
-                rs.uvs = (
-                    _uv, (parentUvs[1][0], texVt), parentUvs[2]
-                )
+                # <rs.startIndexL> will be used as the index of the top vertex of the triangle
+                rs.startIndexL = 2
+                rs.uvBL, rs.uvBR = _uv, (parentUvs[1][0], texVt)
         else:
             # create the top left vertex
             indexTL = len(verts)
@@ -212,10 +210,9 @@ class TrapezoidRV(Geometry):
                     indexTR = parentIndices[2]
                     # the remaining geometry is a triangle
                     rs.remainingGeometry = self.geometryTriangle
-                    rs.indices = (indexTL, indexTR, parentIndices[3])
-                    rs.uvs = (
-                        (parentUvs[0][0], texVt), parentUvs[2], parentUvs[3]
-                    )
+                    # <rs.startIndexL> will be used as the index of the top vertex of the triangle
+                    rs.startIndexL = 3
+                    rs.uvBL, rs.uvBR = (parentUvs[0][0], texVt), parentUvs[2]
                 else:
                     indexTR = len(verts)
                     verts.append(verts[rs.indexBR] + height*zAxis)
@@ -237,10 +234,9 @@ class TrapezoidRV(Geometry):
                 )
                 # the remaining geometry is a triangle
                 rs.remainingGeometry = self.geometryTriangle
-                rs.indices = (indexTL, indexTR, parentIndices[3])
-                rs.uvs = (
-                    (parentUvs[0][0], texVt), _uv, parentUvs[3]
-                )
+                # <rs.startIndexL> will be used as the index of the top vertex of the triangle
+                rs.startIndexL = 3
+                rs.uvBL, rs.uvBR = (parentUvs[0][0], texVt), _uv
         
         item = levelGroup.item
         if item:
@@ -684,14 +680,10 @@ class TrapezoidChainedRV(Geometry):
         # the condition for a triangle as the remaining geometry
         if len(parentIndices)+startIndexL == startIndexR:
             rs.remainingGeometry = self.geometryTriangle
-            rs.indices = (indexTL, indexTR, parentIndices[startIndexR])
-            rs.uvs = (
-                uvsR[_uvIndex+1], uvsR[_uvIndex], parentUvs[startIndexR]
-            )
+            rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
         elif aerasbL or aerasbR:
             rs.remainingGeometry = self.geometryPolygon
             rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
-
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         if rs.remainingGeometry:

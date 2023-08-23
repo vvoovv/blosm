@@ -7,6 +7,12 @@ class Triangle(Geometry):
         # a classical trapezoid with the sides parallel to the horizontal axis
         self.geometryTrapezoid = geometryTrapezoid
     
+    def initRenderStateForLevels(self, rs, parentItem):
+        super().initRenderStateForLevels(rs, parentItem)
+        rs.uvBL, rs.uvBR = parentItem.uvs[0], parentItem.uvs[1]
+        # <rs.startIndexL> will be used as the index of the top vertex of the triangle
+        rs.startIndexL = -1
+    
     def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, itemUvs):
         u = numItemsInFace/numTilesU
         v = numLevelsInFace/numTilesV
@@ -17,10 +23,9 @@ class Triangle(Geometry):
         )
     
     def renderLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        # <rs.indices> and <rs.uvs> are used if <self.renderLastLevelGroup(..)> is called
-        # from another geometry where <self> is the remaining geometry
-        parentIndices = rs.indices or parentItem.indices
-        parentUvs = rs.uvs or parentItem.uvs
+        parentIndices = parentItem.indices
+        parentUvs = parentItem.uvs
+        startIndexL = rs.startIndexL
         
         verts = parentItem.building.renderInfo.verts
         
@@ -31,19 +36,19 @@ class Triangle(Geometry):
         # <indexTL> and <indexTR> are indices of the left and right vertices on the top side of
         # an item with the trapezoid geometry to be created
         indexTL = len(verts)
-        kL = (parentUvs[2][1] - texVt) / (texVt - parentUvs[0][1])
-        verts.append( ( kL*verts[parentIndices[0]] + verts[parentIndices[2]])/(1.+kL) )
+        kL = (parentUvs[startIndexL][1] - texVt) / (texVt - rs.uvBL[1])
+        verts.append( ( kL*verts[rs.indexBL] + verts[parentIndices[startIndexL]])/(1.+kL) )
         
         indexTR = indexTL + 1
-        kR = (parentUvs[2][1] - texVt) / (texVt - parentUvs[1][1])
-        verts.append( ( kR*verts[parentIndices[1]] + verts[parentIndices[2]])/(1.+kR) )
+        kR = (parentUvs[startIndexL][1] - texVt) / (texVt - rs.uvBR[1])
+        verts.append( ( kR*verts[rs.indexBR] + verts[parentIndices[startIndexL]])/(1.+kR) )
         
         indices = (rs.indexBL, rs.indexBR, indexTR, indexTL)
         uvs = (
-            parentUvs[0],
-            parentUvs[1],
-            ( (kR*parentUvs[1][0]+parentUvs[2][0])/(1.+kR), texVt ),
-            ( (kL*parentUvs[0][0]+parentUvs[2][0])/(1.+kL), texVt )
+            rs.uvBL,
+            rs.uvBR,
+            ( (kR*rs.uvBR[0]+parentUvs[startIndexL][0])/(1.+kR), texVt ),
+            ( (kL*rs.uvBL[0]+parentUvs[startIndexL][0])/(1.+kL), texVt )
         )
         
         item = levelGroup.item
@@ -67,31 +72,23 @@ class Triangle(Geometry):
         rs.indexBL = indexTL
         rs.indexBR = indexTR
         rs.texVb = texVt
-        if rs.remainingGeometry:
-            # update <rs.indices> and <rs.uvs>
-            rs.indices = (indexTL, indexTR, parentIndices[2])
-            rs.uvs = (uvs[3], uvs[2], parentUvs[2])
+        rs.uvBL, rs.uvBR = uvs[3], uvs[2]
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        # <rs.indices> and <rs.uvs> are used if <self.renderLastLevelGroup(..)> is called
-        # from another geometry where <self> is the remaining geometry
-        parentIndices = rs.indices or parentItem.indices
-        parentUvs = rs.uvs or parentItem.uvs
-        
         item = levelGroup.item
         if levelGroup.item:
             levelGroup.item.geometry = self
             
         if item and item.markup:
-            item.indices = (rs.indexBL, rs.indexBR, parentIndices[2])
-            item.uvs = ( (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), parentUvs[2] )
+            item.indices = (rs.indexBL, rs.indexBR, parentItem.indices[rs.startIndexL])
+            item.uvs = ( rs.uvBL, rs.uvBR, parentItem.uvs[rs.startIndexL] )
             levelRenderer.renderDivs(item, levelGroup)
         else:
             levelRenderer.renderLevelGroup(
                 item or parentItem,
                 levelGroup,
-                (rs.indexBL, rs.indexBR, parentIndices[2]),
-                ( (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb), parentUvs[2] )
+                (rs.indexBL, rs.indexBR, parentItem.indices[rs.startIndexL]),
+                (rs.uvBL, rs.uvBR, parentItem.uvs[rs.startIndexL])
             )
     
     def renderCladdingAtTop(self, parentItem, parentRenderer):
@@ -101,7 +98,7 @@ class Triangle(Geometry):
             parentItem,
             parentRenderer.r.createFace(
                 parentItem.footprint,
-                rs.indices or (rs.indexBL, rs.indexBR, parentItem.indices[2])
+                (rs.indexBL, rs.indexBR, parentItem.indices[rs.startIndexL])
             ),
-            rs.uvs or ( (parentItem.uvs[0][0], rs.texVb), (parentItem.uvs[1][0], rs.texVb), parentItem.uvs[2] )
+            ( rs.uvBL, rs.uvBR, parentItem.uvs[rs.startIndexL] )
         )
