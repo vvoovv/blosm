@@ -12,6 +12,7 @@ class PolygonHB(Geometry):
     
     def initRenderStateForLevels(self, rs, parentItem):
         super().initRenderStateForLevels(rs, parentItem)
+        rs.uvBL, rs.uvBR = parentItem.uvs[0], parentItem.uvs[1]
         rs.startIndexL = -1
         rs.startIndexR = 2
     
@@ -19,11 +20,9 @@ class PolygonHB(Geometry):
         if rs.remainingGeometry and not rs.remainingGeometry is self:
             rs.remainingGeometry.renderLevelGroup(parentItem, levelGroup, levelRenderer, rs)
             return
-
-        # <rs.indices> and <rs.uvs> are used if <self.renderLevelGroup(..)> is called
-        # from another geometry where <self> is the remaining geometry
-        parentIndices = rs.indices or parentItem.indices
-        parentUvs = rs.uvs or parentItem.uvs
+        
+        parentIndices = parentItem.indices
+        parentUvs = parentItem.uvs
         
         verts = parentItem.building.renderInfo.verts
         startIndexL, startIndexR = rs.startIndexL, rs.startIndexR
@@ -66,7 +65,7 @@ class PolygonHB(Geometry):
         # the following variable is used if <rs.remainingGeometry> is set
         _uvIndex = 0
         indicesR = [rs.indexBL, rs.indexBR]
-        uvsR = [ parentUvs[0], parentUvs[1] ]
+        uvsR = [ rs.uvBL, rs.uvBR ]
         while True:
             if texVt <= parentUvs[startIndexR][1] + zero:
                 if texVt >= parentUvs[startIndexR][1] - zero:
@@ -118,6 +117,7 @@ class PolygonHB(Geometry):
         rs.texVb = texVt
         rs.startIndexL = startIndexL
         rs.startIndexR = startIndexR
+        rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
         
         # the condition for a triangle as the remaining geometry
         if len(parentIndices)+startIndexL == startIndexR:
@@ -158,15 +158,14 @@ class PolygonHB(Geometry):
         if rs.remainingGeometry and not rs.remainingGeometry is self:
             rs.remainingGeometry.renderCladdingAtTop(parentItem, parentRenderer)
         else:
-            # <rs.indices> and <rs.uvs> are used if <self.renderCladdingAtTop(..)> is called
-            # from another geometry where <self> is the remaining geometry
-            parentIndices = rs.indices or parentItem.indices
-            parentUvs = rs.uvs or parentItem.uvs
+            parentIndices = parentItem.indices
+            parentUvs = parentItem.uvs
             
             indices = [rs.indexBL, rs.indexBR]
             indices.extend( parentIndices[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
-            uvs = [ parentUvs[0], parentUvs[1] ]
+            uvs = [ rs.uvBL, rs.uvBR ]
             uvs.extend( parentUvs[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
+            
             parentRenderer.renderCladding(
                 parentItem,
                 parentRenderer.r.createFace(

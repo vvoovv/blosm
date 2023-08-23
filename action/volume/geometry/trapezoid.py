@@ -541,7 +541,7 @@ class TrapezoidChainedRV(Geometry):
         aerasbL = True
         indicesL = uvsL = None
         # Check the condition for the left side
-        if startIndexL == -1 and texVt <= parentUvs[-1][1] + zero:
+        if texVt <= parentUvs[-1][1] + zero:
             berasbL = True
             # initialize a UV coordinate to be used later 
             _uv = None
@@ -593,7 +593,7 @@ class TrapezoidChainedRV(Geometry):
         indicesR = uvsR = None
         # the following variable is used if <rs.remainingGeometry> is set
         _uvIndex = 0
-        if startIndexR == 2 and texVt <= parentUvs[2][1] + zero:
+        if texVt <= parentUvs[2][1] + zero:
             # the case of the right angle
             berasbR = True
             # initialize a UV coordinate to be used later 
@@ -690,17 +690,8 @@ class TrapezoidChainedRV(Geometry):
             )
         elif aerasbL or aerasbR:
             rs.remainingGeometry = self.geometryPolygon
-            
-            indices = [indexTL, indexTR]
-            indices.extend( parentIndices[i] for i in range(startIndexR, len(parentIndices)+startIndexL+1) )
-            
-            uvs = [ uvsR[_uvIndex+1], uvsR[_uvIndex] ]
-            uvs.extend( parentUvs[i] for i in range(startIndexR, len(parentIndices)+startIndexL+1) )
-            
-            rs.indices = indices
-            rs.uvs = uvs
-            rs.startIndexL = -1
-            rs.startIndexR = 2
+            rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
+
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
         if rs.remainingGeometry:
