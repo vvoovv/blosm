@@ -758,3 +758,91 @@ class TrapezoidChainedRV(Geometry):
                 ),
                 uvs
             )
+        
+    def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offsetL):
+        verts = item.building.renderInfo.verts
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        verts.append(
+            verts[parentIndices[0]] + \
+                offsetL/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+        )
+        # add offset
+        offsetL += parentUvs[0][0]
+        uvB = (offsetL, parentUvs[0][1])
+        
+        # initialize the variables to be used below in the code
+        indexT = 0
+        uvT = indicesOffset = uvsOffset = indicesGeometry = uvsGeometry = None
+        
+        numVerts = len(parentIndices)
+        numVerts_1 = numVerts-1
+        for i1, i2 in zip(range(numVerts_1, 2, -1), range(numVerts_1 - 1, 1, -1)):
+            if parentUvs[i1][0] < offsetL <= parentUvs[i2][0] + zero:
+                if offsetL >= parentUvs[i2][0] - zero:
+                    # use existing vertex
+                    indexT = parentIndices[i2]
+                    uvT = parentUvs[i2]
+                    if i2==3:
+                        # change <item.geometry> to <TrapezoidRV>
+                        item.geometry = self.geometryTrapezoidR if parentUvs[3][1] > parentUvs[2][1] else self.geometryTrapezoidL
+                    else:
+                        # the following assignment is needed for filling <indicesGeometry> with values
+                        i1 = i2
+                else:
+                    indexT = len(verts)
+                    k = (offsetL-parentUvs[i1][0]) / (parentUvs[i2][0]-parentUvs[i1][0])
+                    verts.append(
+                        verts[parentIndices[i1]] + k * (verts[parentIndices[i2]] - verts[parentIndices[i1]])
+                    )
+                    uvT = (
+                        offsetL,
+                        parentUvs[i1][1] + k * (parentUvs[i2][1] - parentUvs[i1][1])
+                    )
+                    if i2==2:
+                        # change <item.geometry> to <TrapezoidRV>
+                        item.geometry = self.geometryTrapezoidR if parentUvs[3][1] > parentUvs[2][1] else self.geometryTrapezoidL
+                break
+        
+        #
+        # offset area
+        #
+        if i1 == numVerts_1:
+            # the offset area has the geometry of TrapezoidRV
+            indicesOffset = (parentIndices[0], indexB, indexT, parentIndices[i1])
+            uvsOffset = (parentUvs[0], uvB, uvT, parentUvs[i1])
+        else:
+            # the general case
+            indicesOffset = [parentIndices[0], indexB, indexT]
+            indicesOffset.extend(parentIndices[i] for i in range(i1, numVerts))
+            uvsOffset = [parentUvs[0], uvB, uvT]
+            uvsOffset.extend(parentUvs[i] for i in range(i1, numVerts))
+        
+        #
+        # the remaining geometry after applying the offset
+        #
+        if item.geometry is self:
+            indicesGeometry = [indexB, parentIndices[1], parentIndices[2]]
+            indicesGeometry.extend(parentIndices[i] for i in range(3, i1))
+            indicesGeometry.append(indexT)
+            
+            uvsGeometry = [uvB, parentUvs[1], parentUvs[2]]
+            uvsGeometry.extend(parentUvs[i] for i in range(3, i1))
+            uvsGeometry.append(uvT)
+        else: # <TrapezoidRV>
+            indicesGeometry = (indexB, parentIndices[1], parentIndices[2], indexT)
+            uvsGeometry = (uvB, parentUvs[1], parentUvs[2], uvT)
+        
+        item.indices = indicesGeometry
+        item.uvs = uvsGeometry
+        
+        # render offset area
+        renderer.renderCladding(
+            item,
+            renderer.r.createFace(
+                item.footprint,
+                indicesOffset
+            ),
+            uvsOffset
+        )

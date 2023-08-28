@@ -218,16 +218,16 @@ class Roof:
         return h
 
     def calculateRoofLevelsHeight(self, footprint):
-        numRooflevels = footprint.getStyleBlockAttr("numRoofLevels")
-        if not numRooflevels:
+        numRoofLevels = footprint.getStyleBlockAttr("numRoofLevels")
+        if not numRoofLevels:
             footprint.roofLevelsHeight = 0.
             return 0.
-        footprint.numRoofLevels = numRooflevels
+        footprint.numRoofLevels = numRoofLevels
         
         lh = footprint.levelHeights
         
         if lh.levelHeights:
-            h = lh.levelHeights.getRoofHeight(0, numRooflevels-1)
+            h = lh.levelHeights.getRoofHeight(0, numRoofLevels-1)
         else:
             roofLevelHeight = footprint.getStyleBlockAttr("roofLevelHeight")
             if roofLevelHeight:
@@ -250,7 +250,7 @@ class Roof:
             #
             # the roof levels above the very first roof level
             #
-            if numRooflevels > 1:
+            if numRoofLevels > 1:
                 #
                 # the last roof level
                 #
@@ -265,7 +265,7 @@ class Roof:
                 #
                 # the levels between the very first roof level and the last roof level
                 #
-                if numRooflevels > 2:
-                    h += (numRooflevels-2)*roofLevelHeight
+                if numRoofLevels > 2:
+                    h += (numRoofLevels-2)*roofLevelHeight
         footprint.roofLevelsHeight = h
         return h

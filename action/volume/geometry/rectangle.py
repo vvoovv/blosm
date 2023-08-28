@@ -319,3 +319,6 @@ class RectangleFRA(Geometry):
         rs.indexBL = indexTL
         rs.indexBR = indexTR
         rs.texVb = texVt
+    
+    def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offsetL):
+        return

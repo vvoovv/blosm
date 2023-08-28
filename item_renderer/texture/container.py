@@ -235,6 +235,16 @@ class Container(ItemRendererTexture):
         assetInfo = None
         
         if levelGroup.item:
+            # <item> is <levelGroup.item>
+            
+            # <self.processOffsets(..)> returns <True> if everything was processed inside it
+            if self.processOffsets(item, levelGroup, indices, uvs):
+                return
+            elif item.indices:
+                # use patched <indices> and <uvs>
+                indices = item.indices
+                uvs = item.uvs
+            
             # asset info could have been set in the call to item.getWidth(..)
             assetInfo = item.assetInfo
             # if <assetInfo=0>, then it was already queried in the asset store and nothing was found
@@ -573,3 +583,24 @@ class Container(ItemRendererTexture):
             Corner.prepareGnVerts(self, item, levelGroup, None, assetInfoCorner, obj, numTilesY)
             
             return obj
+    
+    def processOffsets(self, item, levelGroup, indices, uvs):
+        offset = item.getStyleBlockAttr("offset")
+        offsetL = item.getStyleBlockAttr("offsetLeft") or offset
+        offsetR = item.getStyleBlockAttr("offsetRight") or offset
+        offsetMode = item.getStyleBlockAttrDeep("offsetMode")
+        
+        if offsetL or offsetR:
+            if offsetMode == "perLevel" and not levelGroup.singleLevel:
+                # item.geometry.makeSingleLevels()
+                # All processing is done here, so we return <True>
+                # return True
+                pass
+            else:
+                if offsetL:
+                    item.geometry.offsetFromLeft(self, item, indices, uvs, offsetL)
+                if offsetR:
+                    item.geometry.offsetFromRight(self, item, indices, uvs, offsetR)
+        # We offsetted <item.geometry>. The processing will be continued in the caller function,
+        # that's why we return <False>
+        return False
