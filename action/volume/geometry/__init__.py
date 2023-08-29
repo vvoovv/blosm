@@ -260,3 +260,16 @@ class Geometry:
             self.renderLevelGroup(
                 parentItem, bottom, parentRenderer.bottomRenderer, rs
             )
+    
+    def _renderCladding(self, item, renderer, indices, uvs):
+        """
+        A helper function: a wrapper for <renderer.renderCladding(..)>
+        """
+        renderer.renderCladding(
+            item,
+            renderer.r.createFace(
+                item.footprint,
+                indices
+            ),
+            uvs
+        )

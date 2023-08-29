@@ -166,11 +166,4 @@ class PolygonHB(Geometry):
             uvs = [ rs.uvBL, rs.uvBR ]
             uvs.extend( parentUvs[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
             
-            parentRenderer.renderCladding(
-                parentItem,
-                parentRenderer.r.createFace(
-                    parentItem.footprint,
-                    indices
-                ),
-                uvs
-            )
+            self._renderCladding(parentItem, parentRenderer, indices, uvs)

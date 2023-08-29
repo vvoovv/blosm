@@ -283,12 +283,10 @@ class RectangleFRA(Geometry):
         # to be created out of <parentItem>
         texUl = parentItem.uvs[0][0]
         texUr = parentItem.uvs[1][0]
-        parentRenderer.renderCladding(
+        self._renderCladding(
             parentItem,
-            parentRenderer.r.createFace(
-                parentItem.footprint,
-                (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
-            ),
+            parentRenderer,
+            (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3]),
             ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
         )
     
@@ -307,12 +305,10 @@ class RectangleFRA(Geometry):
         verts.append(verts[rs.indexBR] + height*zAxis)
         texVt = rs.texVb + height
         
-        parentRenderer.renderCladding(
+        self._renderCladding(
             parentItem,
-            parentRenderer.r.createFace(
-                parentItem.footprint,
-                (rs.indexBL, rs.indexBR, indexTR, indexTL)
-            ),
+            parentRenderer,
+            (rs.indexBL, rs.indexBR, indexTR, indexTL),
             ( (texUl, rs.texVb), (texUr, rs.texVb), (texUr, texVt), (texUl, texVt) )
         )
         

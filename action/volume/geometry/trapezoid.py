@@ -315,12 +315,10 @@ class TrapezoidRV(Geometry):
             # to be created out of <parentItem>
             texUl = parentItem.uvs[0][0]
             texUr = parentItem.uvs[1][0]
-            parentRenderer.renderCladding(
+            self._renderCladding(
                 parentItem,
-                parentRenderer.r.createFace(
-                    parentItem.footprint,
-                    (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3])
-                ),
+                parentRenderer,
+                (rs.indexBL, rs.indexBR, parentItem.indices[2], parentItem.indices[3]),
                 ( (texUl, rs.texVb), (texUr, rs.texVb), parentItem.uvs[2], parentItem.uvs[3] )
             )
 
@@ -750,14 +748,7 @@ class TrapezoidChainedRV(Geometry):
             indices.extend( parentIndices[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
             uvs = [ (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb) ]
             uvs.extend( parentUvs[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
-            parentRenderer.renderCladding(
-                parentItem,
-                parentRenderer.r.createFace(
-                    parentItem.footprint,
-                    indices
-                ),
-                uvs
-            )
+            self._renderCladding(parentItem, parentRenderer, indices, uvs)
         
     def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offsetL):
         verts = item.building.renderInfo.verts
@@ -838,11 +829,4 @@ class TrapezoidChainedRV(Geometry):
         item.uvs = uvsGeometry
         
         # render offset area
-        renderer.renderCladding(
-            item,
-            renderer.r.createFace(
-                item.footprint,
-                indicesOffset
-            ),
-            uvsOffset
-        )
+        self._renderCladding(item, renderer, indicesOffset, uvsOffset)
