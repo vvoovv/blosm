@@ -599,6 +599,7 @@ class Container(ItemRendererTexture):
             else:
                 if offsetL:
                     item.geometry.offsetFromLeft(self, item, indices, uvs, offsetL)
+                    indices, uvs = item.indices, item.uvs
                 if offsetR:
                     item.geometry.offsetFromRight(self, item, indices, uvs, offsetR)
         # We offsetted <item.geometry>. The processing will be continued in the caller function,

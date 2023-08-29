@@ -778,9 +778,6 @@ class TrapezoidChainedRV(Geometry):
                     if i2==3:
                         # change <item.geometry> to <TrapezoidRV>
                         item.geometry = self.geometryTrapezoidR if parentUvs[3][1] > parentUvs[2][1] else self.geometryTrapezoidL
-                    else:
-                        # the following assignment is needed for filling <indicesGeometry> with values
-                        i1 = i2
                 else:
                     indexT = len(verts)
                     k = (offset-parentUvs[i1][0]) / (parentUvs[i2][0]-parentUvs[i1][0])
@@ -801,8 +798,8 @@ class TrapezoidChainedRV(Geometry):
         #
         if i1 == numVerts_1:
             # the offset area has the geometry of TrapezoidRV
-            indicesOffset = (parentIndices[0], indexB, indexT, parentIndices[i1])
-            uvsOffset = (parentUvs[0], uvB, uvT, parentUvs[i1])
+            indicesOffset = (parentIndices[0], indexB, indexT, parentIndices[numVerts_1])
+            uvsOffset = (parentUvs[0], uvB, uvT, parentUvs[numVerts_1])
         else:
             # the general case
             indicesOffset = [parentIndices[0], indexB, indexT]
@@ -814,16 +811,104 @@ class TrapezoidChainedRV(Geometry):
         # the remaining geometry after applying the offset
         #
         if item.geometry is self:
-            indicesGeometry = [indexB, parentIndices[1], parentIndices[2]]
-            indicesGeometry.extend(parentIndices[i] for i in range(3, i1))
-            indicesGeometry.append(indexT)
+            indicesGeometry = [indexB]
+            indicesGeometry.extend(parentIndices[i] for i in range(1, i1))
             
-            uvsGeometry = [uvB, parentUvs[1], parentUvs[2]]
-            uvsGeometry.extend(parentUvs[i] for i in range(3, i1))
-            uvsGeometry.append(uvT)
+            uvsGeometry = [uvB]
+            uvsGeometry.extend(parentUvs[i] for i in range(1, i1))
+            
+            if indexT != parentIndices[i2]:
+                indicesGeometry.append(indexT)
+                uvsGeometry.append(uvT)
         else: # <TrapezoidRV>
             indicesGeometry = (indexB, parentIndices[1], parentIndices[2], indexT)
             uvsGeometry = (uvB, parentUvs[1], parentUvs[2], uvT)
+        
+        item.indices = indicesGeometry
+        item.uvs = uvsGeometry
+        
+        # render offset area
+        self._renderCladding(item, renderer, indicesOffset, uvsOffset)
+    
+    def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
+        verts = item.building.renderInfo.verts
+        
+        offset = parentUvs[1][0] - parentUvs[0][0] - offset
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        verts.append(
+            verts[parentIndices[0]] + \
+                offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+        )
+        # add offset
+        offset += parentUvs[0][0]
+        uvB = (offset, parentUvs[0][1])
+        
+        # initialize the variables to be used below in the code
+        indexT = 0
+        uvT = indicesOffset = uvsOffset = indicesGeometry = uvsGeometry = None
+        
+        numVerts = len(parentIndices)
+        numVerts_1 = numVerts-1
+        numVerts_2 = numVerts_1-1
+        for i2, i1 in zip(range(3, numVerts), range(2, numVerts_1)):
+            if parentUvs[i2][0] - zero <= offset < parentUvs[i1][0]:
+                if offset <= parentUvs[i2][0] + zero:
+                    # use existing vertex
+                    indexT = parentIndices[i2]
+                    uvT = parentUvs[i2]
+                    if i2==numVerts_2:
+                        # change <item.geometry> to <TrapezoidRV>
+                        item.geometry = self.geometryTrapezoidR if parentUvs[numVerts_1][1] > parentUvs[numVerts_2][1] else self.geometryTrapezoidL
+                else:
+                    indexT = len(verts)
+                    k = (offset-parentUvs[i2][0]) / (parentUvs[i1][0]-parentUvs[i2][0])
+                    verts.append(
+                        verts[parentIndices[i2]] + k * (verts[parentIndices[i1]] - verts[parentIndices[i2]])
+                    )
+                    uvT = (
+                        offset,
+                        parentUvs[i2][1] + k * (parentUvs[i1][1] - parentUvs[i2][1])
+                    )
+                    if i2==numVerts_1:
+                        # change <item.geometry> to <TrapezoidRV>
+                        item.geometry = self.geometryTrapezoidR if parentUvs[numVerts_1][1] > parentUvs[numVerts_2][1] else self.geometryTrapezoidL
+                break
+        
+        #
+        # offset area
+        #
+        if i1 == 2:
+            # the offset area has the geometry of TrapezoidRV
+            indicesOffset = (indexB, parentIndices[1], parentIndices[2], indexT)
+            uvsOffset = (uvB, parentUvs[1], parentUvs[2], uvT)
+        else:
+            # the general case
+            indicesOffset = [indexB]
+            indicesOffset.extend(parentIndices[i] for i in range(1, i2))
+            indicesOffset.append(indexT)
+            
+            uvsOffset = [uvB]
+            uvsOffset.extend(parentUvs[i] for i in range(1, i2))
+            uvsOffset.append(uvT)
+        
+        #
+        # the remaining geometry after applying the offset
+        #
+        if item.geometry is self:
+            indicesGeometry = [parentIndices[0], indexB]\
+                if indexT == parentIndices[i2] else\
+                [parentIndices[0], indexB, indexT]
+            indicesGeometry.extend(parentIndices[i] for i in range(i2, numVerts))
+            
+            uvsGeometry = [parentUvs[0], uvB]\
+                if indexT == parentIndices[i2] else\
+                [parentUvs[0], uvB, uvT]
+            uvsGeometry.extend(parentUvs[i] for i in range(i2, numVerts))
+        else: # <TrapezoidRV>
+            indicesGeometry = (parentIndices[0], indexB, indexT, parentIndices[numVerts_1])
+            uvsGeometry = (parentUvs[0], uvB, uvT, parentUvs[numVerts_1])
         
         item.indices = indicesGeometry
         item.uvs = uvsGeometry
