@@ -750,18 +750,18 @@ class TrapezoidChainedRV(Geometry):
             uvs.extend( parentUvs[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
             self._renderCladding(parentItem, parentRenderer, indices, uvs)
         
-    def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offsetL):
+    def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
         verts = item.building.renderInfo.verts
         
         # the new vertex at the bottom
         indexB = len(verts)
         verts.append(
             verts[parentIndices[0]] + \
-                offsetL/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+                offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
         )
         # add offset
-        offsetL += parentUvs[0][0]
-        uvB = (offsetL, parentUvs[0][1])
+        offset += parentUvs[0][0]
+        uvB = (offset, parentUvs[0][1])
         
         # initialize the variables to be used below in the code
         indexT = 0
@@ -770,8 +770,8 @@ class TrapezoidChainedRV(Geometry):
         numVerts = len(parentIndices)
         numVerts_1 = numVerts-1
         for i1, i2 in zip(range(numVerts_1, 2, -1), range(numVerts_1 - 1, 1, -1)):
-            if parentUvs[i1][0] < offsetL <= parentUvs[i2][0] + zero:
-                if offsetL >= parentUvs[i2][0] - zero:
+            if parentUvs[i1][0] < offset <= parentUvs[i2][0] + zero:
+                if offset >= parentUvs[i2][0] - zero:
                     # use existing vertex
                     indexT = parentIndices[i2]
                     uvT = parentUvs[i2]
@@ -783,12 +783,12 @@ class TrapezoidChainedRV(Geometry):
                         i1 = i2
                 else:
                     indexT = len(verts)
-                    k = (offsetL-parentUvs[i1][0]) / (parentUvs[i2][0]-parentUvs[i1][0])
+                    k = (offset-parentUvs[i1][0]) / (parentUvs[i2][0]-parentUvs[i1][0])
                     verts.append(
                         verts[parentIndices[i1]] + k * (verts[parentIndices[i2]] - verts[parentIndices[i1]])
                     )
                     uvT = (
-                        offsetL,
+                        offset,
                         parentUvs[i1][1] + k * (parentUvs[i2][1] - parentUvs[i1][1])
                     )
                     if i2==2:
