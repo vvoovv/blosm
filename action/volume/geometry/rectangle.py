@@ -317,7 +317,51 @@ class RectangleFRA(Geometry):
         rs.texVb = texVt
     
     def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
-        return
+        verts = item.building.renderInfo.verts
+        offsetVec = offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        verts.append( verts[parentIndices[0]] + offsetVec )
+        uvB = (parentUvs[0][0] + offset, parentUvs[0][1])
+        
+        # the new vertex at the top
+        indexT = indexB + 1
+        verts.append( verts[parentIndices[3]] + offsetVec )
+        uvT = (parentUvs[3][0] + offset, parentUvs[3][1])
+        
+        item.indices = (indexB, parentIndices[1], parentIndices[2], indexT)
+        item.uvs = (uvB, parentUvs[1], parentUvs[2], uvT)
+        
+        # render offset area
+        self._renderCladding(
+            item,
+            renderer,
+            (parentIndices[0], indexB, indexT, parentIndices[3]),
+            (parentUvs[0], uvB, uvT, parentUvs[3])
+        )
     
     def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
-        return
+        verts = item.building.renderInfo.verts
+        offsetVec = (parentUvs[1][0] - parentUvs[0][0] - offset) / (parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        verts.append( verts[parentIndices[0]] + offsetVec )
+        uvB = (parentUvs[0][0] + offset, parentUvs[0][1])
+        
+        # the new vertex at the top
+        indexT = indexB + 1
+        verts.append( verts[parentIndices[3]] + offsetVec )
+        uvT = (parentUvs[3][0] + offset, parentUvs[3][1])
+        
+        item.indices = (parentIndices[0], indexB, indexT, parentIndices[3])
+        item.uvs = (parentUvs[0], uvB, uvT, parentUvs[3])
+        
+        # render offset area
+        self._renderCladding(
+            item,
+            renderer,
+            (indexB, parentIndices[1], parentIndices[2], indexT),
+            (uvB, parentUvs[1], parentUvs[2], uvT)
+        )
