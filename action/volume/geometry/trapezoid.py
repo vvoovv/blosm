@@ -897,14 +897,15 @@ class TrapezoidChainedRV(Geometry):
         # the remaining geometry after applying the offset
         #
         if item.geometry is self:
-            indicesGeometry = [parentIndices[0], indexB]\
-                if indexT == parentIndices[i2] else\
-                [parentIndices[0], indexB, indexT]
+            if indexT == parentIndices[i2]:
+                indicesGeometry = [parentIndices[0], indexB]
+                uvsGeometry = [parentUvs[0], uvB]
+            else:
+                indicesGeometry = [parentIndices[0], indexB, indexT]
+                uvsGeometry = [parentUvs[0], uvB, uvT]
+            
             indicesGeometry.extend(parentIndices[i] for i in range(i2, numVerts))
             
-            uvsGeometry = [parentUvs[0], uvB]\
-                if indexT == parentIndices[i2] else\
-                [parentUvs[0], uvB, uvT]
             uvsGeometry.extend(parentUvs[i] for i in range(i2, numVerts))
         else: # <TrapezoidRV>
             indicesGeometry = (parentIndices[0], indexB, indexT, parentIndices[numVerts_1])
