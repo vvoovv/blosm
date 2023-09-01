@@ -348,12 +348,12 @@ class RectangleFRA(Geometry):
         # the new vertex at the bottom
         indexB = len(verts)
         verts.append( verts[parentIndices[0]] + offsetVec )
-        uvB = (parentUvs[0][0] + offset, parentUvs[0][1])
+        uvB = (parentUvs[1][0] - offset, parentUvs[1][1])
         
         # the new vertex at the top
         indexT = indexB + 1
         verts.append( verts[parentIndices[3]] + offsetVec )
-        uvT = (parentUvs[3][0] + offset, parentUvs[3][1])
+        uvT = (parentUvs[2][0] - offset, parentUvs[2][1])
         
         item.indices = (parentIndices[0], indexB, indexT, parentIndices[3])
         item.uvs = (parentUvs[0], uvB, uvT, parentUvs[3])
