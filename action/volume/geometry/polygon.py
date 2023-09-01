@@ -167,3 +167,122 @@ class PolygonHB(Geometry):
             uvs.extend( parentUvs[i] for i in range(rs.startIndexR, len(parentIndices)+rs.startIndexL+1) )
             
             self._renderCladding(parentItem, parentRenderer, indices, uvs)
+    
+    def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
+        self._offsetFromLeft(
+            renderer, item, parentIndices, parentUvs, offset,
+            parentUvs[0][0] == parentUvs[-1][0],
+            parentUvs[1][0] == parentUvs[2][0]
+        )
+    
+    def _offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset, raL, raR):
+        """
+        Args:
+            raL (bool): There is a right angle to the left
+            raR (bool): There is a right angle to the right
+        """
+        verts = item.building.renderInfo.verts
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        verts.append(
+            verts[parentIndices[0]] + \
+                offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+        )
+        # add offset
+        offset += parentUvs[0][0]
+        uvB = (offset, parentUvs[0][1])
+        
+        # initialize the variables to be used below in the code
+        indexT = 0
+        uvT = indicesOffset = uvsOffset = indicesGeometry = uvsGeometry = None
+        
+        numVerts = len(parentIndices)
+        startIndex = -1 if raL else 0
+        endIndex = (2-numVerts) if raR else (1-numVerts)
+        # the value of of <i2> used in the <for>-cycle below
+        endIndexExtra = endIndex + 1
+        for i1, i2 in zip(range(startIndex, endIndex, -1), range(startIndex-1, endIndex-1, -1)):
+            if parentUvs[i1][0] < offset <= parentUvs[i2][0] + zero:
+                if offset >= parentUvs[i2][0] - zero:
+                    # use existing vertex
+                    indexT = parentIndices[i2]
+                    uvT = parentUvs[i2]
+                    if i2==endIndexExtra:
+                        if raR:
+                            # change <item.geometry> to <TrapezoidRV>
+                            item.geometry = self.geometryTrapezoidR if parentUvs[endIndexExtra][1] > parentUvs[endIndex][1] else self.geometryTrapezoidL
+                        else:
+                            # change <item.geometry> to <Triangle>
+                            item.geometry = self.geometryTriangle
+                else:
+                    indexT = len(verts)
+                    k = (offset-parentUvs[i1][0]) / (parentUvs[i2][0]-parentUvs[i1][0])
+                    verts.append(
+                        verts[parentIndices[i1]] + k * (verts[parentIndices[i2]] - verts[parentIndices[i1]])
+                    )
+                    uvT = (
+                        offset,
+                        parentUvs[i1][1] + k * (parentUvs[i2][1] - parentUvs[i1][1])
+                    )
+                    if i2==endIndex:
+                        if raR:
+                            # change <item.geometry> to <TrapezoidRV>
+                            item.geometry = self.geometryTrapezoidR if parentUvs[endIndexExtra][1] > parentUvs[endIndex][1] else self.geometryTrapezoidL
+                        else:
+                            # change <item.geometry> to <Triangle>
+                            item.geometry = self.geometryTriangle
+                break
+        
+        # absolute value of the index <i1>
+        abs_i1 = numVerts+i1
+        #
+        # offset area
+        #
+        if i1 == startIndex:
+            if raL:
+                # the offset area has the geometry of <TrapezoidRV>
+                indicesOffset = (parentIndices[0], indexB, indexT, parentIndices[-1])
+                uvsOffset = (parentUvs[0], uvB, uvT, parentUvs[-1])
+            else:
+                # the offset area has the geometry of <Triangle>
+                indicesOffset = (parentIndices[0], indexB, indexT)
+                uvsOffset = (parentUvs[0], uvB, uvT)
+        else:
+            # the general case
+            indicesOffset = [parentIndices[0], indexB, indexT]
+            indicesOffset.extend(parentIndices[i] for i in range(abs_i1, numVerts))
+            uvsOffset = [parentUvs[0], uvB, uvT]
+            uvsOffset.extend(parentUvs[i] for i in range(abs_i1, numVerts))
+        
+        #
+        # the remaining geometry after applying the offset
+        #
+        if item.geometry is self:
+            indicesGeometry = [indexB]
+            indicesGeometry.extend(parentIndices[i] for i in range(1, abs_i1))
+            
+            uvsGeometry = [uvB]
+            uvsGeometry.extend(parentUvs[i] for i in range(1, abs_i1))
+            
+            if indexT != parentIndices[i2]:
+                indicesGeometry.append(indexT)
+                uvsGeometry.append(uvT)
+        else:
+            if raR:
+                # <TrapezoidRV>
+                indicesGeometry = (indexB, parentIndices[1], parentIndices[2], indexT)
+                uvsGeometry = (uvB, parentUvs[1], parentUvs[2], uvT)
+            else:
+                # <Triangle>
+                indicesGeometry = (indexB, parentIndices[1], indexT)
+                uvsGeometry = (uvB, parentUvs[1], uvT)
+        
+        item.indices = indicesGeometry
+        item.uvs = uvsGeometry
+        
+        # render offset area
+        self._renderCladding(item, renderer, indicesOffset, uvsOffset)
+    
+    def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
+        return
