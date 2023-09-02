@@ -169,10 +169,12 @@ class PolygonHB(Geometry):
             self._renderCladding(parentItem, parentRenderer, indices, uvs)
     
     def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
+        raL = parentUvs[0][0] == parentUvs[-1][0]
         self._offsetFromLeft(
             renderer, item, parentIndices, parentUvs, offset,
-            parentUvs[0][0] == parentUvs[-1][0],
-            parentUvs[1][0] == parentUvs[2][0]
+            raL,
+            # only one of <raL> or <raR> can be <True>
+            False if raL else (parentUvs[1][0] == parentUvs[2][0])
         )
     
     def _offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset, raL, raR):
@@ -285,10 +287,12 @@ class PolygonHB(Geometry):
         self._renderCladding(item, renderer, indicesOffset, uvsOffset)
     
     def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
+        raL = parentUvs[0][0] == parentUvs[-1][0]
         self._offsetFromRight(
             renderer, item, parentIndices, parentUvs, offset,
-            parentUvs[0][0] == parentUvs[-1][0],
-            parentUvs[1][0] == parentUvs[2][0]
+            raL,
+            # only one of <raL> or <raR> can be <True>
+            False if raL else (parentUvs[1][0] == parentUvs[2][0])
         )
     
     def _offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset, raL, raR):
