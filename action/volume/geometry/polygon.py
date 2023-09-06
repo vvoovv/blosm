@@ -7,8 +7,10 @@ class PolygonHB(Geometry):
     A polygon with the horizontal base
     """
     
-    def __init__(self, geometryTriangle):
+    def __init__(self, geometryTriangle, geometryTrapezoidL, geometryTrapezoidR):
         self.geometryTriangle = geometryTriangle
+        self.geometryTrapezoidL = geometryTrapezoidL
+        self.geometryTrapezoidR = geometryTrapezoidR
     
     def initRenderStateForLevels(self, rs, parentItem):
         super().initRenderStateForLevels(rs, parentItem)

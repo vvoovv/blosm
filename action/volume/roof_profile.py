@@ -493,12 +493,10 @@ class RoofProfile(Roof):
         super().__init__("RoofProfile", data, volumeAction, itemRenderers)
         self.hasGable = True
         # geometries for wall faces
-        self.geometryRectangle = RectangleFRA()
         self.geometryTrapezoidChained = TrapezoidChainedRV()
-        self.geometryTrapezoidL = TrapezoidRV(True) # Left is lower than right
-        self.geometryTrapezoidL.geometryTrapezoidChained = self.geometryTrapezoidChained
-        self.geometryTrapezoidR = TrapezoidRV(False) # Right is lower than left
-        self.geometryTrapezoidR.geometryTrapezoidChained = self.geometryTrapezoidChained
+        self.geometryRectangle = self.geometryTrapezoidChained.geometryRectangle
+        self.geometryTrapezoidL = self.geometryTrapezoidChained.geometryTrapezoidL # Left is lower than right
+        self.geometryTrapezoidR = self.geometryTrapezoidChained.geometryTrapezoidR # Right is lower than left
         
         self.hasRidge = True
         
