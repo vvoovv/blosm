@@ -31,7 +31,7 @@ class TrapezoidH(Geometry):
         )
     
     def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
-        raL = parentUvs[0][0] == parentUvs[-1][0]
+        raL = parentUvs[0][0] == parentUvs[3][0]
         # only one of <raL> or <raR> can be <True>
         raR = False if raL else (parentUvs[1][0] == parentUvs[2][0])
         
@@ -181,7 +181,7 @@ class TrapezoidH(Geometry):
         self._renderCladding(item, renderer, indicesOffset, uvsOffset)
     
     def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
-        raL = parentUvs[0][0] == parentUvs[-1][0]
+        raL = parentUvs[0][0] == parentUvs[3][0]
         # only one of <raL> or <raR> can be <True>
         raR = False if raL else (parentUvs[1][0] == parentUvs[2][0])
         
@@ -940,7 +940,7 @@ class TrapezoidChainedRV(Geometry):
                 uvsL.append(parentUvs[startIndexL])
                 startIndexL -= 1
 
-        # Check the condition for the left side
+        # Check the condition for the right side
         # <berasb> stands for Below or Equal Right Angle Side at the Bottom
         berasbR = False
         # <aerasb> stands for Above or Equal Right Angle Side at the Bottom
