@@ -273,3 +273,58 @@ class Geometry:
             ),
             uvs
         )
+
+    @staticmethod
+    def _getIndicesTriangleAtLeft(indexB, indexT, parentIndices):
+        return (parentIndices[0], indexB, indexT)
+    
+    @staticmethod
+    def _getUvsTriangleAtLeft(uvB, uvT, parentUvs):
+        return (parentUvs[0], uvB, uvT)
+    
+    @staticmethod
+    def _getIndicesTrapezoidAtLeft(indexB, indexT, parentIndices):
+        return (parentIndices[0], indexB, indexT, parentIndices[3])
+    
+    @staticmethod
+    def _getUvsTrapezoidAtLeft(uvB, uvT, parentUvs):
+        return (parentUvs[0], uvB, uvT, parentUvs[3])
+    
+    @staticmethod
+    def _getIndicesPolygonAtLeft(indexB, indexT, parentIndices):
+        return (parentIndices[0], indexB, indexT, parentIndices[2], parentIndices[3])
+    
+    @staticmethod
+    def _getUvsPolygonAtLeft(uvB, uvT, parentUvs):
+        return (parentUvs[0], uvB, uvT, parentUvs[2], parentUvs[3])
+    
+    @staticmethod
+    def _getIndicesTriangleAtRight(indexB, indexT, parentIndices):
+        return (indexB, parentIndices[1], indexT)
+    
+    @staticmethod
+    def _getUvsTriangleAtRight(uvB, uvT, parentUvs):
+        return (uvB, parentUvs[1], uvT)
+    
+    @staticmethod
+    def _getIndicesTrapezoidAtRight(indexB, indexT, parentIndices):
+        return (indexB, parentIndices[1], parentIndices[2], indexT)
+    
+    @staticmethod
+    def _getUvsTrapezoidAtRight(uvB, uvT, parentUvs):
+        return (uvB, parentUvs[1], parentUvs[2], uvT)
+    
+    @staticmethod
+    def _getIndicesPolygonAtRight(indexB, indexT, parentIndices):
+        return (indexB, parentIndices[1], parentIndices[2], parentIndices[3], indexT)
+
+    @staticmethod
+    def _getUvsPolygonAtRight(uvB, uvT, parentUvs):
+        return (uvB, parentUvs[1], parentUvs[2], parentUvs[3], uvT)
+    
+    @staticmethod
+    def _appendVertAtBottom(verts, parentIndices, parentUvs, offset):
+        return verts.append(
+            verts[parentIndices[0]] + \
+                offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
+        )

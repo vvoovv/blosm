@@ -189,10 +189,7 @@ class PolygonHB(Geometry):
         
         # the new vertex at the bottom
         indexB = len(verts)
-        verts.append(
-            verts[parentIndices[0]] + \
-                offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
-        )
+        Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
         # add offset
         offset += parentUvs[0][0]
         uvB = (offset, parentUvs[0][1])
@@ -310,10 +307,7 @@ class PolygonHB(Geometry):
         
         # the new vertex at the bottom
         indexB = len(verts)
-        verts.append(
-            verts[parentIndices[0]] + \
-                offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
-        )
+        Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
         # add offset
         offset += parentUvs[0][0]
         uvB = (offset, parentUvs[0][1])
