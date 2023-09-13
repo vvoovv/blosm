@@ -1,11 +1,16 @@
+from util import zero
+
 from . import Geometry
 
 
 class Triangle(Geometry):
     
-    def __init__(self, geometryTrapezoid):
+    def init(self, geometryTrapezoidH, geometryTrapezoidL, geometryTrapezoidR, geometryPolygon):
         # a classical trapezoid with the sides parallel to the horizontal axis
-        self.geometryTrapezoid = geometryTrapezoid
+        self.geometryTrapezoidH = geometryTrapezoidH
+        self.geometryTrapezoidL = geometryTrapezoidL
+        self.geometryTrapezoidR = geometryTrapezoidR
+        self.geometryPolygon = geometryPolygon
     
     def initRenderStateForLevels(self, rs, parentItem):
         super().initRenderStateForLevels(rs, parentItem)
@@ -56,7 +61,7 @@ class Triangle(Geometry):
             # Set the geometry for the <levelGroup.item>;
             # division of a triangle can only generate a classical trapezoid at the bottom and
             # a triangle at the top
-            item.geometry = self.geometryTrapezoid
+            item.geometry = self.geometryTrapezoidH
         
         if item and item.markup:
             item.indices = indices
@@ -102,3 +107,188 @@ class Triangle(Geometry):
             ),
             ( rs.uvBL, rs.uvBR, parentItem.uvs[rs.startIndexL] )
         )
+    
+    def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
+        raL = parentUvs[0][0] == parentUvs[2][0]
+        # only one of <raL> or <raR> can be <True>
+        raR = False if raL else (parentUvs[1][0] == parentUvs[2][0])
+        
+        verts = item.building.renderInfo.verts
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
+        # add offset
+        offsetU = parentUvs[0][0] + offset
+        uvB = (offsetU, parentUvs[0][1])
+        
+        # initialize the variables to be used below in the code
+        indexT = 0
+        uvT = indicesOffset = uvsOffset = indicesGeometry = uvsGeometry = None
+        
+        if raL:
+            # we don't need to change <item.geometry>, it remains to be <Triangle>
+            indexT, uvT = Geometry._getIndexAndUvAtRight(verts, parentIndices, parentUvs, offsetU)
+            
+            # the offset area has the geometry of <TrapezoidRV>
+            indicesOffset = Geometry._getIndicesTrapezoidAtLeft(indexB, indexT, parentIndices)
+            uvsOffset = Geometry._getUvsTrapezoidAtLeft(uvB, uvT, parentUvs)
+            
+            indicesGeometry = Geometry._getIndicesTriangleAtRight(indexB, indexT, parentIndices)
+            uvsGeometry = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+        elif raR:
+            # change <item.geometry> to <TrapezoidRV>
+            item.geometry = self.geometryTrapezoidL
+            indexT, uvT = Geometry._getIndexAndUvAtLeft(verts, parentIndices, parentUvs, offsetU)
+            
+            # the offset area has the geometry of <Triangle>
+            indicesOffset = Geometry._getIndicesTriangleAtLeft(indexB, indexT, parentIndices)
+            uvsOffset = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+            
+            indicesGeometry = Geometry._getIndicesTrapezoidAtRight(indexB, indexT, parentIndices)
+            uvsGeometry = Geometry._getUvsTrapezoidAtRight(uvB, uvT, parentUvs)
+        else:
+            #
+            # the general case
+            # 
+            if offsetU < parentUvs[2][0] - zero:
+                # change <item.geometry> to <PolygonHB>
+                item.geometry = self.geometryPolygon
+                indexT, uvT = Geometry._getIndexAndUvAtLeft(verts, parentIndices, parentUvs, offsetU)
+                
+                # the offset area has the geometry of <Triangle>
+                indicesOffset = Geometry._getIndicesTriangleAtLeft(indexB, indexT, parentIndices)
+                uvsOffset = Geometry._getUvsTriangleAtLeft(uvB, uvT, parentUvs)
+                
+                indicesGeometry = Triangle._getIndicesPolygonAtRight(indexB, indexT, parentIndices)
+                uvsGeometry = Triangle._getUvsPolygonAtRight(uvB, uvT, parentUvs)
+            elif offsetU <= parentUvs[2][0] + zero:
+                # we don't need to change <item.geometry>, it remains to be <Triangle>
+                # use existing vertex
+                indexT = parentIndices[2]
+                uvT = parentUvs[2]
+                
+                # the offset area has the geometry of <Triangle>
+                indicesOffset = Geometry._getIndicesTriangleAtLeft(indexB, indexT, parentIndices)
+                uvsOffset = Geometry._getUvsTriangleAtLeft(uvB, uvT, parentUvs)
+                
+                indicesGeometry = Geometry._getIndicesTriangleAtRight(indexB, indexT, parentIndices)
+                uvsGeometry = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+            else:
+                # we don't need to change <item.geometry>, it remains to be <Triangle>
+                indexT, uvT = Geometry._getIndexAndUvAtRight(verts, parentIndices, parentUvs, offsetU)
+                
+                # the offset area has the geometry of <PolygonHB>
+                indicesOffset = Triangle._getIndicesPolygonAtLeft(indexB, indexT, parentIndices)
+                uvsOffset = Triangle._getUvsPolygonAtLeft(uvB, uvT, parentUvs)
+                
+                indicesGeometry = Geometry._getIndicesTriangleAtRight(indexB, indexT, parentIndices)
+                uvsGeometry = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+        
+        item.indices = indicesGeometry
+        item.uvs = uvsGeometry
+        
+        # render offset area
+        self._renderCladding(item, renderer, indicesOffset, uvsOffset)
+    
+    def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
+        raL = parentUvs[0][0] == parentUvs[2][0]
+        # only one of <raL> or <raR> can be <True>
+        raR = False if raL else (parentUvs[1][0] == parentUvs[2][0])
+        
+        verts = item.building.renderInfo.verts
+        
+        # convert <offset> to the distance from the leftmost vertex
+        offset = parentUvs[1][0] - parentUvs[0][0] - offset
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
+        # add offset
+        offsetU = parentUvs[0][0] + offset
+        uvB = (offsetU, parentUvs[0][1])
+        
+        # initialize the variables to be used below in the code
+        indexT = 0
+        uvT = indicesOffset = uvsOffset = indicesGeometry = uvsGeometry = None
+        
+        if raL:
+            # change <item.geometry> to <TrapezoidRV>
+            item.geometry = self.geometryTrapezoidR
+            indexT, uvT = Geometry._getIndexAndUvAtRight(verts, parentIndices, parentUvs, offsetU)
+            
+            # the offset area has the geometry of <Triangle>
+            indicesOffset = Geometry._getIndicesTriangleAtRight(indexB, indexT, parentIndices)
+            uvsOffset = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+            
+            indicesGeometry = Geometry._getIndicesTrapezoidAtLeft(indexB, indexT, parentIndices)
+            uvsGeometry = Geometry._getUvsTrapezoidAtLeft(uvB, uvT, parentUvs)
+        elif raR:
+            # we don't need to change <item.geometry>, it remains to be <Triangle>
+            indexT, uvT = Geometry._getIndexAndUvAtLeft(verts, parentIndices, parentUvs, offsetU)
+            
+            # the offset area has the geometry of <TrapezoidRV>
+            indicesOffset = Geometry._getIndicesTrapezoidAtRight(indexB, indexT, parentIndices)
+            uvsOffset = Geometry._getUvsTrapezoidAtRight(uvB, uvT, parentUvs)
+            
+            indicesGeometry = Geometry._getIndicesTriangleAtLeft(indexB, indexT, parentIndices)
+            uvsGeometry = Geometry._getUvsTriangleAtLeft(uvB, uvT, parentUvs)
+        else:
+            #
+            # the general case
+            # 
+            if offsetU < parentUvs[2][0] - zero:
+                # we don't need to change <item.geometry>, it remains to be <Triangle>
+                indexT, uvT = Geometry._getIndexAndUvAtLeft(verts, parentIndices, parentUvs, offsetU)
+                
+                # the offset area has the geometry of <PolygonHB>
+                indicesOffset = Triangle._getIndicesPolygonAtRight(indexB, indexT, parentIndices)
+                uvsOffset = Triangle._getUvsPolygonAtRight(uvB, uvT, parentUvs)
+                
+                indicesGeometry = Geometry._getIndicesTriangleAtLeft(indexB, indexT, parentIndices)
+                uvsGeometry = Geometry._getUvsTriangleAtLeft(uvB, uvT, parentUvs)
+            elif offsetU <= parentUvs[2][0] + zero:
+                # we don't need to change <item.geometry>, it remains to be <Triangle>
+                # use existing vertex
+                indexT = parentIndices[2]
+                uvT = parentUvs[2]
+                
+                # the offset area has the geometry of <Triangle>
+                indicesOffset = Geometry._getIndicesTriangleAtRight(indexB, indexT, parentIndices)
+                uvsOffset = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+                
+                indicesGeometry = Geometry._getIndicesTriangleAtLeft(indexB, indexT, parentIndices)
+                uvsGeometry = Geometry._getUvsTriangleAtLeft(uvB, uvT, parentUvs)
+            else:
+                # change <item.geometry> to <PolygonHB>
+                item.geometry = self.geometryPolygon
+                indexT, uvT = Geometry._getIndexAndUvAtRight(verts, parentIndices, parentUvs, offsetU)
+                
+                # the offset area has the geometry of <Triangle>
+                indicesOffset = Geometry._getIndicesTriangleAtRight(indexB, indexT, parentIndices)
+                uvsOffset = Geometry._getUvsTriangleAtRight(uvB, uvT, parentUvs)
+                
+                indicesGeometry = Triangle._getIndicesPolygonAtLeft(indexB, indexT, parentIndices)
+                uvsGeometry = Triangle._getUvsPolygonAtLeft(uvB, uvT, parentUvs)
+        
+        item.indices = indicesGeometry
+        item.uvs = uvsGeometry
+        
+        # render offset area
+        self._renderCladding(item, renderer, indicesOffset, uvsOffset)
+    
+    @staticmethod
+    def _getIndicesPolygonAtLeft(indexB, indexT, parentIndices):
+        return (parentIndices[0], indexB, indexT, parentIndices[2])
+    
+    @staticmethod
+    def _getUvsPolygonAtLeft(uvB, uvT, parentUvs):
+        return (parentUvs[0], uvB, uvT, parentUvs[2])
+    
+    @staticmethod
+    def _getIndicesPolygonAtRight(indexB, indexT, parentIndices):
+        return (indexB, parentIndices[1], parentIndices[2], indexT)
+
+    @staticmethod
+    def _getUvsPolygonAtRight(uvB, uvT, parentUvs):
+        return (uvB, parentUvs[1], parentUvs[2], uvT)

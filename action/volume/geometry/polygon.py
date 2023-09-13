@@ -129,6 +129,35 @@ class PolygonHB(Geometry):
                 uvsR[_uvIndex+1], uvsR[_uvIndex], parentUvs[startIndexR]
             )
     
+    def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
+        if rs.remainingGeometry and not rs.remainingGeometry is self:
+            rs.remainingGeometry.renderLastLevelGroup(parentItem, levelGroup, levelRenderer, rs)
+        else:
+            parentIndices = parentItem.indices
+            parentUvs = parentItem.uvs
+            
+            item = levelGroup.item
+            if levelGroup.item:
+                # Set the geometry for the <group.item>
+                levelGroup.item.geometry = self
+            
+            indices = [rs.indexBL, rs.indexBR]
+            indices.extend( parentIndices[i] for i in range(2, len(parentIndices)) )
+            uvs = [ (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb) ]
+            uvs.extend( parentUvs[i] for i in range(2, len(parentIndices)) )
+                
+            if item and item.markup:
+                item.indices = indices
+                item.uvs = uvs
+                levelRenderer.renderDivs(item, levelGroup)
+            else:
+                levelRenderer.renderLevelGroup(
+                    item or parentItem,
+                    levelGroup,
+                    indices,
+                    uvs
+                )
+    
     def getFinalUvs(self, numItemsInFace, numLevelsInFace, numTilesU, numTilesV, itemUvs):
         offsetU, offsetV = itemUvs[0]
         # Calculate the height of <item> as the difference between the largest V-coordinate and

@@ -291,14 +291,6 @@ class Geometry:
         return (parentUvs[0], uvB, uvT, parentUvs[3])
     
     @staticmethod
-    def _getIndicesPolygonAtLeft(indexB, indexT, parentIndices):
-        return (parentIndices[0], indexB, indexT, parentIndices[2], parentIndices[3])
-    
-    @staticmethod
-    def _getUvsPolygonAtLeft(uvB, uvT, parentUvs):
-        return (parentUvs[0], uvB, uvT, parentUvs[2], parentUvs[3])
-    
-    @staticmethod
     def _getIndicesTriangleAtRight(indexB, indexT, parentIndices):
         return (indexB, parentIndices[1], indexT)
     
@@ -315,16 +307,50 @@ class Geometry:
         return (uvB, parentUvs[1], parentUvs[2], uvT)
     
     @staticmethod
-    def _getIndicesPolygonAtRight(indexB, indexT, parentIndices):
-        return (indexB, parentIndices[1], parentIndices[2], parentIndices[3], indexT)
-
-    @staticmethod
-    def _getUvsPolygonAtRight(uvB, uvT, parentUvs):
-        return (uvB, parentUvs[1], parentUvs[2], parentUvs[3], uvT)
-    
-    @staticmethod
     def _appendVertAtBottom(verts, parentIndices, parentUvs, offset):
         return verts.append(
             verts[parentIndices[0]] + \
                 offset/(parentUvs[1][0]-parentUvs[0][0]) * (verts[parentIndices[1]]-verts[parentIndices[0]])
         )
+    
+    @staticmethod
+    def _getIndexAndUvAtLeft(verts, parentIndices, parentUvs, offsetU):
+        """
+        A helper function.
+        
+        Returns a vertex index and UV-coordinate of a point at the intersection of
+        the line segment (<verts[parentIndices[0]]>, <verts[parentIndices[-1]]>) and
+        # the vertical line with the U-coordinate <offsetU>
+        """
+        indexT = len(verts)
+        k = (offsetU-parentUvs[0][0]) / (parentUvs[-1][0]-parentUvs[0][0])
+        verts.append(
+            verts[parentIndices[0]] + k * (verts[parentIndices[-1]] - verts[parentIndices[0]])
+        )
+        return\
+            indexT,\
+            (#uvT
+                offsetU,
+                parentUvs[0][1] + k * (parentUvs[-1][1] - parentUvs[0][1])
+            )
+    
+    @staticmethod
+    def _getIndexAndUvAtRight(verts, parentIndices, parentUvs, offsetU):
+        """
+        A helper function.
+        
+        Returns a vertex index and UV-coordinate of a point at the intersection of
+        the line segment (<verts[parentIndices[2]]>, <verts[parentIndices[1]]>) and
+        # the vertical line with the U-coordinate <offsetU>
+        """
+        indexT = len(verts)
+        k = (offsetU-parentUvs[2][0]) / (parentUvs[1][0]-parentUvs[2][0])
+        verts.append(
+            verts[parentIndices[2]] + k * (verts[parentIndices[1]] - verts[parentIndices[2]])
+        )
+        return\
+            indexT,\
+            (
+                offsetU,
+                parentUvs[2][1] + k * (parentUvs[1][1] - parentUvs[2][1])
+            )
