@@ -246,14 +246,8 @@ class PolygonHB(Geometry):
                             # change <item.geometry> to <Triangle>
                             item.geometry = self.geometryTriangle
                 else:
-                    indexT = len(verts)
-                    k = (offset-parentUvs[i1][0]) / (parentUvs[i2][0]-parentUvs[i1][0])
-                    verts.append(
-                        verts[parentIndices[i1]] + k * (verts[parentIndices[i2]] - verts[parentIndices[i1]])
-                    )
-                    uvT = (
-                        offset,
-                        parentUvs[i1][1] + k * (parentUvs[i2][1] - parentUvs[i1][1])
+                    indexT, uvT = Geometry._getIndexAndUvGeneral(
+                        verts, parentIndices, parentUvs, offset, i1, i2
                     )
                     if i2==endIndex:
                         if raR:
@@ -364,14 +358,8 @@ class PolygonHB(Geometry):
                             # change <item.geometry> to <Triangle>
                             item.geometry = self.geometryTriangle
                 else:
-                    indexT = len(verts)
-                    k = (offset-parentUvs[i2][0]) / (parentUvs[i1][0]-parentUvs[i2][0])
-                    verts.append(
-                        verts[parentIndices[i2]] + k * (verts[parentIndices[i1]] - verts[parentIndices[i2]])
-                    )
-                    uvT = (
-                        offset,
-                        parentUvs[i2][1] + k * (parentUvs[i1][1] - parentUvs[i2][1])
+                    indexT, uvT = Geometry._getIndexAndUvGeneral(
+                        verts, parentIndices, parentUvs, offset, i2, i1
                     )
                     if i2==endIndex:
                         if raL:

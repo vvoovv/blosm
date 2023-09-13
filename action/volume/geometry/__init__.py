@@ -354,3 +354,25 @@ class Geometry:
                 offsetU,
                 parentUvs[2][1] + k * (parentUvs[1][1] - parentUvs[2][1])
             )
+    
+    @staticmethod
+    def _getIndexAndUvGeneral(verts, parentIndices, parentUvs, offsetU, index1, index2):
+        """
+        A helper function for the general case of the intersection of the line segment and
+        the vertical line. 
+        
+        Returns a vertex index and UV-coordinate of a point at the intersection of
+        the line segment (<verts[parentIndices[index1]]>, <verts[parentIndices[index2]]>) and
+        # the vertical line with the U-coordinate <offsetU>
+        """
+        indexT = len(verts)
+        k = (offsetU-parentUvs[index1][0]) / (parentUvs[index2][0]-parentUvs[index1][0])
+        verts.append(
+            verts[parentIndices[index1]] + k * (verts[parentIndices[index2]] - verts[parentIndices[index1]])
+        )
+        return\
+            indexT,\
+            (
+                offsetU,
+                parentUvs[index1][1] + k * (parentUvs[index2][1] - parentUvs[index1][1])
+            )
