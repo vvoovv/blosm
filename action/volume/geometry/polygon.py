@@ -141,10 +141,11 @@ class PolygonHB(Geometry):
                 # Set the geometry for the <group.item>
                 levelGroup.item.geometry = self
             
+            endIndex = rs.startIndexL + len(parentIndices) + 1
             indices = [rs.indexBL, rs.indexBR]
-            indices.extend( parentIndices[i] for i in range(2, len(parentIndices)) )
-            uvs = [ (parentUvs[0][0], rs.texVb), (parentUvs[1][0], rs.texVb) ]
-            uvs.extend( parentUvs[i] for i in range(2, len(parentIndices)) )
+            indices.extend( parentIndices[i] for i in range(rs.startIndexR, endIndex) )
+            uvs = [rs.uvBL, rs.uvBR]
+            uvs.extend( parentUvs[i] for i in range(rs.startIndexR, endIndex) )
                 
             if item and item.markup:
                 item.indices = indices
@@ -220,8 +221,8 @@ class PolygonHB(Geometry):
         indexB = len(verts)
         Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
         # add offset
-        offset += parentUvs[0][0]
-        uvB = (offset, parentUvs[0][1])
+        offsetU = parentUvs[0][0] + offset
+        uvB = (offsetU, parentUvs[0][1])
         
         # initialize the variables to be used below in the code
         indexT = 0
@@ -233,8 +234,8 @@ class PolygonHB(Geometry):
         # the value of <endIndexExtra> is used in the <for>-cycle below
         endIndexExtra = endIndex + 1
         for i1, i2 in zip(range(startIndex, endIndex, -1), range(startIndex-1, endIndex-1, -1)):
-            if parentUvs[i1][0] < offset <= parentUvs[i2][0] + zero:
-                if offset >= parentUvs[i2][0] - zero:
+            if parentUvs[i1][0] < offsetU <= parentUvs[i2][0] + zero:
+                if offsetU >= parentUvs[i2][0] - zero:
                     # use existing vertex
                     indexT = parentIndices[i2]
                     uvT = parentUvs[i2]
@@ -247,7 +248,7 @@ class PolygonHB(Geometry):
                             item.geometry = self.geometryTriangle
                 else:
                     indexT, uvT = Geometry._getIndexAndUvGeneral(
-                        verts, parentIndices, parentUvs, offset, i1, i2
+                        verts, parentIndices, parentUvs, offsetU, i1, i2
                     )
                     if i2==endIndex:
                         if raR:
@@ -332,8 +333,8 @@ class PolygonHB(Geometry):
         indexB = len(verts)
         Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
         # add offset
-        offset += parentUvs[0][0]
-        uvB = (offset, parentUvs[0][1])
+        offsetU = parentUvs[0][0] + offset
+        uvB = (offsetU, parentUvs[0][1])
         
         # initialize the variables to be used below in the code
         indexT = 0
@@ -345,8 +346,8 @@ class PolygonHB(Geometry):
         # the value of <endIndexExtra> is used in the <for>-cycle below
         endIndexExtra = endIndex - 1
         for i2, i1 in zip(range(startIndex+1, endIndex+1), range(startIndex, endIndex)):
-            if parentUvs[i2][0] - zero <= offset < parentUvs[i1][0]:
-                if offset <= parentUvs[i2][0] + zero:
+            if parentUvs[i2][0] - zero <= offsetU < parentUvs[i1][0]:
+                if offsetU <= parentUvs[i2][0] + zero:
                     # use existing vertex
                     indexT = parentIndices[i2]
                     uvT = parentUvs[i2]
@@ -359,7 +360,7 @@ class PolygonHB(Geometry):
                             item.geometry = self.geometryTriangle
                 else:
                     indexT, uvT = Geometry._getIndexAndUvGeneral(
-                        verts, parentIndices, parentUvs, offset, i2, i1
+                        verts, parentIndices, parentUvs, offsetU, i2, i1
                     )
                     if i2==endIndex:
                         if raL:

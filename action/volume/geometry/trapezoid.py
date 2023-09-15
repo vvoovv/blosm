@@ -666,7 +666,57 @@ class TrapezoidRV(Geometry):
             )
     
     def offsetFromLeft(self, renderer, item, parentIndices, parentUvs, offset):
-        return
+        verts = item.building.renderInfo.verts
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
+        # add offset
+        offset += parentUvs[0][0]
+        uvB = (offset, parentUvs[0][1])
+        
+        # we don't need to change <item.geometry>, it remains to be <TrapezoidRV>
+        indexT, uvT = Geometry._getIndexAndUvGeneral(verts, parentIndices, parentUvs, offset, 3, 2)
+        
+        item.indices = Geometry._getIndicesTrapezoidAtRight(indexB, indexT, parentIndices)
+        item.uvs = Geometry._getUvsTrapezoidAtRight(uvB, uvT, parentUvs)
+        
+        # render offset area, it has the geometry of <TrapezoidRV>
+        self._renderCladding(
+            item,
+            renderer,
+            Geometry._getIndicesTrapezoidAtLeft(indexB, indexT, parentIndices),
+            Geometry._getUvsTrapezoidAtLeft(uvB, uvT, parentUvs)
+        )
+    
+    def offsetFromRight(self, renderer, item, parentIndices, parentUvs, offset):
+        verts = item.building.renderInfo.verts
+        
+        # convert <offset> to the distance from the leftmost vertex
+        offset = parentUvs[1][0] - parentUvs[0][0] - offset
+        
+        # the new vertex at the bottom
+        indexB = len(verts)
+        Geometry._appendVertAtBottom(verts, parentIndices, parentUvs, offset)
+        # add offset
+        offset += parentUvs[0][0]
+        uvB = (offset, parentUvs[0][1])
+        
+        # we don't need to change <item.geometry>, it remains to be <TrapezoidRV>
+        indexT, uvT = Geometry._getIndexAndUvGeneral(verts, parentIndices, parentUvs, offset, 3, 2)
+        
+        item.indices = Geometry._getIndicesTrapezoidAtLeft(indexB, indexT, parentIndices)
+        item.uvs = Geometry._getUvsTrapezoidAtLeft(uvB, uvT, parentUvs)
+        
+        # render offset area, it has the geometry of <TrapezoidRV>
+        self._renderCladding(
+            item,
+            renderer,
+            Geometry._getIndicesTrapezoidAtRight(indexB, indexT, parentIndices),
+            Geometry._getUvsTrapezoidAtRight(uvB, uvT, parentUvs)
+        )
+        
+        
 
 
 class TrapezoidChainedRV(Geometry):
@@ -895,7 +945,7 @@ class TrapezoidChainedRV(Geometry):
                 aerasbL = False
                 indexTL = len(verts)
                 verts.append(verts[rs.indexBL] + height*zAxis)
-                _uv = (0., texVt)
+                _uv = (parentUvs[0][0], texVt)
             indicesL = [indexTL]
             uvsL = [_uv]
         else:
@@ -983,8 +1033,8 @@ class TrapezoidChainedRV(Geometry):
                 indicesR.append(parentIndices[startIndexR])
                 uvsR.append(parentUvs[startIndexR])
                 startIndexR += 1
-            # set <uvsR> to the last index of <uvsR>
-            _uvIndex = len(indicesR)-1
+            # set <_uvIndex> to the last index of <uvsR>
+            _uvIndex = len(uvsR)-1
             indicesR.extend(reversed(indicesL))
             uvsR.extend(reversed(uvsL))
         
@@ -1025,13 +1075,16 @@ class TrapezoidChainedRV(Geometry):
         # the condition for a triangle as the remaining geometry
         if len(parentIndices)+startIndexL == startIndexR:
             rs.remainingGeometry = self.geometryTriangle
-            rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
         elif aerasbL or aerasbR:
             rs.remainingGeometry = self.geometryPolygon
-            rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
+        
+        rs.uvBL, rs.uvBR = uvsR[_uvIndex+1], uvsR[_uvIndex]
     
     def renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs):
-        PolygonHB.renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs)
+        if rs.remainingGeometry and not rs.remainingGeometry is self:
+            rs.remainingGeometry.renderLastLevelGroup(parentItem, levelGroup, levelRenderer, rs)
+        else:
+            PolygonHB.renderLastLevelGroup(self, parentItem, levelGroup, levelRenderer, rs)
     
     def getClassUvs(self, texUl, texVb, texUr, texVt, uvs):
         numVerts = len(uvs)
