@@ -26,7 +26,7 @@ class PythonCoder():
     def write(self,text):
         self.code += text
 
-    def literalize(self,text, useUnderscore):
+    def literalize(self, text, useUnderscore):
         if text[0] == '"':
             return text
         if useUnderscore:
@@ -35,7 +35,7 @@ class PythonCoder():
             literalized = re.sub('([a-zA-Z_]+[a-zA-Z0-9_]*)', '"\\1"', text) 
         return literalized
 
-    def toCamelCase(self,text):
+    def toCamelCase(self, text):
         return ''.join([ x.capitalize() for x in text.split('_') ])
 
     def replaceHexColorCode(self, match):
@@ -48,19 +48,19 @@ class PythonCoder():
             raise Exception('Invalid hex number: #' + value)
         return '({}, 1.0)'.format(', '.join(value))
 
-    def replaceRGBColorCode(self,match):
+    def replaceRGBColorCode(self, match):
         rgb = match.group(0)
         values = rgb[4:-1].split(',')
         values.append('255')
         return str( tuple( round(c/255.,3) for c in values ) )
 
-    def replaceRGBAColorCode(self,match):
+    def replaceRGBAColorCode(self, match):
         rgba = match.group(0)
         values = rgba[5:-1].split(',')
         values[3] = str( 255.*float(values[3]) )
         return str( tuple( round(c/255.,3) for c in values ) )
 
-    def replaceColorsInText(self,text):
+    def replaceColorsInText(self, text):
         # _hex_colour = re.compile(r'#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b')
         _hex_colour = re.compile(r'#([0-9a-fA-F]+|[0-9a-fA-F]+)\b')
         text = _hex_colour.sub(self.replaceHexColorCode, text)
@@ -72,7 +72,7 @@ class PythonCoder():
         text = _rgba_colour.sub(self.replaceRGBAColorCode, text)
 
         for word, initial in self.dictionary.colors.items():
-             text = re.sub(r'\b'+word+r'\b',str(initial),text)
+            text = re.sub(r'\b'+word+r'\b',str(initial),text)
         return text
         
     # ------------------------------------------------------------
@@ -104,7 +104,7 @@ class PythonCoder():
     #     ;
     # ------------------------------------------------------------
 
-    def enterNamed_block(self,name):
+    def enterNamed_block(self, name):
         self.write(self.blockCommaStack[-1])
         self.write(self.indent()+name + ' : [')
         self.blockCommaStack[-1] = ',\n'
@@ -135,12 +135,12 @@ class PythonCoder():
     #     ;
     # ------------------------------------------------------------
 
-    def enterElement_name(self,name):
+    def enterElement_name(self, name):
         txt = self.toCamelCase(name)
         self.write(self.indent()+txt+'(')
         self.indents += 1
 
-    def enterElement(self,txt):
+    def enterElement(self, txt):
         self.write(self.elementCommaStack[-1])
         self.attribCommaStack.append("\n")  # maybe we have a condition first
         if 'level' in txt[:15]:
@@ -201,13 +201,13 @@ class PythonCoder():
     #     ;
     # ------------------------------------------------------------
 
-    def enterSym_expression(self,sym):
+    def enterSym_expression(self, sym):
         self.write(self.attribCommaStack[-1])
         symmetry = self.toCamelCase(sym)
         self.write(self.indent()+'symmetry = symmetry.'+symmetry )
         self.attribCommaStack[-1] = ",\n"
 
-    def enterUse_expression(self,enterSimple_expr):
+    def enterUse_expression(self, enterSimple_expr):
         self.write(self.attribCommaStack[-1])
         expression = self.literalize(enterSimple_expr,False)
         self.write(self.indent()+'use = (' + expression + ',)' )
@@ -276,7 +276,7 @@ class PythonCoder():
     #     ;
     # ------------------------------------------------------------
 
-    def enterATTR(self,attribute):
+    def enterATTR(self, attribute):
         types = self.dictionary.getAttributeTypes(attribute)
         if self.alternativesContext:
             self.write(self.alterCommaStack[-1])
@@ -297,7 +297,7 @@ class PythonCoder():
                 self.indents -= 1
                 self.write(self.indent()+'))')
 
-    def enterBUILDATTR(self,attribute):
+    def enterBUILDATTR(self, attribute):
         types = self.dictionary.getAttributeTypes(attribute)
         if self.alternativesContext:
             self.write(self.alterCommaStack[-1])
@@ -326,7 +326,7 @@ class PythonCoder():
     #     | ...
     # ------------------------------------------------------------
 
-    def enterRANDN(self,value):
+    def enterRANDN(self, value):
         if self.alternativesContext or self.conditionContext:
             self.write(self.alterCommaStack[-1])
             self.write(self.indent()+'RandomNormal( ' + value + ' )')
@@ -334,7 +334,7 @@ class PythonCoder():
         else:
             self.write('Value(RandomNormal( ' + value + ' ))')
 
-    def enterRANDW(self,li):
+    def enterRANDW(self, li):
         li = self.replaceColorsInText(li)
         list = self.literalize(li,False)
         if self.alternativesContext or self.conditionContext:
@@ -386,7 +386,7 @@ class PythonCoder():
     #     | ...
     # ------------------------------------------------------------
 
-    def enterUSEFROM(self,ident):
+    def enterUSEFROM(self, ident):
         self.write('useFrom("' + ident + '")')
 
     def enterPERBUILD(self):
@@ -414,7 +414,7 @@ class PythonCoder():
     #     | ...
     # ------------------------------------------------------------
 
-    def enterRGB(self,rgb):
+    def enterRGB(self, rgb):
         expr = self.replaceColorsInText(rgb)
         if self.alternativesContext or self.conditionalContext:
             self.write(self.alterCommaStack[-1])
@@ -423,7 +423,7 @@ class PythonCoder():
         else:
             self.write('Value(Constant(' + expr + ')' )
 
-    def enterRGBA(self,rgba):
+    def enterRGBA(self, rgba):
         expr = self.replaceColorsInText(rgba)
         if self.alternativesContext or self.conditionalContext:
             self.write(self.alterCommaStack[-1])
@@ -440,7 +440,7 @@ class PythonCoder():
     #     | ...
     # ------------------------------------------------------------
 
-    def enterCONST(self,text):
+    def enterCONST(self, text):
         text = self.replaceColorsInText(text)
 
         if self.conditionalContext:
@@ -470,8 +470,8 @@ class PythonCoder():
         else:
             self.write( list )
 
-    def exitINNESTED(self,li):
-        list = self.literalize(li,True)
+    def exitINNESTED(self, li):
+        list = self.literalize(li, True)
         self.write( list )
 
     # ------------------------------------------------------------
@@ -502,7 +502,7 @@ class PythonCoder():
         self.spec_condition = []
 
 
-    def enterSPEC_ROOF(self,cond):
+    def enterSPEC_ROOF(self, cond):
         self.spec_condition.append(cond)
 
     def enterSPEC_FULL_INDX(self, index_text):
@@ -511,7 +511,7 @@ class PythonCoder():
         self.write(self.indent()+'indices = ('+indices[0]+','+indices[1]+')' )
         self.attribCommaStack[-1] = ",\n"
 
-    def enterSPEC_SINGLE(self,index_text):
+    def enterSPEC_SINGLE(self, index_text):
         self.write(self.attribCommaStack[-1])
         self.write(self.indent()+'indices = ('+index_text+','+index_text+')' )
         self.attribCommaStack[-1] = ",\n"
@@ -540,10 +540,10 @@ class PythonCoder():
     #     | STRING_LITERAL                                        # ATOM_IDENT
     # ------------------------------------------------------------
 
-    def enterATOM_SINGLE(self,atom):
+    def enterATOM_SINGLE(self, atom):
         self.write(atom)
 
-    def enterATOM_FROMATTR(self,ident,literal):
+    def enterATOM_FROMATTR(self ,ident, literal):
         if self.conditionContext or self.conditionalContext:
             self.write( 'item.' + ident +'.getStyleBlockAttr(' + literal + ')' )
         else:
@@ -552,7 +552,7 @@ class PythonCoder():
             self.write("FromStyleBlockAttr("+literal+",FromStyleBlockAttr."+identifier+")")
  #           self.alterCommaStack[-1] = ",\n"
 
-    def enterATOM_FROMATTR_SHORT(self,literal):
+    def enterATOM_FROMATTR_SHORT(self, literal):
         if self.conditionContext:
             self.write( 'item.getStyleBlockAttr(' + literal + ')' )
         else:
@@ -560,33 +560,33 @@ class PythonCoder():
             self.write(self.indent()+"FromStyleBlockAttr("+literal+")")
             self.alterCommaStack[-1] = ",\n"
 
-    def enterATOM_STYLE(self,identifier):
+    def enterATOM_STYLE(self, identifier):
         if self.conditionContext:
-            self.write( 'self.' + identifier )
+            self.write( 'item.styleBlock.' + identifier )
         else:
             self.write(self.alterCommaStack[-1])
-            self.write(self.indent()+'self.' + identifier)
+            self.write(self.indent()+'item.styleBlock.' + identifier)
             self.alterCommaStack[-1] = ",\n"
 
-    def enterATOM_IDENT(self,ident):
+    def enterATOM_IDENT(self, ident):
         self.write(ident)
 
-    def enterConst_atom(self,atom):
+    def enterConst_atom(self, atom):
         const = self.literalize(atom,True)
         self.write( ',\n'+self.indent()+"Constant(" + const + ')' )
 
     # ------------------------------------------------------------
     #   ... and all the remaining details
     # ------------------------------------------------------------
-    def enterDef_name(self,definition):
+    def enterDef_name(self, definition):
         self.write(self.attribCommaStack[-1])
         self.write(self.indent()+'defName = "' + definition + '"' )
         self.attribCommaStack[-1] = ",\n"
 
-    def enterConstant(self,text):
+    def enterConstant(self, text):
         self.enterCONST(text)
 
-    def enterSimple_expr(self,text):
+    def enterSimple_expr(self, text):
         if self.smoothContext:
             return
         if text in ('true','false'):
@@ -610,17 +610,17 @@ class PythonCoder():
         if self.smoothContext and ident in ('smooth','flat','horizontal','side','all') :
             self.write('smoothness.' + ident )
 
-    def enterInop(self,op):
+    def enterInop(self, op):
         self.write( ' '+op+' ' )
 
-    def enterRelop(self,op):
+    def enterRelop(self, op):
         self.write( ' '+op+' ' )
 
-    def enterLogicop(self,op):
+    def enterLogicop(self, op):
         self.write( ' '+op+' ' )
 
-    def enterNotop(self,op):
+    def enterNotop(self, op):
         self.write( ' '+op+' ' )
 
-    def enterArith_op(self,op):
+    def enterArith_op(self, op):
         self.write( ' '+op+' ' )

@@ -13,7 +13,7 @@ class PML_Preprocessor():
         self.rootDir = rootDir
         self.incl_patt = re.compile('@include.\"')
         self.quot_patt = re.compile('\"(.*?)\"')
-        self.cmnt_patt = re.compile('//.*?\n')
+        self.cmnt_patt = re.compile('//.*\n?')
         self.outLineNr = 0
         self.lineNrTrack = {}
         self.includeStack = []
@@ -45,39 +45,40 @@ class PML_Preprocessor():
             for localLine, line in enumerate(fp):
                 # remove single line comments to avoid commented @include,
                 # but keep the line to simplify line counting
-                line = re.sub(self.cmnt_patt ,"\n" ,line)
-
-                # check for @include and include lines if required
-                isInclude, syntaxError, inclPath = self.isIncludeStatement(line)
-                if isInclude:
-                    if syntaxError:
-                        errorText = 'Syntax error in file {file} on line {line}, col {col}: {msg}'.format(
-                        file = path, line = localLine+1, col = 0, msg = line)
-                        raise Exception(errorText)
-                    else:
-                        # if the first character of path is '/', add path to the root directory
-                        if inclPath[0] == '/':
-                            inclPath = os.path.join(
-                                self.rootDir,
-                                os.path.join(*inclPath[1:].split('/'))
-                            )
-                        # check for recursive inclusion
-                        if inclPath in self.includeStack:
-                            errorText = 'Error in file {file} on line {line}, col {col}: {msg}'.format(
-                            file = path, line = localLine+1, col = 0, msg = 'attempt to @include recursively')
+                line = re.sub(self.cmnt_patt, '\n', line)
+                
+                if line != '\n':
+                    # check for @include and include lines if required
+                    isInclude, syntaxError, inclPath = self.isIncludeStatement(line)
+                    if isInclude:
+                        if syntaxError:
+                            errorText = 'Syntax error in file {file} on line {line}, col {col}: {msg}'.format(
+                            file = path, line = localLine+1, col = 0, msg = line)
                             raise Exception(errorText)
                         else:
-                            inclPath = os.path.join(
-                                os.path.dirname(path),
-                                inclPath
-                            )
-                            self.includeStack.append(inclPath)
-                            # get all lines from included file
-                            self.process_includes(inclPath)
-                            # replace @include line by empty line to simplify line counting
-                            line = "\n"
-                            self.lineNrTrack[self.outLineNr] = (localLine,path)
-                            self.includeStack.pop()
+                            # if the first character of path is '/', add path to the root directory
+                            if inclPath[0] == '/':
+                                inclPath = os.path.join(
+                                    self.rootDir,
+                                    os.path.join(*inclPath[1:].split('/'))
+                                )
+                            # check for recursive inclusion
+                            if inclPath in self.includeStack:
+                                errorText = 'Error in file {file} on line {line}, col {col}: {msg}'.format(
+                                file = path, line = localLine+1, col = 0, msg = 'attempt to @include recursively')
+                                raise Exception(errorText)
+                            else:
+                                inclPath = os.path.join(
+                                    os.path.dirname(path),
+                                    inclPath
+                                )
+                                self.includeStack.append(inclPath)
+                                # get all lines from included file
+                                self.process_includes(inclPath)
+                                # replace @include line by empty line to simplify line counting
+                                line = "\n"
+                                self.lineNrTrack[self.outLineNr] = (localLine,path)
+                                self.includeStack.pop()
                 
                 # push line in output stream
                 self.stream += line
