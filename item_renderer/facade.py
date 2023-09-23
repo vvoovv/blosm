@@ -9,15 +9,16 @@ class Facade:
     def render(self, footprint):
         # <r> is the global building renderer
         r = self.r
-        building = footprint.building
         
         facadeStyle = footprint.facadeStyle
         if footprint.facadeStyle:
             for facade in footprint.facades:
                 if facade.visible:
                     for styleBlock in facadeStyle:
+                        # Temporarily set <facade.styleBlock> to <_tyleBlock> to use attributes
+                        # from <styleBlock> in the condition evaluation
+                        facade.styleBlock = styleBlock
                         if facade.evaluateCondition(styleBlock):
-                            facade.styleBlock = styleBlock
                             # check if <minWidth> attribute is given in the styleBlock
                             minWidth = facade.getStyleBlockAttr("minWidth")
                             if (minWidth and facade.width > minWidth) or not minWidth:
@@ -42,9 +43,9 @@ class Facade:
                                         facade.uvs
                                     )
                                     break
-                            # Clean up the styleBlock for the next attempt with
-                            # the next style block from <facadeStyle>
-                            facade.styleBlock = None
+                        # Clean up the styleBlock for the next attempt with
+                        # the next style block from <facadeStyle>
+                        facade.styleBlock = None
                     else:
                         # No style block suits the <facade>
                         # Use style of <footprint> to render cladding for <facade>
