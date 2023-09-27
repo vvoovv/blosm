@@ -531,6 +531,9 @@ class Building:
         part.wasMissing = True
         part.init(manager)
         self.addPart(part)
+    
+    def getStyleBlockAttr(self, attr):
+        return self.renderInfo._cache.get("at"+attr)
 
 
 class BldgPart:

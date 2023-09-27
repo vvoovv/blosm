@@ -90,6 +90,14 @@ class Item:
 
     def getClass(self):
         return self.getStyleBlockAttrDeep("cl")
+    
+    def postStyleSet(self):
+        if self.styleBlock.buildingCount:
+            for counter in self.styleBlock.buildingCount:
+                if counter in self.building.renderInfo._cache:
+                    self.building.renderInfo._cache[counter] += 1
+                else:
+                    self.building.renderInfo._cache[counter] = 1
 
 
 from grammar import perBuilding

@@ -34,6 +34,12 @@ class Item:
         self.condition = condition
         self.attrs = attrs
         self.isLevel = False
+        # A style block may contain a directive (or a command), for example:
+        # _building_count_door
+        # It means: each time the style block is assigned to an item, increase the building attribute
+        # with the name <door> serving as a counter.
+        # The scope of the counter is the whole building.
+        self.buildingCount = None
         self.init()
     
     def init(self):
@@ -56,6 +62,18 @@ class Item:
             if isComplexValue:
                 if attr in _perBuildingByDefault:
                     value.value.scope = perBuilding
+            elif attr[0] == '_':
+                # the case of a directive (or a command)
+                if attr.startswith("_building_count_"):
+                    attr = "at" + attr[16:]
+                    if self.buildingCount:
+                        if len(self.buildingCount) == 1:
+                            self.buildingCount = [self.buildingCount[0], attr]
+                        else:
+                            self.buildingCount.append(attr)
+                    else:
+                        self.buildingCount = (attr,)
+                continue
             elif isinstance(value, str):
                 if value == "yes":
                     value = True

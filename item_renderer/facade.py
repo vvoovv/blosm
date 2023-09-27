@@ -23,11 +23,13 @@ class Facade:
                             minWidth = facade.getStyleBlockAttr("minWidth")
                             if (minWidth and facade.width > minWidth) or not minWidth:
                                 if facade.getStyleBlockAttr("withoutRepeat") and facade.getStyleBlockAttrDeep("cl"):
+                                    facade.postStyleSet()
                                     self.renderWithoutRepeat(facade)
                                     break
                                 elif styleBlock.markup:
                                     self.renderMarkup(facade)
                                     if facade.valid:
+                                        facade.postStyleSet()
                                         break
                                     else:
                                         # <styleBlock> does not suit for <facade>
@@ -36,6 +38,7 @@ class Facade:
                                         facade.valid = True
                                         facade.markup.clear()
                                 else:
+                                    facade.postStyleSet()
                                     # No markup, so we render cladding only.
                                     self.renderCladding(
                                         facade,
