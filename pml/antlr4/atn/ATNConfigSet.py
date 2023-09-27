@@ -3,23 +3,29 @@
 # Use of this file is governed by the BSD 3-clause license that
 # can be found in the LICENSE.txt file in the project root.
 
-#
-# Specialized {@link Set}{@code <}{@link ATNConfig}{@code >} that can track
-# info about the set, with support for combining similar configurations using a
-# graph-structured stack.
-#/
-from io import StringIO
-from functools import reduce
-from antlr4.PredictionContext import PredictionContext, merge
+from antlr4.PredictionContext import merge
 from antlr4.Utils import str_list
 from antlr4.atn.ATN import ATN
 from antlr4.atn.ATNConfig import ATNConfig
 from antlr4.atn.SemanticContext import SemanticContext
 from antlr4.error.Errors import UnsupportedOperationException, IllegalStateException
+from functools import reduce
+#
+# Specialized {@link Set}{@code <}{@link ATNConfig}{@code >} that can track
+# info about the set, with support for combining similar configurations using a
+# graph-structured stack.
+# /
+from io import StringIO
 
 ATNSimulator = None
 
 class ATNConfigSet(object):
+    __slots__ = (
+        'configLookup', 'fullCtx', 'readonly', 'configs', 'uniqueAlt',
+        'conflictingAlts', 'hasSemanticContext', 'dipsIntoOuterContext',
+        'cachedHashCode'
+    )
+
     #
     # The reason that we need this is because we don't want the hash map to use
     # the standard hash code and equals. We need all configurations with the same
@@ -188,7 +194,7 @@ class ATNConfigSet(object):
             buf.write(str_list(self.configs))
             if self.hasSemanticContext:
                 buf.write(",hasSemanticContext=")
-                buf.write(str(self.hasSemanticContext))
+                buf.write(str(self.hasSemanticContext).lower()) # lower() to conform to java output
             if self.uniqueAlt!=ATN.INVALID_ALT_NUMBER:
                 buf.write(",uniqueAlt=")
                 buf.write(str(self.uniqueAlt))
@@ -204,6 +210,3 @@ class OrderedATNConfigSet(ATNConfigSet):
 
     def __init__(self):
         super().__init__()
-
-
-

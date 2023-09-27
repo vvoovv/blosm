@@ -1,6 +1,6 @@
-# Generated from pml.g4 by ANTLR 4.8
+# Generated from pml.g4 by ANTLR 4.13.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
+if "." in __name__:
     from .pmlParser import pmlParser
 else:
     from pmlParser import pmlParser
