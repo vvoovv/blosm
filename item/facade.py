@@ -78,6 +78,6 @@ class Facade(Div):
         return self.vector.next.facade
     
     @property
-    def gable(self):
+    def gabled(self):
         # just a simple check of the number of the vertices
         return len(self.indices) > 4 or self.footprint.noWalls
