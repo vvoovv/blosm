@@ -644,7 +644,7 @@ class BLOSM_OT_ApeEditAp(bpy.types.Operator):
         ape = context.scene.blosmApe
         
         with open(
-            os.path.join(getAssetsDir(context), ape.assetPackage, "asset_info", "asset_info.json"),
+            os.path.join(getAssetsDir(context), ape.assetPackage, "asset_info", "building.json"),
             'r'
         ) as jsonFile:
             assetPackage[0] = json.load(jsonFile)
@@ -744,11 +744,11 @@ class BLOSM_OT_ApeCopyAp(bpy.types.Operator):
     def copyAssetInfos(self, sourceDir, targetDir, apDirName):
         os.makedirs( os.path.join(targetDir, "asset_info") )
         
-        # actually we copy only the <asset_info.json>
+        # actually we copy only the <building.json>
         
         # 'ai' stands for 'asset info'
-        aiFilepathSource = os.path.join(sourceDir, "asset_info", "asset_info.json")
-        aiFilepathTarget = os.path.join(targetDir, "asset_info", "asset_info.json")
+        aiFilepathSource = os.path.join(sourceDir, "asset_info", "building.json")
+        aiFilepathTarget = os.path.join(targetDir, "asset_info", "building.json")
         # open the source asset info file
         with open(aiFilepathSource, 'r') as aiFile:
             assetInfos = json.load(aiFile)
@@ -889,7 +889,7 @@ class BLOSM_OT_ApeSaveAp(bpy.types.Operator):
             return {'FINISHED'}
         ap = deepcopy(assetPackage[0])
         self.cleanup(ap, True)
-        path = os.path.join(getAssetsDir(context), context.scene.blosmApe.assetPackage, "asset_info", "asset_info.json")
+        path = os.path.join(getAssetsDir(context), context.scene.blosmApe.assetPackage, "asset_info", "building.json")
         writeJson(
             ap,
             path

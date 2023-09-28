@@ -135,7 +135,7 @@ class BaseApp:
         self.pmlFilepath = pmlFilepath
         
         if self.buildings:
-            assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/asset_info.json")
+            assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/building.json")
             if self.enableExperimentalFeatures and self.importForExport:
                 _assetInfoFilepath = "%s_export.json" % assetInfoFilepath[:-5]
                 if os.path.isfile(_assetInfoFilepath):
