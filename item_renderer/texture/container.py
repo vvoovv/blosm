@@ -290,6 +290,9 @@ class Container(ItemRendererTexture):
                         item, levelGroup, indices, assetInfo,
                         self.getGnInstanceObject(item, objName)
                     )
+                elif item.getStyleBlockAttr("withoutRepeat") and item.getStyleBlockAttrDeep("cl"):
+                    item.indices, item.uvs = indices, uvs
+                    self.renderWithoutRepeat(item)
                 else:
                     #
                     # texture

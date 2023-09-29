@@ -106,12 +106,12 @@ class ItemRenderer:
                 imageWidth, imageHeight = assetInfo["textureSize"]
                 if "offsetXPx" in assetInfo:
                     texUl = assetInfo["offsetXPx"]/imageWidth
-                    texUr = texUl + assetInfo["textureWidthPx"]/imageWidth
+                    texUr = texUl + assetInfo.get("textureWidthPx", imageWidth - assetInfo["offsetXPx"])/imageWidth
                 else:
                     texUl, texUr = 0., 1.
                 if "offsetYPx" in assetInfo:
                     texVt = 1. - assetInfo["offsetYPx"]/imageHeight
-                    texVb = texVt - assetInfo["textureHeightPx"]/imageHeight
+                    texVb = texVt - assetInfo.get("textureHeightPx", imageHeight - assetInfo["offsetYPx"])/imageHeight
                 else:
                     texVb, texVt = 0., 1.
                 uvs = item.geometry.getClassUvs(texUl, texVb, texUr, texVt, item.uvs)
