@@ -75,8 +75,11 @@ class AssetStore:
         if category == "part":
             if not cl:
                 return
-            parts = group.meshParts if tp == "mesh" else group.textureParts
-            parts[ asset["part"] ][cl] = asset
+            part = (group.meshParts if tp == "mesh" else group.textureParts)[ asset["part"] ]
+            if not cl in part:
+                part[cl] = EntryList()
+            # multiple assets with the same class are possible
+            part[cl].addEntry(asset)
         else: # cladding
             cladding = group.textureCladdings[ asset["cladding"] ]
             # None is allowed for <cl>. The previous value for <cladding[None]> will be overriden
@@ -90,15 +93,16 @@ class AssetStore:
         cl = asset.get("class")
         
         if category == "part":
-            parts = self.meshParts if tp == "mesh" else self.textureParts
-            part = parts[ asset["part"] ]
+            part = (self.meshParts if tp == "mesh" else self.textureParts)[ asset["part"] ]
             if not cl in part:
                 part[cl] = EntryList()
+            # multiple assets with the same class are possible
             part[cl].addEntry(asset)
         else: # cladding
             cladding = self.textureCladdings[ asset["cladding"] ]
             if not cl in cladding:
                 cladding[cl] = EntryList()
+            # multiple assets with the same class are possible
             cladding[cl].addEntry(asset)
         
         self.processHasMeshOrTexture(tp)
@@ -163,9 +167,10 @@ class AssetStore:
             group = self.getGroup(group, "gr_"+group, cache)
             
             if group:
+                # get an instance of <EntryList>
                 assetInfo = ( group.meshParts[buildingPart] if meshType else group.textureParts[buildingPart] ).get(cl)
                 if assetInfo:
-                    return assetInfo
+                    return assetInfo.getEntry()
                 else:
                     # try to get an asset info without a group in the code below
                     group = None
