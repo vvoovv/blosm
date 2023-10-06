@@ -86,8 +86,7 @@ class BuildingRendererNew(Renderer):
         
         self._cache = {}
         
-        self.buildingActions = []
-        self.footprintActions = []
+        self.actions = []
         # "rev" stands for "render extruded volumes"
         self.revActions = []
     
@@ -147,7 +146,7 @@ class BuildingRendererNew(Renderer):
                     layer.finalize(self)
     
     def cleanup(self):
-        for action in self.buildingActions:
+        for action in self.actions:
             action.cleanup()
         
         if self.exportMaterials:
@@ -183,11 +182,8 @@ class BuildingRendererNew(Renderer):
         if parts:
             itemStore.add((Footprint(part, building) for part in parts), Footprint, len(parts))
         
-        for actions in (self.buildingActions, self.footprintActions):
-            for action in actions:
-                action.do(building, buildingStyle, self)
-                if itemStore.skip:
-                    break
+        for action in self.actions:
+            action.do(building, buildingStyle, self)
             if itemStore.skip:
                 break
         itemStore.clear()

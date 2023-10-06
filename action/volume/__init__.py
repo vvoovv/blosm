@@ -24,6 +24,10 @@ class Volume(Action):
         if itemRenderers:
             self.setVolumeGenerators(manager.data, itemRenderers)
     
+    def preprocess(self, buildingsP):
+        # <buildingsP> means "buildings from the parser"
+        return
+    
     def setRenderer(self, renderer):
         """
         Sets a renderer.

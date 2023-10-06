@@ -5,7 +5,7 @@ class RealisticBuildingManager(BuildingManager):
     
     def process(self):
         super().process()
-        for action in self.renderer.buildingActions:
+        for action in self.renderer.actions:
             action.preprocess(self.buildings)
     
     def render(self):
