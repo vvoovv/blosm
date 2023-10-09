@@ -215,6 +215,10 @@ class SetupBlender(Setup):
         
         buildingManager.setRenderer(buildingRenderer)
     
+    def greasePencil(self):    
+        from action.gp_base import GpBase
+        self.buildingRenderer.actions.append(GpBase())
+    
     def conditionsBuildings(self, buildingManager, buildingParts, buildingRelations):
         from parse.osm.relation.building import Building as BuildingRelation
         
