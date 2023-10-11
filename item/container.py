@@ -122,7 +122,6 @@ class Container(Item):
         # <repeat> is equal to <True> by default
         repeat = bool( self.getStyleBlockAttr("repeat") )
         
-        
         # iterate through the markup items
         for item in markup:
             width = item.getStyleBlockAttr("width")
@@ -144,7 +143,8 @@ class Container(Item):
                         item.width = width
                         totalFlexWidth += width
         
-        # treat the case with the symmetry
+        # treat the case with the symmetry (currently commented out)
+        """
         symmetry = self.getStyleBlockAttr("symmetry")
         if symmetry:
             self.symmetry = symmetry
@@ -164,6 +164,7 @@ class Container(Item):
                         totalFixedWidth -= middleItem.width
                 else:
                     totalRelativeWidth -= middleItem.relativeWidth
+        """
         
         totalNonRelativeWidth = totalFixedWidth+totalFlexWidth
         
