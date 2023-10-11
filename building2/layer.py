@@ -94,6 +94,7 @@ class RealisticBuildingLayer(BuildingLayer):
             for i1,i2 in zip( range(0, len(mAttrs), 3), range(len(mAttrs)//3) ):
                 useAttributeForGnInput(m, mAttrs[i1], gnMeshAttributes[i2])
             
+    def finalizeMeshFlootRoof(self, globalRenderer):
             # TEMPORARY code below to place objects on flat roofs
             # set attributes
             for index, (triangulate, subdivide_level) in enumerate(self.attributeValuesFlatRoof):
