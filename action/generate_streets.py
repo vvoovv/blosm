@@ -431,27 +431,26 @@ class StreetGenerator():
         for net_section in self.sectionNetwork.iterAllForwardSegments():
             if net_section.category != 'scene_border':
                 section = WaySection(net_section,self.sectionNetwork)
-                self.waySections[net_section.sectionId] = section
 
-        # Find number of lanes and widths.
-        for Id,section in self.waySections.items():
-            # if Id==81:
-            #     section.polyline.plot('c',10)
-            #     continue
-            isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
-            section.isOneWay = isOneWay
-            section.lanePatterns = (fwdPattern,bwdPattern)
-            section.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
-            section.forwardLanes = len(fwdPattern)
-            section.backwardLanes = len(bwdPattern)
-            section.bothLanes = bothLanes
-            estimateWayWidths(section)
+                # Find lanes and their widths
+                isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
+                section.isOneWay = isOneWay
+                section.lanePatterns = (fwdPattern,bwdPattern)
+                section.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
+                section.forwardLanes = len(fwdPattern)
+                section.backwardLanes = len(bwdPattern)
+                section.bothLanes = bothLanes
+                estimateWayWidths(section)
+
+                self.waySections[net_section.sectionId] = section
 
     def createTransitionLanes(self):
         for i,node in enumerate(self.sectionNetwork):
             outSections = [s for s in self.sectionNetwork.iterOutSegments(node) if s.category != 'scene_border']
             # Find transition nodes
             if len(outSections) == 2:
+                # Only intersections of two ways (which are in fact just continuations) are checked.
+                # This is not really correct, but how to decide in the other cases?
                 way1 = self.waySections[outSections[0].sectionId]
                 way2 = self.waySections[outSections[1].sectionId]
                 hasTurns = bool( re.search(r'[^N]', way1.lanePatterns[0]+way2.lanePatterns[0]) )
@@ -1442,6 +1441,7 @@ class StreetGenerator():
                 if conflictNodes:
                     for conflict in conflictNodes:
                             conflictingNodes.addSegment(node,conflict)
+
         # Create intersections from nodes, that did not produce conflicts
         for node in self.sectionNetwork:
             if node not in self.processedNodes:
@@ -1781,8 +1781,7 @@ class StreetGenerator():
                 section_gn.width = section.width
                 section_gn.offset = section.offset
                 section_gn.tags = section.originalSection.tags
-                # if section.turnParams:
-                #     section_gn.endWidths = (section.leftWidth+section.turnParams[0], section.rightWidth+section.turnParams[1])
+
                 self.waySectionLines[section.id] = section_gn
             # else:
             #     # already treated as reason for conflicting areas
