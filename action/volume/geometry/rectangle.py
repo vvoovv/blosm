@@ -365,3 +365,8 @@ class RectangleFRA(Geometry):
             (indexB, parentIndices[1], parentIndices[2], indexT),
             (uvB, parentUvs[1], parentUvs[2], uvT)
         )
+    
+    def fitToRectangle(self, renderer, item, indices, uvs):
+        # It's already a rectangle.
+        # Do nothing here.
+        return indices, uvs

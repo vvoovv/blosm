@@ -130,8 +130,6 @@ class Container(ItemRendererTexture):
             _item.prepareMarkupItems()
             # inherit the width from <item> to the markup items
             _item.width = item.width
-            if _item.markup:
-                _item.calculateMarkupDivision(self.r)
         
         item.geometry.renderLevelGroups(item, self)
     
@@ -142,12 +140,13 @@ class Container(ItemRendererTexture):
         
         # <r> is the global building renderer
         r = self.r
-        parentIndices = item.indices
         geometry = item.geometry
         
         if item.arrangement is Horizontal:
-            # get markup width and number of repeats
-            #item.calculateMarkupDivision(r.assetStore)
+            
+            geometry.fitToRectangle(self, item, item.indices, item.uvs)
+            item.calculateMarkupDivision(self.r)
+
             if not item.valid:
                 return
             # create vertices for the markup items
@@ -155,7 +154,7 @@ class Container(ItemRendererTexture):
             if numItems == 1:
                 # the special case
                 _item = item.markup[0]
-                _item.indices = parentIndices
+                _item.indices = item.indices
                 _item.uvs = item.uvs
                 r.createFace(item.footprint, _item.indices)
             else:
@@ -269,6 +268,8 @@ class Container(ItemRendererTexture):
                                 if assetInfoCorner:
                                     self.processImplicitCornerItems(item, levelGroup, indices, assetInfo, assetInfoCorner)
                                     return
+                        
+                        indices, uvs = item.geometry.fitToRectangle(self, item, indices, uvs)
                         
                         objName = assetInfo["object"]
                         
@@ -460,7 +461,7 @@ class Container(ItemRendererTexture):
         numTilesX = max( floor(item.width/tileWidth), 1 )
         numTilesY = 1 if levelGroup.singleLevel else levelGroup.index2 - levelGroup.index1 + 1
         scaleX = item.width/(numTilesX*tileWidth)
-        scaleY = levelGroup.levelHeight/assetInfo["tileHeightM"]
+        scaleY = (item.height or levelGroup.levelHeight)/assetInfo["tileHeightM"]
         
         tileWidth *= scaleX
         

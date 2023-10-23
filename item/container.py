@@ -1,18 +1,23 @@
 import math
 from . import Item
+from grammar.width_type import WidthType
 from grammar.arrangement import Horizontal, Vertical
-from grammar.symmetry import MiddleOfLast
+#from grammar.symmetry import MiddleOfLast
 
 
-class ItemSize:
+def _getWidthType(widthType):
+    if widthType.startswith("fix"):
+        widthType = WidthType.fixed
+    elif widthType.startswith("flex"):
+        widthType = WidthType.flexible
+    elif widthType.startswith("rel"):
+        widthType = WidthType.relative
+    elif widthType == "percent":
+        widthType = WidthType.percent
+    else:
+        widthType = WidthType.flexible
     
-    def __init__(self):
-        self.fixed = 0.
-        self.flex = 0.
-    
-    def init(self):
-        self.fixed = 0.
-        self.flex = 0.
+    return widthType
 
 
 class Container(Item):
@@ -119,28 +124,49 @@ class Container(Item):
         # defined be the resulting width of the item
         flexibleChildrenItems = []
         
+        widthTypeParent = self.getStyleBlockAttrDeep("widthType")
+        # <widthType> is equal to <flexible> by default
+        widthTypeParent = WidthType.flexible if widthTypeParent is None else _getWidthType(widthTypeParent)
+        
+        repeat = self.getStyleBlockAttrDeep("repeat")
         # <repeat> is equal to <True> by default
-        repeat = bool( self.getStyleBlockAttr("repeat") )
+        repeat = True if repeat is None else bool(repeat)
         
         # iterate through the markup items
         for item in markup:
+            widthType = item.getWidthType()
+            widthType = widthTypeParent if widthType is None else _getWidthType(widthType)
+            
             width = item.getStyleBlockAttr("width")
+            
             if width:
-                item.width = width
-                totalFixedWidth += width
+                if widthType == WidthType.flexible:
+                    # <item.widthType = WidthType.flexible> was set in the item constructor
+                    item.width = width
+                    totalFlexWidth += width
+                elif widthType == WidthType.fixed:
+                    item.widthType = WidthType.fixed
+                    item.width = width
+                    totalFixedWidth += width
+                elif widthType == WidthType.relative:
+                    item.widthType = WidthType.relative
+                    item.width = width
+                    totalRelativeWidth += width
+                else: # widthType == WidthType.percent
+                    item.widthType = WidthType.relative
+                    item.width = width/100.;
+                    totalRelativeWidth += item.width
             else:
-                relativeWidth = item.getStyleBlockAttr("relativeWidth")
-                if relativeWidth:
-                    item.relativeWidth = relativeWidth
-                    totalRelativeWidth += relativeWidth
+                # We check if <item> is a container (i.e. level or div)
+                if item.isContainer and not item.styleBlock.markup:
+                    flexibleChildrenItems.append(item)
                 else:
-                    # We check if <item> is a container (i.e. level or div)
-                    if item.isContainer and not item.styleBlock.markup:
-                        flexibleChildrenItems.append(item)
-                    else:
-                        width = item.getWidth(globalRenderer)
-                        item.hasFlexWidth = True
-                        item.width = width
+                    width = item.getWidth(globalRenderer)
+                    item.width = width
+                    if widthType == WidthType.fixed:
+                        item.widthType = WidthType.fixed
+                        totalFixedWidth += width
+                    else: # widthType == WidthType.flexible
                         totalFlexWidth += width
         
         # treat the case with the symmetry (currently commented out)
@@ -158,15 +184,15 @@ class Container(Item):
             if symmetry is MiddleOfLast:
                 middleItem = markup[-1]
                 if middleItem.width:
-                    if middleItem.hasFlexWidth:
+                    if middleItem.widthType == WidthType.flexible:
                         totalFlexWidth -= middleItem.width
                     else:
                         totalFixedWidth -= middleItem.width
                 else:
-                    totalRelativeWidth -= middleItem.relativeWidth
+                    totalRelativeWidth -= middleItem.width
         """
         
-        totalNonRelativeWidth = totalFixedWidth+totalFlexWidth
+        totalNonRelativeWidth = totalFixedWidth + totalFlexWidth
         
         # perform sanity check
         if (totalRelativeWidth and not 0. < totalRelativeWidth <= 1.) or\
@@ -206,7 +232,7 @@ class Container(Item):
             
             numRepeats = math.floor(self.width / width)
             self.numRepeats = numRepeats
-            factor = self.width/numRepeats/width
+            factor = (self.width - totalFixedWidth)/numRepeats/totalFlexWidth
             if numRepeats > 1:
                 # the corrected and final width of a single markup pattern without any repeats
                 width *= factor
@@ -215,11 +241,11 @@ class Container(Item):
             
             # update the widths of the markup items to fit them to <width>
             for item in markup:
-                if item.relativeWidth:
-                    item.width = item.relativeWidth * width
-                elif item.hasFlexWidth:
+                if item.widthType == WidthType.relative:
+                    item.width = item.width * width
+                elif item.widthType == WidthType.flexible:
                     item.width *= factor
-            if totalFixedWidth:
+            if totalFixedWidth and not totalFlexWidth:
                 # distribute the width <factor>*<totalFixedWidth> to the left and right margins
                 pass # TODO
         elif totalRelativeWidth:
@@ -238,7 +264,7 @@ class Container(Item):
                         _totalFlexWidth = totalFlexWidth + extraWidth
                         # distribute the excessive width among the markup items with the flexible width
                         for item in markup:
-                            if item.hasFlexWidth:
+                            if item.widthType == WidthType.flexible:
                                 item.width *= _totalFlexWidth/totalFlexWidth
                     else:
                         # distribute the excessive width to the left and right margins
@@ -251,8 +277,8 @@ class Container(Item):
                 # The solution for the case <totalRelativeWidth> is grater than or equal to 1 is 
                 # to assume that <totalRelativeWidth> corresponds to <_width>
                 for item in markup:
-                    if item.relativeWidth:
-                        item.width = item.relativeWidth * _width / totalRelativeWidth
+                    if item.widthType == WidthType.relative:
+                        item.width = item.width * _width / totalRelativeWidth
             else:
                 # all markup items has relative width
                 if self.width:
@@ -263,13 +289,13 @@ class Container(Item):
                     self.width = width
                 # set width for each item:
                 for item in markup:
-                    item.width = item.relativeWidth*width/totalRelativeWidth
+                    item.width = item.width*width/totalRelativeWidth
         else:
             # there are no items with the relative width
             if totalNonRelativeWidth < self.width:
                 if flexibleChildrenItems:
                     # Total width for the items in <flexibleChildrenItems>.
-                    # The items in <noWidthItems> have the same with by design
+                    # The items in <flexibleChildrenItems> have the same with by design
                     _width = (self.width - totalNonRelativeWidth)/len(flexibleChildrenItems)
                     for item in flexibleChildrenItems:
                         item.width = _width
@@ -277,7 +303,7 @@ class Container(Item):
                     factor = (self.width - totalFixedWidth)/totalFlexWidth
                     # distribute the excessive width among the markup items with the flexible width
                     for item in markup:
-                        if item.hasFlexWidth:
+                        if item.widthType == WidthType.flexible:
                             item.width *= factor
                 else:
                     # distribute the excessive width to the left and right margins

@@ -9,3 +9,7 @@ class Entrance(Item):
         
         self.indices = None
         self.uvs = None
+    
+    def getWidthType(self):
+        # an entrance has a fixed width
+        return "fix"

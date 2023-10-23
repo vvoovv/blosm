@@ -23,9 +23,9 @@ class Item:
         # Typically a style block is defined in the markup definition, however it can be also defined
         # at the very top if the style definition for the item Footprint, Facade, RoofSide, Ridge, Roof
         self.styleBlock = styleBlock
-        self.width = None
-        self.relativeWidth = None
-        self.hasFlexWidth = False
+        self.width = 0.
+        self.height = 0.
+        self.widthType = WidthType.flexible
         # the following variable is used to cache a material id (e.g a string name) 
         self.materialId = None
         # Python dictionary to cache attributes from <self.styleBlock> that are derived
@@ -91,6 +91,9 @@ class Item:
     def getClass(self):
         return self.getStyleBlockAttrDeep("cl")
     
+    def getWidthType(self):
+        return self.getStyleBlockAttr("widthType")
+    
     def postStyleSet(self):
         if self.styleBlock.buildingCount:
             for counter in self.styleBlock.buildingCount:
@@ -101,3 +104,4 @@ class Item:
 
 
 from grammar import perBuilding
+from grammar.width_type import WidthType
