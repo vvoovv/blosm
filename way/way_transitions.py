@@ -14,39 +14,42 @@ def cycleTriples(iterable):
 # ----------------------------------------------------------------
 
 def createSideLaneData(node,way1,way2):
-    smallWay, wideWay = (way1, way2) if way1.totalLanes < way2.totalLanes else (way2, way1)
+    preTurnWay, turnWay = (way1, way2) if way1.totalLanes < way2.totalLanes else (way2, way1)
 
-    # Way width and offset correction according 
+    # Way width and offset correction for seamless connections according to
     # https://github.com/prochitecture/blosm/issues/57#issuecomment-1544025403
-    widePixels = wideWay.totalLanes*220. + 8*(wideWay.totalLanes-1)
-    smallPixels = (wideWay.totalLanes-1)*220. + 8*(wideWay.totalLanes-2)
+    widePixels = turnWay.totalLanes*220. + 8*(turnWay.totalLanes-1)
+    smallPixels = preTurnWay.totalLanes*220. + 8*(turnWay.totalLanes-2)
     factor = widePixels / smallPixels
-    newwidth = (wideWay.totalLanes-1)*wideWay.laneWidth * factor
-    wideWay.offset = newwidth/wideWay.width * wideWay.laneWidth / 2.
-    wideWay.width = newwidth
+    # Fix ratio by changing wider way
+    turnWay.width = factor * preTurnWay.width
+    turnWay.laneWidth = turnWay.width / turnWay.totalLanes
 
-    smallSign = 1 if smallWay.originalSection.s == node else -1
-    wideSign = 1 if wideWay.originalSection.s == node else -1
-    wayIDs = (smallSign*smallWay.id,wideSign*wideWay.id)
-    if smallWay.isOneWay:
-        fwdL, fwdR = turnsFromPatterns(wideWay.lanePatterns[0],smallWay.lanePatterns[0])
+    # Create IDs
+    signOfPre = 1 if preTurnWay.originalSection.s == node else -1
+    signOfTurn = 1 if turnWay.originalSection.s == node else -1
+    wayIDs = (signOfPre*preTurnWay.id,signOfTurn*turnWay.id)
+
+    # Determine turn types and offset
+    if preTurnWay.isOneWay:
+        fwdL, fwdR = turnsFromPatterns(turnWay.lanePatterns[0],preTurnWay.lanePatterns[0])
         laneL = bool(fwdL)
         laneR = bool(fwdR)
-        wideWay.fwdLaneR = fwdR
-        wideWay.fwdLaneL = fwdL
+        turnWay.fwdLaneR = fwdR
+        turnWay.fwdLaneL = fwdL
         if laneL or laneR:
-            wideWay.offset = wideWay.laneWidth/2. if laneR else -wideWay.laneWidth/2.
+            turnWay.offset = turnWay.laneWidth/2. if laneR else -turnWay.laneWidth/2.
     else: # two-ways
-        fwdL, fwdR = turnsFromPatterns(wideWay.lanePatterns[0],smallWay.lanePatterns[0])
-        bwdL, bwdR = turnsFromPatterns(wideWay.lanePatterns[1],smallWay.lanePatterns[1])
+        fwdL, fwdR = turnsFromPatterns(turnWay.lanePatterns[0],preTurnWay.lanePatterns[0])
+        bwdL, bwdR = turnsFromPatterns(turnWay.lanePatterns[1],preTurnWay.lanePatterns[1])
         laneL = bool(fwdL) or bool(bwdL)
         laneR = bool(fwdR) or bool(bwdR)
-        wideWay.fwdLaneR = fwdR
-        wideWay.fwdLaneL = fwdL
-        wideWay.bwdLaneR = bwdR
-        wideWay.bwdLaneL = bwdL
+        turnWay.fwdLaneR = fwdR
+        turnWay.fwdLaneL = fwdL
+        turnWay.bwdLaneR = bwdR
+        turnWay.bwdLaneL = bwdL
         if laneL or laneR:
-            wideWay.offset = wideWay.laneWidth/2. if laneR else -wideWay.laneWidth/2.
+            turnWay.offset = turnWay.laneWidth/2. if laneR else -turnWay.laneWidth/2.
     return wayIDs, laneL, laneR
 
 def createSymLaneData(node,way1,way2):

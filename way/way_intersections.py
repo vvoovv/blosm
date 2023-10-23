@@ -57,29 +57,17 @@ class OutgoingWay():
 
     @property
     def leftW(self):
-        if self.fwd:
-            if bool(self.section.fwdLaneL) or bool(self.section.bwdLaneR):
-                return self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
-            else:
-                return self.section.width/2
+        if self.section.offset != 0.:
+            return self.section.width/2 + self.section.offset
         else:
-            if bool(self.section.bwdLaneL) or bool(self.section.fwdLaneR):
-                return self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
-            else:
-                return self.section.width/2
+            return self.section.width/2
 
     @property
     def rightW(self):
-        if self.fwd:
-            if bool(self.section.bwdLaneL) or bool(self.section.fwdLaneR):
-                return -self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
-            else:
-                return -self.section.width/2
+        if self.section.offset != 0.:
+            return -self.section.width/2 + self.section.offset
         else:
-            if bool(self.section.fwdLaneL) or bool(self.section.bwdLaneR):
-                return -self.section.width/2 + self.section.offset#if self.fwd else self.section.width/2
-            else:
-                return -self.section.width/2
+            return -self.section.width/2
 
     def setTrim(self,trim):
         if self.fwd:
@@ -98,6 +86,7 @@ class Intersection():
         self.position = position
         self.outWays = []
         self.order = 0
+        self.network = network
 
         for net_section in network.iterOutSegments(self.position):
             if net_section.category != 'scene_border':
@@ -109,6 +98,7 @@ class Intersection():
         self.position = sum( (v for v in positions),Vector((0.,0.)) )/len(positions)
         self.outWays = []
         self.order = 0
+        self.network = network
 
         for node in positions:
             for net_section in network.iterOutSegments(node):
@@ -221,9 +211,21 @@ class Intersection():
         # debug = True
         for rightWay,centerWay,leftWay in cycleTriples(self.outWays):
             # if debug:
+            #     plotWay(rightWay.polyline,rightWay.leftW,-rightWay.rightW,'b',1)
+            #     plotWay(centerWay.polyline,centerWay.leftW,-centerWay.rightW,'b',1)
+            #     plotWay(leftWay.polyline,leftWay.leftW,-leftWay.rightW,'b',1)
+            #     # plotPureNetwork(self.network,False)
             #     rightWay.polyline.plot('r',2)
             #     centerWay.polyline.plot('b:',2)
             #     leftWay.polyline.plot('g',2)
+
+            #     if abs(centerWay.leftW) != abs(centerWay.rightW): 
+            #         print(centerWay.leftW,centerWay.rightW,centerWay.leftW+centerWay.rightW)
+            #         color= 'ro'
+            #     else:
+            #         color = 'go'
+            #     plt.plot(centerWay.polyline[-1][0],centerWay.polyline[-1][1],color,markersize=10)
+ 
             # Intersection at the right side of center-way
             # outIsects = 0
             p1, type = offsetPolylineIntersection(rightWay.polyline,centerWay.polyline,rightWay.leftW,-centerWay.rightW,True,0.1)
