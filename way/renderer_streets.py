@@ -799,53 +799,12 @@ class StreetRenderer:
         _tmpList = []
         for streetSection in manager.waySectionLines.values():
             streetSection.streetSectionIndex = 0
-            streetSection.numPoints = len(streetSection.centerline)
-            streetSection.totalLanes = streetSection.forwardLanes + streetSection.backwardLanes + streetSection.bothLanes
-            streetSection.start = streetSection.end = None
-            streetSection.rendered = False
             streetSection.chunkedRoadway = _tmpList
         
         for transition in manager.transitionSideLanes:
             transition.length = 12.
             # offset along the length of <transition>
             transition.lengthOffset = 6.
-            
-            streetSection = manager.waySectionLines[abs(transition.ways[0])]
-            if transition.ways[0] > 0:
-                streetSection.start = transition
-                transition.outgoing = streetSection
-            else:
-                streetSection.end = transition
-                transition.incoming = streetSection
-            
-            streetSection = manager.waySectionLines[abs(transition.ways[1])]
-            if transition.ways[1] > 0:
-                streetSection.start = transition
-                transition.outgoing = streetSection
-            else:
-                streetSection.end = transition
-                transition.incoming = streetSection
-            
-            # The attribute <totalLanesIncreased> indicates if the total number of lanes
-            # in <transition.outgoing> is greater than the total number of lanes
-            # in <transition.incoming>
-            transition.totalLanesIncreased = transition.outgoing.totalLanes > transition.incoming.totalLanes
-
-        for transition in manager.transitionSymLanes:
-            for streetSectionIdx in transition.connectors:
-                streetSection = manager.waySectionLines[abs(streetSectionIdx)]
-                if streetSectionIdx > 0:
-                    streetSection.start = transition
-                else:
-                    streetSection.end = transition
-        
-        for intersection in manager.intersectionAreas:
-            for streetSectionIdx in intersection.connectors:
-                streetSection = manager.waySectionLines[abs(streetSectionIdx)]
-                if streetSectionIdx > 0:
-                    streetSection.start = intersection
-                else:
-                    streetSection.end = intersection
         
         for streetSection in manager.waySectionLines.values():
             if streetSection.chunkedRoadway:
