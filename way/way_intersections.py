@@ -196,6 +196,14 @@ class Intersection():
 
         return conflictingNodes
 
+    def plot(self):
+        from osmPlot import plotWay, plotNode, plotEnd
+        plotNode(self.position,'r')
+        col = ['r','g','b']
+        for i,way in enumerate(self.outWays):
+            plotWay(way.polyline,way.leftW,way.rightW,col[i],1)
+
+
     def intersectionPoly_noFillet_noConflict(self):
         from lib.CompGeom.offset_intersection import offsetPolylineIntersection
         from defs.way_cluster_params import transitionSlope

@@ -53,8 +53,10 @@ class StreetRenderer(Renderer):
         processedWaySections = set()     
         for sideLane in manager.transitionSideLanes:
             processedWaySections.update([abs(sideLane.ways[0]),abs(sideLane.ways[1])])
-            way1 = manager.waySectionLines[abs(sideLane.ways[0])]
-            way2 = manager.waySectionLines[abs(sideLane.ways[1])]
+            way1 = sideLane.incoming#manager.waySectionLines[abs(sideLane.ways[0])]
+            way2 = sideLane.outgoing#manager.waySectionLines[abs(sideLane.ways[1])]
+            if not ((way1.forwardLanes+way1.backwardLanes) < (way2.forwardLanes+way2.backwardLanes)):
+                test=1
             smallWay, wideWay = (way1, way2) if (way1.forwardLanes+way1.backwardLanes) < (way2.forwardLanes+way2.backwardLanes) else (way2, way1)
             plotSideLaneWay(smallWay,wideWay,'orange')
             if self.debug:
@@ -64,7 +66,7 @@ class StreetRenderer(Renderer):
                 plt.text(center[0],center[1],str(abs(sideLane.ways[1])),color='blue',fontsize=14,zorder=120)
 
         for symLane in manager.transitionSymLanes:
-            plotPolygon(symLane.polygon,False,'firebrick','firebrick',2,True,0.4)
+            plotPolygon(symLane.polygon,False,'green','green',2,True,0.5)
 
 
         for sectionNr,section_gn in manager.waySectionLines.items():
@@ -81,9 +83,9 @@ class StreetRenderer(Renderer):
                 width = section_gn.width 
                 buffer = polyline.buffer(width/2,width/2)
                 plotPolygon(buffer,False,'k','b',1,True,0.1)
-                if not section_gn.startConnected:
+                if not section_gn.start:
                     plt.plot(polyline[0][0],polyline[0][1],'cs',markersize=6)
-                if not section_gn.endConnected:
+                if not section_gn.end:
                     plt.plot(polyline[-1][0],polyline[-1][1],'cs',markersize=6)
 
         # for Id,cluster in manager.wayClusters.items(): 

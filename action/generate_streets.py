@@ -102,6 +102,9 @@ class StreetSection(BaseWaySection):
         # is used.
         self.bothLanes  = 0
 
+        # self.forwardLanes + self.backwardLanes + self.bothLanes
+        self.totalLanes  = 0
+
         # The offset from the centerline at the wider part of the street, when it has turn
         # or a merge lanes. Zero  for all other streets.
         self.offset = 0.
@@ -115,11 +118,18 @@ class StreetSection(BaseWaySection):
         self.trimStart = 0.
         self.trimEnd = 0.
         
-        # True, if start of way is connected to other ways, else dead-end
-        self.startConnected = None
+        # Instance of either TransitionSideLane, TransitionSymLane or IntersectionArea,
+        # if connected to one of those at start.
+        self.start = None
 
-        # True, if end of way is connected to other ways, else dead-end
-        self.endConnected = None
+        # Instance of either TransitionSideLane, TransitionSymLane or IntersectionArea,
+        # if connected to one of those at end.
+        self.end = None
+
+        # Number of vertices along the street's polyline.
+        self.numPoints = 0
+
+        self.rendered = False
     
     def getLeftBorderDistance(self):
         return 0.5*self.width
@@ -139,6 +149,15 @@ class TransitionSideLane():
 
         # True, if there is a turn lane to the right from the narrower way-section.
         self.laneR = False
+
+        # Instance of incoming StreetSection.
+        self.incoming = None
+
+        # Instance of outgoing StreetSection.
+        self.outgoing = None
+
+        # self.outgoing.totalLanes > self.incoming.totalLanes
+        self.totalLanesIncreased = 0
 
 class TransitionSymLane():
     def __init__(self):
@@ -1439,6 +1458,12 @@ class StreetGenerator():
                     continue
                 conflictNodes = intersection.checkForConflicts()
                 if conflictNodes:
+                    # from osmPlot import plotEnd, plotNode
+                    # intersection.plot()
+                    # for n in conflictNodes:
+                    #     plotNode(n, 'b', 3)
+                    # plotEnd()
+                    # intersection.checkForConflicts()
                     for conflict in conflictNodes:
                             conflictingNodes.addSegment(node,conflict)
 
@@ -1450,9 +1475,9 @@ class StreetGenerator():
                     self.intersections[node] = intersection
 
         # Create Intersections from conflicting nodes
-        for conflictingCluster in conflictingNodes:
-            intersection = Intersection(conflictingCluster, self.sectionNetwork, self.waySections)
-            self.intersections[intersection.position.freeze()] = intersection
+        # for conflictingCluster in conflictingNodes:
+        #     intersection = Intersection(conflictingCluster, self.sectionNetwork, self.waySections)
+        #     self.intersections[intersection.position.freeze()] = intersection
 
         node2isectArea = dict()
         # Transitions have to be processed first, because way widths may be altered.
@@ -1567,154 +1592,11 @@ class StreetGenerator():
                     mergedArea.connectors[key] = connector-1
 
         # Now remove conflicting (overlapping) areas from list and add the merged areas
-        for i in sorted(conflictingAreasIndcs, reverse = True):
-                del self.intersectionAreas[i]
+        # for i in sorted(conflictingAreasIndcs, reverse = True):
+        #         del self.intersectionAreas[i]
         self.intersectionAreas.extend(mergedAreas)
 
     def createOutput(self):
-        # # Find first nodes that will produce conflicting intersections
-        # conflictingNodes = DisjointSets()
-        # for node in self.sectionNetwork:
-        #     if node not in self.processedNodes:
-        #         intersection = Intersection(node, self.sectionNetwork, self.waySections)
-        #         if intersection.order < 1:
-        #             # plotPureNetwork(self.sectionNetwork)
-        #             # plt.plot(node[0],node[1],'ro',markersize=12)
-        #             continue
-        #         conflictNodes = intersection.checkForConflicts()
-        #         if conflictNodes:
-        #             for conflict in conflictNodes:
-        #                     conflictingNodes.addSegment(node,conflict)
-
-        # # Create intersections from nodes, that did not produce conflicts
-        # for node in self.sectionNetwork:
-        #     if node not in self.processedNodes:
-        #         if node not in conflictingNodes.G:
-        #             intersection = Intersection(node, self.sectionNetwork, self.waySections)
-        #             self.intersections[node] = intersection
-
-        # # Create Intersections from conflicting nodes
-        # for conflictingCluster in conflictingNodes:
-        #     intersection = Intersection(conflictingCluster, self.sectionNetwork, self.waySections)
-        #     self.intersections[intersection.position.freeze()] = intersection
-
-        # node2isectArea = dict()
-        # # Transitions have to be processed first, because way widths may be altered.
-        # for node,intersection in self.intersections.items():
-        #     if intersection.order == 2:
-        #         polygon, connectors = intersection.findTransitionPoly()
-        #         if polygon:
-        #             isectArea = IntersectionArea()
-        #             isectArea.polygon = polygon
-        #             isectArea.connectors = connectors
-        #             node2isectArea[node] = len(self.intersectionAreas)
-        #             self.intersectionAreas.append(isectArea)
-
-        # # Now, the normal intersection areas are constructed
-        # for node,intersection in self.intersections.items():
-        #     if intersection.order > 2:
-        #         polygon = None
-        #         if self.useFillet:
-        #             try:
-        #                 polygon, connectors = intersection.intersectionPoly()
-        #             except:
-        #                 pass
-        #         else:
-        #             try:
-        #                 polygon, connectors = intersection.intersectionPoly_noFillet_noConflict()
-        #             except:
-        #                 pass
-        #         if polygon:
-        #             isectArea = IntersectionArea()
-        #             isectArea.polygon = polygon
-        #             isectArea.connectors = connectors
-        #             node2isectArea[node] = len(self.intersectionAreas)
-        #             self.intersectionAreas.append(isectArea)
-
-        # # Find conflicting intersection areas from over-trimmed way-sections
-        # conflictingSets = DisjointSets()
-        # for sectionNr,section in self.waySections.items():
-        #     if section.trimT <= section.trimS:
-        #         if section.originalSection.s not in node2isectArea or section.originalSection.t not in node2isectArea:
-        #             continue
-        #         indxS = node2isectArea[section.originalSection.s] # index of isectArea at source
-        #         indxT = node2isectArea[section.originalSection.t] # index of isectArea at target
-        #         conflictingSets.addSegment(indxS,indxT)
-
-        # # merge conficting intersection areas
-        # # adapted from:
-        # # https://stackoverflow.com/questions/7150766/union-of-many-more-than-two-polygons-without-holes
-        # conflictingAreasIndcs = []
-        # mergedAreas = []
-        # for conflicting in conflictingSets:
-        #     conflictingAreasIndcs.extend(conflicting)
-        #     waiting = conflicting.copy()  # indices of unprocessed conflicting areas
-        #     merged = []                   # indices of processed (merged) conflicting areas
-        #     while waiting:
-        #         p = waiting.pop()
-        #         merged.append(p)
-        #         mergedPoly = self.intersectionAreas[p].polygon
-        #         changed = True
-        #         while changed:
-        #             changed = False
-        #             for q in waiting:
-        #                 for s in merged:
-        #                     if q in conflictingSets.G[s]: # True, if areas s and q conflict (intersect)
-        #                         waiting.remove(q)
-        #                         changed = True
-        #                         try:
-        #                             ret = boolPolyOp(mergedPoly,self.intersectionAreas[q].polygon,'union')
-        #                         except:
-        #                             print('Problem')
-        #                             break
-        #                         mergedPoly = ret[0]
-        #                         merged.append(q)
-        #                         break
-
-        #     # The merged poygon is now in <mergedPoly>. Be sure that it 
-        #     # is ordered counter-clockwise.
-        #     area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(mergedPoly,mergedPoly[1:]+[mergedPoly[0]]))
-        #     if area > 0.:
-        #         mergedPoly.reverse()
-
-        #     # An instance of IntersectionArea is now constructed with
-        #     # its remaining connectors.
-        #     mergedArea = IntersectionArea()
-        #     mergedArea.polygon = mergedPoly
-        #     # Find duplicate connectors, which have to be removed.
-        #     connectorIDs = [abs(id) for indx in conflicting for id in self.intersectionAreas[indx].connectors]
-        #     seenIDs = set()
-        #     dupIDs = [x for x in connectorIDs if x in seenIDs or seenIDs.add(x)]
-
-        #     for indx in conflicting:
-        #         conflictingArea = self.intersectionAreas[indx]
-        #         connectors = conflictingArea.connectors
-        #         for signedKey,connector in connectors.items():
-        #             key = abs(signedKey)
-        #             # Keep connectors that don't have duplicate IDs
-        #             if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
-        #                 v0 = conflictingArea.polygon[connector]
-        #                 if v0 in mergedPoly:
-        #                     newConnector = mergedPoly.index(v0)
-        #                     mergedArea.connectors[signedKey] = newConnector
-        #                 # else:
-        #                 #     plotPolygon(conflictingArea.polygon,True,'m','m',4)
-
-
-        #     mergedAreas.append(mergedArea)
-
-        #     # avoid a connector to reach over polygon end point index
-        #     mc = max(c for c in mergedArea.connectors.values())
-        #     if mc >= len(mergedArea.polygon)-1:
-        #         mergedArea.polygon = mergedArea.polygon[1:] + mergedArea.polygon[:1]
-        #         for key,connector in mergedArea.connectors.items():
-        #             mergedArea.connectors[key] = connector-1
-
-        # # Now remove conflicting (overlapping) areas from list and add the merged areas
-        # for i in sorted(conflictingAreasIndcs, reverse = True):
-        #         del self.intersectionAreas[i]
-        # self.intersectionAreas.extend(mergedAreas)
-
         # # Find overlapping areas using collision detection. 
         # # First create static spatial index for these areas
         # areaIndex = StaticSpatialIndex()
@@ -1767,27 +1649,58 @@ class StreetGenerator():
                 waySlice = section.polyline.trimmed(section.trimS,section.trimT)
                 section_gn = StreetSection()
 
-                section_gn.startConnected = self.sectionNetwork.borderlessOrder(section.originalSection.s) != 1
-                section_gn.endConnected = self.sectionNetwork.borderlessOrder(section.originalSection.t) != 1
+                section_gn.start = None     # Set below
+                section_gn.end = None       # Set below
 
                 section_gn.centerline = waySlice.verts
                 section_gn.category = section.originalSection.category
                 section_gn.forwardLanes = section.forwardLanes
                 section_gn.backwardLanes = section.backwardLanes
                 section_gn.bothLanes = section.bothLanes
+                section_gn.totalLanes = section.forwardLanes + section.backwardLanes + section.bothLanes
                 section_gn.laneL = bool(section.fwdLaneL) or bool(section.bwdLaneR)
                 section_gn.laneR = bool(section.bwdLaneL) or bool(section.fwdLaneR)
-                section_gn.bothLanes = section.bothLanes
                 section_gn.width = section.width
                 section_gn.offset = section.offset
                 section_gn.tags = section.originalSection.tags
+                section_gn.numPoints = len(section_gn.centerline)
 
                 self.waySectionLines[section.id] = section_gn
             # else:
             #     # already treated as reason for conflicting areas
 
-        for lane in self.internalTransitionSideLanes.values():
-            self.transitionSideLanes.append(lane)
+        for transition in self.internalTransitionSideLanes.values():
+            streetSection = self.waySectionLines[abs(transition.ways[0])]
+            if transition.ways[0] > 0:
+                streetSection.start = transition
+                transition.outgoing = streetSection
+            else:
+                streetSection.end = transition
+                transition.incoming = streetSection
+            
+            streetSection = self.waySectionLines[abs(transition.ways[1])]
+            if transition.ways[1] > 0:
+                streetSection.start = transition
+                transition.outgoing = streetSection
+            else:
+                streetSection.end = transition
+                transition.incoming = streetSection
+            transition.totalLanesIncreased = transition.outgoing.totalLanes > transition.incoming.totalLanes
+            self.transitionSideLanes.append(transition)
 
-        for lane in self.internalTransitionSymLanes.values():
-            self.transitionSymLanes.append(lane)
+        for transition in self.internalTransitionSymLanes.values():
+            for streetSectionIdx in transition.connectors:
+                streetSection = self.waySectionLines[abs(streetSectionIdx)]
+                if streetSectionIdx > 0:
+                    streetSection.start = transition
+                else:
+                    streetSection.end = transition
+            self.transitionSymLanes.append(transition)
+
+        # for intersection in self.intersectionAreas:
+        #     for streetSectionIdx in intersection.connectors:
+        #         streetSection = self.waySectionLines[abs(streetSectionIdx)]
+        #         if streetSectionIdx > 0:
+        #             streetSection.start = intersection
+        #         else:
+        #             streetSection.end = intersection
