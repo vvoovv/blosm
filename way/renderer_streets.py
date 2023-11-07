@@ -368,7 +368,6 @@ class StreetRenderer:
         m["Input_7"] = trimLengthEnd
     
     def setModifierSidewalk(self, obj, offset, width):
-        return # FIXME
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
