@@ -8,7 +8,7 @@ from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 from defs.way_cluster_params import transitionSlope
 
 
-from osmPlot import *
+# from osmPlot import *
 
 # helper functions -----------------------------------------------
 def pairs(iterable):
