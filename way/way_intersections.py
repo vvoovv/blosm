@@ -1,10 +1,10 @@
-from math import sin, cos, atan2, pi, sqrt, floor
+from math import sin, cos, atan2, pi, sqrt
 from operator import xor
 from mathutils import Vector
 from itertools import tee,islice, cycle
 from lib.CompGeom.PolyLine import PolyLine
-from way.way_properties import estFilletRadius
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
+from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
 from defs.way_cluster_params import transitionSlope
 
 
@@ -178,29 +178,42 @@ class Intersection():
         # intersection, but returned for eventual further use.
         shortWays = []
 
+        # If outways of intersection form loops, don' clean anything
+        if any(way.isLoop for way in self.outWays):
+            return []
+
         if self.order < 3:
             return []
 
         for left,centre,right in cycleTriples(self.outWays):
-            # Right endpoint of centre way
+            fragments = []
             endR = centre.polyline.offsetPointAt(len(centre.polyline)-1.,centre.rightW)
             endL = centre.polyline.offsetPointAt(len(centre.polyline)-1.,centre.leftW)
             if pointInPolygon(right.polygon, endR):
                 shortWays.append(centre)
             elif pointInPolygon(right.polygon, endL):
-                shortWays.append(centre)
+                clipper = LinePolygonClipper(right.polygon)
+                border = centre.polyline.parallelOffset(centre.leftW)
+                fragments, _, _  = clipper.clipLine(border)
+                if len(fragments) <= 1:
+                    shortWays.append(centre)
             if pointInPolygon(left.polygon, endR):
-                shortWays.append(centre)
+                clipper = LinePolygonClipper(left.polygon)
+                border = centre.polyline.parallelOffset(centre.rightW)
+                fragments, _, _  = clipper.clipLine(border)
+                if len(fragments) <= 1:
+                    shortWays.append(centre)
             elif pointInPolygon(left.polygon, endL):
                 shortWays.append(centre)
 
-            if debug:
-                self.plot()
-                plotNode(endR, 'r', 30)
-                plotNode(endL, 'b', 30)
-                plotPolygon(right.polygon,False,'r','r',2,True)
-                plotPolygon(left.polygon,False,'b','b',2,True)
-                plotEnd()
+            # if debug and len(fragments)>1:
+            #     for way in self.outWays:
+            #         plotWay(way.polyline,way.leftW,way.rightW,'k',1)
+            #     plotNode(endR, 'r', 30)
+            #     plotNode(endL, 'b', 30)
+            #     plotPolygon(right.polygon,False,'r','r',2,True)
+            #     plotPolygon(left.polygon,False,'b','b',2,True)
+            #     plotEnd()
 
         # Remove short ways from Intersection
         for way in shortWays:

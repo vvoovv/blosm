@@ -530,7 +530,7 @@ class StreetGenerator():
                 neighbors = spatialIndex.query(min_x-bufferWidth,min_y-bufferWidth,
                                                max_x+bufferWidth,max_y+bufferWidth,results,stack)
 
-                # Now test all neighbors of the remplate for parallelism
+                # Now test all neighbors of the template for parallelism
                 for neigborIndx in neighbors:
                     neighborID = spatialIndx2wayId[neigborIndx]
                     # The template is its own neighbor
@@ -1458,14 +1458,14 @@ class StreetGenerator():
                     continue
                 self.intersections[node] = intersection
 
+                # TODO: Handle cleaned ways, when at border of scene
+
                 # if shortWays:
                 #     from osmPlot import plotWay, plotNode, plotEnd
-                #     intersection.plot()
-                #     plotEnd()
                 #     for way in intersection.outWays:
                 #         plotWay(way.polyline,way.leftW,way.rightW,'k',1)
-                    # for way in shortWays:
-                    #     plotWay(way.polyline,way.leftW,way.rightW,'c',3)
+                #     for way in shortWays:
+                #         plotWay(way.polyline,way.leftW,way.rightW,'c',3)
                 #     plotNode(node, 'c', 5)
                 #     plotEnd()
 
@@ -1491,89 +1491,89 @@ class StreetGenerator():
                     node2isectArea[node] = len(self.intersectionAreas)
                     self.intersectionAreas.append(isectArea)
 
-        # # Find conflicting intersection areas from over-trimmed way-sections
-        # conflictingSets = DisjointSets()
-        # for sectionNr,section in self.waySections.items():
-        #     if section.trimT <= section.trimS:
-        #         if section.originalSection.s not in node2isectArea or section.originalSection.t not in node2isectArea:
-        #             continue
-        #         indxS = node2isectArea[section.originalSection.s] # index of isectArea at source
-        #         indxT = node2isectArea[section.originalSection.t] # index of isectArea at target
-        #         conflictingSets.addSegment(indxS,indxT)
+        # Find conflicting intersection areas from over-trimmed way-sections
+        conflictingSets = DisjointSets()
+        for sectionNr,section in self.waySections.items():
+            if section.trimT <= section.trimS:
+                if section.originalSection.s not in node2isectArea or section.originalSection.t not in node2isectArea:
+                    continue
+                indxS = node2isectArea[section.originalSection.s] # index of isectArea at source
+                indxT = node2isectArea[section.originalSection.t] # index of isectArea at target
+                conflictingSets.addSegment(indxS,indxT)
 
-        # # merge conficting intersection areas
-        # # adapted from:
-        # # https://stackoverflow.com/questions/7150766/union-of-many-more-than-two-polygons-without-holes
-        # conflictingAreasIndcs = []
-        # mergedAreas = []
-        # for conflicting in conflictingSets:
-        #     conflictingAreasIndcs.extend(conflicting)
-        #     waiting = conflicting.copy()  # indices of unprocessed conflicting areas
-        #     merged = []                   # indices of processed (merged) conflicting areas
-        #     while waiting:
-        #         p = waiting.pop()
-        #         merged.append(p)
-        #         mergedPoly = self.intersectionAreas[p].polygon
-        #         changed = True
-        #         while changed:
-        #             changed = False
-        #             for q in waiting:
-        #                 for s in merged:
-        #                     if q in conflictingSets.G[s]: # True, if areas s and q conflict (intersect)
-        #                         waiting.remove(q)
-        #                         changed = True
-        #                         try:
-        #                             ret = boolPolyOp(mergedPoly,self.intersectionAreas[q].polygon,'union')
-        #                         except:
-        #                             print('Problem')
-        #                             break
-        #                         mergedPoly = ret[0]
-        #                         merged.append(q)
-        #                         break
+        # merge conficting intersection areas
+        # adapted from:
+        # https://stackoverflow.com/questions/7150766/union-of-many-more-than-two-polygons-without-holes
+        conflictingAreasIndcs = []
+        mergedAreas = []
+        for conflicting in conflictingSets:
+            conflictingAreasIndcs.extend(conflicting)
+            waiting = conflicting.copy()  # indices of unprocessed conflicting areas
+            merged = []                   # indices of processed (merged) conflicting areas
+            while waiting:
+                p = waiting.pop()
+                merged.append(p)
+                mergedPoly = self.intersectionAreas[p].polygon
+                changed = True
+                while changed:
+                    changed = False
+                    for q in waiting:
+                        for s in merged:
+                            if q in conflictingSets.G[s]: # True, if areas s and q conflict (intersect)
+                                waiting.remove(q)
+                                changed = True
+                                try:
+                                    ret = boolPolyOp(mergedPoly,self.intersectionAreas[q].polygon,'union')
+                                except:
+                                    print('Problem')
+                                    break
+                                mergedPoly = ret[0]
+                                merged.append(q)
+                                break
 
-        #     # The merged poygon is now in <mergedPoly>. Be sure that it 
-        #     # is ordered counter-clockwise.
-        #     area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(mergedPoly,mergedPoly[1:]+[mergedPoly[0]]))
-        #     if area > 0.:
-        #         mergedPoly.reverse()
+            # The merged poygon is now in <mergedPoly>. Be sure that it 
+            # is ordered counter-clockwise.
+            area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(mergedPoly,mergedPoly[1:]+[mergedPoly[0]]))
+            if area > 0.:
+                mergedPoly.reverse()
 
-        #     # An instance of IntersectionArea is now constructed with
-        #     # its remaining connectors.
-        #     mergedArea = IntersectionArea()
-        #     mergedArea.polygon = mergedPoly
-        #     # Find duplicate connectors, which have to be removed.
-        #     connectorIDs = [abs(id) for indx in conflicting for id in self.intersectionAreas[indx].connectors]
-        #     seenIDs = set()
-        #     dupIDs = [x for x in connectorIDs if x in seenIDs or seenIDs.add(x)]
+            # An instance of IntersectionArea is now constructed with
+            # its remaining connectors.
+            mergedArea = IntersectionArea()
+            mergedArea.polygon = mergedPoly
+            # Find duplicate connectors, which have to be removed.
+            connectorIDs = [abs(id) for indx in conflicting for id in self.intersectionAreas[indx].connectors]
+            seenIDs = set()
+            dupIDs = [x for x in connectorIDs if x in seenIDs or seenIDs.add(x)]
 
-        #     for indx in conflicting:
-        #         conflictingArea = self.intersectionAreas[indx]
-        #         connectors = conflictingArea.connectors
-        #         for signedKey,connector in connectors.items():
-        #             key = abs(signedKey)
-        #             # Keep connectors that don't have duplicate IDs
-        #             if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
-        #                 v0 = conflictingArea.polygon[connector]
-        #                 if v0 in mergedPoly:
-        #                     newConnector = mergedPoly.index(v0)
-        #                     mergedArea.connectors[signedKey] = newConnector
-        #                 # else:
-        #                 #     plotPolygon(conflictingArea.polygon,True,'m','m',4)
+            for indx in conflicting:
+                conflictingArea = self.intersectionAreas[indx]
+                connectors = conflictingArea.connectors
+                for signedKey,connector in connectors.items():
+                    key = abs(signedKey)
+                    # Keep connectors that don't have duplicate IDs
+                    if key not in dupIDs:#if v0 in mergedPoly and v1 in mergedPoly:
+                        v0 = conflictingArea.polygon[connector]
+                        if v0 in mergedPoly:
+                            newConnector = mergedPoly.index(v0)
+                            mergedArea.connectors[signedKey] = newConnector
+                        # else:
+                        #     plotPolygon(conflictingArea.polygon,True,'m','m',4)
 
 
-        #     mergedAreas.append(mergedArea)
+            mergedAreas.append(mergedArea)
 
-        #     # avoid a connector to reach over polygon end point index
-        #     mc = max(c for c in mergedArea.connectors.values())
-        #     if mc >= len(mergedArea.polygon)-1:
-        #         mergedArea.polygon = mergedArea.polygon[1:] + mergedArea.polygon[:1]
-        #         for key,connector in mergedArea.connectors.items():
-        #             mergedArea.connectors[key] = connector-1
+            # avoid a connector to reach over polygon end point index
+            mc = max(c for c in mergedArea.connectors.values())
+            if mc >= len(mergedArea.polygon)-1:
+                mergedArea.polygon = mergedArea.polygon[1:] + mergedArea.polygon[:1]
+                for key,connector in mergedArea.connectors.items():
+                    mergedArea.connectors[key] = connector-1
 
-        # # Now remove conflicting (overlapping) areas from list and add the merged areas
-        # # for i in sorted(conflictingAreasIndcs, reverse = True):
-        # #         del self.intersectionAreas[i]
-        # self.intersectionAreas.extend(mergedAreas)
+        # Now remove conflicting (overlapping) areas from list and add the merged areas
+        # for i in sorted(conflictingAreasIndcs, reverse = True):
+        #         del self.intersectionAreas[i]
+        self.intersectionAreas.extend(mergedAreas)
 
     def createOutput(self):
         # # Find overlapping areas using collision detection. 
