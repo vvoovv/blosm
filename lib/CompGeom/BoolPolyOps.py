@@ -205,7 +205,7 @@ def boolPolyOp(polyAv, polyBv, operation):
         firstNode = next(iter(edgeFragments))
         sequence = []
         nextNode = firstNode
-        while True:
+        while nextNode in edgeFragments:#True:
             thisNode = edgeFragments[nextNode][0]
             sequence.append(thisNode)
             del edgeFragments[nextNode][0]

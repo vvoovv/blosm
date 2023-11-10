@@ -4,7 +4,6 @@ from statistics import median
 from mathutils import Vector
 import re
 
-
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
@@ -370,6 +369,7 @@ class StreetGenerator():
         self.createWaySections()
         self.createTransitionLanes()
         self.createIntersectionAreas()
+        self.mergeOverlappingIntersections()
         self.createOutput()
         # plotPureNetwork(self.sectionNetwork)
 
@@ -1501,12 +1501,15 @@ class StreetGenerator():
                 indxT = node2isectArea[section.originalSection.t] # index of isectArea at target
                 conflictingSets.addSegment(indxS,indxT)
 
+        self.mergeConflictingAreas(conflictingSets)
+
+    def mergeConflictingAreas(self, conflictingSets):
         # merge conficting intersection areas
         # adapted from:
         # https://stackoverflow.com/questions/7150766/union-of-many-more-than-two-polygons-without-holes
         conflictingAreasIndcs = []
         mergedAreas = []
-        for conflicting in conflictingSets:
+        for nr,conflicting in enumerate(conflictingSets):
             conflictingAreasIndcs.extend(conflicting)
             waiting = conflicting.copy()  # indices of unprocessed conflicting areas
             merged = []                   # indices of processed (merged) conflicting areas
@@ -1546,6 +1549,11 @@ class StreetGenerator():
             seenIDs = set()
             dupIDs = [x for x in connectorIDs if x in seenIDs or seenIDs.add(x)]
 
+            # for indx in conflicting:
+            #     print(self.intersectionAreas[indx].connectors)
+            # plotPolygon(mergedPoly,True)
+            # plotEnd()
+
             for indx in conflicting:
                 conflictingArea = self.intersectionAreas[indx]
                 connectors = conflictingArea.connectors
@@ -1571,9 +1579,44 @@ class StreetGenerator():
                     mergedArea.connectors[key] = connector-1
 
         # Now remove conflicting (overlapping) areas from list and add the merged areas
-        # for i in sorted(conflictingAreasIndcs, reverse = True):
-        #         del self.intersectionAreas[i]
+        for i in sorted(conflictingAreasIndcs, reverse = True):
+                del self.intersectionAreas[i]
         self.intersectionAreas.extend(mergedAreas)
+
+    def mergeOverlappingIntersections(self):
+        # Create spatial index for intersection areas to find overlapping areas faster
+        areaIndex = StaticSpatialIndex()
+        areaIndx2Indx = dict()    # Dictionary from index to Id
+        boxes = dict()      # Bounding boxes of way-sections
+        for Id, area in enumerate(self.intersectionAreas):
+            min_x = min(v[0] for v in area.polygon)
+            min_y = min(v[1] for v in area.polygon)
+            max_x = max(v[0] for v in area.polygon)
+            max_y = max(v[1] for v in area.polygon)
+            bbox = BBox(None,min_x,min_y,max_x,max_y)
+            index = areaIndex.add(min_x,min_y,max_x,max_y)
+            areaIndx2Indx[index] = Id
+            bbox.index = index
+            boxes[Id] = (min_x,min_y,max_x,max_y)
+        areaIndex.finish()
+
+        # Check intersection areas for overlap
+        overlappingAreas = DisjointSets()
+        for indx in range(len(self.intersectionAreas)):
+            results = stack = []
+            overlapIndxs = areaIndex.query(*boxes[indx],results,stack)
+            if overlapIndxs:
+                area1 = self.intersectionAreas[indx]
+                for overlapIndx in overlapIndxs:
+                    if overlapIndx != indx:
+                        area2 = self.intersectionAreas[overlapIndx]
+                        # area1 and area2 have overlapping boxes, check if they reall overlap
+                        overlap = boolPolyOp(area1.polygon,area2.polygon, 'intersection')
+                        if (overlap):
+                            overlappingAreas.addSegment(indx,overlapIndx)
+
+        # Merge overlapping areas
+        self.mergeConflictingAreas(overlappingAreas)
 
     def createOutput(self):
         # # Find overlapping areas using collision detection. 

@@ -227,25 +227,25 @@ class Intersection():
         wayConnectors = dict()
         area = []
         for rightWay,centerWay,leftWay in cycleTriples(self.outWays):
-            if debug:
-                for i,way in enumerate(self.outWays):
-                    way.polyline.plot('k')
-                    q = way.polyline[-1]
-                    plt.text(q[0],q[1]," "+str(i))
-                plotWay(rightWay.polyline,rightWay.leftW,-rightWay.rightW,'b',1)
-                plotWay(centerWay.polyline,centerWay.leftW,-centerWay.rightW,'b',1)
-                plotWay(leftWay.polyline,leftWay.leftW,-leftWay.rightW,'b',1)
-                # plotPureNetwork(self.network,False)
-                rightWay.polyline.plot('r',2)
-                centerWay.polyline.plot('b:',2)
-                leftWay.polyline.plot('g',2)
+            # if debug:
+            #     for i,way in enumerate(self.outWays):
+            #         way.polyline.plot('k')
+            #         q = way.polyline[-1]
+            #         plt.text(q[0],q[1]," "+str(i))
+            #     plotWay(rightWay.polyline,rightWay.leftW,-rightWay.rightW,'b',1)
+            #     plotWay(centerWay.polyline,centerWay.leftW,-centerWay.rightW,'b',1)
+            #     plotWay(leftWay.polyline,leftWay.leftW,-leftWay.rightW,'b',1)
+            #     # plotPureNetwork(self.network,False)
+            #     rightWay.polyline.plot('r',2)
+            #     centerWay.polyline.plot('b:',2)
+            #     leftWay.polyline.plot('g',2)
 
-                if abs(centerWay.leftW) != abs(centerWay.rightW): 
-                    print(centerWay.leftW,centerWay.rightW,centerWay.leftW+centerWay.rightW)
-                    color= 'ro'
-                else:
-                    color = 'go'
-                plt.plot(centerWay.polyline[-1][0],centerWay.polyline[-1][1],color,markersize=10)
+                # if abs(centerWay.leftW) != abs(centerWay.rightW): 
+                #     print(centerWay.leftW,centerWay.rightW,centerWay.leftW+centerWay.rightW)
+                #     color= 'ro'
+                # else:
+                #     color = 'go'
+                # plt.plot(centerWay.polyline[-1][0],centerWay.polyline[-1][1],color,markersize=10)
  
             # Intersection at the right side of center-way
             # outIsects = 0
@@ -267,9 +267,9 @@ class Intersection():
                 # outIsect += 1
                 print('out')
                 continue
-            if debug:
-                plt.plot(p1[0],p1[1],'kx')
-                plt.text(p1[0],p1[1],'   p1')
+            # if debug:
+            #     plt.plot(p1[0],p1[1],'kx')
+            #     plt.text(p1[0],p1[1],'   p1')
 
             # Intersection at the left side of center-way
             p3, type = offsetPolylineIntersection(centerWay.polyline,leftWay.polyline,centerWay.leftW,-leftWay.rightW,True,0.1)
@@ -290,9 +290,9 @@ class Intersection():
                 # outIsect += 1
                 print('out')
                 continue
-            if debug:
-                plt.plot(p3[0],p3[1],'kx')
-                plt.text(p3[0],p3[1],'   p3')
+            # if debug:
+            #     plt.plot(p3[0],p3[1],'kx')
+            #     plt.text(p3[0],p3[1],'   p3')
 
             # Project these onto the centerline of the out-way and create intermediate
             # polygon point <p2>.# _,tP1 = centerWay.polyline.orthoProj(p1)
@@ -307,9 +307,9 @@ class Intersection():
                 p2 = centerWay.polyline.offsetPointAt(tP1,centerWay.leftW)
                 t0 = tP1
                 wayConnectors[Id] = len(area)
-            if debug:
-                plt.plot(p2[0],p2[1],'kx')
-                plt.text(p2[0],p2[1],'   p2')
+            # if debug:
+            #     plt.plot(p2[0],p2[1],'kx')
+            #     plt.text(p2[0],p2[1],'   p2')
 
             if centerWay.fwd:
                 centerWay.section.trimS = max(centerWay.section.trimS, t0)
@@ -332,10 +332,10 @@ class Intersection():
                 area.extend([p1,p3])
             else:
                 area.extend([p1,p2,p3])
-            if debug:
-                plotLine([p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3],True,'m')
-                plotPolygon([p1,p2,p3],True,'r')
-                plotEnd()
+            # if debug:
+            #     plotLine([p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3],True,'m')
+            #     plotPolygon([p1,p2,p3],True,'r')
+            #     plotEnd()
         test = (area[0]-area[-1]).length < 0.001
         area = area[:-1] if (area[0]-area[-1]).length < 0.001 else area
         # plotPolygon(area,True,'r')
