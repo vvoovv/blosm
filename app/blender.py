@@ -236,9 +236,11 @@ class BlenderApp(BaseApp):
             
             self.setAssetPackagePaths()
             
-            self.assetStore = AssetStore(self.assetInfoFilepath)
-            if self.preferMesh and not self.assetStore.hasMesh:
-                self.preferMesh = False
+            if self.buildings:
+                self.assetStore = AssetStore(self.assetInfoFilepath)
+            
+                if self.preferMesh and not self.assetStore.hasMesh:
+                    self.preferMesh = False
         
         if self.mode == BaseApp.twoD and self.gnSetup2d != '-':
             filepath = os.path.realpath(
