@@ -472,7 +472,8 @@ class StreetGenerator():
                 # This is not really correct, but how to decide in the other cases?
                 way1 = self.waySections[outSections[0].sectionId]
                 way2 = self.waySections[outSections[1].sectionId]
-                hasTurns = bool( re.search(r'[^N]', way1.lanePatterns[0]+way2.lanePatterns[0]) )
+                widerWay = way1 if way1.totalLanes > way2.totalLanes else way2
+                hasTurns = bool( re.search(r'[^N]', widerWay.lanePatterns[0] ) )
                 if hasTurns:
                     wayIDs, laneL, laneR = createSideLaneData(node,way1,way2)
                     sideLane = TransitionSideLane()
