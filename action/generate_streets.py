@@ -352,6 +352,7 @@ class StreetGenerator():
         self.longClusterWays = []
         self.processedNodes = set()
         self.waysCoveredByCluster = []
+        self.areaIndex = None
 
     def do(self, manager):
         self.wayManager = manager
@@ -370,7 +371,10 @@ class StreetGenerator():
         self.createTransitionLanes()
         self.createIntersectionAreas()
         self.mergeOverlappingIntersections()
+        self.mergeOverlapsBySymLanesAndIntersections()
         self.createOutput()
+        # missing = [idx for idx in set(abs(idx) for t in manager.transitionSymLanes for idx in t.connectors) if idx not in manager.waySectionLines]
+        # print(missing)
         # plotPureNetwork(self.sectionNetwork)
 
         # self.detectWayClusters()
@@ -1460,21 +1464,18 @@ class StreetGenerator():
                 self.intersections[node] = intersection
 
                 # TODO: Handle cleaned ways, when at border of scene
+                if shortWays:
+                    for way in shortWays:
+                        way.section.isValid = False
 
                 # if shortWays:
                 #     from osmPlot import plotWay, plotNode, plotEnd
-                #     for way in intersection.outWays:
-                #         plotWay(way.polyline,way.leftW,way.rightW,'k',1)
+                #     # for way in intersection.outWays:
+                #     #     plotWay(way.polyline,way.leftW,way.rightW,'k',1)
                 #     for way in shortWays:
                 #         plotWay(way.polyline,way.leftW,way.rightW,'c',3)
                 #     plotNode(node, 'c', 5)
-                #     plotEnd()
-
-        # Create Intersections from conflicting nodes
-        # for cluster in shortWayEndNodes:
-        #     intersection = Intersection(cluster, self.sectionNetwork, self.waySections)
-        #     test=1
-        #     self.intersections[intersection.position.freeze()] = intersection
+                #     # plotEnd()
 
         node2isectArea = dict()
         # Now, the normal intersection areas are constructed
@@ -1586,7 +1587,7 @@ class StreetGenerator():
 
     def mergeOverlappingIntersections(self):
         # Create spatial index for intersection areas to find overlapping areas faster
-        areaIndex = StaticSpatialIndex()
+        self.areaIndex = StaticSpatialIndex()
         areaIndx2Indx = dict()    # Dictionary from index to Id
         boxes = dict()      # Bounding boxes of way-sections
         for Id, area in enumerate(self.intersectionAreas):
@@ -1595,23 +1596,23 @@ class StreetGenerator():
             max_x = max(v[0] for v in area.polygon)
             max_y = max(v[1] for v in area.polygon)
             bbox = BBox(None,min_x,min_y,max_x,max_y)
-            index = areaIndex.add(min_x,min_y,max_x,max_y)
+            index = self.areaIndex.add(min_x,min_y,max_x,max_y)
             areaIndx2Indx[index] = Id
             bbox.index = index
             boxes[Id] = (min_x,min_y,max_x,max_y)
-        areaIndex.finish()
+        self.areaIndex.finish()
 
         # Check intersection areas for overlap
         overlappingAreas = DisjointSets()
         for indx in range(len(self.intersectionAreas)):
             results = stack = []
-            overlapIndxs = areaIndex.query(*boxes[indx],results,stack)
+            overlapIndxs = self.areaIndex.query(*boxes[indx],results,stack)
             if overlapIndxs:
                 area1 = self.intersectionAreas[indx]
                 for overlapIndx in overlapIndxs:
                     if overlapIndx != indx:
                         area2 = self.intersectionAreas[overlapIndx]
-                        # area1 and area2 have overlapping boxes, check if they reall overlap
+                        # area1 and area2 have overlapping boxes, check if they really overlap
                         overlap = boolPolyOp(area1.polygon,area2.polygon, 'intersection')
                         if (overlap):
                             overlappingAreas.addSegment(indx,overlapIndx)
@@ -1619,50 +1620,71 @@ class StreetGenerator():
         # Merge overlapping areas
         self.mergeConflictingAreas(overlappingAreas)
 
+    def mergeOverlapsBySymLanesAndIntersections(self):
+        # Special case: Did transition sym lanes overlap intersections?
+        mergedAreas = []
+        mergedAreaIDs = []
+        lanesToRemove = []
+        
+        for node,lane in self.internalTransitionSymLanes.items():
+            min_x = min(v[0] for v in lane.polygon)
+            min_y = min(v[1] for v in lane.polygon)
+            max_x = max(v[0] for v in lane.polygon)
+            max_y = max(v[1] for v in lane.polygon)
+            results = []
+            stack= []
+
+            # Check for overlap with an intersection area (using already existing index)
+            areaIDs = self.areaIndex.query(min_x, min_y, max_x, max_y, results, stack)
+            for areaID in areaIDs: # Should be only one
+                areaPoly = self.intersectionAreas[areaID].polygon
+                lanePoly = lane.polygon
+                overlap = boolPolyOp(lanePoly, areaPoly, 'intersection')
+
+                # If there is an overlap, we merge the sym lane to the intersection area,
+                # remove it and also invalidate the way that connects both
+                if overlap:
+                    # Merge sym lane to the intersection area
+                    try:
+                        ret = boolPolyOp(areaPoly,lanePoly,'union')
+                        mergedPoly = ret[0]
+                    except:
+                        print('Problem')
+                        break
+
+                    # mergedPoly must be ordered counter-clockwise.
+                    area = sum( (p2[0]-p1[0])*(p2[1]+p1[1]) for p1,p2 in zip(mergedPoly,mergedPoly[1:]+[mergedPoly[0]]))
+                    if area > 0.:
+                        mergedPoly.reverse()
+
+                    # Get original connectors with vertices
+                    connectorIDs = dict()
+                    connectorIDs.update( {id:lanePoly[val] for id,val in lane.connectors.items()} )
+                    connectorIDs.update( {id:areaPoly[val] for id,val in self.intersectionAreas[areaID].connectors.items()} )
+                    # Find duplicate connectors, which have to be removed.
+                    seenIDs = set()
+                    dupIDs = [x for x in connectorIDs if abs(x) in seenIDs or seenIDs.add(abs(x))]
+
+                    # Create new connector for merged area
+                    newConnectors = dict()
+                    for signedKey,vertex in connectorIDs.items():
+                        key = abs(signedKey)
+                        # Keep only connectors that don't have duplicate IDs and have a vertex in the merged area
+                        if key not in dupIDs:
+                            if vertex in mergedPoly:
+                                newConnectors[signedKey] = mergedPoly.index(vertex)
+
+                    # Update the intersection area
+                    self.intersectionAreas[areaID].polygon = mergedPoly
+                    self.intersectionAreas[areaID].connectors = newConnectors
+
+                    # Remove this sym lane
+                    lanesToRemove.append(node)
+
+        for node in lanesToRemove: # remove overlapping TransitionSymLane
+            self.internalTransitionSymLanes.pop(node, None)    
+
     def createOutput(self):
-        # # Find overlapping areas using collision detection. 
-        # # First create static spatial index for these areas
-        # areaIndex = StaticSpatialIndex()
-        # areaIndx2Indx = dict()
-        # boxes = dict()
-        # for indx,area in enumerate(self.intersectionAreas):
-        #     min_x = min(v[0] for v in area.polygon)
-        #     min_y = min(v[1] for v in area.polygon)
-        #     max_x = max(v[0] for v in area.polygon)
-        #     max_y = max(v[1] for v in area.polygon)
-        #     bbox = BBox(None,min_x,min_y,max_x,max_y)
-        #     index = areaIndex.add(min_x,min_y,max_x,max_y)
-        #     areaIndx2Indx[index] = indx
-        #     bbox.index = index
-        #     boxes[indx] = (min_x,min_y,max_x,max_y)
-        # areaIndex.finish()
-
-        # # Check all areas for collisions
-        # collidingAreas = DisjointSets()
-        # for indx in range(len(self.intersectionAreas)):
-        #     results = stack = []
-        #     neighborIndxs = areaIndex.query(*boxes[indx],results,stack)
-        #     if neighborIndxs:
-        #         poly1 = self.intersectionAreas[indx]
-        #         clipper = LinePolygonClipper(poly1.polygon)
-        #         for neighIndx in neighborIndxs:
-        #             if neighIndx != indx:
-        #                 poly2 = self.intersectionAreas[neighIndx]
-        #                 fragments, totalLength, nrOfON = clipper.clipLine(poly2.polygon + [poly2.polygon[0]])
-        #                 if fragments:
-        #                     collidingAreas.addSegment(indx,neighIndx)
-        #                 # opres = boolPolyOp(poly1.polygon,poly2.polygon, 'intersection')
-        #                 # if boolPolyOp(poly1.polygon,poly2.polygon,'intersection'):#polyCollision(poly1.polygon,poly2.polygon):
-        #                 #     collidingAreas.addSegment(indx,neighIndx)
-        #                 #     # opres = boolPolyOp(poly1.polygon,poly2.polygon,'intersection')
-        #                 test=1
-
-        # for colliding in collidingAreas:
-        #     for i in colliding:
-        #         plotPolygon(self.intersectionAreas[i].polygon,'c',3,False,False,True,0.9,999)
-        #         print('had overlaps')
-        #     # plotEnd()
-
         # Finally, the StreetSections of the ways are constructed
         for section in self.waySections.values():
             if not section.isValid:
