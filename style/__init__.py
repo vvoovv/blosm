@@ -1,6 +1,8 @@
 import os, math
 
 from grammar import *
+from grammar.building import *
+from grammar.street import * 
 from grammar.scope import PerBuilding, PerFootprint
 from grammar import units, symmetry, smoothness
 from grammar.value import Value, FromAttr, FromBldgAttr, Alternatives, Conditional, FromStyleBlockAttr, Constant
@@ -17,7 +19,7 @@ minWidthForOpenings = 1.
 
 class StyleStore:
     
-    def __init__(self, app, styles=None):
+    def __init__(self, pmlFilepath, assetsDir, styles=None):
         # None is returned by getStyle(..) in a setup script if the building is to be skipped for rendering
         self.styles = {None: None}
         # overwrite an entry with the given key in <self.styles> if the key already exists in <self.styles>
@@ -25,8 +27,8 @@ class StyleStore:
         
         if styles:
             self.addStyles(styles)
-        elif app.pmlFilepath:
-            self.loadFromFile(app.pmlFilepath, app.assetsDir)
+        elif pmlFilepath:
+            self.loadFromFile(pmlFilepath, assetsDir)
     
     def addStyles(self, styles):
         for styleName in styles:

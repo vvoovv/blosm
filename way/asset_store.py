@@ -12,7 +12,7 @@ class AssetPart:
     sidewalk = "sidewalk"
     crosswalk = "crosswalk"
     pavement = "pavement"
-    ground = "ground"
+    vegetation = "vegetation"
     side_lane_transition = "side_lane_transition"
 
 _parts = [_part for _part in dir(AssetPart) if not _part.startswith('__')]

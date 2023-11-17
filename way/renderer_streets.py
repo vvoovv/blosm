@@ -24,8 +24,9 @@ cslWidth = crosswalkWidth + stopLineWidth
 
 class StreetRenderer:
     
-    def __init__(self, app):
+    def __init__(self, app, styleStore):
         self.app = app
+        self.styleStore = styleStore
         
         self.assetsDir = app.assetsDir
         self.assetPackageDir = app.assetPackageDir
@@ -363,11 +364,12 @@ class StreetRenderer:
         m["Input_2"] = offset
         m["Input_3"] = width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, None, AssetPart.ground, "default")
+        self.setMaterial(m, "Input_5", AssetType.material, None, AssetPart.vegetation, "default")
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
     
     def setModifierSidewalk(self, obj, offset, width):
+        return
         m = addGeometryNodesModifier(obj, self.gnSidewalk, "Sidewalk")
         m["Input_3"] = offset
         m["Input_4"] = width
@@ -985,7 +987,7 @@ class TerrainPatchesRenderer:
         
         # apply the modifier <self.gnPolygons>
         m = addGeometryNodesModifier(obj, streetRenderer.gnPolygons, "Material for terrain patches")
-        streetRenderer.setMaterial(m, "Input_2", AssetType.material, None, AssetPart.ground, "grass")
+        streetRenderer.setMaterial(m, "Input_2", AssetType.material, None, AssetPart.vegetation, "grass")
         
         terrainObj = streetRenderer.getTerrainObj()
         if terrainObj:

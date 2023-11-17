@@ -132,7 +132,12 @@ class BaseApp:
         pmlFilepath = os.path.join(assetPackageDir, "style/building/main.pml")
         if not os.path.isfile(pmlFilepath):
             raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
-        self.pmlFilepath = pmlFilepath
+        self.pmlFilepathBuilding = pmlFilepath
+        
+        pmlFilepath = os.path.join(assetPackageDir, "style/street/main.pml")
+        if not os.path.isfile(pmlFilepath):
+            raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
+        self.pmlFilepathStreet = pmlFilepath
         
         if self.buildings:
             assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/building.json")

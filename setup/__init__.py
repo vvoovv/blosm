@@ -206,7 +206,7 @@ class SetupBlender(Setup):
         
         buildingRenderer = BuildingRendererNew(
             self.app,
-            StyleStore(self.app, styles=None),
+            StyleStore(self.app.pmlFilepathBuilding, self.app.assetsDir, styles=None),
             itemRenderers,
             getStyle=getStyle
         )

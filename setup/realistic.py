@@ -23,9 +23,19 @@ def setup(app, osm):
         wayManager = setup.getWayManager()
         if app.highways or app.railways:
             from action.generate_streets import StreetGenerator
+            from action.generate_items import ItemGenerator
             from way.renderer_streets import StreetRenderer
+            from style import StyleStore
+            
             wayManager.addAction(StreetGenerator())
-            wayManager.addRenderer(StreetRenderer(app))
+            wayManager.addAction(ItemGenerator())
+            
+            wayManager.addRenderer(
+                StreetRenderer(
+                    app,
+                    StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
+                )
+            )
     
         if app.highways:
             setup.roadsAndPaths()
@@ -37,7 +47,7 @@ def setup(app, osm):
         setup_forests(app, osm)
     
     if app.buildings:
-        setup.buildingsRealistic(getStyle=getStyle)
+        setup.buildingsRealistic(getStyle=getStyleBuilding)
         
         setup.detectFeatures(simplifyPolygons=True)
         
@@ -45,7 +55,7 @@ def setup(app, osm):
             setup.classifyFacades()
 
 
-def getStyle(building, app):
+def getStyleBuilding(building, app):
     #return "mid rise apartments zaandam"
     #return "high rise mirrored glass"
     buildingTag = building["building"]
@@ -73,3 +83,7 @@ def getStyle(building, app):
         return "single family house"
     
     return "high rise"
+
+
+def getStyleStreet():
+    return
