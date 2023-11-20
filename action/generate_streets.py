@@ -369,6 +369,10 @@ class StreetGenerator():
         self.createWaySectionNetwork()
         self.createWaySections()
         self.createTransitionLanes()
+
+        self.detectWayClusters()
+        self.createLongClusterWays()
+
         self.createIntersectionAreas()
         self.mergeOverlappingIntersections()
         self.mergeOverlapsBySymLanesAndIntersections()
@@ -496,10 +500,10 @@ class StreetGenerator():
     def detectWayClusters(self):
         # Create spatial index (R-tree) of way sections
         spatialIndex = StaticSpatialIndex()
-        spatialIndx2wayId = dict()    # Dictionary from index to Id
-        boxes = dict()      # Bounding boxes of way-sections
+        spatialIndx2wayId = dict()  # Dictionary from index to Id
+        boxes = dict()              # Bounding boxes of way-sections
         for Id, section in self.waySections.items():
-            # exclusions by some criteria
+            # exclude by some criteria
             if isEdgy(section.polyline): continue
             if section.polyline.length() < min(minTemplateLength,minNeighborLength):
                 continue
@@ -516,7 +520,7 @@ class StreetGenerator():
         spatialIndex.finish()
 
         self.waysForClusters = DisjointSets()
-        # Use every way-section, that has been inserted into spatial index 
+        # Use every way-section, that has been inserted into spatial index, 
         # as template and create a buffer around it.
         for Id, section in ((Id, section) for Id, section in self.waySections.items() if Id in boxes):
             # The template must have a minimum length.
@@ -528,35 +532,37 @@ class StreetGenerator():
                 # Create line clipper with this polygon.
                 clipper = LinePolygonClipper(bufferPoly.verts)
 
-                # Get neighbors of template way from static spatial index with its
-                # bounding box, expanded by the buffer width.
+                # Get neighbors of template way with its bounding box, expanded 
+                # by the buffer width, from static spatial index .
                 min_x,min_y,max_x,max_y = boxes[Id]
                 results = stack = []
                 neighbors = spatialIndex.query(min_x-bufferWidth,min_y-bufferWidth,
                                                max_x+bufferWidth,max_y+bufferWidth,results,stack)
 
-                # Now test all neighbors of the template for parallelism
+                # Now test all these neighbors of the template for parallelism
                 for neigborIndx in neighbors:
                     neighborID = spatialIndx2wayId[neigborIndx]
-                    # The template is its own neighbor
-                    if neighborID == Id: continue
+
+                    if neighborID == Id:
+                        continue # Skip, the template is its own neighbor
 
                     # Check in table if pairing as cluster is allowed
                     neighborCategory = self.waySections[neighborID].originalSection.category
                     if not canPair[section.originalSection.category][neighborCategory]: continue
 
-                    # Polyline of this neighbor ...
+                    # If the polyline of this neighbor ...
                     neighborLine = self.waySections[neighborID].polyline
 
-                    # ... must be longer than minimal length ...
+                    # ... is longer than a minimal length, ...
                     if neighborLine.length() > minNeighborLength:
-                        # ... then clip it with buffer polygon
+                        # ... then clip it with the buffer polygon
                         inLine, inLineLength, nrOfON = clipper.clipLine(neighborLine.verts)
 
-                        if inLineLength < 0.1: continue # discard short inside lines
+                        if inLineLength < 0.1:
+                            continue # discard short inside lines
 
-                        # To check the quality of parallelism, the "slope" relative to the template's
-                        # line is evaluated.
+                        # To check the quality of parallelism, some kind of "slope" relative 
+                        # to the template's line is evaluated.
                         p1, d1 = section.polyline.distTo(inLine[0][0])     # distance to start of inLine
                         p2, d2 = section.polyline.distTo(inLine[-1][-1])   # distance to end of inLine
                         p_dist = (p2-p1).length
@@ -571,12 +577,12 @@ class StreetGenerator():
 
     def createLongClusterWays(self):
         for cIndx,wayIndxs in enumerate(self.waysForClusters):
-            # Get the sections included in this cluster
+            # Get the sections that belong to this cluster from the disjoint set.
             sections = [self.waySections[Id] for Id in wayIndxs]
 
-            # Find their endpoints (ends of the cluster)
-            # Note: Clusters may have common endpoints,
-            # which are not yet detected here.
+            # Find their endpoints (which are ends of the cluster)
+            # Note: way sections in a cluster may have common endpoints,
+            # these are not yet detected here.
             sectionEnds = defaultdict(list)
             for i,section in enumerate(sections):
                 s,t = section.originalSection.s, section.originalSection.t
@@ -586,35 +592,40 @@ class StreetGenerator():
                 # direction vectors at start and end. The latter will be used to detect common endpoints.
                 sectionEnds[s].append({'ID':Id,'start':s,'end':t,'verts':section.polyline.verts,      'startV':sV,'endV':-tV})
                 sectionEnds[t].append({'ID':Id,'start':t,'end':s,'verts':section.polyline.verts[::-1],'startV':tV,'endV':-sV})
+            # Entries in this dictionary, that have only one element (either start 's' or end 't' vertex of the
+            # segment), are endpoints of the cluster.
             clusterEnds = [k for k, v in sectionEnds.items() if len(v) == 1]
 
             if not clusterEnds:
-                continue
+                continue 
 
-            # Connect the segments to polylines for long clusters. Collect the section IDs
-            # and the intersections along these lines spearately in the same order.
+            # What follows now is quite complicated. We try to connect the way sections, that belong to a cluster,
+            # to lines, that may go through intersections along them.
             endpoints = clusterEnds.copy()
             lines = []
             intersectionsAll = []
             sectionsIDsAll = []
             inClusterIsects = []
             while endpoints:
-                ep = endpoints.pop()
                 line = []
                 intersectionsThis = []
-                sectionsIDs = []
-                currSec = sectionEnds[ep][0]
+                sectionsIDs = []                # Id's of the sections that belong to a line
+                # Take an endpoint <ep> of the cluster and try to follow a line along its sections.
+                ep = endpoints.pop()            # Endpoint to start with
+                currSec = sectionEnds[ep][0]    # Section it belongs to
                 while True:
-                    line.extend(currSec['verts'][:-1])  # The end of this section will be the start of the next section.
+                    # The reverted vertices of the current sections are part of the line.
+                    line.extend(currSec['verts'][:-1])  
                     sectionsIDs.append(currSec['ID'])
-                    end = currSec['end']
-                    if len(sectionEnds[end]) == 2:
+                    end = currSec['end'] # The end of this section may be the start of a next section ...
+                    if len(sectionEnds[end]) == 2: # ... if there are two common vertices in the dictionary ...
+                        # we have (maybe) such a new section
                         newSec = [sec for sec in sectionEnds[end] if sec['end'] != currSec['start']][0]
                         if currSec['endV'].dot(newSec['startV']) < 0.:
-                            # We have a common endpoint here that does not exist in <endpoints>.
-                            # We end the current line here and start a new one, that continues.
+                            # Does the new section point backwards?
+                            # Then we have a common endpoint here that does not exist in <endpoints>.
+                            # We end the current line here and start a new one (backwards).
                             # But remember this point as an additional possible cluster endpoint.
-                            # sectionsIDs.append(currSec['ID'])
                             intersectionsThis.append(currSec['end'])
                             line.append(end)
                             inClusterIsects.append(end)
@@ -637,7 +648,7 @@ class StreetGenerator():
                 intersectionsAll.append(intersectionsThis)
                 sectionsIDsAll.append(sectionsIDs)
 
-           # In the next step, in-cluster intersections are processed. As a first
+            # In the next step, in-cluster intersections are processed. As a first
             # measure, ways, that have such intersections on both sides are removed.
             if inClusterIsects:
                 toRemove = []
@@ -944,22 +955,22 @@ class StreetGenerator():
                             lineIndx = list(isect2line[node])[0]
                             if node in intersectionsAll[lineIndx]: intersectionsAll[lineIndx].remove(node)
 
-            longCluster = LongClusterWay(self)
-            for i in range(len(lines)):
-                longCluster.sectionIDs.append(sectionsIDsAll[i])
-                longCluster.intersections.append(intersectionsAll[i])
-                longCluster.polylines.append(lines[i])
-                longCluster.centerline = centerline
-                longCluster.clipped= clipped
+            # longCluster = LongClusterWay(self)
+            # for i in range(len(lines)):
+            #     longCluster.sectionIDs.append(sectionsIDsAll[i])
+            #     longCluster.intersections.append(intersectionsAll[i])
+            #     longCluster.polylines.append(lines[i])
+            #     longCluster.centerline = centerline
+            #     longCluster.clipped= clipped
 
-            for Id in self.waysCoveredByCluster:
-                self.waySections[Id].isValid = False
+            # for Id in self.waysCoveredByCluster:
+            #     self.waySections[Id].isValid = False
 
-            # Split the long cluster in smaller subclusters of class <SubCluster>,
-            # stored in the instance of <longCluster>.
-            longCluster.split()
+            # # Split the long cluster in smaller subclusters of class <SubCluster>,
+            # # stored in the instance of <longCluster>.
+            # longCluster.split()
 
-            self.longClusterWays.append(longCluster)
+            # self.longClusterWays.append(longCluster)
 
     def cleanCoveredWays(self):
         # This process removes all way-sections, that are by whatever reason
