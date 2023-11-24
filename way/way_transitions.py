@@ -12,6 +12,16 @@ def cycleTriples(iterable):
     p2 = islice(cycle(p2), len(iterable) - 1, None)
     return zip(p1,p2,p3)
 # ----------------------------------------------------------------
+# def printTags(way,typ=''):
+#     lanes = way.tags['lanes'] if 'lanes' in way.tags else 0
+#     forward = way.tags['lanes:forward'] if 'lanes:forward' in way.tags else 0
+#     backward = way.tags['lanes:backward'] if 'lanes:backward' in way.tags else 0
+#     turns = way.tags['turn:lanes'] if 'turn:lanes' in way.tags else ''
+#     turns_fwd = way.tags['turn:lanes:forward'] if 'turn:lanes:forward' in way.tags else ''
+#     turns_bwd = way.tags['turn:lanes:backward'] if 'turn:lanes:backward' in way.tags else ''
+#     patterns = way.lanePatterns
+#     print( '%s: L:%d F:%d B%d T:%s TF:%s TB:%s  P: %s\n' %(typ, int(lanes), int(forward), int(backward), (turns), (turns_fwd), (turns_bwd), patterns) )
+
 
 def createSideLaneData(node,way1,way2):
     preTurnWay, turnWay = (way1, way2) if way1.totalLanes < way2.totalLanes else (way2, way1)

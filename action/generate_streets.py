@@ -1726,21 +1726,25 @@ class StreetGenerator():
             #     # already treated as reason for conflicting areas
 
         for transition in self.internalTransitionSideLanes.values():
-            streetSection = self.waySectionLines[abs(transition.ways[0])]
-            if transition.ways[0] > 0:
-                streetSection.start = transition
-                transition.outgoing = streetSection
+            way1 = self.waySectionLines.get(abs(transition.ways[0]),None)
+            way2 = self.waySectionLines.get(abs(transition.ways[1]),None)
+            if not way1 or not way2:
+                continue
+            preTurnWay, turnWay = (way1, way2) if way1.totalLanes < way2.totalLanes else (way2, way1)
+
+            transition.incoming = preTurnWay
+            transition.outgoing = turnWay
+
+            if transition.ways[0]<0:
+                preTurnWay.start = transition
             else:
-                streetSection.end = transition
-                transition.incoming = streetSection
+                preTurnWay.end = transition
+
+            if transition.ways[0]<0:
+                turnWay.start = transition
+            else:
+                turnWay.end = transition
             
-            streetSection = self.waySectionLines[abs(transition.ways[1])]
-            if transition.ways[1] > 0:
-                streetSection.start = transition
-                transition.outgoing = streetSection
-            else:
-                streetSection.end = transition
-                transition.incoming = streetSection
             transition.totalLanesIncreased = transition.outgoing.totalLanes > transition.incoming.totalLanes
             self.transitionSideLanes.append(transition)
 
