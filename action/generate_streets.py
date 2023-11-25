@@ -370,8 +370,8 @@ class StreetGenerator():
         self.createWaySections()
         self.createTransitionLanes()
 
-        self.detectWayClusters()
-        self.createLongClusterWays()
+        # self.detectWayClusters()
+        # self.createLongClusterWays()
 
         self.createIntersectionAreas()
         self.mergeOverlappingIntersections()
@@ -1633,10 +1633,24 @@ class StreetGenerator():
 
     def mergeOverlapsBySymLanesAndIntersections(self):
         # Special case: Did transition sym lanes overlap intersections?
-        mergedAreas = []
-        mergedAreaIDs = []
         lanesToRemove = []
-        
+
+        # Recreate index of interesection areas, because there may have been merged        
+        self.areaIndex = StaticSpatialIndex()
+        areaIndx2Indx = dict()    # Dictionary from index to Id
+        boxes = dict()      # Bounding boxes of way-sections
+        for Id, area in enumerate(self.intersectionAreas):
+            min_x = min(v[0] for v in area.polygon)
+            min_y = min(v[1] for v in area.polygon)
+            max_x = max(v[0] for v in area.polygon)
+            max_y = max(v[1] for v in area.polygon)
+            bbox = BBox(None,min_x,min_y,max_x,max_y)
+            index = self.areaIndex.add(min_x,min_y,max_x,max_y)
+            areaIndx2Indx[index] = Id
+            bbox.index = index
+            boxes[Id] = (min_x,min_y,max_x,max_y)
+        self.areaIndex.finish()
+
         for node,lane in self.internalTransitionSymLanes.items():
             min_x = min(v[0] for v in lane.polygon)
             min_y = min(v[1] for v in lane.polygon)
@@ -1648,6 +1662,8 @@ class StreetGenerator():
             # Check for overlap with an intersection area (using already existing index)
             areaIDs = self.areaIndex.query(min_x, min_y, max_x, max_y, results, stack)
             for areaID in areaIDs: # Should be only one
+                if areaID >= len(self.intersectionAreas):
+                    continue
                 areaPoly = self.intersectionAreas[areaID].polygon
                 lanePoly = lane.polygon
                 overlap = boolPolyOp(lanePoly, areaPoly, 'intersection')
@@ -1758,10 +1774,10 @@ class StreetGenerator():
                         streetSection.end = transition
             self.transitionSymLanes.append(transition)
 
-        # for intersection in self.intersectionAreas:
-        #     for streetSectionIdx in intersection.connectors:
-        #         streetSection = self.waySectionLines[abs(streetSectionIdx)]
-        #         if streetSectionIdx > 0:
-        #             streetSection.start = intersection
-        #         else:
-        #             streetSection.end = intersection
+        for intersection in self.intersectionAreas:
+            for streetSectionIdx in intersection.connectors:
+                streetSection = self.waySectionLines[abs(streetSectionIdx)]
+                if streetSectionIdx > 0:
+                    streetSection.start = intersection
+                else:
+                    streetSection.end = intersection

@@ -37,10 +37,6 @@ class WaySection():
         self.offset = 0.            # When there is a turn lane, this is the distance to shift the centerline,
                                     # to make the widths left and right equal. (Blender likes symmetry!)
 
-        # self.forwardWidth = None
-        # self.backwardWidth = None
-        # self.offset = 0.
-
         # Trim values in a cluster
         self.trimStart = 0.
         self.trimEnd = 0.

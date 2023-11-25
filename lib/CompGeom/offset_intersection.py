@@ -25,7 +25,7 @@ def offsetIntersection(e0,e1,w0,w1,lim=1.e-3):
     e0u, e1u = -ev0/ev0.length, ev1/ev1.length
     # cross product is sine of angle between edge vectors
     if abs(e1u.cross(e0u)) < lim:
-        return Vector((0,0)), 'parallel'
+        return Vector((0,0)), 'parallel', False
     # unit normals of the edges
     n0,n1 = Vector((e0u[1],-e0u[0])), Vector((e1u[1],-e1u[0]))
     # width offset of <e1> when edges start at different positions
@@ -44,7 +44,9 @@ def offsetIntersection(e0,e1,w0,w1,lim=1.e-3):
     isect = e0[0] + n0w + ev0*u
     # Test if <isect> is out of normals at the upper end of the edges.
     valid = ccw(e0[1],e0[1]+n0,isect) and not ccw(e1[1],e1[1]+n1,isect)
-    return isect, 'valid' if valid else 'out'
+    isPos = u >= 0.
+    kind = 'valid' if valid else 'out'
+    return isect, kind, isPos
 
 def offsetPolylineIntersection(line0,line1,w0,w1,exitOnParallel=False,lim=1.e-3):
     # Find the intersection of a right polyline <line0>, offset by <w0> to the left, and
@@ -72,10 +74,24 @@ def offsetPolylineIntersection(line0,line1,w0,w1,exitOnParallel=False,lim=1.e-3)
     combinations = list(product(range(len(segs0)),range(len(segs1))))
     combinations = sorted(combinations,key=lambda x: sum(x))
     breakCond, contCond = (['valid','parallel'],['out']) if exitOnParallel else (['valid'],['out','parallel'])
-    for i0,i1 in combinations:
-        isect, kind = offsetIntersection(segs0[i0],segs1[i1],w0,w1,lim)
-        if kind in breakCond: break
-        if kind in contCond: continue
 
-    return isect, kind
+    isFirst = True 
+    result = (Vector((0,0)), '')
+    for i0,i1 in combinations:
+        isect, kind, isPos = offsetIntersection(segs0[i0],segs1[i1],w0,w1,lim) 
+        if kind in breakCond:
+            if isFirst: # Store the first intersection parameters
+                result = (isect, kind)
+                isFirst = False
+                if kind == 'parallel':
+                    break
+            if isPos:   # Overwrite result, if there is a better intersection than the first
+                result = (isect, kind)
+                break
+            continue
+        elif kind in contCond:
+            result = result if result[1] == 'valid' else (Vector((0,0)), kind)
+            continue
+
+    return result
 

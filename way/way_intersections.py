@@ -273,6 +273,9 @@ class Intersection():
 
             # Intersection at the left side of center-way
             p3, type = offsetPolylineIntersection(centerWay.polyline,leftWay.polyline,centerWay.leftW,-leftWay.rightW,True,0.1)
+            # if debug:
+            #     plt.plot(p3[0],p3[1],'rx',markersize=4)
+            #     plt.text(p3[0],p3[1],'   p3_first')
             if type == 'valid':
                 _,tP3 = centerWay.polyline.orthoProj(p3)
                 if tP3 < 0.:

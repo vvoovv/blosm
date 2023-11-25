@@ -39,6 +39,8 @@ def createSideLaneData(node,way1,way2):
     signOfPre = 1 if preTurnWay.originalSection.s == node else -1
     signOfTurn = 1 if turnWay.originalSection.s == node else -1
     wayIDs = (signOfPre*preTurnWay.id,signOfTurn*turnWay.id)
+    # printTags(preTurnWay,'pre')
+    # printTags(turnWay,'turn')
 
     # Determine turn types and offset
     if preTurnWay.isOneWay:

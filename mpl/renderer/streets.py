@@ -65,8 +65,11 @@ class StreetRenderer(Renderer):
                 center = sum(wideWay.centerline, Vector((0,0)))/len(wideWay.centerline)
                 plt.text(center[0],center[1],str(abs(sideLane.ways[1])),color='blue',fontsize=14,zorder=120)
 
-        for symLane in manager.transitionSymLanes:
+        for key,symLane in enumerate(manager.transitionSymLanes):
             plotPolygon(symLane.polygon,False,'green','green',2,True,0.5)
+            if self.debug:
+                c = sum(symLane.polygon,Vector((0,0)))/len(symLane.polygon)
+                plt.text(c[0],c[1],str(key),color='g',fontsize=18,zorder=130)
 
 
         for sectionNr,section_gn in manager.waySectionLines.items():
