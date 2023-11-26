@@ -105,10 +105,10 @@ class StreetSection(BaseWaySection):
         self.totalLanes  = 0
 
         # The offset from the centerline at the wider part of the street, when it has turn
-        # or a merge lanes. Zero  for all other streets.
+        # or a merge lanes. Zero for all other streets.
         self.offset = 0.
 
-        # True, if there is a transtion lane at left (laneL) or right (LaneR)
+        # True, if there is a transition lane at left (laneL) or right (LaneR)
         self.laneR = False
         self.laneL = False
 
@@ -374,8 +374,8 @@ class StreetGenerator():
         # self.createLongClusterWays()
 
         self.createIntersectionAreas()
-        self.mergeOverlappingIntersections()
-        self.mergeOverlapsBySymLanesAndIntersections()
+        # self.mergeOverlappingIntersections()
+        # self.mergeOverlapsBySymLanesAndIntersections()
         self.createOutput()
         # missing = [idx for idx in set(abs(idx) for t in manager.transitionSymLanes for idx in t.connectors) if idx not in manager.waySectionLines]
         # print(missing)
@@ -1469,28 +1469,27 @@ class StreetGenerator():
             if node not in nodesAlreadyProcessed:
                 intersection = Intersection(node, self.sectionNetwork, self.waySections)
 
-                shortWays = intersection.cleanShortWays(False)
                 if intersection.order <= 1:
                     continue
                 self.intersections[node] = intersection
 
-                # TODO: Handle cleaned ways, when at border of scene
-                if shortWays:
-                    for way in shortWays:
-                        way.section.isValid = False
-
-                # if shortWays:
-                #     from osmPlot import plotWay, plotNode, plotEnd
-                #     # for way in intersection.outWays:
-                #     #     plotWay(way.polyline,way.leftW,way.rightW,'k',1)
-                #     for way in shortWays:
-                #         plotWay(way.polyline,way.leftW,way.rightW,'c',3)
-                #     plotNode(node, 'c', 5)
-                #     # plotEnd()
 
         node2isectArea = dict()
         # Now, the normal intersection areas are constructed
         for node,intersection in self.intersections.items():
+
+            # # TODO treat somehow short ways, this here does not work
+            shortWays = intersection.cleanShortWays(False)
+            if shortWays:
+                for way in shortWays:
+                    way.section.isValid = False
+            #         polygon = way.polyline.buffer(way.leftW,-way.rightW)
+            #         isectArea = IntersectionArea()
+            #         isectArea.connectors = dict()
+            #         isectArea.polygon = polygon
+            #         self.intersectionAreas.append(isectArea)
+            #     continue
+
             if intersection.order > 2:
                 polygon = None
                 try:
@@ -1776,8 +1775,9 @@ class StreetGenerator():
 
         for intersection in self.intersectionAreas:
             for streetSectionIdx in intersection.connectors:
-                streetSection = self.waySectionLines[abs(streetSectionIdx)]
-                if streetSectionIdx > 0:
-                    streetSection.start = intersection
-                else:
-                    streetSection.end = intersection
+                if abs(streetSectionIdx) in self.waySectionLines:
+                    streetSection = self.waySectionLines[abs(streetSectionIdx)]
+                    if streetSectionIdx > 0:
+                        streetSection.start = intersection
+                    else:
+                        streetSection.end = intersection

@@ -34,8 +34,15 @@ class WaySection():
         self.fwdLaneL = False
         self.bwdLaneR = False
         self.bwdLaneL = False
-        self.offset = 0.            # When there is a turn lane, this is the distance to shift the centerline,
-                                    # to make the widths left and right equal. (Blender likes symmetry!)
+
+        # The reference for offset is the centerline of the section with the turn lane (which is
+        # always the outgoing section of the <TransitionSideLane>, even if the centerline
+        # points inwards). If the offset is negative, the curve is offset to the left
+        # relative to the supplied centerline. Otherwise, the curve is offset to the right.   
+        # signOfTurn is positive, if in outgoing direction of the turn way          
+        self.offset = 0.        
+        self.signOfTurn = 1    
+
 
         # Trim values in a cluster
         self.trimStart = 0.

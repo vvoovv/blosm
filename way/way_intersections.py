@@ -63,6 +63,7 @@ class OutgoingWay():
         # fwd:      Direction of the outgoing section. True, if same as original.
         self.section = section
         self.fwd = fwd
+        self.offset = self.section.offset if fwd else -self.section.offset
         self.polyline = section.polyline.clone()
         self.polyline.setView( PolyLine.fwd if fwd else PolyLine.rev)
         self.polygon = self.polyline.buffer(abs(self.leftW),abs(self.rightW))
@@ -70,15 +71,15 @@ class OutgoingWay():
 
     @property
     def leftW(self):
-        if self.section.offset != 0.:
-            return self.section.width/2 + self.section.offset
+        if self.offset != 0.:
+            return self.section.width/2 - self.offset
         else:
             return self.section.width/2
 
     @property
     def rightW(self):
-        if self.section.offset != 0.:
-            return -self.section.width/2 + self.section.offset
+        if self.offset != 0.:
+            return -self.section.width/2 - self.offset
         else:
             return -self.section.width/2
 
@@ -224,6 +225,7 @@ class Intersection():
         return shortWays
 
     def intersectionPoly(self,debug=False):
+
         wayConnectors = dict()
         area = []
         for rightWay,centerWay,leftWay in cycleTriples(self.outWays):
@@ -256,7 +258,7 @@ class Intersection():
                     tP1 = 0.
                     p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
             elif type == 'parallel':
-                transWidth = max(1.,abs(rightWay.leftW+centerWay.rightW)/transitionSlope)
+                transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(rightWay.leftW+centerWay.rightW)/transitionSlope) )
                 tP1 = centerWay.polyline.d2t(transWidth)
                 p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
             else: # out
@@ -282,7 +284,8 @@ class Intersection():
                     tP3 = 0.
                     p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.leftW)
             elif type == 'parallel':
-                transWidth =max(1.,abs(centerWay.leftW+leftWay.rightW)/transitionSlope)
+                # transWidth =max(1.,abs(centerWay.leftW+leftWay.rightW)/transitionSlope)
+                transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(centerWay.leftW+leftWay.rightW)/transitionSlope) )
                 tP3 = centerWay.polyline.d2t(transWidth)
                 p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.leftW)
             else: # out
@@ -341,13 +344,14 @@ class Intersection():
             #     plotEnd()
         test = (area[0]-area[-1]).length < 0.001
         area = area[:-1] if (area[0]-area[-1]).length < 0.001 else area
-        # plotPolygon(area,True,'r')
-        # for i,c in enumerate(wayConnectors.values()):
-        #     p = area[c]
-        #     plt.text(p[0],p[1],str(i),color = 'r',fontsize = 14)
-        # for way in self.outWays:
-        #     way.polyline.plot('k')
-        # plotEnd()
+        # if debug:
+        #     plotPolygon(area,True,'r')
+        #     for i,c in enumerate(wayConnectors.values()):
+        #         p = area[c]
+        #         plt.text(p[0],p[1],str(i),color = 'r',fontsize = 14)
+        #     for way in self.outWays:
+        #         way.polyline.plot('k')
+        #     plotEnd()
         return area, wayConnectors
 
 
