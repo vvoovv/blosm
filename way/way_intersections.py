@@ -257,6 +257,8 @@ class Intersection():
                 if tP1 < 0.:
                     tP1 = 0.
                     p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
+                elif isinstance(tP1,int):   # inter buffer point, reproject
+                    p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.rightW)
             elif type == 'parallel':
                 transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(rightWay.leftW+centerWay.rightW)/transitionSlope) )
                 tP1 = centerWay.polyline.d2t(transWidth)
@@ -282,6 +284,8 @@ class Intersection():
                 _,tP3 = centerWay.polyline.orthoProj(p3)
                 if tP3 < 0.:
                     tP3 = 0.
+                    p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.leftW)
+                elif isinstance(tP3,int):   # inter buffer point, reproject
                     p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.leftW)
             elif type == 'parallel':
                 # transWidth =max(1.,abs(centerWay.leftW+leftWay.rightW)/transitionSlope)
@@ -342,7 +346,6 @@ class Intersection():
             #     plotLine([p1,p2,p3] if p1!=p2 and p2!=p3 else [p1,p3],True,'m')
             #     plotPolygon([p1,p2,p3],True,'r')
             #     plotEnd()
-        test = (area[0]-area[-1]).length < 0.001
         area = area[:-1] if (area[0]-area[-1]).length < 0.001 else area
         # if debug:
         #     plotPolygon(area,True,'r')
