@@ -51,19 +51,17 @@ class StreetRenderer(Renderer):
                         break
 
         processedWaySections = set()     
-        for sideLane in manager.transitionSideLanes:
-            processedWaySections.update([abs(sideLane.ways[0]),abs(sideLane.ways[1])])
-            way1 = sideLane.incoming#manager.waySectionLines[abs(sideLane.ways[0])]
-            way2 = sideLane.outgoing#manager.waySectionLines[abs(sideLane.ways[1])]
-            if not ((way1.forwardLanes+way1.backwardLanes) < (way2.forwardLanes+way2.backwardLanes)):
-                test=1
+        for transition in manager.transitionSideLanes:
+            processedWaySections.update([abs(transition.ways[0]),abs(transition.ways[1])])
+            way1 = transition.incoming#manager.waySectionLines[abs(transition.ways[0])]
+            way2 = transition.outgoing#manager.waySectionLines[abs(transition.ways[1])]
             smallWay, wideWay = (way1, way2) if (way1.forwardLanes+way1.backwardLanes) < (way2.forwardLanes+way2.backwardLanes) else (way2, way1)
             plotSideLaneWay(smallWay,wideWay,'orange')
             if self.debug:
                 center = sum(smallWay.centerline, Vector((0,0)))/len(smallWay.centerline)
-                plt.text(center[0],center[1],str(abs(sideLane.ways[0])),color='blue',fontsize=14,zorder=120)
+                plt.text(center[0],center[1],str(abs(transition.ways[0])),color='blue',fontsize=14,zorder=120)
                 center = sum(wideWay.centerline, Vector((0,0)))/len(wideWay.centerline)
-                plt.text(center[0],center[1],str(abs(sideLane.ways[1])),color='blue',fontsize=14,zorder=120)
+                plt.text(center[0],center[1],str(abs(transition.ways[1])),color='blue',fontsize=14,zorder=120)
 
         for key,symLane in enumerate(manager.transitionSymLanes):
             plotPolygon(symLane.polygon,False,'green','green',2,True,0.5)
@@ -80,6 +78,8 @@ class StreetRenderer(Renderer):
                 center = sum(section_gn.centerline, Vector((0,0)))/len(section_gn.centerline)
                 plt.text(center[0],center[1],str(sectionNr),color='blue',fontsize=14,zorder=120)
             else:
+                center = sum(section_gn.centerline, Vector((0,0)))/len(section_gn.centerline)
+                plt.text(center[0],center[1],str(sectionNr),color='blue',fontsize=14,zorder=120)
                 plotWay(section_gn.centerline,False,'b',2.)
                 from lib.CompGeom.PolyLine import PolyLine
                 polyline = PolyLine(section_gn.centerline)
@@ -172,8 +172,9 @@ def plotSideLaneWay(smallWay,wideWay,color):
     from lib.CompGeom.PolyLine import PolyLine
     smallLine = PolyLine(smallWay.centerline)
     wideLine = PolyLine(wideWay.centerline)
-    # p = wideWay.centerline[-1]
-    # plt.plot(p[0],p[1],'ko',markersize=14)
+    smallLine.plotWithArrows('g',2)
+    wideLine.plotWithArrows('r',2)
+
     wideLine = wideLine.parallelOffset(-wideWay.offset)
     poly = wideLine.buffer(wideWay.width/2.,wideWay.width/2.)
     plotPolygon(poly,False,color,color,1.,True,0.3,120)

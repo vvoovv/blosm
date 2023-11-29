@@ -1751,14 +1751,16 @@ class StreetGenerator():
             transition.outgoing = turnWay
 
             if transition.ways[0]<0:
-                preTurnWay.start = transition
-            else:
                 preTurnWay.end = transition
-
-            if transition.ways[0]<0:
-                turnWay.start = transition
             else:
+                preTurnWay.start = transition
+
+            if transition.ways[1]<0:
                 turnWay.end = transition
+            else:
+                turnWay.start = transition
+
+
             
             transition.totalLanesIncreased = transition.outgoing.totalLanes > transition.incoming.totalLanes
             self.transitionSideLanes.append(transition)
