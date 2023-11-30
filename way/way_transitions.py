@@ -56,7 +56,8 @@ def createSideLaneData(node,way1,way2):
             # points inwards). If the offset is negative, the curve is offset to the left
             # relative to the supplied centerline. Otherwise, the curve is offset to the right.   
             # signOfTurn is positive, if in outgoing direction of the turn way          
-            turnWay.offset = turnWay.laneWidth/2.*signOfTurn*laneDir
+            nrTurnLanesFwd = max( len(fwdL), len(fwdR))  
+            turnWay.offset = turnWay.laneWidth/2. * signOfTurn * laneDir*nrTurnLanesFwd
     else: # two-ways
         # TODO case of merging lanes, as above?
         fwdL, fwdR = turnsFromPatterns(turnWay.lanePatterns[0],preTurnWay.lanePatterns[0])
@@ -72,8 +73,10 @@ def createSideLaneData(node,way1,way2):
             # always the outgoing section of the TransitionSideLane, even if the centerline
             # points inwards). If the offset is negative, the curve is offset to the left
             # relative to the supplied centerline. Otherwise, the curve is offset to the right.   
-            # signOfTurn is positive, if in outgoing direction of the turn way          
-            turnWay.offset = turnWay.laneWidth/2.*signOfTurn if laneR else -turnWay.laneWidth/2.*signOfTurn
+            # signOfTurn is positive, if in outgoing direction of the turn way 
+            nrTurnLanesFwd = max( len(fwdL), len(fwdR))  
+            nrTurnLanesBwd = max( len(bwdL), len(bwdR))        
+            turnWay.offset = turnWay.laneWidth/2. * signOfTurn * nrTurnLanesFwd if laneR else -turnWay.laneWidth/2. * signOfTurn * nrTurnLanesFwd
     return wayIDs, laneL, laneR
 
 def createSymLaneData(node,way1,way2):
