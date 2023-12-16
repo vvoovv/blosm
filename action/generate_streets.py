@@ -11,13 +11,18 @@ from way.way_properties import lanePattern, turnsFromPatterns, estimateWayWidths
 
 from way.way_cluster import LongClusterWay, createLeftTransition, createClippedEndArea, createRightTransition, \
                            createLeftIntersection, createRightIntersection, createShortClusterIntersection
-from way.way_intersections import Intersection
+# from way.way_intersections import Intersection
 from way.intersection_cluster import IntersectionCluster
 from way.overlap_handler import EndWayHandler
 from way.way_transitions import createSideLaneData, createSymLaneData
 from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
+
+from way.waymap.waymap import WayMap
+from way.waymap.nodes import *
+from way.waymap.sections import *
+
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
 from lib.CompGeom.algorithms import SCClipper, orderAsPolygon
@@ -344,6 +349,7 @@ class StreetGenerator():
         self.sectionNetwork = None
 
         # Internal use
+        self.waymap = WayMap()
         self.waySections = dict()
         self.internalTransitionSideLanes = dict()
         self.internalTransitionSymLanes = dict()
@@ -367,16 +373,17 @@ class StreetGenerator():
 
         self.findSelfIntersections()
         self.createWaySectionNetwork()
-        self.createWaySections()
-        self.createTransitionLanes()
+        self.createEmptyWaymap()
+        # self.createWaySections()
+        # self.createTransitionLanes()
 
         # self.detectWayClusters()
         # self.createLongClusterWays()
 
-        self.createIntersectionAreas()
+        # self.createIntersectionAreas()
         # self.mergeOverlappingIntersections()
         # self.mergeOverlapsBySymLanesAndIntersections()
-        self.createOutput()
+        # self.createOutput()
         # missing = [idx for idx in set(abs(idx) for t in manager.transitionSymLanes for idx in t.connectors) if idx not in manager.waySectionLines]
         # print(missing)
         # plotPureNetwork(self.sectionNetwork)
@@ -453,6 +460,26 @@ class StreetGenerator():
 
         # create way-section network
         wayManager.sectionNetwork = self.sectionNetwork = createSectionNetwork(wayManager.networkGraph,self.leftHandTraffic)
+
+    def createEmptyWaymap(self):
+        for net_section in self.sectionNetwork.iterAllForwardSegments():
+            if net_section.category != 'scene_border':
+                section = Section(net_section,self.sectionNetwork)
+
+                # Define lanes
+                isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
+                section.isOneWay = isOneWay
+                section.lanePatterns = (fwdPattern,bwdPattern)
+                section.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
+                section.forwardLanes = len(fwdPattern)
+                section.backwardLanes = len(bwdPattern)
+                section.bothLanes = bothLanes
+
+                # Add section, we do not yet know the type of the intersections
+                self.waymap.addStreetNode(Intersection(section.src))
+                self.waymap.addStreetNode(Intersection(section.dst))
+                self.waymap.addSection(section)
+        test=1
 
     def createWaySections(self):
         for net_section in self.sectionNetwork.iterAllForwardSegments():
