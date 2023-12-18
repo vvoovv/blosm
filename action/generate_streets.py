@@ -20,8 +20,7 @@ from defs.way_cluster_params import minTemplateLength, minNeighborLength, search
                                     canPair, dbScanDist, transitionSlope
 
 from way.waymap.waymap import WayMap
-from way.waymap.nodes import *
-from way.waymap.sections import *
+from way.items import *
 
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox

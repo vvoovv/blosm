@@ -2,7 +2,7 @@ from mathutils import Vector
 from itertools import tee
 
 import lib.blosm_networkx as nx
-from way.waymap.nodes.dummy_node import DummyNode
+from way.items.dummy_node import DummyNode
 
 class WayMap(nx.MultiDiGraph):
     ID = 0
@@ -99,13 +99,13 @@ class WayMap(nx.MultiDiGraph):
     # Create an iterator for all paths between nodes of a given class (e.g. Intersection).
     # The first node (of class nodeClass) is not included.
     # Parameters: 
-    #   nodeType: type of node at start and end of  a path.
+    #   nodeClasses: class or tuple of classes of nodes at start and end of  a path.
     # Returns:
     #   src: Location of the first node.
     #   sections: List of instances of the line section classes along path (path to last nodeClass included).
     #   nodes: List of instances of the lstreet node classes along path (last nodeClass included).
-    def pathBetweenNodesOfType(self,nodeClass):
-        srcIter, dstIter = tee(node for node, data in self.nodes(data=True) if isinstance(data.get('object',None),nodeClass) )
+    def pathBetweenNodesOfType(self,nodeClasses):
+        srcIter, dstIter = tee(node for node, data in self.nodes(data=True) if isinstance(data.get('object',None),nodeClasses) )
         for src in srcIter:
             for dst in dstIter:
                 if src != dst:
