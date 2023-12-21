@@ -39,6 +39,7 @@ def setup(app, osm):
     
         if app.highways:
             setup.roadsAndPaths()
+            setup.ptPlatforms()
         
         if app.railways:
             setup.railways()
