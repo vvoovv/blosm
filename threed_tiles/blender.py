@@ -57,10 +57,16 @@ class BlenderRenderer:
                 obj.select_set(True)
             self.joinObjects()
             
+            # set the origin of the resulting Blender object at <centerCoords>
+            _cursorLocation = bpy.context.scene.cursor.location.copy()
+            bpy.context.scene.cursor.location = centerCoords
+            bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+            bpy.context.scene.cursor.location = _cursorLocation
+            
             joinedObject = self.importedObjects[-1]
-            location = locationsAtNorthPole[-1]
-            location[2] -= heightOffset
-            joinedObject.matrix_local = Matrix.Translation(location) @ matrix
+            #location = locationsAtNorthPole[-1]
+            #location[2] -= heightOffset
+            joinedObject.matrix_local = matrix#Matrix.Translation(location) @ matrix
         else:
             for obj, location in zip(self.importedObjects, locationsAtNorthPole):
                 location[2] -= heightOffset
