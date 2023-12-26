@@ -14,7 +14,28 @@ searchDist = {
         "subway":        10., "light_rail":     10., "tram":       20., "funicular":     10., "monorail":     10., "other_railway": 10.,
 }
 
-canPair = {
+canPairDict = {
+    'motorway': {'motorway': True},
+    'trunk':    {'trunk': True},
+    'primary':  {'primary':True, 'secondary':True, 'rail':True, 'tram':True},
+    'primary_link': {'primary_link':True},
+    'secondary': {'secondary':True, 'tertiary':True, 'rail':True, 'tram':True},
+    'tertiary': {'tertiary':True, 'tram':True},
+    'tertiary_link': {'tertiary_link':True},
+    'unclassified': {'tram':True},
+    'footway': {'footway':True},
+    'cycleway': {'cycleway':True},
+    'cycleway': {'footway':True},
+    'rail': {'rail':True,'light_rail':True},
+    'tram': {'tram':True},
+}
+
+def canPair(src, dst):
+    if canPairDict.get(src,False):
+        return canPairDict.get(dst,False)
+    return False
+
+canPairOld = {
     "motorway": {
                     "motorway":       True, "motorway_link":  False, "trunk":      False, "trunk_link":    False, "primary":      False, "primary_link":  False,
                     "secondary":     False, "secondary_link": False, "tertiary":   False, "tertiary_link": False, "unclassified": False, "residential":   False, 

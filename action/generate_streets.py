@@ -376,6 +376,10 @@ class StreetGenerator():
         # self.createWaySections()
         # self.createTransitionLanes()
 
+        # plotPureNetwork(self.sectionNetwork)
+        self.createParallelSections()
+        # plotEnd()
+
         # self.detectWayClusters()
         # self.createLongClusterWays()
 
@@ -522,6 +526,91 @@ class StreetGenerator():
                     symLane.connectors = connectors
                     self.internalTransitionSymLanes[node] = symLane
 
+    def createParallelSections(self):
+        # Create spatial index (R-tree) of sections
+        candidateIndex = StaticSpatialIndex()
+        indx2SectionKey = dict()    # Dictionary from index to key, which is (src,dst)
+        boxes = dict()              # Bounding boxes of sections
+        # Add boxes of all sections
+        for src,dst, section in self.waymap.edges(data='object'):
+            # Some are excluded
+            if isEdgy(section.polyline): continue
+            if section.polyline.length() < min(minTemplateLength,minNeighborLength):
+                continue
+            min_x = min(v[0] for v in section.polyline.verts)
+            min_y = min(v[1] for v in section.polyline.verts)
+            max_x = max(v[0] for v in section.polyline.verts)
+            max_y = max(v[1] for v in section.polyline.verts)
+            bbox = BBox(None,min_x,min_y,max_x,max_y)
+            index = candidateIndex.add(min_x,min_y,max_x,max_y)
+            indx2SectionKey[index] = (src,dst)
+            bbox.index = index
+            boxes[(src,dst)] = (min_x,min_y,max_x,max_y)
+        candidateIndex.finish()
+
+        parallelSectionKeys = DisjointSets()
+        # Use every section, that has been inserted into the spatial index, 
+        # as template and create a buffer around it.
+        for src,dst, template in self.waymap.edges(data='object'):
+            if (src,dst) in boxes:
+                # Create buffer polygon with a width according to the category of the section.
+                bufferWidth = searchDist[template.category]
+                bufferPoly = template.polyline.buffer(bufferWidth,bufferWidth)
+
+                # Create a line clipper with this polygon.
+                clipper = LinePolygonClipper(bufferPoly.verts)
+
+                # Get neighbors of this template section using its bounding box, expanded 
+                # by the buffer width, from static spatial index .
+                min_x,min_y,max_x,max_y = boxes[(src,dst)]
+                results = stack = []
+                neighbors = candidateIndex.query(min_x-bufferWidth,min_y-bufferWidth,
+                                               max_x+bufferWidth,max_y+bufferWidth,results,stack)
+
+                # Now test all these neighbors of the template for parallelism
+                for neigborIndx in neighbors:
+                    srcNeigbor,dstNeigbor = indx2SectionKey[neigborIndx]
+                    if (srcNeigbor,dstNeigbor) == (src,dst):
+                        continue # Skip, the template is its own neighbor
+
+                    neighbor = self.waymap[srcNeigbor][dstNeigbor][0]['object'] # Multigraph ??!!??
+
+                    # Check in table if pairing as cluster is allowed
+                    if not canPair(template.category, neighbor.category):
+                        continue
+
+                    # If the polyline of this neighbor ...
+                    neighborLine = neighbor.polyline
+
+                    # ... is longer than a minimal length, ...
+                    if neighborLine.length() > minNeighborLength:
+                        # ... then clip it with the buffer polygon
+                        inLine, inLineLength, nrOfON = clipper.clipLine(neighborLine.verts)
+
+                        if inLineLength < 0.1:
+                            continue # discard short inside lines
+
+                        # To check the quality of parallelism, some kind of "slope" relative 
+                        # to the template's line is evaluated.
+                        p1, d1 = template.polyline.distTo(inLine[0][0])     # distance to start of inLine
+                        p2, d2 = template.polyline.distTo(inLine[-1][-1])   # distance to end of inLine
+                        p_dist = (p2-p1).length
+                        slope = abs(d1-d2)/p_dist if p_dist else 1.
+
+                        # Conditions for acceptable inside line.
+                        acceptCond = slope < 0.15 and min(d1,d2) <= bufferWidth and \
+                                     nrOfON <= 2 and inLineLength > bufferWidth/2
+                        if acceptCond:
+                            # Accept this pair as parallel.
+                            parallelSectionKeys.addSegment((src,dst),(srcNeigbor,dstNeigbor))
+
+        for cIndx,sectKeys in enumerate(parallelSectionKeys):
+            colors = ['r','g','b','y','m','c','k']
+            for src,dst in sectKeys:
+                section = self.waymap[src][dst][0]['object']
+                section.polyline.plot(colors[cIndx%7],3)
+
+        test=1
 
     def detectWayClusters(self):
         # Create spatial index (R-tree) of way sections
@@ -574,7 +663,7 @@ class StreetGenerator():
 
                     # Check in table if pairing as cluster is allowed
                     neighborCategory = self.waySections[neighborID].originalSection.category
-                    if not canPair[section.originalSection.category][neighborCategory]: continue
+                    if not canPair(section.originalSection.category,neighborCategory): continue
 
                     # If the polyline of this neighbor ...
                     neighborLine = self.waySections[neighborID].polyline
