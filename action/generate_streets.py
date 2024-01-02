@@ -317,7 +317,7 @@ def triples(iterable):
 def isEdgy(polyline):
     vu = polyline.unitVectors()
     for v1,v2 in pairs(vu):
-        if abs(v1.cross(v2)) > 0.65:
+        if abs(v1.cross(v2)) > 0.6:
             return True
     return False
 
@@ -349,6 +349,7 @@ class StreetGenerator():
 
         # Internal use
         self.waymap = WayMap()
+        self.parallelSectionKeys = None
         self.waySections = dict()
         self.internalTransitionSideLanes = dict()
         self.internalTransitionSymLanes = dict()
@@ -358,6 +359,8 @@ class StreetGenerator():
         self.processedNodes = set()
         self.waysCoveredByCluster = []
         self.areaIndex = None
+
+        self.allWays = True
 
     def do(self, manager):
         self.wayManager = manager
@@ -404,7 +407,11 @@ class StreetGenerator():
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
         uniqueSegments = defaultdict(set)
-        for way in self.wayManager.getAllVehicleWays():
+        if self.allWays: 
+            getWays = self.wayManager.getAllWays()
+        else:
+            getWays = self.wayManager.getAllVehicleWays()
+        for way in getWays:#self.wayManager.getAllWays():#getAllVehicleWays():
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
             for segment in way.segments:
@@ -434,7 +441,11 @@ class StreetGenerator():
 
         # some way tags to exclude, used also in createWaySectionNetwork(),
         # ExcludedWayTags is defined in <defs>.
-        for way in wayManager.getAllVehicleWays():
+        if self.allWays: 
+            getWays = self.wayManager.getAllWays()
+        else:
+            getWays = self.wayManager.getAllVehicleWays()
+        for way in getWays:#self.wayManager.getAllWays():#getAllVehicleWays():
             # Exclude ways with unwanted tags
             if [tag for tag in ExcludedWayTags if tag in way.category]:
                 continue
@@ -484,22 +495,22 @@ class StreetGenerator():
                 self.waymap.addSection(section)
         test=1
 
-    def createWaySections(self):
-        for net_section in self.sectionNetwork.iterAllForwardSegments():
-            if net_section.category != 'scene_border':
-                section = WaySection(net_section,self.sectionNetwork)
+    # def createWaySections(self):
+    #     for net_section in self.sectionNetwork.iterAllForwardSegments():
+    #         if net_section.category != 'scene_border':
+    #             section = WaySection(net_section,self.sectionNetwork)
 
-                # Find lanes and their widths
-                isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
-                section.isOneWay = isOneWay
-                section.lanePatterns = (fwdPattern,bwdPattern)
-                section.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
-                section.forwardLanes = len(fwdPattern)
-                section.backwardLanes = len(bwdPattern)
-                section.bothLanes = bothLanes
-                estimateWayWidths(section)
+    #             # Find lanes and their widths
+    #             isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
+    #             section.isOneWay = isOneWay
+    #             section.lanePatterns = (fwdPattern,bwdPattern)
+    #             section.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
+    #             section.forwardLanes = len(fwdPattern)
+    #             section.backwardLanes = len(bwdPattern)
+    #             section.bothLanes = bothLanes
+    #             estimateWayWidths(section)
 
-                self.waySections[net_section.sectionId] = section
+    #             self.waySections[net_section.sectionId] = section
 
     def createTransitionLanes(self):
         for i,node in enumerate(self.sectionNetwork):
@@ -529,12 +540,44 @@ class StreetGenerator():
     def createParallelSections(self):
         # Create spatial index (R-tree) of sections
         candidateIndex = StaticSpatialIndex()
-        indx2SectionKey = dict()    # Dictionary from index to key, which is (src,dst)
-        boxes = dict()              # Bounding boxes of sections
+        index2DictKey = dict()    # Dictionary from index to dictKey, which is (src,dst,multKey)
+        boxes = dict()            # Bounding boxes of sections
         # Add boxes of all sections
-        for src,dst, section in self.waymap.edges(data='object'):
+        for src, dst, multKey, section in self.waymap.edges(data='object',keys=True):
+            # multKey is 0,1,.. for multiple edges between equal nodes (waymap is a MultiDiGraph of networkx)
+            # It must be included in the dictionary entry key to distinguish them.
+            dictKey = (src,dst,multKey)
+
+            # # DEBUG Show section id
+            # from osmPlot import plt
+            # p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
+            # p0 = section.polyline[len(section.polyline)//2]
+            # L = section.polyline.length()
+            # plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
+            # # plt.text(p[0],p[1],' %4.2f'%(L))
+            # plt.text(p[0],p[1],'%3d'%(section.id))
+            # # # EDGY - TEST
+            # # ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
+            # # if ds < 1.0:
+            # #     plt.text(p[0],p[1],'%4.2f'%(ds))
+            # # if isEdgy(section.polyline):
+            # #     plt.text(p[0],p[1],'         %s'%('EDGY'),color='red')
+            # # # END EDGY - TEST
+            # # END DEBUG
+
             # Some are excluded
-            if isEdgy(section.polyline): continue
+            ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
+            if isEdgy(section.polyline) and ds < 0.9:
+                continue
+            # if isEdgy(section.polyline): 
+            #     vu = section.polyline.unitVectors()
+            #     sumv = sum((abs(v1.cross(v2)) for v1,v2 in pairs(vu)),0.)/len(section.polyline)
+            #     ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
+            #     # pt = sum((v for v in section.polyline), Vector((0,0)))/len(section.polyline)
+            #     # plt.plot(pt[0],pt[1],'ko')
+            #     # plt.text(pt[0],pt[1],'   %5.2f'%(ds) )
+            #     if ds < 0.95:
+            #         continue
             if section.polyline.length() < min(minTemplateLength,minNeighborLength):
                 continue
             min_x = min(v[0] for v in section.polyline.verts)
@@ -543,41 +586,43 @@ class StreetGenerator():
             max_y = max(v[1] for v in section.polyline.verts)
             bbox = BBox(None,min_x,min_y,max_x,max_y)
             index = candidateIndex.add(min_x,min_y,max_x,max_y)
-            indx2SectionKey[index] = (src,dst)
+            index2DictKey[index] = dictKey
             bbox.index = index
-            boxes[(src,dst)] = (min_x,min_y,max_x,max_y)
+            boxes[dictKey] = (min_x,min_y,max_x,max_y)
         candidateIndex.finish()
 
-        parallelSectionKeys = DisjointSets()
+        self.parallelSectionKeys = DisjointSets()
         # Use every section, that has been inserted into the spatial index, 
         # as template and create a buffer around it.
-        for src,dst, template in self.waymap.edges(data='object'):
-            if (src,dst) in boxes:
+        for src, dst, multKey, template in self.waymap.edges(data='object',keys=True):
+            # multKey is 0,1,.. for multiple edges between equal nodes (waymap is a MultiDiGraph of networkx)
+            # It must be included in the dictionary entry key to distinguish them.
+            dictKey = (src,dst,multKey)
+
+            if dictKey in boxes:
+
                 # Create buffer polygon with a width according to the category of the section.
                 bufferWidth = searchDist[template.category]
                 bufferPoly = template.polyline.buffer(bufferWidth,bufferWidth)
 
-                # Create a line clipper with this polygon.
+                # Create a line clipper using this polygon.
                 clipper = LinePolygonClipper(bufferPoly.verts)
 
-                # Get neighbors of this template section using its bounding box, expanded 
-                # by the buffer width, from static spatial index .
-                min_x,min_y,max_x,max_y = boxes[(src,dst)]
+                # Get neighbors of this template section from the static spatial index, using its
+                # bounding box, expanded by the buffer width as additionla search range.
+                min_x,min_y,max_x,max_y = boxes[dictKey]
                 results = stack = []
-                neighbors = candidateIndex.query(min_x-bufferWidth,min_y-bufferWidth,
+                neighborIndices = candidateIndex.query(min_x-bufferWidth,min_y-bufferWidth,
                                                max_x+bufferWidth,max_y+bufferWidth,results,stack)
 
-                # Now test all these neighbors of the template for parallelism
-                for neigborIndx in neighbors:
-                    srcNeigbor,dstNeigbor = indx2SectionKey[neigborIndx]
-                    if (srcNeigbor,dstNeigbor) == (src,dst):
-                        continue # Skip, the template is its own neighbor
+                # Now test all these neighbors of the template for parallelism.
+                for neigborIndex in neighborIndices:
+                    neighDictKey = index2DictKey[neigborIndex]
+                    if neighDictKey == dictKey:
+                        continue # Skip, the template is its own neighbor.
 
-                    neighbor = self.waymap[srcNeigbor][dstNeigbor][0]['object'] # Multigraph ??!!??
-
-                    # Check in table if pairing as cluster is allowed
-                    if not canPair(template.category, neighbor.category):
-                        continue
+                    srcNeigbor, dstNeigbor, neighMultKey = neighDictKey
+                    neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object'] # Section from multigraph edge
 
                     # If the polyline of this neighbor ...
                     neighborLine = neighbor.polyline
@@ -587,30 +632,48 @@ class StreetGenerator():
                         # ... then clip it with the buffer polygon
                         inLine, inLineLength, nrOfON = clipper.clipLine(neighborLine.verts)
 
-                        if inLineLength < 0.1:
-                            continue # discard short inside lines
+                        if inLineLength/neighborLine.length() < 0.1:
+                            continue # discard short inside lines. At least 10% must be inside.
 
                         # To check the quality of parallelism, some kind of "slope" relative 
                         # to the template's line is evaluated.
                         p1, d1 = template.polyline.distTo(inLine[0][0])     # distance to start of inLine
                         p2, d2 = template.polyline.distTo(inLine[-1][-1])   # distance to end of inLine
-                        p_dist = (p2-p1).length
-                        slope = abs(d1-d2)/p_dist if p_dist else 1.
-
+                        slope = abs(d1-d2)/inLineLength if inLineLength else 1.
+    
                         # Conditions for acceptable inside line.
-                        acceptCond = slope < 0.15 and min(d1,d2) <= bufferWidth and \
-                                     nrOfON <= 2 and inLineLength > bufferWidth/2
-                        if acceptCond:
+                        if slope < 0.15 and min(d1,d2) <= bufferWidth and nrOfON <= 2:
                             # Accept this pair as parallel.
-                            parallelSectionKeys.addSegment((src,dst),(srcNeigbor,dstNeigbor))
+                            self.parallelSectionKeys.addSegment((src,dst),(srcNeigbor,dstNeigbor))
 
-        for cIndx,sectKeys in enumerate(parallelSectionKeys):
-            colors = ['r','g','b','y','m','c','k']
-            for src,dst in sectKeys:
-                section = self.waymap[src][dst][0]['object']
-                section.polyline.plot(colors[cIndx%7],3)
-
-        test=1
+        # # DEBUG: Show clusters of parallel way-sections.
+        # from osmPlot import plt, randomColor, randomLineStyle, plotPureNetwork, plotEnd
+        # inPieces = False
+        # if not inPieces:
+        #     plotPureNetwork(self.sectionNetwork)
+        # colorIter = randomColor(10)
+        # styleIter = randomLineStyle(10)
+        # import numpy as np
+        # for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
+        #     if inPieces:
+        #         pass
+        #         plotPureNetwork(self.sectionNetwork)
+        #     color = next(colorIter)
+        #     for src,dst in sectKeys:
+        #         if inPieces:
+        #             color = next(colorIter)
+        #             section = self.waymap[src][dst][0]['object']
+        #             p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
+        #             p0 = section.polyline[len(section.polyline)//2]
+        #             plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
+        #             plt.text(p[0],p[1],'%3d'%(section.id))
+        #         style = 'solid'#next(styleIter)
+        #         section = self.waymap[src][dst][0]['object'].polyline.plot(color,2,style)
+        #     if inPieces:
+        #         plotEnd()
+        # if not inPieces:
+        #     plotEnd()
+        # # END DEBUG
 
     def detectWayClusters(self):
         # Create spatial index (R-tree) of way sections
