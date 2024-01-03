@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import sys
-from . import BaseApp
+from . import BaseApp, AppType
 from .asset_store import AssetStore
 
 if "bpy" in sys.modules:
@@ -118,6 +118,7 @@ class BlenderApp(BaseApp):
     voidSubstitution = 0
     
     def __init__(self):
+        self.type = AppType.blender
         super().__init__()
         
         # path to the top directory of the addon

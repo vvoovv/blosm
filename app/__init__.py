@@ -4,6 +4,11 @@ from urllib import request
 from building import BldgPolygon
 
 
+class AppType:
+    commandLine = 1
+    blender = 2
+
+
 class BaseApp:
     
     # app mode

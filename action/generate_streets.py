@@ -4,6 +4,8 @@ from statistics import median
 from mathutils import Vector
 import re
 
+from app import AppType
+
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
