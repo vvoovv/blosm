@@ -646,34 +646,32 @@ class StreetGenerator():
                             # Accept this pair as parallel.
                             self.parallelSectionKeys.addSegment((src,dst),(srcNeigbor,dstNeigbor))
 
-        # # DEBUG: Show clusters of parallel way-sections.
-        # from osmPlot import plt, randomColor, randomLineStyle, plotPureNetwork, plotEnd
-        # inPieces = False
-        # if not inPieces:
-        #     plotPureNetwork(self.sectionNetwork)
-        # colorIter = randomColor(10)
-        # styleIter = randomLineStyle(10)
-        # import numpy as np
-        # for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
-        #     if inPieces:
-        #         pass
-        #         plotPureNetwork(self.sectionNetwork)
-        #     color = next(colorIter)
-        #     for src,dst in sectKeys:
-        #         if inPieces:
-        #             color = next(colorIter)
-        #             section = self.waymap[src][dst][0]['object']
-        #             p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
-        #             p0 = section.polyline[len(section.polyline)//2]
-        #             plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
-        #             plt.text(p[0],p[1],'%3d'%(section.id))
-        #         style = 'solid'#next(styleIter)
-        #         section = self.waymap[src][dst][0]['object'].polyline.plot(color,2,style)
-        #     if inPieces:
-        #         plotEnd()
-        # if not inPieces:
-        #     plotEnd()
-        # # END DEBUG
+        # DEBUG: Show clusters of parallel way-sections.
+        # The plotting functions for this debug part are at the end of this module
+        inPieces = False
+        if not inPieces:
+            plotPureNetwork(self.sectionNetwork)
+        colorIter = randomColor(10)
+        import numpy as np
+        for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
+            if inPieces:
+                pass
+                plotPureNetwork(self.sectionNetwork)
+            color = next(colorIter)
+            for src,dst in sectKeys:
+                if inPieces:
+                    color = next(colorIter)
+                    section = self.waymap[src][dst][0]['object']
+                    p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
+                    p0 = section.polyline[len(section.polyline)//2]
+                    plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
+                    plt.text(p[0],p[1],'%3d'%(section.id))
+                section = self.waymap[src][dst][0]['object'].polyline.plot(color,2,'solid')
+            if inPieces:
+                plotEnd()
+        if not inPieces:
+            plotEnd()
+        # END DEBUG
 
     def detectWayClusters(self):
         # Create spatial index (R-tree) of way sections
@@ -1961,3 +1959,55 @@ class StreetGenerator():
                         streetSection.start = intersection
                     else:
                         streetSection.end = intersection
+
+# === debug plotting functions ================================================
+
+from matplotlib import pyplot as plt
+
+def plotPureNetwork(network,arrows=False,showIDs=False):
+    from itertools import tee
+    def pairs(iterable):
+        # s -> (s0,s1), (s1,s2), (s2, s3), ...
+        p1, p2 = tee(iterable)
+        next(p2, None)
+        return zip(p1,p2)
+
+    for count,seg in enumerate(network.iterAllSegments()):
+        color = 'g' if seg.category=='scene_border' else 'k'
+        if arrows:
+            width = 2
+            for v0,v1 in pairs(seg.path):
+                x = (v0[0]+v1[0])/2
+                y = (v0[1]+v1[1])/2
+                arrowprops=dict(color='r', width=width, shrink=0.05, headwidth=width*3, headlength=5*width)
+                plt.gca().annotate("", xy=(x,y), xytext=(v0[0],v0[1]),arrowprops=arrowprops)
+                plt.plot([v0[0],v1[0]],[v0[1],v1[1]],color=color, linewidth=width)
+        else:
+            plotLine(seg.path,False,color,1)
+        plt.plot(seg.s[0],seg.s[1],'k.')
+        plt.plot(seg.t[0],seg.t[1],'k.')
+        if showIDs:
+            c = sum(seg.path, Vector((0,0)))/len(seg.path)
+            plt.text(c[0],c[1],'  '+str(seg.sectionId) )
+            
+def plotLine(line,vertsOrder,lineColor='k',width=1.,order=100):
+    x = [n[0] for n in line]
+    y = [n[1] for n in line]
+    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
+    if vertsOrder:
+        for i,(xx,yy) in enumerate(zip(x,y)):
+            plt.text(xx,yy,str(i),fontsize=12)
+
+def randomColor(n, name='hsv'):
+    cmap = plt.cm.get_cmap(name, n)
+    cmapList = [ cmap(i) for i in range(n)]
+    import random
+    random.shuffle(cmapList)
+    i = 0
+    while True:
+        yield cmapList[i]
+        i = (i+1)%n
+
+def plotEnd():
+    plt.gca().axis('equal')
+    plt.show()
