@@ -129,7 +129,7 @@ smallRoads = (
 )
 
 # aAll roads used by motorized vehicles
-vecicleRoadsCategories = (
+vehicleRoadsCategories = (
     "motorway",
     "motorway_link",
     "trunk",
@@ -152,7 +152,7 @@ vecicleRoadsCategories = (
     "monorail",
     "other_railway",
 )
-vecicleRoadsCategoriesSet = set(vecicleRoadsCategories)
+vehicleRoadsCategoriesSet = set(vehicleRoadsCategories)
 
 
 class Category:

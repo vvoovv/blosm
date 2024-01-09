@@ -383,6 +383,7 @@ class StreetGenerator():
 
         # plotPureNetwork(self.sectionNetwork)
         self.createParallelSections()
+        self.detectIntersectionClusters()
         # plotEnd()
 
         # self.detectWayClusters()
@@ -480,22 +481,29 @@ class StreetGenerator():
     def createEmptyWaymap(self):
         for net_section in self.sectionNetwork.iterAllForwardSegments():
             if net_section.category != 'scene_border':
-                section = Section(net_section,self.sectionNetwork)
 
-                # Define lanes
+                section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
                 isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
-                section.isOneWay = isOneWay
-                section.lanePatterns = (fwdPattern,bwdPattern)
-                section.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
-                section.forwardLanes = len(fwdPattern)
-                section.backwardLanes = len(bwdPattern)
-                section.bothLanes = bothLanes
+                section.setlaneParams(isOneWay,fwdPattern,bwdPattern,bothLanes)
+                corners = section.polyline.getCorners(0.7)
+                if corners:
+                    corners.append(len(section.polyline)-1)
+                    self.waymap.addStreetNode(Intersection(section.src))
+                    lastCorner = 0
+                    for nextCorner in corners:
+                        splitline = PolyLine( section.polyline[lastCorner:nextCorner+1] )
+                        subsection = Section(net_section,splitline,self.sectionNetwork)
+                        self.waymap.addStreetNode(Corner(subsection.dst))
+                        self.waymap.addSection(subsection)
+                        lastCorner = nextCorner
+                    self.waymap.replaceStreetNodeBy(Intersection(subsection.dst))
+                else:
+                    # Add section, we do not yet know the type of the intersections
+                    self.waymap.addStreetNode(Intersection(section.src))
+                    self.waymap.addStreetNode(Intersection(section.dst))
+                    self.waymap.addSection(section)
 
-                # Add section, we do not yet know the type of the intersections
-                self.waymap.addStreetNode(Intersection(section.src))
-                self.waymap.addStreetNode(Intersection(section.dst))
-                self.waymap.addSection(section)
-        test=1
+
 
     # def createWaySections(self):
     #     for net_section in self.sectionNetwork.iterAllForwardSegments():
@@ -550,7 +558,7 @@ class StreetGenerator():
             # It must be included in the dictionary entry key to distinguish them.
             dictKey = (src,dst,multKey)
 
-            # # DEBUG Show section id
+            # DEBUG Show section id
             # from osmPlot import plt
             # p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
             # p0 = section.polyline[len(section.polyline)//2]
@@ -558,14 +566,14 @@ class StreetGenerator():
             # plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
             # # plt.text(p[0],p[1],' %4.2f'%(L))
             # plt.text(p[0],p[1],'%3d'%(section.id))
-            # # # EDGY - TEST
-            # # ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
-            # # if ds < 1.0:
-            # #     plt.text(p[0],p[1],'%4.2f'%(ds))
-            # # if isEdgy(section.polyline):
-            # #     plt.text(p[0],p[1],'         %s'%('EDGY'),color='red')
-            # # # END EDGY - TEST
-            # # END DEBUG
+            # # EDGY - TEST
+            # ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
+            # if ds < 1.0:
+            #     plt.text(p[0],p[1],'%4.2f'%(ds))
+            # if isEdgy(section.polyline):
+            #     plt.text(p[0],p[1],'         %s'%('EDGY'),color='red')
+            # # END EDGY - TEST
+            # END DEBUG
 
             # Some are excluded
             ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
@@ -671,9 +679,79 @@ class StreetGenerator():
                 section = self.waymap[src][dst][0]['object'].polyline.plot(color,2,'solid')
             if inPieces:
                 plotEnd()
-        if not inPieces:
-            plotEnd()
+        # if not inPieces:
+        #     plotEnd()
         # END DEBUG
+            
+    def detectIntersectionClusters(self):
+        def isMainIntersection(node):
+            slowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
+            mainWayCount = 0
+            for src,dst in self.waymap.in_edges(node):
+                if self.waymap[src][dst][0]['object'].category not in slowWayCategories:
+                    mainWayCount += 1
+            for src,dst in self.waymap.out_edges(node):
+                if self.waymap[src][dst][0]['object'].category not in slowWayCategories:
+                    mainWayCount += 1
+            # plt.text(node[0],node[1],str(mainWayCount))
+            # if mainWayCount > 2:
+            #     plt.plot(node[0],node[1],'ro',markersize=10,zorder=999)
+            return mainWayCount > 2
+        
+        endPoints = []
+        seen = set()
+        for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
+            # Section ends in this bundle are those, that appear only once
+            sectionEnds = defaultdict(int)
+            for src,dst in sectKeys:
+                sectionEnds[src] += 1
+                sectionEnds[dst] += 1
+
+            # If their intersections contain >2 main ways, keep them as end points
+            keepAll = True
+            for node, count in sectionEnds.items():
+                if (keepAll or isMainIntersection(node)):
+                    endPoints.append( (node,cIndx) )
+
+        clusterGroups = dbClusterScan(endPoints, dbScanDist, 2)
+
+        # DEBUG: Show clusters of parallel way-sections.
+        # The plotting functions for this debug part are at the end of this module
+        plotPureNetwork(self.sectionNetwork)
+        # from lib.CompGeom.algorithms import circumCircle
+        colorIter = randomColor(10)
+        for cnt,clusterGroup in enumerate(clusterGroups):
+            color = next(colorIter)
+            clusterPoints = []
+            for node in clusterGroup:
+                p = node[0]
+                clusterPoints.append(p)
+
+            if len(clusterPoints) > 1:
+                x = [n[0] for n in clusterPoints]
+                y = [n[1] for n in clusterPoints]
+                plt.scatter(x,y,c=[color],zorder=999)
+                # center,radius = circumCircle(clusterPoints)
+                # # plt.gca().set_aspect(1) 
+                # plt.gca().add_artist(plt.Circle(
+                #     center,
+                #     radius,
+                #     alpha=0.3,
+                #     color=color,
+                #     zorder=100
+                # )) 
+                # plt.text(center[0],center[1],str(len(clusterGroup)))
+                from lib.CompGeom.ConvexHull import ConvexHull2D
+                hull_creator = ConvexHull2D()
+                hull = hull_creator(clusterPoints)
+                if hull is not None and len(hull)>2:
+                    plotPolygon(hull,False,color,color,2,True,0.3,100)
+                elif hull is not None and len(hull)>0:
+                    plotLine(hull,False,color,2,100)
+                # plotEnd()
+        # END DEBUG
+
+
 
     def detectWayClusters(self):
         # Create spatial index (R-tree) of way sections
@@ -1966,6 +2044,20 @@ class StreetGenerator():
 
 from matplotlib import pyplot as plt
 
+def plotNetwork(network,waySections=None):
+    from mpl.renderer.road_polygons import RoadPolygonsRenderer
+    # for section in waySections.values():
+    #     seg = section.originalSection
+    for count,seg in enumerate(network.iterAllSegments()):
+        # plt.plot(seg.s[0],seg.s[1],'k.')
+        # plt.plot(seg.t[0],seg.t[1],'k.')
+        color = 'r' if seg.category=='scene_border' else 'y'
+
+        for v1,v2 in zip(seg.path[:-1],seg.path[1:]):
+            plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), **RoadPolygonsRenderer.styles[seg.category], zorder=50 )
+            # plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), 'k', 0.5, zorder=50)
+
+
 def plotPureNetwork(network,arrows=False,showIDs=False):
     from itertools import tee
     def pairs(iterable):
@@ -1998,6 +2090,18 @@ def plotLine(line,vertsOrder,lineColor='k',width=1.,order=100):
     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
     if vertsOrder:
         for i,(xx,yy) in enumerate(zip(x,y)):
+            plt.text(xx,yy,str(i),fontsize=12)
+
+def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
+    if not poly:
+        return
+    x = [n[0] for n in poly] + [poly[0][0]]
+    y = [n[1] for n in poly] + [poly[0][1]]
+    if fill:
+        plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
+    plt.plot(x,y,color=lineColor,linestyle=':',linewidth=width,zorder=order)
+    if vertsOrder:
+        for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
             plt.text(xx,yy,str(i),fontsize=12)
 
 def randomColor(n, name='hsv'):

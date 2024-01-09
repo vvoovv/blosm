@@ -1,5 +1,5 @@
-minTemplateLength = 20.
-minNeighborLength = 20.
+minTemplateLength = 2.
+minNeighborLength = 2.
 
 transitionLimit = 0.01
 transitionSlope = 0.3
