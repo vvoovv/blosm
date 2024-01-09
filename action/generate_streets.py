@@ -741,12 +741,12 @@ class StreetGenerator():
                 #     zorder=100
                 # )) 
                 # plt.text(center[0],center[1],str(len(clusterGroup)))
-                from lib.CompGeom.ConvexHull import ConvexHull2D
-                hull_creator = ConvexHull2D()
+                from lib.CompGeom.ConvexHullVector import ConvexHullVector
+                hull_creator = ConvexHullVector()
                 hull = hull_creator(clusterPoints)
-                if hull is not None and len(hull)>2:
+                if hull_creator.isValid and len(hull)>2:
                     plotPolygon(hull,False,color,color,2,True,0.3,100)
-                elif hull is not None and len(hull)>0:
+                elif hull_creator.isValid and len(hull)>0:
                     plotLine(hull,False,color,2,100)
                 # plotEnd()
         # END DEBUG
