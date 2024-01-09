@@ -51,8 +51,10 @@ class ConvexHullVector:
     #     points = np.random.random((100,2)) 
     #     hull = ch_creator(points)
     #
-    #     #plot
-    #     plt.plot(hull[:,0], hull[:,1])
+    #     #plot (close the polygon of the hull)
+    #     x = [p[0] for p in hull] + [hull[0][0]]
+    #     y = [p[1] for p in hull] + [hull[0][1]]
+    #     plt.plot(x,y,'k)
     #     plt.show()
     def __init__(self):
         self.points = None
