@@ -684,7 +684,7 @@ class StreetGenerator():
         # END DEBUG
             
     def detectIntersectionClusters(self):
-        def isMainIntersection(node):
+        def intersectionType(node):
             slowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
             mainWayCount = 0
             for src,dst in self.waymap.in_edges(node):
@@ -696,10 +696,9 @@ class StreetGenerator():
             # plt.text(node[0],node[1],str(mainWayCount))
             # if mainWayCount > 2:
             #     plt.plot(node[0],node[1],'ro',markersize=10,zorder=999)
-            return mainWayCount > 2
+            return 'main' if mainWayCount > 1 else 'slow'
         
-        endPoints = []
-        seen = set()
+        points = set()
         for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
             # Section ends in this bundle are those, that appear only once
             sectionEnds = defaultdict(int)
@@ -708,47 +707,41 @@ class StreetGenerator():
                 sectionEnds[dst] += 1
 
             # If their intersections contain >2 main ways, keep them as end points
-            keepAll = True
             for node, count in sectionEnds.items():
-                if (keepAll or isMainIntersection(node)):
-                    endPoints.append( (node,cIndx) )
+                typ = intersectionType(node)
+                points.add( (node,typ) )
 
-        clusterGroups = dbClusterScan(endPoints, dbScanDist, 2)
+        groups = dbClusterScan(list(points), dbScanDist, 2)
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        plotPureNetwork(self.sectionNetwork)
-        # from lib.CompGeom.algorithms import circumCircle
         colorIter = randomColor(10)
-        for cnt,clusterGroup in enumerate(clusterGroups):
+        plotPureNetwork(self.sectionNetwork)
+        from lib.CompGeom.convexhull import ConvexHull
+        for cnt,group in enumerate(groups):
             color = next(colorIter)
-            clusterPoints = []
-            for node in clusterGroup:
-                p = node[0]
-                clusterPoints.append(p)
+            mainPoints = [g[0] for g in group if g[1]=='main']
+            slowPoints = [g[0] for g in group if g[1]=='slow']
+            mainCreator =  ConvexHull()
+            slowCreator =  ConvexHull()
+            if len(group) > 2:
+                mainHull = mainCreator.convexHull(mainPoints)
+                if len(mainHull)>2:
+                    plotPolygon(list(mainHull),False,color,color,1,True,0.4,100)
+                elif len(mainHull)>0:
+                    plotLine(list(mainHull),False,color,2,100)
 
-            if len(clusterPoints) > 1:
-                x = [n[0] for n in clusterPoints]
-                y = [n[1] for n in clusterPoints]
-                plt.scatter(x,y,c=[color],zorder=999)
-                # center,radius = circumCircle(clusterPoints)
-                # # plt.gca().set_aspect(1) 
-                # plt.gca().add_artist(plt.Circle(
-                #     center,
-                #     radius,
-                #     alpha=0.3,
-                #     color=color,
-                #     zorder=100
-                # )) 
-                # plt.text(center[0],center[1],str(len(clusterGroup)))
-                from lib.CompGeom.ConvexHullVector import ConvexHullVector
-                hull_creator = ConvexHullVector()
-                hull = hull_creator(clusterPoints)
-                if hull_creator.isValid and len(hull)>2:
-                    plotPolygon(hull,False,color,color,2,True,0.3,100)
-                elif hull_creator.isValid and len(hull)>0:
-                    plotLine(hull,False,color,2,100)
-                # plotEnd()
+                slowHull =slowCreator.convexHull(mainPoints+slowPoints)
+                if len(slowHull)>2:
+                    plotPolygon(list(slowHull),True,color,color,1,True,0.1,100)
+                elif len(slowHull)>0:
+                    plotLine(list(slowHull),False,color,2,100)
+
+                from matplotlib.patches import Circle, Rectangle
+                for p in mainPoints:
+                    plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
+                for p in slowPoints:
+                    plt.gca().add_artist(Rectangle(xy=(p[0]-1,p[1]-1), width=2, height=2, color=color, ec='k',zorder=999))
         # END DEBUG
 
 
