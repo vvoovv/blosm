@@ -696,7 +696,7 @@ class StreetGenerator():
                 wayCount += 1
                 if self.waymap[src][dst][0]['object'].category not in lowWayCategories:
                     mainWayCount += 1
-            return 'major' if mainWayCount==wayCount else 'main' if mainWayCount > 1 else 'low'
+            return 'major' if mainWayCount>2 else 'main' if mainWayCount > 1 else 'low'
         
         points = set()
         for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
