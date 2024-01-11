@@ -685,18 +685,18 @@ class StreetGenerator():
             
     def detectIntersectionClusters(self):
         def intersectionType(node):
-            slowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
+            lowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
             mainWayCount = 0
+            wayCount = 0
             for src,dst in self.waymap.in_edges(node):
-                if self.waymap[src][dst][0]['object'].category not in slowWayCategories:
+                wayCount += 1
+                if self.waymap[src][dst][0]['object'].category not in lowWayCategories:
                     mainWayCount += 1
             for src,dst in self.waymap.out_edges(node):
-                if self.waymap[src][dst][0]['object'].category not in slowWayCategories:
+                wayCount += 1
+                if self.waymap[src][dst][0]['object'].category not in lowWayCategories:
                     mainWayCount += 1
-            # plt.text(node[0],node[1],str(mainWayCount))
-            # if mainWayCount > 2:
-            #     plt.plot(node[0],node[1],'ro',markersize=10,zorder=999)
-            return 'main' if mainWayCount > 1 else 'slow'
+            return 'major' if mainWayCount==wayCount else 'main' if mainWayCount > 1 else 'low'
         
         points = set()
         for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
@@ -716,31 +716,42 @@ class StreetGenerator():
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
         colorIter = randomColor(10)
-        plotPureNetwork(self.sectionNetwork)
+        # plotPureNetwork(self.sectionNetwork)
         from lib.CompGeom.convexhull import ConvexHull
         for cnt,group in enumerate(groups):
             color = next(colorIter)
+            mjorPoints = [g[0] for g in group if g[1]=='major']
             mainPoints = [g[0] for g in group if g[1]=='main']
-            slowPoints = [g[0] for g in group if g[1]=='slow']
+            lowPoints = [g[0] for g in group if g[1]=='low']
+            mjorCreator =  ConvexHull()
             mainCreator =  ConvexHull()
-            slowCreator =  ConvexHull()
+            lowCreator =  ConvexHull()
             if len(group) > 2:
-                mainHull = mainCreator.convexHull(mainPoints)
-                if len(mainHull)>2:
-                    plotPolygon(list(mainHull),False,color,color,1,True,0.4,100)
-                elif len(mainHull)>0:
-                    plotLine(list(mainHull),False,color,2,100)
+                if len(mjorPoints) > 2:
+                    mjorHull = mjorCreator.convexHull(mjorPoints)
+                    plotPolygon(list(mjorHull),False,'k',color,2,True,0.8,120)
+                elif len(mjorPoints)>1:
+                        plotLine(mjorPoints,False,color,8,120)
 
-                slowHull =slowCreator.convexHull(mainPoints+slowPoints)
-                if len(slowHull)>2:
-                    plotPolygon(list(slowHull),True,color,color,1,True,0.1,100)
-                elif len(slowHull)>0:
-                    plotLine(list(slowHull),False,color,2,100)
+                if len(mainPoints+mjorPoints) > 2:
+                    mainHull = mainCreator.convexHull(mainPoints+mjorPoints)
+                    plotPolygon(list(mainHull),False,'k',color,1,True,0.3,110)
+                elif len(mainPoints)>1:
+                        plotLine(mainPoints,False,color,4,110)
+
+                if len(mainPoints+mjorPoints+lowPoints) > 2:
+                    slowHull = lowCreator.convexHull(mainPoints+mjorPoints+lowPoints)
+                    plotPolygon(list(slowHull),False,'k',color,1,True,0.1,100)
+                elif len(lowPoints)>1:
+                        plotLine(lowPoints,False,color,4,100)
 
                 from matplotlib.patches import Circle, Rectangle
+                for p in mjorPoints:
+                    plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
+                    plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=1, color='w', ec='k',zorder=999))
                 for p in mainPoints:
                     plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
-                for p in slowPoints:
+                for p in lowPoints:
                     plt.gca().add_artist(Rectangle(xy=(p[0]-1,p[1]-1), width=2, height=2, color=color, ec='k',zorder=999))
         # END DEBUG
 
@@ -2080,7 +2091,7 @@ def plotPureNetwork(network,arrows=False,showIDs=False):
 def plotLine(line,vertsOrder,lineColor='k',width=1.,order=100):
     x = [n[0] for n in line]
     y = [n[1] for n in line]
-    plt.plot(x,y,lineColor,linewidth=width,zorder=order)
+    plt.plot(x,y,color=lineColor,linewidth=width,zorder=order)
     if vertsOrder:
         for i,(xx,yy) in enumerate(zip(x,y)):
             plt.text(xx,yy,str(i),fontsize=12)
