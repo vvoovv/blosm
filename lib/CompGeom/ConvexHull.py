@@ -3,8 +3,8 @@
 # see: https://en.wikipedia.org/wiki/Quickhull
 #
 # Usage:
-#           hullCreator = ConvexHull()
-#           hull = hullCreator.convexHull(points)
+#       hullCreator = ConvexHull()
+#       hull = hullCreator.convexHull(points)
 #
 
 from mathutils import Vector

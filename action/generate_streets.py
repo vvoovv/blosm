@@ -717,7 +717,7 @@ class StreetGenerator():
         # The plotting functions for this debug part are at the end of this module
         colorIter = randomColor(10)
         # plotPureNetwork(self.sectionNetwork)
-        from lib.CompGeom.convexhull import ConvexHull
+        from lib.CompGeom.ConvexHull import ConvexHull
         for cnt,group in enumerate(groups):
             color = next(colorIter)
             mjorPoints = [g[0] for g in group if g[1]=='major']
