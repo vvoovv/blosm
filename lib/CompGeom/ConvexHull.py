@@ -51,8 +51,12 @@ class ConvexHull():
         def _pseudoangle(d):
             p = d[0]/(abs(d[0])+abs(d[1])) # -1 .. 1 increasing with x
             return 3 + p if d[1] < 0 else 1 - p 
-        centerOfGravity = sum( (p for p in points),Vector((0,0))) / len(points)
-        return sorted(points,key=lambda x: _pseudoangle(x-centerOfGravity))
+        
+        if points and len(points) > 1:
+            centerOfGravity = sum( (p for p in points),Vector((0,0))) / len(points)
+            return sorted(points,key=lambda x: _pseudoangle(x-centerOfGravity))
+        else:
+            return points
 
     def quickHull(self, points, p1, p2, side):
 	    # Find the point with maximum distance from p1-p2 and also on the specified side of p1-p2.
