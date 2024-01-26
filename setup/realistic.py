@@ -23,18 +23,17 @@ def setup(app, osm):
         wayManager = setup.getWayManager()
         if app.highways or app.railways:
             from action.generate_streets import StreetGenerator
-            from action.generate_items import ItemGenerator
             from way.renderer_streets import StreetRenderer
             from style import StyleStore
+            from .realistic_streets import getStyleStreet
             
-            wayManager.addAction(StreetGenerator())
-            wayManager.addAction(ItemGenerator())
+            styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
+            #streetStyle = styleStore.get(self.getStyle(section))
+            
+            wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
             
             wayManager.addRenderer(
-                StreetRenderer(
-                    app,
-                    StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
-                )
+                StreetRenderer(app)
             )
     
         if app.highways:
@@ -84,23 +83,3 @@ def getStyleBuilding(building, app):
         return "single family house"
     
     return "high rise"
-
-
-_categoryToStreetStyle = {
-    "motorway": "motorway",
-    "motorway_link": "motorway_link",
-    "trunk": "motorway",
-    "trunk_link": "motorway_link",
-    "primary": "primary",
-    "primary_link": "primary_link",
-    "secondary": "secondary",
-    "secondary_link": "secondary_link",
-    "tertiary": "secondary",
-    "tertiary_link": "secondary_link",
-    "residential": "residential",
-    "living_street": "residential",
-    "service": "residential",
-    "pedestrian": "residential"
-}
-def getStyleStreet(section):
-    return _categoryToStreetStyle.get(section.category, "residential")

@@ -340,7 +340,9 @@ def createStreetSection(offset, width, nrOfLanes, category, tags):
 
 class StreetGenerator():
     
-    def __init__(self,leftHandTraffic=True): 
+    def __init__(self, styleStore, getStyle, leftHandTraffic=True):
+        self.styleStore = styleStore
+        self.getStyle = getStyle
         # Interface via manager
         self.leftHandTraffic = leftHandTraffic
         self.intersectionAreas = None

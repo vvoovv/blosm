@@ -34,6 +34,8 @@ class CommandLineApp(BaseApp):
         self.initArgParser()
         
         self.mode = BaseApp.twoD
+        
+        self.assetPackage = "default"
     
     def initArgParser(self):
         self.argParser = argParser = argparse.ArgumentParser()

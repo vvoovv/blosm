@@ -2,6 +2,14 @@ import matplotlib.pyplot as plt
 from parse.osm import Osm
 from app.command_line import CommandLineApp
 
+import os, sys
+def _checkPath():
+    _path = os.path.dirname(os.path.dirname(__file__))
+    path = os.path.join(_path, "pml")
+    if not path in sys.path:
+        sys.path.append(path)
+_checkPath()
+
 
 def importData():
     
