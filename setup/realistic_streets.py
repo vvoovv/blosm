@@ -15,5 +15,5 @@ _categoryToStreetStyle = {
     "pedestrian": "residential"
 }
 
-def getStyleStreet(section):
-    return _categoryToStreetStyle.get(section.category, "residential")
+def getStyleStreet(street):
+    return _categoryToStreetStyle.get(street.getMainCategory(), "residential")

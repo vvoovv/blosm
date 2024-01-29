@@ -37,3 +37,6 @@ class Section(object):
         self.forwardLanes = len(fwdPattern)
         self.backwardLanes = len(bwdPattern)
         self.bothLanes = bothLanes
+    
+    def getMainCategory(self):
+        return self.category

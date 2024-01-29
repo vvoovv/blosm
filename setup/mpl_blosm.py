@@ -106,6 +106,28 @@ def setup(app, osm):
             
             styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
             
+            #
+            # temporary code starts
+            #
+            from way.items.street import Street
+            class TmpSection:
+                def __init__(self, category):
+                    self.category = category
+                
+                def getMainCategory(self):
+                    return self.category
+                
+            street = Street(None, None)
+            street.start = TmpSection("primary")
+            
+            streetStyle = styleStore.get(
+                getStyleStreet(street)
+            )
+            
+            #
+            # temporary code ends
+            #
+            
             wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
             wayManager.addRenderer(StreetRenderer(debug=False))
         else:

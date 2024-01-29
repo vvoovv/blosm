@@ -1,3 +1,4 @@
+from way.items.street import Street
 from way.items.crosswalk import Crosswalk
 from way.items.dummy_node import DummyNode
 from way.items.intersection import Intersection
