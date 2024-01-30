@@ -1,4 +1,4 @@
-from way.items.pt_stop import PtStop
+from way.item.pt_stop import PtStop
 
 
 class PtStopManager:

@@ -2,7 +2,7 @@ from mathutils import Vector
 from itertools import tee
 
 import lib.blosm_networkx as nx
-from way.items.dummy_node import DummyNode
+from way.item.dummy_node import DummyNode
 
 class WayMap(nx.MultiDiGraph):
     ID = 0

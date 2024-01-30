@@ -22,4 +22,7 @@ class Street:
         return self._dst
     
     def getMainCategory(self):
-        return self.start.getMainCategory()
+        return self.start.getMainCategory
+    
+    def setStyle(self, style):
+        self.style = style

@@ -109,7 +109,7 @@ def setup(app, osm):
             #
             # temporary code starts
             #
-            from way.items.street import Street
+            from way.item.street import Street
             class TmpSection:
                 def __init__(self, category):
                     self.category = category
@@ -123,6 +123,8 @@ def setup(app, osm):
             streetStyle = styleStore.get(
                 getStyleStreet(street)
             )
+            
+            street.setStyle(streetStyle)
             
             #
             # temporary code ends
