@@ -486,7 +486,7 @@ class StreetGenerator():
 
                 section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
                 isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
-                section.setlaneParams(isOneWay,fwdPattern,bwdPattern,bothLanes)
+                section.setLaneParams(isOneWay,fwdPattern,bwdPattern,bothLanes)
                 corners = section.polyline.getCorners(0.7)
                 if corners:
                     corners.append(len(section.polyline)-1)

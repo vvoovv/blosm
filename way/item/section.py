@@ -65,7 +65,7 @@ class Section(Item):
     def dst(self):
         return self._dst
     
-    def setlaneParams(self, isOneWay, fwdPattern, bwdPattern, bothLanes):
+    def setLaneParams(self, isOneWay, fwdPattern, bwdPattern, bothLanes):
         self.isOneWay = isOneWay
         self.lanePatterns = (fwdPattern,bwdPattern)
         self.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
