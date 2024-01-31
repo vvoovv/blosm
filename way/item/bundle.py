@@ -1,6 +1,12 @@
-class Bundle(object):
+from .item import Item
+
+
+class Bundle(Item):
+    
     ID = 1  # Must not start with zero to get unambiguous connector indices!
-    def __init__(self,src,dst):
+    
+    def __init__(self, src, dst):
+        super().__init__()
         self.id = Bundle.ID
         Bundle.ID += 1
 

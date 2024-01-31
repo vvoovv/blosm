@@ -2,6 +2,7 @@ import os, math, ssl
 from urllib import request
 
 from building import BldgPolygon
+from way.asset_store import AssetType
 
 
 class AppType:
@@ -134,17 +135,12 @@ class BaseApp:
             raise Exception("The directory for the asset package %s doesn't exist" % assetPackageDir)
         self.assetPackageDir = assetPackageDir
         
-        pmlFilepath = os.path.join(assetPackageDir, "style/building/main.pml")
-        if not os.path.isfile(pmlFilepath):
-            raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
-        self.pmlFilepathBuilding = pmlFilepath
-        
-        pmlFilepath = os.path.join(assetPackageDir, "style/street/main.pml")
-        if not os.path.isfile(pmlFilepath):
-            raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
-        self.pmlFilepathStreet = pmlFilepath
-        
-        if self.buildings:
+        if self.buildings and self.type != AppType.commandLine:
+            pmlFilepath = os.path.join(assetPackageDir, "style/building/main.pml")
+            if not os.path.isfile(pmlFilepath):
+                raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
+            self.pmlFilepathBuilding = pmlFilepath
+            
             assetInfoFilepath = os.path.join(assetPackageDir, "asset_info/building.json")
             if self.enableExperimentalFeatures and self.importForExport:
                 _assetInfoFilepath = "%s_export.json" % assetInfoFilepath[:-5]
@@ -155,10 +151,16 @@ class BaseApp:
             self.assetInfoFilepath = assetInfoFilepath
         
         if self.highways:
-            assetInfoFilepathStreet = os.path.join(assetPackageDir, "asset_info/street.json")
-            if not os.path.isfile(assetInfoFilepathStreet):
-                raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepathStreet)
-            self.assetInfoFilepathStreet = assetInfoFilepathStreet
+            pmlFilepath = os.path.join(assetPackageDir, "style/street/main.pml")
+            if not os.path.isfile(pmlFilepath):
+                raise Exception("%s isn't a valid path for the PML file" % pmlFilepath)
+            self.pmlFilepathStreet = pmlFilepath
+            
+            if self.type != AppType.commandLine:
+                assetInfoFilepathStreet = os.path.join(assetPackageDir, "asset_info/street.json")
+                if not os.path.isfile(assetInfoFilepathStreet):
+                    raise Exception("%s isn't a valid path for the asset info file" % assetInfoFilepathStreet)
+                self.assetInfoFilepathStreet = assetInfoFilepathStreet
     
     def loadSetupScript(self, setupScript):
         setupScript = os.path.realpath(setupScript)

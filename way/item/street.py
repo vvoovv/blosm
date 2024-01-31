@@ -1,9 +1,12 @@
+from .item import Item
 
 
-class Street:
+class Street(Item):
+    
     ID = 1  # Must not start with zero to get unambiguous connector indices!
     
     def __init__(self, src, dst):
+        super().__init__()
         self.id = Street.ID
         Street.ID += 1
 
@@ -22,7 +25,11 @@ class Street:
         return self._dst
     
     def getMainCategory(self):
-        return self.start.getMainCategory
+        return self.start.getMainCategory()
     
     def setStyle(self, style):
         self.style = style
+        self.setStyleBlockFromTop(style)
+        
+        # set a style block for the items of the street (sections, crosswalks, etc)
+        self.start.setStyleBlockFromTop(style)

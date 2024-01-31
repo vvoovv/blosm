@@ -1,8 +1,13 @@
+from .item import Item
 from lib.CompGeom.PolyLine import PolyLine
 
-class Section(object):
+
+class Section(Item):
+    
     ID = 1  # Must not start with zero to get unambiguous connector indices!
-    def __init__(self,net_section,polyline,network):
+    
+    def __init__(self, net_section, polyline, network):
+        super().__init__()
         self.id = Section.ID
         Section.ID += 1
 

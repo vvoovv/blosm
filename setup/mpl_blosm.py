@@ -109,22 +109,33 @@ def setup(app, osm):
             #
             # temporary code starts
             #
+            from way.item.item import Item
             from way.item.street import Street
-            class TmpSection:
+            
+            class Section(Item):
                 def __init__(self, category):
+                    super().__init__()
                     self.category = category
+                    self.totalLanes = 2
+                    self.oneway = True
                 
                 def getMainCategory(self):
                     return self.category
                 
             street = Street(None, None)
-            street.start = TmpSection("primary")
+            section = Section("service")
+            street.start = section
             
             streetStyle = styleStore.get(
                 getStyleStreet(street)
             )
             
             street.setStyle(streetStyle)
+            
+            filletRadius = street.getStyleBlockAttr("filletRadius")
+            sidewalk = street.getStyleBlockAttr("sidewalk")
+            
+            cl = section.getStyleBlockAttr("cl")
             
             #
             # temporary code ends
