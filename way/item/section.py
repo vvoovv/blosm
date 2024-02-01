@@ -16,6 +16,7 @@ class Section(Item):
         self.offset = 0.                        # an offset from the centerline
         self.width = 0.                         # the width of the section
 
+        self.oneway = None
         self.forwardLanes = None
         self.backwardLanes = None
         self.bothLanes = None
@@ -36,7 +37,6 @@ class Section(Item):
         self.polyline = polyline
         self.isLoop = self._src == self._dst
 
-        self.isOneWay = None
         self.lanePatterns = None
 
     def split(self, nodeIndex, item, itemLength):
@@ -65,8 +65,8 @@ class Section(Item):
     def dst(self):
         return self._dst
     
-    def setLaneParams(self, isOneWay, fwdPattern, bwdPattern, bothLanes):
-        self.isOneWay = isOneWay
+    def setLaneParams(self, oneway, fwdPattern, bwdPattern, bothLanes):
+        self.oneway = oneway
         self.lanePatterns = (fwdPattern,bwdPattern)
         self.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
         self.forwardLanes = len(fwdPattern)

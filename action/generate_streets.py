@@ -485,8 +485,8 @@ class StreetGenerator():
             if net_section.category != 'scene_border':
 
                 section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
-                isOneWay,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
-                section.setLaneParams(isOneWay,fwdPattern,bwdPattern,bothLanes)
+                oneway,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
+                section.setLaneParams(oneway,fwdPattern,bwdPattern,bothLanes)
                 corners = section.polyline.getCorners(0.7)
                 if corners:
                     corners.append(len(section.polyline)-1)
@@ -495,15 +495,33 @@ class StreetGenerator():
                     for nextCorner in corners:
                         splitline = PolyLine( section.polyline[lastCorner:nextCorner+1] )
                         subsection = Section(net_section,splitline,self.sectionNetwork)
+
+                        street = Street(subsection.src, subsection.dst)
+                        street.start = subsection
+                        streetStyle = self.styleStore.get(
+                            self.getStyle(street)
+                        )
+                        street.setStyle(streetStyle)
+                        street.start = street.end = subsection                        
+
                         self.waymap.addStreetNode(Corner(subsection.dst))
-                        self.waymap.addSection(subsection)
+                        self.waymap.addSection(street)
                         lastCorner = nextCorner
                     self.waymap.replaceStreetNodeBy(Intersection(subsection.dst))
                 else:
                     # Add section, we do not yet know the type of the intersections
                     self.waymap.addStreetNode(Intersection(section.src))
                     self.waymap.addStreetNode(Intersection(section.dst))
-                    self.waymap.addSection(section)
+
+                    street = Street(section.src, section.dst)
+                    street.start = section
+                    streetStyle = self.styleStore.get(
+                        self.getStyle(street)
+                    )
+                    street.setStyle(streetStyle)
+                    street.start = street.end = section
+
+                    self.waymap.addSection(street)
 
 
 
@@ -555,10 +573,11 @@ class StreetGenerator():
         index2DictKey = dict()    # Dictionary from index to dictKey, which is (src,dst,multKey)
         boxes = dict()            # Bounding boxes of sections
         # Add boxes of all sections
-        for src, dst, multKey, section in self.waymap.edges(data='object',keys=True):
+        for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):
             # multKey is 0,1,.. for multiple edges between equal nodes (waymap is a MultiDiGraph of networkx)
             # It must be included in the dictionary entry key to distinguish them.
             dictKey = (src,dst,multKey)
+            section = street.start
 
             # DEBUG Show section id
             # from osmPlot import plt
@@ -606,10 +625,11 @@ class StreetGenerator():
         self.parallelSectionKeys = DisjointSets()
         # Use every section, that has been inserted into the spatial index, 
         # as template and create a buffer around it.
-        for src, dst, multKey, template in self.waymap.edges(data='object',keys=True):
+        for src, dst, multKey, templateStreet in self.waymap.edges(data='object',keys=True):
             # multKey is 0,1,.. for multiple edges between equal nodes (waymap is a MultiDiGraph of networkx)
             # It must be included in the dictionary entry key to distinguish them.
             dictKey = (src,dst,multKey)
+            template = templateStreet.start
 
             if dictKey in boxes:
 
@@ -634,7 +654,7 @@ class StreetGenerator():
                         continue # Skip, the template is its own neighbor.
 
                     srcNeigbor, dstNeigbor, neighMultKey = neighDictKey
-                    neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object'] # Section from multigraph edge
+                    neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object'].start # Section from multigraph edge
 
                     # If the polyline of this neighbor ...
                     neighborLine = neighbor.polyline
@@ -673,12 +693,12 @@ class StreetGenerator():
             for src,dst in sectKeys:
                 if inPieces:
                     color = next(colorIter)
-                    section = self.waymap[src][dst][0]['object']
+                    section = self.waymap.addStreetNodegetSectionObject(src,dst,0).start
                     p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
                     p0 = section.polyline[len(section.polyline)//2]
                     plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
                     plt.text(p[0],p[1],'%3d'%(section.id))
-                section = self.waymap[src][dst][0]['object'].polyline.plot(color,2,'solid')
+                section = self.waymap.getSectionObject(src,dst,0).start.polyline.plot(color,2,'solid')
             if inPieces:
                 plotEnd()
         # if not inPieces:
@@ -692,11 +712,11 @@ class StreetGenerator():
             wayCount = 0
             for src,dst in self.waymap.in_edges(node):
                 wayCount += 1
-                if self.waymap[src][dst][0]['object'].category not in lowWayCategories:
+                if self.waymap.getSectionObject(src,dst,0).start.category not in lowWayCategories:
                     mainWayCount += 1
             for src,dst in self.waymap.out_edges(node):
                 wayCount += 1
-                if self.waymap[src][dst][0]['object'].category not in lowWayCategories:
+                if self.waymap.getSectionObject(src,dst,0).start.category not in lowWayCategories:
                     mainWayCount += 1
             return 'major' if mainWayCount>2 else 'main' if mainWayCount > 1 else 'low'
         

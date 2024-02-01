@@ -47,7 +47,7 @@ class WayMap(nx.MultiDiGraph):
                 streetNode = data['object'] if data else DummyNode()
                 yield location, streetNode
 
-    # Add a line section object (like Section, Roadway, Bundle) into map
+    # Add a line section object (like Section, Street, Bundle) into map
     def addSection(self, section):
         src = section.src.freeze()
         dst = section.dst.freeze()
@@ -60,6 +60,11 @@ class WayMap(nx.MultiDiGraph):
         for sec in self.get_edge_data(src,dst).values():
             yield sec['object']
 
+    def getSectionObject(self,src,dst,key):
+        src.freeze()
+        dst.freeze()
+        return self[src][dst][key]['object']
+    
     # Iterate over line section object, optionaly of a given type
     def iterSections(self,sectionType=None):
         if sectionType:
