@@ -29,7 +29,13 @@ class Street(Item):
     
     def setStyle(self, style):
         self.style = style
+        
         self.setStyleBlockFromTop(style)
         
-        # set a style block for the items of the street (sections, crosswalks, etc)
-        self.start.setStyleBlockFromTop(style)
+        if self.start is self.end:
+            self.start.setStyleBlockFromTop(style)
+        else:
+            item = self.start
+            while not item is self.end:
+                item.setStyleBlockFromTop(style)
+                item = item.succ
