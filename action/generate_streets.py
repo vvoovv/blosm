@@ -592,20 +592,21 @@ class StreetGenerator():
             section = street.start
 
             # DEBUG Show section id
-            # from osmPlot import plt
-            # p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
-            # p0 = section.polyline[len(section.polyline)//2]
-            # L = section.polyline.length()
-            # plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
-            # # plt.text(p[0],p[1],' %4.2f'%(L))
-            # plt.text(p[0],p[1],'%3d'%(section.id))
-            # # EDGY - TEST
-            # ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
-            # if ds < 1.0:
-            #     plt.text(p[0],p[1],'%4.2f'%(ds))
-            # if isEdgy(section.polyline):
-            #     plt.text(p[0],p[1],'         %s'%('EDGY'),color='red')
-            # # END EDGY - TEST
+            if False and self.app.type == AppType.commandLine:
+                from debug import plt, plotPolygon, randomColor, plotLine
+                p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
+                p0 = section.polyline[len(section.polyline)//2]
+                L = section.polyline.length()
+                plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
+                # plt.text(p[0],p[1],' %4.2f'%(L))
+                plt.text(p[0],p[1],'%3d'%(section.id))
+                # EDGY - TEST
+                ds = (section.polyline[0]-section.polyline[-1]).length / section.polyline.length()
+                if ds < 1.0:
+                    plt.text(p[0],p[1],'%4.2f'%(ds))
+                if isEdgy(section.polyline):
+                    plt.text(p[0],p[1],'         %s'%('EDGY'),color='red')
+                # END EDGY - TEST
             # END DEBUG
 
             # Some are excluded
@@ -692,30 +693,32 @@ class StreetGenerator():
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        inPieces = False
-        if not inPieces:
-            plotPureNetwork(self.sectionNetwork)
-        colorIter = randomColor(10)
-        import numpy as np
-        for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
-            if inPieces:
-                pass
+        if True and self.app.type == AppType.commandLine:
+            from debug import plt, plotPureNetwork, randomColor, plotEnd
+            inPieces = False
+            if not inPieces:
                 plotPureNetwork(self.sectionNetwork)
-            color = next(colorIter)
-            for src,dst in sectKeys:
+            colorIter = randomColor(10)
+            import numpy as np
+            for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
                 if inPieces:
-                    color = next(colorIter)
-                    section = self.waymap.addStreetNodegetSectionObject(src,dst,0).start
-                    p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
-                    p0 = section.polyline[len(section.polyline)//2]
-                    plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
-                    plt.text(p[0],p[1],'%3d'%(section.id))
-                section = self.waymap.getSectionObject(src,dst,0).start.polyline.plot(color,2,'solid')
-            if inPieces:
-                plotEnd()
-        # if not inPieces:
-        #     plotEnd()
-        # END DEBUG
+                    pass
+                    plotPureNetwork(self.sectionNetwork)
+                color = next(colorIter)
+                for src,dst in sectKeys:
+                    if inPieces:
+                        color = next(colorIter)
+                        section = self.waymap.addStreetNodegetSectionObject(src,dst,0).start
+                        p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
+                        p0 = section.polyline[len(section.polyline)//2]
+                        plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
+                        plt.text(p[0],p[1],'%3d'%(section.id))
+                    section = self.waymap.getSectionObject(src,dst,0).start.polyline.plot(color,2,'solid')
+                if inPieces:
+                    plotEnd()
+            # if not inPieces:
+            #     plotEnd()
+            # END DEBUG
             
     def detectIntersectionClusters(self):
         def intersectionType(node):
@@ -749,45 +752,47 @@ class StreetGenerator():
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        colorIter = randomColor(10)
-        # plotPureNetwork(self.sectionNetwork)
-        from lib.CompGeom.ConvexHull import ConvexHull
-        for cnt,group in enumerate(groups):
-            color = next(colorIter)
-            mjorPoints = [g[0] for g in group if g[1]=='major']
-            mainPoints = [g[0] for g in group if g[1]=='main']
-            lowPoints = [g[0] for g in group if g[1]=='low']
-            mjorCreator =  ConvexHull()
-            mainCreator =  ConvexHull()
-            lowCreator =  ConvexHull()
-            if len(group) > 2:
-                if len(mjorPoints) > 2:
-                    mjorHull = mjorCreator.convexHull(mjorPoints)
-                    plotPolygon(list(mjorHull),False,'k',color,2,True,0.8,120)
-                elif len(mjorPoints)>1:
-                        plotLine(mjorPoints,False,color,8,120)
+        if True and self.app.type == AppType.commandLine:
+            from debug import plt, plotPolygon, randomColor, plotLine
+            colorIter = randomColor(10)
+            # plotPureNetwork(self.sectionNetwork)
+            from lib.CompGeom.ConvexHull import ConvexHull
+            for cnt,group in enumerate(groups):
+                color = next(colorIter)
+                mjorPoints = [g[0] for g in group if g[1]=='major']
+                mainPoints = [g[0] for g in group if g[1]=='main']
+                lowPoints = [g[0] for g in group if g[1]=='low']
+                mjorCreator =  ConvexHull()
+                mainCreator =  ConvexHull()
+                lowCreator =  ConvexHull()
+                if len(group) > 2:
+                    if len(mjorPoints) > 2:
+                        mjorHull = mjorCreator.convexHull(mjorPoints)
+                        plotPolygon(list(mjorHull),False,'k',color,2,True,0.8,120)
+                    elif len(mjorPoints)>1:
+                            plotLine(mjorPoints,False,color,8,120)
 
-                if len(mainPoints+mjorPoints) > 2:
-                    mainHull = mainCreator.convexHull(mainPoints+mjorPoints)
-                    plotPolygon(list(mainHull),False,'k',color,1,True,0.3,110)
-                elif len(mainPoints)>1:
-                        plotLine(mainPoints,False,color,4,110)
+                    if len(mainPoints+mjorPoints) > 2:
+                        mainHull = mainCreator.convexHull(mainPoints+mjorPoints)
+                        plotPolygon(list(mainHull),False,'k',color,1,True,0.3,110)
+                    elif len(mainPoints)>1:
+                            plotLine(mainPoints,False,color,4,110)
 
-                if len(mainPoints+mjorPoints+lowPoints) > 2:
-                    slowHull = lowCreator.convexHull(mainPoints+mjorPoints+lowPoints)
-                    plotPolygon(list(slowHull),False,'k',color,1,True,0.1,100)
-                elif len(lowPoints)>1:
-                        plotLine(lowPoints,False,color,4,100)
+                    if len(mainPoints+mjorPoints+lowPoints) > 2:
+                        slowHull = lowCreator.convexHull(mainPoints+mjorPoints+lowPoints)
+                        plotPolygon(list(slowHull),False,'k',color,1,True,0.1,100)
+                    elif len(lowPoints)>1:
+                            plotLine(lowPoints,False,color,4,100)
 
-                from matplotlib.patches import Circle, Rectangle
-                for p in mjorPoints:
-                    plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
-                    plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=1, color='w', ec='k',zorder=999))
-                for p in mainPoints:
-                    plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
-                for p in lowPoints:
-                    plt.gca().add_artist(Rectangle(xy=(p[0]-1,p[1]-1), width=2, height=2, color=color, ec='k',zorder=999))
-        # END DEBUG
+                    from matplotlib.patches import Circle, Rectangle
+                    for p in mjorPoints:
+                        plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
+                        plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=1, color='w', ec='k',zorder=999))
+                    for p in mainPoints:
+                        plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
+                    for p in lowPoints:
+                        plt.gca().add_artist(Rectangle(xy=(p[0]-1,p[1]-1), width=2, height=2, color=color, ec='k',zorder=999))
+            # END DEBUG
 
 
 
@@ -2080,78 +2085,78 @@ class StreetGenerator():
 
 # === debug plotting functions ================================================
 
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
-def plotNetwork(network,waySections=None):
-    from mpl.renderer.road_polygons import RoadPolygonsRenderer
-    # for section in waySections.values():
-    #     seg = section.originalSection
-    for count,seg in enumerate(network.iterAllSegments()):
-        # plt.plot(seg.s[0],seg.s[1],'k.')
-        # plt.plot(seg.t[0],seg.t[1],'k.')
-        color = 'r' if seg.category=='scene_border' else 'y'
+# def plotNetwork(network,waySections=None):
+#     from mpl.renderer.road_polygons import RoadPolygonsRenderer
+#     # for section in waySections.values():
+#     #     seg = section.originalSection
+#     for count,seg in enumerate(network.iterAllSegments()):
+#         # plt.plot(seg.s[0],seg.s[1],'k.')
+#         # plt.plot(seg.t[0],seg.t[1],'k.')
+#         color = 'r' if seg.category=='scene_border' else 'y'
 
-        for v1,v2 in zip(seg.path[:-1],seg.path[1:]):
-            plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), **RoadPolygonsRenderer.styles[seg.category], zorder=50 )
-            # plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), 'k', 0.5, zorder=50)
+#         for v1,v2 in zip(seg.path[:-1],seg.path[1:]):
+#             plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), **RoadPolygonsRenderer.styles[seg.category], zorder=50 )
+#             # plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), 'k', 0.5, zorder=50)
 
 
-def plotPureNetwork(network,arrows=False,showIDs=False):
-    from itertools import tee
-    def pairs(iterable):
-        # s -> (s0,s1), (s1,s2), (s2, s3), ...
-        p1, p2 = tee(iterable)
-        next(p2, None)
-        return zip(p1,p2)
+# def plotPureNetwork(network,arrows=False,showIDs=False):
+#     from itertools import tee
+#     def pairs(iterable):
+#         # s -> (s0,s1), (s1,s2), (s2, s3), ...
+#         p1, p2 = tee(iterable)
+#         next(p2, None)
+#         return zip(p1,p2)
 
-    for count,seg in enumerate(network.iterAllSegments()):
-        color = 'g' if seg.category=='scene_border' else 'k'
-        if arrows:
-            width = 2
-            for v0,v1 in pairs(seg.path):
-                x = (v0[0]+v1[0])/2
-                y = (v0[1]+v1[1])/2
-                arrowprops=dict(color='r', width=width, shrink=0.05, headwidth=width*3, headlength=5*width)
-                plt.gca().annotate("", xy=(x,y), xytext=(v0[0],v0[1]),arrowprops=arrowprops)
-                plt.plot([v0[0],v1[0]],[v0[1],v1[1]],color=color, linewidth=width)
-        else:
-            plotLine(seg.path,False,color,1)
-        plt.plot(seg.s[0],seg.s[1],'k.')
-        plt.plot(seg.t[0],seg.t[1],'k.')
-        if showIDs:
-            c = sum(seg.path, Vector((0,0)))/len(seg.path)
-            plt.text(c[0],c[1],'  '+str(seg.sectionId) )
+#     for count,seg in enumerate(network.iterAllSegments()):
+#         color = 'g' if seg.category=='scene_border' else 'k'
+#         if arrows:
+#             width = 2
+#             for v0,v1 in pairs(seg.path):
+#                 x = (v0[0]+v1[0])/2
+#                 y = (v0[1]+v1[1])/2
+#                 arrowprops=dict(color='r', width=width, shrink=0.05, headwidth=width*3, headlength=5*width)
+#                 plt.gca().annotate("", xy=(x,y), xytext=(v0[0],v0[1]),arrowprops=arrowprops)
+#                 plt.plot([v0[0],v1[0]],[v0[1],v1[1]],color=color, linewidth=width)
+#         else:
+#             plotLine(seg.path,False,color,1)
+#         plt.plot(seg.s[0],seg.s[1],'k.')
+#         plt.plot(seg.t[0],seg.t[1],'k.')
+#         if showIDs:
+#             c = sum(seg.path, Vector((0,0)))/len(seg.path)
+#             plt.text(c[0],c[1],'  '+str(seg.sectionId) )
             
-def plotLine(line,vertsOrder,lineColor='k',width=1.,order=100):
-    x = [n[0] for n in line]
-    y = [n[1] for n in line]
-    plt.plot(x,y,color=lineColor,linewidth=width,zorder=order)
-    if vertsOrder:
-        for i,(xx,yy) in enumerate(zip(x,y)):
-            plt.text(xx,yy,str(i),fontsize=12)
+# def plotLine(line,vertsOrder,lineColor='k',width=1.,order=100):
+#     x = [n[0] for n in line]
+#     y = [n[1] for n in line]
+#     plt.plot(x,y,color=lineColor,linewidth=width,zorder=order)
+#     if vertsOrder:
+#         for i,(xx,yy) in enumerate(zip(x,y)):
+#             plt.text(xx,yy,str(i),fontsize=12)
 
-def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
-    if not poly:
-        return
-    x = [n[0] for n in poly] + [poly[0][0]]
-    y = [n[1] for n in poly] + [poly[0][1]]
-    if fill:
-        plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
-    plt.plot(x,y,color=lineColor,linestyle=':',linewidth=width,zorder=order)
-    if vertsOrder:
-        for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
-            plt.text(xx,yy,str(i),fontsize=12)
+# def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
+#     if not poly:
+#         return
+#     x = [n[0] for n in poly] + [poly[0][0]]
+#     y = [n[1] for n in poly] + [poly[0][1]]
+#     if fill:
+#         plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
+#     plt.plot(x,y,color=lineColor,linestyle=':',linewidth=width,zorder=order)
+#     if vertsOrder:
+#         for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
+#             plt.text(xx,yy,str(i),fontsize=12)
 
-def randomColor(n, name='hsv'):
-    cmap = plt.cm.get_cmap(name, n)
-    cmapList = [ cmap(i) for i in range(n)]
-    import random
-    random.shuffle(cmapList)
-    i = 0
-    while True:
-        yield cmapList[i]
-        i = (i+1)%n
+# def randomColor(n, name='hsv'):
+#     cmap = plt.cm.get_cmap(name, n)
+#     cmapList = [ cmap(i) for i in range(n)]
+#     import random
+#     random.shuffle(cmapList)
+#     i = 0
+#     while True:
+#         yield cmapList[i]
+#         i = (i+1)%n
 
-def plotEnd():
-    plt.gca().axis('equal')
-    plt.show()
+# def plotEnd():
+#     plt.gca().axis('equal')
+#     plt.show()
