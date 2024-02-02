@@ -484,9 +484,28 @@ class StreetGenerator():
         for net_section in self.sectionNetwork.iterAllForwardSegments():
             if net_section.category != 'scene_border':
 
+                # Create Section from net-section, including style block parameters
                 section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
-                oneway,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic)
-                section.setLaneParams(oneway,fwdPattern,bwdPattern,bothLanes)
+                oneway = 'oneway' in section.tags and section.tags['oneway'] != 'no'
+                street = Street(section.src, section.dst)
+                street.start = section
+                streetStyle = self.styleStore.get( self.getStyle(street) )
+                street.setStyle(streetStyle)
+
+                # Derive Section attributes
+                if oneway:
+                    totalNumLanesOneway = street.getStyleBlockAttr("totalNumLanesOneway")
+                    nrLanes = totalNumLanesOneway if totalNumLanesOneway else street.getStyleBlockAttr("totalNumLanes")
+                else:
+                    nrLanes = street.getStyleBlockAttr("totalNumLanes")
+                props = { 
+                    'nrLanes' : nrLanes,
+                    'laneWidth' : street.getStyleBlockAttr("laneWidth")
+                }
+                _,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic,props)
+                section.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
+
+                # If there are corners, the section must be split to enable finding of parallel sections
                 corners = section.polyline.getCorners(0.7)
                 if corners:
                     corners.append(len(section.polyline)-1)
@@ -495,14 +514,11 @@ class StreetGenerator():
                     for nextCorner in corners:
                         splitline = PolyLine( section.polyline[lastCorner:nextCorner+1] )
                         subsection = Section(net_section,splitline,self.sectionNetwork)
+                        subsection.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
                         street = Street(subsection.src, subsection.dst)
-                        street.start = subsection
-                        streetStyle = self.styleStore.get(
-                            self.getStyle(street)
-                        )
-                        street.setStyle(streetStyle)
                         street.start = street.end = subsection                        
+                        street.setStyle(streetStyle)
 
                         self.waymap.addStreetNode(Corner(subsection.dst))
                         self.waymap.addSection(street)
@@ -514,12 +530,8 @@ class StreetGenerator():
                     self.waymap.addStreetNode(Intersection(section.dst))
 
                     street = Street(section.src, section.dst)
-                    street.start = section
-                    streetStyle = self.styleStore.get(
-                        self.getStyle(street)
-                    )
-                    street.setStyle(streetStyle)
                     street.start = street.end = section
+                    street.setStyle(streetStyle)
 
                     self.waymap.addSection(street)
 

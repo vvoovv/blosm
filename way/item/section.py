@@ -1,4 +1,5 @@
 from .item import Item
+from way.way_properties import getWidth
 from lib.CompGeom.PolyLine import PolyLine
 
 
@@ -21,6 +22,7 @@ class Section(Item):
         self.backwardLanes = None
         self.bothLanes = None
         self.totalLanes = None
+        self.laneWidth = 0.
 
         # Values of the attributes pred and succ can be None in the case of a dead-end, 
         # or an instance of Intersection, PartialIntersection, Crosswalk, TransitionSideLane,
@@ -65,13 +67,21 @@ class Section(Item):
     def dst(self):
         return self._dst
     
-    def setLaneParams(self, oneway, fwdPattern, bwdPattern, bothLanes):
+    def setSectionAttributes(self, oneway, fwdPattern, bwdPattern, bothLanes, props):
         self.oneway = oneway
         self.lanePatterns = (fwdPattern,bwdPattern)
         self.totalLanes = len(fwdPattern) + len(bwdPattern) + bothLanes
         self.forwardLanes = len(fwdPattern)
         self.backwardLanes = len(bwdPattern)
         self.bothLanes = bothLanes
+
+        width = getWidth(self.tags)
+        self.laneWidth = width/self.totalLanes if width else props['laneWidth']
+        self.width = self.totalLanes * self.laneWidth
+        self.forwardWidth =  self.forwardLanes * self.laneWidth + \
+                                self.bothLanes * self.laneWidth/2.
+        self.backwardWidth = self.backwardLanes * self.laneWidth + \
+                                self.bothLanes * self.laneWidth/2.
     
     def getMainCategory(self):
         return self.category

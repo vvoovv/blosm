@@ -168,9 +168,12 @@ def val2patRight(tags,fwd):
             pattern += 'N'
     return pattern
 
-def lanePattern(category,tags,leftHandTraffic):
+def lanePattern(category,tags,leftHandTraffic,props=None):
     val2pat = val2patLeft if leftHandTraffic else val2patRight
-    props = wayCategoryProps[category]
+    if props is None:   # Used in section network, where no PML style available
+        props = {
+            'nrLanes' : 2
+        }
     isOneWay = 'oneway' in tags and tags['oneway'] != 'no'
 
     fwdPattern = None
