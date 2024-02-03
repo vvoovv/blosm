@@ -47,14 +47,13 @@ class BlenderRenderer:
         centerCoords = self.centerCoords
         # lat = radians(manager.centerLat - 90.) # gives incorrect result for the expression below
         lat = atan(centerCoords[2]/sqrt(centerCoords[0]*centerCoords[0] + centerCoords[1]*centerCoords[1]))
-        # Bring the mesh to the north pole with rotations around Z and X axes,
-        # then move it to the center of the coordinate reference system
+        # Rotate the mesh, so it will point to the north pole. The rotations are around Z and X axes
         matrix = Matrix.Rotation(lat-pi/2., 4, 'X') @ Matrix.Rotation(radians(-90. - manager.centerLon), 4, 'Z')
         
-        locationsAtNorthPole = [(matrix @ obj.location) for obj in self.importedObjects]
+        locationsAfterRotation = [(matrix @ obj.location) for obj in self.importedObjects]
         
         # find the lowest Z-coordinate if <self.calculateHeightOffset>
-        heightOffset = min(location[2] for location in locationsAtNorthPole)\
+        heightOffset = min(location[2] for location in locationsAfterRotation)\
             if self.calculateHeightOffset else\
             self.heightOffset
         if self.calculateHeightOffset:
@@ -74,12 +73,16 @@ class BlenderRenderer:
             bpy.context.scene.cursor.location = _cursorLocation
             
             joinedObject = self.importedObjects[-1]
-            #location = locationsAtNorthPole[-1]
+            #location = locationsAfterRotation[-1]
             #location[2] -= heightOffset
             joinedObject.matrix_local = matrix#Matrix.Translation(location) @ matrix
         else:
-            for obj, location in zip(self.importedObjects, locationsAtNorthPole):
-                location[2] -= heightOffset
+            if not self.gltfImporterPatched:
+                # rotate the vector <centerCoords>
+                centerCoords = matrix @ centerCoords
+            for obj, location in zip(self.importedObjects, locationsAfterRotation):
+                if not self.gltfImporterPatched:
+                    location[2] -= centerCoords[2]
                 obj.matrix_local = Matrix.Translation(location) @ matrix
                 obj.select_set(True)
         
