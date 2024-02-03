@@ -352,7 +352,6 @@ class StreetGenerator():
         self.sectionNetwork = None
 
         # Internal use
-        self.waymap = WayMap()
         self.parallelSectionKeys = None
         self.waySections = dict()
         self.internalTransitionSideLanes = dict()
@@ -368,6 +367,7 @@ class StreetGenerator():
 
     def do(self, manager):
         self.wayManager = manager
+        self.waymap = manager.waymap
         self.intersectionAreas = manager.intersectionAreas
         self.transitionSideLanes = manager.transitionSideLanes
         self.transitionSymLanes = manager.transitionSymLanes

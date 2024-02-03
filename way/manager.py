@@ -1,5 +1,6 @@
 from . import Way, Railway
 from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories, vehicleRoadsCategories
+from way.waymap.waymap import WayMap
 
 
 class WayManager:
@@ -27,6 +28,7 @@ class WayManager:
         self.transitionSymLanes = []
         self.transitionSideLanes = []
         # street sections and clusters
+        self.waymap = WayMap()
         self.waySectionLines = dict()
         self.wayClusters = dict()
         

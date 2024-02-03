@@ -65,17 +65,15 @@ class WayMap(nx.MultiDiGraph):
         dst.freeze()
         return self[src][dst][key]['object']
     
-    # Iterate over line section object, optionaly of a given type
+    # Iterate over line section object, optionally of a given type
     def iterSections(self,sectionType=None):
         if sectionType:
-            for src, dst, data in self.edges(data=True):
-                streetNode = data['object']
-                if isinstance(streetNode,sectionType):
-                    yield src, dst, streetNode
+            for src, dst, key, section in self.edges(data='object',keys=True):
+                if isinstance(section,sectionType):
+                    yield src, dst, key, section
         else:
-            for src, dst, data in self.edges(data=True):
-                streetNode = data['object']
-                yield src, dst, streetNode
+            for src, dst, key, section in self.edges(data='object',keys=True):
+                yield src, dst, key, section
 
     # Remove an existing section object.
     def removeSection(self, section):
