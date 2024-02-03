@@ -184,7 +184,7 @@ def lanePattern(category,tags,leftHandTraffic,props=None):
         if 'lanes' in tags:
             fwdCount = int(tags['lanes'])
         else:
-            fwdCount = int(props['nrLanes']/2) if category in halveNrLanesIfOneWay else props['nrLanes']
+            fwdCount = int(props['nrLanes'])
         fwdTags =  tags['turn:lanes'] if 'turn:lanes' in tags else '|'*(fwdCount-1)
         fwdPattern = val2pat(fwdTags,'one')
         bwdPattern = ''

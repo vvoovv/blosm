@@ -488,7 +488,7 @@ class StreetGenerator():
                 section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
                 oneway = 'oneway' in section.tags and section.tags['oneway'] != 'no'
                 street = Street(section.src, section.dst)
-                street.start = section
+                street.start = street.end = section
                 streetStyle = self.styleStore.get( self.getStyle(street) )
                 street.setStyle(streetStyle)
 
