@@ -506,7 +506,14 @@ class StreetGenerator():
                 section.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
                 # If there are corners, the section must be split to enable finding of parallel sections
-                corners = section.polyline.getCorners(0.7)
+                corners = section.polyline.getCorners(0.6) if section.category in ['footway', 'cycleway'] else []
+
+                if False and corners and self.app.type == AppType.commandLine:
+                    from debug import plt, plotPureNetwork
+                    for nextCorner in corners:
+                        c = section.polyline[nextCorner]
+                        plt.plot(c[0],c[1],'ro',markersize=8,zorder=999,markeredgecolor='red', markerfacecolor='none')
+
                 if corners:
                     corners.append(len(section.polyline)-1)
                     self.waymap.addStreetNode(Intersection(section.src))
