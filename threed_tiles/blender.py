@@ -162,7 +162,7 @@ class BlenderRenderer:
     
     def patchGltfImporter(self):
         bv = bpy.app.version
-        if bv[0] == 4 and bv[1] == 0:
+        if (bv[0] == 3 and bv[1] == 6) or (bv[0] == 4 and bv[1] in (0,1)):
             from .gltf_patch import set_convert_functions_4_0
             from io_scene_gltf2.io.imp.gltf2_io_gltf import glTFImporter
             from io_scene_gltf2.blender.imp.gltf2_blender_gltf import BlenderGlTF
