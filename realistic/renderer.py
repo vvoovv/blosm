@@ -172,7 +172,7 @@ class AreaRenderer:
         obj.select_set(False)
 
     def renderTerrain(self, layer, terrain, **kwargs):
-        vertexColors = kwargs.get("vertexColors", True)
+        vertexColors = kwargs.get("vertexColors", False)
         use_antialiasing = kwargs.get("use_antialiasing", True)
         
         layerId = layer.id
