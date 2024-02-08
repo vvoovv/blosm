@@ -112,6 +112,7 @@ class BlenderApp(BaseApp):
     
     voidValue = -32768
     voidSubstitution = 0
+    customName = ""
     
     def __init__(self):
         super().__init__()
@@ -198,7 +199,7 @@ class BlenderApp(BaseApp):
         ]
         
         if addon.osmSource == "server":
-            self.downloadOsmFile(osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat)
+            self.downloadOsmFile(osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat, self.customName)
         else:
             self.osmFilepath = os.path.realpath(bpy.path.abspath(self.osmFilepath))
 
@@ -531,10 +532,17 @@ class BlenderApp(BaseApp):
             v[2] -= minHeight
         
         # create a mesh object in Blender
-        mesh = bpy.data.meshes.new("Terrain")
+        if context.scene.blosm.terrainName != "Terrain":
+            mesh = bpy.data.meshes.new(context.scene.blosm.terrainName)
+        else:
+            mesh = bpy.data.meshes.new("Terrain")
         mesh.from_pydata(verts, [], indices)
         mesh.update()
-        obj = bpy.data.objects.new("Terrain", mesh)
+        if context.scene.blosm.terrainName != "Terrain":
+            obj = bpy.data.objects.new(context.scene.blosm.terrainName, mesh)
+        else:
+            obj = bpy.data.objects.new("Terrain", mesh)
+            
         obj["height_offset"] = minHeight
         context.scene.collection.objects.link(obj)
         context.scene.blosm.terrainObject = obj.name
