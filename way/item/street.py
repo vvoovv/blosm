@@ -24,8 +24,8 @@ class Street(Item):
     def dst(self):
         return self._dst
     
-    def getMainCategory(self):
-        return self.start.getMainCategory()
+    def getCategory(self):
+        return self.start.getCategory()
     
     def setStyle(self, style):
         self.style = style
@@ -39,3 +39,8 @@ class Street(Item):
             while not item is self.end:
                 item.setStyleBlockFromTop(style)
                 item = item.succ
+            # set the style to <self.end>
+            item.setStyleBlockFromTop(style)
+    
+    def getName(self):
+        return self.start.getName()

@@ -27,13 +27,19 @@ def setup(app, osm):
             from style import StyleStore
             from .realistic_streets import getStyleStreet
             
+            from way.item_renderer.section import Section
+            
             styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
             #streetStyle = styleStore.get(self.getStyle(section))
             
             wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
             
+            itemRenderers = {
+                "Section": Section()   
+            }
+            
             wayManager.addRenderer(
-                StreetRenderer(app)
+                StreetRenderer(app, itemRenderers)
             )
     
         if app.highways:

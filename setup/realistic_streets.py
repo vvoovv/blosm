@@ -16,4 +16,4 @@ _categoryToStreetStyle = {
 }
 
 def getStyleStreet(street):
-    return _categoryToStreetStyle.get(street.getMainCategory(), "residential")
+    return _categoryToStreetStyle.get(street.getCategory(), "residential")

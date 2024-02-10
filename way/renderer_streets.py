@@ -24,9 +24,9 @@ cslWidth = crosswalkWidth + stopLineWidth
 
 class StreetRenderer:
     
-    def __init__(self, app, styleStore):
+    def __init__(self, app, itemRenderers):
         self.app = app
-        self.styleStore = styleStore
+        self.itemRenderers = itemRenderers
         
         self.assetsDir = app.assetsDir
         self.assetPackageDir = app.assetPackageDir
@@ -34,6 +34,10 @@ class StreetRenderer:
         self.streetSectionsCollection = None
         self.streetSectionObjNames = []
         self.assetStore = AssetStore(app.assetInfoFilepathStreet)
+        
+        # initialize item renderers
+        for itemRenderer in itemRenderers.values():
+            itemRenderer.init(self)
     
     def prepare(self):
         self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
@@ -49,51 +53,67 @@ class StreetRenderer:
         )
         self.intersectionSidewalksBm = getBmesh(self.intersectionSidewalksObj)
         
-        # check if the Geometry Nodes setup with the name "blosm_gn_street_no_terrain" is already available
-        _gnRoadway = "blosm_roadway"
-        _gnSidewalk = "blosm_sidewalk"
-        _gnLineItem = "blosm_line_item"
-        _gnSeparator = "blosm_roadway_separator"
-        _gnLamps = "blosm_street_lamps"
-        _gnProjectStreets = "blosm_project_streets"
-        _gnTerrainPatches = "blosm_terrain_patches"
-        _gnProjectOnTerrain = "blosm_project_on_terrain"
-        _gnProjectTerrainPatches = "blosm_project_terrain_patches"
-        _gnMeshToCurve = "blosm_mesh_to_curve"
-        _gnPolygons = "blosm_polygons_uv_material"
-        _gnSideLaneTransition = "blosm_side_lane_transition"
+        nodeGroupNames = set(("blosm_init_data",))
+        for itemRenderer in self.itemRenderers.values():
+            itemRenderer.requestNodeGroups(nodeGroupNames)
         
-        node_groups = bpy.data.node_groups
-        if _gnRoadway in node_groups:
-            self.gnRoadway = node_groups[_gnRoadway]
-            self.gnSidewalk = node_groups[_gnSidewalk]
-            self.gnLineItem = node_groups[_gnLineItem]
-            self.gnSeparator = node_groups[_gnSeparator]
-            self.gnLamps = node_groups[_gnLamps]
-            self.gnProjectStreets = node_groups[_gnProjectStreets]
-            self.gnTerrainPatches = node_groups[_gnTerrainPatches]
-            self.gnProjectOnTerrain = node_groups[_gnProjectOnTerrain]
-            self.gnProjectTerrainPatches = node_groups[_gnProjectTerrainPatches]
-            self.gnMeshToCurve = node_groups[_gnMeshToCurve]
-            self.gnPolygons = node_groups[_gnPolygons]
-            self.gnSideLaneTransition = node_groups[_gnSideLaneTransition]
-        else:
-            #
-            # TEMPORARY CODE
-            #
-            # load the Geometry Nodes setup
+        nodeGroups = dict(
+            (nodeGroupName, bpy.data.node_groups[nodeGroupName]) for nodeGroupName in nodeGroupNames if nodeGroupName in bpy.data.node_groups
+        )
+        
+        nodeGroupsToLoad = [nodeGroupName for nodeGroupName in nodeGroupNames if not nodeGroupName in bpy.data.node_groups]
+        
+        if nodeGroupsToLoad:
             with bpy.data.libraries.load(os.path.join(os.path.dirname(self.app.baseAssetPath), "prochitecture_streets.blend")) as (_, data_to):
-                data_to.node_groups = [
-                    _gnRoadway, _gnSidewalk, _gnLineItem, _gnSeparator, _gnLamps,\
-                    _gnProjectStreets, _gnTerrainPatches, _gnProjectOnTerrain, _gnProjectTerrainPatches,\
-                    _gnMeshToCurve, _gnPolygons, _gnSideLaneTransition
-                ]
-            self.gnRoadway, self.gnSidewalk, self.gnLineItem, self.gnSeparator, self.gnLamps,\
-                self.gnProjectStreets, self.gnTerrainPatches, self.gnProjectOnTerrain,\
-                self.gnProjectTerrainPatches, self.gnMeshToCurve, self.gnPolygons,\
-                self.gnSideLaneTransition = data_to.node_groups
+                data_to.node_groups = nodeGroupsToLoad
+        
+        nodeGroups.update(
+            (nodeGroup.name, nodeGroup) for nodeGroup in nodeGroupsToLoad
+        )
+        
+        self.gnInitData = nodeGroups["blosm_init_data"]
+        
+        for itemRenderer in self.itemRenderers.values():
+            itemRenderer.setNodeGroups(nodeGroups)
+        
+        gnRoadway = "blosm_roadway"
+        gnSidewalk = "blosm_sidewalk"
+        gnLineItem = "blosm_line_item"
+        gnSeparator = "blosm_roadway_separator"
+        gnLamps = "blosm_street_lamps"
+        gnProjectStreets = "blosm_project_streets"
+        gnTerrainPatches = "blosm_terrain_patches"
+        gnProjectOnTerrain = "blosm_project_on_terrain"
+        gnProjectTerrainPatches = "blosm_project_terrain_patches"
+        gnMeshToCurve = "blosm_mesh_to_curve"
+        gnPolygons = "blosm_polygons_uv_material"
+        gnSideLaneTransition = "blosm_side_lane_transition"
     
     def render(self, manager, data):
+        location = Vector((0., 0., 0.))
+        for _, _, _, street in manager.waymap.iterSections():
+            obj = self.getStreetObj(street, location)
+            
+            addGeometryNodesModifier(obj, self.gnInitData)
+            
+            if street.start is street.end:
+                self.renderItem(street.start, 0, obj, 0)
+            else:
+                itemIndex = 1
+                item = street.start
+                while not item is street.end:
+                    self.renderItem(item, itemIndex, obj)
+                    itemIndex += 1
+                    item = item.succ
+                # render <street.end>
+                self.renderItem(item, itemIndex, obj)
+    
+    def renderItem(self, item, itemIndex, obj, pointIndexOffset):
+        itemRenderer = self.itemRenderers.get(item.__class__.__name__)
+        if itemRenderer:
+            itemRenderer.render(item, itemIndex, obj, pointIndexOffset)
+    
+    def renderOld(self, manager, data):
         self.terrainRenderer = TerrainPatchesRenderer(self)
         
         self.tmpPrepare(manager) # FXME
@@ -780,9 +800,9 @@ class StreetRenderer:
             
         return material
     
-    def getStreetSectionObj(self, streetSection, location):
+    def getStreetObj(self, street, location):
         obj = createMeshObject(
-            streetSection.tags.get("name", "Street section"),
+            street.getName() or "Street",
             location = location,
             collection = self.streetSectionsCollection
         )

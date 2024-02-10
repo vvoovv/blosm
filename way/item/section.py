@@ -83,5 +83,8 @@ class Section(Item):
         self.backwardWidth = self.backwardLanes * self.laneWidth + \
                                 self.bothLanes * self.laneWidth/2.
     
-    def getMainCategory(self):
+    def getCategory(self):
         return self.category
+    
+    def getName(self):
+        return self.tags.get("name")
