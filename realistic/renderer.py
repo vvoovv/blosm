@@ -160,7 +160,7 @@ class AreaRenderer:
         obj.select_set(False)
 
     def renderTerrain(self, layer, terrain, **kwargs):
-        vertexColors = kwargs.get("vertexColors", True)
+        vertexColors = kwargs.get("vertexColors", False)
         use_antialiasing = kwargs.get("use_antialiasing", True)
         
         layerId = layer.id
@@ -172,6 +172,7 @@ class AreaRenderer:
         collection = bpy.data.collections[collectionName]\
             if collectionName in bpy.data.collections\
             else bpy.data.collections.new(collectionName)
+        collection.use_fake_user = True
         # add <obj> to the brush collection
         collection.objects.link(obj)
         # vertex colors

@@ -1027,7 +1027,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
     cacheJsonFiles: bpy.props.BoolProperty(
         name = "Cache JSON Files",
         description = "Cache JSON Files that define tilesets",
-        default = True
+        default = False
     )
     
     cache3dFiles: bpy.props.BoolProperty(

@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import xml.etree.cElementTree as etree
-import inspect, importlib
 
 from .node import Node
 from .way import Way

@@ -3,6 +3,7 @@ from os import remove as removeFile
 from math import radians, atan, sqrt, pi
 import re
 from operator import itemgetter
+import sys
 
 import bpy
 from mathutils import Matrix
@@ -22,9 +23,18 @@ class BlenderRenderer:
         
         self.licenseRePattern = re.compile(b'\"copyright\":\s*\"(\w+)\"')
         self.copyrightHolders = {}
+        
+        self.gltfImporterPatched = False
+        # the original static function <BlenderGlTF.set_convert_functions> of the glTF importer will stored in the attribute below
+        self._set_convert_functions = None
     
     def prepare(self, manager):
         self.collection = createCollection(self.threedTilesName)
+        
+        self.centerCoords = manager.fromGeographic(manager.centerLat, manager.centerLon, 0.)
+        
+        if "io_scene_gltf2" in sys.modules:
+            self.patchGltfImporter()
     
     def finalize(self, manager):
         if not self.importedObjects:
@@ -34,17 +44,16 @@ class BlenderRenderer:
         #
         # tranformation matrix
         #
-        centerCoords = manager.fromGeographic(manager.centerLat, manager.centerLon, 0.)
+        centerCoords = self.centerCoords
         # lat = radians(manager.centerLat - 90.) # gives incorrect result for the expression below
         lat = atan(centerCoords[2]/sqrt(centerCoords[0]*centerCoords[0] + centerCoords[1]*centerCoords[1]))
-        # Bring the mesh to the north pole with rotations around Z and X axes,
-        # then move it to the center of the coordinate reference system
+        # Rotate the mesh, so it will point to the north pole. The rotations are around Z and X axes
         matrix = Matrix.Rotation(lat-pi/2., 4, 'X') @ Matrix.Rotation(radians(-90. - manager.centerLon), 4, 'Z')
         
-        locationsAtNorthPole = [(matrix @ obj.location) for obj in self.importedObjects]
+        locationsAfterRotation = [(matrix @ obj.location) for obj in self.importedObjects]
         
         # find the lowest Z-coordinate if <self.calculateHeightOffset>
-        heightOffset = min(location[2] for location in locationsAtNorthPole)\
+        heightOffset = min(location[2] for location in locationsAfterRotation)\
             if self.calculateHeightOffset else\
             self.heightOffset
         if self.calculateHeightOffset:
@@ -57,13 +66,23 @@ class BlenderRenderer:
                 obj.select_set(True)
             self.joinObjects()
             
+            # set the origin of the resulting Blender object at <centerCoords>
+            _cursorLocation = bpy.context.scene.cursor.location.copy()
+            bpy.context.scene.cursor.location = (0., 0., 0.) if self.gltfImporterPatched else centerCoords
+            bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+            bpy.context.scene.cursor.location = _cursorLocation
+            
             joinedObject = self.importedObjects[-1]
-            location = locationsAtNorthPole[-1]
-            location[2] -= heightOffset
-            joinedObject.matrix_local = Matrix.Translation(location) @ matrix
+            #location = locationsAfterRotation[-1]
+            #location[2] -= heightOffset
+            joinedObject.matrix_local = matrix#Matrix.Translation(location) @ matrix
         else:
-            for obj, location in zip(self.importedObjects, locationsAtNorthPole):
-                location[2] -= heightOffset
+            if not self.gltfImporterPatched:
+                # rotate the vector <centerCoords>
+                centerCoords = matrix @ centerCoords
+            for obj, location in zip(self.importedObjects, locationsAfterRotation):
+                if not self.gltfImporterPatched:
+                    location[2] -= centerCoords[2]
                 obj.matrix_local = Matrix.Translation(location) @ matrix
                 obj.select_set(True)
         
@@ -82,6 +101,15 @@ class BlenderRenderer:
         
         self.importedObjects.clear()
         self.collection = None
+        
+        if self.gltfImporterPatched:
+            from io_scene_gltf2.io.imp.gltf2_io_gltf import glTFImporter
+            from io_scene_gltf2.blender.imp.gltf2_blender_gltf import BlenderGlTF
+            
+            # clean everything up after patching
+            BlenderGlTF.set_convert_functions = self._set_convert_functions
+            self._set_convert_functions = None
+            delattr(glTFImporter, "_offset")
         
         return numImportedTiles
     
@@ -131,3 +159,16 @@ class BlenderRenderer:
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.remove_doubles()
         bpy.ops.object.mode_set(mode='OBJECT')
+    
+    def patchGltfImporter(self):
+        bv = bpy.app.version
+        if (bv[0] == 3 and bv[1] == 6) or (bv[0] == 4 and bv[1] in (0,1)):
+            from .gltf_patch import set_convert_functions_4_0
+            from io_scene_gltf2.io.imp.gltf2_io_gltf import glTFImporter
+            from io_scene_gltf2.blender.imp.gltf2_blender_gltf import BlenderGlTF
+            
+            glTFImporter._offset = self.centerCoords
+            self._set_convert_functions = BlenderGlTF.set_convert_functions
+            BlenderGlTF.set_convert_functions = set_convert_functions_4_0
+            
+            self.gltfImporterPatched = True
