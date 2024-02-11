@@ -23,22 +23,28 @@ def setup(app, osm):
         wayManager = setup.getWayManager()
         if app.highways or app.railways:
             from action.generate_streets import StreetGenerator
-            from action.generate_items import ItemGenerator
             from way.renderer_streets import StreetRenderer
             from style import StyleStore
+            from .realistic_streets import getStyleStreet
             
-            wayManager.addAction(StreetGenerator())
-            wayManager.addAction(ItemGenerator())
+            from way.item_renderer.section import Section
+            
+            styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
+            #streetStyle = styleStore.get(self.getStyle(section))
+            
+            wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
+            
+            itemRenderers = {
+                "Section": Section()   
+            }
             
             wayManager.addRenderer(
-                StreetRenderer(
-                    app,
-                    StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
-                )
+                StreetRenderer(app, itemRenderers)
             )
     
         if app.highways:
             setup.roadsAndPaths()
+            setup.ptPlatforms()
         
         if app.railways:
             setup.railways()
@@ -83,7 +89,3 @@ def getStyleBuilding(building, app):
         return "single family house"
     
     return "high rise"
-
-
-def getStyleStreet():
-    return

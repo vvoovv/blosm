@@ -1,6 +1,6 @@
 import os, argparse
 
-from . import BaseApp
+from . import BaseApp, AppType
 from util.transverse_mercator import TransverseMercator
 
 
@@ -17,6 +17,7 @@ class Layer:
 class CommandLineApp(BaseApp):
     
     def __init__(self):
+        self.type = AppType.commandLine
         super().__init__()
         
         self.projection = None
@@ -33,6 +34,8 @@ class CommandLineApp(BaseApp):
         self.initArgParser()
         
         self.mode = BaseApp.twoD
+        
+        self.assetPackage = "default"
     
     def initArgParser(self):
         self.argParser = argParser = argparse.ArgumentParser()

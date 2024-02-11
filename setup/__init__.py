@@ -147,6 +147,24 @@ class Setup:
             self.getWayManager().getRailwayManager()
         )
     
+    def ptPlatforms(self):
+        from way.pt_stop import PtStopManager
+        
+        osm = self.osm
+        ptStopManager = PtStopManager()
+        
+        osm.addCondition(
+            lambda tags, e: tags.get("public_transport") == "platform" or tags.get("highway") == "bus_stop",
+            "pt_stops",
+            ptStopManager
+        )
+        
+        osm.addNodeCondition(
+            lambda tags, e: tags.get("public_transport") == "platform" or tags.get("highway") == "bus_stop",
+            "pt_stops",
+            ptStopManager
+        )
+    
     def getFeatureDetectionAction(self, simplifyPolygons):
         if not self.featureDetectionAction:
             from action.feature_detection import FeatureDetection

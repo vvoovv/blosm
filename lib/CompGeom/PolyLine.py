@@ -448,12 +448,21 @@ class PolyLine():
         offsetVerts = offsetL + offsetR
         offsetPoly = PolyLine(offsetVerts)
         return offsetPoly
+    
+    def getCorners(self,maxSin=0.7):
+        # Find corners along polyline (sin(angle)>maxSin)
+        corners = []
+        uV = self.unitVectors()
+        for i, (v1,v2) in enumerate(pairs(uV)):
+            if abs(v1.cross(v2)) > maxSin:
+                corners.append(i+1)
+        return corners
 
-    def plot(self,color,width=1,showOrder=False,order=999):
+    def plot(self,color,width=1,linestyle='solid',showOrder=False,order=999):
         import matplotlib.pyplot as plt        
         x = [n[0] for n in self.verts[self.view]]
         y = [n[1] for n in self.verts[self.view]]
-        plt.plot(x,y,color,linewidth=width,zorder=order)
+        plt.plot(x,y,color=color,linewidth=width,linestyle=linestyle,zorder=order)
         if showOrder:
             for i,(xx,yy) in enumerate(zip(x,y)):
                 plt.text(xx,yy,' '+str(i),fontsize=12)

@@ -32,7 +32,7 @@ class Street(StreetItem):
         super().__init__(defName, use, markup, condition, attrs)
 
 
-class Roadway(StreetItem):
+class Section(StreetItem):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
         super().__init__(defName, use, markup, condition, attrs)

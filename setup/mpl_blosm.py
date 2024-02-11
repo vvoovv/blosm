@@ -28,6 +28,7 @@ def setup(app, osm):
     app.argParserExtra.add_argument("--wayClustering", action='store_true', help="Create way clusters", default=False)
     app.argParserExtra.add_argument("--simplifyPolygonsAgain", action='store_true', help="Restore the features and simplify the polygons again", default=False)
     app.argParserExtra.add_argument("--generateStreets", action='store_true', help="Generate and show streets and intersections", default=False)
+    app.argParserExtra.add_argument("--assetsDir", help="Path to a folder with assets and PML styles", default='')
     
     # parse the newly added command line arguments
     app.parseArgs()
@@ -47,6 +48,8 @@ def setup(app, osm):
     
     generateStreets = getattr(app, "generateStreets", False)
     
+    
+    app.setAssetPackagePaths()
     
     setup = Setup(app, osm)
     
@@ -98,7 +101,12 @@ def setup(app, osm):
         if generateStreets:
             from action.generate_streets import StreetGenerator
             from mpl.renderer.streets import StreetRenderer
-            wayManager.addAction(StreetGenerator())
+            from style import StyleStore
+            from setup.realistic_streets import getStyleStreet
+            
+            styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
+            
+            wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
             wayManager.addRenderer(StreetRenderer(debug=False))
         else:
             wayManager.addRenderer(WayVisibilityRenderer(showIDs=showIDs))
