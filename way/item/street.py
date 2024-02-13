@@ -13,8 +13,11 @@ class Street(Item):
         self._src = src
         self._dst = dst
         
-        self.start = None
-        self.end = None
+        self.head = None
+        self.tail = None
+
+        self.pred = None
+        self.succ = None
 
     @property
     def src(self):
@@ -25,22 +28,22 @@ class Street(Item):
         return self._dst
     
     def getCategory(self):
-        return self.start.getCategory()
+        return self.head.getCategory()
     
     def setStyle(self, style):
         self.style = style
         
         self.setStyleBlockFromTop(style)
         
-        if self.start is self.end:
-            self.start.setStyleBlockFromTop(style)
+        if self.head is self.tail:
+            self.head.setStyleBlockFromTop(style)
         else:
             item = self.start
-            while not item is self.end:
+            while item is not self.tail:
                 item.setStyleBlockFromTop(style)
                 item = item.succ
             # set the style to <self.end>
             item.setStyleBlockFromTop(style)
     
     def getName(self):
-        return self.start.getName()
+        return self.head.getName()

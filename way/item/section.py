@@ -41,6 +41,10 @@ class Section(Item):
 
         self.lanePatterns = None
 
+        self.trimS = 0.                      # trim factor for start
+        self.trimT = len(self.polyline)-1    # trim factor for target
+
+
     def split(self, nodeIndex, item, itemLength):
         # The method splits the section at the <nodeIndex> and inserts the <item> which has
         # the length <itemLength>. The attributes centerline, pred, succ of the items in question

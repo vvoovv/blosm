@@ -21,8 +21,7 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
 
-from way.waymap.waymap import WayMap
-from way.item import *
+from way.item import Intersection, Corner, Section, Street
 
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
@@ -385,8 +384,10 @@ class StreetGenerator():
 
         # plotPureNetwork(self.sectionNetwork)
         self.createParallelSections()
-        self.detectIntersectionClusters()
+        # self.detectIntersectionClusters()
         # plotEnd()
+
+        self.updateIntersections()
 
         # self.detectWayClusters()
         # self.createLongClusterWays()
@@ -488,7 +489,7 @@ class StreetGenerator():
                 section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
                 oneway = 'oneway' in section.tags and section.tags['oneway'] != 'no'
                 street = Street(section.src, section.dst)
-                street.start = street.end = section
+                street.head = street.tail = section
                 streetStyle = self.styleStore.get( self.getStyle(street) )
                 street.setStyle(streetStyle)
 
@@ -524,7 +525,7 @@ class StreetGenerator():
                         subsection.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
                         street = Street(subsection.src, subsection.dst)
-                        street.start = street.end = subsection                        
+                        street.head = street.tail = subsection                        
                         street.setStyle(streetStyle)
 
                         self.waymap.addStreetNode(Corner(subsection.dst))
@@ -537,7 +538,7 @@ class StreetGenerator():
                     self.waymap.addStreetNode(Intersection(section.dst))
 
                     street = Street(section.src, section.dst)
-                    street.start = street.end = section
+                    street.head = street.tail = section
                     street.setStyle(streetStyle)
 
                     self.waymap.addSection(street)
@@ -596,7 +597,7 @@ class StreetGenerator():
             # multKey is 0,1,.. for multiple edges between equal nodes (waymap is a MultiDiGraph of networkx)
             # It must be included in the dictionary entry key to distinguish them.
             dictKey = (src,dst,multKey)
-            section = street.start
+            section = street.head
 
             # DEBUG Show section id
             if False and self.app.type == AppType.commandLine:
@@ -649,7 +650,7 @@ class StreetGenerator():
             # multKey is 0,1,.. for multiple edges between equal nodes (waymap is a MultiDiGraph of networkx)
             # It must be included in the dictionary entry key to distinguish them.
             dictKey = (src,dst,multKey)
-            template = templateStreet.start
+            template = templateStreet.head
 
             if dictKey in boxes:
 
@@ -674,7 +675,7 @@ class StreetGenerator():
                         continue # Skip, the template is its own neighbor.
 
                     srcNeigbor, dstNeigbor, neighMultKey = neighDictKey
-                    neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object'].start # Section from multigraph edge
+                    neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object'].head # Section from multigraph edge
 
                     # If the polyline of this neighbor ...
                     neighborLine = neighbor.polyline
@@ -720,7 +721,7 @@ class StreetGenerator():
                         p0 = section.polyline[len(section.polyline)//2]
                         plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
                         plt.text(p[0],p[1],'%3d'%(section.id))
-                    section = self.waymap.getSectionObject(src,dst,0).start.polyline.plot(color,2,'solid')
+                    section = self.waymap.getSectionObject(src,dst,0).head.polyline.plot(color,2,'solid')
                 if inPieces:
                     plotEnd()
             # if not inPieces:
@@ -1763,6 +1764,46 @@ class StreetGenerator():
         # Remove ways that have been covered by the cluster
         for wayID in self.waysCoveredByCluster:
             self.waySections[wayID].isValid=False
+
+    def updateIntersections(self):
+        # At this stage, it is assumed, that SideLanes, SymLanes and clustered intersections are already built
+        # and that their nodes are stored in <self.processedNodes>.
+        nodesAlreadyProcessed = self.processedNodes
+
+        nr = 0
+        for location, intersection in self.waymap.iterNodes(Intersection):
+            if location in nodesAlreadyProcessed:
+                continue
+            inStreets, outStreets = self.waymap.getInOutSections(location)
+            intersection.update(inStreets, outStreets)
+
+            # DEBUG: Show clusters of parallel way-sections.
+            # The plotting functions for this debug part are at the end of this module
+            if False and self.app.type == AppType.commandLine:
+                from debug import plt, plotPolygon, plotEnd
+                plt.close()
+                for i,way in enumerate(intersection.leaveWays):
+                    plotPolygon(way.polygon,False,'k')
+                    p = way.polyline[-1]
+                    plt.text(p[0],p[1],str(i))
+                plotEnd()
+
+            # # TODO treat somehow short ways, this here does not work
+            shortWays = intersection.cleanShortWays(False)
+            if shortWays:
+                for way in shortWays:
+                    way.section.isValid = False
+
+            intersection.processIntersection()
+            nr += 1
+
+            # DEBUG: Show clusters of parallel way-sections.
+            # The plotting functions for this debug part are at the end of this module
+            if True and self.app.type == AppType.commandLine:
+                from debug import plt, plotPolygon
+                plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
+
+
 
     def createIntersectionAreas(self):
         nodesAlreadyProcessed = self.processedNodes

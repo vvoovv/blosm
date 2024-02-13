@@ -305,7 +305,8 @@ class Intersection():
             #     plt.text(p3[0],p3[1],'   p3')
 
             # Project these onto the centerline of the out-way and create intermediate
-            # polygon point <p2>.# _,tP1 = centerWay.polyline.orthoProj(p1)
+            # polygon point <p2>.
+            # _,tP1 = centerWay.polyline.orthoProj(p1)
             # _,tP3 = centerWay.polyline.orthoProj(p3)
             Id = centerWay.section.id  if centerWay.fwd else -centerWay.section.id
             t0 = 0.

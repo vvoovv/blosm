@@ -90,6 +90,13 @@ class WayMap(nx.MultiDiGraph):
             self.remove_edge(src,dst)
         self.addSection(newSec)
 
+    def getInOutSections(self, node):
+        location = node if isinstance(node,Vector) else node.location
+        inSections = [section for _, _, _, section in self.in_edges(location,data='object',keys=True)]
+        outSections = [section for _, _, _, section in self.out_edges(location,data='object',keys=True)]
+        return inSections, outSections
+
+
     # def splitSectionBy(self, src, dst, splitPos, node):
     #     if self.has_edge(src,dst):
     #         section = [sec for sec in self.getSections(src,dst)][0] # multi-section?
