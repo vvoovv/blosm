@@ -158,9 +158,9 @@ class RealisticBuildingLayerExport(RealisticBuildingLayer):
         # The same UV-map is used for both the facade and cladding textures
         self.uvLayerNameCladding = "facade"
     
-    def prepare(self, instance):
-        mesh = instance.obj.data
+    def prepare(self):
+        mesh = self.obj.data
         uv_layers = mesh.uv_layers
         uv_layers.new(name=self.uvLayerNameFacade)
         
-        super().prepare(instance)
+        super().prepare()

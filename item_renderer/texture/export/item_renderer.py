@@ -19,7 +19,7 @@ class ItemRendererMixin:
     
     def getCladdingMaterialId(self, item, claddingTextureInfo):
         color = self.getCladdingColorHex(item)
-        return "%s_%s%s" % (color, claddingTextureInfo["material"], os.path.splitext(claddingTextureInfo["name"])[1])\
+        return "%s_%s%s" % (color, claddingTextureInfo["cladding"], os.path.splitext(claddingTextureInfo["name"])[1])\
             if claddingTextureInfo and color\
             else claddingTextureInfo["name"]
     

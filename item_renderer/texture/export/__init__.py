@@ -5,6 +5,7 @@ from ..div import Div as DivBase
 from ..level import Level as LevelBase
 from ..top import Top as TopBase
 from ..bottom import Bottom as BottomBase
+from ..corner import Corner as CornerBase
 from .entrance import Entrance
 
 from ..roof_flat import RoofFlat as RoofFlatBase
@@ -56,6 +57,14 @@ class Bottom(BottomBase, Container):
         self.Container = Container
         Container.__init__(self, exportMaterials=True)
         BottomBase.__init__(self)
+
+
+class Corner(CornerBase, Container):
+    
+    def __init__(self):
+        # a reference to the Container class used in the parent classes
+        self.Container = Container
+        Container.__init__(self, exportMaterials=True)
 
 
 class RoofFlat(RoofFlatBase, ItemRendererMixin):
