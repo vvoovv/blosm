@@ -119,6 +119,13 @@ class Intersection(Item):
             fragments = []
             endR = centre.polyline.offsetPointAt(len(centre.polyline)-1.,centre.widthR)
             endL = centre.polyline.offsetPointAt(len(centre.polyline)-1.,centre.widthL)
+            # if debug:
+            #     from debug import plt,plotPolygon,plotEnd
+            #     plotPolygon(right.polygon,False,'r')
+            #     plotPolygon(left.polygon,False,'g')
+            #     plt.plot(endR[0],endR[1],'ro')
+            #     plt.plot(endL[0],endL[1],'go')
+            #     plotEnd()
             if pointInPolygon(right.polygon, endR) in ('IN','ON'):
                 shortWays.append(centre)
             elif pointInPolygon(right.polygon, endL) in ('IN','ON'):
@@ -175,6 +182,9 @@ class Intersection(Item):
                 p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
             else: # out
                 print('out')
+                # from debug import plt
+                # p = self.location
+                # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
                 continue
 
             # Find the boundary intersection p3 at the left side of center-way
@@ -192,6 +202,9 @@ class Intersection(Item):
                 p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
             else: # out
                 print('out')
+                # from debug import plt
+                # p = self.location
+                # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
                 continue
 
             # Project p1 and p3 onto the centerline of the center-way and create intermediate

@@ -24,6 +24,8 @@ class Section(Item):
         self.totalLanes = None
         self.laneWidth = 0.
 
+        self.valid = True
+
         # Values of the attributes pred and succ can be None in the case of a dead-end, 
         # or an instance of Intersection, PartialIntersection, Crosswalk, TransitionSideLane,
         # TransitionSymLane, SplitMerge, or PtStop.

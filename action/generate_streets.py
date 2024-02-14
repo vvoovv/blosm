@@ -388,6 +388,7 @@ class StreetGenerator():
         # plotEnd()
 
         self.updateIntersections()
+        self.finalizeOutput()
 
         # self.detectWayClusters()
         # self.createLongClusterWays()
@@ -1797,12 +1798,19 @@ class StreetGenerator():
             intersection.processIntersection()
             nr += 1
 
-            # DEBUG: Show clusters of parallel way-sections.
+            # DEBUG: Show intersections.
             # The plotting functions for this debug part are at the end of this module
             if True and self.app.type == AppType.commandLine:
                 from debug import plt, plotPolygon
                 plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
 
+    def finalizeOutput(self):
+        for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):
+            section = street.head
+            if section.trimS < section.trimT:
+                section.centerline = section.polyline.trimmed(section.trimS,section.trimT)[::]
+            else:
+                section.valid = False
 
 
     def createIntersectionAreas(self):
