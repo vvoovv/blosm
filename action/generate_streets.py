@@ -367,7 +367,7 @@ class StreetGenerator():
     def do(self, manager):
         self.wayManager = manager
         self.waymap = manager.waymap
-        self.intersectionAreas = manager.intersectionAreas
+        self.intersections = manager.intersections
         self.transitionSideLanes = manager.transitionSideLanes
         self.transitionSymLanes = manager.transitionSymLanes
         self.wayClusters = manager.wayClusters
@@ -1804,6 +1804,9 @@ class StreetGenerator():
             if True and self.app.type == AppType.commandLine:
                 from debug import plt, plotPolygon
                 plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
+
+            if intersection.area and intersection.leaveWays:
+                self.intersections.append(intersection)
 
     def finalizeOutput(self):
         for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):

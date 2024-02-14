@@ -20,6 +20,7 @@ class StreetRenderer(Renderer):
         return
     
     def render(self, manager, data):
+        return
         for Id,isectArea in enumerate(manager.intersectionAreas):
             plotPolygon(isectArea.polygon,False,'r','r',2,True)
             if self.debug:
