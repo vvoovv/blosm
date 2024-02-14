@@ -62,7 +62,6 @@ class Intersection(Item):
         self.leaveWays = []
 
         self.area = []
-        # self.connectors_old = None
         self.startConnector = None
 
     @property
@@ -214,12 +213,10 @@ class Intersection(Item):
             if tP3 > tP1:
                 p2 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthR)
                 t0 = tP3
-                self.connectors_old[Id] = len(self.area)+1
                 connector.index = len(self.area)+1
             else:
                 p2 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthL)
                 t0 = tP1
-                self.connectors_old[Id] = len(self.area)
                 connector.index = len(self.area)
 
             if centerWay.leaving:
@@ -231,7 +228,6 @@ class Intersection(Item):
             # last vertex == first vertex ?
             if self.area and (p1-self.area[-1]).length < 0.01:
                 self.area = self.area[:-1]
-                self.connectors_old[Id] -= 1
                 connector.index -= 1
 
             if p1==p2 or p2==p3: # way is perpendicular

@@ -702,7 +702,7 @@ class StreetGenerator():
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        if True and self.app.type == AppType.commandLine:
+        if False and self.app.type == AppType.commandLine:
             from debug import plt, plotPureNetwork, randomColor, plotEnd
             inPieces = False
             if not inPieces:
@@ -761,7 +761,7 @@ class StreetGenerator():
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        if True and self.app.type == AppType.commandLine:
+        if False and self.app.type == AppType.commandLine:
             from debug import plt, plotPolygon, randomColor, plotLine
             colorIter = randomColor(10)
             # plotPureNetwork(self.sectionNetwork)
@@ -1801,7 +1801,7 @@ class StreetGenerator():
 
             # DEBUG: Show intersections.
             # The plotting functions for this debug part are at the end of this module
-            if True and self.app.type == AppType.commandLine:
+            if False and self.app.type == AppType.commandLine:
                 from debug import plt, plotPolygon
                 plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
 
