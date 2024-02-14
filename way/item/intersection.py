@@ -34,16 +34,16 @@ class LeavingWay():
     # of its polyline, the sides 'left' and 'right', and the start and target
     # trim positions are redirected correctly to the instance <section> of Section.
 
-    def __init__(self, street, section, fwd):
+    def __init__(self, street, section, leaving):
         # street:   Instance of Street, connected to the intersection
         # section:  Instance of a Section, that holds the way-section in its
         #           original direction.
-        # fwd:      Direction as outgoing section. True, if same as original.
+        # leaving:  Direction as outgoing section. True, if same as original.
         self.street = street
         self.section = section
-        self.fwd = fwd
-        self.offset = self.section.offset if fwd else -self.section.offset
-        self.polyline = PolyLine(section.polyline[:]) if fwd else PolyLine(section.polyline[::-1])
+        self.leaving = leaving
+        self.offset = self.section.offset if leaving else -self.section.offset
+        self.polyline = PolyLine(section.polyline[:]) if leaving else PolyLine(section.polyline[::-1])
         self.widthL = self.section.width/2 - self.offset
         self.widthR = -self.section.width/2 - self.offset
         self.polygon = self.polyline.buffer(abs(self.widthL),abs(self.widthR))
@@ -62,8 +62,8 @@ class Intersection(Item):
         self.leaveWays = []
 
         self.area = []
-        self.connectors_old = None
-        self.connectors = None
+        # self.connectors_old = None
+        self.startConnector = None
 
     @property
     def location(self):
@@ -92,13 +92,13 @@ class Intersection(Item):
     def insertConnector(self, connector):
         # Inserts the instance <connector> of IntConnector into the circular doubly-linked list,
         # attached to self.connectors. It is inserted "after", which is in counter-clockwise direction.
-        if self.connectors is None:
+        if self.startConnector is None:
             connector.succ = connector.pred = connector
-            self.connectors = connector
+            self.startConnector = connector
         else:
-            last = self.connectors.pred
-            connector.succ = self.connectors
-            self.connectors.pred = connector
+            last = self.startConnector.pred
+            connector.succ = self.startConnector
+            self.startConnector.pred = connector
             connector.pred = last
             last.succ = connector
 
@@ -154,8 +154,8 @@ class Intersection(Item):
             # Embed the connector of centerWay
             connector = IntConnector(self)
             connector.item = centerWay.street
-            connector.fwd = centerWay.fwd
-            if connector.fwd:
+            connector.leaving = centerWay.leaving
+            if connector.leaving:
                 centerWay.street.pred = connector
             else:
                 centerWay.street.succ = connector
@@ -196,7 +196,7 @@ class Intersection(Item):
 
             # Project p1 and p3 onto the centerline of the center-way and create intermediate
             # polygon point <p2>.
-            Id = centerWay.section.id  if centerWay.fwd else -centerWay.section.id
+            Id = centerWay.section.id  if centerWay.leaving else -centerWay.section.id
             t0 = 0.
             if tP3 > tP1:
                 p2 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthR)
@@ -209,7 +209,7 @@ class Intersection(Item):
                 self.connectors_old[Id] = len(self.area)
                 connector.index = len(self.area)
 
-            if centerWay.fwd:
+            if centerWay.leaving:
                 centerWay.section.trimS = max(centerWay.section.trimS, t0)
             else:
                 t = len(centerWay.section.polyline)-1 - t0

@@ -12,8 +12,9 @@ class IntConnector():
         # the item, to which the connector is connected to
         self.item = None
 
-        # the direction of the item, to which the connector is connected to
-        self.fwd = None
+        # the direction of the item, to which the connector is connected to.
+        # True, if the item leaves the intersection
+        self.leaving = None
 
         # the preceding connector in the intersection (in clockwise direction)
         self.pred = None
