@@ -1,6 +1,5 @@
 from .item import Item
 from way.way_properties import getWidth
-from lib.CompGeom.PolyLine import PolyLine
 
 
 class Section(Item):

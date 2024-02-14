@@ -1787,13 +1787,14 @@ class StreetGenerator():
                     plotPolygon(way.polygon,False,'k')
                     p = way.polyline[-1]
                     plt.text(p[0],p[1],str(i))
+                plt.title(str(nr))
                 plotEnd()
 
             # # TODO treat somehow short ways, this here does not work
             shortWays = intersection.cleanShortWays(False)
             if shortWays:
                 for way in shortWays:
-                    way.section.isValid = False
+                    way.section.valid = False
 
             intersection.processIntersection()
             nr += 1

@@ -116,29 +116,29 @@ class Intersection(Item):
             return []
 
         for left,centre,right in cycleTriples(self.leaveWays):
-            fragments = []
             endR = centre.polyline.offsetPointAt(len(centre.polyline)-1.,centre.widthR)
             endL = centre.polyline.offsetPointAt(len(centre.polyline)-1.,centre.widthL)
             # if debug:
             #     from debug import plt,plotPolygon,plotEnd
             #     plotPolygon(right.polygon,False,'r')
             #     plotPolygon(left.polygon,False,'g')
+            #     plotPolygon(centre.polygon,False,'k:')
             #     plt.plot(endR[0],endR[1],'ro')
             #     plt.plot(endL[0],endL[1],'go')
             #     plotEnd()
             if pointInPolygon(right.polygon, endR) in ('IN','ON'):
                 shortWays.append(centre)
             elif pointInPolygon(right.polygon, endL) in ('IN','ON'):
-                clipper = LinePolygonClipper(right.polygon)
+                # If the centerline leaves the neighbor and returns, then it's not a short way.
                 border = centre.polyline.parallelOffset(centre.widthL)
-                fragments, _, _  = clipper.clipLine(border)
-                if len(fragments) <= 1:
+                doesLeave = any( (pointInPolygon(right.polygon,p) == 'OUT') for p in border )
+                if not doesLeave:
                     shortWays.append(centre)
             if pointInPolygon(left.polygon, endR) in ('IN','ON'):
-                clipper = LinePolygonClipper(left.polygon)
+                # If the centerline leaves the neighbor and returns, then it's not a short way.
                 border = centre.polyline.parallelOffset(centre.widthR)
-                fragments, _, _  = clipper.clipLine(border)
-                if len(fragments) <= 1:
+                doesLeave = any( (pointInPolygon(left.polygon,p) == 'OUT') for p in border )
+                if not doesLeave:
                     shortWays.append(centre)
             elif pointInPolygon(left.polygon, endL) in ('IN','ON'):
                 shortWays.append(centre)
