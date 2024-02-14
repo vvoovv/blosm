@@ -96,12 +96,12 @@ class StreetRenderer:
             
             addGeometryNodesModifier(obj, self.gnInitData)
             
-            if street.start is street.end:
-                self.renderItem(street.start, 0, obj, 0)
+            if street.tail is street.head:
+                self.renderItem(street.tail, 0, obj, 0)
             else:
                 itemIndex = 1
-                item = street.start
-                while not item is street.end:
+                item = street.tail
+                while not item is street.head:
                     self.renderItem(item, itemIndex, obj)
                     itemIndex += 1
                     item = item.succ
