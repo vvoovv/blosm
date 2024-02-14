@@ -1,6 +1,5 @@
 from .item import Item
 from way.way_properties import getWidth
-from lib.CompGeom.PolyLine import PolyLine
 
 
 class Section(Item):
@@ -24,6 +23,8 @@ class Section(Item):
         self.totalLanes = None
         self.laneWidth = 0.
 
+        self.valid = True
+
         # Values of the attributes pred and succ can be None in the case of a dead-end, 
         # or an instance of Intersection, PartialIntersection, Crosswalk, TransitionSideLane,
         # TransitionSymLane, SplitMerge, or PtStop.
@@ -40,6 +41,10 @@ class Section(Item):
         self.isLoop = self._src == self._dst
 
         self.lanePatterns = None
+
+        self.trimS = 0.                      # trim factor for start
+        self.trimT = len(self.polyline)-1    # trim factor for target
+
 
     def split(self, nodeIndex, item, itemLength):
         # The method splits the section at the <nodeIndex> and inserts the <item> which has

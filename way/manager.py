@@ -22,9 +22,9 @@ class WayManager:
         
         self.actions = []
         
-        # <self.intersectionAreas>, <self.wayClusters> and <self.waySectionLines>
+        # <self.intersections>, <self.wayClusters> and <self.waySectionLines>
         # are used for realistic rendering of streets
-        self.intersectionAreas = []
+        self.intersections = []
         self.transitionSymLanes = []
         self.transitionSideLanes = []
         # street sections and clusters

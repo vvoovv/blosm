@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+from mathutils import Vector
 
 def plotNetwork(network,waySections=None):
     from mpl.renderer.road_polygons import RoadPolygonsRenderer
@@ -55,7 +56,13 @@ def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,
     y = [n[1] for n in poly] + [poly[0][1]]
     if fill:
         plt.fill(x[:-1],y[:-1],color=fillColor,alpha=alpha,zorder = order)
-    plt.plot(x,y,color=lineColor,linestyle=':',linewidth=width,zorder=order)
+    if len(lineColor) > 1:
+        color = lineColor[0]
+        linestyle = lineColor[1]
+    else:
+        color = lineColor
+        linestyle = 'solid'
+    plt.plot(x,y,color=color,linestyle=linestyle,linewidth=width,zorder=order)
     if vertsOrder:
         for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
             plt.text(xx,yy,str(i),fontsize=12)
