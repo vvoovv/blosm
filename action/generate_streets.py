@@ -21,7 +21,7 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
 
-from way.item import Intersection, Corner, Section, Street
+from way.item import Intersection, Corner, Section, Street, SideLane, SymLane
 
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
@@ -141,46 +141,46 @@ class StreetSection(BaseWaySection):
     def getRightBorderDistance(self):
         return 0.5*self.width
 
-class TransitionSideLane():
-    def __init__(self):
-        # A tuple of way IDs of the way-sections, that connect to this transition. The ID is
-        # positive, when the start of the way-section connects to the transition, and
-        # negative, when the way-section ends here.
-        self.ways = None
+# class TransitionSideLane():
+#     def __init__(self):
+#         # A tuple of way IDs of the way-sections, that connect to this transition. The ID is
+#         # positive, when the start of the way-section connects to the transition, and
+#         # negative, when the way-section ends here.
+#         self.ways = None
 
-        # True, if there is a turn lane to the left from the narrower way-section.
-        self.laneL = False
+#         # True, if there is a turn lane to the left from the narrower way-section.
+#         self.laneL = False
 
-        # True, if there is a turn lane to the right from the narrower way-section.
-        self.laneR = False
+#         # True, if there is a turn lane to the right from the narrower way-section.
+#         self.laneR = False
 
-        # Instance of incoming StreetSection.
-        self.incoming = None
+#         # Instance of incoming StreetSection.
+#         self.incoming = None
 
-        # Instance of outgoing StreetSection.
-        self.outgoing = None
+#         # Instance of outgoing StreetSection.
+#         self.outgoing = None
 
-        # self.outgoing.totalLanes > self.incoming.totalLanes
-        self.totalLanesIncreased = 0
+#         # self.outgoing.totalLanes > self.incoming.totalLanes
+#         self.totalLanesIncreased = 0
 
-class TransitionSymLane():
-    def __init__(self):
-        # The vertices of the polygon in counter-clockwise order. A Python
-        # list of vertices of type mathutils.Vector.
-        self.polygon = None
+# class TransitionSymLane():
+#     def __init__(self):
+#         # The vertices of the polygon in counter-clockwise order. A Python
+#         # list of vertices of type mathutils.Vector.
+#         self.polygon = None
         
-        # The connectors of this polygon to the way-sections.
-        # A dictionary of indices, where the key is the corresponding
-        # way-section key in the dictionary of TrimmedWaySection. The key is
-        # positive, when the start of the way-section connects to the area, and
-        # negative, when the way-section ends here. The value <index> in the
-        # dictionary value is the the first index in the intersection polygon
-        # for this connector. The way connects between <index> and <index>+1. 
-        self.connectors = dict()
+#         # The connectors of this polygon to the way-sections.
+#         # A dictionary of indices, where the key is the corresponding
+#         # way-section key in the dictionary of TrimmedWaySection. The key is
+#         # positive, when the start of the way-section connects to the area, and
+#         # negative, when the way-section ends here. The value <index> in the
+#         # dictionary value is the the first index in the intersection polygon
+#         # for this connector. The way connects between <index> and <index>+1. 
+#         self.connectors = dict()
                 
-        self.numPoints = 0
+#         self.numPoints = 0
         
-        self.connectorsInfo = None
+#         self.connectorsInfo = None
 
     def getConnectorsInfo(self):
         """
@@ -384,6 +384,7 @@ class StreetGenerator():
 
         # plotPureNetwork(self.sectionNetwork)
         self.createParallelSections()
+        self.createSymSideLanes()
         # self.detectIntersectionClusters()
         # plotEnd()
 
@@ -490,7 +491,7 @@ class StreetGenerator():
                 section = Section(net_section,PolyLine(net_section.path),self.sectionNetwork)
                 oneway = 'oneway' in section.tags and section.tags['oneway'] != 'no'
                 street = Street(section.src, section.dst)
-                street.head = street.tail = section
+                street.append(section)
                 streetStyle = self.styleStore.get( self.getStyle(street) )
                 street.setStyle(streetStyle)
 
@@ -516,7 +517,7 @@ class StreetGenerator():
                         c = section.polyline[nextCorner]
                         plt.plot(c[0],c[1],'ro',markersize=8,zorder=999,markeredgecolor='red', markerfacecolor='none')
 
-                if corners:
+                if False:#corners:
                     corners.append(len(section.polyline)-1)
                     self.waymap.addStreetNode(Intersection(section.src))
                     lastCorner = 0
@@ -526,7 +527,7 @@ class StreetGenerator():
                         subsection.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
                         street = Street(subsection.src, subsection.dst)
-                        street.head = street.tail = subsection                        
+                        street.append(subsection)                       
                         street.setStyle(streetStyle)
 
                         self.waymap.addStreetNode(Corner(subsection.dst))
@@ -539,11 +540,15 @@ class StreetGenerator():
                     self.waymap.addStreetNode(Intersection(section.dst))
 
                     street = Street(section.src, section.dst)
-                    street.head = street.tail = section
+                    street.append(section)
                     street.setStyle(streetStyle)
 
                     self.waymap.addSection(street)
 
+        # Add ways to intersections
+        for location, intersection in self.waymap.iterNodes(Intersection):
+            inStreets, outStreets = self.waymap.getInOutSections(location)
+            intersection.update(inStreets, outStreets)
 
 
     # def createWaySections(self):
@@ -563,30 +568,30 @@ class StreetGenerator():
 
     #             self.waySections[net_section.sectionId] = section
 
-    def createTransitionLanes(self):
-        for i,node in enumerate(self.sectionNetwork):
-            outSections = [s for s in self.sectionNetwork.iterOutSegments(node) if s.category != 'scene_border']
-            # Find transition nodes
-            if len(outSections) == 2:
-                # Only intersections of two ways (which are in fact just continuations) are checked.
-                # This is not really correct, but how to decide in the other cases?
-                way1 = self.waySections[outSections[0].sectionId]
-                way2 = self.waySections[outSections[1].sectionId]
-                widerWay = way1 if way1.totalLanes > way2.totalLanes else way2
-                hasTurns = bool( re.search(r'[^N]', widerWay.lanePatterns[0] ) )
-                if hasTurns:
-                    wayIDs, laneL, laneR = createSideLaneData(node,way1,way2)
-                    sideLane = TransitionSideLane()
-                    sideLane.ways = wayIDs
-                    sideLane.laneL = laneL
-                    sideLane.laneR = laneR
-                    self.internalTransitionSideLanes[node] = sideLane
-                else:
-                    area, connectors = createSymLaneData(node,way1,way2)
-                    symLane = TransitionSymLane()
-                    symLane.polygon = area
-                    symLane.connectors = connectors
-                    self.internalTransitionSymLanes[node] = symLane
+    # def createTransitionLanes(self):
+    #     for i,node in enumerate(self.sectionNetwork):
+    #         outSections = [s for s in self.sectionNetwork.iterOutSegments(node) if s.category != 'scene_border']
+    #         # Find transition nodes
+    #         if len(outSections) == 2:
+    #             # Only intersections of two ways (which are in fact just continuations) are checked.
+    #             # This is not really correct, but how to decide in the other cases?
+    #             way1 = self.waySections[outSections[0].sectionId]
+    #             way2 = self.waySections[outSections[1].sectionId]
+    #             widerWay = way1 if way1.totalLanes > way2.totalLanes else way2
+    #             hasTurns = bool( re.search(r'[^N]', widerWay.lanePatterns[0] ) )
+    #             if hasTurns:
+    #                 wayIDs, laneL, laneR = createSideLaneData(node,way1,way2)
+    #                 sideLane = TransitionSideLane()
+    #                 sideLane.ways = wayIDs
+    #                 sideLane.laneL = laneL
+    #                 sideLane.laneR = laneR
+    #                 self.internalTransitionSideLanes[node] = sideLane
+    #             else:
+    #                 area, connectors = createSymLaneData(node,way1,way2)
+    #                 symLane = TransitionSymLane()
+    #                 symLane.polygon = area
+    #                 symLane.connectors = connectors
+    #                 self.internalTransitionSymLanes[node] = symLane
 
     def createParallelSections(self):
         # Create spatial index (R-tree) of sections
@@ -1766,17 +1771,42 @@ class StreetGenerator():
         for wayID in self.waysCoveredByCluster:
             self.waySections[wayID].isValid=False
 
+    def createSymSideLanes(self):
+        nr = 0
+        toReplace = []
+        for location, intersection in self.waymap.iterNodes(Intersection):
+            if intersection.order == 2:
+                section0 = intersection.leaveWays[0].section
+                section1 = intersection.leaveWays[1].section
+                incoming, outgoing = (section0, section1) if section0.totalLanes < section1.totalLanes else (section1, section0)
+                hasTurns = bool( re.search(r'[^N]', outgoing.lanePatterns[0] ) )
+                if hasTurns:    # it's a side lane
+                    sideLane = SideLane(location, incoming, outgoing)
+                    street = Street(incoming.src, outgoing.dst)
+                    street.append(section0)
+                    street.append(sideLane)
+                    street.append(section1)
+                    toReplace.append( (location, street) )
+                else:   # it's a sym lane
+                    symLane = SymLane(location, incoming, outgoing)
+                    street = Street(incoming.src, outgoing.dst)
+                    street.append(section0)
+                    street.append(symLane)
+                    street.append(section1)
+                    toReplace.append( (location, street) )
+            nr += 1
+
+        for location, street in toReplace:
+            self.waymap.removeStreetNode(location)
+            self.waymap.addSection(street)
+
     def updateIntersections(self):
         # At this stage, it is assumed, that SideLanes, SymLanes and clustered intersections are already built
         # and that their nodes are stored in <self.processedNodes>.
-        nodesAlreadyProcessed = self.processedNodes
-
         nr = 0
         for location, intersection in self.waymap.iterNodes(Intersection):
-            if location in nodesAlreadyProcessed:
+            if location in self.processedNodes:
                 continue
-            inStreets, outStreets = self.waymap.getInOutSections(location)
-            intersection.update(inStreets, outStreets)
 
             # DEBUG: Show clusters of parallel way-sections.
             # The plotting functions for this debug part are at the end of this module
@@ -1805,16 +1835,26 @@ class StreetGenerator():
                 from debug import plt, plotPolygon
                 plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
 
+            self.processedNodes.add(location)
             if intersection.area and intersection.leaveWays:
                 self.intersections.append(intersection)
 
     def finalizeOutput(self):
         for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):
-            section = street.head
-            if section.trimS < section.trimT:
-                section.centerline = section.polyline.trimmed(section.trimS,section.trimT)[::]
-            else:
-                section.valid = False
+            for item in street.iterItems():
+                if isinstance(item,Section):
+                    section = item
+                    if section.trimS < section.trimT:
+                        section.centerline = section.polyline.trimmed(section.trimS,section.trimT)[::]
+                    else:
+                        section.valid = False
+
+        # DEBUG: Show intersections.
+        # The plotting functions for this debug part are at the end of this module
+        if False and self.app.type == AppType.commandLine:
+            from debug import plt
+            for p, intersection in self.waymap.iterNodes(Corner):
+                plt.plot(p[0],p[1],'mD',markersize=8,zorder=900)
 
 
     def createIntersectionAreas(self):

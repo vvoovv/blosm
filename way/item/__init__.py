@@ -10,3 +10,4 @@ from way.item.sym_lane import SymLane
 from way.item.section import Section
 from way.item.roadway import Roadway
 from way.item.bundle import Bundle
+from way.item.connectors import IntConnector

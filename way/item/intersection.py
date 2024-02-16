@@ -4,7 +4,6 @@ from .item import Item
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 from lib.CompGeom.centerline import pointInPolygon
-from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
 from defs.way_cluster_params import transitionSlope
 from way.item.section import Section
 from way.item.connectors import IntConnector
@@ -62,12 +61,18 @@ class Intersection(Item):
         self.leaveWays = []
 
         self.area = []
+
+        # Reference to first connector of circular doubly-linked list of IntConnectors.
         self.startConnector = None
 
     @property
     def location(self):
         return self._location
     
+    @property
+    def order(self):
+        return len(self.leaveWays)
+
     def update(self, inStreets, outStreets):
         for street in inStreets:
             item = street.tail
@@ -90,7 +95,7 @@ class Intersection(Item):
 
     def insertConnector(self, connector):
         # Inserts the instance <connector> of IntConnector into the circular doubly-linked list,
-        # attached to self.connectors. It is inserted "after", which is in counter-clockwise direction.
+        # attached to self.startConnector. It is inserted "after", which is in counter-clockwise direction.
         if self.startConnector is None:
             connector.succ = connector.pred = connector
             self.startConnector = connector
