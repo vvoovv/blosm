@@ -32,27 +32,11 @@ class SymLane(Item):
         # The polygon of the transition area
         self.area = []
 
-        # Reference to first connector of circular doubly-linked list of IntConnectors.
-        self.startConnector = None
-
         self.createSymLane()
 
     @property
     def location(self):
         return self._location
-
-    def insertConnector(self, connector):
-        # Inserts the instance <connector> of IntConnector into the circular doubly-linked list,
-        # attached to self.startConnector. It is inserted "after", which is in counter-clockwise direction.
-        if self.startConnector is None:
-            connector.succ = connector.pred = connector
-            self.startConnector = connector
-        else:
-            last = self.startConnector.pred
-            connector.succ = self.startConnector
-            self.startConnector.pred = connector
-            connector.pred = last
-            last.succ = connector
 
     def createSymLane(self):
         fwdWidthDiff = self.incoming.forwardWidth - self.outgoing.forwardWidth
