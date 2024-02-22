@@ -28,6 +28,7 @@ def setup(app, osm):
             from .realistic_streets import getStyleStreet
             
             from way.item_renderer.section import Section
+            from way.item_renderer.intersection import Intersection
             
             styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
             #streetStyle = styleStore.get(self.getStyle(section))
@@ -35,7 +36,8 @@ def setup(app, osm):
             wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
             
             itemRenderers = {
-                "Section": Section()   
+                "Section": Section(),
+                "Intersection": Intersection()
             }
             
             wayManager.addRenderer(

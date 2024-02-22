@@ -1,18 +1,9 @@
-import bpy
-
-from util.blender import addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh, loadMaterialsFromFile
-from item_renderer.util import getFilepath
+from . import ItemRenderer
+from util.blender import addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
 from ..asset_store import AssetType, AssetPart
 
 
-class Section:
-    
-    def __init__(self):
-        pass
-
-    def init(self, globalRenderer):
-        self.globalRenderer = globalRenderer
-        self.assetStore = globalRenderer.assetStore
+class Section(ItemRenderer):
     
     def render(self, section, itemIndex, obj, pointIndexOffset):
         createPolylineMesh(obj, None, section.centerline)
@@ -36,31 +27,6 @@ class Section:
     
     def setNodeGroups(self, nodeGroups):
         self.gnRoadway = nodeGroups["blosm_roadway"]
-    
-    def setMaterial(self, modifier, modifierAttr, assetType, group, streetPart, cl):
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            assetType, group, streetPart, cl
-        )
-        if assetInfo:
-            # set material
-            material = self.getMaterial(assetInfo)
-            if material:
-                modifier[modifierAttr] = material
-    
-    def getMaterial(self, assetInfo):
-        materialName = assetInfo["material"]
-        material = bpy.data.materials.get(materialName)
-        
-        if not material:
-            material = loadMaterialsFromFile(
-                getFilepath(self.globalRenderer, assetInfo),
-                False,
-                materialName
-            )
-            material = material[0] if material else None
-            
-        return material
     
     def setOffsetWeights(self, obj, section, pointIndexOffset):
         # Set offset weights. An offset weight is equal to

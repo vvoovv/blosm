@@ -4,7 +4,7 @@ import bpy
 from renderer import Renderer
 #from renderer.curve_renderer import CurveRenderer
 from .asset_store import AssetStore, AssetType, AssetPart
-from action.generate_streets import TransitionSideLane, TransitionSymLane, IntersectionArea
+from action.generate_streets import IntersectionArea
 
 from util.blender import createMeshObject, createCollection, getBmesh, setBmesh, loadMaterialsFromFile,\
     addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
@@ -86,27 +86,39 @@ class StreetRenderer:
         gnProjectOnTerrain = "blosm_project_on_terrain"
         gnProjectTerrainPatches = "blosm_project_terrain_patches"
         gnMeshToCurve = "blosm_mesh_to_curve"
-        gnPolygons = "blosm_polygons_uv_material"
         gnSideLaneTransition = "blosm_side_lane_transition"
     
     def render(self, manager, data):
         location = Vector((0., 0., 0.))
+        
+        # render instances of the class <Street> 
         for _, _, _, street in manager.waymap.iterSections():
             obj = self.getStreetObj(street, location)
             
             addGeometryNodesModifier(obj, self.gnInitData)
             
-            if street.tail is street.head:
-                self.renderItem(street.tail, 0, obj, 0)
+            if street.head is street.tail:
+                self.renderItem(street.head, 0, obj, 0)
             else:
                 itemIndex = 1
-                item = street.tail
-                while not item is street.head:
-                    self.renderItem(item, itemIndex, obj)
+                # we go from <street.head> to <street.tail>
+                item = street.head
+                pointIndexOffset = 0
+                while not item is street.tail:
+                    self.renderItem(item, itemIndex, obj, pointIndexOffset)
                     itemIndex += 1
+                    pointIndexOffset += len(item.centerline)
                     item = item.succ
                 # render <street.end>
-                self.renderItem(item, itemIndex, obj)
+                self.renderItem(item, itemIndex, obj, pointIndexOffset)
+        
+        # render instances of class <Intersection>
+        intersectionRenderer = self.itemRenderers["Intersection"]
+        for intersection in manager.intersections:
+            intersectionRenderer.render(intersection)
+        
+        for itemRenderer in self.itemRenderers.values():
+            itemRenderer.finalize()
     
     def renderItem(self, item, itemIndex, obj, pointIndexOffset):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
