@@ -5,7 +5,7 @@ schema_version = "1.0.0"
 id = "blosm"
 version = "2.7.5"
 name = "Blosm"
-tagline = "Import of Google 3D cities, OpenStreetMap, terrain, satellite imagery"
+tagline = "Import of Google 3D cities, OpenStreetMap, satellite imagery"
 # Supported types: "add-on", "theme"
 type = "add-on"
 
