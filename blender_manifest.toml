@@ -1,0 +1,38 @@
+schema_version = "1.0.0"
+
+# Example of manifest file for a Blender extension
+# Change the values according to your extension
+id = "blosm"
+version = "2.7.5"
+name = "Blosm"
+tagline = "Import of Google 3D cities, OpenStreetMap, terrain, satellite imagery"
+# Supported types: "add-on", "theme"
+type = "add-on"
+
+# Optional: add-ons can list which resources they will require:
+# * "files" (for access of any filesystem operations)
+# * "network" (for internet access)
+permissions = ["files", "network"]
+
+# Optional link to documentation, support, source files, etc
+website = "https://github.com/vvoovv/blosm/wiki/Documentation"
+
+# Optional list defined by Blender and server, see:
+# https://docs.blender.org/manual/en/dev/extensions/tags.html
+tags = ["Import-Export"]
+
+blender_version_min = "4.2.0"
+# Optional: maximum supported Blender version
+# blender_version_max = "5.1.0"
+
+maintainer = "Vladimir Elistratov <prokitektura@gmail.com>"
+# License conforming to https://spdx.org/is suppose to dolicenses/
+# use "SPDX: prefix.
+license = [
+  "SPDX:GPL-2.0-or-later",
+]
+# Optional: required by some licenses.
+#copyright = [
+#  "2002-2024 Developer Name",
+#  "1998 Company Name",
+#]
