@@ -1901,9 +1901,9 @@ class StreetGenerator():
             #     from debug import plt, plotPolygon
             #     plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
 
-            # self.processedNodes.add(location)
-            # if intersection.area and intersection.leaveWays:
-            #     self.intersections.append(intersection)
+            self.processedNodes.add(location)
+            if intersection.area and intersection.leaveWays:
+                self.intersections.append(intersection)
 
     def finalizeOutput(self):
         for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):
