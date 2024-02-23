@@ -18,7 +18,7 @@ class WayMap(nx.MultiDiGraph):
         self.add_node(location, object = streetNode)
 
     # Get a street node at a given location
-    def getStreeNode(self,location):
+    def getStreetNode(self,location):
         location.freeze()
         return self.nodes[location]
 

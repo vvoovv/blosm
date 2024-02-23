@@ -385,10 +385,10 @@ class StreetGenerator():
         # plotPureNetwork(self.sectionNetwork)
         self.createParallelSections()
         self.createSymSideLanes()
-        # self.detectIntersectionClusters()
         # plotEnd()
 
         self.updateIntersections()
+        # self.experimentalClusters()
         self.finalizeOutput()
 
         # self.detectWayClusters()
@@ -734,7 +734,148 @@ class StreetGenerator():
             #     plotEnd()
             # END DEBUG
             
-    def detectIntersectionClusters(self):
+    def experimentalClusters(self):
+        def intersectionType(node):
+            lowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
+            mainWayCount = 0
+            wayCount = 0
+            for src,dst in self.waymap.in_edges(node):
+                wayCount += 1
+                if self.waymap.getSectionObject(src,dst,0).head.category not in lowWayCategories:
+                    mainWayCount += 1
+            for src,dst in self.waymap.out_edges(node):
+                wayCount += 1
+                if self.waymap.getSectionObject(src,dst,0).head.category not in lowWayCategories:
+                    mainWayCount += 1
+            return 'major' if mainWayCount>2 else 'main' if mainWayCount > 1 else 'low'
+
+
+                        # all/parallel, major/,main/,low location/isect concave/convex
+        detectionType = ['all',        'major','main',         'location',   'convex' ]
+
+
+        # EITHER ENDS OF PARALLEL SECTION ...     
+        if 'parallel' in detectionType:
+            points = set()
+            for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
+                # Section ends in this bundle are those, that appear only once
+                sectionEnds = defaultdict(int)
+                for src,dst in sectKeys:
+                    sectionEnds[src] += 1
+                    sectionEnds[dst] += 1
+
+                # If their intersections contain >2 main ways, keep them as end points
+                for node, count in sectionEnds.items():
+                    typ = intersectionType(node)
+                    points.add( (node,typ) )
+
+        # OR CENTRES OF INTERSECTIONS ...
+        else:
+            points = set()
+            for node in self.waymap.iterNodes(Intersection):
+                location = node[0] 
+                typ = intersectionType(location)
+                points.add( (location,typ) )
+
+
+        isectGroups = dbClusterScan(list(points), dbScanDist, 2)
+
+        for cnt,group in enumerate(isectGroups):
+            mjorIsects = [g[0] for g in group if g[1]=='major']
+            mainIsects = [g[0] for g in group if g[1]=='main']
+            lowIsects = [g[0] for g in group if g[1]=='low']
+
+            usedIsects = []
+            if "major" in detectionType:
+                usedIsects.extend(mjorIsects)
+            if "main" in detectionType:
+                usedIsects.extend(mainIsects)
+            if "low" in detectionType:
+                usedIsects.extend(lowIsects)
+
+            from debug import plt, plotPolygon, randomColor
+
+            # usedIsects is list of locations of intersections
+            # Create dict of areas of these intersection and collection of points
+            points = set()
+            areas = dict()
+            for location in usedIsects:
+                if 'location' in detectionType:
+                    points.add( (location.freeze(),location) )
+                else:
+                    isect = self.waymap.getStreetNode(location)
+                    if isect:
+                        areas[location] = isect['object'].area
+                        for p in areas[location]:
+                            points.add( (p.freeze(),location) )
+                    else:
+                        plt.plot(location[0],location[1],'ro',markersize=20)
+
+            # Group area points by density
+            if 'location' in detectionType:
+                groups = dbClusterScan(list(points), 10, 3)
+            else:
+                groups = dbClusterScan(list(points), 10, 9)
+            # Show content of group
+            # plt.close()
+            colorIter = randomColor(10)
+            color = next(colorIter)
+            for cnt,group in enumerate(groups):
+                locationsInGroup = list( set([p[1] for p in group]) )
+                pointsInGroup = []
+                for location in locationsInGroup:
+                    if 'location' in detectionType:
+                        pointsInGroup.append(location)
+                    else:
+                        pointsInGroup.extend(areas[location])
+
+                if len(locationsInGroup) < 3:
+                    continue
+
+                # Show these points
+                for p in locationsInGroup:
+                    plt.plot(p[0],p[1],'rx')
+                for p in pointsInGroup:
+                    plt.plot(p[0],p[1],'ko',markersize=8)
+                for location in locationsInGroup:
+                    if 'location' in detectionType:
+                        from matplotlib.patches import Circle
+                        for p in usedIsects:
+                            plt.plot(p[0],p[1],'ko',markersize=8)
+                            # plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
+                            # plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=1, color='w', ec='k',zorder=999))
+                    else:
+                        area = areas[location]
+                        plotPolygon(area, False, 'r:')
+
+                if 'concave' in detectionType:
+                    # compute concave hull
+                    from lib.CompGeom.ConcaveHull import ConcaveHull
+                    concHull = ConcaveHull()
+                    hull = concHull.concaveHull(pointsInGroup, 12)
+                    plotPolygon(hull,False,'k',color,2,True,0.8,120)
+                    color = next(colorIter)
+                elif 'convex' in detectionType:
+                    # compute convex hull
+                    from lib.CompGeom.ConvexHull import ConvexHull
+                    convHull = ConvexHull()
+                    hull = convHull.convexHull(pointsInGroup)
+                    plotPolygon(list(hull),False,'k',color,2,True,0.8,120)
+                    color = next(colorIter)
+                else:
+                    from lib.CompGeom.AlphaShaper import AlphaShaper
+                    alphaShaper = AlphaShaper(pointsInGroup)
+                    hull = alphaShaper.alphaShapeAuto(1)
+                    hullVerts = [pointsInGroup[p] for p in hull]
+                    plt.title('hull')
+                    plt.gca().axis('equal')
+                    plotPolygon(hullVerts,False,'k',color,2,True,0.3,120)
+                    color = next(colorIter)
+                # plotEnd()
+
+
+
+    def detectIntersectionClusters_old(self):
         def intersectionType(node):
             lowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
             mainWayCount = 0

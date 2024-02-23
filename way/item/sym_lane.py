@@ -41,7 +41,7 @@ class SymLane(Item):
     def createSymLane(self):
         fwdWidthDiff = self.incoming.forwardWidth - self.outgoing.forwardWidth
         bwdWidthDiff = self.incoming.backwardWidth - self.outgoing.backwardWidth
-        transitionLength = max( abs(fwdWidthDiff+bwdWidthDiff)/transitionSlope, 1. ) / 2.
+        transitionLength = max( abs(fwdWidthDiff+bwdWidthDiff)/transitionSlope, 3. ) / 2.
 
         fwd1, fwd2 = False, False
         if self.incoming.src == self.location:
