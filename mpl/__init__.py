@@ -26,13 +26,9 @@ class Mpl:
             # plt.xlim([-50,50])
             # plt.ylim([-50,25])
 
-            # corners piestany
-            # plt.xlim([-300,-150])
-            # plt.ylim([-660,-500])
-
-            # corners milano
-            # plt.xlim([-310,-220])
-            # plt.ylim([-225,-170])
+            # # milano-01
+            # plt.xlim([-100,0])
+            # plt.ylim([-245,-180])
 
             # self.ax.set_aspect(1)
             # plt.tight_layout()

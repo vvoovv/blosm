@@ -53,7 +53,7 @@ class StreetRenderer(Renderer):
                         plotPolygon(isect.area,True,'k','k',2,True,0.1,999)
                         break
 
-        processedWaySections = set()     
+        # processedWaySections = set()     
         # for transition in manager.transitionSideLanes:
         #     processedWaySections.update([abs(transition.ways[0]),abs(transition.ways[1])])
         #     way1 = transition.incoming#manager.waySectionLines[abs(transition.ways[0])]
