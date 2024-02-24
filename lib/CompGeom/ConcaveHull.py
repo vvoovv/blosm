@@ -134,7 +134,7 @@ class ConcaveHull(object):
 
         # since at least one point is out of the computed polygon, try again
         # with a higher number of neighbors
-        if not allInside:
+        if not allInside and kk < 10:
             return self.concaveHull(points, kk + 1)
 
         # a valid hull has been constructed

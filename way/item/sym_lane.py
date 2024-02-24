@@ -48,15 +48,15 @@ class SymLane(Item):
             fwd1 = True
             tTrans1 = min( self.incoming.polyline.d2t(transitionLength), (len(self.incoming.polyline)-1)/2. )
             self.incoming.trimS = max(self.incoming.trimS,tTrans1)
-            p2 = self.incoming.polyline.offsetPointAt(tTrans1,-self.incoming.width/2.)
-            p1 = self.incoming.polyline.offsetPointAt(tTrans1,self.incoming.width/2.)
+            p1 = self.incoming.polyline.offsetPointAt(tTrans1,-self.incoming.width/2.)
+            p2 = self.incoming.polyline.offsetPointAt(tTrans1,self.incoming.width/2.)
         else:
             tTrans1 = max( self.incoming.polyline.d2t(self.incoming.polyline.length() - transitionLength), (len(self.incoming.polyline)-1)/2. )
             self.incoming.trimT = min(self.incoming.trimT,tTrans1)
             # p2 = way1.polyline.offsetPointAt(tTrans1,-way1.backwardWidth)
             # p1 = way1.polyline.offsetPointAt(tTrans1,way1.forwardWidth)
-            p2 = self.incoming.polyline.offsetPointAt(tTrans1,-self.incoming.width/2.)
             p1 = self.incoming.polyline.offsetPointAt(tTrans1,self.incoming.width/2.)
+            p2 = self.incoming.polyline.offsetPointAt(tTrans1,-self.incoming.width/2.)
 
         if self.outgoing.src == self.location:
             fwd2 = True
@@ -71,8 +71,8 @@ class SymLane(Item):
             self.outgoing.trimT = min(self.outgoing.trimT,tTrans2)
             # p3 = way2.polyline.offsetPointAt(tTrans2,-way2.forwardWidth)
             # p4 = way2.polyline.offsetPointAt(tTrans2,way2.backwardWidth)
-            p3 = self.outgoing.polyline.offsetPointAt(tTrans2,-self.outgoing.width/2.)
-            p4 = self.outgoing.polyline.offsetPointAt(tTrans2,self.outgoing.width/2.)
+            p3 = self.outgoing.polyline.offsetPointAt(tTrans2,self.outgoing.width/2.)
+            p4 = self.outgoing.polyline.offsetPointAt(tTrans2,-self.outgoing.width/2.)
 
         self.area = [p1,p2,p3,p4]
 

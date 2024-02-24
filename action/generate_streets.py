@@ -835,11 +835,15 @@ class StreetGenerator():
                     plt.scatter(p[0],p[1], s=50, marker='p', edgecolor='black', facecolor='white', zorder=900)
                 for location in locationsInGroup:
                     if 'location' in detectionType:
-                        # from matplotlib.patches import Circle
-                        for p in usedIsects:
-                            plt.scatter(p[0],p[1], s=50, marker='p', edgecolor='black', facecolor='white', zorder=900)
-                            # plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=2, color=color, ec='k',zorder=999))
-                            # plt.gca().add_artist(Circle(xy=(p[0],p[1]), radius=1, color='w', ec='k',zorder=999))
+                        if "major" in detectionType:
+                            for p in mjorIsects:
+                                plt.scatter(p[0],p[1], s=50, marker='p', edgecolor='black', facecolor='red', zorder=900)
+                        if "main" in detectionType:
+                            for p in mainIsects:
+                                plt.scatter(p[0],p[1], s=50, marker='p', edgecolor='black', facecolor='white', zorder=900)
+                        if "low" in detectionType:
+                            for p in lowIsects:
+                                      plt.scatter(p[0],p[1], s=30, marker='p', edgecolor='black', facecolor='white', zorder=900)
                     else:
                         area = areas[location]
                         plotPolygon(area, False, 'k:','k',1,False,0.2,900)
