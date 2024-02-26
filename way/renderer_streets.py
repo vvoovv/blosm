@@ -38,6 +38,8 @@ class StreetRenderer:
         # initialize item renderers
         for itemRenderer in itemRenderers.values():
             itemRenderer.init(self)
+        
+        self.sectionRenderer = itemRenderers["Section"]
     
     def prepare(self):
         self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
@@ -93,37 +95,71 @@ class StreetRenderer:
         
         # render instances of the class <Street> 
         for _, _, _, street in manager.waymap.iterSections():
-            obj = self.getStreetObj(street, location)
+            self.sectionRenderer.reset()
             
-            addGeometryNodesModifier(obj, self.gnInitData)
+            # Create a Blender object and BMesh for <street>. Ann instance of <Street> contains
+            # at least one one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
+            street.obj = self.getStreetObj(street, location)
+            street.bm = getBmesh(street.obj)
+            addGeometryNodesModifier(street.obj, self.gnInitData)
             
+            # Rendering is performed in two passes:
+            # In the first pass we create a Blender mesh
+            # in the second pass we set attributes and apply Blender modifiers.
+            
+            #
+            # (1) the first pass
+            #
             if street.head is street.tail:
-                self.renderItem(street.head, 0, obj, 0)
+                street.head.street = street
+                self.renderItem(street.head)
+            else:
+                # we go from <street.head> to <street.tail>
+                item = street.head
+                while not item is street.tail:
+                    item.street = street
+                    self.renderItem(item)
+                    item = item.succ
+                # render <street.end>
+                item.street = street
+                self.renderItem(item)
+            
+            setBmesh(street.obj, street.bm)
+            
+            #
+            # (2) the second pass
+            #
+            if street.head is street.tail:
+                self.finalizeItem(street.head, 0)
             else:
                 itemIndex = 1
                 # we go from <street.head> to <street.tail>
                 item = street.head
-                pointIndexOffset = 0
                 while not item is street.tail:
-                    self.renderItem(item, itemIndex, obj, pointIndexOffset)
+                    self.finalizeItem(item, itemIndex)
                     itemIndex += 1
-                    pointIndexOffset += len(item.centerline)
                     item = item.succ
                 # render <street.end>
-                self.renderItem(item, itemIndex, obj, pointIndexOffset)
+                self.finalizeItem(item, itemIndex)
+                
         
         # render instances of class <Intersection>
         intersectionRenderer = self.itemRenderers["Intersection"]
         for intersection in manager.intersections:
-            intersectionRenderer.render(intersection)
+            intersectionRenderer.renderItem(intersection)
         
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.finalize()
     
-    def renderItem(self, item, itemIndex, obj, pointIndexOffset):
+    def renderItem(self, item):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
         if itemRenderer:
-            itemRenderer.render(item, itemIndex, obj, pointIndexOffset)
+            itemRenderer.renderItem(item)
+
+    def finalizeItem(self, item, itemIndex):
+        itemRenderer = self.itemRenderers.get(item.__class__.__name__)
+        if itemRenderer:
+            itemRenderer.finalizeItem(item, itemIndex)
     
     def renderOld(self, manager, data):
         self.terrainRenderer = TerrainPatchesRenderer(self)
