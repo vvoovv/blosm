@@ -41,6 +41,18 @@ class StreetRenderer:
         
         self.sectionRenderer = itemRenderers["Section"]
     
+    def initTerrain(self):
+        self.terrainObj = None
+        
+        terrain = self.app.terrain
+        if terrain:
+            terrain = terrain.terrain
+            if terrain:
+                # hide Blender terrain object
+                terrain.hide_viewport = True
+                terrain.hide_render = True
+                self.terrainObj = terrain
+    
     def prepare(self):
         self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
         
@@ -77,6 +89,8 @@ class StreetRenderer:
         
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.setNodeGroups(nodeGroups)
+        
+        self.initTerrain()
         
         gnRoadway = "blosm_roadway"
         gnSidewalk = "blosm_sidewalk"
@@ -818,7 +832,7 @@ class StreetRenderer:
         return
     
     def cleanup(self):
-        return
+        self.terrainObj = None
     
     def getRoadwayClass(self, streetSection):
         return str(streetSection.totalLanes) + "_lanes"

@@ -9,7 +9,7 @@ class Section(ItemRenderer):
         createPolylineMesh(None, section.street.bm, section.centerline)
     
     def finalizeItem(self, section, itemIndex):
-        self.setModifierRoadway(section, itemIndex, 0., 0.)
+        self.setModifierSection(section, itemIndex, 0., 0.)
         
         #
         # set the index of the street section
@@ -25,12 +25,12 @@ class Section(ItemRenderer):
         self.pointIndexOffset = 0
         self.itemIndex = 0
 
-    def setModifierRoadway(self, section, itemIndex, trimLengthStart, trimLengthEnd):
-        m = addGeometryNodesModifier(section.street.obj, self.gnRoadway, "Roadway")
+    def setModifierSection(self, section, itemIndex, trimLengthStart, trimLengthEnd):
+        m = addGeometryNodesModifier(section.street.obj, self.gnSection, "Street Section")
         m["Input_2"] = section.offset
         m["Input_3"] = section.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, section.getStyleBlockAttr("cl"))
+        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.section, section.getStyleBlockAttr("cl"))
         # set trim lengths
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
@@ -38,10 +38,11 @@ class Section(ItemRenderer):
             m["Input_9"] = itemIndex
     
     def requestNodeGroups(self, nodeGroupNames):
-        nodeGroupNames.add("blosm_roadway")
+        nodeGroupNames.add("blosm_section")
+        #nodeGroupNames.add("blosm_")
     
     def setNodeGroups(self, nodeGroups):
-        self.gnRoadway = nodeGroups["blosm_roadway"]
+        self.gnSection = nodeGroups["blosm_section"]
     
     def setOffsetWeights(self, section):
         # Set offset weights. An offset weight is equal to

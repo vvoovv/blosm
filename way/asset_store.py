@@ -8,7 +8,7 @@ class AssetType:
 
 
 class AssetPart:
-    roadway = "roadway"
+    section = "section"
     sidewalk = "sidewalk"
     crosswalk = "crosswalk"
     pavement = "pavement"
