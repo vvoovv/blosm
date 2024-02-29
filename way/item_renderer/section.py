@@ -39,7 +39,6 @@ class Section(ItemRenderer):
     
     def requestNodeGroups(self, nodeGroupNames):
         nodeGroupNames.add("blosm_section")
-        #nodeGroupNames.add("blosm_")
     
     def setNodeGroups(self, nodeGroups):
         self.gnSection = nodeGroups["blosm_section"]

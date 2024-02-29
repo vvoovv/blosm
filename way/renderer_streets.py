@@ -67,7 +67,11 @@ class StreetRenderer:
         )
         self.intersectionSidewalksBm = getBmesh(self.intersectionSidewalksObj)
         
-        nodeGroupNames = set(("blosm_init_data",))
+        # prepare item renderers
+        for itemRenderer in self.itemRenderers.values():
+            itemRenderer.prepare()
+        
+        nodeGroupNames = set(("blosm_init_data", "blosm_terrain_area", "blosm_terrain_street_full", "blosm_terrain_street_centerline"))
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.requestNodeGroups(nodeGroupNames)
         
@@ -86,18 +90,19 @@ class StreetRenderer:
         )
         
         self.gnInitData = nodeGroups["blosm_init_data"]
+        self.gnTerrainArea = nodeGroups["blosm_terrain_area"]
+        self.gnTerrainStreetFull = nodeGroups["blosm_terrain_street_full"]
+        #self.gnTerrainStreetCenterline = nodeGroups["blosm_terrain_street_centerline"]
         
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.setNodeGroups(nodeGroups)
         
         self.initTerrain()
         
-        gnRoadway = "blosm_roadway"
         gnSidewalk = "blosm_sidewalk"
         gnLineItem = "blosm_line_item"
         gnSeparator = "blosm_roadway_separator"
         gnLamps = "blosm_street_lamps"
-        gnProjectStreets = "blosm_project_streets"
         gnTerrainPatches = "blosm_terrain_patches"
         gnProjectOnTerrain = "blosm_project_on_terrain"
         gnProjectTerrainPatches = "blosm_project_terrain_patches"
@@ -115,6 +120,10 @@ class StreetRenderer:
             # at least one one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
             street.obj = self.getStreetObj(street, location)
             street.bm = getBmesh(street.obj)
+            
+            #if self.terrainObj:
+            #    m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetCenterline, "Streets on terrain")
+            #    m["Input_2"] = self.terrainObj
             addGeometryNodesModifier(street.obj, self.gnInitData)
             
             # Rendering is performed in two passes:
@@ -156,6 +165,9 @@ class StreetRenderer:
                 # render <street.end>
                 self.finalizeItem(item, itemIndex)
                 
+            if self.terrainObj:
+                m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetFull, "Streets on terrain")
+                m["Input_2"] = self.terrainObj
         
         # render instances of class <Intersection>
         intersectionRenderer = self.itemRenderers["Intersection"]
