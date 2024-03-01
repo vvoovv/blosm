@@ -5,7 +5,9 @@ class Item:
     def __init__(self):
         # A cache to store evaluated values of attributes and maybe other stuff
         self._cache = {}
-    
+
+        self.street = None
+
     def evaluateCondition(self, styleBlock):
         return not styleBlock.condition or styleBlock.condition(self)
     

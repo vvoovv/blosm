@@ -13,8 +13,6 @@ class SideLane(Item):
         self.id = SideLane.ID
         SideLane.ID += 1
 
-        self.street = None
-
         self._location = location
         self.pred = None
         self.succ = None

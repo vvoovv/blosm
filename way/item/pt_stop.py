@@ -10,9 +10,6 @@ class PtStop(Item):
         self.id = PtStop.ID
         PtStop.ID += 1
 
-        self.street = None
-
-        
         self.element = element
         #self._location = location
 
