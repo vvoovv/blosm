@@ -17,7 +17,7 @@ class ConvexHull():
 
     def convexHull(self, points):
         if points is None or len(points) < 3:
-            print('Invalid point set for convex hull')
+            # print('Invalid point set for convex hull')
             return set(points)
         if len(points) == 3:
             return set(points)

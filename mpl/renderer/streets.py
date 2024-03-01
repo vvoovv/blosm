@@ -3,7 +3,8 @@ from itertools import tee, islice, cycle
 import matplotlib.pyplot as plt
 from . import Renderer
 from lib.CompGeom.BoolPolyOps import _isectSegSeg
-from way.item.connectors import IntConnector
+from lib.CompGeom.PolyLine import PolyLine
+from way.item import IntConnector, Section, SideLane, SymLane
 
 def cyclePair(iterable):
     # iterable -> (p0,p1), (p1,p2), (p2, p3), ..., (pn, p0)
@@ -12,7 +13,7 @@ def cyclePair(iterable):
     return zip(prevs,nexts)
 
 class StreetRenderer(Renderer):
-    
+
     def __init__(self, debug):
         super().__init__()
         self.debug = debug
@@ -25,11 +26,11 @@ class StreetRenderer(Renderer):
             plotPolygon(isect.area,False,'r','r',2,True)
             if self.debug:
                 c = sum(isect.area,Vector((0,0)))/len(isect.area)
-                plt.text(c[0],c[1],str(Id),color='r',fontsize=18,zorder=130,ha='center', va='center')
+                plt.text(c[0],c[1],str(isect.id),color='r',fontsize=18,zorder=130,ha='center', va='center', clip_on=True)
                 for connector in IntConnector.iterate_from(isect.startConnector):
                     side = 'S' if connector.leaving else 'E'
                     p = isect.area[connector.index]
-                    plt.text(p[0],p[1],str(abs(connector.item.id))+' '+side)
+                    plt.text(p[0],p[1],str(abs(connector.item.id))+' '+side, clip_on=True)
 
                 # for id, connector in isectArea.clusterConns.items():
                 #     side = 'S' if id>0 else 'E'
@@ -52,7 +53,7 @@ class StreetRenderer(Renderer):
                         plotPolygon(isect.area,True,'k','k',2,True,0.1,999)
                         break
 
-        processedWaySections = set()     
+        # processedWaySections = set()     
         # for transition in manager.transitionSideLanes:
         #     processedWaySections.update([abs(transition.ways[0]),abs(transition.ways[1])])
         #     way1 = transition.incoming#manager.waySectionLines[abs(transition.ways[0])]
@@ -73,31 +74,45 @@ class StreetRenderer(Renderer):
 
 
         for src, dst, multKey, street in manager.waymap.edges(data='object',keys=True):
-            section = street.head
-            if not section.valid:
-                # center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
-                # plt.text(center[0],center[1],str(street.id),color='red',fontsize=8,zorder=120)
-                # plotWay(section.centerline,False,'m',2.)
-                # from lib.CompGeom.PolyLine import PolyLine
-                # polyline = PolyLine(section.centerline)
-                # width = section.width 
-                # buffer = polyline.buffer(width/2,width/2)
-                # plotPolygon(buffer,False,'m','m',1,True,0.5)
-                continue
-            if self.debug:
-                plotWay(section.centerline,False,'b',2.)
-                center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
-                plt.text(center[0],center[1],str(street.id),color='blue',fontsize=14,zorder=120)
-            else:
-                center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
-                plt.text(center[0],center[1],str(street.id),color='blue',fontsize=8,zorder=120)
-                plotWay(section.centerline,False,'b',2.)
-                from lib.CompGeom.PolyLine import PolyLine
-                polyline = PolyLine(section.centerline)
-                width = section.width 
-                buffer = polyline.buffer(width/2,width/2)
-                plotPolygon(buffer,False,'k','b',1,True,0.1)
-                # if not section.start:
+            for item in street.iterItems():
+                if isinstance(item,Section):
+                    section = item
+                    p1 = section.centerline[0]
+                    plt.plot(p1[0],p1[1],'bo')
+                    if not section.valid:
+                        if self.debug:
+                            center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
+                            plt.text(center[0],center[1],str(street.id),color='orange',fontsize=8,zorder=999, clip_on=True)
+                            polyline = PolyLine(section.centerline)
+                            width = section.width 
+                            buffer = polyline.buffer(width/2,width/2)
+                            plotPolygon(buffer,False,'r','r',1,True,0.9)
+                        continue
+                    if self.debug:
+                        plotWay(section.centerline,False,'b',2.)
+                        center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
+                        plt.text(center[0],center[1],str(street.id),color='blue',fontsize=14,zorder=120)
+                    else:
+                        center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
+                        plt.text(center[0],center[1],str(street.id),color='blue',fontsize=8,zorder=120, clip_on=True)
+                        plotWay(section.centerline,False,'b',2.)
+                        polyline = PolyLine(section.centerline)
+                        width = section.width 
+                        buffer = polyline.buffer(width/2,width/2)
+                        plotPolygon(buffer,False,'k','b',1,True,0.1)
+                else:
+                    if isinstance(item,SideLane):
+                        p = item.location
+                        plt.plot(p[0],p[1],'cD',markersize=15,zorder=900)
+                        if self.debug:
+                            plt.text(p[0],p[1],str(item.id),color='b',fontsize=18,zorder=999,ha='center', va='center', clip_on=True)
+                    elif isinstance(item,SymLane):
+                        plotPolygon(item.area,False,'g','g',2,True)
+                        # if self.debug:
+                        p = item.location
+                        plt.text(p[0],p[1],str(item.id),color='g',fontsize=18,zorder=999,ha='center', va='center', clip_on=True)
+
+                        # if not section.start:
                 #     plt.plot(polyline[0][0],polyline[0][1],'cs',markersize=6)
                 # if not section.end:
                 #     plt.plot(polyline[-1][0],polyline[-1][1],'cs',markersize=6)
@@ -169,7 +184,7 @@ def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,
     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
     if vertsOrder:
         for i,(xx,yy) in enumerate(zip(x[:-1],y[:-1])):
-            plt.text(xx,yy,str(i),fontsize=12)
+            plt.text(xx,yy,str(i),fontsize=12, clip_on=True)
 
 def plotWay(way,vertsOrder,lineColor='k',width=1.,order=100):
     x = [n[0] for n in way]
@@ -177,7 +192,7 @@ def plotWay(way,vertsOrder,lineColor='k',width=1.,order=100):
     plt.plot(x,y,lineColor,linewidth=width,zorder=order)
     if vertsOrder:
         for i,(xx,yy) in enumerate(zip(x,y)):
-            plt.text(xx,yy,str(i),fontsize=12)
+            plt.text(xx,yy,str(i),fontsize=12, clip_on=True)
 
 def plotSideLaneWay(smallWay,wideWay,color):
     from lib.CompGeom.PolyLine import PolyLine

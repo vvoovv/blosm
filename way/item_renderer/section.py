@@ -1,30 +1,36 @@
-import bpy
-
-from util.blender import addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh, loadMaterialsFromFile
-from item_renderer.util import getFilepath
+from . import ItemRenderer
+from util.blender import addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
 from ..asset_store import AssetType, AssetPart
 
 
-class Section:
+class Section(ItemRenderer):
     
-    def __init__(self):
-        pass
-
-    def init(self, globalRenderer):
-        self.globalRenderer = globalRenderer
-        self.assetStore = globalRenderer.assetStore
+    def renderItem(self, section):
+        createPolylineMesh(None, section.street.bm, section.centerline)
     
-    def render(self, section, itemIndex, obj, pointIndexOffset):
-        createPolylineMesh(obj, None, section.centerline)
-        self.setModifierRoadway(obj, section, itemIndex, 0., 0.)
-        self.setOffsetWeights(obj, section, pointIndexOffset)
+    def finalizeItem(self, section, itemIndex):
+        self.setModifierSection(section, itemIndex, 0., 0.)
+        
+        #
+        # set the index of the street section
+        #
+        obj = section.street.obj
+        for pointIndex in range(self.pointIndexOffset, self.pointIndexOffset + len(section.centerline)):
+            obj.data.attributes['section_index'].data[pointIndex].value = itemIndex
+        
+        self.setOffsetWeights(section)
+        self.pointIndexOffset += len(section.centerline)
+        
+    def reset(self):
+        self.pointIndexOffset = 0
+        self.itemIndex = 0
 
-    def setModifierRoadway(self, obj, section, itemIndex, trimLengthStart, trimLengthEnd):
-        m = addGeometryNodesModifier(obj, self.gnRoadway, "Roadway")
+    def setModifierSection(self, section, itemIndex, trimLengthStart, trimLengthEnd):
+        m = addGeometryNodesModifier(section.street.obj, self.gnSection, "Street Section")
         m["Input_2"] = section.offset
         m["Input_3"] = section.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.roadway, section.getStyleBlockAttr("cl"))
+        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.section, section.getStyleBlockAttr("cl"))
         # set trim lengths
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
@@ -32,42 +38,18 @@ class Section:
             m["Input_9"] = itemIndex
     
     def requestNodeGroups(self, nodeGroupNames):
-        nodeGroupNames.add("blosm_roadway")
+        nodeGroupNames.add("blosm_section")
     
     def setNodeGroups(self, nodeGroups):
-        self.gnRoadway = nodeGroups["blosm_roadway"]
+        self.gnSection = nodeGroups["blosm_section"]
     
-    def setMaterial(self, modifier, modifierAttr, assetType, group, streetPart, cl):
-        # get asset info for the material
-        assetInfo = self.assetStore.getAssetInfo(
-            assetType, group, streetPart, cl
-        )
-        if assetInfo:
-            # set material
-            material = self.getMaterial(assetInfo)
-            if material:
-                modifier[modifierAttr] = material
-    
-    def getMaterial(self, assetInfo):
-        materialName = assetInfo["material"]
-        material = bpy.data.materials.get(materialName)
-        
-        if not material:
-            material = loadMaterialsFromFile(
-                getFilepath(self.globalRenderer, assetInfo),
-                False,
-                materialName
-            )
-            material = material[0] if material else None
-            
-        return material
-    
-    def setOffsetWeights(self, obj, section, pointIndexOffset):
+    def setOffsetWeights(self, section):
         # Set offset weights. An offset weight is equal to
         # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
-        attributes = obj.data.attributes["offset_weight"].data
+        attributes = section.street.obj.data.attributes["offset_weight"].data
         centerline = section.centerline
         numPoints = len(centerline)
+        pointIndexOffset = self.pointIndexOffset
         attributes[pointIndexOffset].value = attributes[pointIndexOffset+numPoints-1].value = 1.
         
         if numPoints > 2:

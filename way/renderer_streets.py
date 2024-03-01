@@ -4,7 +4,7 @@ import bpy
 from renderer import Renderer
 #from renderer.curve_renderer import CurveRenderer
 from .asset_store import AssetStore, AssetType, AssetPart
-from action.generate_streets import TransitionSideLane, TransitionSymLane, IntersectionArea
+from action.generate_streets import IntersectionArea
 
 from util.blender import createMeshObject, createCollection, getBmesh, setBmesh, loadMaterialsFromFile,\
     addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
@@ -38,6 +38,20 @@ class StreetRenderer:
         # initialize item renderers
         for itemRenderer in itemRenderers.values():
             itemRenderer.init(self)
+        
+        self.sectionRenderer = itemRenderers["Section"]
+    
+    def initTerrain(self):
+        self.terrainObj = None
+        
+        terrain = self.app.terrain
+        if terrain:
+            terrain = terrain.terrain
+            if terrain:
+                # hide Blender terrain object
+                terrain.hide_viewport = True
+                terrain.hide_render = True
+                self.terrainObj = terrain
     
     def prepare(self):
         self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
@@ -53,7 +67,11 @@ class StreetRenderer:
         )
         self.intersectionSidewalksBm = getBmesh(self.intersectionSidewalksObj)
         
-        nodeGroupNames = set(("blosm_init_data",))
+        # prepare item renderers
+        for itemRenderer in self.itemRenderers.values():
+            itemRenderer.prepare()
+        
+        nodeGroupNames = set(("blosm_init_data", "blosm_terrain_area", "blosm_terrain_street_full", "blosm_terrain_street_centerline"))
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.requestNodeGroups(nodeGroupNames)
         
@@ -72,46 +90,102 @@ class StreetRenderer:
         )
         
         self.gnInitData = nodeGroups["blosm_init_data"]
+        self.gnTerrainArea = nodeGroups["blosm_terrain_area"]
+        self.gnTerrainStreetFull = nodeGroups["blosm_terrain_street_full"]
+        #self.gnTerrainStreetCenterline = nodeGroups["blosm_terrain_street_centerline"]
         
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.setNodeGroups(nodeGroups)
         
-        gnRoadway = "blosm_roadway"
+        self.initTerrain()
+        
         gnSidewalk = "blosm_sidewalk"
         gnLineItem = "blosm_line_item"
         gnSeparator = "blosm_roadway_separator"
         gnLamps = "blosm_street_lamps"
-        gnProjectStreets = "blosm_project_streets"
         gnTerrainPatches = "blosm_terrain_patches"
         gnProjectOnTerrain = "blosm_project_on_terrain"
         gnProjectTerrainPatches = "blosm_project_terrain_patches"
         gnMeshToCurve = "blosm_mesh_to_curve"
-        gnPolygons = "blosm_polygons_uv_material"
         gnSideLaneTransition = "blosm_side_lane_transition"
     
     def render(self, manager, data):
         location = Vector((0., 0., 0.))
+        
+        # render instances of the class <Street> 
         for _, _, _, street in manager.waymap.iterSections():
-            obj = self.getStreetObj(street, location)
+            self.sectionRenderer.reset()
             
-            addGeometryNodesModifier(obj, self.gnInitData)
+            # Create a Blender object and BMesh for <street>. Ann instance of <Street> contains
+            # at least one one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
+            street.obj = self.getStreetObj(street, location)
+            street.bm = getBmesh(street.obj)
             
-            if street.tail is street.head:
-                self.renderItem(street.tail, 0, obj, 0)
+            #if self.terrainObj:
+            #    m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetCenterline, "Streets on terrain")
+            #    m["Input_2"] = self.terrainObj
+            addGeometryNodesModifier(street.obj, self.gnInitData)
+            
+            # Rendering is performed in two passes:
+            # In the first pass we create a Blender mesh
+            # in the second pass we set attributes and apply Blender modifiers.
+            
+            #
+            # (1) the first pass
+            #
+            if street.head is street.tail:
+                street.head.street = street
+                self.renderItem(street.head)
+            else:
+                # we go from <street.head> to <street.tail>
+                item = street.head
+                while not item is street.tail:
+                    item.street = street
+                    self.renderItem(item)
+                    item = item.succ
+                # render <street.end>
+                item.street = street
+                self.renderItem(item)
+            
+            setBmesh(street.obj, street.bm)
+            
+            #
+            # (2) the second pass
+            #
+            if street.head is street.tail:
+                self.finalizeItem(street.head, 0)
             else:
                 itemIndex = 1
-                item = street.tail
-                while not item is street.head:
-                    self.renderItem(item, itemIndex, obj)
+                # we go from <street.head> to <street.tail>
+                item = street.head
+                while not item is street.tail:
+                    self.finalizeItem(item, itemIndex)
                     itemIndex += 1
                     item = item.succ
                 # render <street.end>
-                self.renderItem(item, itemIndex, obj)
+                self.finalizeItem(item, itemIndex)
+                
+            if self.terrainObj:
+                m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetFull, "Streets on terrain")
+                m["Input_2"] = self.terrainObj
+        
+        # render instances of class <Intersection>
+        intersectionRenderer = self.itemRenderers["Intersection"]
+        for intersection in manager.intersections:
+            intersectionRenderer.renderItem(intersection)
+        
+        for itemRenderer in self.itemRenderers.values():
+            itemRenderer.finalize()
     
-    def renderItem(self, item, itemIndex, obj, pointIndexOffset):
+    def renderItem(self, item):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
         if itemRenderer:
-            itemRenderer.render(item, itemIndex, obj, pointIndexOffset)
+            itemRenderer.renderItem(item)
+
+    def finalizeItem(self, item, itemIndex):
+        itemRenderer = self.itemRenderers.get(item.__class__.__name__)
+        if itemRenderer:
+            itemRenderer.finalizeItem(item, itemIndex)
     
     def renderOld(self, manager, data):
         self.terrainRenderer = TerrainPatchesRenderer(self)
@@ -770,7 +844,7 @@ class StreetRenderer:
         return
     
     def cleanup(self):
-        return
+        self.terrainObj = None
     
     def getRoadwayClass(self, streetSection):
         return str(streetSection.totalLanes) + "_lanes"
