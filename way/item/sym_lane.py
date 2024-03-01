@@ -13,6 +13,8 @@ class SymLane(Item):
         self.id = SymLane.ID
         SymLane.ID += 1
 
+        self.street = None
+
         self._location = location
         self.pred = None
         self.succ = None

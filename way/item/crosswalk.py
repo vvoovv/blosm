@@ -11,6 +11,8 @@ class Crosswalk(Item):
         Crosswalk.ID += 1
         self._location = location
 
+        self.street = None
+
     @property
     def location(self):
         return self._location

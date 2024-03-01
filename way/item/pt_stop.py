@@ -9,6 +9,9 @@ class PtStop(Item):
         super().__init__()
         self.id = PtStop.ID
         PtStop.ID += 1
+
+        self.street = None
+
         
         self.element = element
         #self._location = location

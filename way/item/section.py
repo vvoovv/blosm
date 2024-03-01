@@ -11,6 +11,8 @@ class Section(Item):
         self.id = Section.ID
         Section.ID += 1
 
+        self.street = None
+
         self.category = net_section.category    # the category of the related OSM-way
         self.centerline = polyline[::]          # a Python list of coordinates
         self.offset = 0.                        # an offset from the centerline
