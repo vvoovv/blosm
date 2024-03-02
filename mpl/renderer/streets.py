@@ -79,6 +79,7 @@ class StreetRenderer(Renderer):
                     section = item
                     p1 = section.centerline[0]
                     plt.plot(p1[0],p1[1],'bo')
+                    plt.text(p1[0],p1[1],' s: '+str(section.street.id),color='brown',fontsize=8,zorder=999, clip_on=True)
                     if not section.valid:
                         if self.debug:
                             center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
@@ -104,6 +105,7 @@ class StreetRenderer(Renderer):
                     if isinstance(item,SideLane):
                         p = item.location
                         plt.plot(p[0],p[1],'cD',markersize=15,zorder=900)
+                        plt.text(p[0],p[1],' s: '+str(item.street.id),color='brown',fontsize=8,zorder=999, clip_on=True)
                         if self.debug:
                             plt.text(p[0],p[1],str(item.id),color='b',fontsize=18,zorder=999,ha='center', va='center', clip_on=True)
                     elif isinstance(item,SymLane):
@@ -111,6 +113,7 @@ class StreetRenderer(Renderer):
                         # if self.debug:
                         p = item.location
                         plt.text(p[0],p[1],str(item.id),color='g',fontsize=18,zorder=999,ha='center', va='center', clip_on=True)
+                        plt.text(p[0],p[1],'         s:'+str(item.street.id),color='brown',fontsize=8,zorder=999, clip_on=True)
 
                         # if not section.start:
                 #     plt.plot(polyline[0][0],polyline[0][1],'cs',markersize=6)
