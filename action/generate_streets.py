@@ -490,6 +490,7 @@ class StreetGenerator():
                 street.append(section)
                 streetStyle = self.styleStore.get( self.getStyle(street) )
                 street.setStyle(streetStyle)
+                section.street = street
 
                 # Derive Section attributes
                 if oneway:
@@ -536,6 +537,7 @@ class StreetGenerator():
                     self.waymap.addStreetNode(Intersection(section.dst))
 
                     street = Street(section.src, section.dst)
+                    section.street = street
                     street.append(section)
                     street.setStyle(streetStyle)
 
@@ -1856,14 +1858,22 @@ class StreetGenerator():
                     street.append(section0)
                     street.append(sideLane)
                     street.append(section1)
+                    section0.street = street
+                    sideLane.street = street
+                    section1.street = street
                     toReplace.append( (location, street) )
+                    self.transitionSideLanes.append(sideLane)
                 else:   # it's a sym lane
                     symLane = SymLane(location, incoming, outgoing)
                     street = Street(incoming.src, outgoing.dst)
                     street.append(section0)
                     street.append(symLane)
                     street.append(section1)
+                    section0.street = street
+                    symLane.street = street
+                    section1.street = street
                     toReplace.append( (location, street) )
+                    self.transitionSymLanes.append(symLane)
             nr += 1
 
         for location, street in toReplace:
