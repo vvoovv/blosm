@@ -185,6 +185,9 @@ class BuildingRendererNew(Renderer):
         for action in self.actions:
             action.do(building, buildingStyle, self)
             if itemStore.skip:
+                # <building.polygon> equal to <None> means that <building> was skipped.
+                # It can be used later in the code if two building footprints share an edge
+                building.polygon = None
                 break
         itemStore.clear()
         

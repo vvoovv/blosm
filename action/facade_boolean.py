@@ -29,15 +29,22 @@ class FacadeBoolean:
                         self.processVectorsSameDir(vector)
                     
                     neighborBldgVector = bldgVectors[1] if bldgVectors[0].polygon is polygon else bldgVectors[0]
-                    neighborBldgParts = neighborBldgVector.polygon.building.parts
-                    if neighborBldgParts and neighborBldgVector.facade:
-                        # added <neighborBldgVector.facade> in the condition above as a hack
-                        self.processVectorsOppDir(vector, neighborBldgVector)
-                    
-                    if not building.parts and not neighborBldgParts and not neighborBldgVector.facade.processed:
-                        # No vectors that define building parts. There are only <bldgVectors>
-                        # <vector> defines the footprint of <building>
-                        vector.facade.geometry.subtract(vector.facade, neighborBldgVector.facade)
+                    if neighborBldgVector.polygon.building.polygon:
+                        neighborBldgParts = neighborBldgVector.polygon.building.parts
+                        if neighborBldgParts and neighborBldgVector.facade:
+                            # added <neighborBldgVector.facade> in the condition above as a hack
+                            self.processVectorsOppDir(vector, neighborBldgVector)
+                        
+                        if not building.parts and not neighborBldgParts and not neighborBldgVector.facade.processed:
+                            # No vectors that define building parts. There are only <bldgVectors>
+                            # <vector> defines the footprint of <building>
+                            vector.facade.geometry.subtract(vector.facade, neighborBldgVector.facade)
+                    else:
+                        # <neighborBldgVector.polygon.building.polygon> equal to <None> means
+                        # that <neighborBldgVector.polygon.building> was skipped
+                        # (e.g. a <neighborBldgVector.polygon.building> is out of the terrain).
+                        if building.parts:
+                            self.processVectorsSameDir(vector)
             else:
                 # <edge> is located inside the footprint of <building>
                 self.processVectorsSameDir(vector)
