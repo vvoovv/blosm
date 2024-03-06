@@ -878,8 +878,6 @@ class StreetRenderer:
             location = location,
             collection = self.streetSectionsCollection
         )
-        # create an attribute "offset_weight" for <obj>
-        obj.data.attributes.new("offset_weight", 'FLOAT', 'POINT')
         # create an attribute for the index of the street section (or curve's spline)
         obj.data.attributes.new("section_index", 'INT', 'POINT')
         return obj
