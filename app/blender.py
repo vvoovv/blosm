@@ -479,7 +479,12 @@ class BlenderApp(BaseApp):
         
         for m in self.managers:
             m.renderExtra()
-
+        
+        # finalize layers
+        if self.singleObject:
+            for layer in self.layers:
+                layer.finalize()
+        # finalize renderers
         for r in self.renderers:
             r.finalize()
         

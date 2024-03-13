@@ -138,7 +138,7 @@ class BuildingRendererNew(Renderer):
                         parent = None
                     )
                     layer.prepare()
-
+    
     def finalize(self):
         if self.app.singleObject:
             for layer in self.app.layers:

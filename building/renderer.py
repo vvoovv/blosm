@@ -103,11 +103,9 @@ class BuildingRenderer(Renderer2d):
         }
     
     def render(self, building, osm):
-        parts = building.parts
-        outline = building.outline
+        self.parts = parts = building.parts
+        self.outline = outline = building.element
         app = self.app
-        self.parts = parts
-        self.outline = outline
         
         if not app.singleObject:
             self.calculateOffset(outline, osm)

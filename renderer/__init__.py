@@ -65,7 +65,7 @@ class Renderer:
                     collection = self.collection,
                     parent = None
                 )
-                layer.prepare(layer)
+                layer.prepare()
             self.bm = layer.bm
             self.obj = layer.obj
             self.materialIndices = layer.materialIndices
@@ -102,6 +102,9 @@ class Renderer:
         terrain = self.app.terrain
         if terrain and terrain.terrain:
             terrain.cleanup()
+    
+    def finalize(self):
+        return
     
     @classmethod
     def join(self):

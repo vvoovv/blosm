@@ -43,7 +43,10 @@ class RealisticBuildingLayer(BuildingLayer):
         
         super().prepare()
     
-    def finalize(self, globalRenderer):
+    def finalize(self, globalRenderer=None):
+        if not globalRenderer:
+            return
+        
         super().finalize()
         
         if self.app.preferMesh:

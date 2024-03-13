@@ -133,16 +133,16 @@ class MeshLayer(Layer):
         Slice Blender MESH object, add modifiers
         """
         obj = self.obj
-        
-        setBmesh(obj, self.bm)
-        
-        app = self.app
-        terrain = app.terrain
-        if terrain and self.sliceMesh:
-            self.slice(obj, terrain, app)
-        if self.modifiers:
-            self.addBoolenModifier(obj, terrain.envelope)
-            addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
+        if obj:
+            setBmesh(obj, self.bm)
+            
+            app = self.app
+            terrain = app.terrain
+            if terrain and self.sliceMesh:
+                self.slice(obj, terrain, app)
+            if self.modifiers:
+                self.addBoolenModifier(obj, terrain.envelope)
+                addShrinkwrapModifier(obj, terrain.terrain, self.swOffset)
     
     def addBoolenModifier(self, obj, operand):
         m = obj.modifiers.new(name="Boolean", type='BOOLEAN')
