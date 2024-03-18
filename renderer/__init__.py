@@ -70,13 +70,14 @@ class Renderer:
             self.obj = layer.obj
             self.materialIndices = layer.materialIndices
         else:
-            self.obj = self.createBlenderObject(
+            self.obj = layer.obj = self.createBlenderObject(
                 self.getName(element),
                 self.offsetZ if self.offsetZ else (self.offset if self.offset else layer.location),
                 collection = layer.getCollection(self.collection),
                 parent = layer.getParent(layer.getCollection(self.collection))
             )
-            layer.prepare(self)
+            layer.prepare()
+            self.bm = layer.bm
     
     def renderLineString(self, element, data):
         pass
