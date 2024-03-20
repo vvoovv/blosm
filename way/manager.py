@@ -10,7 +10,7 @@ class WayManager:
         self.data = data
         self.app = app
         
-        # use the default layer class in the <app>
+        # no layers for this manager
         self.layerClass = None
         
         # don't accept broken multipolygons
@@ -100,7 +100,7 @@ class RailwayManager:
     
     def __init__(self, wayManager):
         self.layers = wayManager.layers
-        # use the default layer class in the <app>
+        # no layers for this manager
         self.layerClass = None
     
     def parseWay(self, element, elementId):

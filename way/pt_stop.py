@@ -4,7 +4,8 @@ from way.item.pt_stop import PtStop
 class PtStopManager:
     
     def __init__(self):
-        self.layerClass = None
+        # no layers for this manager
+        self.layerClass = self.nodeLayerClass = None
         self.ptStops = []
     
     def parseNode(self, element, elementId):

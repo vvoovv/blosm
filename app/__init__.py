@@ -203,12 +203,13 @@ class BaseApp:
                 manager = c[1]
                 layerId = c[3]
                 if layerId and not layerId in layerIndices:
-                    if manager and manager.layerClass:
-                        manager.createLayer(
-                            layerId,
-                            self,
-                            **self.layerKwargs
-                        )
+                    if manager:
+                        if manager.layerClass:
+                            manager.createLayer(
+                                layerId,
+                                self,
+                                **self.layerKwargs
+                            )
                     else:  
                         self.createLayer(
                             layerId,
@@ -230,11 +231,12 @@ class BaseApp:
                 layerId = c[3]
                 if layerId and not layerId in layerIndices:
                     if manager:
-                        manager.createNodeLayer(
-                            layerId,
-                            self,
-                            **self.layerKwargs
-                        )
+                        if manager.nodeLayerClass:
+                            manager.createNodeLayer(
+                                layerId,
+                                self,
+                                **self.layerKwargs
+                            )
                     else:
                         self.createLayer(
                             layerId,
