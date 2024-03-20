@@ -18,7 +18,6 @@ class Section(ItemRenderer):
         for pointIndex in range(self.pointIndexOffset, self.pointIndexOffset + len(section.centerline)):
             obj.data.attributes['section_index'].data[pointIndex].value = itemIndex
         
-        self.setOffsetWeights(section)
         self.pointIndexOffset += len(section.centerline)
         
     def reset(self):
@@ -44,6 +43,8 @@ class Section(ItemRenderer):
         self.gnSection = nodeGroups["blosm_section"]
     
     def setOffsetWeights(self, section):
+        # This method is not used anymore. Offset weights (a reversed sine of half angle between the edges) are set in the Geometry Nodes.
+        
         # Set offset weights. An offset weight is equal to
         # 1/sin(angle/2), where <angle> is the angle between <vec1> and <vec2> (see below the code)
         attributes = section.street.obj.data.attributes["offset_weight"].data
@@ -60,5 +61,5 @@ class Section(ItemRenderer):
                 vec2.normalize()
                 vec = vec1 + vec2
                 vec.normalize()
-                attributes[pointIndex].value = abs(1/vec.cross(vec2))
+                attributes[pointIndex].value = abs(1./vec.cross(vec2))
                 vec1 = -vec2

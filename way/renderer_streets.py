@@ -134,13 +134,11 @@ class StreetRenderer:
             # (1) the first pass
             #
             if street.head is street.tail:
-                street.head.street = street
                 self.renderItem(street.head)
             else:
                 # we go from <street.head> to <street.tail>
                 item = street.head
                 while not item is street.tail:
-                    item.street = street
                     self.renderItem(item)
                     item = item.succ
                 # render <street.end>
@@ -880,8 +878,6 @@ class StreetRenderer:
             location = location,
             collection = self.streetSectionsCollection
         )
-        # create an attribute "offset_weight" for <obj>
-        obj.data.attributes.new("offset_weight", 'FLOAT', 'POINT')
         # create an attribute for the index of the street section (or curve's spline)
         obj.data.attributes.new("section_index", 'INT', 'POINT')
         return obj
