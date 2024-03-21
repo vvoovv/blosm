@@ -22,27 +22,29 @@ class Mpl:
             #Karl-Marx-Allee
             # plt.xlim([400,480])
             # plt.ylim([-150,-80])
-            # file = 'D:/BLOSM/doc/clustering/images/karl_marx_06.png'
+            # file = 'D:/BLOSM/doc/clustering_02/images/karl_marx_06.png'
 
             # rotterdam_01
+            # plt.xlim([-40,40])
+            # plt.ylim([-40,15])
             # plt.xlim([-50,50])
             # plt.ylim([-50,25])
-            # file = 'D:/BLOSM/doc/clustering/images/rotterdam_06.png'
+            # file = 'D:/BLOSM/doc/clustering_02/images/rotterdam_06.png'
 
             # # milano-01
             # plt.xlim([-100,0])
             # plt.ylim([-245,-180])
-            # file = 'D:/BLOSM/doc/clustering/images/milano_06.png'
+            # file = 'D:/BLOSM/doc/clustering_02/images/milano_06.png'
 
             # tokyo_shibuya
             # plt.xlim([-160,-60])
             # plt.ylim([30,110])
-            # file = 'D:/BLOSM/doc/clustering/images/tokyo_01.png'
+            # file = 'D:/BLOSM/doc/clustering_02/images/tokyo_01.png'
 
             # bratislava
             # plt.xlim([470,570])
             # plt.ylim([150,220])
-            # file = 'D:/BLOSM/doc/clustering/images/bratislava_06.png'
+            # file = 'D:/BLOSM/doc/clustering_02/images/bratislava_06.png'
 
             # from debug import saveAxisContent
             # saveAxisContent(file)

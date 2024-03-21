@@ -385,6 +385,7 @@ class StreetGenerator():
 
         self.updateIntersections()
         # self.experimentalClusters()
+        # self.experimentalSimpleClusters()
         self.finalizeOutput()
 
         # self.detectWayClusters()
@@ -731,6 +732,70 @@ class StreetGenerator():
         #     # if not inPieces:
         #     #     plotEnd()
         #     # END DEBUG
+                            
+    def experimentalSimpleClusters(self):
+        def mainWays(node):
+            lowWayCategories = ["pedestrian", "track", "footway", "path", "cycleway", "bridleway" ]
+            mainWayCount = 0
+            for src,dst in self.waymap.in_edges(node):
+                if self.waymap.getSectionObject(src,dst,0).head.category not in lowWayCategories:
+                    mainWayCount += 1
+            for src,dst in self.waymap.out_edges(node):
+                if self.waymap.getSectionObject(src,dst,0).head.category not in lowWayCategories:
+                    mainWayCount += 1
+            # plt.text(node[0],node[1],str(mainWayCount),color='green')
+            return mainWayCount
+
+        points = set()
+        for node in self.waymap.iterNodes(Intersection):
+            location = node[0] 
+            wayCount = mainWays(location)
+            points.add( (location,wayCount) )
+
+        areas = dict()
+        vertices = set()
+        for (location,wayCount) in points:
+            if wayCount > 3:
+                intersection = self.waymap.getStreetNode(location)
+                if intersection:
+                    areas[location] = intersection['object'].area
+                    for p in areas[location]:
+                        vertices.add( (p.freeze(),location) )
+
+        groups = dbClusterScan(list(vertices), 10, 8)
+
+        colorIter = randomColor(10)
+        color = 'darkorange'#next(colorIter)
+        for group in groups:
+            locationsInGroup = list( set([p[1] for p in group]) )
+            pointsInGroup = []
+            for location in locationsInGroup:
+                pointsInGroup.extend(areas[location])
+
+            if len(locationsInGroup) < 2:
+                continue
+
+            # Show these points
+            for p in locationsInGroup:
+                plt.plot(p[0],p[1],'k1',zorder=900)
+            for p in pointsInGroup:
+                plt.scatter(p[0],p[1], s=50, marker='p', edgecolor='black', facecolor='white', zorder=900)
+
+            convex = True
+            if convex:
+                from lib.CompGeom.ConvexHull import ConvexHull
+                convHull = ConvexHull()
+                hull = convHull.convexHull(pointsInGroup)
+                plotPolygon(list(hull),False,'k',color,2,True,0.6,120)
+                color = next(colorIter)
+            else:
+                from lib.CompGeom.AlphaShaper import AlphaShaper
+                alphaShaper = AlphaShaper(pointsInGroup)
+                hull = alphaShaper.alphaShapeAuto(1)
+                hullVerts = [pointsInGroup[p] for p in hull]
+                plotPolygon(hullVerts,False,'k',color,2,True,0.6,120)
+                color = next(colorIter)
+
             
     def experimentalClusters(self):
         def intersectionType(node):
