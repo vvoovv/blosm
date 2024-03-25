@@ -1,7 +1,4 @@
 import mathutils
-import numpy as np
-from numpy.linalg import inv
-import cmath
 
 # -------------------------------------------------------------------------
 # from https://bryceboe.com/2006/10/23/line-segment-intersection-algorithm/,

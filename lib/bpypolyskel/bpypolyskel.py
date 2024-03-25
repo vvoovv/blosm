@@ -179,13 +179,14 @@ class _LAVertex:
                     if b is None:
                         continue
 
-					# check eligibility of b
-					# a valid b should lie within the area limited by the edge and the bisectors of its two vertices:
+                    # check eligibility of b
+                    # a valid b should lie within the area limited by the edge and the bisectors of its two vertices:
                     xprev	= ( (edge.bisector_prev.v.normalized()).cross( (b - edge.bisector_prev.p).normalized() )) < EPSILON
                     xnext	= ( (edge.bisector_next.v.normalized()).cross( (b - edge.bisector_next.p).normalized() )) > -EPSILON
                     xedge	= ( edge.edge.norm.cross( (b - edge.edge.p1).normalized() )) > -EPSILON
 
-                    if not (xprev and xnext and xedge):
+                    parallel = edge.bisector_next.v.length == 0.
+                    if not (xprev and xnext and xedge and not parallel):
                         # Candidate discarded
                         continue
 
@@ -218,12 +219,12 @@ class _LAV:
     # edgeContour is a list of edges of class Edge2
     def from_polygon(cls, edgeContour, slav):
         lav = cls(slav)
-        for prev, next in _iterCircularPrevNext(edgeContour):
+        for prev, nxt in _iterCircularPrevNext(edgeContour):
             # V(i) is the current vertex
             # prev is the edge from vertex V(i-1) to V(i)
             # this is the edge from vertex V(i-) to V(i+1)
             lav._len += 1
-            vertex = _LAVertex(next.p1, prev, next)
+            vertex = _LAVertex(nxt.p1, prev, nxt)
             vertex.lav = lav
             if lav.head is None:
                 lav.head = vertex
@@ -274,12 +275,16 @@ class _LAV:
         return self._len
 
     def __iter__(self):
+        visited = set()
         cur = self.head
         while True:
             yield cur
             cur = cur.next
             if cur == self.head:
                 return
+            if cur in visited:
+                raise RuntimeError("(Infinite loop) circular reference detected in LAV.")
+            visited.add(cur)
 
 class _SLAV:
     def __init__(self, edgeContours):
@@ -888,17 +893,17 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
     ----------
     verts:              A list of vertices. Vertices that define the outer contour of the footprint polygon are
                         located in a continuous block of the verts list, starting at the index firstVertIndex.
-                        Each vertex is an instance of mathutils.Vector with 3 coordinates x, y and z. The
+                        Each vertex is an instance of `mathutils.Vector` with 3 coordinates x, y and z. The
                         z-coordinate must be the same for all vertices of the polygon.
 
-                        The outer contour of the footprint polygon contains numVerts vertices in counterclockwise
-                        order, in its block in verts.
+                        The outer contour of the footprint polygon contains `numVerts` vertices in counterclockwise
+                        order, in its block in `verts`.
 
-                        Vertices that define eventual holes are also located in verts. Every hole takes its continuous
+                        Vertices that define eventual holes are also located in `verts`. Every hole takes its continuous
                         block. The start index and the length of every hole block are described by the argument
-                        holesInfo. See there.
+                        `holesInfo`. See there.
 
-                        The list of vertices verts gets extended by polygonize(). The new nodes of the straight
+                        The list of vertices verts gets extended by `polygonize()`. The new nodes of the straight
                         skeleton are appended at the end of the list.
 
     firstVertIndex: 	The first index of vertices of the polygon index in the verts list that defines the footprint polygon.
@@ -907,53 +912,53 @@ def polygonize(verts, firstVertIndex, numVerts, holesInfo=None, height=0., tan=0
                         contour of the footprint.
 
     holesInfo:          If the footprint polygon contains holes, their position and length in the verts list are
-                        described by this argument. holesInfo is a list of tuples, one for every hole. The first
-                        element in every tuple is the start index of the hole's vertices in verts and the second
+                        described by this argument. `holesInfo` is a list of tuples, one for every hole. The first
+                        element in every tuple is the start index of the hole's vertices in `verts` and the second
                         element is the number of its vertices.
 
                         The default value of holesInfo is None, which means that there are no holes.
 
-    height: 	        The maximum height of the hipped roof to be generated. If both height and tan are equal
-                        to zero, flat faces are generated. height takes precedence over tan if both have a non-zero
-                        value. The default value of height is 0.0.
+    height: 	        The maximum height of the hipped roof to be generated. If both `height` and `tan` are equal
+                        to zero, flat faces are generated. `height` takes precedence over `tan` if both have a non-zero
+                        value. The default value of `height` is 0.0.
 
     tan:                In many cases it's desirable to deal with the roof pitch angle instead of the maximum roof
-                        height. The tangent tan of the roof pitch angle can be supplied for that case. If both height
-                        and tan are equal to zero, flat faces are generated. height takes precedence over tan if
-                        both have a non-zero value. The default value of tan is 0.0.
+                        height. The tangent `tan` of the roof pitch angle can be supplied for that case. If both `height`
+                        and `tan` are equal to zero, flat faces are generated. `height` takes precedence over `tan` if
+                        both have a non-zero value. The default value of `tan` is 0.0.
 
-    faces:              An already existing Python list of faces. Everey face in this list is itself a list of
+    faces:              An already existing Python list of faces. Every face in this list is itself a list of
                         indices of the face-vertices in the verts list. If this argument is None (its default value),
                         a new list with the new faces created by the straight skeleton is created and returned by
                         polygonize(), else faces is extended by the new list.
 
     unitVectors:        A Python list of unit vectors along the polygon edges (including holes if they are present).
-                        These vectors are of type mathutils.Vector with three dimensions. The direction of the vectors
+                        These vectors are of type `mathutils.Vector` with three dimensions. The direction of the vectors
                         corresponds to order of the vertices in the polygon and its holes. The order of the unit
                         vectors in the unitVectors list corresponds to the order of vertices in the input Python list
                         verts.
 
-                        The list unitVectors (if given) gets used inside polygonize() function instead of calculating
+                        The list `unitVectors` (if given) gets used inside polygonize() function instead of calculating
                         it once more. If this argument is None (its default value), the unit vectors get calculated
                         inside polygonize().
 
     Output:
     ------
-    verts:              The list of the vertices verts gets extended at its end by the vertices of the straight skeleton.
+    verts:              The list of the vertices `verts` gets extended at its end by the vertices of the straight skeleton.
 
-    return:             A list of the faces created by the straight skeleton. Everey face in this list is a list of
+    return:             A list of the faces created by the straight skeleton. Every face in this list is a list of
                         indices of the face-vertices in the verts list. The order of vertices of the faces is
-                        counterclockwise, as the order of vertices in the input Python list verts. The first edge of
-                        a face is always an edge of the polygon or its holes.    
+                        counterclockwise, as the order of vertices in the input Python list `verts`. The first edge of
+                        a face is always an edge of the polygon or its holes.
 
                         If a list of faces has been given in the argument faces, it gets extended at its end by the
-                        new list.              
+                        new list.
     """
     # assume that all vertices of polygon and holes have the same z-value
     zBase = verts[firstVertIndex][2]
 
     # compute center of gravity of polygon
-    center = mathutils.Vector((0.0,0.0,0.0))
+    center = mathutils.Vector((0.0, 0.0, 0.0))
     for i in range(firstVertIndex,firstVertIndex+numVerts):
         center += verts[i]
     center /= numVerts
