@@ -1920,9 +1920,9 @@ class StreetGenerator():
                 if hasTurns:    # it's a side lane
                     sideLane = SideLane(location, incoming, outgoing)
                     street = Street(incoming.src, outgoing.dst)
-                    street.append(section0)
-                    street.append(sideLane)
                     street.append(section1)
+                    street.append(sideLane)
+                    street.append(section0)
                     section0.street = street
                     sideLane.street = street
                     section1.street = street
@@ -1931,9 +1931,9 @@ class StreetGenerator():
                 else:   # it's a sym lane
                     symLane = SymLane(location, incoming, outgoing)
                     street = Street(incoming.src, outgoing.dst)
-                    street.append(section0)
-                    street.append(symLane)
                     street.append(section1)
+                    street.append(symLane)
+                    street.append(section0)
                     section0.street = street
                     symLane.street = street
                     section1.street = street
