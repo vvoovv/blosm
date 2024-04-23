@@ -507,7 +507,7 @@ class StreetGenerator():
                 section.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
                 # If there are corners, the section must be split to enable finding of parallel sections
-                corners = section.polyline.getCorners(0.6) if section.category in ['footway', 'cycleway'] else []
+                # corners = section.polyline.getCorners(0.6) if section.category in ['footway', 'cycleway'] else []
 
                 # if False and corners and self.app.type == AppType.commandLine:
                 #     from debug import plt, plotPureNetwork
@@ -537,6 +537,11 @@ class StreetGenerator():
                     self.waymap.addStreetNode(Intersection(section.src))
                     self.waymap.addStreetNode(Intersection(section.dst))
 
+                    # street = Street(section.src, section.dst)
+                    # section.street = street
+                    # street.append(section)
+                    # street.setStyle(streetStyle)
+                
                     self.waymap.addSection(street)
 
         # Add ways to intersections
@@ -1915,9 +1920,9 @@ class StreetGenerator():
                 if hasTurns:    # it's a side lane
                     sideLane = SideLane(location, incoming, outgoing)
                     street = Street(incoming.src, outgoing.dst)
-                    street.append(section0)
+                    street.append(incoming)
                     street.append(sideLane)
-                    street.append(section1)
+                    street.append(outgoing)
                     section0.street = street
                     sideLane.street = street
                     section1.street = street
@@ -1927,9 +1932,9 @@ class StreetGenerator():
                     symLane = SymLane(location, incoming, outgoing)
 
                     street = Street(incoming.src, outgoing.dst)
-                    street.append(section0)
+                    street.append(incoming)
                     street.append(symLane)
-                    street.append(section1)
+                    street.append(outgoing)
                     section0.street = street
                     symLane.street = street
                     section1.street = street
