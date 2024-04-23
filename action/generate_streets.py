@@ -537,11 +537,6 @@ class StreetGenerator():
                     self.waymap.addStreetNode(Intersection(section.src))
                     self.waymap.addStreetNode(Intersection(section.dst))
 
-                    street = Street(section.src, section.dst)
-                    section.street = street
-                    street.append(section)
-                    street.setStyle(streetStyle)
-
                     self.waymap.addSection(street)
 
         # Add ways to intersections
@@ -1920,9 +1915,9 @@ class StreetGenerator():
                 if hasTurns:    # it's a side lane
                     sideLane = SideLane(location, incoming, outgoing)
                     street = Street(incoming.src, outgoing.dst)
-                    street.append(section1)
-                    street.append(sideLane)
                     street.append(section0)
+                    street.append(sideLane)
+                    street.append(section1)
                     section0.street = street
                     sideLane.street = street
                     section1.street = street
@@ -1930,10 +1925,11 @@ class StreetGenerator():
                     self.transitionSideLanes.append(sideLane)
                 else:   # it's a sym lane
                     symLane = SymLane(location, incoming, outgoing)
+
                     street = Street(incoming.src, outgoing.dst)
-                    street.append(section1)
-                    street.append(symLane)
                     street.append(section0)
+                    street.append(symLane)
+                    street.append(section1)
                     section0.street = street
                     symLane.street = street
                     section1.street = street

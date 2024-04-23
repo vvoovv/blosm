@@ -95,7 +95,7 @@ class StreetRenderer(Renderer):
                         plt.text(center[0],center[1],str(street.id),color='blue',fontsize=14,zorder=120)
                     else:
                         center = sum(section.centerline, Vector((0,0)))/len(section.centerline)
-                        plt.text(center[0],center[1],str(street.id),color='blue',fontsize=8,zorder=120, clip_on=True)
+                        plt.text(center[0],center[1],str(street.id)+'/'+str(section.id),color='blue',fontsize=8,zorder=120, clip_on=True)
                         plotWay(section.centerline,False,'b',2.)
                         polyline = PolyLine(section.centerline)
                         width = section.width 
