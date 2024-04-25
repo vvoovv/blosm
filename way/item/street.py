@@ -46,11 +46,7 @@ class Street(Item):
     def getCategory(self):
         return self.head.getCategory()
     
-    def setStyle(self, style):
-        self.style = style
-        
-        self.setStyleBlockFromTop(style)
-        
+    def setStyleForItems(self, style):
         if self.head is self.tail:
             self.head.setStyleBlockFromTop(style)
         else:

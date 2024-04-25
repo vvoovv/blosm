@@ -124,7 +124,9 @@ class StreetRenderer:
             #if self.terrainObj:
             #    m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetCenterline, "Streets on terrain")
             #    m["Input_2"] = self.terrainObj
-            addGeometryNodesModifier(street.obj, self.gnInitData)
+            m = addGeometryNodesModifier(street.obj, self.gnInitData)
+            # setting offset for points where two street sections share a position of their end points
+            m["Socket_2"] = 4.
             
             # Rendering is performed in two passes:
             # In the first pass we create a Blender mesh

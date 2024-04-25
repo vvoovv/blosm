@@ -490,7 +490,7 @@ class StreetGenerator():
                 street = Street(section.src, section.dst)
                 street.append(section)
                 streetStyle = self.styleStore.get( self.getStyle(street) )
-                street.setStyle(streetStyle)
+                street.setStyleBlockFromTop(streetStyle)
                 section.street = street
 
                 # Derive Section attributes
@@ -504,11 +504,9 @@ class StreetGenerator():
                     'laneWidth' : street.getStyleBlockAttr("laneWidth")
                 }
                 _,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic,props)
-                section.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
-
-                # Update style by these attributes
-                streetStyle = self.styleStore.get( self.getStyle(street) )
-                street.setStyle(streetStyle)
+                section.setSectionAttributes(oneway, fwdPattern, bwdPattern, bothLanes, props)
+                
+                street.setStyleForItems(streetStyle)
 
                 self.waymap.addStreetNode(Intersection(section.src))
                 self.waymap.addStreetNode(Intersection(section.dst))
