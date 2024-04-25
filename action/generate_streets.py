@@ -506,6 +506,14 @@ class StreetGenerator():
                 _,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic,props)
                 section.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
+                # Update style by these attributes
+                streetStyle = self.styleStore.get( self.getStyle(street) )
+                street.setStyle(streetStyle)
+
+                self.waymap.addStreetNode(Intersection(section.src))
+                self.waymap.addStreetNode(Intersection(section.dst))
+                self.waymap.addSection(street)
+
                 # If there are corners, the section must be split to enable finding of parallel sections
                 # corners = section.polyline.getCorners(0.6) if section.category in ['footway', 'cycleway'] else []
 
@@ -515,34 +523,34 @@ class StreetGenerator():
                 #         c = section.polyline[nextCorner]
                 #         plt.plot(c[0],c[1],'ro',markersize=8,zorder=999,markeredgecolor='red', markerfacecolor='none')
 
-                if False:#corners:
-                    corners.append(len(section.polyline)-1)
-                    self.waymap.addStreetNode(Intersection(section.src))
-                    lastCorner = 0
-                    for nextCorner in corners:
-                        splitline = PolyLine( section.polyline[lastCorner:nextCorner+1] )
-                        subsection = Section(net_section,splitline,self.sectionNetwork)
-                        subsection.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
+                # if corners:
+                #     corners.append(len(section.polyline)-1)
+                #     self.waymap.addStreetNode(Intersection(section.src))
+                #     lastCorner = 0
+                #     for nextCorner in corners:
+                #         splitline = PolyLine( section.polyline[lastCorner:nextCorner+1] )
+                #         subsection = Section(net_section,splitline,self.sectionNetwork)
+                #         subsection.setSectionAttributes(oneway,fwdPattern,bwdPattern,bothLanes,props)
 
-                        street = Street(subsection.src, subsection.dst)
-                        street.append(subsection)                       
-                        street.setStyle(streetStyle)
+                #         street = Street(subsection.src, subsection.dst)
+                #         street.append(subsection)                       
+                #         street.setStyle(streetStyle)
 
-                        self.waymap.addStreetNode(Corner(subsection.dst))
-                        self.waymap.addSection(street)
-                        lastCorner = nextCorner
-                    self.waymap.replaceStreetNodeBy(Intersection(subsection.dst))
-                else:
-                    # Add section, we do not yet know the type of the intersections
-                    self.waymap.addStreetNode(Intersection(section.src))
-                    self.waymap.addStreetNode(Intersection(section.dst))
+                #         self.waymap.addStreetNode(Corner(subsection.dst))
+                #         self.waymap.addSection(street)
+                #         lastCorner = nextCorner
+                #     self.waymap.replaceStreetNodeBy(Intersection(subsection.dst))
+                # else:
+                #     Add section, we do not yet know the type of the intersections
+                #     self.waymap.addStreetNode(Intersection(section.src))
+                #     self.waymap.addStreetNode(Intersection(section.dst))
 
-                    # street = Street(section.src, section.dst)
-                    # section.street = street
-                    # street.append(section)
-                    # street.setStyle(streetStyle)
+                #     street = Street(section.src, section.dst)
+                #     section.street = street
+                #     street.append(section)
+                #     street.setStyle(streetStyle)
                 
-                    self.waymap.addSection(street)
+                #     self.waymap.addSection(street)
 
         # Add ways to intersections
         for location, intersection in self.waymap.iterNodes(Intersection):

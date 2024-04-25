@@ -48,6 +48,11 @@ class LeavingWay():
         self.polygon = self.polyline.buffer(abs(self.widthL),abs(self.widthR))
         self.isLoop = self.section.isLoop
 
+    def updateOffset(self):
+        if self.section.offset != 0.0:
+            self.offset = self.section.offset if self.leaving else -self.section.offset
+            self.widthL = self.section.width/2 - self.offset
+            self.widthR = -self.section.width/2 - self.offset
 
 class Intersection(Item):
     
@@ -157,6 +162,9 @@ class Intersection(Item):
     def processIntersection(self):
         if len(self.leaveWays) < 3:
             return
+        
+        for way in self.leaveWays:
+            way.updateOffset()
         
         self.connectors_old = dict()
         self.area = []

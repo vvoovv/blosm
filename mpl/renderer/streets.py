@@ -99,7 +99,9 @@ class StreetRenderer(Renderer):
                         plotWay(section.centerline,False,'b',2.)
                         polyline = PolyLine(section.centerline)
                         width = section.width 
-                        buffer = polyline.buffer(width/2,width/2)
+                        widthL = width/2 - section.offset
+                        widthR = width/2 + section.offset
+                        buffer = polyline.buffer(widthL,widthR)
                         plotPolygon(buffer,False,'k','b',1,True,0.1)
                 else:
                     if isinstance(item,SideLane):
