@@ -38,6 +38,12 @@ class Section(StreetItem):
         super().__init__(defName, use, markup, condition, attrs)
 
 
+class SideLane(StreetItem):
+    
+    def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):
+        super().__init__(defName, use, markup, condition, attrs)
+
+
 class Sidewalk(StreetItem):
     
     def __init__(self, defName=None, use=None, markup=None, condition=None, **attrs):

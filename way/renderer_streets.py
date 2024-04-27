@@ -112,6 +112,10 @@ class StreetRenderer:
     def render(self, manager, data):
         location = Vector((0., 0., 0.))
         
+        # split neighbor street sections for the side lane transitions
+        for sideLane in manager.transitionSideLanes:
+            sideLane.splitAffectedSection()
+        
         # render instances of the class <Street> 
         for _, _, _, street in manager.waymap.iterSections():
             self.sectionRenderer.reset()
@@ -138,14 +142,8 @@ class StreetRenderer:
             if street.head is street.tail:
                 self.renderItem(street.head)
             else:
-                # we go from <street.head> to <street.tail>
-                item = street.head
-                while not item is street.tail:
+                for item in street.iterItems():
                     self.renderItem(item)
-                    item = item.succ
-                # render <street.end>
-                item.street = street
-                self.renderItem(item)
             
             setBmesh(street.obj, street.bm)
             
@@ -156,14 +154,9 @@ class StreetRenderer:
                 self.finalizeItem(street.head, 0)
             else:
                 itemIndex = 1
-                # we go from <street.head> to <street.tail>
-                item = street.head
-                while not item is street.tail:
+                for item in street.iterItems():
                     self.finalizeItem(item, itemIndex)
                     itemIndex += 1
-                    item = item.succ
-                # render <street.end>
-                self.finalizeItem(item, itemIndex)
                 
             if self.terrainObj:
                 m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetFull, "Streets on terrain")

@@ -107,3 +107,12 @@ class SideLane(Item):
                     if self.laneR
                     else -self.outgoing.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
                 )
+    
+    def splitAffectedSection(self):
+        return
+        length = self.getStyleBlockAttr("length")
+        
+        if self.totalLanesIncreased:
+            self.succ.splitFromStart(length, self)
+        else:
+            self.succ.splitFromEnd(length, self)

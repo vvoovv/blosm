@@ -9,6 +9,8 @@ class Street(Item):
         super().__init__()
         self.id = Street.ID
         Street.ID += 1
+        
+        self.style = None
 
         self._src = src
         self._dst = dst
@@ -46,16 +48,13 @@ class Street(Item):
     def getCategory(self):
         return self.head.getCategory()
     
-    def setStyleForItems(self, style):
+    def setStyleForItems(self):
+        style = self.style
         if self.head is self.tail:
             self.head.setStyleBlockFromTop(style)
         else:
-            item = self.head
-            while item is not self.tail:
+            for item in self.iterItems():
                 item.setStyleBlockFromTop(style)
-                item = item.succ
-            # set the style to <self.end>
-            item.setStyleBlockFromTop(style)
     
     def getName(self):
         return self.head.getName()
