@@ -2004,8 +2004,8 @@ class StreetGenerator():
 
         for _, _, _, street in self.waymap.edges(data='object',keys=True):
             if isinstance(street, Street):
-                if not street.style:
-                    street.style = self.styleStore.get( self.getStyle(street) )
+                #if not street.style:
+                #    street.style = self.styleStore.get( self.getStyle(street) )
                 street.setStyleForItems()
 
         # # DEBUG: Show intersections.
