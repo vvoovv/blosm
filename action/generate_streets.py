@@ -506,7 +506,7 @@ class StreetGenerator():
                 _,fwdPattern,bwdPattern,bothLanes = lanePattern(section.category,section.tags,self.leftHandTraffic,props)
                 section.setSectionAttributes(oneway, fwdPattern, bwdPattern, bothLanes, props)
                 
-                street.setStyleForItems(streetStyle)
+                # street.setStyleForItems(streetStyle)
 
                 self.waymap.addStreetNode(Intersection(section.src))
                 self.waymap.addStreetNode(Intersection(section.dst))
@@ -2000,6 +2000,11 @@ class StreetGenerator():
                         section.centerline = section.polyline.trimmed(section.trimS,section.trimT)[::]
                     else:
                         section.valid = False
+
+        for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):
+            if isinstance(street, Street):
+                streetStyle = self.styleStore.get( self.getStyle(street) )
+                street.setStyleForItems(streetStyle)
 
         # # DEBUG: Show intersections.
         # # The plotting functions for this debug part are at the end of this module
