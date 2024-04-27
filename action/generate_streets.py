@@ -1949,6 +1949,8 @@ class StreetGenerator():
 
         for location, street in toReplace:
             self.waymap.removeStreetNode(location)
+            street.style = self.styleStore.get( self.getStyle(street) )
+            street.setStyleBlockFromTop(street.style)
             self.waymap.addSection(street)
 
     def updateIntersections(self):
