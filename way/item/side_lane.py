@@ -14,14 +14,12 @@ class SideLane(Item):
         SideLane.ID += 1
 
         self._location = location
-        self.pred = None
-        self.succ = None
 
         # A reference to the incoming Section before the turn lanes
-        self.incoming = incoming
+        self.pred = incoming
 
         # A reference to the outgoing Section with the turn lanes
-        self.outgoing = outgoing
+        self.succ = outgoing
 
         # A tuple of direction indicators of the Sections, that connect to this transition.
         # The first indicator refers to the incoming Section and the second to the outgoing
@@ -36,7 +34,7 @@ class SideLane(Item):
         self.laneR = False
 
         # self.turnSection.totalLanes > self.preTurnSection.totalLanes
-        self.totalLanesIncreased = self.outgoing.totalLanes > self.incoming.totalLanes
+        self.totalLanesIncreased = self.succ.totalLanes > self.pred.totalLanes
 
         self.createSideLane()
 
@@ -47,28 +45,28 @@ class SideLane(Item):
     def createSideLane(self):
         # Way width and offset correction for seamless connections according to
         # https://github.com/prochitecture/blosm/issues/57#issuecomment-1544025403
-        widePixels = self.outgoing.totalLanes * 220.0 + 8 * (self.outgoing.totalLanes - 1)
-        smallPixels = self.incoming.totalLanes * 220.0 + 8 * (self.outgoing.totalLanes - 2)
+        widePixels = self.succ.totalLanes * 220.0 + 8 * (self.succ.totalLanes - 1)
+        smallPixels = self.pred.totalLanes * 220.0 + 8 * (self.succ.totalLanes - 2)
         factor = widePixels / smallPixels
         # Fix ratio by changing wider way
-        self.outgoing.width = factor * self.incoming.width
-        self.outgoing.laneWidth = self.outgoing.width / self.outgoing.totalLanes
+        self.succ.width = factor * self.pred.width
+        self.succ.laneWidth = self.succ.width / self.succ.totalLanes
 
         # Create direction indicators, positive, if start of Section at location
-        signOfTurn = signOfPre = 1 if self.incoming.src == self.location else -1
-        signOfTurn = signOfTurn = 1 if self.outgoing.src == self.location else -1
+        signOfTurn = signOfPre = 1 if self.pred.src == self.location else -1
+        signOfTurn = signOfTurn = 1 if self.succ.src == self.location else -1
         self.directions = (signOfPre, signOfTurn)
 
         # Determine turn types and offset
-        if self.incoming.oneway:  # then also outgoing.oneway is True
+        if self.pred.oneway:  # then also outgoing.oneway is True
             fwdL, fwdR = turnsFromPatterns(
-                self.outgoing.lanePatterns[0], self.incoming.lanePatterns[0]
+                self.succ.lanePatterns[0], self.pred.lanePatterns[0]
             )
             isNotMerge = fwdL not in ["l", "r"]
             self.laneL = bool(fwdL) if isNotMerge else not bool(fwdL)
             self.laneR = bool(fwdR) if isNotMerge else not bool(fwdR)
-            self.outgoing.fwdLaneR = fwdR
-            self.outgoing.fwdLaneL = fwdL
+            self.succ.fwdLaneR = fwdR
+            self.succ.fwdLaneL = fwdL
             laneDir = 1 if self.laneR else -1
             if self.laneL or self.laneR:
                 # The reference is the centerline of the section with the turn lane (which is
@@ -77,23 +75,23 @@ class SideLane(Item):
                 # relative to the supplied centerline. Otherwise, the curve is offset to the right.
                 # signOfTurn is positive, if in outgoing direction of the turn way
                 nrTurnLanesFwd = max(len(fwdL), len(fwdR))
-                self.outgoing.offset = (
-                    self.outgoing.laneWidth / 2.0 * signOfTurn * laneDir * nrTurnLanesFwd
+                self.succ.offset = (
+                    self.succ.laneWidth / 2.0 * signOfTurn * laneDir * nrTurnLanesFwd
                 )
         else:  # two-ways
             # TODO case of merging lanes, as above?
             fwdL, fwdR = turnsFromPatterns(
-                self.outgoing.lanePatterns[0], self.incoming.lanePatterns[0]
+                self.succ.lanePatterns[0], self.pred.lanePatterns[0]
             )
             bwdL, bwdR = turnsFromPatterns(
-                self.outgoing.lanePatterns[1], self.incoming.lanePatterns[1]
+                self.succ.lanePatterns[1], self.pred.lanePatterns[1]
             )
             self.laneL = bool(fwdL) or bool(bwdL)
             self.laneR = bool(fwdR) or bool(bwdR)
-            self.outgoing.fwdLaneR = fwdR
-            self.outgoing.fwdLaneL = fwdL
-            self.outgoing.bwdLaneR = bwdR
-            self.outgoing.bwdLaneL = bwdL
+            self.succ.fwdLaneR = fwdR
+            self.succ.fwdLaneL = fwdL
+            self.succ.bwdLaneR = bwdR
+            self.succ.bwdLaneL = bwdL
             if self.laneL or self.laneR:
                 # The reference is the centerline of the section with the turn lane (which is
                 # always the outgoing section of the TransitionSideLane, even if the centerline
@@ -102,10 +100,10 @@ class SideLane(Item):
                 # signOfTurn is positive, if in outgoing direction of the turn way
                 nrTurnLanesFwd = max(len(fwdL), len(fwdR))
                 # nrTurnLanesBwd = max( len(bwdL), len(bwdR))
-                self.outgoing.offset = (
-                    self.outgoing.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
+                self.succ.offset = (
+                    self.succ.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
                     if self.laneR
-                    else -self.outgoing.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
+                    else -self.succ.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
                 )
     
     def splitAffectedSection(self):

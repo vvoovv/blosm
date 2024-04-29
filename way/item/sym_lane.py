@@ -14,14 +14,12 @@ class SymLane(Item):
         SymLane.ID += 1
 
         self._location = location
-        self.pred = None
-        self.succ = None
 
         # A reference to the incoming (smaller) Section.
-        self.incoming = incoming
+        self.pred = incoming
 
         # A reference to the outgoing (wider) Section.
-        self.outgoing = outgoing
+        self.succ = outgoing
 
         # A tuple of direction indicators of the Sections, that connect to this transition.
         # The first indicator refers to the incoming Section and the second to the outgoing
@@ -39,40 +37,40 @@ class SymLane(Item):
         return self._location
 
     def createSymLane(self):
-        fwdWidthDiff = self.incoming.forwardWidth - self.outgoing.forwardWidth
-        bwdWidthDiff = self.incoming.backwardWidth - self.outgoing.backwardWidth
+        fwdWidthDiff = self.pred.forwardWidth - self.succ.forwardWidth
+        bwdWidthDiff = self.pred.backwardWidth - self.succ.backwardWidth
         transitionLength = max( abs(fwdWidthDiff+bwdWidthDiff)/transitionSlope, 3. ) / 2.
 
         fwd1, fwd2 = False, False
-        if self.incoming.src == self.location:
+        if self.pred.src == self.location:
             fwd1 = True
-            tTrans1 = min( self.incoming.polyline.d2t(transitionLength), (len(self.incoming.polyline)-1)/2. )
-            self.incoming.trimS = max(self.incoming.trimS,tTrans1)
-            p1 = self.incoming.polyline.offsetPointAt(tTrans1,-self.incoming.width/2.)
-            p2 = self.incoming.polyline.offsetPointAt(tTrans1,self.incoming.width/2.)
+            tTrans1 = min( self.pred.polyline.d2t(transitionLength), (len(self.pred.polyline)-1)/2. )
+            self.pred.trimS = max(self.pred.trimS,tTrans1)
+            p1 = self.pred.polyline.offsetPointAt(tTrans1,-self.pred.width/2.)
+            p2 = self.pred.polyline.offsetPointAt(tTrans1,self.pred.width/2.)
         else:
-            tTrans1 = max( self.incoming.polyline.d2t(self.incoming.polyline.length() - transitionLength), (len(self.incoming.polyline)-1)/2. )
-            self.incoming.trimT = min(self.incoming.trimT,tTrans1)
+            tTrans1 = max( self.pred.polyline.d2t(self.pred.polyline.length() - transitionLength), (len(self.pred.polyline)-1)/2. )
+            self.pred.trimT = min(self.pred.trimT,tTrans1)
             # p2 = way1.polyline.offsetPointAt(tTrans1,-way1.backwardWidth)
             # p1 = way1.polyline.offsetPointAt(tTrans1,way1.forwardWidth)
-            p1 = self.incoming.polyline.offsetPointAt(tTrans1,self.incoming.width/2.)
-            p2 = self.incoming.polyline.offsetPointAt(tTrans1,-self.incoming.width/2.)
+            p1 = self.pred.polyline.offsetPointAt(tTrans1,self.pred.width/2.)
+            p2 = self.pred.polyline.offsetPointAt(tTrans1,-self.pred.width/2.)
 
-        if self.outgoing.src == self.location:
+        if self.succ.src == self.location:
             fwd2 = True
-            tTrans2 = min( self.outgoing.polyline.d2t(transitionLength), (len(self.outgoing.polyline)-1)/2. )
-            self.outgoing.trimS = max(self.outgoing.trimS,tTrans2)
+            tTrans2 = min( self.succ.polyline.d2t(transitionLength), (len(self.succ.polyline)-1)/2. )
+            self.succ.trimS = max(self.succ.trimS,tTrans2)
             # p3 = way2.polyline.offsetPointAt(tTrans2,-way2.backwardWidth)
             # p4 = way2.polyline.offsetPointAt(tTrans2,way2.forwardWidth)
-            p3 = self.outgoing.polyline.offsetPointAt(tTrans2,-self.outgoing.width/2.)
-            p4 = self.outgoing.polyline.offsetPointAt(tTrans2,self.outgoing.width/2.)
+            p3 = self.succ.polyline.offsetPointAt(tTrans2,-self.succ.width/2.)
+            p4 = self.succ.polyline.offsetPointAt(tTrans2,self.succ.width/2.)
         else:
-            tTrans2 = max( self.outgoing.polyline.d2t(self.outgoing.polyline.length() - transitionLength), (len(self.outgoing.polyline)-1)/2. )
-            self.outgoing.trimT = min(self.outgoing.trimT,tTrans2)
+            tTrans2 = max( self.succ.polyline.d2t(self.succ.polyline.length() - transitionLength), (len(self.succ.polyline)-1)/2. )
+            self.succ.trimT = min(self.succ.trimT,tTrans2)
             # p3 = way2.polyline.offsetPointAt(tTrans2,-way2.forwardWidth)
             # p4 = way2.polyline.offsetPointAt(tTrans2,way2.backwardWidth)
-            p3 = self.outgoing.polyline.offsetPointAt(tTrans2,self.outgoing.width/2.)
-            p4 = self.outgoing.polyline.offsetPointAt(tTrans2,-self.outgoing.width/2.)
+            p3 = self.succ.polyline.offsetPointAt(tTrans2,self.succ.width/2.)
+            p4 = self.succ.polyline.offsetPointAt(tTrans2,-self.succ.width/2.)
 
         self.area = [p1,p2,p3,p4]
 
