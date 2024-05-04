@@ -46,23 +46,64 @@ class Section(Item):
         self.trimT = len(self.polyline)-1    # trim factor for target
 
 
-    def split(self, nodeIndex, item, itemLength):
-        # The method splits the section at the <nodeIndex> and inserts the <item> which has
-        # the length <itemLength>. The attributes centerline, pred, succ of the items in question
-        # are changed or set accordingly.
-        pass    # to be implemented
+    def insertAfter(self,length, item):
+        # Shortens the section to the length <length> and appends <item> after it. <length> is
+        # the physical length in meters. After the split is the section followed by <item>. The
+        # method returns True, if item is successfully inserted and False else.
+        # For now, the method returns False, when <length> is larger than the length of the section.
+        # <item> is inserted into the linked list by:
+        # section.succ.pred = item    # if pred exists
+        # item.succ = section.succ
+        # section.succ = item
+        # item. pred = section
 
-    def trimStart(self, item, itemLength):
-        # The method trims the section at the start and inserts the <item> at the start of the section.
-        # The <item> has the length <itemLength>. The attributes centerline, pred, succ of the items in
-        # question are changed or set accordingly.
-        pass    # to be implemented
+        # Shorten section (self)
+        t = self.polyline.d2t(length)
+        if 0. <= t < len(self.polyline)-1:
+            self.polyline = self.polyline.trimmed(0.,t)
+            self.trimT = len(self.polyline)-1
+            self.centerline = self.polyline[::]
+            self._dst = self.polyline[-1]
 
-    def trimEnd(self, item, itemLength):
-        # The method trims the section at the end and inserts the <item> at the end of the section.
-        # The <item> has the length <itemLength>. The attributes centerline, pred, succ of the items in
-        # question are changed or set accordingly.
-        pass    # to be implemented
+            # insert item in linked list
+            if hasattr(self.succ, 'pred'):  # check, maybe its an intersection
+                self.succ.pred = item
+            item.succ = self.succ
+            self.succ = item
+            item.pred = self
+            return True
+        else:
+            return False
+
+    def insertBefore(self,length, item):
+        # Shortens the section so that it starts after the length <length> and remains until its end.
+        # <length> is the physical length in meters. After the split the item is followed by the
+        # remaining section. The method returns True, if <item> is successfully inserted and False else.
+        # For now, the method returns False, when <length> is larger than the length of the section.
+        # <item> is inserted into the linked list by:
+        # section.pred.succ = item  # if succ exists
+        # item.pred = section.pred
+        # item.succ = section
+        # section.pred = item
+
+        # Shorten section (self)
+        t = self.polyline.d2t(length)
+        lenOld = len(self.polyline)-1
+        if 0. <= t < lenOld:
+            self.polyline = self.polyline.trimmed(t,lenOld)
+            self.trimT = len(self.polyline)-1
+            self.centerline = self.polyline[::]
+            self._src = self.polyline[0]
+
+            # insert item in linked list
+            if hasattr(self.pred, 'succ'):  # check, maybe its an intersection
+                self.pred.succ = item
+            item.pred = self.pred
+            item.succ = self
+            self.pred = item
+            return True
+        else:
+            return False
 
     @property
     def src(self):
