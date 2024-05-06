@@ -4,7 +4,7 @@ from urllib import request
 from urllib.parse import urlparse
 from os.path import splitext, basename, join as joinStrings, exists as pathExists
 import json, ssl
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 _geometricErrorRanges = {
@@ -58,7 +58,7 @@ class BaseManager:
     
     def render(self, minLon, minLat, maxLon, maxLat):
         self.errors = []
-        self.areaBbox = BaseManager.getAreaBbox(minLon, minLat, maxLon, maxLat)
+        self.initAreaData(minLon, minLat, maxLon, maxLat)
         
         self.renderer.prepare(self)
         
@@ -76,17 +76,14 @@ class BaseManager:
     
     def renderTileset(self, tileset):
         tileset = tileset["root"]
-        
-        bbox = BaseManager.getTileBbox( tileset["boundingVolume"]["box"] )
                 
-        if BaseManager.bboxesOverlap(self.areaBbox, bbox):
+        if self.areaOverlapsWith( tileset["boundingVolume"]["box"] ):
             self.renderChildren(tileset["children"])
             
     def renderChildren(self, children):
         # render children
         for tile in children:
-            tileBbox = BaseManager.getTileBbox( tile["boundingVolume"]["box"] )
-            if BaseManager.bboxesOverlap(self.areaBbox, tileBbox):
+            if self.areaOverlapsWith( tile["boundingVolume"]["box"] ):
                 geometricError = tile["geometricError"]
                 if self.geometricErrorMin < geometricError <= self.geometricErrorMax:
                     if "content" in tile:
@@ -135,33 +132,45 @@ class BaseManager:
             uri += '?' + self.uriQuery
         
         return uri                 
-        
-    @staticmethod
-    def getAreaBbox(minLon, minLat, maxLon, maxLat):
-        bbox2d = (
-            (minLat, minLon), (minLat, maxLon), (maxLat, maxLon), (maxLat, minLon)
-        )
-        # The bounding box with the axes that are not parallel to the axes of
-        # the system of reference
-        return BaseManager.getParallelAxesBbox([
-            BaseManager.fromGeographic(lat,lon,height)\
-                for height in (_minHeight, _maxHeight) for lat, lon in bbox2d
-        ])
     
-    @staticmethod
-    def getParallelAxesBbox(bbox):
-        # get the bounding box with axes parallel to the axes of the system of reference
-        return\
-            (
-                min(bbox, key=itemgetter(0))[0],
-                min(bbox, key=itemgetter(1))[1],
-                min(bbox, key=itemgetter(2))[2]
-            ),\
-            (
-                max(bbox, key=itemgetter(0))[0],
-                max(bbox, key=itemgetter(1))[1],
-                max(bbox, key=itemgetter(2))[2]
-            )
+    def initAreaData(self, minLon, minLat, maxLon, maxLat):
+        p0 = self.areaOrigin = BaseManager.fromGeographic(minLat, minLon, _minHeight)
+        pZ = BaseManager.fromGeographic(minLat, minLon, _maxHeight)
+        pX = BaseManager.fromGeographic(minLat, maxLon, _minHeight)
+        pY = BaseManager.fromGeographic(maxLat, minLon, _minHeight)
+        
+        # unit vectors
+        dX = pX - p0
+        self.areaSizeX = dX.length
+        eX = dX.normalized()
+        
+        dZ = pZ - p0
+        self.areaSizeZ = dZ.length
+        eZ = dZ.normalized()
+        
+        eY = eZ.cross(eX)
+        self.areaSizeY = (pY - p0).length
+        dY = self.areaSizeY * eY
+        
+        # rotation matrix
+        self.areaRotationMatrix = Matrix((
+            (eX[0], eX[1], eX[2]),
+            (eY[0], eY[1], eY[2]),
+            (eZ[0], eZ[1], eZ[2])
+        ))
+        
+        self.areaVerts = (
+            p0,
+            p0 + dX,
+            p0 + dX + dY,
+            p0 + dY,
+            pZ,
+            pZ + dX,
+            pZ + dX + dY,
+            pZ + dY
+        )
+        
+        #self.debugInit()
     
     def getJsonFile(self, uri, path, cacheContent):
         if cacheContent:
@@ -219,8 +228,7 @@ class BaseManager:
         
         return scratchK + scratchN
     
-    @staticmethod
-    def getTileBbox(bbox):
+    def areaOverlapsWith(self, bbox):
         bboxCenter = Vector((bbox[0], bbox[1], bbox[2]))
         # direction and half-length for the local X-axis of <bbox>
         bboxX = Vector((bbox[3], bbox[4], bbox[5]))
@@ -229,9 +237,10 @@ class BaseManager:
         # direction and half-length for the local Z-axis of <bbox>
         bboxZ = Vector((bbox[9], bbox[10], bbox[11]))
         
-        # get the bounding box with axes parallel to the axes of the system of reference
-        return BaseManager.getParallelAxesBbox([
-            bboxCenter - bboxX - bboxY - bboxZ,
+        bboxOrigin = bboxCenter - bboxX - bboxY - bboxZ
+        
+        bboxVerts = (
+            bboxOrigin,
             bboxCenter + bboxX - bboxY - bboxZ,
             bboxCenter + bboxX + bboxY - bboxZ,
             bboxCenter - bboxX + bboxY - bboxZ,
@@ -239,18 +248,81 @@ class BaseManager:
             bboxCenter + bboxX - bboxY + bboxZ,
             bboxCenter + bboxX + bboxY + bboxZ,
             bboxCenter - bboxX + bboxY + bboxZ
-        ])
-    
-    @staticmethod
-    def bboxesOverlap(bbox1, bbox2):
-        return \
-            bbox1[1][0] >= bbox2[0][0] and bbox2[1][0] >= bbox1[0][0]\
-            and\
-            bbox1[1][1] >= bbox2[0][1] and bbox2[1][1] >= bbox1[0][1]\
-            and\
-            bbox1[1][2] >= bbox2[0][2] and bbox2[1][2] >= bbox1[0][2]
+        )
+        
+        #self.debugBboxes(bboxVerts)
+        
+        for bboxVert in bboxVerts:
+            bboxVert = self.areaRotationMatrix @ (bboxVert - self.areaOrigin)
+            if 0. < bboxVert[0] < self.areaSizeX and\
+                0. < bboxVert[1] < self.areaSizeY and\
+                0. < bboxVert[2] < self.areaSizeZ:
+                    return True
+
+        bboxSizeX = bboxX.length
+        bboxSizeY = bboxY.length
+        bboxSizeZ = bboxZ.length
+                
+        eX = bboxX/bboxSizeX
+        eY = bboxY/bboxSizeY
+        eZ = bboxZ/bboxSizeZ
+        
+        bboxSizeX *= 2.
+        bboxSizeY *= 2.
+        bboxSizeZ *= 2.
+        
+        # bbox rotation matrix
+        bboxRotationMatrix = Matrix((
+            (eX[0], eX[1], eX[2]),
+            (eY[0], eY[1], eY[2]),
+            (eZ[0], eZ[1], eZ[2])
+        ))
+        
+        for areaVert in self.areaVerts:
+            areaVert = bboxRotationMatrix @ (areaVert - bboxOrigin)
+            if 0. < areaVert[0] < bboxSizeX and\
+                0. < areaVert[1] < bboxSizeY and\
+                0. < areaVert[2] < bboxSizeZ:
+                    return True
+        
+        return False
     
     def processError(self, e, uri):
         self.errors.append(
             "There was an error when processing the URI %s: %s" % (uri, str(e))
         )
+
+"""
+    def debugInit(self):
+        self.debugBboxCounter = 0
+        
+        self.debugGenerateBbox(self.areaVerts)
+        
+    
+    def debugBboxes(self, bboxVerts):
+        self.debugBboxCounter += 1
+        if self.debugBboxCounter <= 4:
+            return
+        
+        self.debugGenerateBbox(bboxVerts)
+    
+    def debugGenerateBbox(self, bboxVerts):
+        scale = 1000000.
+        
+        import bpy
+        from util.blender import createMeshObject, getBmesh, setBmesh
+        
+        obj = createMeshObject("Bbox " +str(self.debugBboxCounter))
+        bm = getBmesh(obj)
+        
+        verts = [ bm.verts.new(bboxVert/scale) for bboxVert in bboxVerts ]
+        
+        bm.faces.new((verts[3], verts[2], verts[1], verts[0]))
+        bm.faces.new((verts[0], verts[1], verts[5], verts[4]))
+        bm.faces.new((verts[1], verts[2], verts[6], verts[5]))
+        bm.faces.new((verts[2], verts[3], verts[7], verts[6]))
+        bm.faces.new((verts[3], verts[0], verts[4], verts[7]))
+        bm.faces.new((verts[4], verts[5], verts[6], verts[7]))
+        
+        setBmesh(obj, bm)
+"""
