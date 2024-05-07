@@ -169,7 +169,10 @@ class BaseManager:
             pZ + dY
         )
         
-        #self.debugInit()
+        self.areaCenter = 0.5 * (p0 + self.areaVerts[6])
+        self.areaRadius = 0.5 * (self.areaVerts[6] - p0).length
+        self.areaRadiusSquared = self.areaRadius * self.areaRadius
+        self.areaRadiusDoubled = 2 * self.areaRadius
     
     def getJsonFile(self, uri, path, cacheContent):
         if cacheContent:
@@ -249,9 +252,17 @@ class BaseManager:
             self.areaRotationMatrix @ ( bboxCenter - bboxX + bboxY + bboxZ - self.areaOrigin )
         )
         
-        #self.debugBboxes(bboxVerts)
+        bboxRadius = (bboxCenter - bboxOrigin).length
         
-        if BaseManager.edgesIntersectsBbox(bboxVerts, self.areaSizeX, self.areaSizeY, self.areaSizeZ):
+        # (1)
+        # A quick check if the spheres with the centers at <self.areaCenter> and <bboxCenter> and radii <self.areaRadius> and <bboxRadius>
+        # respectively do not intersect. That means the area bbox and the current bbox do not intersect either.
+        # The condition for that is distance between <self.areaCenter> and <bboxCenter> is larger than the sum
+        # of the radii <self.areaRadius> and <bboxRadius>.
+        if (self.areaCenter - bboxCenter).length_squared > self.areaRadiusSquared + self.areaRadiusDoubled * bboxRadius + bboxRadius*bboxRadius:
+            return False
+        
+        if BaseManager.bboxIntersectsBbox(bboxVerts, self.areaSizeX, self.areaSizeY, self.areaSizeZ):
             return True
 
         bboxSizeX = bboxX.length
@@ -275,13 +286,17 @@ class BaseManager:
         
         areaVerts = [bboxRotationMatrix @ (areaVert - bboxOrigin) for areaVert in self.areaVerts]
         
-        if BaseManager.edgesIntersectsBbox(areaVerts, bboxSizeX, bboxSizeY, bboxSizeZ):
+        if BaseManager.bboxIntersectsBbox(areaVerts, bboxSizeX, bboxSizeY, bboxSizeZ):
             return True
         
         return False
     
     @staticmethod
-    def edgesIntersectsBbox(verts, bboxSizeX, bboxSizeY, bboxSizeZ):
+    def bboxIntersectsBbox(verts, bboxSizeX, bboxSizeY, bboxSizeZ):
+        """
+        Checks if a bounding box defined by its <verts> intersect another bounding box
+        with the dimensions <bboxSizeX>, <bboxSizeY>, <bboxSizeZ> and the edges parallel to the axes of the system of reference.
+        """
         for vert in verts:
             if 0. < vert[0] < bboxSizeX and\
                 0. < vert[1] < bboxSizeY and\
@@ -333,38 +348,3 @@ class BaseManager:
         self.errors.append(
             "There was an error when processing the URI %s: %s" % (uri, str(e))
         )
-
-"""
-    def debugInit(self):
-        self.debugBboxCounter = 0
-        
-        self.debugGenerateBbox(self.areaVerts)
-        
-    
-    def debugBboxes(self, bboxVerts):
-        self.debugBboxCounter += 1
-        if self.debugBboxCounter <= 4:
-            return
-        
-        self.debugGenerateBbox(bboxVerts)
-    
-    def debugGenerateBbox(self, bboxVerts):
-        scale = 1000000.
-        
-        import bpy
-        from util.blender import createMeshObject, getBmesh, setBmesh
-        
-        obj = createMeshObject("Bbox " +str(self.debugBboxCounter))
-        bm = getBmesh(obj)
-        
-        verts = [ bm.verts.new(bboxVert/scale) for bboxVert in bboxVerts ]
-        
-        bm.faces.new((verts[3], verts[2], verts[1], verts[0]))
-        bm.faces.new((verts[0], verts[1], verts[5], verts[4]))
-        bm.faces.new((verts[1], verts[2], verts[6], verts[5]))
-        bm.faces.new((verts[2], verts[3], verts[7], verts[6]))
-        bm.faces.new((verts[3], verts[0], verts[4], verts[7]))
-        bm.faces.new((verts[4], verts[5], verts[6], verts[7]))
-        
-        setBmesh(obj, bm)
-"""
