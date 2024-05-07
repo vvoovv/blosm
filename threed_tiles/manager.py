@@ -1,4 +1,3 @@
-from operator import itemgetter
 from math import radians, cos, sin, sqrt
 from urllib import request
 from urllib.parse import urlparse
@@ -240,24 +239,26 @@ class BaseManager:
         bboxOrigin = bboxCenter - bboxX - bboxY - bboxZ
         
         bboxVerts = (
-            bboxOrigin,
-            bboxCenter + bboxX - bboxY - bboxZ,
-            bboxCenter + bboxX + bboxY - bboxZ,
-            bboxCenter - bboxX + bboxY - bboxZ,
-            bboxCenter - bboxX - bboxY + bboxZ,
-            bboxCenter + bboxX - bboxY + bboxZ,
-            bboxCenter + bboxX + bboxY + bboxZ,
-            bboxCenter - bboxX + bboxY + bboxZ
+            self.areaRotationMatrix @ ( bboxOrigin - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter + bboxX - bboxY - bboxZ - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter + bboxX + bboxY - bboxZ - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter - bboxX + bboxY - bboxZ - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter - bboxX - bboxY + bboxZ - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter + bboxX - bboxY + bboxZ - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter + bboxX + bboxY + bboxZ - self.areaOrigin ),
+            self.areaRotationMatrix @ ( bboxCenter - bboxX + bboxY + bboxZ - self.areaOrigin )
         )
         
         #self.debugBboxes(bboxVerts)
         
         for bboxVert in bboxVerts:
-            bboxVert = self.areaRotationMatrix @ (bboxVert - self.areaOrigin)
             if 0. < bboxVert[0] < self.areaSizeX and\
-                0. < bboxVert[1] < self.areaSizeY and\
-                0. < bboxVert[2] < self.areaSizeZ:
-                    return True
+                    0. < bboxVert[1] < self.areaSizeY and\
+                    0. < bboxVert[2] < self.areaSizeZ:
+                return True
+        
+        if BaseManager.edgesIntersectsBbox(bboxVerts, self.areaSizeX, self.areaSizeY, self.areaSizeZ):
+            return True
 
         bboxSizeX = bboxX.length
         bboxSizeY = bboxY.length
@@ -278,11 +279,58 @@ class BaseManager:
             (eZ[0], eZ[1], eZ[2])
         ))
         
-        for areaVert in self.areaVerts:
-            areaVert = bboxRotationMatrix @ (areaVert - bboxOrigin)
+        areaVerts = [bboxRotationMatrix @ (areaVert - bboxOrigin) for areaVert in self.areaVerts]
+        
+        for areaVert in areaVerts:
             if 0. < areaVert[0] < bboxSizeX and\
                 0. < areaVert[1] < bboxSizeY and\
                 0. < areaVert[2] < bboxSizeZ:
+                    return True
+        
+        if BaseManager.edgesIntersectsBbox(areaVerts, bboxSizeX, bboxSizeY, bboxSizeZ):
+            return True
+        
+        return False
+    
+    @staticmethod
+    def edgesIntersectsBbox(verts, bboxSizeX, bboxSizeY, bboxSizeZ):
+        edges = (
+            (verts[0], verts[1]), (verts[1], verts[2]), (verts[2], verts[3]), (verts[3], verts[0]),
+            (verts[4], verts[5]), (verts[5], verts[6]), (verts[6], verts[7]), (verts[7], verts[4]),
+            (verts[0], verts[4]), (verts[1], verts[5]), (verts[2], verts[6]), (verts[3], verts[7])
+        )
+        
+        for edge in edges:
+            v1, v2 = edge
+            
+            if v1[0] != v2[0]:
+                # check if <edge> intersects the face of bbox at <x == 0>
+                factor = v1[0]/(v1[0] - v2[0])
+                if 0. < factor < 1. and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
+                    return True
+                # check if <edge> intersects the face of bbox at <x == bboxSizeX>
+                factor = (v1[0] - bboxSizeX)/(v1[0] - v2[0])
+                if 0. < factor < 1. and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
+                    return True
+            
+            if v1[1] != v2[1]:
+                # check if <edge> intersects the face of bbox at <y == 0>
+                factor = v1[1]/(v1[1] - v2[1])
+                if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
+                    return True
+                # check if <edge> intersects the face of bbox at <y == bboxSizeY>
+                factor = (v1[1] - bboxSizeY)/(v1[1] - v2[1])
+                if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
+                    return True
+    
+            if v1[2] != v2[2]:
+                # check if <edge> intersects the face of bbox at <z == 0>
+                factor = v1[2]/(v1[2] - v2[2])
+                if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY:
+                    return True
+                # check if <edge> intersects the face of bbox at <z == bboxSizeZ>
+                factor = (v1[2] - bboxSizeZ)/(v1[2] - v2[2])
+                if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY:
                     return True
         
         return False
