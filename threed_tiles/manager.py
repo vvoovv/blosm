@@ -251,12 +251,6 @@ class BaseManager:
         
         #self.debugBboxes(bboxVerts)
         
-        for bboxVert in bboxVerts:
-            if 0. < bboxVert[0] < self.areaSizeX and\
-                    0. < bboxVert[1] < self.areaSizeY and\
-                    0. < bboxVert[2] < self.areaSizeZ:
-                return True
-        
         if BaseManager.edgesIntersectsBbox(bboxVerts, self.areaSizeX, self.areaSizeY, self.areaSizeZ):
             return True
 
@@ -281,12 +275,6 @@ class BaseManager:
         
         areaVerts = [bboxRotationMatrix @ (areaVert - bboxOrigin) for areaVert in self.areaVerts]
         
-        for areaVert in areaVerts:
-            if 0. < areaVert[0] < bboxSizeX and\
-                0. < areaVert[1] < bboxSizeY and\
-                0. < areaVert[2] < bboxSizeZ:
-                    return True
-        
         if BaseManager.edgesIntersectsBbox(areaVerts, bboxSizeX, bboxSizeY, bboxSizeZ):
             return True
         
@@ -294,6 +282,12 @@ class BaseManager:
     
     @staticmethod
     def edgesIntersectsBbox(verts, bboxSizeX, bboxSizeY, bboxSizeZ):
+        for vert in verts:
+            if 0. < vert[0] < bboxSizeX and\
+                0. < vert[1] < bboxSizeY and\
+                0. < vert[2] < bboxSizeZ:
+                    return True
+        
         edges = (
             (verts[0], verts[1]), (verts[1], verts[2]), (verts[2], verts[3]), (verts[3], verts[0]),
             (verts[4], verts[5]), (verts[5], verts[6]), (verts[6], verts[7]), (verts[7], verts[4]),
