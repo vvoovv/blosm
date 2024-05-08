@@ -151,7 +151,7 @@ class BaseManager:
         self.areaSizeY = (pY - p0).length
         dY = self.areaSizeY * eY
         
-        # rotation matrix
+        # A rotation matrix the rotates the unit vectors along the axes of the global system of references to <eX>, <eY>, <eZ>
         self.areaRotationMatrix = Matrix((
             (eX[0], eX[1], eX[2]),
             (eY[0], eY[1], eY[2]),
@@ -241,6 +241,9 @@ class BaseManager:
         
         bboxOrigin = bboxCenter - bboxX - bboxY - bboxZ
         
+        # The coordinates of the current bounding box are transformed to the system of reference where
+        # (1) the edges of the bounding box of the area of interest are parallel to the axes of the system of reference and
+        # (2) the origin of the bounding box of the area of interest is located at the origin of that system of reference 
         bboxVerts = (
             self.areaRotationMatrix @ ( bboxOrigin - self.areaOrigin ),
             self.areaRotationMatrix @ ( bboxCenter + bboxX - bboxY - bboxZ - self.areaOrigin ),
@@ -256,19 +259,24 @@ class BaseManager:
         
         # (1)
         # A quick check if the spheres with the centers at <self.areaCenter> and <bboxCenter> and radii <self.areaRadius> and <bboxRadius>
-        # respectively do not intersect. That means the area bbox and the current bbox do not intersect either.
-        # The condition for that is distance between <self.areaCenter> and <bboxCenter> is larger than the sum
+        # respectively do not intersect. That means the bounding box of the area of interest and
+        # the current bounding box do not intersect either.
+        # The condition for that is the following: the distance between <self.areaCenter> and <bboxCenter> is larger than the sum
         # of the radii <self.areaRadius> and <bboxRadius>.
         if (self.areaCenter - bboxCenter).length_squared > self.areaRadiusSquared + self.areaRadiusDoubled * bboxRadius + bboxRadius*bboxRadius:
             return False
         
+        # (2)
+        # Perform a thorough interesection test (read the description of the method <BaseManager.bboxIntersectsBbox> to understand
+        # what exactly is tested)
         if BaseManager.bboxIntersectsBbox(bboxVerts, self.areaSizeX, self.areaSizeY, self.areaSizeZ):
             return True
 
         bboxSizeX = bboxX.length
         bboxSizeY = bboxY.length
         bboxSizeZ = bboxZ.length
-                
+        
+        # Unit vectors along the sides of the current bounding box
         eX = bboxX/bboxSizeX
         eY = bboxY/bboxSizeY
         eZ = bboxZ/bboxSizeZ
@@ -277,15 +285,21 @@ class BaseManager:
         bboxSizeY *= 2.
         bboxSizeZ *= 2.
         
-        # bbox rotation matrix
+        # A rotation matrix the rotates the unit vectors along the axes of the global system of references to <eX>, <eY>, <eZ>
         bboxRotationMatrix = Matrix((
             (eX[0], eX[1], eX[2]),
             (eY[0], eY[1], eY[2]),
             (eZ[0], eZ[1], eZ[2])
         ))
         
+        # The coordinates of the bounding box of the area of interest are transformed to the system of reference where
+        # (1) the edges of the curent bounding box are parallel to the axes of the system of reference and
+        # (2) the origin of the current bounding box is located at the origin of that system of reference 
         areaVerts = [bboxRotationMatrix @ (areaVert - bboxOrigin) for areaVert in self.areaVerts]
         
+        # (3)
+        # Perform a thorough interesection test (read the description of the method <BaseManager.bboxIntersectsBbox> to understand
+        # what exactly is tested)
         if BaseManager.bboxIntersectsBbox(areaVerts, bboxSizeX, bboxSizeY, bboxSizeZ):
             return True
         
@@ -294,50 +308,61 @@ class BaseManager:
     @staticmethod
     def bboxIntersectsBbox(verts, bboxSizeX, bboxSizeY, bboxSizeZ):
         """
-        Checks if a bounding box defined by its <verts> intersect another bounding box
-        with the dimensions <bboxSizeX>, <bboxSizeY>, <bboxSizeZ> and the edges parallel to the axes of the system of reference.
+        Checks the partial conditions if the bounding box defined by its <verts> intersect the bounding box
+        with the dimensions <bboxSizeX>, <bboxSizeY>, <bboxSizeZ> and the edges parallel to the axes of the system of reference
+        and the origin located at the origin of the system of reference.
         """
+        
+        # (1)
+        # Check if at least one vertex of <verts> is located inside the bounding box
+        # with the dimensions <bboxSizeX>, <bboxSizeY>, <bboxSizeZ> and the edges parallel to the axes of the system of reference
+        # and he origin located at the origin of the system of reference.
         for vert in verts:
             if 0. < vert[0] < bboxSizeX and\
                 0. < vert[1] < bboxSizeY and\
                 0. < vert[2] < bboxSizeZ:
                     return True
         
+        # Create edges out of <verts> as a pair of vertices the form the related edge
         edges = (
             (verts[0], verts[1]), (verts[1], verts[2]), (verts[2], verts[3]), (verts[3], verts[0]),
             (verts[4], verts[5]), (verts[5], verts[6]), (verts[6], verts[7]), (verts[7], verts[4]),
             (verts[0], verts[4]), (verts[1], verts[5]), (verts[2], verts[6]), (verts[3], verts[7])
         )
         
+        # (2)
+        # Check if at least one edge intersects the bounding box with the dimensions <bboxSizeX>, <bboxSizeY>, <bboxSizeZ> and
+        # the edges pareallel to the axes of the system of reference and the origin located at the origin of the system of reference.
+        
         for edge in edges:
             v1, v2 = edge
             
             if v1[0] != v2[0]:
-                # check if <edge> intersects the face of bbox at <x == 0>
+                # check if <edge> intersects the face of the bounding box at <x == 0>
                 factor = v1[0]/(v1[0] - v2[0])
                 if 0. < factor < 1. and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
                     return True
-                # check if <edge> intersects the face of bbox at <x == bboxSizeX>
+                # check if <edge> intersects the face of the bounding box at <x == bboxSizeX>
                 factor = (v1[0] - bboxSizeX)/(v1[0] - v2[0])
                 if 0. < factor < 1. and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
                     return True
             
             if v1[1] != v2[1]:
-                # check if <edge> intersects the face of bbox at <y == 0>
+                # check if <edge> intersects the face of the bounding box at <y == 0>
                 factor = v1[1]/(v1[1] - v2[1])
                 if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
                     return True
-                # check if <edge> intersects the face of bbox at <y == bboxSizeY>
+                # check if <edge> intersects the face of the bounding box at <y == bboxSizeY>
                 factor = (v1[1] - bboxSizeY)/(v1[1] - v2[1])
                 if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[2] + factor * (v2[2] - v1[2]) < bboxSizeZ:
                     return True
     
             if v1[2] != v2[2]:
-                # check if <edge> intersects the face of bbox at <z == 0>
+                # check if <edge> intersects the face of the bounding box at <z == 0>
                 factor = v1[2]/(v1[2] - v2[2])
                 if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY:
                     return True
-                # check if <edge> intersects the face of bbox at <z == bboxSizeZ>
+                # check if <edge> intersects the face of the bounding box at <z == bboxSizeZ>
                 factor = (v1[2] - bboxSizeZ)/(v1[2] - v2[2])
                 if 0. < factor < 1. and 0. < v1[0] + factor * (v2[0] - v1[0]) < bboxSizeX and 0. < v1[1] + factor * (v2[1] - v1[1]) < bboxSizeY:
                     return True
