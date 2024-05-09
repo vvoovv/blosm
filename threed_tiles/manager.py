@@ -16,7 +16,7 @@ _geometricErrorRanges = {
 }
 
 # heights above the sea level
-_minHeight = 0.
+_minHeight = -5000.
 _maxHeight = 9000.
 
 
