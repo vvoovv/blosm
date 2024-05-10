@@ -1998,7 +1998,8 @@ class StreetGenerator():
                 if isinstance(item,Section):
                     section = item
                     if section.trimS < section.trimT:
-                        section.centerline = section.polyline.trimmed(section.trimS,section.trimT)[::]
+                        pass # QUICKTEST
+                        # section.centerline = section.polyline.trimmed(section.trimS,section.trimT)[::]
                     else:
                         section.valid = False
 

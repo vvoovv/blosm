@@ -175,9 +175,10 @@ class Intersection(Item):
             connector.item = centerWay.street
             connector.leaving = centerWay.leaving
             if connector.leaving:
-                centerWay.street.pred = connector
+                # QUICKTEST
+                centerWay.street.pred = self#connector
             else:
-                centerWay.street.succ = connector
+                centerWay.street.succ = self#connector
 
             # Find the boundary intersection p1 at the right side of center-way
             p1, type = offsetPolylineIntersection(rightWay.polyline,centerWay.polyline,rightWay.widthL,-centerWay.widthR,True,0.1)
