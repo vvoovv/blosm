@@ -76,6 +76,8 @@ class Section(Item):
             item.succ = self.succ
             self.succ = item
             item.pred = self
+            item.width = self.width
+            item.offset = self.offset
             return True
         else:
             return False
@@ -110,6 +112,8 @@ class Section(Item):
             item.pred = self.pred
             item.succ = self
             self.pred = item
+            item.width = self.width
+            item.offset = self.offset
             return True
         else:
             return False
