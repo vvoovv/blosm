@@ -46,9 +46,9 @@ class Section(Item):
         self.trimT = len(self.polyline)-1    # trim factor for target
 
 
-    def insertAfter(self,length, item):
+    def insertAfter(self, length, item):
         # Shortens the section to the length <length> and appends <item> after it. <length> is
-        # the physical length in meters. After the split is the section followed by <item>. The
+        # the physical length in meters. After the split the section is followed by <item>. The
         # method returns True, if item is successfully inserted and False else.
         # For now, the method returns False, when <length> is larger than the length of the section.
         # <item> is inserted into the linked list by:
@@ -59,11 +59,16 @@ class Section(Item):
 
         # Shorten section (self)
         t = self.polyline.d2t(length)
-        if 0. <= t < len(self.polyline)-1:
+        endT = len(self.polyline)-1
+        if 0. <= t < endT:
             self.polyline = self.polyline.trimmed(0.,t)
+            remainingPolyline = self.polyline.trimmed(t,endT)
             self.trimT = len(self.polyline)-1
             self.centerline = self.polyline[::]
             self._dst = self.polyline[-1]
+
+            # Add remaining centerline to item
+            item.centerline = remainingPolyline[::]
 
             # insert item in linked list
             if hasattr(self.succ, 'pred'):  # check, maybe its an intersection
@@ -75,7 +80,7 @@ class Section(Item):
         else:
             return False
 
-    def insertBefore(self,length, item):
+    def insertBefore(self, length, item):
         # Shortens the section so that it starts after the length <length> and remains until its end.
         # <length> is the physical length in meters. After the split the item is followed by the
         # remaining section. The method returns True, if <item> is successfully inserted and False else.
@@ -91,9 +96,13 @@ class Section(Item):
         lenOld = len(self.polyline)-1
         if 0. <= t < lenOld:
             self.polyline = self.polyline.trimmed(t,lenOld)
+            remainingPolyline = self.polyline.trimmed(0,t)
             self.trimT = len(self.polyline)-1
             self.centerline = self.polyline[::]
             self._src = self.polyline[0]
+
+            # Add remaining centerline to item
+            item.centerline = remainingPolyline[::]
 
             # insert item in linked list
             if hasattr(self.pred, 'succ'):  # check, maybe its an intersection
