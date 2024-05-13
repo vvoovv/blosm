@@ -61,8 +61,8 @@ class Section(Item):
         t = self.polyline.d2t(length)
         endT = len(self.polyline)-1
         if 0. <= t < endT:
-            self.polyline = self.polyline.trimmed(0.,t)
             remainingPolyline = self.polyline.trimmed(t,endT)
+            self.polyline = self.polyline.trimmed(0.,t)
             self.trimT = len(self.polyline)-1
             self.centerline = self.polyline[::]
             self._dst = self.polyline[-1]
@@ -95,8 +95,8 @@ class Section(Item):
         t = self.polyline.d2t(length)
         lenOld = len(self.polyline)-1
         if 0. <= t < lenOld:
-            self.polyline = self.polyline.trimmed(t,lenOld)
             remainingPolyline = self.polyline.trimmed(0,t)
+            self.polyline = self.polyline.trimmed(t,lenOld)
             self.trimT = len(self.polyline)-1
             self.centerline = self.polyline[::]
             self._src = self.polyline[0]
