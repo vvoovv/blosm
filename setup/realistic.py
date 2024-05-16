@@ -29,6 +29,7 @@ def setup(app, osm):
             
             from way.item_renderer.section import Section
             from way.item_renderer.intersection import Intersection
+            from way.item_renderer.side_lane import SideLane
             
             styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
             #streetStyle = styleStore.get(self.getStyle(section))
@@ -37,7 +38,8 @@ def setup(app, osm):
             
             itemRenderers = {
                 "Section": Section(),
-                "Intersection": Intersection()
+                "Intersection": Intersection(),
+                "SideLane": SideLane()
             }
             
             wayManager.addRenderer(

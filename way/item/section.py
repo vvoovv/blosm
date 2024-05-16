@@ -46,7 +46,7 @@ class Section(Item):
         self.trimT = len(self.polyline)-1    # trim factor for target
 
 
-    def insertAfter(self, length, item):
+    def insertAfter(self, length, item, updateNeighbors):
         # Shortens the section to the length <length> and appends <item> after it. <length> is
         # the physical length in meters. After the split the section is followed by <item>. The
         # method returns True, if item is successfully inserted and False else.
@@ -69,20 +69,19 @@ class Section(Item):
 
             # Add remaining centerline to item
             item.centerline = remainingPolyline[::]
-
-            # insert item in linked list
-            if hasattr(self.succ, 'pred'):  # check, maybe its an intersection
-                self.succ.pred = item
-            item.succ = self.succ
-            self.succ = item
-            item.pred = self
-            item.width = self.width
-            item.offset = self.offset
+            
+            if updateNeighbors:
+                # insert item in linked list
+                if hasattr(self.succ, 'pred'):  # check, maybe its an intersection
+                    self.succ.pred = item
+                item.succ = self.succ
+                self.succ = item
+                item.pred = self
             return True
         else:
             return False
 
-    def insertBefore(self, length, item):
+    def insertBefore(self, length, item, updateNeighbors):
         # Shortens the section so that it starts after the length <length> and remains until its end.
         # <length> is the physical length in meters. After the split the item is followed by the
         # remaining section. The method returns True, if <item> is successfully inserted and False else.
@@ -105,15 +104,14 @@ class Section(Item):
 
             # Add remaining centerline to item
             item.centerline = remainingPolyline[::]
-
-            # insert item in linked list
-            if hasattr(self.pred, 'succ'):  # check, maybe its an intersection
-                self.pred.succ = item
-            item.pred = self.pred
-            item.succ = self
-            self.pred = item
-            item.width = self.width
-            item.offset = self.offset
+            
+            if updateNeighbors:
+                # insert item in linked list
+                if hasattr(self.pred, 'succ'):  # check, maybe its an intersection
+                    self.pred.succ = item
+                item.pred = self.pred
+                item.succ = self
+                self.pred = item
             return True
         else:
             return False

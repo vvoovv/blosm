@@ -107,7 +107,6 @@ class StreetRenderer:
         gnProjectOnTerrain = "blosm_project_on_terrain"
         gnProjectTerrainPatches = "blosm_project_terrain_patches"
         gnMeshToCurve = "blosm_mesh_to_curve"
-        gnSideLaneTransition = "blosm_side_lane_transition"
     
     def render(self, manager, data):
         location = Vector((0., 0., 0.))
@@ -118,7 +117,7 @@ class StreetRenderer:
         
         # render instances of the class <Street> 
         for _, _, _, street in manager.waymap.iterSections():
-            self.sectionRenderer.reset()
+            self.pointIndexOffset = 0
             
             # Create a Blender object and BMesh for <street>. Ann instance of <Street> contains
             # at least one one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.

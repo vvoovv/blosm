@@ -15,21 +15,17 @@ class Section(ItemRenderer):
         # set the index of the street section
         #
         obj = section.street.obj
-        for pointIndex in range(self.pointIndexOffset, self.pointIndexOffset + len(section.centerline)):
+        for pointIndex in range(self.r.pointIndexOffset, self.r.pointIndexOffset + len(section.centerline)):
             obj.data.attributes['section_index'].data[pointIndex].value = itemIndex
         
-        self.pointIndexOffset += len(section.centerline)
-        
-    def reset(self):
-        self.pointIndexOffset = 0
-        self.itemIndex = 0
+        self.r.pointIndexOffset += len(section.centerline)
 
     def setModifierSection(self, section, itemIndex, trimLengthStart, trimLengthEnd):
         m = addGeometryNodesModifier(section.street.obj, self.gnSection, "Street Section")
         m["Input_2"] = section.offset
         m["Input_3"] = section.width
         useAttributeForGnInput(m, "Input_4", "offset_weight")
-        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.section, section.getStyleBlockAttr("cl"))
+        self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.section, section.getClass())
         # set trim lengths
         m["Input_6"] = trimLengthStart
         m["Input_7"] = trimLengthEnd
@@ -50,7 +46,7 @@ class Section(ItemRenderer):
         attributes = section.street.obj.data.attributes["offset_weight"].data
         centerline = section.centerline
         numPoints = len(centerline)
-        pointIndexOffset = self.pointIndexOffset
+        pointIndexOffset = self.r.pointIndexOffset
         attributes[pointIndexOffset].value = attributes[pointIndexOffset+numPoints-1].value = 1.
         
         if numPoints > 2:

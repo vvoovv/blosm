@@ -46,3 +46,6 @@ class Item:
             else:
                 # no style block
                 return
+    
+    def getClass(self):
+        return self.getStyleBlockAttr("cl")
