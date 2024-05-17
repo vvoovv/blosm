@@ -30,7 +30,7 @@ class SideLane(Section):
         # Lane on the Right
         m["Input_6"] = section.laneR
         # Material
-        #self.setMaterial(m, "Input_7", AssetType.material, "demo", AssetPart.section, self.getClass())
+        self.setMaterial(m, "Input_7", AssetType.material, None, AssetPart.side_lane_transition, section.getStyleBlockAttr("cl"))
         if itemIndex:
             m["Input_8"] = itemIndex
         # Number of Lanes is Increased
