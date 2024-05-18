@@ -74,10 +74,7 @@ class SideLane(Item):
                 # points inwards). If the offset is negative, the curve is offset to the left
                 # relative to the supplied centerline. Otherwise, the curve is offset to the right.
                 # signOfTurn is positive, if in outgoing direction of the turn way
-                nrTurnLanesFwd = max(len(fwdL), len(fwdR))
-                self.succ.offset = (
-                    self.succ.laneWidth / 2.0 * signOfTurn * laneDir * nrTurnLanesFwd
-                )
+                self.succ.offset = (self.succ.width-self.pred.width) / 2. * signOfTurn * laneDir
         else:  # two-ways
             # TODO case of merging lanes, as above?
             fwdL, fwdR = turnsFromPatterns(
@@ -101,11 +98,11 @@ class SideLane(Item):
                 nrTurnLanesFwd = max(len(fwdL), len(fwdR))
                 # nrTurnLanesBwd = max( len(bwdL), len(bwdR))
                 self.succ.offset = (
-                    self.succ.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
-                    if self.laneR
-                    else -self.succ.laneWidth / 2.0 * signOfTurn * nrTurnLanesFwd
-                )
-    
+                          (self.succ.width-self.pred.width) / 2. * signOfTurn
+                    if self.laneR else
+                        - (self.succ.width-self.pred.width) / 2. * signOfTurn
+                 )
+
     def splitAffectedSection(self):
         length = self.length = self.getStyleBlockAttr("length")
         
