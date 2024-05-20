@@ -117,7 +117,7 @@ class StreetRenderer:
         
         # render instances of the class <Street> 
         for _, _, _, street in manager.waymap.iterSections():
-            self.pointIndexOffset = 0
+            street.edgeIndexOffset = 0
             
             # Create a Blender object and BMesh for <street>. Ann instance of <Street> contains
             # at least one one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
@@ -139,10 +139,12 @@ class StreetRenderer:
             # (1) the first pass
             #
             if street.head is street.tail:
-                self.renderItem(street.head)
+                self.renderItem(street.head, True)
             else:
+                # the first BMesh vertex for the current street section
+                street.bmVert = None
                 for item in street.iterItems():
-                    self.renderItem(item)
+                    self.renderItem(item, False)
             
             setBmesh(street.obj, street.bm)
             
@@ -169,10 +171,10 @@ class StreetRenderer:
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.finalize()
     
-    def renderItem(self, item):
+    def renderItem(self, item, singleItem):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
         if itemRenderer:
-            itemRenderer.renderItem(item)
+            itemRenderer.renderItem(item, singleItem)
 
     def finalizeItem(self, item, itemIndex):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
@@ -872,8 +874,8 @@ class StreetRenderer:
             location = location,
             collection = self.streetSectionsCollection
         )
-        # create an attribute for the index of the street section (or curve's spline)
-        obj.data.attributes.new("section_index", 'INT', 'POINT')
+        # create an attribute for the index of the street section
+        obj.data.attributes.new("section_index", 'INT', 'EDGE')
         return obj
     
     def debugIntersectionArea(self, manager):

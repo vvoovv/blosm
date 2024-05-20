@@ -5,8 +5,14 @@ from ..asset_store import AssetType, AssetPart
 
 class Section(ItemRenderer):
     
-    def renderItem(self, section):
-        createPolylineMesh(None, section.street.bm, section.centerline)
+    def renderItem(self, section, singleItem):
+        street = section.street
+        if singleItem:
+            # create a polyline mesh
+            createPolylineMesh(None, street.bm, section.centerline, None)
+        else:
+            # create a polyline mesh and set a BMesh vertex for the next section
+            street.bmVert = createPolylineMesh(None, street.bm, section.centerline, street.bmVert)
     
     def finalizeItem(self, section, itemIndex):
         self.setModifierSection(section, itemIndex, 0., 0.)
@@ -14,11 +20,13 @@ class Section(ItemRenderer):
         #
         # set the index of the street section
         #
-        obj = section.street.obj
-        for pointIndex in range(self.r.pointIndexOffset, self.r.pointIndexOffset + len(section.centerline)):
+        street = section.street
+        obj = street.obj
+        numEdges = len(section.centerline) - 1
+        for pointIndex in range(street.edgeIndexOffset, street.edgeIndexOffset + numEdges):
             obj.data.attributes['section_index'].data[pointIndex].value = itemIndex
         
-        self.r.pointIndexOffset += len(section.centerline)
+        street.edgeIndexOffset += numEdges
 
     def setModifierSection(self, section, itemIndex, trimLengthStart, trimLengthEnd):
         m = addGeometryNodesModifier(section.street.obj, self.gnSection, "Street Section")
@@ -46,13 +54,13 @@ class Section(ItemRenderer):
         attributes = section.street.obj.data.attributes["offset_weight"].data
         centerline = section.centerline
         numPoints = len(centerline)
-        pointIndexOffset = self.r.pointIndexOffset
-        attributes[pointIndexOffset].value = attributes[pointIndexOffset+numPoints-1].value = 1.
+        edgeIndexOffset = section.street.edgeIndexOffset
+        attributes[edgeIndexOffset].value = attributes[edgeIndexOffset+numPoints-1].value = 1.
         
         if numPoints > 2:
             vec1 = centerline[0] - centerline[1]
             vec1.normalize()
-            for centerlineIndex, pointIndex in zip(range(1, numPoints-1), range(pointIndexOffset+1, pointIndexOffset+numPoints-1)):
+            for centerlineIndex, pointIndex in zip(range(1, numPoints-1), range(edgeIndexOffset+1, edgeIndexOffset+numPoints-1)):
                 vec2 = centerline[centerlineIndex+1] - centerline[centerlineIndex]
                 vec2.normalize()
                 vec = vec1 + vec2

@@ -317,11 +317,12 @@ def useAttributeForGnInput(modifier, inputId, attributeName):
     modifier[inputId + "_attribute_name"] = attributeName
 
 
-def createPolylineMesh(obj, bm, polyline):
+def createPolylineMesh(obj, bm, polyline, prevVert):
     if obj:
         bm = getBmesh(obj)
     
-    prevVert = bm.verts.new((polyline[0][0], polyline[0][1], 0.))
+    if not prevVert:
+        prevVert = bm.verts.new((polyline[0][0], polyline[0][1], 0.))
     for i in range(1, len(polyline)):
         vert = bm.verts.new((polyline[i][0], polyline[i][1], 0.))
         bm.edges.new((prevVert, vert))
@@ -329,3 +330,5 @@ def createPolylineMesh(obj, bm, polyline):
     
     if obj:
         setBmesh(obj, bm)
+    else:
+        return prevVert
