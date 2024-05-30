@@ -1934,6 +1934,8 @@ class StreetGenerator():
                     toReplace.append( (location, street) )
                     self.transitionSideLanes.append(sideLane)
                 else:   # it's a sym lane
+                    # the above definition does not hold for SymLanes
+                    incoming, outgoing = (section0, section1) if section0.dst == section1.src else (section1, section0)
                     symLane = SymLane(location, incoming, outgoing)
 
                     street = Street(incoming.src, outgoing.dst)
