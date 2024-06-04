@@ -61,3 +61,7 @@ def set_convert_functions_4_0(gltf):
     gltf.normals_batch_gltf_to_blender = convert_normals_batch
     gltf.scale_gltf_to_blender = convert_scale
     gltf.matrix_gltf_to_blender = convert_matrix
+
+
+def select_imported_objects_4_1(gltf):
+    return

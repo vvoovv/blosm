@@ -25,8 +25,10 @@ class BlenderRenderer:
         self.copyrightHolders = {}
         
         self.gltfImporterPatched = False
-        # the original static function <BlenderGlTF.set_convert_functions> of the glTF importer will stored in the attribute below
+        # the original static function <BlenderGlTF.set_convert_functions> of the glTF importer will be stored in the attribute below
         self._set_convert_functions = None
+        # the original static function <BlenderScene.select_imported_objects> of the glTF importer will be stored in the attribute below
+        self._select_imported_objects = None
     
     def prepare(self, manager):
         self.collection = createCollection(self.threedTilesName)
@@ -105,11 +107,15 @@ class BlenderRenderer:
         if self.gltfImporterPatched:
             from io_scene_gltf2.io.imp.gltf2_io_gltf import glTFImporter
             from io_scene_gltf2.blender.imp.gltf2_blender_gltf import BlenderGlTF
+            from io_scene_gltf2.blender.imp.gltf2_blender_scene import BlenderScene
             
             # clean everything up after patching
+            
             BlenderGlTF.set_convert_functions = self._set_convert_functions
             self._set_convert_functions = None
             delattr(glTFImporter, "_offset")
+            
+            BlenderScene.select_imported_objects = self._select_imported_objects
         
         return numImportedTiles
     
@@ -163,12 +169,16 @@ class BlenderRenderer:
     def patchGltfImporter(self):
         bv = bpy.app.version
         if (bv[0] == 3 and bv[1] == 6) or (bv[0] == 4 and bv[1] in (0,1)):
-            from .gltf_patch import set_convert_functions_4_0
+            from .gltf_patch import set_convert_functions_4_0, select_imported_objects_4_1
             from io_scene_gltf2.io.imp.gltf2_io_gltf import glTFImporter
             from io_scene_gltf2.blender.imp.gltf2_blender_gltf import BlenderGlTF
+            from io_scene_gltf2.blender.imp.gltf2_blender_scene import BlenderScene
             
             glTFImporter._offset = self.centerCoords
             self._set_convert_functions = BlenderGlTF.set_convert_functions
             BlenderGlTF.set_convert_functions = set_convert_functions_4_0
+            
+            self._select_imported_objects = BlenderScene.select_imported_objects
+            BlenderScene.select_imported_objects = select_imported_objects_4_1
             
             self.gltfImporterPatched = True
