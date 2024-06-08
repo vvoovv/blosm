@@ -44,12 +44,13 @@ for m in [
     sys.modules.pop(m, 0)
 
 def _checkPath():
-    path = os.path.dirname(__file__)
+    path = os.path.dirname(os.path.realpath(__file__))
     if path in sys.path:
         sys.path.remove(path)
     # make <path> the first one to search for a module
     sys.path.insert(0, path)
     sys.path.insert(1, os.path.join(path, "pml"))
+    sys.path.insert(2, os.path.join(path, "threed_tiles"))
 _checkPath()
 
 
