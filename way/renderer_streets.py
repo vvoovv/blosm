@@ -71,7 +71,13 @@ class StreetRenderer:
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.prepare()
         
-        nodeGroupNames = set(("blosm_init_data", "blosm_terrain_area", "blosm_terrain_street_full", "blosm_terrain_street_centerline"))
+        nodeGroupNames = set((
+            "blosm_init_data",
+            "blosm_intersection_edge",
+            "blosm_terrain_area",
+            "blosm_terrain_street_full"
+            #"blosm_terrain_street_centerline"
+        ))
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.requestNodeGroups(nodeGroupNames)
         
@@ -90,6 +96,7 @@ class StreetRenderer:
         )
         
         self.gnInitData = nodeGroups["blosm_init_data"]
+        self.gnIntersectionEdge = nodeGroups["blosm_intersection_edge"]
         self.gnTerrainArea = nodeGroups["blosm_terrain_area"]
         self.gnTerrainStreetFull = nodeGroups["blosm_terrain_street_full"]
         #self.gnTerrainStreetCenterline = nodeGroups["blosm_terrain_street_centerline"]
@@ -162,6 +169,19 @@ class StreetRenderer:
             if self.terrainObj:
                 m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetFull, "Streets on terrain")
                 m["Input_2"] = self.terrainObj
+        
+        for _, _, _, street in manager.waymap.iterSections():
+            # If <street.succ> is set, then it is an istance of the <IntConnector> class
+            if street.succ and hasattr(street.succ.pred.item, "obj") and hasattr(street.succ.succ.item, "obj"):
+                objL = street.succ.pred.item.obj
+                objR = street.succ.succ.item.obj
+                
+                m = addGeometryNodesModifier(street.obj, self.gnIntersectionEdge, "Intersection Edge")
+                m["Socket_2"] = objL.name
+                m["Socket_3"] = objR.name
+            if street.pred and hasattr(street.pred.pred.item, "obj") and hasattr(street.pred.succ.item, "obj"):
+                objL = street.pred.pred.item.obj
+                objR = street.pred.succ.item.obj
         
         # render instances of class <Intersection>
         intersectionRenderer = self.itemRenderers["Intersection"]
