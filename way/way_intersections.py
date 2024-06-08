@@ -269,7 +269,7 @@ class Intersection():
                 # leftWay.polyline.plot('g',2)
                 # # plotEnd()
                 # outIsect += 1
-                print('out')
+                # print('out')
                 continue
             # if debug:
             #     plt.plot(p1[0],p1[1],'kx')
@@ -298,7 +298,7 @@ class Intersection():
                 # leftWay.polyline.plot('g',2)
                 # # plotEnd()
                 # outIsect += 1
-                print('out')
+                # print('out')
                 continue
             # if debug:
             #     plt.plot(p3[0],p3[1],'kx')

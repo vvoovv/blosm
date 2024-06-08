@@ -194,7 +194,7 @@ class Intersection(Item):
                 tP1 = centerWay.polyline.d2t(transWidth)
                 p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
             else: # out
-                print('out')
+                # print('out')
                 # from debug import plt
                 # p = self.location
                 # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
@@ -214,7 +214,7 @@ class Intersection(Item):
                 tP3 = centerWay.polyline.d2t(transWidth)
                 p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
             else: # out
-                print('out')
+                # print('out')
                 # from debug import plt
                 # p = self.location
                 # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')

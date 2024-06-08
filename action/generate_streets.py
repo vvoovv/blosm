@@ -1920,6 +1920,7 @@ class StreetGenerator():
             if intersection.order == 2:
                 section0 = intersection.leaveWays[0].section
                 section1 = intersection.leaveWays[1].section
+                streetIds = (intersection.leaveWays[0].street.id, intersection.leaveWays[1].street.id)
                 incoming, outgoing = (section0, section1) if section0.totalLanes < section1.totalLanes else (section1, section0)
                 hasTurns = bool( re.search(r'[^N]', outgoing.lanePatterns[0] ) )
                 if hasTurns:    # it's a side lane
@@ -1931,7 +1932,7 @@ class StreetGenerator():
                     section0.street = street
                     sideLane.street = street
                     section1.street = street
-                    toReplace.append( (location, street) )
+                    toReplace.append( (location, street, streetIds) )
                     self.transitionSideLanes.append(sideLane)
                 else:   # it's a sym lane
                     # the above definition does not hold for SymLanes
@@ -1945,11 +1946,25 @@ class StreetGenerator():
                     section0.street = street
                     symLane.street = street
                     section1.street = street
-                    toReplace.append( (location, street) )
+                    toReplace.append( (location, street, streetIds) )
                     self.transitionSymLanes.append(symLane)
             nr += 1
 
-        for location, street in toReplace:
+        for location, street, streetIds in toReplace:
+            # At this stage, intersections do not yet have connectors. They will get them 
+            # when processIntersection() is called (which occurs at self.updateIntersections).
+            # But the leaving ways structure of the intersections at the end of the new
+            # Street needs to be updated.
+            predIsect = self.waymap.getStreetNode(street.src)['object']
+            for way in predIsect.leaveWays:
+                if way.street.id in streetIds:
+                    way.street = street
+            
+            succIsect = self.waymap.getStreetNode(street.dst)['object']
+            for way in succIsect.leaveWays:
+                if way.street.id in streetIds:
+                    way.street = street
+
             self.waymap.removeStreetNode(location)
             street.style = self.styleStore.get( self.getStyle(street) )
             street.setStyleBlockFromTop(street.style)
