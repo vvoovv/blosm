@@ -5,7 +5,7 @@ from ..asset_store import AssetType, AssetPart
 
 class Section(ItemRenderer):
     
-    def renderItem(self, section, singleItem):
+    def initItem(self, section, singleItem):
         street = section.street
         if singleItem:
             # create a polyline mesh
@@ -14,9 +14,7 @@ class Section(ItemRenderer):
             # create a polyline mesh and set a BMesh vertex for the next section
             street.bmVert = createPolylineMesh(None, street.bm, section.centerline, street.bmVert)
     
-    def finalizeItem(self, section, itemIndex):
-        self.setModifierSection(section, itemIndex, 0., 0.)
-        
+    def initItemExtra(self, section, itemIndex):
         #
         # set the index of the street section
         #
@@ -27,16 +25,17 @@ class Section(ItemRenderer):
             obj.data.attributes['section_index'].data[pointIndex].value = itemIndex
         
         street.edgeIndexOffset += numEdges
+    
+    def finalizeItem(self, section, itemIndex):
+        self.setModifierSection(section, itemIndex)
 
-    def setModifierSection(self, section, itemIndex, trimLengthStart, trimLengthEnd):
-        m = addGeometryNodesModifier(section.street.obj, self.gnSection, "Street Section")
+    def setModifierSection(self, section, itemIndex):
+        m = addGeometryNodesModifier(section.street.obj3d, self.gnSection, "Street Section")
         m["Input_2"] = section.offset
         m["Input_3"] = section.width
-        useAttributeForGnInput(m, "Input_4", "offset_weight")
+        # Offset weights are now calculated in the Geometry Nodes
+        #useAttributeForGnInput(m, "Input_4", "offset_weight")
         self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.section, section.getClass())
-        # set trim lengths
-        m["Input_6"] = trimLengthStart
-        m["Input_7"] = trimLengthEnd
         if itemIndex:
             m["Input_9"] = itemIndex
     

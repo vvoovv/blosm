@@ -18,7 +18,7 @@ class SideLane(Section):
         section.width = sectionNarrower.width
         section.offset = sectionNarrower.offset
         
-        m = addGeometryNodesModifier(section.street.obj, self.gnSideLaneTransition, "Side Lane Transition")
+        m = addGeometryNodesModifier(section.street.obj3d, self.gnSideLaneTransition, "Side Lane Transition")
         # Length of the Transition Lane
         m["Input_2"] = section.length
         # Width of the Transition Lane

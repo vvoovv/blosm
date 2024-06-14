@@ -54,7 +54,8 @@ class StreetRenderer:
                 self.terrainObj = terrain
     
     def prepare(self):
-        self.streetSectionsCollection = createCollection("Street sections", Renderer.collection)
+        self.collectionPolylines = createCollection("Street polylines", Renderer.collection)
+        self.collection3dStreets = createCollection("Streets in 3D", Renderer.collection)
         
         self.intersectionAreasObj = createMeshObject(
             "Intersections",
@@ -73,7 +74,6 @@ class StreetRenderer:
         
         nodeGroupNames = set((
             "blosm_init_data",
-            "blosm_intersection_edge",
             "blosm_terrain_area",
             "blosm_terrain_street_full"
             #"blosm_terrain_street_centerline"
@@ -96,7 +96,6 @@ class StreetRenderer:
         )
         
         self.gnInitData = nodeGroups["blosm_init_data"]
-        self.gnIntersectionEdge = nodeGroups["blosm_intersection_edge"]
         self.gnTerrainArea = nodeGroups["blosm_terrain_area"]
         self.gnTerrainStreetFull = nodeGroups["blosm_terrain_street_full"]
         #self.gnTerrainStreetCenterline = nodeGroups["blosm_terrain_street_centerline"]
@@ -126,32 +125,29 @@ class StreetRenderer:
         for _, _, _, street in manager.waymap.iterSections():
             street.edgeIndexOffset = 0
             
-            # Create a Blender object and BMesh for <street>. Ann instance of <Street> contains
-            # at least one one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
-            street.obj = self.getStreetObj(street, location)
+            # Create a Blender object and BMesh for the <street> polyline. Ann instance of <Street> contains
+            # at least one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
+            street.obj = self.getStreetPolylineObj(street, location)
             street.bm = getBmesh(street.obj)
             
             #if self.terrainObj:
             #    m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetCenterline, "Streets on terrain")
             #    m["Input_2"] = self.terrainObj
-            m = addGeometryNodesModifier(street.obj, self.gnInitData)
-            # setting offset for points where two street sections share a position of their end points
-            m["Socket_2"] = 4.
             
-            # Rendering is performed in two passes:
+            # Initialization is performed in two passes:
             # In the first pass we create a Blender mesh
-            # in the second pass we set attributes and apply Blender modifiers.
+            # in the second pass we set attributes
             
             #
             # (1) the first pass
             #
             if street.head is street.tail:
-                self.renderItem(street.head, True)
+                self.initItem(street.head, True)
             else:
                 # the first BMesh vertex for the current street section
                 street.bmVert = None
                 for item in street.iterItems():
-                    self.renderItem(item, False)
+                    self.initItem(item, False)
             
             setBmesh(street.obj, street.bm)
             
@@ -159,29 +155,30 @@ class StreetRenderer:
             # (2) the second pass
             #
             if street.head is street.tail:
+                self.initItemExtra(street.head, 0)
+            else:
+                itemIndex = 1
+                for item in street.iterItems():
+                    self.initItemExtra(item, itemIndex)
+                    itemIndex += 1
+        
+        #
+        # Finalize items: apply modifiers
+        #
+        for _, _, _, street in manager.waymap.iterSections():
+            street.obj3d = self.get3dStreetObj(street, location)
+            
+            if street.head is street.tail:
                 self.finalizeItem(street.head, 0)
             else:
                 itemIndex = 1
                 for item in street.iterItems():
                     self.finalizeItem(item, itemIndex)
                     itemIndex += 1
-                
+              
             if self.terrainObj:
-                m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetFull, "Streets on terrain")
+                m = addGeometryNodesModifier(street.obj3d, self.gnTerrainStreetFull, "Streets on terrain")
                 m["Input_2"] = self.terrainObj
-        
-        for _, _, _, street in manager.waymap.iterSections():
-            # If <street.succ> is set, then it is an istance of the <IntConnector> class
-            if street.succ and hasattr(street.succ.pred.item, "obj") and hasattr(street.succ.succ.item, "obj"):
-                objL = street.succ.pred.item.obj
-                objR = street.succ.succ.item.obj
-                
-                m = addGeometryNodesModifier(street.obj, self.gnIntersectionEdge, "Intersection Edge")
-                m["Socket_2"] = objL.name
-                m["Socket_3"] = objR.name
-            if street.pred and hasattr(street.pred.pred.item, "obj") and hasattr(street.pred.succ.item, "obj"):
-                objL = street.pred.pred.item.obj
-                objR = street.pred.succ.item.obj
         
         # render instances of class <Intersection>
         intersectionRenderer = self.itemRenderers["Intersection"]
@@ -191,11 +188,16 @@ class StreetRenderer:
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.finalize()
     
-    def renderItem(self, item, singleItem):
+    def initItem(self, item, singleItem):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
         if itemRenderer:
-            itemRenderer.renderItem(item, singleItem)
+            itemRenderer.initItem(item, singleItem)
 
+    def initItemExtra(self, item, itemIndex):
+        itemRenderer = self.itemRenderers.get(item.__class__.__name__)
+        if itemRenderer:
+            itemRenderer.initItemExtra(item, itemIndex)
+    
     def finalizeItem(self, item, itemIndex):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
         if itemRenderer:
@@ -888,14 +890,36 @@ class StreetRenderer:
             
         return material
     
-    def getStreetObj(self, street, location):
+    def getStreetPolylineObj(self, street, location):
         obj = createMeshObject(
-            street.getName() or "Street",
+            "Polyline " + (street.getName() or "Street"),
             location = location,
-            collection = self.streetSectionsCollection
+            collection = self.collectionPolylines
         )
         # create an attribute for the index of the street section
         obj.data.attributes.new("section_index", 'INT', 'EDGE')
+        return obj
+    
+    def get3dStreetObj(self, street, location):
+        obj = createMeshObject(
+            street.obj.name[9:], # without <Polyline > in the beginning
+            location = location,
+            collection = self.collection3dStreets
+        )
+        m = addGeometryNodesModifier(obj, self.gnInitData)
+        m["Socket_3"] = street.obj
+        # setting offset for points where two street sections share a position of their end points
+        m["Socket_2"] = 4.
+        
+        # If <street.succ> is set, then it is an istance of the <IntConnector> class
+        if street.succ and hasattr(street.succ.pred.item, "obj") and hasattr(street.succ.succ.item, "obj"):
+            objL = street.succ.pred.item.obj
+            objR = street.succ.succ.item.obj
+            m["Socket_4"] = objL
+            m["Socket_5"] = objR
+        #if street.pred and hasattr(street.pred.pred.item, "obj") and hasattr(street.pred.succ.item, "obj"):
+        #    objL = street.pred.pred.item.obj
+        #    objR = street.pred.succ.item.obj
         return obj
     
     def debugIntersectionArea(self, manager):
