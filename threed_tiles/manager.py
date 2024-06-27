@@ -1,8 +1,8 @@
 from math import radians, cos, sin, sqrt
 from urllib import request
 from urllib.parse import urlparse
-from os.path import splitext, basename, join as joinStrings, exists as pathExists
-import json, ssl
+from os.path import splitext, basename, dirname, join as joinStrings, exists as pathExists
+import json, ssl, gzip
 from mathutils import Vector, Matrix
 
 
@@ -38,6 +38,7 @@ class BaseManager:
         self.rootUri = rootUri
         rootUriComponents = urlparse(rootUri)
         self.uriServer = rootUriComponents.scheme + "://" + rootUriComponents.netloc
+        self.baseUri = self.uriServer + dirname(rootUriComponents.path) + '/'
         
         self.renderer = renderer
         # <self.constantUriQuery> is defined by the application (e.g. an API key), it is
@@ -63,7 +64,7 @@ class BaseManager:
         
         try:
             tileset = self.getJsonFile(self.rootUri, None, False)
-            self.renderTileset(tileset)
+            self.renderTileset(tileset, self.baseUri)
         except Exception as e:
             # return only a critical error
             return ("Unable to process the root URI of the 3D Tiles: %s" % str(e),)
@@ -73,32 +74,32 @@ class BaseManager:
         # return the number of rendered tiles and uncritical errors
         return numRenderedTiles, self.errors
     
-    def renderTileset(self, tileset):
+    def renderTileset(self, tileset, baseUri):
         tileset = tileset["root"]
                 
-        if self.areaOverlapsWith( tileset["boundingVolume"]["box"] ):
-            self.renderChildren(tileset["children"])
+        if self.areaOverlapsWith( tileset["boundingVolume"] ):
+            self.renderChildren(tileset["children"], baseUri)
             
-    def renderChildren(self, children):
+    def renderChildren(self, children, baseUri):
         # render children
         for tile in children:
-            if self.areaOverlapsWith( tile["boundingVolume"]["box"] ):
+            if self.areaOverlapsWith( tile["boundingVolume"] ):
                 geometricError = tile["geometricError"]
                 if self.geometricErrorMin < geometricError <= self.geometricErrorMax:
                     if "content" in tile:
-                        self.renderTile(tile, jsonOnly=False)
+                        self.renderTile(tile, baseUri, jsonOnly=False)
                     else:
                         _children = tile.get("children")
                         if _children:
-                            self.renderChildren(_children)
+                            self.renderChildren(_children, baseUri)
                 else:
                     _children = tile.get("children")
                     if _children:
-                        self.renderChildren(_children)
+                        self.renderChildren(_children, baseUri)
                     elif "content" in tile:
-                        self.renderTile(tile, jsonOnly=True)
+                        self.renderTile(tile, baseUri, jsonOnly=True)
         
-    def renderTile(self, tile, jsonOnly):
+    def renderTile(self, tile, baseUri, jsonOnly):
         uriComponents = urlparse(tile["content"]["uri"])
         
         contentExtension = splitext(uriComponents.path)[1].lower()
@@ -109,20 +110,30 @@ class BaseManager:
         if uriComponents.query:
             self.uriQuery = uriComponents.query
         
-        uri = self.getUri(uriComponents)
+        uri, baseUri = self.getUri(uriComponents, baseUri)
         
         try:
             if contentExtension == ".json":
                 tileset = self.getJsonFile(uri, uriComponents.path, self.cacheJsonFiles)
-                self.renderTileset(tileset)
+                self.renderTileset(tileset, baseUri)
             elif contentExtension == ".glb":
                 self.renderer.renderGlb(self, uri, uriComponents.path, self.cache3dFiles)
+            elif contentExtension == ".b3dm":
+                self.renderer.renderB3dm(self, uri, uriComponents.path, self.cache3dFiles)
         except Exception as e:
             self.processError(e, uri)
     
-    def getUri(self, uriComponents):
-        uri = (self.uriServer if self.uriServer else uriComponents.scheme + "://" + uriComponents.netloc) +\
-            uriComponents.path
+    def getUri(self, uriComponents, baseUri):
+        if uriComponents.netloc:
+            baseUri = uriComponents.scheme + "://" + uriComponents.netloc
+        else:
+            baseUri = (self.uriServer if uriComponents.path[0] == '/' else baseUri)
+        
+        uri = baseUri + uriComponents.path
+        _dirname = dirname(uriComponents.path)
+        if _dirname:
+            baseUri = baseUri + _dirname + '/' 
+        
         if self.uriQuery and self.constantUriQuery:
             uri += '?' + self.uriQuery + '&' + self.constantUriQuery
         elif self.constantUriQuery:
@@ -130,7 +141,7 @@ class BaseManager:
         elif self.uriQuery:
             uri += '?' + self.uriQuery
         
-        return uri                 
+        return uri, baseUri
     
     def initAreaData(self, minLon, minLat, maxLon, maxLat):
         p0 = self.areaOrigin = BaseManager.fromGeographic(minLat, minLon, _minHeight)
@@ -150,6 +161,8 @@ class BaseManager:
         eY = eZ.cross(eX)
         self.areaSizeY = (pY - p0).length
         dY = self.areaSizeY * eY
+        
+        self.areaSizes = (self.areaSizeX, self.areaSizeY, self.areaSizeZ)
         
         # A rotation matrix the rotates the unit vectors along the axes of the global system of references to <eX>, <eY>, <eZ>
         self.areaRotationMatrix = Matrix((
@@ -202,6 +215,12 @@ class BaseManager:
         # a hack to avoid CERTIFICATE_VERIFY_FAILED error
         ctx = ssl._create_unverified_context()
         response = request.urlopen(req, context=ctx).read()
+        
+        # check for gzip magic number
+        if isinstance(response, bytes) and response[:2] == b"\x1f\x8b":
+            # decompress the gzip file
+            response = gzip.decompress(response)
+        
         return response
     
     @staticmethod
@@ -230,7 +249,18 @@ class BaseManager:
         
         return scratchK + scratchN
     
-    def areaOverlapsWith(self, bbox):
+    def areaOverlapsWith(self, boundingVolume):
+        result = False
+        
+        if "box" in boundingVolume:
+            result = self.areaOverlapsWithBbox(boundingVolume["box"])
+        elif "sphere" in boundingVolume:
+            result = self.areaOverlapsWithSphere(boundingVolume["sphere"])
+        
+        return result
+        
+    def areaOverlapsWithBbox(self, bbox):
+        
         bboxCenter = Vector((bbox[0], bbox[1], bbox[2]))
         # direction and half-length for the local X-axis of <bbox>
         bboxX = Vector((bbox[3], bbox[4], bbox[5]))
@@ -368,6 +398,41 @@ class BaseManager:
                     return True
         
         return False
+    
+    def areaOverlapsWithSphere(self, sphere):
+        sphereCenter, sphereRadius = Vector(sphere[:3]), sphere[3]
+        sphereRadiusSquared = sphereRadius * sphereRadius
+        
+        # A quick check if the spheres with the centers at <self.areaCenter> and <sphereCenter> and radii <self.areaRadius> and <sphereRadius>
+        # respectively do not intersect. That means the bounding box of the area of interest and
+        # the current sphere do not intersect either.
+        # The condition for that is the following: the distance between <self.areaCenter> and <sphereCenter> is larger than the sum
+        # of the radii <self.areaRadius> and <sphereRadius>.
+        if (self.areaCenter - sphereCenter).length_squared > self.areaRadiusSquared + self.areaRadiusDoubled * sphereRadius + sphereRadius*sphereRadius:
+            return False
+        
+        sphereCenter = self.areaRotationMatrix @ ( sphereCenter - self.areaOrigin )
+        
+        #
+        # The algorithm is from the paper "A Simple Method For Box-Sphere Intersection Testing" by James Arvo
+        #
+        dmin = 0.
+        dmax = 0.
+        face = False
+        for i in range(3):
+            a = sphereCenter[i] * sphereCenter[i]
+            b = (sphereCenter[i] - self.areaSizes[i]) * (sphereCenter[i] - self.areaSizes[i])
+            dmax += max(a, b)
+            if sphereCenter[i] < 0.:
+                face = True
+                dmin += a
+            elif sphereCenter[i] > self.areaSizes[i]:
+                face = True
+                dmin += b
+            elif min(a, b) <= sphereRadiusSquared:
+                face = True
+        
+        return face and dmin <= sphereRadiusSquared and sphereRadiusSquared <= dmax
     
     def processError(self, e, uri):
         self.errors.append(

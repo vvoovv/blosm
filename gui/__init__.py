@@ -34,7 +34,10 @@ def getDataTypes():
             ("osm", "OpenStreetMap", "OpenStreetMap"),
             ("terrain", "terrain", "Terrain"),
             ("overlay", "image overlay", "Image overlay for the terrain, e.g. satellite imagery or a map"),
-            ("google-3d-tiles", "Google 3D Tiles", "Photorealistic 3D Tiles by Google"),
+            ("3d-tiles", "3D Tiles", "Photorealistic 3D Tiles by Google and other providers. " +\
+                "3D Tiles is an open standard by the Open Geospatial Consortium (OGC) " +\
+                "for streaming massive 3D geospatial content such as Photogrammetry and 3D Buildings"
+            ),
             ("gpx", "gpx", "GPX tracks")
         ]
         if app.has(Keys.geojson):
@@ -381,7 +384,7 @@ class BLOSM_PT_Extent(bpy.types.Panel):
         if (addon.dataType == "osm" and addon.osmSource == "server") or\
             (addon.dataType == "overlay" and not bpy.data.objects.get(addon.terrainObject)) or\
             addon.dataType == "terrain" or\
-            addon.dataType == "google-3d-tiles" or\
+            addon.dataType == "3d-tiles" or\
             (addon.dataType == "geojson" and addon.coordinatesAsFilter):
             box = layout.box()
             row = box.row()
@@ -453,8 +456,8 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             self.drawTerrain(context)
         elif dataType == "overlay":
             self.drawOverlay(context)
-        elif dataType == "google-3d-tiles":
-            self.drawGoogle3dTiles(context)
+        elif dataType == "3d-tiles":
+            self.draw3dTiles(context)
         elif dataType == "gpx":
             self.drawGpx(context)
         elif dataType == "geojson":
@@ -622,11 +625,18 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         _squreTextureSize = 256 * round( math.sqrt(addon.maxNumTiles) )
         box.label(text="Like a square texture {:,d}x{:,d} px".format(_squreTextureSize, _squreTextureSize))
     
-    def drawGoogle3dTiles(self, context):
+    def draw3dTiles(self, context):
         layout = self.layout
         addon = context.scene.blosm
         
         box = layout.box()
+        
+        box.row().prop(addon, "threedTilesType", expand=True)
+        
+        if addon.threedTilesType == "custom":
+            box.label(text="Paste URL of root tile here:")
+            box.prop(addon, "threedTilesUrl")
+        
         box.label(text="Level of details:")
         box.prop(addon, "lodOf3dTiles", text='')
         layout.prop(addon, "join3dTilesObjects")
@@ -654,7 +664,7 @@ class BLOSM_PT_Tools(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return context.scene.blosm.dataType == "google-3d-tiles" and context.selected_objects
+        return context.scene.blosm.dataType == "3d-tiles" and context.selected_objects
     
     def draw(self, context):
         layout = self.layout
@@ -994,6 +1004,21 @@ class BlosmProperties(bpy.types.PropertyGroup):
     ####################################
     # Settings for the 3D Tiles import
     ####################################
+    
+    threedTilesType: bpy.props.EnumProperty(
+        name = "Type of 3D Tiles",
+        items = (
+            ("google", "Google", "3D Tiles by Google (similar to the 3D content in Google Maps or Google Earth)"),
+            ("custom", "Custom", "3D Tiles defined by a custom URL of the root tile")
+        ),
+        description = "Type of 3D Tiles",
+        default = "google"   
+    )
+    
+    threedTilesUrl: bpy.props.StringProperty(
+        name = '',
+        description = "URL of the root tile"
+    )
     
     lodOf3dTiles: bpy.props.EnumProperty(
         name = "Level of details",

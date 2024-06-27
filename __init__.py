@@ -255,8 +255,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             return self.importOverlay(context)
         elif dataType == "gpx":
             return self.importGpx(context)
-        elif dataType == "google-3d-tiles":
-            return self.importGoogle3dTiles(context)
+        elif dataType == "3d-tiles":
+            return self.import3dTiles(context)
         elif dataType == "geojson":
             return self.importGeoJson(context)
         
@@ -466,14 +466,21 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         return {'FINISHED'}
     
-    def importGoogle3dTiles(self, context):
+    def import3dTiles(self, context):
         from threed_tiles.manager import BaseManager
         from threed_tiles.blender import BlenderRenderer
         
         addon = context.scene.blosm
+        google3dTiles = addon.threedTilesType == "google"
         
-        renderer = BlenderRenderer("Google 3D Tiles", addon.join3dTilesObjects)
-        manager = BaseManager("https://tile.googleapis.com/v1/3dtiles/root.json", renderer)
+        renderer = BlenderRenderer(
+            "Google 3D Tiles" if google3dTiles else "3D Tiles",
+            addon.join3dTilesObjects
+        )
+        manager = BaseManager(
+            "https://tile.googleapis.com/v1/3dtiles/root.json" if google3dTiles else addon.threedTilesUrl,
+            renderer
+        )
         
         manager.cacheJsonFiles = addon.cacheJsonFiles
         manager.cache3dFiles = addon.cache3dFiles

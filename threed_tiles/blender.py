@@ -148,6 +148,57 @@ class BlenderRenderer:
         self.collection.objects.link(importedObject)
         self.importedObjects.append(importedObject)
         context.scene.collection.objects.unlink(importedObject)
+
+    def renderB3dm(self, manager, uri, path, cacheContent):
+        import numpy
+        from .py3dtiles.tileset.content.tile_content_reader import read_array
+        
+        context = bpy.context
+        
+        filePath = joinStrings(
+            manager.tilesDir,
+            basename(path)[:-4] + "glb" if cacheContent else "current_file.glb"
+        )
+        
+        if cacheContent:
+            if not pathExists(filePath):
+                fileContent = manager.download(uri)
+                with open(filePath, 'wb') as f:
+                    f.write(fileContent)
+            bpy.ops.import_scene.gltf(filepath=filePath)
+        else:
+            fileContent = manager.download(uri)
+            # check if <fileContent> contains copyright information
+            match = re.search(self.licenseRePattern, fileContent)
+            if match:
+                self.processCopyrightInfo(match.group(1).decode('utf-8'))
+            
+            b3dmContent = read_array( numpy.frombuffer(fileContent, dtype=numpy.uint8) )
+            if b3dmContent is None or b3dmContent.header is None:
+                raise Exception("The file doesn't contain a valid data.")
+            
+            gltfContent = b3dmContent.body.gltf
+            rtc_center = b3dmContent.body.feature_table.header.data.get("RTC_CENTER")
+            
+            # set position
+            if rtc_center:
+                gltfContent.header["nodes"] = [
+                    dict(
+                        mesh = 0,
+                        translation = (rtc_center[0], rtc_center[2], -rtc_center[1])
+                    )
+                ]
+            
+            with open(filePath, 'wb') as f:
+                f.write(gltfContent.to_array())
+            
+            bpy.ops.import_scene.gltf(filepath=filePath)
+            removeFile(filePath)
+        
+        importedObject = context.object
+        self.collection.objects.link(importedObject)
+        self.importedObjects.append(importedObject)
+        context.scene.collection.objects.unlink(importedObject)
     
     def processCopyrightInfo(self, info):
         for copyrightHolder in info.split(';'):
