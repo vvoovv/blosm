@@ -475,7 +475,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         renderer = BlenderRenderer(
             "Google 3D Tiles" if google3dTiles else "3D Tiles",
-            addon.join3dTilesObjects
+            addon.join3dTilesObjects,
+            addon.instanceName
         )
         manager = BaseManager(
             "https://tile.googleapis.com/v1/3dtiles/root.json" if google3dTiles else addon.threedTilesUrl,

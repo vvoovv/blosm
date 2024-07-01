@@ -715,7 +715,13 @@ class BlosmProperties(bpy.types.PropertyGroup):
         name = "Command line mode",
         description = "The option specifies if the addon is used in the command line mode",
         default = False
-    ) 
+    )
+    
+    instanceName: bpy.props.StringProperty(
+        name = "Instance Name",
+        description = "Instance name for running multiple instances of Blender",
+        default = ''
+    )
     
     terrainObject: bpy.props.StringProperty(
         name = "Terrain",

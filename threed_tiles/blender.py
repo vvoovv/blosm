@@ -13,9 +13,10 @@ from util.blender import createEmptyObject, createCollection
 
 class BlenderRenderer:
     
-    def __init__(self, threedTilesName, join3dTilesObjects):
+    def __init__(self, threedTilesName, join3dTilesObjects, instanceName):
         self.threedTilesName = threedTilesName
         self.join3dTilesObjects = join3dTilesObjects
+        self.instanceName = instanceName
         self.importedObjects = []
         
         self.calculateHeightOffset = False
@@ -124,7 +125,7 @@ class BlenderRenderer:
         
         filePath = joinStrings(
             manager.tilesDir,
-            basename(path) if cacheContent else "current_file.glb"
+            basename(path) if cacheContent else ("current_file_" + self.instanceName + ".glb" if self.instanceName else "current_file.glb")
         )
         
         if cacheContent:
@@ -157,7 +158,7 @@ class BlenderRenderer:
         
         filePath = joinStrings(
             manager.tilesDir,
-            basename(path)[:-4] + "glb" if cacheContent else "current_file.glb"
+            basename(path)[:-4] + "glb" if cacheContent else ("current_file_" + self.instanceName + ".glb" if self.instanceName else "current_file.glb")
         )
         
         if cacheContent:
