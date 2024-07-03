@@ -176,10 +176,10 @@ blenderApp.app.addonName = BlosmPreferences.bl_idname
 class BLOSM_OT_GetArcgisToken(bpy.types.Operator):
     bl_idname = "blosm.get_arcgis_token"
     bl_label = ""
-    bl_description = "Get ArcGIS access token"
+    bl_description = "Get ArcGIS API key"
     bl_options = {'INTERNAL'}
     
-    url = "https://developers.arcgis.com/sign-up/"
+    url = "https://location.arcgis.com/sign-up/"
     
     def execute(self, context):
         import webbrowser
