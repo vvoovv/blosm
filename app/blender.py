@@ -342,7 +342,7 @@ class BlenderApp(BaseApp):
             os.makedirs(tilesDir)
         manager.tilesDir = tilesDir
         
-        manager.setGeometricErrorRange(self.lodOf3dTiles)
+        manager.setGeometricError(self.lodOf3dTiles)
         
         if context.scene.blosm.threedTilesType == "google":
             prefs = bpy.context.preferences.addons

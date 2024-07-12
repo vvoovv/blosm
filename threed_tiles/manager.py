@@ -53,8 +53,8 @@ class BaseManager:
         self.cacheJsonFiles = True
         self.cache3dFiles = False
     
-    def setGeometricErrorRange(self, rangeId):
-        self.geometricErrorMin, self.geometricErrorMax = _geometricErrorRanges[rangeId]
+    def setGeometricError(self, lodId):
+        self.geometricError = _geometricErrorRanges[lodId][1]
     
     def render(self, minLon, minLat, maxLon, maxLat):
         self.errors = []
@@ -85,7 +85,8 @@ class BaseManager:
         for tile in children:
             if self.areaOverlapsWith( tile["boundingVolume"] ):
                 geometricError = tile["geometricError"]
-                if self.geometricErrorMin < geometricError <= self.geometricErrorMax:
+                #if self.geometricErrorMin < geometricError <= self.geometricErrorMax:
+                if geometricError <= self.geometricError:
                     if "content" in tile:
                         self.renderTile(tile, baseUri, jsonOnly=False)
                     else:
