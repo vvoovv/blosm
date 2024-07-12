@@ -290,9 +290,15 @@ class BLOSM_OT_ReplaceMaterials(bpy.types.Operator):
         imageTextureNode = templateMaterial.node_tree.nodes.new('ShaderNodeTexImage')
         imageTextureNode.label = "BASE COLOR"
         imageTextureNode.location = (-300, 300)
+        
+        # Find the first node of the type <PRINCIPLED_BSDF>
+        for principledBsdfNode in templateMaterial.node_tree.nodes:
+            if principledBsdfNode.type == 'BSDF_PRINCIPLED':
+                break
+        
         # create links
         templateMaterial.node_tree.links.new(
-            templateMaterial.node_tree.nodes["Principled BSDF"].inputs['Base Color'],
+            principledBsdfNode.inputs['Base Color'],
             imageTextureNode.outputs['Color']
         )
         
