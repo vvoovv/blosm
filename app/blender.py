@@ -334,6 +334,9 @@ class BlenderApp(BaseApp):
         self.setTerrain(context, createFlatTerrain=True, createBvhTree=False)
     
     def init3dTiles(self, context, manager, subdirName):
+        from threed_tiles.manager import BaseManager
+        
+        addon = context.scene.blosm
         addonName = self.addonName
         
         self.setDataDir(context, self.basePath, addonName)
@@ -342,9 +345,13 @@ class BlenderApp(BaseApp):
             os.makedirs(tilesDir)
         manager.tilesDir = tilesDir
         
-        manager.setGeometricError(self.lodOf3dTiles)
+        manager.setGeometricError(
+            BaseManager.geometricErrors.get(self.lodOf3dTiles)\
+            if addon.threedTilesSource == "google" else\
+            addon.geometricError
+        )
         
-        if context.scene.blosm.threedTilesType == "google":
+        if addon.threedTilesSource == "google":
             prefs = bpy.context.preferences.addons
             if addonName in prefs:
                 googleMapsApiKey = prefs[addonName].preferences.googleMapsApiKey

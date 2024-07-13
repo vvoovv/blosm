@@ -637,14 +637,16 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         
         box = layout.box()
         
-        box.row().prop(addon, "threedTilesType", expand=True)
+        box.row().prop(addon, "threedTilesSource", text="Source")
         
-        if addon.threedTilesType == "custom":
+        if addon.threedTilesSource == "custom":
             box.label(text="Paste URL of root tile here:")
             box.prop(addon, "threedTilesUrl")
+            box.prop(addon, "geometricError")
+        else:
+            box.label(text="Level of details:")
+            box.prop(addon, "lodOf3dTiles", text='')
         
-        box.label(text="Level of details:")
-        box.prop(addon, "lodOf3dTiles", text='')
         layout.prop(addon, "join3dTilesObjects")
         layout.prop(addon, "relativeToInitialImport")
     
@@ -1017,13 +1019,13 @@ class BlosmProperties(bpy.types.PropertyGroup):
     # Settings for the 3D Tiles import
     ####################################
     
-    threedTilesType: bpy.props.EnumProperty(
-        name = "Type of 3D Tiles",
+    threedTilesSource: bpy.props.EnumProperty(
+        name = "Source of 3D Tiles",
         items = (
             ("google", "Google", "3D Tiles by Google (similar to the 3D content in Google Maps or Google Earth)"),
             ("custom", "Custom", "3D Tiles defined by a custom URL of the root tile")
         ),
-        description = "Type of 3D Tiles",
+        description = "Source of 3D Tiles",
         default = "google"   
     )
     
@@ -1044,6 +1046,14 @@ class BlosmProperties(bpy.types.PropertyGroup):
         ),
         description = "Choose a level of details (LoD)",
         default = "lod3"
+    )
+    
+    geometricError: bpy.props.FloatProperty(
+        name = "Geometric error",
+        subtype = 'UNSIGNED',
+        description = "The smaller the geometric error, the more detailed the imported scene will be. " +\
+        "The first tile in the tileset's tree of tiles with the geometric error equal or less than the given one, will be imported",
+        default = 30.
     )
     
     join3dTilesObjects: bpy.props.BoolProperty(

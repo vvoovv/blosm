@@ -6,15 +6,6 @@ import json, ssl, gzip
 from mathutils import Vector, Matrix
 
 
-_geometricErrorRanges = {
-    'lod1': (60., 200.),
-    'lod2': (30., 60.),
-    'lod3': (15., 30),
-    'lod4': (7., 15.),
-    'lod5': (3., 7),
-    'lod6': (0., 3)
-}
-
 # heights above the sea level
 _minHeight = -5000.
 _maxHeight = 9000.
@@ -33,6 +24,15 @@ _radiiSquared = _wgs84RadiiSquared = (
 
 
 class BaseManager:
+    
+    geometricErrors = {
+        'lod1': 200.,
+        'lod2': 60.,
+        'lod3': 30.,
+        'lod4': 15.,
+        'lod5': 7.,
+        'lod6': 3.
+    }
     
     def __init__(self, rootUri, renderer):
         self.rootUri = rootUri
@@ -53,8 +53,8 @@ class BaseManager:
         self.cacheJsonFiles = True
         self.cache3dFiles = False
     
-    def setGeometricError(self, lodId):
-        self.geometricError = _geometricErrorRanges[lodId][1]
+    def setGeometricError(self, geometricError):
+        self.geometricError = geometricError
     
     def render(self, minLon, minLat, maxLon, maxLat):
         self.errors = []

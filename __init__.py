@@ -471,7 +471,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         from threed_tiles.blender import BlenderRenderer
         
         addon = context.scene.blosm
-        google3dTiles = addon.threedTilesType == "google"
+        google3dTiles = addon.threedTilesSource == "google"
         
         renderer = BlenderRenderer(
             "Google 3D Tiles" if google3dTiles else "3D Tiles",
