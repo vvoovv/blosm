@@ -5,7 +5,7 @@ from ..asset_store import AssetType, AssetPart
 
 class Section(ItemRenderer):
     
-    def initItem(self, section, singleItem):
+    def initItemCenterline1(self, section, singleItem):
         street = section.street
         if singleItem:
             # create a polyline mesh
@@ -14,7 +14,7 @@ class Section(ItemRenderer):
             # create a polyline mesh and set a BMesh vertex for the next section
             street.bmVert = createPolylineMesh(None, street.bm, section.centerline, street.bmVert)
     
-    def initItemExtra(self, section, itemIndex):
+    def initItemCenterline2(self, section, itemIndex):
         #
         # set the index of the street section
         #
@@ -40,10 +40,10 @@ class Section(ItemRenderer):
             m["Input_9"] = itemIndex
     
     def requestNodeGroups(self, nodeGroupNames):
-        nodeGroupNames.add("blosm_section")
+        nodeGroupNames.add("Blosm Street Section")
     
     def setNodeGroups(self, nodeGroups):
-        self.gnSection = nodeGroups["blosm_section"]
+        self.gnSection = nodeGroups["Blosm Street Section"]
     
     def setOffsetWeights(self, section):
         # This method is not used anymore. Offset weights (a reversed sine of half angle between the edges) are set in the Geometry Nodes.
