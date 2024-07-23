@@ -709,34 +709,34 @@ class StreetGenerator():
                             # Accept this pair as parallel.
                             self.parallelSectionKeys.addSegment((src,dst),(srcNeigbor,dstNeigbor))
 
-        # # DEBUG: Show clusters of parallel way-sections.
-        # # The plotting functions for this debug part are at the end of this module
-        # if False and self.app.type == AppType.commandLine:
-        #     from debug import plt, plotPureNetwork, randomColor, plotEnd
-        #     inPieces = False
-        #     if not inPieces:
-        #         plotPureNetwork(self.sectionNetwork)
-        #     colorIter = randomColor(10)
-        #     import numpy as np
-        #     for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
-        #         if inPieces:
-        #             pass
-        #             plotPureNetwork(self.sectionNetwork)
-        #         color = next(colorIter)
-        #         for src,dst in sectKeys:
-        #             if inPieces:
-        #                 color = next(colorIter)
-        #                 section = self.waymap.addStreetNodegetSectionObject(src,dst,0).start
-        #                 p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
-        #                 p0 = section.polyline[len(section.polyline)//2]
-        #                 plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
-        #                 plt.text(p[0],p[1],'%3d'%(section.id))
-        #             section = self.waymap.getSectionObject(src,dst,0).head.polyline.plot(color,2,'solid')
-        #         if inPieces:
-        #             plotEnd()
-        #     # if not inPieces:
-        #     #     plotEnd()
-        #     # END DEBUG
+        # DEBUG: Show clusters of parallel way-sections.
+        # The plotting functions for this debug part are at the end of this module
+        if True:#elf.app.type == AppType.commandLine:
+            from debug import plt, plotPureNetwork, randomColor, plotEnd
+            inPieces = False
+            if not inPieces:
+                plotPureNetwork(self.sectionNetwork)
+            colorIter = randomColor(10)
+            import numpy as np
+            for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
+                if inPieces:
+                    pass
+                    plotPureNetwork(self.sectionNetwork)
+                color = next(colorIter)
+                for src,dst in sectKeys:
+                    if inPieces:
+                        color = next(colorIter)
+                        section = self.waymap.addStreetNodegetSectionObject(src,dst,0).start
+                        p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
+                        p0 = section.polyline[len(section.polyline)//2]
+                        plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
+                        plt.text(p[0],p[1],'%3d'%(section.id))
+                    section = self.waymap.getSectionObject(src,dst,0).head.polyline.plot(color,2,'solid')
+                if inPieces:
+                    plotEnd()
+            if not inPieces:
+                plotEnd()
+            # END DEBUG
                             
     def experimentalSimpleClusters(self):
         def mainWays(node):
