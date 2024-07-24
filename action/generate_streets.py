@@ -4,6 +4,8 @@ from statistics import median
 from mathutils import Vector
 import re
 
+from app import AppType
+
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_section import WaySection
@@ -711,7 +713,7 @@ class StreetGenerator():
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        if True:#elf.app.type == AppType.commandLine:
+        if self.app.type == AppType.commandLine:
             from debug import plt, plotPureNetwork, randomColor, plotEnd
             inPieces = False
             if not inPieces:
@@ -915,7 +917,7 @@ class StreetGenerator():
                                 plt.scatter(p[0],p[1], s=50, marker='p', edgecolor='black', facecolor='white', zorder=900)
                         if "low" in detectionType:
                             for p in lowIsects:
-                                      plt.scatter(p[0],p[1], s=30, marker='p', edgecolor='black', facecolor='white', zorder=900)
+                                plt.scatter(p[0],p[1], s=30, marker='p', edgecolor='black', facecolor='white', zorder=900)
                     else:
                         area = areas[location]
                         plotPolygon(area, False, 'k:','k',1,False,0.2,900)
