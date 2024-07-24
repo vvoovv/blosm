@@ -1,7 +1,7 @@
 # Parameter definitions used in and around road_polygons.py
 
 # Way segements with these tags are excluded from networkGraph and sectionNetwork
-ExcludedWayTags = ['steps']
+ExcludedWayTags = ['steps', 'footway', 'cycleway', 'path']
 
 # Large object polygons may have no vertices in or near graph cycles. To make them
 # detectable, a grid of detection vertices is added to the KD-Tree.
