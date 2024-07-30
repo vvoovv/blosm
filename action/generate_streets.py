@@ -610,6 +610,9 @@ class StreetGenerator():
             # It must be included in the dictionary entry key to distinguish them.
             dictKey = (src,dst,multKey)
             section = street.head
+            
+            if section.category in ('steps', 'footway', 'cycleway', 'path', 'service'):
+                continue
 
             # # DEBUG Show section id
             # if False and self.app.type == AppType.commandLine:
