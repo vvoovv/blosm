@@ -718,28 +718,33 @@ class StreetGenerator():
         # The plotting functions for this debug part are at the end of this module
         if self.app.type == AppType.commandLine:
             from debug import plt, plotPureNetwork, randomColor, plotEnd
-            inPieces = False
-            if not inPieces:
+
+            inBundles = False
+
+            if not inBundles:
                 plotPureNetwork(self.sectionNetwork)
             colorIter = randomColor(10)
             import numpy as np
-            for cIndx,sectKeys in enumerate(self.parallelSectionKeys):
-                if inPieces:
-                    pass
+            for bIndx,sectKeys in enumerate(self.parallelSectionKeys):
+                if inBundles:
                     plotPureNetwork(self.sectionNetwork)
+                    plt.title("Bundle "+str(bIndx))
                 color = next(colorIter)
                 for src,dst in sectKeys:
-                    if inPieces:
-                        color = next(colorIter)
-                        section = self.waymap.addStreetNodegetSectionObject(src,dst,0).start
-                        p = sum((v for v in section.polyline),Vector((0,0)) ) / len(section.polyline)
-                        p0 = section.polyline[len(section.polyline)//2]
-                        plt.plot([p0[0],p[0]],[p0[1],p[1]],'r')
-                        plt.text(p[0],p[1],'%3d'%(section.id))
-                    section = self.waymap.getSectionObject(src,dst,0).head.polyline.plot(color,2,'solid')
-                if inPieces:
+                    width = 2
+                    if inBundles: 
+                        color = "red"
+                        width = 3
+                    polyline = self.waymap.getSectionObject(src,dst,0).head.polyline
+                    polyline.plot(color,width,'solid')
+                    if inBundles: 
+                        plt.scatter(polyline[0][0], polyline[0][1], s=80, facecolors='none', edgecolors='g',zorder=999)
+                        plt.scatter(polyline[-1][0], polyline[-1][1], s=80, facecolors='none', edgecolors='g',zorder=999)
+                        # plt.plot(polyline[0][0], polyline[0][1], 'go', markersize=8,zorder=999)
+                        # plt.plot(polyline[-1][0], polyline[-1][1], 'go', markersize=8,zorder=999)
+                if inBundles:
                     plotEnd()
-            if not inPieces:
+            if not inBundles:
                 plotEnd()
             # END DEBUG
                             
