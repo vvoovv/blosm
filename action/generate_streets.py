@@ -381,6 +381,7 @@ class StreetGenerator():
         # self.createTransitionLanes()
 
         # plotPureNetwork(self.sectionNetwork)
+        self.showMajorMinor()
         self.createParallelSections()
         self.createSymSideLanes()
         # plotEnd()
@@ -598,6 +599,34 @@ class StreetGenerator():
     #                 symLane.polygon = area
     #                 symLane.connectors = connectors
     #                 self.internalTransitionSymLanes[node] = symLane
+
+    def showMajorMinor(self):
+        from debug import plt, plotEnd
+        for location, intersection in self.waymap.iterNodes(Intersection):
+            majorCount = 0
+            minorCount = 0
+            for leaveWay in intersection.leaveWays:
+                if leaveWay.section.category in ['footway', 'cycleway','service']:
+                    leaveWay.polyline.plot('b')
+                    if leaveWay.section.category == 'service' and 'service' in leaveWay.section.tags:
+                        if leaveWay.section.tags['service']!='driveway':
+                            continue
+                    minorCount += 1
+                    
+                else:
+                    majorCount += 1
+                    leaveWay.polyline.plot('r')
+
+            if majorCount == 2 and minorCount>0:
+                # plt.plot(location[0],location[1],'co', markersize=6,zorder=998)
+                plt.plot(location[0],location[1],'rx', markersize=10,zorder=999)
+            elif majorCount > 2:
+                plt.plot(location[0],location[1],'ro', markersize=6, zorder=999)
+            else:
+                plt.plot(location[0],location[1],'c.', markersize=8, zorder=999)
+        
+        plotEnd()      
+
 
     def createParallelSections(self):
         # Create spatial index (R-tree) of sections
