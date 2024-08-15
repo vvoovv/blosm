@@ -7,9 +7,6 @@ class IntConnector():
         # the intersection, to which the connector belongs to
         self.intersection = intersection
 
-        # the first index of the connector in the area polygon of Intersection
-        self.index = None
-
         # the item, to which the connector is connected to
         self.item = None
 
@@ -25,7 +22,6 @@ class IntConnector():
 
     def copy(self):
         conn = IntConnector(self.intersection)
-        conn.index = self.index
         conn.item = self.item
         conn.leaving = self.leaving
         conn.pred = self.pred
