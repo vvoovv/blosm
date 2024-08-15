@@ -3,7 +3,7 @@ from itertools import tee
 from defs.way_cluster_params import transitionLimit,transitionSlope
 from way.way_properties import estimateWayWidths
 from way.intersection_cluster import IntersectionCluster
-from way.way_section import WaySection
+from legacy.way_section import WaySection
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.offset_intersection import offsetPolylineIntersection
 from lib.CompGeom.centerline import pointInPolygon
