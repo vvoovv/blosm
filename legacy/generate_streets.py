@@ -8,9 +8,9 @@ from app import AppType
 
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
-from way.way_section import WaySection
+from legacy.way_section import WaySection
 from way.way_properties import lanePattern
-from way.way_cluster import createLeftTransition, createClippedEndArea, createRightTransition, \
+from legacy.way_cluster import createLeftTransition, createClippedEndArea, createRightTransition, \
                            createLeftIntersection, createRightIntersection, createShortClusterIntersection
 # from way.way_intersections import Intersection
 from way.intersection_cluster import IntersectionCluster
