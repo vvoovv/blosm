@@ -181,73 +181,73 @@ class Intersection(Item):
                 centerWay.street.succ = connector #self
 
             # Find the boundary intersection p1 at the right side of center-way
-            p1, type = offsetPolylineIntersection(rightWay.polyline,centerWay.polyline,rightWay.widthL,-centerWay.widthR,True,0.1)
-            if type == 'valid':
-                _,tP1 = centerWay.polyline.orthoProj(p1)
-                if tP1 < 0.:
-                    tP1 = 0.
-                    p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
-                elif isinstance(tP1,int):   # inter buffer point, reproject
-                    p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
-            elif type == 'parallel':
-                transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(rightWay.widthL+centerWay.widthR)/transitionSlope) )
-                tP1 = centerWay.polyline.d2t(transWidth)
-                p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
-            else: # out
-                # print('out')
-                # from debug import plt
-                # p = self.location
-                # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
-                continue
+            # p1, type = offsetPolylineIntersection(rightWay.polyline,centerWay.polyline,rightWay.widthL,-centerWay.widthR,True,0.1)
+            # if type == 'valid':
+            #     _,tP1 = centerWay.polyline.orthoProj(p1)
+            #     if tP1 < 0.:
+            #         tP1 = 0.
+            #         p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
+            #     elif isinstance(tP1,int):   # inter buffer point, reproject
+            #         p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
+            # elif type == 'parallel':
+            #     transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(rightWay.widthL+centerWay.widthR)/transitionSlope) )
+            #     tP1 = centerWay.polyline.d2t(transWidth)
+            #     p1 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthR)
+            # else: # out
+            #     # print('out')
+            #     # from debug import plt
+            #     # p = self.location
+            #     # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
+            #     continue
 
-            # Find the boundary intersection p3 at the left side of center-way
-            p3, type = offsetPolylineIntersection(centerWay.polyline,leftWay.polyline,centerWay.widthL,-leftWay.widthR,True,0.1)
-            if type == 'valid':
-                _,tP3 = centerWay.polyline.orthoProj(p3)
-                if tP3 < 0.:
-                    tP3 = 0.
-                    p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
-                elif isinstance(tP3,int):   # inter buffer point, reproject
-                    p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
-            elif type == 'parallel':
-                transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(centerWay.widthL+leftWay.widthR)/transitionSlope) )
-                tP3 = centerWay.polyline.d2t(transWidth)
-                p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
-            else: # out
-                # print('out')
-                # from debug import plt
-                # p = self.location
-                # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
-                continue
+            # # Find the boundary intersection p3 at the left side of center-way
+            # p3, type = offsetPolylineIntersection(centerWay.polyline,leftWay.polyline,centerWay.widthL,-leftWay.widthR,True,0.1)
+            # if type == 'valid':
+            #     _,tP3 = centerWay.polyline.orthoProj(p3)
+            #     if tP3 < 0.:
+            #         tP3 = 0.
+            #         p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
+            #     elif isinstance(tP3,int):   # inter buffer point, reproject
+            #         p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
+            # elif type == 'parallel':
+            #     transWidth = min(centerWay.polyline.length()*0.5,max(1.,abs(centerWay.widthL+leftWay.widthR)/transitionSlope) )
+            #     tP3 = centerWay.polyline.d2t(transWidth)
+            #     p3 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthL)
+            # else: # out
+            #     # print('out')
+            #     # from debug import plt
+            #     # p = self.location
+            #     # plt.plot(p[0],p[1],'ro',markersize=12,zorder=999,markeredgecolor='orange', markerfacecolor='none')
+            #     continue
 
-            # Project p1 and p3 onto the centerline of the center-way and create intermediate
-            # polygon point <p2>.
-            Id = centerWay.section.id  if centerWay.leaving else -centerWay.section.id
-            t0 = 0.
-            if tP3 > tP1:
-                p2 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthR)
-                t0 = tP3
-                connector.index = len(self.area)+1
-            else:
-                p2 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthL)
-                t0 = tP1
-                connector.index = len(self.area)
+            # # Project p1 and p3 onto the centerline of the center-way and create intermediate
+            # # polygon point <p2>.
+            # Id = centerWay.section.id  if centerWay.leaving else -centerWay.section.id
+            # t0 = 0.
+            # if tP3 > tP1:
+            #     p2 = centerWay.polyline.offsetPointAt(tP3,centerWay.widthR)
+            #     t0 = tP3
+            #     connector.index = len(self.area)+1
+            # else:
+            #     p2 = centerWay.polyline.offsetPointAt(tP1,centerWay.widthL)
+            #     t0 = tP1
+            #     connector.index = len(self.area)
 
-            if centerWay.leaving:
-                centerWay.section.trimS = max(centerWay.section.trimS, t0)
-            else:
-                t = len(centerWay.section.polyline)-1 - t0
-                centerWay.section.trimT = min(centerWay.section.trimT, t)            
+            # if centerWay.leaving:
+            #     centerWay.section.trimS = max(centerWay.section.trimS, t0)
+            # else:
+            #     t = len(centerWay.section.polyline)-1 - t0
+            #     centerWay.section.trimT = min(centerWay.section.trimT, t)            
 
-            # last vertex == first vertex ?
-            if self.area and (p1-self.area[-1]).length < 0.01:
-                self.area = self.area[:-1]
-                connector.index -= 1
+            # # last vertex == first vertex ?
+            # if self.area and (p1-self.area[-1]).length < 0.01:
+            #     self.area = self.area[:-1]
+            #     connector.index -= 1
 
-            if p1==p2 or p2==p3: # way is perpendicular
-                self.area.extend([p1,p3])
-            else:
-                self.area.extend([p1,p2,p3])
+            # if p1==p2 or p2==p3: # way is perpendicular
+            #     self.area.extend([p1,p3])
+            # else:
+            #     self.area.extend([p1,p2,p3])
 
             self.insertConnector(connector)
 

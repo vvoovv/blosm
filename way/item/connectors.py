@@ -1,7 +1,8 @@
-
 class IntConnector():
-
+    ID = 0
     def __init__(self, intersection):
+        self.id = IntConnector.ID
+        IntConnector.ID += 1
 
         # the intersection, to which the connector belongs to
         self.intersection = intersection
@@ -21,6 +22,15 @@ class IntConnector():
 
         # the succeeding connector in the intersection (in counter-clockwise direction)
         self.succ = None
+
+    def copy(self):
+        conn = IntConnector(self.intersection)
+        conn.index = self.index
+        conn.item = self.item
+        conn.leaving = self.leaving
+        conn.pred = self.pred
+        conn.succ = self.succ
+        return conn
 
     @staticmethod
     def iterate_from(conn_item):

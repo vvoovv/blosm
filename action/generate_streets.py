@@ -19,7 +19,7 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist,\
                                     canPair, dbScanDist, transitionSlope
 
-from way.item import Intersection, Corner, Section, Street, SideLane, SymLane
+from way.item import Intersection, MinorIntersection, IntConnector, Corner, Section, Street, SideLane, SymLane
 
 from lib.SweepIntersectorLib.SweepIntersector import SweepIntersector
 from lib.CompGeom.StaticSpatialIndex import StaticSpatialIndex, BBox
@@ -381,12 +381,13 @@ class StreetGenerator():
         # self.createTransitionLanes()
 
         # plotPureNetwork(self.sectionNetwork)
-        self.showMajorMinor()
-        self.createParallelSections()
+        # self.showMajorMinor()
+        # self.createParallelSections()
         self.createSymSideLanes()
         # plotEnd()
 
         self.updateIntersections()
+        self.extendStreets()
         # self.experimentalClusters()
         # self.experimentalSimpleClusters()
         self.finalizeOutput()
@@ -605,6 +606,7 @@ class StreetGenerator():
         for location, intersection in self.waymap.iterNodes(Intersection):
             majorCount = 0
             minorCount = 0
+            majorCategories = set();
             for leaveWay in intersection.leaveWays:
                 if leaveWay.section.category in ['footway', 'cycleway','service']:
                     leaveWay.polyline.plot('b')
@@ -616,10 +618,14 @@ class StreetGenerator():
                 else:
                     majorCount += 1
                     leaveWay.polyline.plot('r')
+                    majorCategories.add(leaveWay.section.category)
 
-            if majorCount == 2 and minorCount>0:
+            if majorCount == 2 and minorCount>0 and len(majorCategories)==1:
                 # plt.plot(location[0],location[1],'co', markersize=6,zorder=998)
-                plt.plot(location[0],location[1],'rx', markersize=10,zorder=999)
+                # plt.plot(location[0],location[1],'rx', markersize=10,zorder=999)
+                plt.plot(location[0],location[1],'ro',markersize=8,zorder=999,markeredgecolor='red', markerfacecolor='none')
+            elif majorCount == 2 and minorCount>0 and len(majorCategories)>1:
+                plt.plot(location[0],location[1],'ro',markersize=8,zorder=999,markeredgecolor='red', markerfacecolor='cyan')
             elif majorCount > 2:
                 plt.plot(location[0],location[1],'ro', markersize=6, zorder=999)
             else:
@@ -2009,6 +2015,99 @@ class StreetGenerator():
             street.setStyleBlockFromTop(street.style)
             self.waymap.addSection(street)
 
+    def extendStreets(self):
+        def isMinorCategory(section):
+            if not section.valid: return False
+            return  section.category in  ['footway', 'cycleway','service'] or \
+                    ('service' in section.tags and \
+                    section.tags['service']=='driveway')
+
+        def isMinorIntersection(intersection):
+            minorCount = 0
+            majorCount = 0
+            majorCategories = set()
+            majorIndices = []
+            for indx, leaveWay in enumerate(intersection.leaveWays):
+                if isMinorCategory(leaveWay.section):
+                    minorCount += 1
+                else:
+                    majorCount += 1
+                    majorCategories.add(leaveWay.section.category)
+                    majorIndices.append(indx)
+            return (majorCount == 2 and minorCount>0 and len(majorCategories)==1)
+
+        intersectionsToReplace = []
+        minorsToReInsert = []
+
+        # Search for minor intersections
+        for location, intersection in self.waymap.iterNodes(Intersection):
+            if isMinorIntersection(intersection):
+
+                # Find leaving major item (in conn)
+                for conn in IntConnector.iterate_from(intersection.startConnector):
+                    if conn.leaving and not isMinorCategory(conn.item.head):
+                        break
+
+                # Create minor intersection from Intersection
+                minorIsect = MinorIntersection(intersection.location)
+
+                # conn.item is the leaving major Street. Its content, the list of items,
+                # will be filled into the arriving Street. This content is hold by <head>
+                # and <tail> of item
+                leavingStreet = conn.item
+                minorIsect.succ = conn.item.head
+                conn.item.head.pred = minorIsect
+
+                # The circular list of connectors of the ordinary Intersection is
+                # ordered counter-clockwise. When we start with a leaving section,
+                # the first minor sections are on the left.
+                for conn in IntConnector.iterate_from(conn.succ):
+                    section = conn.item.head if conn.leaving else conn.item.tail
+                    if isMinorCategory(section):
+                        minorIsect.insertLeftConnector(conn)
+                        minorsToReInsert.append(conn.item)
+                    else:
+                        break # the next major section
+
+                # conn.item is now the arriving major Street. minorIsect is 
+                # already linked with the list from the leaving Street.
+                arrivingStreet = conn.item
+                minorIsect.pred = conn.item.tail
+                conn.item.tail.succ = minorIsect
+                arrivingStreet.tail = leavingStreet.tail
+                
+
+                # Then, the minor sections on the right are collected
+                for conn in IntConnector.iterate_from(conn.succ):
+                    section = conn.item.head if conn.leaving else conn.item.tail
+                    if isMinorCategory(section):
+                        minorIsect.insertRightConnector(conn)
+                        minorsToReInsert.append(conn.item)
+                    else:
+                        break # this is again the first major section
+
+                intersectionsToReplace.append( (intersection, location, arrivingStreet))
+
+        for intersection, location, street in intersectionsToReplace:
+            # Remove the original intersection with all its edges
+            self.waymap.removeStreetNode(location)
+            self.intersections.remove(intersection)
+
+            # All items are now linked in <street>. Set sytle ??
+            street.style = self.styleStore.get( self.getStyle(street) )
+            street.setStyleBlockFromTop(street.style)
+
+            # Reinsert <street>
+            self.waymap.addSection(street)
+
+        for street in minorsToReInsert:
+            self.waymap.addSection(street)
+
+        test = 1
+
+
+
+
     def updateIntersections(self):
         # At this stage, it is assumed, that SideLanes, SymLanes and clustered intersections are already built
         # and that their nodes are stored in <self.processedNodes>.
@@ -2029,11 +2128,12 @@ class StreetGenerator():
             #     plt.title(str(nr))
             #     plotEnd()
 
-            # # TODO treat somehow short ways, this here does not work
-            shortWays = intersection.cleanShortWays(False)
-            if shortWays:
-                for way in shortWays:
-                    way.section.valid = False
+            # TODO treat somehow short ways, this here does not work
+            # shortWays = intersection.cleanShortWays(False)
+            # if shortWays:
+            #     for way in shortWays:
+            #         way.section.valid = False
+            #         way.section.polyline.plot('c',4)
 
             intersection.processIntersection()
             nr += 1
@@ -2045,7 +2145,8 @@ class StreetGenerator():
             #     plotPolygon(intersection.area,False,'k','r',1,True,0.4,999)
 
             self.processedNodes.add(location)
-            if intersection.area and intersection.leaveWays:
+            # if intersection.area and intersection.leaveWays:
+            if intersection.order > 1:
                 self.intersections.append(intersection)
 
     def finalizeOutput(self):
