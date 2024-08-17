@@ -178,6 +178,7 @@ class StreetGenerator():
 
                 self.waymap.addStreetNode(Intersection(section.src))
                 self.waymap.addStreetNode(Intersection(section.dst))
+                street.street = street # Fill superclass Item
                 self.waymap.addSection(street)
 
                 # If there are corners, the section must be split to enable finding of parallel sections
@@ -499,6 +500,17 @@ class StreetGenerator():
                         minorsToReInsert.append(conn.item)
                     else:
                         break # this is again the first major section
+
+                # The content of the leaving major street is now appended 
+                # after the minor intersection of the arriving street.
+                # The attribute <street> of the super class Item has to be updated. 
+                item = minorIsect.succ   # first item of former leaving street
+                while item is not None:
+                    item.street = arrivingStreet
+                    item = item.succ
+
+                # Finally, the minor intersection itself belngs to the arriving street.
+                minorIsect.street = arrivingStreet 
 
                 intersectionsToReplace.append( (intersection, location, arrivingStreet))
 
