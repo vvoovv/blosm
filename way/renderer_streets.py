@@ -2,7 +2,6 @@ import os
 
 from mathutils import Vector
 
-from action.generate_streets import IntersectionArea
 import bpy
 from item_renderer.util import getFilepath
 from mathutils.geometry import intersect_line_line_2d
