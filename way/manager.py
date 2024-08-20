@@ -1,14 +1,17 @@
 from . import Way, Railway
 from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories, vehicleRoadsCategories
+from style import StyleStore
 from way.waymap.waymap import WayMap
 
 
 class WayManager:
     
-    def __init__(self, data, app):
+    def __init__(self, data, app, getStyle):
         self.id = "ways"
         self.data = data
         self.app = app
+        self.styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
+        self.getStyle = getStyle
         
         # no layers for this manager
         self.layerClass = None

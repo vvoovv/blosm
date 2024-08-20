@@ -24,17 +24,12 @@ def setup(app, osm):
         if app.highways or app.railways:
             from action.generate_streets import StreetGenerator
             from way.renderer_streets import StreetRenderer
-            from style import StyleStore
-            from .realistic_streets import getStyleStreet
             
             from way.item_renderer.section import Section
             from way.item_renderer.intersection import Intersection
             from way.item_renderer.side_lane import SideLane
             
-            styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
-            #streetStyle = styleStore.get(self.getStyle(section))
-            
-            wayManager.addAction(StreetGenerator(styleStore, getStyle=getStyleStreet))
+            wayManager.addAction(StreetGenerator(wayManager.styleStore, getStyle=wayManager.getStyle))
             
             itemRenderers = {
                 "Section": Section(),
