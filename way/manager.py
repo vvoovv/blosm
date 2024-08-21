@@ -113,7 +113,7 @@ class WayManager:
             return srcIsect, dstIsect
         
         processedStreets = set()
-        for src, dst, key, street in self.waymap.edges(data='object',keys=True):
+        for _, _, _, street in self.waymap.edges(data='object',keys=True):
             if street in processedStreets:
                 continue
 
@@ -125,6 +125,7 @@ class WayManager:
                 streetStyle = self.styleStore.get( self.getStyle(street) )
                 street.style = streetStyle
                 street.setStyleBlockFromTop(streetStyle)
+                street.setStyleForItems()
                 yield street
             else:
                 # Create a new Street
@@ -166,6 +167,7 @@ class WayManager:
                 streetStyle = self.styleStore.get( self.getStyle(longStreet) )
                 longStreet.style = streetStyle
                 longStreet.setStyleBlockFromTop(streetStyle)
+                longStreet.setStyleForItems()
 
                 yield longStreet
 
