@@ -3,6 +3,8 @@ from itertools import tee
 
 import lib.blosm_networkx as nx
 from way.item.dummy_node import DummyNode
+from way.item.street import Street
+from way.item.intersection import Intersection
 
 class WayMap(nx.MultiDiGraph):
     ID = 0
@@ -11,27 +13,38 @@ class WayMap(nx.MultiDiGraph):
         self.id = WayMap.ID
         WayMap.ID += 1
 
-    # Store a street node object (like Intersection, SymLane, SideLane,
+    # Store a node object (like Intersection, SymLane, SideLane,
     # Crosswalk, PtStop, ...) into map.
-    def addStreetNode(self, streetNode):
-        location = streetNode.location.freeze()
-        self.add_node(location, object = streetNode)
+    def addNode(self, node):
+        location = node.location.freeze()
+        self.add_node(location, object = node)
 
-    # Get a street node at a given location
-    def getStreetNode(self,location):
+    # Get a node at a given location
+    def getNode(self,location):
         location.freeze()
         return self.nodes[location]
 
-    # Replace an existing street node by a new one at the same location,
+    def getMinorNode(self,location):
+        location.freeze()
+        node = self.nodes[location]
+        if not node:
+            return None     # endpoint
+        node = node['object']
+        if isinstance(node,Intersection) and node.isMinor:
+            return node
+        else:
+            return None
+
+    # Replace an existing node by a new one at the same location,
     # keeping all edges from and to this object.
     # If the location does not yet exist in the map, a new node is created.
-    def replaceStreetNodeBy(self, newStreetNode):
-        location = newStreetNode.location.freeze()
-        self.add_node(location, object = newStreetNode)
+    def replaceNodeBy(self, newNode):
+        location = newNode.location.freeze()
+        self.add_node(location, object = newNode)
 
     # Remove a street node and all adjacent edges. Attempting to 
     # remove a nonexistent node will raise an exception.
-    def removeStreetNode(self, location):
+    def removeNode(self, location):
         location.freeze()
         self.remove_node(location)
 
@@ -48,26 +61,31 @@ class WayMap(nx.MultiDiGraph):
                 streetNode = data['object'] if data else DummyNode()
                 yield location, streetNode
 
-    # Add a line section object (like Section, Street, Bundle) into map
-    def addSection(self, section):
+    # Add a line object (like Section, Street, Bundle) into map
+    def addEdge(self, section):
         src = section.src.freeze()
         dst = section.dst.freeze()
         self.add_edge(src,dst,None,object=section)
 
-    # Get the line section objects between two given nodes
-    def getSections(self,src, dst):
+    def hasEdge(self,src, dst):
+        src.freeze()
+        dst.freeze()
+        return self.has_edge(src,dst)
+
+    # Get the line edge objects between two given nodes
+    def getEdges(self,src, dst):
         src.freeze()
         dst.freeze()
         for sec in self.get_edge_data(src,dst).values():
             yield sec['object']
 
-    def getSectionObject(self,src,dst,key):
+    def getEdgeObject(self,src,dst,key):
         src.freeze()
         dst.freeze()
         return self[src][dst][key]['object']
     
-    # Iterate over line section object, optionally of a given type
-    def iterSections(self,sectionType=None):
+    # Iterate over line edge object, optionally of a given type
+    def iterEdges(self,sectionType=None):
         if sectionType:
             for src, dst, key, section in self.edges(data='object',keys=True):
                 if isinstance(section,sectionType):
@@ -76,27 +94,26 @@ class WayMap(nx.MultiDiGraph):
             for src, dst, key, section in self.edges(data='object',keys=True):
                 yield src, dst, key, section
 
-    # Remove an existing section object.
-    def removeSection(self, section):
+    # Remove an existing edge object.
+    def removeEdge(self, section):
         src = section.src.freeze()
         dst = section.dst.freeze()
         self.remove_edge(src,dst)
 
-    # Replace an existing section object by a new one at the same positions.
-    # If the positions do not yet exist in the map, a new section is created.
-    def replaceSectionBy(self, newSec):
+    # Replace an existing edge object by a new one at the same positions.
+    # If the positions do not yet exist in the map, a new edge is created.
+    def replaceEdgeBy(self, newSec):
         src = newSec.src.freeze()
         dst = newSec.dst.freeze()
         if self.has_edge(src,dst):
             self.remove_edge(src,dst)
-        self.addSection(newSec)
+        self.addEdge(newSec)
 
-    def getInOutSections(self, node):
+    def getInOutEdges(self, node):
         location = node if isinstance(node,Vector) else node.location
         inSections = [section for _, _, _, section in self.in_edges(location,data='object',keys=True)]
         outSections = [section for _, _, _, section in self.out_edges(location,data='object',keys=True)]
         return inSections, outSections
-
 
     # def splitSectionBy(self, src, dst, splitPos, node):
     #     if self.has_edge(src,dst):

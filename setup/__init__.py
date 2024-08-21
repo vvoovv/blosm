@@ -188,7 +188,9 @@ class Setup:
     def getWayManager(self):
         if not self.wayManager:
             from way.manager import WayManager
-            self.wayManager = WayManager(self.osm, self.app)
+            from .realistic_streets import getStyleStreet
+            
+            self.wayManager = WayManager(self.osm, self.app, getStyleStreet)
         return self.wayManager
 
 

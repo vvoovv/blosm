@@ -1,14 +1,18 @@
 from . import Way, Railway
 from defs.way import allWayCategories, facadeVisibilityWayCategories, wayIntersectionCategories, vehicleRoadsCategories
+from style import StyleStore
 from way.waymap.waymap import WayMap
+from way.item.street import Street
 
 
 class WayManager:
     
-    def __init__(self, data, app):
+    def __init__(self, data, app, getStyle):
         self.id = "ways"
         self.data = data
         self.app = app
+        self.styleStore = StyleStore(app.pmlFilepathStreet, app.assetsDir, styles=None)
+        self.getStyle = getStyle
         
         # no layers for this manager
         self.layerClass = None
@@ -24,9 +28,11 @@ class WayManager:
         
         # <self.intersections>, <self.wayClusters> and <self.waySectionLines>
         # are used for realistic rendering of streets
-        self.intersections = []
+        self.majorIntersections  = []
+        self.minorIntersections  = []
         self.transitionSymLanes = []
         self.transitionSideLanes = []
+        self.streets = []
         # street sections and clusters
         self.waymap = WayMap()
         self.waySectionLines = dict()
@@ -92,6 +98,76 @@ class WayManager:
     
     def getRailwayManager(self):
         return RailwayManager(self)
+    
+    def iterStreets(self):
+        return iter(self.streets)
+
+    def iterStreetsFromWaymap(self):
+        def findMinorNodes(street):
+            srcIsect = self.waymap.getMinorNode(street.src)
+            if srcIsect:
+                srcIsect = srcIsect if srcIsect.leaving == street or srcIsect.arriving == street else None
+            dstIsect = self.waymap.getMinorNode(street.dst)
+            if dstIsect:
+                dstIsect = dstIsect if dstIsect.leaving == street or dstIsect.arriving == street else None
+            return srcIsect, dstIsect
+        
+        processedStreets = set()
+        for src, dst, key, street in self.waymap.edges(data='object',keys=True):
+            if street in processedStreets:
+                continue
+
+            srcIsectInit, dstIsectInit = findMinorNodes(street)
+            hasMinors = srcIsectInit or dstIsectInit
+
+            if not hasMinors:
+                processedStreets.add(street)
+                streetStyle = self.styleStore.get( self.getStyle(street) )
+                street.style = streetStyle
+                street.setStyleBlockFromTop(streetStyle)
+                yield street
+            else:
+                # Create a new Street
+                longStreet = Street(street.src,street.dst)
+                longStreet.insertStreetEnd(street)
+
+                if dstIsectInit:    # Minor intersection at the end of this street
+                    dstIsectInit.street = longStreet
+                    longStreet.insertEnd(dstIsectInit)   # insert minor intersection object
+                    dstIsectCurr = dstIsectInit
+                    while True:
+                        nextStreet = dstIsectCurr.leaving
+                        if nextStreet in processedStreets:
+                            break
+                        longStreet.insertStreetEnd(nextStreet)
+                        processedStreets.add(nextStreet)
+                        _, dstIsectCurr = findMinorNodes(nextStreet)
+                        if not dstIsectCurr:
+                            break
+                        dstIsectCurr.street = longStreet
+                        longStreet.insertEnd(dstIsectCurr) 
+ 
+                if srcIsectInit:        # Minor intersection at the front of this street
+                    srcIsectInit.street = longStreet
+                    longStreet.insertFront(srcIsectInit)   # insert minor intersection object
+                    srcIsectCurr = srcIsectInit
+                    while True:
+                        prevStreet = srcIsectCurr.arriving
+                        if prevStreet in processedStreets:
+                            break
+                        longStreet.insertStreetFront(prevStreet)
+                        processedStreets.add(prevStreet)
+                        srcIsectCurr, _ = findMinorNodes(prevStreet)
+                        if not srcIsectCurr:
+                            break
+                        srcIsectCurr.street = longStreet
+                        longStreet.insertFront(srcIsectCurr)   # insert minor intersection object
+
+                streetStyle = self.styleStore.get( self.getStyle(longStreet) )
+                longStreet.style = streetStyle
+                longStreet.setStyleBlockFromTop(streetStyle)
+
+                yield longStreet
 
 class RailwayManager:
     """

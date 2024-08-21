@@ -109,7 +109,7 @@ class StreetRenderer:
             sideLane.splitAffectedSection()
         
         # render instances of the class <Street> 
-        for _, _, _, street in manager.waymap.iterSections():
+        for street in manager.iterStreets():
             street.edgeIndexOffset = 0
             
             # Create a Blender object and BMesh for the <street> centeline. An instance of <Street> contains
