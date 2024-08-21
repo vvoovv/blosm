@@ -116,7 +116,7 @@ class StreetRenderer:
             sideLane.splitAffectedSection()
         
         # render instances of the class <Street> 
-        for _, _, _, street in manager.waymap.iterSections():
+        for _, _, _, street in manager.waymap.iterEdges():
             self.pointIndexOffset = 0
             
             # Create a Blender object and BMesh for <street>. Ann instance of <Street> contains

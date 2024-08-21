@@ -2,7 +2,6 @@ from way.item.street import Street
 from way.item.crosswalk import Crosswalk
 from way.item.dummy_node import DummyNode
 from way.item.intersection import Intersection
-from way.item.minor_intersection import MinorIntersection
 from way.item.partial_intersection import PartialIntersection
 from way.item.corner import Corner
 from way.item.pt_stop import PtStop

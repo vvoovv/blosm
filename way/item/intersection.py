@@ -2,9 +2,6 @@ from itertools import tee,islice, cycle
 
 from .item import Item
 from lib.CompGeom.PolyLine import PolyLine
-# from lib.CompGeom.offset_intersection import offsetPolylineIntersection
-from lib.CompGeom.centerline import pointInPolygon
-# from defs.way_cluster_params import transitionSlope
 from way.item.section import Section
 from way.item.connectors import IntConnector
 
@@ -68,6 +65,20 @@ class Intersection(Item):
         # Reference to first connector of circular doubly-linked list of IntConnectors.
         self.startConnector = None
 
+        # Attributes for minor intersection
+        self.isMinor = False
+
+        self.leftHead = None
+        self.leftTail = None
+        self.rightHead = None
+        self.rightTail = None
+
+        self.leaving = None     # leaving major street
+        self.arriving = None    # arriving major street
+
+        self._pred = None       # will be set when linked into a Street
+        self._succ = None       # will be set when linked into a Street
+
     @property
     def location(self):
         return self._location
@@ -128,3 +139,92 @@ class Intersection(Item):
             else:
                 way.street.succ = connector
             self.insertConnector(connector)
+
+# For minor intersections -----------------------------------------------------
+    @staticmethod
+    def isMinorCategory(section):
+        if not section.valid: return False
+        return  section.category in  ['footway', 'cycleway','service'] or \
+                ('service' in section.tags and \
+                section.tags['service']=='driveway')
+
+    def isMinorIntersection(self):
+        minorCount = 0
+        majorCount = 0
+        majorCategories = set()
+        majorIndices = []
+        for indx, leaveWay in enumerate(self.leaveWays):
+            if Intersection.isMinorCategory(leaveWay.section):
+                minorCount += 1
+            else:
+                majorCount += 1
+                majorCategories.add(leaveWay.section.category)
+                majorIndices.append(indx)
+        return (majorCount == 2 and minorCount>0 and len(majorCategories)==1)
+
+    def insertLeftConnector(self, conn):
+        # Inserts the instance <connector> of IntConnector at the end of the linear doubly-linked list,
+        # attached to self.leftHead. It is inserted "after", which is in counter-clockwise direction.
+        connector = conn.copy()
+        if self.leftHead is None:
+            connector.pred = None
+            connector.succ = None
+            self.leftHead = connector
+            self.leftTail = connector
+        else:
+            self.leftTail.succ = connector
+            connector.succ = None
+            connector.pred = self.leftTail
+            self.leftTail = connector
+
+    def insertRightConnector(self, conn):
+        # Inserts the instance <connector> of IntConnector at the end of the linear doubly-linked list,
+        # attached to self.rightHead. It is inserted "after", which is in counter-clockwise direction.
+        connector = conn.copy()
+        if self.rightHead is None:
+            connector.pred = None
+            connector.succ = None
+            self.rightHead = connector
+            self.rightTail = connector
+        else:
+            self.rightTail.succ = connector
+            connector.succ = None
+            connector.pred = self.leftTail
+            self.rightTail = connector
+
+    def transformToMinor(self):
+        self.isMinor = True
+
+        # Find a leaving major street (by connector <conn>)
+        for conn in IntConnector.iterate_from(self.startConnector):
+            if conn.leaving and not Intersection.isMinorCategory(conn.item.head):
+                break
+        self.leaving = conn.item
+
+        # The circular list of connectors of this intersection is
+        # ordered counter-clockwise. When we start with a leaving section,
+        # the first minor sections are to the left.
+        for conn in IntConnector.iterate_from(conn.succ):
+            section = conn.item.head if conn.leaving else conn.item.tail
+            if Intersection.isMinorCategory(section):
+                self.insertLeftConnector(conn)
+            else:
+                break # We found the next major section
+
+        self.arriving = conn.item
+
+        # Then, the minor sections to the right are collected
+        for conn in IntConnector.iterate_from(conn.succ):
+            section = conn.item.head if conn.leaving else conn.item.tail
+            if Intersection.isMinorCategory(section):
+                self.insertRightConnector(conn)
+            else:
+                break # this is again the first major section
+
+        test = 1
+
+    @staticmethod
+    def iterate_from(conn_item):
+        while conn_item is not None:
+            yield conn_item
+            conn_item = conn_item.succ
