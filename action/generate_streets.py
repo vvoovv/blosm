@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import tee, islice, cycle, permutations, accumulate
+from itertools import tee
 from mathutils import Vector
 import re
 
@@ -248,10 +248,8 @@ class StreetGenerator():
     #     # Spatial index (R-tree) of candidate Streets
     #     candidateIndex = StaticSpatialIndex()
 
-    #     # Dictionary from index in candidateIndex to <dictKey>.
-    #     # <dictKey> is defined as the tuple (src,dst,multKey),
-    #     # which defines an edge in the waymap.
-    #     index2DictKey = dict()
+    #     # Dictionary from index in candidateIndex to street.
+    #     index2Street = dict()
 
     #     # The bounding boxes of the streets. The dictionary key is <dictKey>.
     #     boxes = dict()
@@ -260,12 +258,7 @@ class StreetGenerator():
     #     attributes = dict()
 
     #     # Add the bounding boxes of all streets to the index.
-    #     for src, dst, multKey, street in self.waymap.edges(data='object',keys=True):
-    #         # multKey is 0,1,.. for multiple edges between the same nodes
-    #         # (waymap is a MultiDiGraph of networkx). multKey must be included in dictKey
-    #         # as dictionary key to distinguish them.
-    #         dictKey = (src,dst,multKey)
- 
+    #     for street in self.wayManager.iterStreets():
     #         # Some categories are excluded.
     #         category =  categoryOfStreet(street)
     #         if category in ('steps', 'footway', 'cycleway', 'path', 'service'):
@@ -290,26 +283,23 @@ class StreetGenerator():
     #         max_y = max(v[1] for v in centerlineVerts)
     #         bbox = BBox(None,min_x,min_y,max_x,max_y)
     #         index = candidateIndex.add(min_x,min_y,max_x,max_y)
-    #         index2DictKey[index] = dictKey
+    #         index2Street[index] = street
     #         bbox.index = index
-    #         boxes[dictKey] = (min_x,min_y,max_x,max_y)
-
-    #         attributes[dictKey] = ( category, centerline, centerlineVerts )
+    #         boxes[street] = (min_x,min_y,max_x,max_y)
+    #         attributes[street] = ( category, centerline, centerlineVerts )
 
     #     # Finalize the index for usage.   
     #     candidateIndex.finish()
 
     #     # This is the structure we use to collect the parallel streets
-    #     self.parallelStreetKeys = DisjointSets()
+    #     self.parallelStreets = DisjointSets()
 
     #     # Every street that was inserted into the spatial index becomes now 
     #     # as sample. We expand it to a buffer area around it.
-    #     for src, dst, multKey, sample in self.waymap.edges(data='object',keys=True):
-    #         dictKey = (src,dst,multKey)
-
+    #     for sampleStreet in self.wayManager.iterStreets():
     #         # Use only accepted streets
-    #         if dictKey in boxes:
-    #             sampleCategory, sampleCenterline, _ = attributes[dictKey]
+    #         if sampleStreet in boxes:
+    #             sampleCategory, sampleCenterline, _ = attributes[sampleStreet]
     #             # Create buffer polygon around the sample street with a width according
     #             # to the category of the sample street.
     #             bufferWidth = searchDist[sampleCategory]
@@ -320,20 +310,18 @@ class StreetGenerator():
 
     #             # Get neighbors of this sample street from the static spatial index, using its
     #             # bounding box, expanded by the buffer width as additional search range.
-    #             min_x,min_y,max_x,max_y = boxes[dictKey]
+    #             min_x,min_y,max_x,max_y = boxes[sampleStreet]
     #             results = stack = []
     #             neighborIndices = candidateIndex.query(min_x-bufferWidth,min_y-bufferWidth,
     #                                            max_x+bufferWidth,max_y+bufferWidth,results,stack)
 
     #             # Now test all these neighbors of the sample street for parallelism.
     #             for neigborIndex in neighborIndices:
-    #                 neighDictKey = index2DictKey[neigborIndex]
-    #                 if neighDictKey == dictKey:
+    #                 neighborStreet = index2Street[neigborIndex]
+    #                 if neighborStreet == sampleStreet:
     #                     continue # Skip, the sample street is its own neighbor.
 
-    #                 srcNeigbor, dstNeigbor, neighMultKey = neighDictKey
-    #                 # neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object'] # Street from multigraph edge
-    #                 _, neighCenterline, neighCenterlineVerts = attributes[neighDictKey]
+    #                 _, neighCenterline, neighCenterlineVerts = attributes[neighborStreet]
 
     #                 # If the centerline of this neighbor is longer than a minimal length, ...
     #                 if neighCenterline.length() > minNeighborLength:
@@ -350,54 +338,31 @@ class StreetGenerator():
     #                     slope = abs(d1-d2)/inLineLength if inLineLength else 1.
 
     #                     # Conditions for acceptable inside line.
+    #                     # plotPureNetwork(self.sectionNetwork)
     #                     if slope < 0.15 and min(d1,d2) <= bufferWidth and nrOfON <= 2:
     #                         # Accept this pair as parallel.
-    #                         self.parallelStreetKeys.addSegment((src,dst),(srcNeigbor,dstNeigbor))
+    #                         self.parallelStreets.addSegment(sampleStreet,neighborStreet)
 
-    #                         # s = sum(sampleCenterline.verts,Vector((0,0)))/len(sampleCenterline)
-    #                         # plt.text(s[0],s[1],str(sample.id),fontsize=12)
-    #                         # sampleCenterline.plotWithArrows('b',1,False,999)
-    #                         # neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object']
-    #                         # n = sum(neighCenterline.verts,Vector((0,0)))/len(neighCenterline)
-    #                         # plt.text(n[0],n[1],str(neighbor.id),fontsize=12)
-    #                         # neighCenterline.plotWithArrows('r',3,False,998)
-    #                         # # plt.title('ACCEPTED '+str(neighbor.id)+' '+str(sample.id))
-    #                         # # plotEnd()
-
-    #                     else:
-    #                         pass
-    #                         # s = sum(sampleCenterline.verts,Vector((0,0)))/len(sampleCenterline)
-    #                         # plt.text(s[0],s[1],str(sample.id))
-    #                         # sampleCenterline.plot('b')
-    #                         # neighbor = self.waymap[srcNeigbor][dstNeigbor][neighMultKey]['object']
-    #                         # n = sum(neighCenterline.verts,Vector((0,0)))/len(neighCenterline)
-    #                         # plt.text(n[0],n[1],str(neighbor.id))
-    #                         # neighCenterline.plot('r')
-    #                         # plt.title('not '+str(neighbor.id)+' '+str(sample.id))
-    #                         # plotEnd()
-    #             # plotEnd()
     #     # DEBUG: Show clusters of parallel way-sections.
     #     # The plotting functions for this debug part are at the end of this module
     #     if self.app.type == AppType.commandLine:
     #         from debug import plt, plotPureNetwork, randomColor, plotEnd
 
-    #         inBundles = True
+    #         inBundles = False
 
     #         if not inBundles:
     #             plotPureNetwork(self.sectionNetwork)
     #         colorIter = randomColor(10)
-    #         import numpy as np
-    #         for bIndx,sectKeys in enumerate(self.parallelStreetKeys):
+    #         for bIndx,streets in enumerate(self.parallelStreets):
     #             if inBundles:
     #                 plotPureNetwork(self.sectionNetwork)
     #                 plt.title("Bundle "+str(bIndx))
     #             color = next(colorIter)
-    #             for src,dst in sectKeys:
+    #             for street in streets:
     #                 width = 2
     #                 if inBundles: 
     #                     color = "red"
     #                     width = 3
-    #                 street = self.waymap.getEdgeObject(src,dst,0)
     #                 print(street.id)
     #                 centerline, _ = centerlineOfStreet(street)
     #                 centerline.plot(color,width,'solid')

@@ -3,6 +3,7 @@ from defs.way import allWayCategories, facadeVisibilityWayCategories, wayInterse
 from style import StyleStore
 from way.waymap.waymap import WayMap
 from way.item.street import Street
+from way.item.connectors import IntConnector
 
 
 class WayManager:
@@ -144,9 +145,17 @@ class WayManager:
                         processedStreets.add(nextStreet)
                         _, dstIsectCurr = findMinorNodes(nextStreet)
                         if not dstIsectCurr:
+                            if nextStreet.succ is not None:
+                                if isinstance(nextStreet.succ,IntConnector):
+                                    nextStreet.succ.item = longStreet
                             break
                         dstIsectCurr.street = longStreet
                         longStreet.insertEnd(dstIsectCurr) 
+                else:
+                    if street.succ is not None:
+                        if isinstance(street.succ,IntConnector):
+                            street.succ.item = longStreet
+
  
                 if srcIsectInit:        # Minor intersection at the front of this street
                     srcIsectInit.street = longStreet
@@ -160,9 +169,16 @@ class WayManager:
                         processedStreets.add(prevStreet)
                         srcIsectCurr, _ = findMinorNodes(prevStreet)
                         if not srcIsectCurr:
+                            if prevStreet.pred is not None:
+                                if isinstance(prevStreet.pred,IntConnector):
+                                    prevStreet.pred.item = longStreet
                             break
                         srcIsectCurr.street = longStreet
                         longStreet.insertFront(srcIsectCurr)   # insert minor intersection object
+                else:
+                    if street.pred is not None:
+                        if isinstance(street.pred,IntConnector):
+                            street.pred.item = longStreet
 
                 streetStyle = self.styleStore.get( self.getStyle(longStreet) )
                 longStreet.style = streetStyle

@@ -30,11 +30,17 @@ class StreetRenderer(Renderer):
         for Id,isect in enumerate(manager.majorIntersections):
             p = isect.location
             plt.plot(p[0],p[1],'ro',markersize=6,zorder=999,markeredgecolor='red', markerfacecolor='orange')
+            plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+            #     plt.plot(p[0],p[1],'co',markersize=15,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
             # if self.debug:
-            #     plt.text(p[0]+2,p[1]-2,str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
-        # for Id,isect in enumerate(manager.minorIntersections):
-        #     p = isect.location
+        for Id,isect in enumerate(manager.minorIntersections):
+            p = isect.location
+            # if isect.id==19:
+            #     plt.plot(p[0],p[1],'co',markersize=15,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
+
+            plt.text(p[0],p[1],'  '+str(isect.id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
+            plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
         #     plt.plot(p[0],p[1],'rv',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='none')
         #     isect.leaving.plot('c',1,True)
         #     isect.arriving.plot('m',1,False)
@@ -64,7 +70,8 @@ class StreetRenderer(Renderer):
                         color = 'b' if isMinorCategory(section) else 'r'
                         width = 1 if isMinorCategory(section) else 2
                         style = 'dotted' if isMinorCategory(section) else 'solid'
-                        section.polyline.plot(color,width,style)
+                        # section.polyline.plot(color,width,style)
+                        section.polyline.plotWithArrows(color,width)
                         allColor = color
                         if isMinorCategory(section):
                             streetIsMinor = True
@@ -108,7 +115,7 @@ class StreetRenderer(Renderer):
             #     longPoly = PolyLine(allVertices)
             #     longPoly.plot('g',4)
 
-            if self.debug:
+            if True:#self.debug:
                 color = 'cornflowerblue' if streetIsMinor else 'crimson'
                 width = 8 if streetIsMinor else 10
                 if len(allVertices):
