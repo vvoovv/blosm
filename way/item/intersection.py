@@ -221,7 +221,15 @@ class Intersection(Item):
             else:
                 break # this is again the first major section
 
-        test = 1
+        # Check direction of major streets
+        # see https://github.com/prochitecture/blosm/issues/106#issuecomment-2305297075
+        if self.leaving.dst == self.location and self.arriving.src == self.location:
+            self.leaving, self.arriving = self.arriving, self.leaving
+        
+        if self.leaving.src != self.location or self.arriving.dst != self.location:
+            # One of the streets runs the wrong way
+            # Do not accept as minor intersection
+            self.isMinor = False
 
     @staticmethod
     def iterate_from(conn_item):
