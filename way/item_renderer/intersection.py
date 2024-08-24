@@ -90,3 +90,9 @@ class Intersection(ItemRenderer):
         )
         self.gnPolygon = nodeGroups["Blosm Polygon UV Material"]
         self.gnTerrainArea = nodeGroups["blosm_terrain_area"]
+    
+    def initItemCenterline1(self, section, singleItem):
+        return
+    
+    def initItemCenterline2(self, section, itemIndex):
+        return

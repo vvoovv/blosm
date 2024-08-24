@@ -153,7 +153,7 @@ class StreetRenderer:
 
         # render instances of class <Intersection>
         intersectionRenderer = self.itemRenderers["Intersection"]
-        for intersection in manager.intersections:
+        for intersection in manager.majorIntersections:
             intersectionRenderer.renderItem(intersection)
         
         #
