@@ -29,17 +29,19 @@ class StreetRenderer(Renderer):
 
         for Id,isect in enumerate(manager.majorIntersections):
             p = isect.location
-            plt.plot(p[0],p[1],'ro',markersize=6,zorder=999,markeredgecolor='red', markerfacecolor='orange')
+            plt.plot(p[0],p[1],'ro',markersize=5,zorder=999,markeredgecolor='red', markerfacecolor='orange')
+            plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+            #     plt.plot(p[0],p[1],'co',markersize=15,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
             # if self.debug:
-            #     plt.text(p[0]+2,p[1]-2,str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
-        # for Id,isect in enumerate(manager.minorIntersections):
-        #     p = isect.location
-        #     plt.plot(p[0],p[1],'rv',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='none')
+        for Id,isect in enumerate(manager.minorIntersections):
+            p = isect.location
+            plt.text(p[0],p[1],'  '+str(isect.id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
+            plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
         #     isect.leaving.plot('c',1,True)
         #     isect.arriving.plot('m',1,False)
-        #     plt.text(p[0],p[1],'  '+str(isect.id),color='r',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
 
+        # DEBUG: Plot streets from waymap
         # for src, dst, multKey, street in manager.waymap.edges(data='object',keys=True):
         #     allVertices = []
         #     for item in street.iterItems():
@@ -50,13 +52,13 @@ class StreetRenderer(Renderer):
         #         c = sum(allVertices,Vector((0,0))) / len(allVertices)
         #         plt.text(c[0],c[1],'S '+str(street.id),color='blue',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
         # return
+
         for street in manager.iterStreets():
         # for src, dst, multKey, street in manager.waymap.edges(data='object',keys=True):
             allVertices = []
             streetIsMinor = False
             for item in street.iterItems():
-                # if street.id == 525:
-                #     continue
+
                 if isinstance(item,Section):
                     section = item
                     allVertices.extend(section.centerline)
@@ -64,18 +66,17 @@ class StreetRenderer(Renderer):
                         color = 'b' if isMinorCategory(section) else 'r'
                         width = 1 if isMinorCategory(section) else 2
                         style = 'dotted' if isMinorCategory(section) else 'solid'
-                        section.polyline.plot(color,width,style)
-                        allColor = color
+                        section.polyline.plotWithArrows(color,width,False,950)
                         if isMinorCategory(section):
                             streetIsMinor = True
+
                 if isinstance(item,Intersection):
                     if not item.isMinor:
-                        print('False non-minor')
+                        print('Must be minor when in Street!!!! street.id', street.id,' item.id ',item.id)
                         continue
                     p = item.location
-                    plt.plot(p[0],p[1],'rv',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='none')
-                    if self.debug:
-                        plt.text(p[0]+2,p[1]-2,'M '+str(item.id),color='g',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+                    plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='green', markerfacecolor='none')
+                    plt.text(p[0],p[1],'M '+str(item.id),color='g',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
                     if self.debug:
                         for conn in Intersection.iterate_from(item.leftHead):
@@ -101,19 +102,14 @@ class StreetRenderer(Renderer):
 
                 if isinstance(item,SymLane):
                     p = item.location
-                    plt.plot(p[0],p[1],'rs',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                    plt.plot(p[0],p[1],'rP',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
 
-            # if street.id == 525:
-            #     allVertices = list(dict.fromkeys(allVertices))
-            #     longPoly = PolyLine(allVertices)
-            #     longPoly.plot('g',4)
 
-            if self.debug:
-                color = 'cornflowerblue' if streetIsMinor else 'crimson'
-                width = 8 if streetIsMinor else 10
-                if len(allVertices):
-                    c = sum(allVertices,Vector((0,0))) / len(allVertices)
-                    plt.text(c[0]+2,c[1]-2,'S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
+            color = 'cornflowerblue' if streetIsMinor else 'crimson'
+            width = 8 if streetIsMinor else 10
+            if len(allVertices):
+                c = sum(allVertices,Vector((0,0))) / len(allVertices)
+                plt.text(c[0]+2,c[1]-2,'S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
 
 def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
     x = [n[0] for n in poly] + [poly[0][0]]
