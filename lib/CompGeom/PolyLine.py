@@ -467,15 +467,16 @@ class PolyLine():
             for i,(xx,yy) in enumerate(zip(x,y)):
                 plt.text(xx,yy,' '+str(i),fontsize=12)
 
-    def plotWithArrows(self,color,width=1,showOrder=False,order=999):
+    def plotWithArrows(self,color,width=1,linestyle='solid',showOrder=False,order=999):
         import matplotlib.pyplot as plt 
         i = 0       
         for v0,v1 in pairs(self):
-            x = (v0[0]+v1[0])/2
-            y = (v0[1]+v1[1])/2
-            arrowprops=dict(color=color, width=width, shrink=0.05, headwidth=width*3, headlength=5*width)
-            plt.gca().annotate("", xy=(x,y), xytext=(v0[0],v0[1]),arrowprops=arrowprops)
-            plt.plot([v0[0],v1[0]],[v0[1],v1[1]],color=color, linewidth=width)
+            dv = v1-v0
+            xytext = v0 + 0.5*dv
+            xy = v0 + 0.45*dv
+            arrowprops=dict(color=color, linewidth=width, linestyle=linestyle, shrink=0.05, headwidth=width*3, headlength=5*width)
+            plt.gca().annotate("", xy=(xy[0],xy[1]), xytext=(xytext[0],xytext[1]),arrowprops=arrowprops)
+            plt.plot([v0[0],v1[0]],[v0[1],v1[1]],color=color, linestyle=linestyle, linewidth=width)
             if showOrder:
                 plt.text(v0[0],v0[1],' '+str(i),fontsize=12,color='r')
                 plt.text(v1[0],v1[1],' '+str(i+1),fontsize=12,color='r')
