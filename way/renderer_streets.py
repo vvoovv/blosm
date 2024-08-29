@@ -159,7 +159,7 @@ class StreetRenderer:
         #
         # Finalize items: apply modifiers
         #
-        for _, _, _, street in manager.waymap.iterSections():
+        for street in manager.iterStreets():
             street.obj3d = self.get3dStreetObj(street, location)
             
             if street.head is street.tail:
@@ -594,10 +594,10 @@ class StreetRenderer:
         # setting offset for points where two street sections share a position of their end points
         m["Socket_2"] = 4.
         # intersection at the start of the street
-        if street.pred and street.pred.intersection.order == 4:
+        if street.pred and street.pred.intersection.order == 4 and not street.pred.intersection.isMinor:
             m["Socket_4"] = street.pred.intersection.obj
         # intersection at the end of the street
-        if street.succ and street.succ.intersection.order == 4:
+        if street.succ and street.succ.intersection.order == 4 and not street.succ.intersection.isMinor:
             m["Socket_5"] = street.succ.intersection.obj
         return obj
     

@@ -96,3 +96,6 @@ class Intersection(ItemRenderer):
     
     def initItemCenterline2(self, section, itemIndex):
         return
+    
+    def finalizeItem(self, section, itemIndex):
+        return
