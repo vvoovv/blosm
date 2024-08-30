@@ -345,30 +345,37 @@ class StreetGenerator():
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
         if self.app.type == AppType.commandLine:
-            from debug import plt, plotPureNetwork, randomColor, plotEnd
+            from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
 
             inBundles = False
 
             if not inBundles:
-                plotPureNetwork(self.sectionNetwork)
-            colorIter = randomColor(10)
+                plotQualifiedNetwork(self.sectionNetwork,False)
+            colorIter = randomColor(19)
             for bIndx,streets in enumerate(self.parallelStreets):
+                # if bIndx not in [0,1]:
+                #     continue
                 if inBundles:
-                    plotPureNetwork(self.sectionNetwork)
+                    plotQualifiedNetwork(self.sectionNetwork,False)
                     plt.title("Bundle "+str(bIndx))
                 color = next(colorIter)
+                allVerts = []
                 for street in streets:
                     width = 2
                     if inBundles: 
                         color = "red"
                         width = 3
-                    centerline, _ = centerlineOfStreet(street)
+                    centerline,verts = centerlineOfStreet(street)
+                    allVerts.extend(verts)
                     centerline.plot(color,width,'solid')
+                    centerline.plotWithArrows(color,1,0.5,'solid',False,950)
                     if inBundles: 
                         plt.scatter(centerline[0][0], centerline[0][1], s=80, facecolors='none', edgecolors='g',zorder=999)
                         plt.scatter(centerline[-1][0], centerline[-1][1], s=80, facecolors='none', edgecolors='g',zorder=999)
                         # plt.plot(polyline[0][0], polyline[0][1], 'go', markersize=8,zorder=999)
                         # plt.plot(polyline[-1][0], polyline[-1][1], 'go', markersize=8,zorder=999)
+                center = sum(allVerts,Vector((0,0)))/len(allVerts)
+                plt.text(center[0],center[1],str(bIndx),fontsize=10)
                 if inBundles:
                     plotEnd()
             if not inBundles:

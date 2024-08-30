@@ -65,7 +65,7 @@ class StreetRenderer(Renderer):
                         color = 'gray' if isSmallestCategory(section) else 'b' if isMinorCategory(section) else 'r'
                         width = 1 if isSmallestCategory(section) else 1.5 if isMinorCategory(section) else 2
                         style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
-                        section.polyline.plotWithArrows(color,width,style,False,950)
+                        section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                         if isMinorCategory(section):
                             streetIsMinor = True
 

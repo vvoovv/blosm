@@ -467,13 +467,14 @@ class PolyLine():
             for i,(xx,yy) in enumerate(zip(x,y)):
                 plt.text(xx,yy,' '+str(i),fontsize=12)
 
-    def plotWithArrows(self,color,width=1,linestyle='solid',showOrder=False,order=999):
+    def plotWithArrows(self,color,width=1,length=2,linestyle='solid',showOrder=False,order=999):
         import matplotlib.pyplot as plt 
         i = 0       
         for v0,v1 in pairs(self):
             dv = v1-v0
+            dvu = dv/dv.length
             xytext = v0 + 0.5*dv
-            xy = v0 + 0.45*dv
+            xy = v0 + 0.5*dv - length*dvu
             arrowprops=dict(color=color, linewidth=width, linestyle=linestyle, shrink=0.05, headwidth=width*3, headlength=5*width)
             plt.gca().annotate("", xy=(xy[0],xy[1]), xytext=(xytext[0],xytext[1]),arrowprops=arrowprops)
             plt.plot([v0[0],v1[0]],[v0[1],v1[1]],color=color, linestyle=linestyle, linewidth=width)
