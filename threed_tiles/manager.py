@@ -272,7 +272,7 @@ class BaseManager:
         
         bboxOrigin = bboxCenter - bboxX - bboxY - bboxZ
         
-        # The coordinates of the current bounding box are transformed to the system of reference where
+        # The coordinates are transformed to the system of reference where
         # (1) the edges of the bounding box of the area of interest are parallel to the axes of the system of reference and
         # (2) the origin of the bounding box of the area of interest is located at the origin of that system of reference 
         bboxVerts = (
@@ -412,28 +412,39 @@ class BaseManager:
         if (self.areaCenter - sphereCenter).length_squared > self.areaRadiusSquared + self.areaRadiusDoubled * sphereRadius + sphereRadius*sphereRadius:
             return False
         
+        # The coordinates are transformed to the system of reference where
+        # (1) the edges of the bounding box of the area of interest are parallel to the axes of the system of reference and
+        # (2) the origin of the bounding box of the area of interest is located at the origin of that system of reference 
         sphereCenter = self.areaRotationMatrix @ ( sphereCenter - self.areaOrigin )
         
+        # Another quick check.
+        # Check if <sphereCenter> is within the bounding box of the area of interest. That means that either the surfaces of the sphere and
+        # the bounding box of the area of interest intersect OR the sphere is entirely within the bounding box of the area of interest.
+        
+        if  0. <= sphereCenter[0] <= self.areaSizes[0] and\
+            0. <= sphereCenter[1] <= self.areaSizes[1] and\
+            0. <= sphereCenter[2] <= self.areaSizes[2]:
+            return True
         #
         # The algorithm is from the paper "A Simple Method For Box-Sphere Intersection Testing" by James Arvo
         #
+        
+        # The minimum squared distance between <sphereCenter> and the bounding box of the area of interest
         dmin = 0.
+        # The maximum squared distance between <sphereCenter> and the bounding box of the area of interest
         dmax = 0.
-        face = False
         for i in range(3):
             a = sphereCenter[i] * sphereCenter[i]
             b = (sphereCenter[i] - self.areaSizes[i]) * (sphereCenter[i] - self.areaSizes[i])
             dmax += max(a, b)
             if sphereCenter[i] < 0.:
-                face = True
                 dmin += a
             elif sphereCenter[i] > self.areaSizes[i]:
-                face = True
                 dmin += b
-            elif min(a, b) <= sphereRadiusSquared:
-                face = True
         
-        return face and dmin <= sphereRadiusSquared and sphereRadiusSquared <= dmax
+        # The first condition is for the intersection of surfaces of the sphere and the bounding box of the area of interest.
+        # The second condition is for the case when the bounding box of the area of interest is entirely contained within the sphere.
+        return dmin <= sphereRadiusSquared or dmax <= sphereRadiusSquared
     
     def processError(self, e, uri):
         self.errors.append(
