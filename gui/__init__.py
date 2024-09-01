@@ -1051,8 +1051,9 @@ class BlosmProperties(bpy.types.PropertyGroup):
     geometricError: bpy.props.FloatProperty(
         name = "Geometric error",
         subtype = 'UNSIGNED',
-        description = "The smaller the geometric error, the more detailed the imported scene will be. " +\
-        "The first tile in the tileset's tree of tiles with the geometric error equal or less than the given one, will be imported",
+        description = "The smaller the geometric error, the more detailed the imported scene will be.\n\n" +\
+        "The first tile in the tileset's tree of tiles with the geometric error equal or less than the given one, will be imported.\n\n" +\
+        "Try dividing the current value of the geometric error by two to get a more detailed scene",
         default = 30.
     )
     
