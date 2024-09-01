@@ -363,6 +363,9 @@ class BlenderApp(BaseApp):
             
             manager.rootUri = manager.rootUri + "?key=" + googleMapsApiKey
             manager.constantUriQuery = "key=" + googleMapsApiKey
+        else: # addon.threedTilesSource == "google"
+            if not addon.threedTilesUrl:
+                raise Exception("A URL of the root tile was not entered")
     
     def initGpx(self, context, addonName):
         gpxFilepath = os.path.realpath(bpy.path.abspath(self.gpxFilepath))
