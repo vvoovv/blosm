@@ -28,14 +28,14 @@ class StreetRenderer(Renderer):
         def isMinorCategory(section):
             return  section.category in  ['footway', 'cycleway','service']
         
-        for Id,isect in enumerate(manager.majorIntersections):
+        for id,isect in manager.majorIntersections.items():
             p = isect.location
             plt.plot(p[0],p[1],'ro',markersize=5,zorder=999,markeredgecolor='red', markerfacecolor='orange')
-            plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+            plt.text(p[0],p[1],' '+str(id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
-        for Id,isect in enumerate(manager.minorIntersections):
+        for id,isect in manager.minorIntersections.items():
             p = isect.location
-            plt.text(p[0],p[1],'  '+str(isect.id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
+            plt.text(p[0],p[1],'  '+str(id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
             plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
             # if isect.isMinor and len(isect.minorCategories)==2:
             #     plt.plot(p[0],p[1],'co',markersize=12)
@@ -98,10 +98,12 @@ class StreetRenderer(Renderer):
                 if isinstance(item,SideLane):
                     p = item.location
                     plt.plot(p[0],p[1],'rs',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                    plt.text(p[0]+2,p[1]-2,'Side '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
 
                 if isinstance(item,SymLane):
                     p = item.location
                     plt.plot(p[0],p[1],'rP',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                    plt.text(p[0]+2,p[1]-2,'Sym '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
 
 
             color = 'cornflowerblue' if streetIsMinor else 'crimson'

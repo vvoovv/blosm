@@ -64,6 +64,7 @@ class StreetGenerator():
         self.transitionSideLanes = manager.transitionSideLanes
         self.transitionSymLanes = manager.transitionSymLanes
         self.streets = manager.streets
+        self.bundles = manager.bundles
         self.wayClusters = manager.wayClusters
         self.waySectionLines = manager.waySectionLines
 
@@ -76,6 +77,7 @@ class StreetGenerator():
         self.updateIntersections()
         self.createStreets()
         # self.createParallelStreets()
+        # self.createBundles()
 
     def findSelfIntersections(self):
         uniqueSegments = defaultdict(set)
@@ -382,6 +384,63 @@ class StreetGenerator():
                 plotEnd()
             # END DEBUG
                             
+    def createBundles(self):
+        from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
+
+        def centerlineOfStreet(street):
+            # Find the centerline of the whole street.
+            centerlineVerts = []
+            for item in street.iterItems():
+                if isinstance(item, Section):
+                    centerlineVerts.extend( item.centerline)
+
+            # Remove duplicates and create polyLine
+            centerlineVerts = list(dict.fromkeys(centerlineVerts))
+            centerline = PolyLine(centerlineVerts)
+            return centerline, centerlineVerts
+        
+        for indx,streets in enumerate(self.parallelStreets):
+            streetEnds = defaultdict(list)
+            innerIsects = dict()
+            for street in streets:
+                streetEnds[street.src].append(street)
+                streetEnds[street.dst].append(street)
+
+                if street.pred:
+                    innerIsects[street.src] = street.pred.intersection
+                else:
+                    innerIsects[street.src]  = None
+                if street.succ:
+                    innerIsects[street.dst] = street.succ.intersection
+                else:
+                    innerIsects[street.dst]  = None
+
+                centerline,_ = centerlineOfStreet(street)
+                centerline.plotWithArrows('red',1,0.5,'solid',False,950)
+
+            for p, conns in streetEnds.items():
+                plt.plot(p[0],p[1],'go')
+                plt.text(p[0],p[1],' '+str(len(conns)),color='red')
+
+            for p, isect in innerIsects.items():
+                plt.plot(p[0],p[1],'go')
+                outgoingStreeets = 0
+                if isect:
+                    # plt.text(p[0],p[1],'         '+str(isect.id),color='m')
+                    for intsect in isect:
+                        if intsect.item not in streets:
+                            outgoingStreeets += 1
+                    plt.text(p[0],p[1],'     '+str(outgoingStreeets),color='blue')
+                else:
+                    plt.text(p[0],p[1],'     0',color='blue')
+
+
+            plotEnd()
+
+
+
+        test=1
+
     def createSymSideLanes(self):
         nr = 0
         toReplace = []
@@ -390,11 +449,12 @@ class StreetGenerator():
                 section0 = intersection.leaveWays[0].section
                 section1 = intersection.leaveWays[1].section
                 streetIds = (intersection.leaveWays[0].street.id, intersection.leaveWays[1].street.id)
-                incoming, outgoing = (section0, section1) if section0.totalLanes < section1.totalLanes else (section1, section0)
+                incoming, outgoing = (section0, section1) if section0.dst == section1.src else (section1, section0)
                 hasTurns = bool( re.search(r'[^N]', outgoing.lanePatterns[0] ) )
                 if hasTurns:    # it's a side lane
                     sideLane = SideLane(location, incoming, outgoing)
                     street = Street(incoming.src, outgoing.dst)
+                    street.pred = incoming.pred
                     street.insertEnd(incoming)
                     street.insertEnd(sideLane)
                     street.insertEnd(outgoing)
@@ -409,6 +469,7 @@ class StreetGenerator():
                     symLane = SymLane(location, incoming, outgoing)
 
                     street = Street(incoming.src, outgoing.dst)
+                    street.pred = incoming.pred
                     street.insertEnd(incoming)
                     street.insertEnd(symLane)
                     street.insertEnd(outgoing)
@@ -451,18 +512,18 @@ class StreetGenerator():
                 intersection.transformToMinor()
                 # see https://github.com/prochitecture/blosm/issues/106#issuecomment-2305297075
                 if intersection.isMinor:
-                    self.minorIntersections.append(intersection)
+                    self.minorIntersections[intersection.id] = intersection
                 else:
                     if intersection.order > 1:
-                        self.majorIntersections.append(intersection)
+                        self.majorIntersections[intersection.id] = intersection
             else:
                 if intersection.order > 1:
-                    self.majorIntersections.append(intersection)
+                    self.majorIntersections[intersection.id] = intersection
 
             self.processedNodes.add(location)
 
     def createStreets(self):
         for street in self.wayManager.iterStreetsFromWaymap():
-            self.streets.append(street)
+            self.streets[street.id] = street
 
  

@@ -141,6 +141,16 @@ class Intersection(Item):
                 way.street.succ = connector
             self.insertConnector(connector)
 
+    # Iterator for circular double-linked list. 
+    #Only valid if self.isMinor == False !!!
+    def __iter__(self):
+        curr = self.startConnector
+        while curr:
+            yield curr
+            curr = curr.succ
+            if curr == self.startConnector:
+                break
+
 # For minor intersections -----------------------------------------------------
     @staticmethod
     def minorCategoryRank(section):
