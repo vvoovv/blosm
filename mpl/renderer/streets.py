@@ -22,24 +22,23 @@ class StreetRenderer(Renderer):
         return
 
     def render(self, manager, data):
+        def isSmallestCategory(section):
+             return  section.category in  ['footway', 'cycleway']
+        
         def isMinorCategory(section):
-            return  section.category in  ['footway', 'cycleway','service'] or \
-                    ('service' in section.tags and \
-                    section.tags['service']=='driveway')
-
-        for Id,isect in enumerate(manager.majorIntersections):
+            return  section.category in  ['footway', 'cycleway','service']
+        
+        for id,isect in manager.majorIntersections.items():
             p = isect.location
             plt.plot(p[0],p[1],'ro',markersize=5,zorder=999,markeredgecolor='red', markerfacecolor='orange')
-            plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
-            #     plt.plot(p[0],p[1],'co',markersize=15,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
-            # if self.debug:
+            plt.text(p[0],p[1],' '+str(id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
-        for Id,isect in enumerate(manager.minorIntersections):
+        for id,isect in manager.minorIntersections.items():
             p = isect.location
-            plt.text(p[0],p[1],'  '+str(isect.id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
+            plt.text(p[0],p[1],'  '+str(id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
             plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
-        #     isect.leaving.plot('c',1,True)
-        #     isect.arriving.plot('m',1,False)
+            # if isect.isMinor and len(isect.minorCategories)==2:
+            #     plt.plot(p[0],p[1],'co',markersize=12)
 
         # DEBUG: Plot streets from waymap
         # for src, dst, multKey, street in manager.waymap.edges(data='object',keys=True):
@@ -63,10 +62,10 @@ class StreetRenderer(Renderer):
                     section = item
                     allVertices.extend(section.centerline)
                     if section.valid:
-                        color = 'b' if isMinorCategory(section) else 'r'
-                        width = 1 if isMinorCategory(section) else 2
-                        style = 'dotted' if isMinorCategory(section) else 'solid'
-                        section.polyline.plotWithArrows(color,width,False,950)
+                        color = 'gray' if isSmallestCategory(section) else 'b' if isMinorCategory(section) else 'r'
+                        width = 1 if isSmallestCategory(section) else 1.5 if isMinorCategory(section) else 2
+                        style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
+                        section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                         if isMinorCategory(section):
                             streetIsMinor = True
 
@@ -99,10 +98,12 @@ class StreetRenderer(Renderer):
                 if isinstance(item,SideLane):
                     p = item.location
                     plt.plot(p[0],p[1],'rs',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                    plt.text(p[0]+2,p[1]-2,'Side '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
 
                 if isinstance(item,SymLane):
                     p = item.location
                     plt.plot(p[0],p[1],'rP',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                    plt.text(p[0]+2,p[1]-2,'Sym '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
 
 
             color = 'cornflowerblue' if streetIsMinor else 'crimson'

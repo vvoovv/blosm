@@ -29,11 +29,12 @@ class WayManager:
         
         # <self.intersections>, <self.wayClusters> and <self.waySectionLines>
         # are used for realistic rendering of streets
-        self.majorIntersections  = []
-        self.minorIntersections  = []
+        self.majorIntersections  = dict()
+        self.minorIntersections  = dict()
         self.transitionSymLanes = []
         self.transitionSideLanes = []
-        self.streets = []
+        self.streets = dict()
+        self.bundles = dict()
         # street sections and clusters
         self.waymap = WayMap()
         self.waySectionLines = dict()
@@ -101,7 +102,10 @@ class WayManager:
         return RailwayManager(self)
     
     def iterStreets(self):
-        return iter(self.streets)
+        return self.streets.values()
+
+    def iterBundles(self):
+        return self.bundles.values()
 
     def iterStreetsFromWaymap(self):
         def findMinorNodes(street):
@@ -132,6 +136,7 @@ class WayManager:
                 # Create a new Street
                 longStreet = Street(street.src,street.dst)
                 longStreet.insertStreetEnd(street)
+                longStreet.pred = street.pred
 
                 if dstIsectInit:    # Minor intersection at the end of this street
                     dstIsectInit.street = longStreet

@@ -22,6 +22,8 @@ class Street(Item):
         self.pred = None
         self.succ = None
 
+        self.bundle = None
+        
     def insertEnd(self, item):
         item.street = self
         if self.head is None:
@@ -48,6 +50,7 @@ class Street(Item):
             self.src = newstreet.src
             self.head.pred = None
             self.tail.succ = None
+            self.succ = newstreet.succ
             return
         
         # If list is not empty 
@@ -56,6 +59,7 @@ class Street(Item):
         self.tail.succ = newstreet.head
         self.tail = newstreet.tail
         self.dst = newstreet.dst
+        self.succ = newstreet.succ
 
     def insertFront(self, item):
         item.street = self
@@ -83,6 +87,7 @@ class Street(Item):
             self.dst = newstreet.dst
             self.head.pred = None
             self.tail.succ = None
+            self.pred = newstreet.pred
             return
 
         # If list is not empty 
@@ -91,6 +96,7 @@ class Street(Item):
         self.head.pred = newstreet.head
         self.head = newstreet.head
         self.src = newstreet.src
+        self.pred = newstreet.pred
 
     def iterItems(self):
         if self.head is None:

@@ -49,7 +49,7 @@ class Mpl:
             # from debug import saveAxisContent
             # saveAxisContent(file)
 
-            self.ax.axis('equal')
+            plt.gca().axis('equal')
             plt.show()
         
     @staticmethod

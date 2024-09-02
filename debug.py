@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 from matplotlib.patches import Circle,Rectangle
 from mathutils import Vector
+from lib.CompGeom.PolyLine import PolyLine
 
 def plotNetwork(network,waySections=None):
     from mpl.renderer.road_polygons import RoadPolygonsRenderer
@@ -14,6 +15,39 @@ def plotNetwork(network,waySections=None):
         for v1,v2 in zip(seg.path[:-1],seg.path[1:]):
             plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), **RoadPolygonsRenderer.styles[seg.category], zorder=50 )
             # plt.plot( (v1[0], v2[0]), (v1[1], v2[1]), 'k', 0.5, zorder=50)
+
+def plotQualifiedNetwork(network,arrows=False,showIDs=False):
+    from itertools import tee
+    def pairs(iterable):
+        # s -> (s0,s1), (s1,s2), (s2, s3), ...
+        p1, p2 = tee(iterable)
+        next(p2, None)
+        return zip(p1,p2)
+
+    def isSmallestCategory(category):
+            return  category in  ['footway', 'cycleway']
+    
+    def isMinorCategory(category):
+        return  category in  ['footway', 'cycleway','service']
+
+    for count,seg in enumerate(network.iterAllSegments()):
+        color = 'g' if seg.category=='scene_border' else 'k'
+        category = seg.category
+        polyline = PolyLine(seg.path)
+        color = 'gray'# if isSmallestCategory(category) else 'b' if isMinorCategory(category) else 'r'
+        width = 1 if isSmallestCategory(category) else 1.5 if isMinorCategory(category) else 2
+        style = 'dotted' if isSmallestCategory(category) else '--' if isMinorCategory(category) else 'solid'
+        if arrows:
+            polyline.plotWithArrows(color,width,0.5,style,False,950)
+            polyline.plot(color,width,style,False,950)
+        else:
+            polyline.plot(color,width,style,False,950)
+
+        plt.plot(seg.s[0],seg.s[1],'k.')
+        plt.plot(seg.t[0],seg.t[1],'k.')
+        if showIDs:
+            c = sum(seg.path, Vector((0,0)))/len(seg.path)
+            plt.text(c[0],c[1],'  '+str(seg.sectionId) )
 
 
 def plotPureNetwork(network,arrows=False,showIDs=False):

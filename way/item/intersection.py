@@ -66,6 +66,7 @@ class Intersection(Item):
         self.startConnector = None
 
         # Attributes for minor intersection
+        self.minorCategories = None
         self.isMinor = False
 
         self.leftHead = None
@@ -140,27 +141,48 @@ class Intersection(Item):
                 way.street.succ = connector
             self.insertConnector(connector)
 
+    # Iterator for circular double-linked list. 
+    #Only valid if self.isMinor == False !!!
+    def __iter__(self):
+        curr = self.startConnector
+        while curr:
+            yield curr
+            curr = curr.succ
+            if curr == self.startConnector:
+                break
+
 # For minor intersections -----------------------------------------------------
     @staticmethod
-    def isMinorCategory(section):
+    def minorCategoryRank(section):
+        if section.category in ['footway', 'cycleway']:
+            return 1
+        elif section.category == 'service':
+            return 2
+        else:
+            return 3
+
+    def isMinorCategory(self, section):
         if not section.valid: return False
-        return  section.category in  ['footway', 'cycleway','service'] or \
-                ('service' in section.tags and \
-                section.tags['service']=='driveway')
+        if not self.minorCategories:
+            maxCatRank = max(self.minorCategoryRank(w.section) for w in self.leaveWays)
+            self.minorCategories = ['footway', 'cycleway','service'] if maxCatRank>2 else ['footway', 'cycleway']
+        return section.category in self.minorCategories
 
     def isMinorIntersection(self):
         minorCount = 0
         majorCount = 0
         majorCategories = set()
         majorIndices = []
+
         for indx, leaveWay in enumerate(self.leaveWays):
-            if Intersection.isMinorCategory(leaveWay.section):
+            if self.isMinorCategory(leaveWay.section):
                 minorCount += 1
             else:
                 majorCount += 1
                 majorCategories.add(leaveWay.section.category)
                 majorIndices.append(indx)
         return (majorCount == 2 and minorCount>0 and len(majorCategories)==1)
+
 
     def insertLeftConnector(self, conn):
         # Inserts the instance <connector> of IntConnector at the end of the linear doubly-linked list,
@@ -197,7 +219,7 @@ class Intersection(Item):
 
         # Find a leaving major street (by connector <conn>)
         for conn in IntConnector.iterate_from(self.startConnector):
-            if conn.leaving and not Intersection.isMinorCategory(conn.item.head):
+            if conn.leaving and not self.isMinorCategory(conn.item.head):
                 break
         self.leaving = conn.item
 
@@ -206,7 +228,7 @@ class Intersection(Item):
         # the first minor sections are to the left.
         for conn in IntConnector.iterate_from(conn.succ):
             section = conn.item.head if conn.leaving else conn.item.tail
-            if Intersection.isMinorCategory(section):
+            if self.isMinorCategory(section):
                 self.insertLeftConnector(conn)
             else:
                 break # We found the next major section
@@ -216,7 +238,7 @@ class Intersection(Item):
         # Then, the minor sections to the right are collected
         for conn in IntConnector.iterate_from(conn.succ):
             section = conn.item.head if conn.leaving else conn.item.tail
-            if Intersection.isMinorCategory(section):
+            if self.isMinorCategory(section):
                 self.insertRightConnector(conn)
             else:
                 break # this is again the first major section

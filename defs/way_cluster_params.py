@@ -8,9 +8,9 @@ dbScanDist = 20.
 
 searchDist = {
         "motorway":      40., "motorway_link":  40., "trunk":      30., "trunk_link":    30., "primary":      30., "primary_link":  30.,
-        "secondary":     25., "secondary_link": 25., "tertiary":   20., "tertiary_link": 20., "unclassified": 20., "residential":   15., 
+        "secondary":     25., "secondary_link": 25., "tertiary":   20., "tertiary_link": 20., "unclassified": 25., "residential":   15., 
         "living_street": 15., "service":        15., "pedestrian":  5., "track":          5., "escape":       20., "raceway":       20.,        
-        "other_roadway": 20., "footway":         5., "path":        5., "cycleway":       5., "bridleway":     5., "rail":          15., 
+        "other_roadway": 20., "footway":        10., "path":        5., "cycleway":       5., "bridleway":     5., "rail":          15., 
         "subway":        10., "light_rail":     10., "tram":       20., "funicular":     10., "monorail":     10., "other_railway": 10.,
 }
 
