@@ -724,7 +724,12 @@ class BLOSM_OT_ControlOverlay(bpy.types.Operator):
     def drawLine(self, content, yPosition):
         fontId = 0
         blf.position(fontId, 15, yPosition, 0)
-        blf.size(fontId, 20)
+        
+        # calculate dpi from preferences
+        system = bpy.context.preferences.system
+        dpi = int(system.dpi * system.pixel_size)
+        
+        blf.size(fontId, 20, dpi)
         blf.draw(fontId, content)
     
     def setHeaderText(self, context):
