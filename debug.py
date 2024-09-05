@@ -38,10 +38,10 @@ def plotQualifiedNetwork(network,arrows=False,showIDs=False):
         width = 1 if isSmallestCategory(category) else 1.5 if isMinorCategory(category) else 2
         style = 'dotted' if isSmallestCategory(category) else '--' if isMinorCategory(category) else 'solid'
         if arrows:
-            polyline.plotWithArrows(color,width,0.5,style,False,950)
-            polyline.plot(color,width,style,False,950)
+            polyline.plotWithArrows(color,width,0.5,style,False,800)
+            polyline.plot(color,width,style,False,800)
         else:
-            polyline.plot(color,width,style,False,950)
+            polyline.plot(color,width,style,False,800)
 
         plt.plot(seg.s[0],seg.s[1],'k.')
         plt.plot(seg.t[0],seg.t[1],'k.')

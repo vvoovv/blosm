@@ -9,6 +9,7 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist
 
 from way.item import Intersection, Section, Street, SideLane, SymLane
+from way.item.bundle import Bundle, mergePseudoMinors, locationsInGroup, forwardOrder
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_properties import lanePattern
@@ -386,60 +387,143 @@ class StreetGenerator():
                             
     def createBundles(self):
         from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
+        colorIter = randomColor(19)
 
-        def centerlineOfStreet(street):
-            # Find the centerline of the whole street.
-            centerlineVerts = []
-            for item in street.iterItems():
-                if isinstance(item, Section):
-                    centerlineVerts.extend( item.centerline)
-
-            # Remove duplicates and create polyLine
-            centerlineVerts = list(dict.fromkeys(centerlineVerts))
-            centerline = PolyLine(centerlineVerts)
-            return centerline, centerlineVerts
-        
-        for indx,streets in enumerate(self.parallelStreets):
-            streetEnds = defaultdict(list)
-            innerIsects = dict()
+        def plotStreets(streets,doEnd=True):
             for street in streets:
-                streetEnds[street.src].append(street)
-                streetEnds[street.dst].append(street)
+                allVertices = []
+                color = next(colorIter)
+                for item in street.iterItems():
+                    if isinstance(item, Section):
+                        item.polyline.plotWithArrows(color,1,0.5,'solid',False,999)
+                        allVertices.extend(item.centerline)
+                if len(allVertices):
+                    c = sum(allVertices,Vector((0,0))) / len(allVertices)
+                    plt.text(c[0]+2,c[1]-2,'S '+str(street.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
 
-                if street.pred:
-                    innerIsects[street.src] = street.pred.intersection
+            streetsThatEndHere = defaultdict(list)  # The streets that end at the key location
+            intersectionOfThisEnd = dict()          # The intersection at the key location
+            for street in streets:
+                streetsThatEndHere[street.src].append(street)
+                streetsThatEndHere[street.dst].append(street)
+                intersectionOfThisEnd[street.src] = street.pred.intersection if street.pred else None
+                intersectionOfThisEnd[street.dst] = street.succ.intersection if street.succ else None
+
+            innerOrder = dict()     # number of leaving streets, that belong to the bundle
+            outerOrder = dict()     # number of leaving streets, that do not belong to the bundle
+            isectOrder = dict()
+            for location, intersection in intersectionOfThisEnd.items():
+                innerOrder[location] = len(streetsThatEndHere[location])
+                outerOrder[location] = sum(1 for connector in intersection if connector.item not in streets) if intersection else 0
+                isectOrder[location] = intersection.order if intersection else None
+
+                p = location
+                if innerOrder[location]==1:   # endpoint
+                    plt.plot(p[0],p[1],'rx',markersize=8,zorder=999)
+                elif innerOrder[location]==2 and outerOrder[location]==1: # major to minor and connect
+                    plt.plot(p[0],p[1],'bo',markersize=8,zorder=999)
+                elif outerOrder[location]==0: # inner intersection, split/merge
+                    plt.plot(p[0],p[1],'cs',markersize=8,zorder=999)
+                    plt.text(p[0],p[1]+2,str(isectOrder[location]),color='red',zorder=999)
+                    plt.text(p[0],p[1],' '+str(innerOrder[location]),color='red',zorder=999)
+                    plt.text(p[0],p[1],'     '+str(outerOrder[location]),color='blue',zorder=999)
                 else:
-                    innerIsects[street.src]  = None
-                if street.succ:
-                    innerIsects[street.dst] = street.succ.intersection
-                else:
-                    innerIsects[street.dst]  = None
+                    plt.plot(p[0],p[1],'mo',markersize=8,zorder=999)
+                    plt.text(p[0],p[1]+2,str(isectOrder[location]),color='red',zorder=999)
+                    plt.text(p[0],p[1],' '+str(innerOrder[location]),color='red',zorder=999)
+                    plt.text(p[0],p[1],'     '+str(outerOrder[location]),color='blue',zorder=999)
 
-                centerline,_ = centerlineOfStreet(street)
-                centerline.plotWithArrows('red',1,0.5,'solid',False,950)
+            if doEnd:
+                plotEnd()
 
-            for p, conns in streetEnds.items():
-                plt.plot(p[0],p[1],'go')
-                plt.text(p[0],p[1],' '+str(len(conns)),color='red')
+        for indxG,streetGroup in enumerate(self.parallelStreets):
 
-            for p, isect in innerIsects.items():
-                plt.plot(p[0],p[1],'go')
-                outgoingStreeets = 0
-                if isect:
-                    # plt.text(p[0],p[1],'         '+str(isect.id),color='m')
-                    for intsect in isect:
-                        if intsect.item not in streets:
-                            outgoingStreeets += 1
-                    plt.text(p[0],p[1],'     '+str(outgoingStreeets),color='blue')
-                else:
-                    plt.text(p[0],p[1],'     0',color='blue')
+            # see https://github.com/prochitecture/blosm/issues/104#issuecomment-2322836476
+            # Major intersections in bundles, with only one side street, are merged into a long street,
+            # similar to minor intersections.
+            streetEnds, intersections = locationsInGroup(streetGroup)
+            streetGroup = mergePseudoMinors(self, streetGroup, streetEnds, intersections)
 
+            # compute this again, because streetGroup may have been changed
+            streetEnds, intersections = locationsInGroup(streetGroup)
 
-            plotEnd()
+            # Check if intermediate intersections exist
+            hasIntermediates = any(len(end)>1 for end in streetEnds.values())
 
+            if hasIntermediates:
+                plotQualifiedNetwork(self.sectionNetwork)
+                plt.title(str(indxG))
+                plotStreets(streetGroup)
+            else:
+                # Try to find starts and ends of the streets relative to the bundle. This 
+                # 'forwardOrder' determines also the direction of the bundle. See this
+                # function in uitilities of Bundle.
+                head = []
+                tail = []
+                for street in streetGroup:
+                    fwd = forwardOrder(street.src,street.dst)
+                    h, t = (street.src, street.dst) if fwd else (street.dst, street.src)
+                    if len(streetEnds[h])==1:  
+                            head.append({'street':street, 'firstVert':h, 'lastVert':t})
+                    if len(streetEnds[t])==1:  
+                            tail.append({'street':street, 'firstVert':t, 'lastVert':h})
 
+                # The streets in head and tail have to be ordered from left to right.
+                # The vector of the first segment of an arbitrary street is turned 
+                # perpendicularly to the right and all points at this end of the bundle
+                # are projected onto this vector, delivering some kind of a line parameter t.
+                # The lines are then sorted by increasing values of this parameter, which
+                # orders them from left to right, seen in the direction of the bundle.
 
-        test=1
+                # Process head (start) of the bundle
+                arbStreet = head[0]['street']   # arbitrary street at the bundle's head
+                # forwardVector points from the head into the bundle.
+                fwd = forwardOrder(arbStreet.src,arbStreet.dst)
+                srcVec, dstVec = arbStreet.endVectors()
+                forwardVector = srcVec if fwd else dstVec
+                
+                # the origin of this vector
+                p0 = arbStreet.src if fwd else arbStreet.dst
+
+                # perp is perpendicular to the forwardVector, turned to the right
+                perp = Vector((forwardVector[1],-forwardVector[0])) 
+
+                # sort streets along perp from left to right
+                sortedIndices = sorted( (i for i in range(len(head))),  key=lambda i: ( head[i]['firstVert'] - p0).dot(perp) )
+
+                plotStreets(streetGroup, False)    
+                for k, indx in enumerate(sortedIndices):
+                    head[indx]['i'] = k
+                    item = head[indx]
+                    p = head[indx]['firstVert']
+                    plt.text(p[0],p[1],'  '+str(item['i']),fontsize=12)
+
+                # Process tail (end) of the bundle
+                # take an aribtrary street
+                arbStreet = tail[0]['street']   # arbitrary street at the bundle's tail
+
+                # forwardVector point from tail out of the bundle
+                fwd = forwardOrder(arbStreet.src,arbStreet.dst)
+                srcVec, dstVec = arbStreet.endVectors()
+                forwardVector = -dstVec if fwd else -srcVec
+                
+                # the origin of this vector
+                p0 = arbStreet.dst if fwd else arbStreet.src
+
+                # perp is perpendicular to forwardVector, turned to the right
+                perp = Vector((forwardVector[1],-forwardVector[0])) 
+
+                # sort streats along perp from left to right
+                sortedIndices = sorted( (i for i in range(len(head))),  key=lambda i: ( head[i]['lastVert'] - p0).dot(perp) )
+                                   
+                for k, indx in enumerate(sortedIndices):
+                    head[indx]['i'] = k
+                    item = head[indx]
+                    p = head[indx]['lastVert']
+                    plt.text(p[0],p[1],'  '+str(item['i']),fontsize=12)
+
+                plt.title(str(indxG))
+                plotEnd()
 
     def createSymSideLanes(self):
         nr = 0
@@ -485,15 +569,19 @@ class StreetGenerator():
             # when processIntersection() is called (which occurs at self.updateIntersections).
             # But the leaving ways structure of the intersections at the end of the new
             # Street needs to be updated.
-            predIsect = self.waymap.getNode(street.src)['object']
-            for way in predIsect.leaveWays:
-                if way.street.id in streetIds:
-                    way.street = street
+            node = self.waymap.getNode(street.src)
+            if node:
+                predIsect = node['object']
+                for way in predIsect.leaveWays:
+                    if way.street.id in streetIds:
+                        way.street = street
             
-            succIsect = self.waymap.getNode(street.dst)['object']
-            for way in succIsect.leaveWays:
-                if way.street.id in streetIds:
-                    way.street = street
+            node = self.waymap.getNode(street.dst)
+            if node:
+                succIsect = node['object']
+                for way in succIsect.leaveWays:
+                    if way.street.id in streetIds:
+                        way.street = street
 
             self.waymap.removeNode(location)
             street.style = self.styleStore.get( self.getStyle(street) )

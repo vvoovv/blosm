@@ -31,6 +31,7 @@ class Street(Item):
             self.tail = item
             item.pred = None
             item.succ = None
+            self.succ = item.succ
             return
 
         # If list is not empty 
@@ -38,6 +39,7 @@ class Street(Item):
         item.succ = None
         self.tail.succ = item
         self.tail = item
+        self.succ = item.succ
 
     def insertStreetEnd(self,newstreet):
         for item in newstreet.iterItems():
@@ -68,6 +70,7 @@ class Street(Item):
             self.tail = item
             item.pred = None
             item.succ = None
+            self.pred = item.pred
             return
 
         # If list is not empty 
@@ -75,6 +78,7 @@ class Street(Item):
         item.pred = None
         self.head.pred = item
         self.head = item
+        self.pred = item.pred
 
     def insertStreetFront(self,newstreet):
         for item in newstreet.iterItems():
@@ -117,6 +121,19 @@ class Street(Item):
         else:
             for item in self.iterItems():
                 item.setStyleBlockFromTop(style)
+
+    def length(self):
+        streetLength = 0
+        for item in self.iterItems():
+            if isinstance(item,Section):
+                streetLength += item.polyline.length()
+        return streetLength
+    
+    def endVectors(self):
+        # both point into the street
+        srcVec = self.head.centerline[1] - self.head.centerline[0]
+        dstVec = self.tail.centerline[-2] - self.tail.centerline[-1]
+        return srcVec, dstVec
     
     def getName(self):
         return self.head.getName()
