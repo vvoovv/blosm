@@ -187,6 +187,11 @@ class BaseManager:
         self.areaRadius = 0.5 * (self.areaVerts[6] - p0).length
         self.areaRadiusSquared = self.areaRadius * self.areaRadius
         self.areaRadiusDoubled = 2 * self.areaRadius
+        
+        self.areaMinLon = radians(minLon)
+        self.areaMinLat = radians(minLat)
+        self.areaMaxLon = radians(maxLon)
+        self.areaMaxLat = radians(maxLat)
     
     def getJsonFile(self, uri, path, cacheContent):
         if cacheContent:
@@ -257,6 +262,8 @@ class BaseManager:
             result = self.areaOverlapsWithBbox(boundingVolume["box"])
         elif "sphere" in boundingVolume:
             result = self.areaOverlapsWithSphere(boundingVolume["sphere"])
+        elif "region" in boundingVolume:
+            result = self.areaOverlapsWithRegion(boundingVolume["region"])
         
         return result
         
@@ -445,6 +452,17 @@ class BaseManager:
         # The first condition is for the intersection of surfaces of the sphere and the bounding box of the area of interest.
         # The second condition is for the case when the bounding box of the area of interest is entirely contained within the sphere.
         return dmin <= sphereRadiusSquared or dmax <= sphereRadiusSquared
+    
+    def areaOverlapsWithRegion(self, region):
+        regionMinLon, regionMinLat, regionMaxLon, regionMaxLat, _, _ = region
+        
+        # Two regions do NOT overlap if one of the following conditions is true:
+        # 1) One region is completely to the east of the other region
+        # 2) One region is completely to the north of the other region
+        
+        return not\
+            regionMinLon > self.areaMaxLon or self.areaMinLon > regionMaxLon or\
+            regionMinLat > self.areaMaxLat or self.areaMinLat > regionMaxLat
     
     def processError(self, e, uri):
         self.errors.append(
