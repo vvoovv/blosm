@@ -460,9 +460,10 @@ class BaseManager:
         # 1) One region is completely to the east of the other region
         # 2) One region is completely to the north of the other region
         
-        return not\
-            regionMinLon > self.areaMaxLon or self.areaMinLon > regionMaxLon or\
+        return not (
+            regionMinLon > self.areaMaxLon or self.areaMinLon > regionMaxLon or
             regionMinLat > self.areaMaxLat or self.areaMinLat > regionMaxLat
+        )
     
     def processError(self, e, uri):
         self.errors.append(
