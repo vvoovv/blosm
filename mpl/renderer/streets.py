@@ -1,6 +1,8 @@
 from mathutils import Vector
+import numpy as np
 from itertools import tee, islice, cycle
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 from . import Renderer
 from lib.CompGeom.BoolPolyOps import _isectSegSeg
 from lib.CompGeom.PolyLine import PolyLine
@@ -75,7 +77,7 @@ class StreetRenderer(Renderer):
                         continue
                     p = item.location
                     plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='green', markerfacecolor='none')
-                    plt.text(p[0],p[1],'M '+str(item.id),color='g',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+                    plt.text(p[0],p[1],'  M '+str(item.id),color='g',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
                     if self.debug:
                         for conn in Intersection.iterate_from(item.leftHead):
@@ -110,7 +112,15 @@ class StreetRenderer(Renderer):
             width = 8 if streetIsMinor else 10
             if len(allVertices):
                 c = sum(allVertices,Vector((0,0))) / len(allVertices)
-                plt.text(c[0]+2,c[1]-2,'S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
+                plt.text(c[0]+2,c[1]-2,' S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
+    
+        for bundle in manager.iterBundles():
+            vertices = bundle.headVerts
+            vertices.extend(bundle.tailVerts[::-1])
+            vertices = [(p[0],p[1]) for p in vertices]
+            polygon = Polygon(vertices, closed=True,alpha=0.2, facecolor='cyan')
+            plt.gca().add_patch(polygon)
+
 
 def plotPolygon(poly,vertsOrder,lineColor='k',fillColor='k',width=1.,fill=False,alpha = 0.2,order=100):
     x = [n[0] for n in poly] + [poly[0][0]]

@@ -1,8 +1,10 @@
 from collections import defaultdict
+from mathutils import Vector
 
 from .item import Item
 from way.item.street import Street
 from way.item.section import Section
+from way.item.intersection import Intersection
 from way.item.connectors import IntConnector
 
 
@@ -20,6 +22,9 @@ class Bundle(Item):
 
         self.streetsHead = []
         self.streetsTail = []
+
+        self.headVerts = []
+        self.tailVerts = []
 
     @property
     def pred(self):
@@ -39,7 +44,7 @@ class Bundle(Item):
 
 
 def makePseudoMinor(streetGenerator, intersection, arriving, leaving):
-    intersection.isMajor = False
+    intersection.isMinor = True
 
     # Find a leaving major street (by connector <conn>)
     for conn in IntConnector.iterate_from(intersection.startConnector):
@@ -88,17 +93,22 @@ def isHairpinBend(arriving, leaving):
 def locationsInGroup(streetGroup):
     streetEnds = defaultdict(list)  # Holds lists of streets at locations of their ends
     intersections = dict()                 # Holds intersection for locations
+    hairpins = dict()
     for street in streetGroup:
         streetEnds[street.src].append(street)
         streetEnds[street.dst].append(street)
         intersections[street.src] = street.pred.intersection if street.pred else None
         intersections[street.dst] = street.succ.intersection if street.succ else None
-    return streetEnds, intersections
+
+    for p, streets in streetEnds.items():
+        hairpins[p] = len(streets) == 2 and isHairpinBend(streets[0],streets[1])
+
+    return streetEnds, intersections, hairpins
 
 # see https://github.com/prochitecture/blosm/issues/104#issuecomment-2322836476
 # Major intersections the street group of a bundle, with only one side street,
 # are merged into a long street, similar to minor intersections.
-def mergePseudoMinors(streetGenerator, streetGroup, streetEnds, intersections):
+def mergePseudoMinors(streetGenerator, streetGroup):
 
     def mergableIntersections(street):
         # Look for major intersections that are at the ends of streets that can be merged.
@@ -133,6 +143,8 @@ def mergePseudoMinors(streetGenerator, streetGroup, streetEnds, intersections):
 
         exits = {'arrivingSrc': arrivingSrc, 'leavingSrc': leavingSrc, 'arrivingDst':arrivingDst, 'leavingDst':leavingDst }
         return srcIsect, dstIsect, exits
+    
+    streetEnds, intersections, _ = locationsInGroup(streetGroup)
 
     replacedStreets = set() # Streets that have been replaced by a longer street.
     modifiedIsects = set()  # Major intersections, that have been transformed to pseudo minor ones.
@@ -177,7 +189,6 @@ def mergePseudoMinors(streetGenerator, streetGroup, streetEnds, intersections):
                 if street.succ is not None:
                     if isinstance(street.succ,IntConnector):
                         street.succ.item = longStreet
-
 
             if srcIsectIni: # extend the street at its front
                 srcIsectIni.street = longStreet
@@ -224,3 +235,162 @@ def mergePseudoMinors(streetGenerator, streetGroup, streetEnds, intersections):
 
     return streetGroup
 
+
+def removeIntermediateSections(streetGroup):
+    streetEnds, intersections, hairpins = locationsInGroup(streetGroup)
+
+    # Check if intermediate intersections exist
+    hasIntermediates = any(len(end)>1 for end in streetEnds.values())
+
+    hadIntermediates = hasIntermediates
+    while hasIntermediates:
+        hasIntermediates = False
+        for p,streets in streetEnds.items():
+            if len(streets)==2 and not hairpins[p]:
+                smallestStreet = min(streets, key = lambda x: x.length())
+                if smallestStreet in streetGroup:
+                    streetGroup.remove(smallestStreet)
+                print(smallestStreet.id, 'removed')
+                streetEnds, intersections, hairpins = locationsInGroup(streetGroup)
+                hasIntermediates = any(len(end)>1 for end in streetEnds.values())
+                break
+
+    return streetGroup
+
+def orderHeadTail(streetGroup):
+    streetEnds, intersections, hairpins = locationsInGroup(streetGroup)
+
+    # Try to find starts and ends of the streets relative to the bundle. This 
+    # 'forwardOrder' determines also the direction of the bundle. See this
+    # function above.
+    head = []
+    tail = []
+    for street in streetGroup:
+        fwd = forwardOrder(street.src,street.dst)
+        h, t = (street.src, street.dst) if fwd else (street.dst, street.src)
+        if len(streetEnds[h])==1 or hairpins[h]:  
+                head.append({'street':street, 'firstVert':h, 'lastVert':t})
+        if len(streetEnds[t])==1 or hairpins[t]:  
+                tail.append({'street':street, 'firstVert':t, 'lastVert':h})
+
+    # The streets in head and tail have to be ordered from left to right.
+    # The vector of the first segment of an arbitrary street is turned 
+    # perpendicularly to the right and all points at this end of the bundle
+    # are projected onto this vector, delivering some kind of a line parameter t.
+    # The lines are then sorted by increasing values of this parameter, which
+    # orders them from left to right, seen in the direction of the bundle.
+
+    # Process head (start) of the future bundle
+    arbStreet = head[0]['street']   # arbitrary street at the bundle's head
+    # forwardVector points from the head into the bundle.
+    fwd = forwardOrder(arbStreet.src,arbStreet.dst)
+    srcVec, dstVec = arbStreet.endVectors()
+    forwardVector = srcVec if fwd else dstVec
+    
+    # the origin of this vector
+    p0 = arbStreet.src if fwd else arbStreet.dst
+
+    # perp is perpendicular to the forwardVector, turned to the right
+    perp = Vector((forwardVector[1],-forwardVector[0])) 
+
+    # sort streets along perp from left to right
+    sortedIndices = sorted( (i for i in range(len(head))),  key=lambda i: ( head[i]['firstVert'] - p0).dot(perp) )
+
+    for k, indx in enumerate(sortedIndices):
+        head[indx]['i'] = k
+
+    # Process tail (end) of the bundle
+    # take an aribtrary street
+    arbStreet = tail[0]['street']   # arbitrary street at the bundle's tail
+
+    # forwardVector point from tail out of the bundle
+    fwd = forwardOrder(arbStreet.src,arbStreet.dst)
+    srcVec, dstVec = arbStreet.endVectors()
+    forwardVector = -dstVec if fwd else -srcVec
+    
+    # the origin of this vector
+    p0 = arbStreet.dst if fwd else arbStreet.src
+
+    # perp is perpendicular to forwardVector, turned to the right
+    perp = Vector((forwardVector[1],-forwardVector[0])) 
+
+    # sort streats along perp from left to right
+    sortedIndices = sorted( (i for i in range(len(tail))),  key=lambda i: ( tail[i]['lastVert'] - p0).dot(perp) )
+                        
+    for k, indx in enumerate(sortedIndices):
+        tail[indx]['i'] = k
+
+    return head, tail
+
+def findInnerStreets(streetGroup,leftHandTraffic):
+    def innerNodes(street):
+        nodeIDs = set()
+        for item in street.iterItems():
+            if isinstance(item,Intersection):
+                nodeIDs.add(item.id)
+        return nodeIDs
+
+    def lastIsectSeenFrom(node, street):
+        if node.location == street.src:
+            return street.succ.intersection
+        else:
+            return street.pred.intersection
+        
+    # Find all intersections that lead to inner streets
+    innerIsects = dict()
+    for street in streetGroup:
+            for item in street.iterItems():
+                if isinstance(item,Intersection):
+                        if not item.isMinor:
+                            print('!!!!!!')
+                        # Inner streets leave to the left if lefthand traffic, else to the right
+                        iterator = Intersection.iterate_from(item.leftHead) if leftHandTraffic else \
+                                   Intersection.iterate_from(item.rightHead)
+                        for intConn in iterator:
+                            innerIsects[intConn.intersection] = intConn.item
+
+    from debug import plt, plotEnd
+    for intersection, street in innerIsects.items():
+        p = intersection.location
+        plt.plot(p[0],p[1],'co',markersize=8)
+        # for item in street.iterItems():
+        #     if isinstance(item, Section):
+        #         item.polyline.plot('c',2,'solid',False,999)
+
+    innerStreets = set()
+    bundleIsects = set()
+    for intersection, innerStreet in innerIsects.items():
+        innerStreets.add(innerStreet)
+        # Maybe this inner street has inner (minr) intersections
+        # bundleIsects.union( innerNodes(innerStreet) )
+        lastIsect = lastIsectSeenFrom(intConn.intersection,innerStreet)
+        if lastIsect not in innerIsects:
+            bundleIsects.add(lastIsect)
+
+    for intersection in bundleIsects:
+        p = intersection.location
+        plt.plot(p[0],p[1],'mo',markersize=8,zorder=800)
+
+
+
+    additionalStreets = set()
+    for item in bundleIsects:
+        if item.isMinor:
+            for intConn in Intersection.iterate_from(item.leftHead):
+                if intConn.item not in innerStreets:
+                    innerStreets.add(intConn.item)
+                    additionalStreets.add(intConn.item)
+            for intConn in Intersection.iterate_from(item.rightHead):
+                if intConn.item not in innerStreets:
+                    innerStreets.add(intConn.item)
+                    additionalStreets.add(intConn.item)
+            if item.street not in innerStreets:
+                innerStreets.add(item.street)
+                additionalStreets.add(item.arriving)
+        else:
+            for intConn in item:
+                if intConn.item not in innerStreets:
+                    innerStreets.add(intConn.item)
+                    additionalStreets.add(intConn.item)
+
+    return innerStreets
