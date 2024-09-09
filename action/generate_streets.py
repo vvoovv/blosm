@@ -6,7 +6,7 @@ import re
 from app import AppType
 
 from defs.road_polygons import ExcludedWayTags
-from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist
+from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist, dbScanDist
 
 from way.item import Intersection, Section, Street, SideLane, SymLane
 from way.item.bundle import Bundle, mergePseudoMinors, removeIntermediateSections, orderHeadTail, findInnerStreets
@@ -21,6 +21,7 @@ from lib.CompGeom.algorithms import SCClipper
 from lib.CompGeom.GraphBasedAlgos import DisjointSets
 from lib.CompGeom.PolyLine import PolyLine
 from lib.CompGeom.LinePolygonClipper import LinePolygonClipper
+from lib.CompGeom.dbscan import dbClusterScan
 
 
 # helper functions -----------------------------------------------
@@ -77,8 +78,9 @@ class StreetGenerator():
         self.createSymSideLanes()
         self.updateIntersections()
         self.createStreets()
-        # self.createParallelStreets()
-        # self.createBundles()
+        self.createParallelStreets()
+        self.createBundles()
+        # self.createBundleIntersections()
 
     def findSelfIntersections(self):
         uniqueSegments = defaultdict(set)
@@ -228,7 +230,8 @@ class StreetGenerator():
             intersection.update(inStreets, outStreets)
 
     def createParallelStreets(self):
-        from debug import plt, plotPureNetwork, randomColor, plotEnd
+        doDebug = False and self.app.type == AppType.commandLine
+
         def categoryOfStreet(street):
             for item in street.iterItems():
                 if isinstance(item, Section):
@@ -347,7 +350,7 @@ class StreetGenerator():
 
         # DEBUG: Show clusters of parallel way-sections.
         # The plotting functions for this debug part are at the end of this module
-        if self.app.type == AppType.commandLine:
+        if doDebug:
             from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
 
             inBundles = False
@@ -517,6 +520,113 @@ class StreetGenerator():
             for street in innerStreets:
                 street.bundle = bundle
 
+    def createBundleIntersections(self):
+        doDebug = False and self.app.type == AppType.commandLine
+
+        if doDebug:
+            from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
+
+            def plotStreet(street,arrows=False):
+                for item in street.iterItems():
+                    if isinstance(item, Section):
+                        if arrows:
+                            item.polyline.plotWithArrows('blue',3,0.5,'solid',False,950)
+                        else:
+                            item.polyline.plot('blue',3,'solid',False,950)
+
+        def streetVerts(street):
+            verts = []
+            for item in street.iterItems():
+                if isinstance(item, Section):
+                    verts.extend(item.centerline)
+            return verts
+
+
+        def markBundles():
+            for id, bundle in self.bundles.items():
+                verts = []
+                for street in bundle.streetsHead:
+                    verts.extend(streetVerts(street))
+                for street in bundle.streetsTail:
+                    verts.extend(streetVerts(street))
+                c = sum(verts,Vector((0,0)))/len(verts)
+                if doDebug:
+                    plt.text(c[0],c[1],str(id),fontsize=12,color='red')
+
+        # Find all ends of streets of all  bundles and cluster them to groups, 
+        # that are potential intersections.
+        endPoints = []
+        for id, bundle in self.bundles.items():
+            for end in bundle.headVerts:
+                endPoints.append( (end,{'type':'head', 'bundle':bundle}) )
+            for end in bundle.tailVerts:
+                endPoints.append( (end,{'type':'tail', 'bundle':bundle}) )
+        isectCandidates = dbClusterScan(endPoints, dbScanDist, 2)
+        # <dbClusterScan> searches for endpoints, that are close together.
+        # <isectCandidates> is a list of potential intersection candidates. 
+        # These candidates are lists of dictionaries, that hold the location of the
+        # streets end, the street's end type ('head' or 'tail'), the street instance
+        # itself and the bundle, they belong to.
+
+        # If one street end of a bundle is a candidate, all the ends on this side
+        # of the bundle become also candidates.
+        for m,candidates in enumerate(isectCandidates):
+            involvedEnds = defaultdict(list)
+            for _,candidate in candidates:
+                involvedEnds[candidate['bundle']].append(candidate['type'])
+
+            nrOfInvolvedBundles = len(involvedEnds)
+            involvedBundles = set( b.id for b,_ in involvedEnds.items())
+            involvedBundleEnds = []
+            for _,end in involvedEnds.items():
+                involvedBundleEnds.extend(end)
+            print(nrOfInvolvedBundles, involvedBundles, involvedBundleEnds, m)
+
+            if doDebug:
+                if len(involvedEnds)==1:
+                    for k,(bundle,ends) in enumerate(involvedEnds.items()):
+                        if 'head' in ends:
+                            for p in bundle.headVerts:
+                                plt.plot(p[0],p[1],'bo',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                        if 'tail' in ends:
+                            for p in bundle.tailVerts:
+                                plt.plot(p[0],p[1],'bo',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                if len(involvedEnds)==2:
+                    for k,(bundle,ends) in enumerate(involvedEnds.items()):
+                        if 'head' in ends:
+                            for p in bundle.headVerts:
+                                plt.plot(p[0],p[1],'ro',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                        if 'tail' in ends:
+                            for p in bundle.tailVerts:
+                                plt.plot(p[0],p[1],'ro',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                if len(involvedEnds)>2:
+                    for k,(bundle,ends) in enumerate(involvedEnds.items()):
+                        if 'head' in ends:
+                            for p in bundle.headVerts:
+                                plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                        if 'tail' in ends:
+                            for p in bundle.tailVerts:
+                                plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+
+        if doDebug:
+            markBundles()
+            plotQualifiedNetwork(self.sectionNetwork)
+            plotEnd()
+        test=1
+
+
+
+        test = 1
+
+
+
+
 
 
     def createSymSideLanes(self):
@@ -607,5 +717,27 @@ class StreetGenerator():
     def createStreets(self):
         for street in self.wayManager.iterStreetsFromWaymap():
             self.streets[street.id] = street
+
+        doDebug = False and self.app.type == AppType.commandLine
+
+        if doDebug:
+            from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
+
+            def plotStreet(street,color, arrows=False):
+                for item in street.iterItems():
+                    if isinstance(item, Section):
+                        width = 6 if item.id==398 else 3
+                        if arrows:
+                            item.polyline.plotWithArrows(color,width,0.5,'solid',False,950)
+                        else:
+                            item.polyline.plot(color,width,'solid',False,950)
+
+            plotStreet(self.streets[564],'red')
+            p = self.streets[564].dst
+            # plotStreet(self.streets[510],'blue')
+            plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
+            plotQualifiedNetwork(self.sectionNetwork)
+            plotEnd()
+
 
  

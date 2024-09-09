@@ -332,9 +332,15 @@ def findInnerStreets(streetGroup,leftHandTraffic):
 
     def lastIsectSeenFrom(node, street):
         if node.location == street.src:
-            return street.succ.intersection
+            if street.succ:
+                return street.succ.intersection
+            else:
+                return None
         else:
-            return street.pred.intersection
+            if street.pred:
+                return street.pred.intersection
+            else:
+                return None
         
     # Find all intersections that lead to inner streets
     innerIsects = dict()
@@ -349,10 +355,10 @@ def findInnerStreets(streetGroup,leftHandTraffic):
                         for intConn in iterator:
                             innerIsects[intConn.intersection] = intConn.item
 
-    from debug import plt, plotEnd
-    for intersection, street in innerIsects.items():
-        p = intersection.location
-        plt.plot(p[0],p[1],'co',markersize=8)
+    # from debug import plt, plotEnd
+    # for intersection, street in innerIsects.items():
+    #     p = intersection.location
+    #     plt.plot(p[0],p[1],'co',markersize=8)
         # for item in street.iterItems():
         #     if isinstance(item, Section):
         #         item.polyline.plot('c',2,'solid',False,999)
@@ -361,15 +367,15 @@ def findInnerStreets(streetGroup,leftHandTraffic):
     bundleIsects = set()
     for intersection, innerStreet in innerIsects.items():
         innerStreets.add(innerStreet)
-        # Maybe this inner street has inner (minr) intersections
+        # Maybe this inner street has inner (minor) intersections
         # bundleIsects.union( innerNodes(innerStreet) )
         lastIsect = lastIsectSeenFrom(intConn.intersection,innerStreet)
-        if lastIsect not in innerIsects:
+        if lastIsect and lastIsect not in innerIsects:
             bundleIsects.add(lastIsect)
 
-    for intersection in bundleIsects:
-        p = intersection.location
-        plt.plot(p[0],p[1],'mo',markersize=8,zorder=800)
+    # for intersection in bundleIsects:
+    #     p = intersection.location
+    #     plt.plot(p[0],p[1],'mo',markersize=8,zorder=800)
 
 
 
