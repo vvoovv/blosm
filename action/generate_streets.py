@@ -749,13 +749,13 @@ class StreetGenerator():
                 srcIsect = node['object']
                 for way in srcIsect.leaveWays:
                     if way.street.id in streetIDs:
-                        way.street = street
+                        way.street = longStreet
             node = self.waymap.getNode(longStreet.dst)
             if node:
                 dstIsect = node['object']
                 for way in dstIsect.leaveWays:
                     if way.street.id in streetIDs:
-                        way.street = street
+                        way.street = longStreet
 
         for node in nodesToRemove:
             self.waymap.removeNode(node.location)
