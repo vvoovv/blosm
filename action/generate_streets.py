@@ -625,72 +625,145 @@ class StreetGenerator():
         test = 1
 
 
-
-
-
-
     def createSymSideLanes(self):
-        nr = 0
-        toReplace = []
-        for location, intersection in self.waymap.iterNodes(Intersection):
-            if intersection.order == 2:
-                section0 = intersection.leaveWays[0].section
-                section1 = intersection.leaveWays[1].section
-                streetIds = (intersection.leaveWays[0].street.id, intersection.leaveWays[1].street.id)
-                incoming, outgoing = (section0, section1) if section0.dst == section1.src else (section1, section0)
-                hasTurns = bool( re.search(r'[^N]', outgoing.lanePatterns[0] ) )
-                if hasTurns:    # it's a side lane
-                    sideLane = SideLane(location, incoming, outgoing)
-                    street = Street(incoming.src, outgoing.dst)
-                    street.pred = incoming.pred
-                    street.insertEnd(incoming)
-                    street.insertEnd(sideLane)
-                    street.insertEnd(outgoing)
-                    section0.street = street
-                    sideLane.street = street
-                    section1.street = street
-                    toReplace.append( (location, street, streetIds) )
-                    self.transitionSideLanes.append(sideLane)
-                else:   # it's a sym lane
-                    # the above definition does not hold for SymLanes
-                    incoming, outgoing = (section0, section1) if section0.dst == section1.src else (section1, section0)
-                    symLane = SymLane(location, incoming, outgoing)
+        def findSymSideIsects(street):
+            srcIsectObj = self.waymap.getNode(street.src)
+            if srcIsectObj and isinstance(srcIsectObj['object'], Intersection):
+                srcIsect = srcIsectObj['object']
+                if srcIsect:
+                    if srcIsect.order==2:
+                        street0 = srcIsect.leaveWays[0].section.street
+                        street1 = srcIsect.leaveWays[1].section.street
+                        arriving, leaving = (street0, street1) if street0.dst == street1.src else (street1, street0)
+                        # Check directions
+                        if arriving.dst == srcIsect.location and leaving.src == srcIsect.location:
+                            hasTurns = bool( re.search(r'[^N]', leaving.head.lanePatterns[0] ) )
+                            srcIsect = {'isect':srcIsect, 'arriving':arriving, 'leaving':leaving, 'hasTurns':hasTurns}
+                        else:
+                            srcIsect = None
+                    else:
+                        srcIsect = None
+            else:
+                srcIsect = None
 
-                    street = Street(incoming.src, outgoing.dst)
-                    street.pred = incoming.pred
-                    street.insertEnd(incoming)
-                    street.insertEnd(symLane)
-                    street.insertEnd(outgoing)
-                    section0.street = street
-                    symLane.street = street
-                    section1.street = street
-                    toReplace.append( (location, street, streetIds) )
-                    self.transitionSymLanes.append(symLane)
-            nr += 1
+            dstIsectObj = self.waymap.getNode(street.dst)
+            if dstIsectObj and isinstance(dstIsectObj['object'], Intersection):
+                dstIsect = dstIsectObj['object']
+                if dstIsect:
+                    if dstIsect.order==2:
+                        street0 = dstIsect.leaveWays[0].section.street
+                        street1 = dstIsect.leaveWays[1].section.street
+                        arriving, leaving = (street0, street1) if street0.dst == street1.src else (street1, street0)
+                        # Check directions
+                        if arriving.dst == dstIsect.location and leaving.src == dstIsect.location:
+                            hasTurns = bool( re.search(r'[^N]', leaving.head.lanePatterns[0] ) )
+                            dstIsect = {'isect':dstIsect, 'arriving':arriving, 'leaving':leaving, 'hasTurns':hasTurns}
+                        else:
+                            dstIsect = None
+                    else:
+                        dstIsect = None
+            else:
+                dstIsect = None
 
-        for location, street, streetIds in toReplace:
-            # At this stage, intersections do not yet have connectors. They will get them 
-            # when processIntersection() is called (which occurs at self.updateIntersections).
-            # But the leaving ways structure of the intersections at the end of the new
-            # Street needs to be updated.
-            node = self.waymap.getNode(street.src)
+            return srcIsect, dstIsect
+
+        processedStreets = set()
+        nodesToRemove = []
+        longStreets = []
+        for _, _, _, street in self.waymap.edges(data='object',keys=True):
+            if street in processedStreets:
+                continue
+
+            srcIsectInit, dstIsectInit = findSymSideIsects(street)
+            hasSymSide = srcIsectInit or dstIsectInit
+
+            if hasSymSide:
+                longStreet = Street(street.src,street.dst)
+                longStreet.insertStreetEnd(street)
+                processedStreets.add(street)
+                longStreet.pred = street.pred
+
+                if srcIsectInit: # # SymSide intersection at the at the front of this street
+                    if srcIsectInit['hasTurns']:
+                        newLane = SideLane(srcIsectInit['isect'].location, srcIsectInit['arriving'].head, srcIsectInit['leaving'].head)
+                    else:
+                        newLane = SymLane(srcIsectInit['isect'].location, srcIsectInit['arriving'].head, srcIsectInit['leaving'].head)
+                    newLane.street = longStreet
+                    longStreet.insertFront(newLane)   # insert new lane object
+                    nodesToRemove.append(srcIsectInit['isect'])
+                    srcIsectCurr = srcIsectInit
+                    while True: # Continue, if there are more SymSide intersections
+                        prevStreet = srcIsectCurr['arriving']
+                        if prevStreet in processedStreets:
+                            break
+                        longStreet.insertStreetFront(prevStreet)
+                        processedStreets.add(prevStreet)
+                        srcIsectCurr, _ = findSymSideIsects(prevStreet)
+                        if not srcIsectCurr:
+                            break
+                        if srcIsectCurr['hasTurns']:
+                            newLane = SideLane(srcIsectCurr['isect'].location, srcIsectCurr['arriving'].head, srcIsectCurr['leaving'].head)
+                        else:
+                            newLane = SymLane(srcIsectCurr['isect'].location, srcIsectCurr['arriving'].head, srcIsectCurr['leaving'].head)
+                        newLane.street = longStreet
+                        longStreet.insertFront(newLane)   # insert minor intersection object
+                        nodesToRemove.append(srcIsectInit['isect'])
+
+                if dstIsectInit: # # SymSide intersection at the at the end of this street
+                    if dstIsectInit['hasTurns']:
+                        newLane = SideLane(dstIsectInit['isect'].location, dstIsectInit['arriving'].head, dstIsectInit['leaving'].head)
+                    else:
+                        newLane = SymLane(dstIsectInit['isect'].location, dstIsectInit['arriving'].head, dstIsectInit['leaving'].head)
+                    newLane.street = longStreet
+                    longStreet.insertEnd(newLane)   # insert new lane object
+                    nodesToRemove.append(dstIsectInit['isect'])
+                    dstIsectCurr = dstIsectInit
+                    while True: # Continue, if there are more SymSide intersections
+                        nextStreet = dstIsectCurr['leaving']
+                        if nextStreet in processedStreets:
+                            break
+                        longStreet.insertStreetEnd(nextStreet)
+                        processedStreets.add(nextStreet)
+
+                        dstIsectCurr, _ = findSymSideIsects(nextStreet)
+                        if not dstIsectCurr:
+                            break
+                        if dstIsectCurr['hasTurns']:
+                            newLane = SideLane(dstIsectCurr['isect'].location, dstIsectCurr['arriving'].head, dstIsectCurr['leaving'].head)
+                        else:
+                            newLane = SymLane(dstIsectCurr['isect'].location, dstIsectCurr['arriving'].head, dstIsectCurr['leaving'].head)
+                        newLane.street = longStreet
+                        longStreet.insertEnd(newLane)   # insert minor intersection object
+                        nodesToRemove.append(dstIsectInit['isect'])
+
+                longStreets.append(longStreet)
+
+        # At this stage, intersections do not yet have connectors. They will get them 
+        # when processIntersection() is called (which occurs at self.updateIntersections).
+        # But the leaving ways structure of the intersections at the end of the new
+        # long Street needs to be updated.
+        streetIDs = [s.id for s in processedStreets]
+        for longStreet in longStreets:
+            print('longStreet ',longStreet.id)
+            longStreet.print()
+            node = self.waymap.getNode(longStreet.src)
             if node:
-                predIsect = node['object']
-                for way in predIsect.leaveWays:
-                    if way.street.id in streetIds:
+                srcIsect = node['object']
+                for way in srcIsect.leaveWays:
+                    if way.street.id in streetIDs:
                         way.street = street
-            
-            node = self.waymap.getNode(street.dst)
+            node = self.waymap.getNode(longStreet.dst)
             if node:
-                succIsect = node['object']
-                for way in succIsect.leaveWays:
-                    if way.street.id in streetIds:
+                dstIsect = node['object']
+                for way in dstIsect.leaveWays:
+                    if way.street.id in streetIDs:
                         way.street = street
 
-            self.waymap.removeNode(location)
-            street.style = self.styleStore.get( self.getStyle(street) )
-            street.setStyleBlockFromTop(street.style)
-            self.waymap.addEdge(street)
+        for node in nodesToRemove:
+            self.waymap.removeNode(node.location)
+
+        for longStreet in longStreets:
+            self.waymap.addEdge(longStreet)
 
     def updateIntersections(self):
         # At this stage, it is assumed, that SideLanes, SymLanes are already built

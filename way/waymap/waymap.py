@@ -43,10 +43,11 @@ class WayMap(nx.MultiDiGraph):
         self.add_node(location, object = newNode)
 
     # Remove a street node and all adjacent edges. Attempting to 
-    # remove a nonexistent node will raise an exception.
+    # remove a nonexistent node will just return.
     def removeNode(self, location):
         location.freeze()
-        self.remove_node(location)
+        if self.has_node(location):
+            self.remove_node(location)
 
     # Iterate over street nodes, optionaly of a given type
     def iterNodes(self,nodeType=None):
