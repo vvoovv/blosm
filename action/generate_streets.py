@@ -744,8 +744,6 @@ class StreetGenerator():
         # long Street needs to be updated.
         streetIDs = [s.id for s in processedStreets]
         for longStreet in longStreets:
-            print('longStreet ',longStreet.id)
-            longStreet.print()
             node = self.waymap.getNode(longStreet.src)
             if node:
                 srcIsect = node['object']
