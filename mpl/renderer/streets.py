@@ -30,15 +30,15 @@ class StreetRenderer(Renderer):
         def isMinorCategory(section):
             return  section.category in  ['footway', 'cycleway','service']
         
-        for id,isect in manager.majorIntersections.items():
-            p = isect.location
+        for location,isect in manager.majorIntersections.items():
+            p = location
             plt.plot(p[0],p[1],'ro',markersize=5,zorder=999,markeredgecolor='red', markerfacecolor='orange')
-            plt.text(p[0],p[1],' '+str(id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+            plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
 
-        for id,isect in manager.minorIntersections.items():
-            p = isect.location
-            plt.text(p[0],p[1],'  '+str(id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
+        for location,isect in manager.minorIntersections.items():
+            p = location
             plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='cyan', markerfacecolor='cyan')
+            plt.text(p[0],p[1],'  '+str(isect.id),color='c',fontsize=6,zorder=130,ha='left', va='top', clip_on=True)
             # if isect.isMinor and len(isect.minorCategories)==2:
             #     plt.plot(p[0],p[1],'co',markersize=12)
 
@@ -68,8 +68,8 @@ class StreetRenderer(Renderer):
                         width = 1 if isSmallestCategory(section) else 1.5 if isMinorCategory(section) else 2
                         style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
                         section.polyline.plotWithArrows(color,width,0.5,style,False,950)
-                        # p = section.src
-                        # plt.text(p[0],p[1]+1,' s'+str(section.id),fontsize=10,color='red')
+                        p = section.src
+                        plt.text(p[0],p[1]+1,' s'+str(section.id),fontsize=10,color='red')
                         if isMinorCategory(section):
                             streetIsMinor = True
 
@@ -117,8 +117,8 @@ class StreetRenderer(Renderer):
                 plt.text(c[0]+2,c[1]-2,' S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
     
         for bundle in manager.iterBundles():
-            vertices = bundle.headVerts
-            vertices.extend(bundle.tailVerts[::-1])
+            vertices = bundle.headLocs
+            vertices.extend(bundle.tailLocs[::-1])
             vertices = [(p[0],p[1]) for p in vertices]
             polygon = Polygon(vertices, closed=True,alpha=0.2, facecolor='cyan')
             plt.gca().add_patch(polygon)
