@@ -49,6 +49,9 @@ class Bundle(Item):
 
 def makePseudoMinor(streetGenerator, intersection, arriving, leaving):
     intersection.isMinor = True
+    if intersection.location in streetGenerator.minorIntersections:
+        del streetGenerator.majorIntersections[intersection.location]
+    streetGenerator.minorIntersections[intersection.location] = intersection
 
     # Find a leaving major street (by connector <conn>)
     for conn in IntConnector.iterate_from(intersection.startConnector):
@@ -118,7 +121,7 @@ def mergePseudoMinors(streetGenerator, streetGroup):
         # Look for major intersections that are at the ends of streets that can be merged.
         # The conditions are:
         #   - Only 2 streets of the bundle candidate end here.
-        #   - Only one extrernal street allowed (intersection order must be 3).
+        #   - Only one external street allowed (intersection order must be 3).
         #   - The streets of the bundle candidate must not build a hairpin bend.
         arrivingSrc = None
         leavingSrc = None
@@ -432,6 +435,121 @@ def canBeMerged(streetGenerator, involvedBundles):
     b = leaving.head.polyline[1]
     checkLeft = (b[0] - a[0])*(c[1] - a[1]) - (b[1] - a[1])*(c[0] - a[0]) > 0.
 
+    # if a in streetGenerator.majorIntersections:
+    intersection = streetGenerator.majorIntersections[a]
+    # elif a in streetGenerator.minorIntersections:
+    #     intersection = streetGenerator.minorIntersections[a]
+
+    initialStreet, followStreet = (leaving, arriving) if checkLeft else (arriving, leaving)
+
+    # Find the initial street
+    for conn in IntConnector.iterate_from(intersection.startConnector):
+        if conn.item == initialStreet:
+            break
+
+    # The circular list of connectors of this intersection is
+    # ordered counter-clockwise. When we start with the initial street,
+    # all the streets, that are not the followStreet street, inner streets.
+    isMergable = True
+    for conn in IntConnector.iterate_from(conn.succ):
+        if conn.item == followStreet:
+            break
+        isMergable = False
+        break
+
+    return isMergable
+
+def mergeBundles(streetGenerator,involvedBundles):
+    # data for bundle 0 from left to right, relative to bundle
+    bundleList = list(involvedBundles.items())
+    (_, streetData0), (_, streetData1) = bundleList
+
+    # Find the end-points of both sides of the bundle 0. 
+    end0left = streetData0[0]['end']
+    street0 = streetData0[0]['street']
+    intersection0 = streetGenerator.majorIntersections[end0left]
+
+    # Find the street of bundle 1, that meets at the left endpoint of bundle 0
+    street1 = next(filter(lambda x: x['end']==end0left,streetData1))['street']
+    # determine the succession of these streets through both bundles
+    arriving0, leaving0 = (street0,street1) if street0.dst == street1.src else (street1,street0)
+
+    end0right = streetData0[-1]['end']
+    street0 = streetData0[-1]['street']
+    intersection1 = streetGenerator.majorIntersections[end0right]
+
+    # Find the street of bundle 1, that meets at the right endpoint of bundle 0
+    street1 = next(filter(lambda x: x['end']==end0right,streetData1))['street']
+    # determine the succession of these streets through both bundles
+    arriving1, leaving1 = (street0,street1) if street0.dst == street1.src else (street1,street0)
+
+
+    # merge these adajacent streets by pseudo minors
+    mergedStreets = []
+
+    longStreet = Street(arriving0.src,arriving0.dst)
+    longStreet.insertStreetEnd(arriving0)
+    longStreet.pred = arriving0.pred
+    makePseudoMinor(streetGenerator, intersection0, arriving0, leaving0)
+    longStreet.insertEnd(intersection0)
+    longStreet.insertStreetEnd(leaving0)
+    mergedStreets.append(longStreet)
+
+    longStreet = Street(arriving1.src,arriving1.dst)
+    longStreet.insertStreetEnd(arriving1)
+    longStreet.pred = arriving1.pred
+    makePseudoMinor(streetGenerator, intersection1, arriving1, leaving1)
+    longStreet.insertEnd(intersection1)
+    longStreet.insertStreetEnd(leaving1)
+    mergedStreets.append(longStreet)
+
+    head, tail = orderHeadTail(mergedStreets)
+
+    mergedBundle = Bundle()
+    for item in head:
+        street = item['street']
+        street.bundle = mergedBundle
+        mergedBundle.streetsHead.append(street)
+        mergedBundle.headLocs.append(item['firstVert'])
+    for item in tail:
+        street = item['street']
+        street.bundle = mergedBundle
+        mergedBundle.streetsTail.append(street)
+        mergedBundle.tailLocs.append(item['firstVert'])
+
+    streetGenerator.bundles[mergedBundle.id] = mergedBundle
+
+    # remove old bundles
+    for bundle,_ in involvedBundles.items():
+        del streetGenerator.bundles[bundle.id]
+
+
+def makeIntersectionByTwo(streetGenerator,involvedBundles):
+    # When two bundles meet, they can be merged, if there are
+    # no inner streets between them at the intersection area.
+    bundleList = list(involvedBundles.items())
+    (_, streetData0), (_, streetData1) = bundleList
+
+    # Find the end-points of both streets (see below) and the street
+    # at the left border of bundle 0.
+    a = streetData0[0]['end']
+    c = streetData0[-1]['end']
+    street0 = streetData0[0]['street']
+    # Find the street of bundle 1, that meets the same endpoint.
+    street1 = next(filter(lambda x: x['end']==a,streetData1))['street']
+    # determine the succession of these streets through both bundles
+    arriving, leaving = (street0,street1) if street0.dst == street1.src else (street1,street0)
+
+    # Check, if the inner streets would be on the left or the right of street0.
+    #
+    #     checkLeft: True                             checkLeft: False
+    #  ============c============  street1          ============a===b========> street0
+    #  bundle0     |     bundle1             or    bundle0     |      bundle1 
+    #  ============a===b========> street0          ============c============  street1
+
+    b = leaving.head.polyline[1]
+    checkLeft = (b[0] - a[0])*(c[1] - a[1]) - (b[1] - a[1])*(c[0] - a[0]) > 0.
+
     intersection = streetGenerator.majorIntersections[a]
     initialStreet, followStreet = (leaving, arriving) if checkLeft else (arriving, leaving)
 
@@ -443,12 +561,15 @@ def canBeMerged(streetGenerator, involvedBundles):
     # The circular list of connectors of this intersection is
     # ordered counter-clockwise. When we start with the initial street,
     # all the streets, that are not the followStreet street, inner streets.
-    isMergable = False
     for conn in IntConnector.iterate_from(conn.succ):
-        if conn.item == followStreet:
+        if conn.item != followStreet:
             break
-        isMergable = True
-        break
-
-    return isMergable
-
+    
+    # We need to follow and remove the crossway until we are at
+    # the other end of the bundle
+    crossWay = conn.item
+    nextEnd = crossWay.dst if conn.leaving else crossWay.src
+    if nextEnd == streetData0[-1]['end']:
+        del streetGenerator.streets[crossWay.id]
+    else:
+        print('multiple cross streets')

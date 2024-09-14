@@ -9,7 +9,8 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist, dbScanDist
 
 from way.item import Intersection, Section, Street, SideLane, SymLane
-from way.item.bundle import Bundle, mergePseudoMinors, removeIntermediateSections, orderHeadTail, findInnerStreets, canBeMerged
+from way.item.bundle import Bundle, mergePseudoMinors, removeIntermediateSections, orderHeadTail, \
+                                    findInnerStreets, canBeMerged, mergeBundles, makeIntersectionByTwo
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_properties import lanePattern
@@ -81,7 +82,7 @@ class StreetGenerator():
         # self.circularStreets()
         self.createParallelStreets()
         self.createBundles()
-        # self.createBundleIntersections()
+        self.createBundleIntersections()
 
     def findSelfIntersections(self):
         uniqueSegments = defaultdict(set)
@@ -273,7 +274,7 @@ class StreetGenerator():
 
 
     def createParallelStreets(self):
-        doDebug = False and self.app.type == AppType.commandLine
+        doDebug = True and self.app.type == AppType.commandLine
 
         def categoryOfStreet(street):
             for item in street.iterItems():
@@ -554,28 +555,35 @@ class StreetGenerator():
                 street.bundle = bundle
                 bundle.streetsHead.append(street)
                 bundle.headLocs.append(item['firstVert'])
+                if street.id in self.streets:
+                    del self.streets[street.id]
             for item in tail:
                 street = item['street']
                 street.bundle = bundle
                 bundle.streetsTail.append(street)
                 bundle.tailLocs.append(item['firstVert'])
+                if street.id in self.streets:
+                    del self.streets[street.id]
             self.bundles[bundle.id] = bundle
             for street in innerStreets:
                 street.bundle = bundle
 
     def createBundleIntersections(self):
-        doDebug = False and self.app.type == AppType.commandLine
+        doDebug = True and self.app.type == AppType.commandLine
+        detailDebug = False and self.app.type == AppType.commandLine
+        if detailDebug:
+             from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
 
-        if doDebug:
+        if doDebug or detailDebug:
             from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
 
-            def plotStreet(street,arrows=False):
-                for item in street.iterItems():
-                    if isinstance(item, Section):
-                        if arrows:
-                            item.polyline.plotWithArrows('blue',3,0.5,'solid',False,950)
-                        else:
-                            item.polyline.plot('blue',3,'solid',False,950)
+            # def plotStreet(street,arrows=False):
+            #     for item in street.iterItems():
+            #         if isinstance(item, Section):
+            #             if arrows:
+            #                 item.polyline.plotWithArrows('blue',3,0.5,'solid',False,950)
+            #             else:
+            #                 item.polyline.plot('blue',3,'solid',False,950)
 
             def streetVerts(street):
                 verts = []
@@ -596,6 +604,8 @@ class StreetGenerator():
                     if doDebug:
                         plt.text(c[0],c[1],str(bundle.id),fontsize=12,color='red')
 
+        toBeMerged = []
+        toBeIntersected = []
         # Find all ends of streets of all bundles and cluster them to groups, 
         # that are potential intersections.
         endPoints = []
@@ -611,30 +621,6 @@ class StreetGenerator():
         # streets end, the street's end type ('head' or 'tail'), the street instance
         # itself and the bundle, they belong to.
 
-        # colors = ['red','green','blue','orange','magenta','cyan']
-        # plotQualifiedNetwork(self.sectionNetwork)
-        # markBundles()
-        # for m,candidates in enumerate(isectCandidates):
-        #     involvedEnds = defaultdict(list)
-        #     c = []
-        #     for p,candidate in candidates:
-        #         c.append(p)
-        #         plt.plot(p[0],p[1],colors[m%6],marker='o',markersize=12,alpha=1.0)
-        #         involvedEnds[candidate['bundle']].append(candidate['type'])
-        #     cm = sum(c,Vector((0,0)))/len(c)
-        #     nrOfInvolvedBundles = len(involvedEnds)
-        #     involvedBundles = set( b.id for b,_ in involvedEnds.items())
-        #     involvedBundleEnds = []
-        #     for _,end in involvedEnds.items():
-        #         involvedBundleEnds.extend(end)
-        #     plt.text(cm[0],cm[1],'   '+str(nrOfInvolvedBundles)+'/'+str(involvedBundles)+'/'+str(involvedBundleEnds))
-        #     print([(b.id, e) for b,e in involvedEnds.items()])
-        #     print(nrOfInvolvedBundles, involvedBundles, involvedBundleEnds, m)
-        # plotEnd()
-
-
-        # If one street end of a bundle is a candidate, all the ends on this side
-        # of the bundle become also candidates.
         for m,candidates in enumerate(isectCandidates):
             involvedBundles = defaultdict(list)
             for _,cand in candidates:
@@ -646,66 +632,125 @@ class StreetGenerator():
             involvedBundleTypes = []
             for _,data in involvedBundles.items():
                 involvedBundleTypes.extend( [d['type'] for d in data] )
-            print(nrOfBundles, involvedBundleIDs, involvedBundleTypes, m)
+            # print(nrOfBundles, involvedBundleIDs, involvedBundleTypes, m)
 
             if nrOfBundles==1:
                 # These are ends of bundles, do nothing
-                for k,(bundle,data) in enumerate(involvedBundles.items()):
-                    if 'head' == data[0]['type']:
-                        for p in bundle.headLocs:
-                            plt.plot(p[0],p[1],'bo',markersize=12,alpha=0.4)
-                            plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
-                    if 'tail' == data[0]['type']:
-                        for p in bundle.tailLocs:
-                            plt.plot(p[0],p[1],'bo',markersize=12,alpha=0.4)
-                            plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                if doDebug:
+                    from lib.CompGeom.algorithms import circumCircle
+                    ends = set()
+                    for bundle,data in involvedBundles.items():
+                        ends = ends.union( set(item['end'] for item in data) )
+                    center,radius = circumCircle(list(ends))
+                    circle = plt.Circle(center, radius*1.1, color='orange', alpha=0.6)
+                    plt.gca().add_patch(circle)
+
+                if detailDebug:
+                    for k,(bundle,data) in enumerate(involvedBundles.items()):
+                        if 'head' == data[0]['type']:
+                            for p in bundle.headLocs:
+                                plt.plot(p[0],p[1],'bo',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                        if 'tail' == data[0]['type']:
+                            for p in bundle.tailLocs:
+                                plt.plot(p[0],p[1],'bo',markersize=12,alpha=0.4)
+                                plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
 
             if nrOfBundles==2:
                 # These are bundles, that touch each other. If there is no street
                 # to the inner side, they can be merged using pseudo minors.
                 # Else, an intersection needs to be created. 
                 if len(candidates) == 2:
-                    p = candidates[0][0]
-                    plt.plot(p[0],p[1],'ms',markersize=12,alpha=0.4)
-                    p = candidates[1][0]
-                    plt.plot(p[0],p[1],'ms',markersize=12,alpha=0.4)
+                    if detailDebug:
+                        p = candidates[0][0]
+                        plt.plot(p[0],p[1],'ms',markersize=12,alpha=0.4)
+                        p = candidates[1][0]
+                        plt.plot(p[0],p[1],'ms',markersize=12,alpha=0.4)
                     continue
 
-                hasCrossWay = canBeMerged(self, involvedBundles)
+                if canBeMerged(self, involvedBundles):
+                    toBeMerged.append(involvedBundles)
+                else:
+                    toBeIntersected.append(involvedBundles)
+                    if doDebug:
+                        from lib.CompGeom.algorithms import circumCircle
+                        ends = set()
+                        for bundle,data in involvedBundles.items():
+                            ends = ends.union( set(item['end'] for item in data) )
+                        center,radius = circumCircle(list(ends))
+                        circle = plt.Circle(center, radius*1.1, color='g', alpha=0.6)
+                        plt.gca().add_patch(circle)
 
-                if hasCrossWay:
-                    color = 'red'
-                    marker = 'o'
-                else: 
-                    # we merge these bundles by pseiûdo minors
-                    color = 'orange'
-                    marker = 'X'
-                for k,(bundle,ends) in enumerate(involvedBundles.items()):
-                    if 'head' == ends[0]['type']:
-                        for p in bundle.headLocs:
-                            plt.plot(p[0],p[1],color, marker=marker,markersize=12,alpha=0.4)
-                            plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
-                    if 'tail' == ends[0]['type']:
-                        for p in bundle.tailLocs:
-                            plt.plot(p[0],p[1],color, marker=marker,markersize=12,alpha=0.4)
-                            plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                # if canBeMerged(self, involvedBundles):
+                #     color = 'orange'
+                #     marker = 'X'
+                # else: 
+                #     color = 'red'
+                #     marker = 'o'
+                #     # we merge these bundles by pseudo minors
+                # for k,(bundle,ends) in enumerate(involvedBundles.items()):
+                #     if 'head' == ends[0]['type']:
+                #         for p in bundle.headLocs:
+                #             plt.plot(p[0],p[1],color, marker=marker,markersize=12,alpha=0.4)
+                #             plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                #     if 'tail' == ends[0]['type']:
+                #         for p in bundle.tailLocs:
+                #             plt.plot(p[0],p[1],color, marker=marker,markersize=12,alpha=0.4)
+                #             plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
  
  
             if nrOfBundles>2:
-                for k,(bundle,ends) in enumerate(involvedBundles.items()):
-                    if 'head' == ends[0]['type']:
-                        for p in bundle.headLocs:
-                            plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
-                            plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
-                    if 'tail' == ends[0]['type']:
-                        for p in bundle.tailLocs:
-                            plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
-                            plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                ends = set()
+                for bundle,data in involvedBundles.items():
+                    types = set(item['type'] for item in data)
+                    if len(types)>1:
+                        for street in bundle.streetsHead:
+                            if street.id in self.streets:
+                                del self.streets[street.id]
+                        for street in bundle.streetsTail:
+                            if street.id in self.streets:
+                                del self.streets[street.id]
+                        if bundle.id in self.bundles:
+                            del self.bundles[bundle.id]
+                    else:
+                        ends = ends.union( set(item['end'] for item in data) )
+                pass
 
-        if doDebug:
-                markBundles()
-                plotQualifiedNetwork(self.sectionNetwork)
-                plotEnd()
+                if doDebug:
+                    from lib.CompGeom.algorithms import circumCircle
+                    center,radius = circumCircle(list(ends))
+                    circle = plt.Circle(center, radius*1.1, color='g', alpha=0.6)
+                    plt.gca().add_patch(circle)
+                # for k,(bundle,ends) in enumerate(involvedBundles.items()):
+                #     if 'head' == ends[0]['type']:
+                #         for p in bundle.headLocs:
+                #             plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
+                #             plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+                #     if 'tail' == ends[0]['type']:
+                #         for p in bundle.tailLocs:
+                #             plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
+                #             plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
+
+        for involvedBundles in toBeMerged:
+            mergeBundles(self,involvedBundles)
+
+        for involvedBundles in toBeIntersected:
+            makeIntersectionByTwo(self, involvedBundles)
+
+        if detailDebug:
+            plotQualifiedNetwork(self.sectionNetwork)
+            markBundles()
+
+            for id,bundle in self.bundles.items():
+                for street in bundle.streetsHead:
+                    for item in street.iterItems():
+                        if isinstance(item,Section):
+                            section = item
+                            if section.valid:
+                                section.polyline.plotWithArrows('green',2,0.5,'solid',False,950)
+
+            plotQualifiedNetwork(self.sectionNetwork)
+            plotEnd()
 
 
 
