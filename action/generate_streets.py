@@ -1,5 +1,5 @@
 from collections import defaultdict
-from itertools import tee
+from itertools import tee, islice, cycle
 from mathutils import Vector
 import re
 
@@ -8,9 +8,9 @@ from app import AppType
 from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist, dbScanDist
 
-from way.item import Intersection, Section, Street, SideLane, SymLane
+from way.item import Intersection, IntConnector, Section, Street, SideLane, SymLane
 from way.item.bundle import Bundle, mergePseudoMinors, removeIntermediateSections, orderHeadTail, \
-                                    findInnerStreets, canBeMerged, mergeBundles, makeIntersectionByTwo
+                                    findInnerStreets, canBeMerged, mergeBundles, intersectBundles
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_properties import lanePattern
@@ -38,6 +38,10 @@ def isEdgy(polyline):
         if abs(v1.cross(v2)) > 0.6:
             return True
     return False
+
+def _pseudoangle(d):
+    p = d[0]/(abs(d[0])+abs(d[1])) # -1 .. 1 increasing with x
+    return 3 + p if d[1] < 0 else 1 - p 
 # ----------------------------------------------------------------
 
 
@@ -82,6 +86,7 @@ class StreetGenerator():
         # self.circularStreets()
         self.createParallelStreets()
         self.createBundles()
+        self.mergeBundles()
         self.createBundleIntersections()
 
     def findSelfIntersections(self):
@@ -549,6 +554,7 @@ class StreetGenerator():
                 plt.title(str(indxG))
                 plotEnd()
 
+            # ToDo: street.pred, street.succ ??
             bundle = Bundle()
             for item in head:
                 street = item['street']
@@ -567,6 +573,34 @@ class StreetGenerator():
             self.bundles[bundle.id] = bundle
             for street in innerStreets:
                 street.bundle = bundle
+
+    def mergeBundles(self):
+        # Find all ends of streets of all bundles and cluster them to groups, 
+        # that are potential intersections.
+        endPoints = []
+        for id, bundle in self.bundles.items():
+            for end, street in zip(bundle.headLocs,bundle.streetsHead):
+                endPoints.append( (end,{'end':end, 'type':'head', 'street':street, 'bundle':bundle}) )
+            for end, street in zip(bundle.tailLocs,bundle.streetsTail):
+                endPoints.append( (end,{'end':end, 'type':'tail', 'street':street, 'bundle':bundle}) )
+        isectCandidates = dbClusterScan(endPoints, dbScanDist, 2)
+
+        toBeMerged = []
+        for candidates in isectCandidates:
+            involvedBundles = defaultdict(list)
+            for _,cand in candidates:
+                data = {'end':cand['end'], 'type':cand['type'], 'street':cand['street'], 'bundle':cand['bundle']}
+                involvedBundles[cand['bundle']].append(data)
+
+            if len(involvedBundles) == 2:
+                if len(candidates) == 2:
+                    continue
+                if canBeMerged(self, involvedBundles):
+                    toBeMerged.append(involvedBundles)
+
+        for involvedBundles in toBeMerged:
+            mergedIDs, newId = mergeBundles(self,involvedBundles)
+
 
     def createBundleIntersections(self):
         doDebug = True and self.app.type == AppType.commandLine
@@ -604,10 +638,8 @@ class StreetGenerator():
                     if doDebug:
                         plt.text(c[0],c[1],str(bundle.id),fontsize=12,color='red')
 
-        toBeMerged = []
         toBeIntersected = []
-        # Find all ends of streets of all bundles and cluster them to groups, 
-        # that are potential intersections.
+
         endPoints = []
         for id, bundle in self.bundles.items():
             for end, street in zip(bundle.headLocs,bundle.streetsHead):
@@ -615,13 +647,12 @@ class StreetGenerator():
             for end, street in zip(bundle.tailLocs,bundle.streetsTail):
                 endPoints.append( (end,{'end':end, 'type':'tail', 'street':street, 'bundle':bundle}) )
         isectCandidates = dbClusterScan(endPoints, dbScanDist, 2)
-        # <dbClusterScan> searches for endpoints, that are close together.
+
         # <isectCandidates> is a list of potential intersection candidates. 
         # These candidates are lists of dictionaries, that hold the location of the
         # streets end, the street's end type ('head' or 'tail'), the street instance
         # itself and the bundle, they belong to.
-
-        for m,candidates in enumerate(isectCandidates):
+        for candidates in isectCandidates:
             involvedBundles = defaultdict(list)
             for _,cand in candidates:
                 data = {'end':cand['end'], 'type':cand['type'], 'street':cand['street'], 'bundle':cand['bundle']}
@@ -668,18 +699,15 @@ class StreetGenerator():
                         plt.plot(p[0],p[1],'ms',markersize=12,alpha=0.4)
                     continue
 
-                if canBeMerged(self, involvedBundles):
-                    toBeMerged.append(involvedBundles)
-                else:
-                    toBeIntersected.append(involvedBundles)
-                    if doDebug:
-                        from lib.CompGeom.algorithms import circumCircle
-                        ends = set()
-                        for bundle,data in involvedBundles.items():
-                            ends = ends.union( set(item['end'] for item in data) )
-                        center,radius = circumCircle(list(ends))
-                        circle = plt.Circle(center, radius*1.1, color='g', alpha=0.6)
-                        plt.gca().add_patch(circle)
+                toBeIntersected.append(involvedBundles)
+                if doDebug:
+                    from lib.CompGeom.algorithms import circumCircle
+                    ends = set()
+                    for bundle,data in involvedBundles.items():
+                        ends = ends.union( set(item['end'] for item in data) )
+                    center,radius = circumCircle(list(ends))
+                    circle = plt.Circle(center, radius*1.1, color='g', alpha=0.6)
+                    plt.gca().add_patch(circle)
 
                 # if canBeMerged(self, involvedBundles):
                 #     color = 'orange'
@@ -700,24 +728,17 @@ class StreetGenerator():
  
  
             if nrOfBundles>2:
-                ends = set()
-                for bundle,data in involvedBundles.items():
-                    types = set(item['type'] for item in data)
-                    if len(types)>1:
-                        for street in bundle.streetsHead:
-                            if street.id in self.streets:
-                                del self.streets[street.id]
-                        for street in bundle.streetsTail:
-                            if street.id in self.streets:
-                                del self.streets[street.id]
-                        if bundle.id in self.bundles:
-                            del self.bundles[bundle.id]
-                    else:
-                        ends = ends.union( set(item['end'] for item in data) )
-                pass
+                toBeIntersected.append(involvedBundles)
 
                 if doDebug:
                     from lib.CompGeom.algorithms import circumCircle
+
+                    ends = set()
+                    for bundle,data in involvedBundles.items():
+                        types = set(item['type'] for item in data)
+                        if len(types)<2:    
+                            ends = ends.union( set(item['end'] for item in data) )
+
                     center,radius = circumCircle(list(ends))
                     circle = plt.Circle(center, radius*1.1, color='g', alpha=0.6)
                     plt.gca().add_patch(circle)
@@ -731,11 +752,8 @@ class StreetGenerator():
                 #             plt.plot(p[0],p[1],'co',markersize=12,alpha=0.4)
                 #             plt.text(p[0],p[1],'   '+str(bundle.id)+'/'+str(k))
 
-        for involvedBundles in toBeMerged:
-            mergeBundles(self,involvedBundles)
-
         for involvedBundles in toBeIntersected:
-            makeIntersectionByTwo(self, involvedBundles)
+            intersectBundles(self, involvedBundles)
 
         if detailDebug:
             plotQualifiedNetwork(self.sectionNetwork)

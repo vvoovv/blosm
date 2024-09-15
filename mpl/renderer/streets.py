@@ -6,7 +6,7 @@ from matplotlib.patches import Polygon
 from . import Renderer
 from lib.CompGeom.BoolPolyOps import _isectSegSeg
 from lib.CompGeom.PolyLine import PolyLine
-from way.item import IntConnector, Intersection, Section, SideLane, SymLane
+from way.item import Street, Bundle, Intersection, Section, SideLane, SymLane
 
 def cyclePair(iterable):
     # iterable -> (p0,p1), (p1,p2), (p2, p3), ..., (pn, p0)
@@ -55,86 +55,96 @@ class StreetRenderer(Renderer):
         # return
 
         for street in manager.iterStreets():
-            allVertices = []
-            streetIsMinor = False
-            for item in street.iterItems():
-
-                if isinstance(item,Section):
-                    section = item
-                    allVertices.extend(section.centerline)
-                    if section.valid:
-                        color = 'gray' if isSmallestCategory(section) else 'b' if isMinorCategory(section) else 'r'
-                        width = 0.6 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 1.2
-                        style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
-                        section.polyline.plotWithArrows(color,width,0.5,style,False,950)
-                        if self.debug:
-                            p = section.src
-                            plt.text(p[0],p[1]+1,' s'+str(section.id),fontsize=10,color='red')
-
-                if isinstance(item,Intersection):
-                    if not item.isMinor:
-                        print('Must be minor when in Street!!!! street.id', street.id,' item.id ',item.id)
-                        continue
-                    p = item.location
-                    plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='green', markerfacecolor='none')
-                    if self.debug:
-                        plt.text(p[0],p[1],'  M '+str(item.id),color='g',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
-
-                    if self.debug:
-                        for conn in Intersection.iterate_from(item.leftHead):
-                            line = conn.item.head.polyline if conn.leaving else conn.item.tail.polyline
-                            vec = line[1]-line[0] if conn.leaving else line[-2]-line[-1]
-                            vec = vec/vec.length
-                            p0 = line[0] if conn.leaving else line[-1]
-                            p1 = p0 +3*vec
-                            plt.plot([p0[0],p1[0]], [p0[1],p1[1]], 'g')
-                            if self.debug:
-                                plt.text(p1[0]+2,p1[1]-2,'C '+str(conn.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
-                        for conn in Intersection.iterate_from(item.rightHead):
-                            line = conn.item.head.polyline if conn.leaving else conn.item.tail.polyline
-                            vec = line[1]-line[0] if conn.leaving else line[-2]-line[-1]
-                            vec = vec/vec.length
-                            p0 = line[0] if conn.leaving else line[-1]
-                            p1 = p0 +3*vec
-                            plt.plot([p0[0],p1[0]], [p0[1],p1[1]], 'r')
-                            if self.debug:
-                                plt.text(p1[0]+2,p1[1]-2,'C '+str(conn.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
-
-                if isinstance(item,SideLane):
-                    p = item.location
-                    plt.plot(p[0],p[1],'rs',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
-                    if self.debug:
-                        plt.text(p[0]+2,p[1]-2,'Side '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
-
-                if isinstance(item,SymLane):
-                    p = item.location
-                    plt.plot(p[0],p[1],'rP',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
-                    if self.debug:
-                        plt.text(p[0]+2,p[1]-2,'Sym '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
-
-
-            color = 'cornflowerblue' if streetIsMinor else 'crimson'
-            width = 8 if streetIsMinor else 10
-            if len(allVertices):
-                c = sum(allVertices,Vector((0,0))) / len(allVertices)
+            if isinstance(street,Street):
+                allVertices = []
                 if self.debug:
-                    plt.text(c[0]+2,c[1]-2,' S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
-    
-        for i,bundle in enumerate(manager.iterBundles()):
-            processed = set()
-            vertices = []
-            for street in bundle.streetsHead:
+                    color = 'gray' if isSmallestCategory(street.head) else 'b' if isMinorCategory(street.head) else 'r'
+                    fontsize = 6 if isSmallestCategory(street.head) else 8 if isMinorCategory(street.head) else 10
+                    p = street.src
+                    plt.text(p[0],p[1],'   S'+str(street.id),fontsize=fontsize,color=color)
                 for item in street.iterItems():
+
                     if isinstance(item,Section):
                         section = item
+                        allVertices.extend(section.centerline)
                         if section.valid:
-                            color = 'gray' if isSmallestCategory(section) else 'g' if isMinorCategory(section) else 'g'
-                            width = 1 if isSmallestCategory(section) else 1.1 if isMinorCategory(section) else 1.5
+                            color = 'gray' if isSmallestCategory(section) else 'b' if isMinorCategory(section) else 'r'
+                            width = 0.6 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 1.2
                             style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
                             section.polyline.plotWithArrows(color,width,0.5,style,False,950)
-                            vertices.extend(section.centerline)
-            c = sum(vertices,Vector((0,0)))/len(vertices)
-            plt.text(c[0],c[1],str(i),fontsize=18,color='red',ha='center', va='center')
+                            # if self.debug:
+                            #     p = section.src
+                            #     plt.text(p[0],p[1]+1,' s'+str(section.id),fontsize=10,color='red')
+
+                    if isinstance(item,Intersection):
+                        if not item.isMinor:
+                            print('Must be minor when in Street!!!! street.id', street.id,' item.id ',item.id)
+                            continue
+                        p = item.location
+                        plt.plot(p[0],p[1],'cv',markersize=5,zorder=999,markeredgecolor='green', markerfacecolor='none')
+                        if self.debug:
+                            plt.text(p[0],p[1],'  M '+str(item.id),color='g',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+
+                        if False:#self.debug:
+                            for conn in Intersection.iterate_from(item.leftHead):
+                                line = conn.item.head.polyline if conn.leaving else conn.item.tail.polyline
+                                vec = line[1]-line[0] if conn.leaving else line[-2]-line[-1]
+                                vec = vec/vec.length
+                                p0 = line[0] if conn.leaving else line[-1]
+                                p1 = p0 +3*vec
+                                plt.plot([p0[0],p1[0]], [p0[1],p1[1]], 'g')
+                                if self.debug:
+                                    plt.text(p1[0]+2,p1[1]-2,'C '+str(conn.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
+                            for conn in Intersection.iterate_from(item.rightHead):
+                                line = conn.item.head.polyline if conn.leaving else conn.item.tail.polyline
+                                vec = line[1]-line[0] if conn.leaving else line[-2]-line[-1]
+                                vec = vec/vec.length
+                                p0 = line[0] if conn.leaving else line[-1]
+                                p1 = p0 +3*vec
+                                plt.plot([p0[0],p1[0]], [p0[1],p1[1]], 'r')
+                                if self.debug:
+                                    plt.text(p1[0]+2,p1[1]-2,'C '+str(conn.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
+
+                    if isinstance(item,SideLane):
+                        p = item.location
+                        plt.plot(p[0],p[1],'rs',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                        if self.debug:
+                            plt.text(p[0]+2,p[1]-2,'Side '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
+
+                    if isinstance(item,SymLane):
+                        p = item.location
+                        plt.plot(p[0],p[1],'rP',markersize=6,zorder=999,markeredgecolor='green', markerfacecolor='cyan')
+                        if self.debug:
+                            plt.text(p[0]+2,p[1]-2,'Sym '+str(item.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
+
+
+                # color = 'crimson'
+                # width =  10
+                # if len(allVertices):
+                #     c = sum(allVertices,Vector((0,0))) / len(allVertices)
+                #     if self.debug:
+                #         plt.text(c[0]+2,c[1]-2,' S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
+
+            elif isinstance(street,Bundle):
+                bundle = street
+                vertices = []
+                for street in bundle.streetsHead:
+                    p = street.head.polyline[1]
+                    plt.text(p[0],p[1]+1.5,'   S'+str(street.id),fontsize=10,color='green',ha='right', va='bottom')
+                    for item in street.iterItems():
+                        if isinstance(item,Section):
+                            section = item
+                            if section.valid:
+                                color = 'gray' if isSmallestCategory(section) else 'g' if isMinorCategory(section) else 'g'
+                                width = 1 if isSmallestCategory(section) else 1.1 if isMinorCategory(section) else 1.5
+                                style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
+                                section.polyline.plotWithArrows(color,width,0.5,style,False,950)
+                                vertices.extend(section.centerline)
+                c = sum(vertices,Vector((0,0)))/len(vertices)
+                plt.text(c[0],c[1],str(bundle.id),fontsize=18,color='red',ha='center', va='center')
+            
+            else:
+                print('Unknown object: ', type(street))
 
 
 
