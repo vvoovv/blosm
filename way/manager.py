@@ -102,10 +102,10 @@ class WayManager:
         return RailwayManager(self)
     
     def iterStreets(self):
-        return self.streets.values()
-
-    def iterBundles(self):
-        return self.bundles.values()
+        for street in self.streets.values():
+            yield street
+        for bundle in self.bundles.values():
+            yield bundle
 
     def iterStreetsFromWaymap(self):
         def findMinorNodes(street):

@@ -68,6 +68,7 @@ class Intersection(Item):
         # Attributes for minor intersection
         self.minorCategories = None
         self.isMinor = False
+        self.connectsBundles = False
 
         self.leftHead = None
         self.leftTail = None
