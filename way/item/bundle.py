@@ -471,10 +471,11 @@ def canBeMerged(streetGenerator, involvedBundles):
     return isMergable
 
 def mergeBundles(streetGenerator,involvedBundles):
+    # TODO: bundle attribute of inner streets
+
     # data for bundle 0 from left to right, relative to bundle
     bundleList = list(involvedBundles.items())
     (bundle0, streetData0), (bundle1, streetData1) = bundleList
-    mergedIDs = (bundle0.id,bundle1.id)
 
     # Find the end-points of both sides of the bundle 0. 
     end0left = streetData0[0]['end']
@@ -501,27 +502,31 @@ def mergeBundles(streetGenerator,involvedBundles):
     longStreet = Street(arriving0.src,arriving0.dst)
     longStreet.insertStreetEnd(arriving0)
     longStreet.pred = arriving0.pred
-    longStreet.pred.item = longStreet
+    if longStreet.pred:
+        longStreet.pred.item = longStreet
     makePseudoMinor(streetGenerator, intersection0, arriving0, leaving0)
     longStreet.insertEnd(intersection0)
     longStreet.insertStreetEnd(leaving0)
-    longStreet.succ.item = longStreet
+    if longStreet.succ:
+        longStreet.succ.item = longStreet
     mergedStreets.append(longStreet)
 
     longStreet = Street(arriving1.src,arriving1.dst)
     longStreet.insertStreetEnd(arriving1)
     longStreet.pred = arriving1.pred
-    longStreet.pred.item = longStreet
+    if longStreet.pred:
+        longStreet.pred.item = longStreet
     makePseudoMinor(streetGenerator, intersection1, arriving1, leaving1)
     longStreet.insertEnd(intersection1)
     longStreet.insertStreetEnd(leaving1)
+    if longStreet.succ:
+        longStreet.succ.item = longStreet
     longStreet.succ.item = longStreet
     mergedStreets.append(longStreet)
 
     head, tail = orderHeadTail(mergedStreets)
 
     mergedBundle = Bundle()
-    newId = mergedBundle.id
     for item in head:
         street = item['street']
         street.bundle = mergedBundle
@@ -539,8 +544,6 @@ def mergeBundles(streetGenerator,involvedBundles):
     for bundle,_ in involvedBundles.items():
         del streetGenerator.bundles[bundle.id]
 
-    return mergedIDs, newId
-
 def intersectBundles(streetGenerator,involvedBundles):
     if len(involvedBundles) == 2:
         twoBundleIntersection(streetGenerator,involvedBundles)
@@ -550,11 +553,10 @@ def intersectBundles(streetGenerator,involvedBundles):
 def twoBundleIntersection(streetGenerator,involvedBundles):
     bundleStreets = set()
     ends = set()
-    for bundle,data in involvedBundles.items():
-        print(bundle.id)
+    for _,data in involvedBundles.items():
         bundleStreets = bundleStreets.union( set(item['street'] for item in data) )
         ends = ends.union( set(item['end'] for item in data) )
-    print(' ')
+
     # find streets, that do not belong to the bundle
     externalStreets = set()
     for end in ends:
@@ -566,7 +568,7 @@ def twoBundleIntersection(streetGenerator,involvedBundles):
     # Now, we have to find, which external streets are between the
     # outer borders of the bundles. These must be removed.
     bundleList = list(involvedBundles.items())
-    (_, data0), (_, data1) = bundleList
+    (bundle0, data0), (bundle1, data1) = bundleList
 
     # Find the border streets and their end points for the first bundle.
     type = data0[0]['type']
@@ -594,66 +596,95 @@ def twoBundleIntersection(streetGenerator,involvedBundles):
     c = rightEnd
     d = rightFirst
     epsilon = 1.e-5
+    streetsLeftOfBundle = []
+    streetsRightOfBundle = []
     for street in externalStreets:
         o = street.src if street.dst in ends else street.dst
         o_isRightOfLeft = (b[0] - a[0])*(o[1] - a[1]) - (b[1] - a[1])*(o[0] - a[0]) <=  epsilon
         o_isLeftOfRight = (d[0] - c[0])*(o[1] - c[1]) - (d[1] - c[1])*(o[0] - c[0]) >= -epsilon
         insideBundle = o_isRightOfLeft and o_isLeftOfRight
-        if insideBundle:
+        # print( o_isRightOfLeft, o_isLeftOfRight)
+        # from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
+        # plt.close()
+        # plt.plot([a[0],b[0]],[a[1],b[1]],'g',linewidth=4,zorder=950)
+        # plt.plot([c[0],d[0]],[c[1],d[1]],'r',linewidth=4,zorder=950)
+        # plt.plot(a[0],a[1],'go',zorder=950)
+        # plt.plot(c[0],c[1],'ro',zorder=950)
+        # plt.plot(o[0],o[1],'kX',markersize=12,zorder=950)
+        # plotEnd()
+        if o_isRightOfLeft and o_isLeftOfRight:
+            # The street is inside the bundle, remove it
             del streetGenerator.streets[street.id]
+        elif o_isLeftOfRight:
+            # The street is left of the bundle
+            streetsLeftOfBundle.append(street)
+        elif o_isRightOfLeft:
+            # The street is right of the bundle
+            streetsRightOfBundle.append(street)
 
-def twoBundleIntersectionOld(streetGenerator,involvedBundles):
-    # When two bundles meet, they can be merged, if there are
-    # no inner streets between them at the intersection area.
-    bundleList = list(involvedBundles.items())
-    (_, streetData0), (_, streetData1) = bundleList
+    # Now, we are able to construct the intersection
+    location = sum(ends,Vector((0,0)))/len(ends)
+    intersection = Intersection(location)
+    intersection.connectsBundles = True
 
-    # Find the end-points of both streets (see below) and the street
-    # at the left border of bundle 0.
-    a = streetData0[0]['end']
-    c = streetData0[-1]['end']
-    street0 = streetData0[0]['street']
-    # Find the street of bundle 1, that meets the same endpoint.
-    street1 = next(filter(lambda x: x['end']==a,streetData1))['street']
-    # determine the succession of these streets through both bundles
-    arriving, leaving = (street0,street1) if street0.dst == street1.src else (street1,street0)
-
-    # Check, if the inner streets would be on the left or the right of street0.
-    #
-    #     checkLeft: True                             checkLeft: False
-    #  ============c============  street1          ============a===b========> street0
-    #  bundle0     |     bundle1             or    bundle0     |      bundle1 
-    #  ============a===b========> street0          ============c============  street1
-
-    b = leaving.head.polyline[1]
-    checkLeft = (b[0] - a[0])*(c[1] - a[1]) - (b[1] - a[1])*(c[0] - a[0]) > 0.
-
-    intersection = streetGenerator.majorIntersections[a]
-    initialStreet, followStreet = (leaving, arriving) if checkLeft else (arriving, leaving)
-
-    # Find the initial street
-    for conn in IntConnector.iterate_from(intersection.startConnector):
-        if conn.item == initialStreet:
-            break
-
-    # The circular list of connectors of this intersection is
-    # ordered counter-clockwise. When we start with the initial street,
-    # all the streets, that are not the followStreet street, inner streets.
-    for conn in IntConnector.iterate_from(conn.succ):
-        if conn.item != followStreet:
-            break
-    
-    # We need to follow and remove the crossway until we are at
-    # the other end of the bundle
-    crossWay = conn.item
-    # ToDo: Works currently only for one single street between the
-    # bundle ends. May be complicated, if there are intersections
-    # along this way.
-    nextEnd = crossWay.dst if conn.leaving else crossWay.src
-    if nextEnd == streetData0[-1]['end']:
-        del streetGenerator.streets[crossWay.id]
+    # The bundle0 makes the start "upwards"
+    connector = IntConnector(intersection)
+    connector.item = bundle0
+    connector.leaving = type=='head'
+    if connector.leaving:
+        bundle0.pred = connector
     else:
-        print('multiple cross streets')
+        bundle0.succ = connector
+    intersection.insertConnector(connector)
+
+    # To be counter-clockwise, we insert now the left streets.
+    # TODO: This works currently only for one street. If more
+    # streets, they will have to be sorted counter-clockwise.
+    if streetsLeftOfBundle:
+        if len(streetsLeftOfBundle)>1:
+            print('This works currently only for one side street !!!')
+        street = streetsLeftOfBundle[0]
+        connector = IntConnector(intersection)
+        connector.item = street
+        connector.leaving = street.src in ends
+        if connector.leaving:
+            street.pred = connector
+        else:
+            street.succ = connector
+        intersection.insertConnector(connector)
+
+    # The bundle1 looks now "downwards"
+    connector = IntConnector(intersection)
+    connector.item = bundle1
+    type = data1[0]['type']
+    connector.leaving = type=='head'
+    if connector.leaving:
+        bundle1.pred = connector
+    else:
+        bundle1.succ = connector
+    intersection.insertConnector(connector)
+    test=1
+
+    # Finally, we insert the right streets.
+    # TODO: This works currently only for one street. If more
+    # streets, they will have to be sorted counter-clockwise.
+    if streetsRightOfBundle:
+        if len(streetsRightOfBundle)>1:
+            print('This works currently only for one side street !!!')
+        street = streetsRightOfBundle[0]
+        connector = IntConnector(intersection)
+        connector.item = street
+        connector.leaving = street.src in ends
+        if connector.leaving:
+            street.pred = connector
+        else:
+            street.succ = connector
+        intersection.insertConnector(connector)
+
+    # Remove intersections???
+    for end in ends:
+        if end in streetGenerator.majorIntersections:
+            del streetGenerator.majorIntersections[end]
 
 def multiBundleIntersection(streetGenerator,involvedBundles):
     ends = set()
@@ -690,7 +721,7 @@ def multiBundleIntersection(streetGenerator,involvedBundles):
     # Create the intersection
     intersection = Intersection(location)
     intersection.connectsBundles = True
-    # ToDo: This works only for two street bundles !!!
+    # TODO: This works only for two street bundles !!!
     for e0,e1 in cyclePairs(ends):
         for bundle, data in intersectingBundles.items():
             type = data[0]['type']

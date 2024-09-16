@@ -469,7 +469,8 @@ class PolyLine():
 
     def plotWithArrows(self,color,width=1,length=2,linestyle='solid',showOrder=False,order=999):
         import matplotlib.pyplot as plt 
-        i = 0       
+        i = 0    
+        length = 0.7*width   
         for v0,v1 in pairs(self.verts[self.view]):
             dv = v1-v0
             dvu = dv/dv.length

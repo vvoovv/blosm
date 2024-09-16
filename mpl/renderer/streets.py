@@ -69,7 +69,7 @@ class StreetRenderer(Renderer):
                         allVertices.extend(section.centerline)
                         if section.valid:
                             color = 'gray' if isSmallestCategory(section) else 'b' if isMinorCategory(section) else 'r'
-                            width = 0.6 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 1.2
+                            width = 0.8 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 1.2
                             style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
                             section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                             # if self.debug:
