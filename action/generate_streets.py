@@ -10,7 +10,7 @@ from defs.way_cluster_params import minTemplateLength, minNeighborLength, search
 
 from way.item import Intersection, IntConnector, Section, Street, SideLane, SymLane
 from way.item.bundle import Bundle, mergePseudoMinors, removeIntermediateSections, orderHeadTail, \
-                                    findInnerStreets, canBeMerged, mergeBundles, intersectBundles
+                                    findInnerStreets, canBeMerged, mergeBundles, intersectBundles, endBundleIntersection
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
 from way.way_properties import lanePattern
@@ -634,15 +634,9 @@ class StreetGenerator():
                 involvedBundleTypes.extend( [d['type'] for d in data] )
 
             if nrOfBundles==1:
-                # These are ends of bundles, do nothing  ????
-                if doDebug:
-                    from lib.CompGeom.algorithms import circumCircle
-                    ends = set()
-                    for bundle,data in involvedBundles.items():
-                        ends = ends.union( set(item['end'] for item in data) )
-                    center,radius = circumCircle(list(ends))
-                    circle = plt.Circle(center, radius*1.1, color='orange', alpha=0.6)
-                    plt.gca().add_patch(circle)
+                # These are ends of bundles. Because these ar not detected reliably
+                # here, they are processed at the end of this method.
+                pass
 
             if nrOfBundles==2:
                 # These are bundles, that touch each other. If there is no street
@@ -681,6 +675,43 @@ class StreetGenerator():
 
         for involvedBundles in toBeIntersected:
             intersectBundles(self, involvedBundles)
+
+        # Finally process open Bundle ends.
+        for id,bundle in self.bundles.items():
+            if not bundle.pred or not bundle.succ:
+
+                if doDebug:
+                    from lib.CompGeom.algorithms import circumCircle
+                    if not bundle.pred:
+                        ends = set(bundle.headLocs)
+
+                        center,radius = None, None
+                        if len(ends)>1:
+                            center,radius = circumCircle(list(ends))
+                        elif len(ends)==1:
+                            center,radius = next(iter(ends)), 5.
+                        else:
+                            pass
+                        if center:
+                            circle = plt.Circle(center, radius*1.1, color='orange', alpha=0.6)
+                            plt.gca().add_patch(circle)
+
+                    if not bundle.succ:
+                        ends = set(bundle.tailLocs)
+
+                        center,radius = None, None
+                        if len(ends)>1:
+                            center,radius = circumCircle(list(ends))
+                        elif len(ends)==1:
+                            center,radius = next(iter(ends)), 5.
+                        else:
+                            pass
+                        if center:
+                            circle = plt.Circle(center, radius*1.1, color='orange', alpha=0.6)
+                            plt.gca().add_patch(circle)
+
+                endBundleIntersection(self, bundle)
+
 
 
     def createSymSideLanes(self):
