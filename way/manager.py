@@ -104,6 +104,8 @@ class WayManager:
     def iterStreets(self):
         for street in self.streets.values():
             yield street
+
+    def iterBundles(self):
         for bundle in self.bundles.values():
             yield bundle
 

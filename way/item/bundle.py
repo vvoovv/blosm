@@ -426,6 +426,12 @@ def canBeMerged(streetGenerator, involvedBundles):
     bundleList = list(involvedBundles.items())
     (_, streetData0), (_, streetData1) = bundleList
 
+    # Check, if they have all ends common
+    ends0 = set( streetData0[0]['bundle'].headLocs if streetData0[0]['type']=='head' else streetData0[0]['bundle'].tailLocs )
+    ends1 = set( streetData1[0]['bundle'].headLocs if streetData1[0]['type']=='head' else streetData1[0]['bundle'].tailLocs )
+    if ends0 != ends1:
+        return False
+
     # Find the end-points of both streets (see below) and the street
     # at the left border of bundle 0.
     a = streetData0[0]['end']
@@ -521,7 +527,6 @@ def mergeBundles(streetGenerator,involvedBundles):
     longStreet.insertStreetEnd(leaving1)
     if longStreet.succ:
         longStreet.succ.item = longStreet
-    longStreet.succ.item = longStreet
     mergedStreets.append(longStreet)
 
     head, tail = orderHeadTail(mergedStreets)
@@ -540,9 +545,16 @@ def mergeBundles(streetGenerator,involvedBundles):
 
     streetGenerator.bundles[mergedBundle.id] = mergedBundle
 
+    # Bookkeeping:
     # remove old bundles
     for bundle,_ in involvedBundles.items():
-        del streetGenerator.bundles[bundle.id]
+        if bundle.id in streetGenerator.bundles:
+            del streetGenerator.bundles[bundle.id]
+    # Redirect inner streets, if any
+    for _,street in streetGenerator.streets.items():
+        if street.bundle in [bundle0, bundle1]:
+            street.bundle = mergedBundle
+
 
 def intersectBundles(streetGenerator,involvedBundles):
     if len(involvedBundles) == 2:
@@ -560,10 +572,11 @@ def twoBundleIntersection(streetGenerator,involvedBundles):
     # find streets, that do not belong to the bundle
     externalStreets = set()
     for end in ends:
-        intersection = streetGenerator.majorIntersections[end]
-        for intSec in intersection:
-            if intSec.item not in bundleStreets:
-                externalStreets.add(intSec.item)
+        if end in streetGenerator.majorIntersections:
+            intersection = streetGenerator.majorIntersections[end]
+            for intSec in intersection:
+                if intSec.item not in bundleStreets:
+                    externalStreets.add(intSec.item)
 
     # Now, we have to find, which external streets are between the
     # outer borders of the bundles. These must be removed.
@@ -736,4 +749,100 @@ def multiBundleIntersection(streetGenerator,involvedBundles):
                     bundle.succ = connector
                 intersection.insertConnector(connector)
 
+def endBundleIntersection(streetGenerator, bundle):
+    if not bundle.pred:
+        externalStreets = set()
+        for end in bundle.headLocs:
+            if end not in streetGenerator.majorIntersections:
+                pass
+            else:
+                intersection = streetGenerator.majorIntersections[end]
+                for intSec in intersection:
+                    if intSec.item not in bundle.streetsHead:
+                        externalStreets.add(intSec.item)
+        if not externalStreets:
+            bundle.pred = None  # Void end of bundle
+        else:
+            # We have an end-intersection at the head of this bundle
+            location = sum(bundle.headLocs,Vector((0,0)))/len(bundle.headLocs)
+            intersection = Intersection(location)
+            intersection.connectsBundles = True
+
+            # The bundle makes the start "upwards"
+            connector = IntConnector(intersection)
+            connector.item = bundle
+            connector.leaving = True
+            bundle.pred = connector
+            intersection.insertConnector(connector)
+
+            # A counter-clockwise rotation of the intersections starts
+            # with the leftmost end in the bundle.
+            for end in bundle.headLocs:
+                if end in streetGenerator.majorIntersections:
+                    endIsect = streetGenerator.majorIntersections[end]
+                    # The iterator of Intersection runs counter-clockwise
+                    for intSec in endIsect:
+                        if intSec.item not in bundle.streetsHead:
+                            connector = IntConnector(intersection)
+                            connector.item = intSec.item
+                            connector.leaving = intSec.item.src==end
+                            if connector.leaving:
+                                intSec.item.pred = connector
+                            else:
+                                intSec.item.succ = connector
+                            intersection.insertConnector(connector)
+
+            # Remove intersections???
+            for end in bundle.headLocs:
+                if end in streetGenerator.majorIntersections:
+                    del streetGenerator.majorIntersections[end]
+
+    if not bundle.succ:
+        externalStreets = set()
+        for end in bundle.tailLocs:
+            if end not in streetGenerator.majorIntersections:
+                pass
+            else:
+                intersection = streetGenerator.majorIntersections[end]
+                for intSec in intersection:
+                    if intSec.item not in bundle.streetsTail:
+                        externalStreets.add(intSec.item)
+        if not externalStreets:
+            bundle.succ = None  # Void end of bundle
+        else:
+            # We have an end-intersection at the head of this bundle
+            location = sum(bundle.tailLocs,Vector((0,0)))/len(bundle.tailLocs)
+            intersection = Intersection(location)
+            intersection.connectsBundles = True
+
+            # The bundle makes the start "upwards"
+            connector = IntConnector(intersection)
+            connector.item = bundle
+            connector.leaving = False
+            bundle.succ = connector
+            intersection.insertConnector(connector)
+
+            # A counter-clockwise rotation of the intersections starts
+            # with the leftmost end in the bundle. Because this is a 
+            # bundle tail, this is the rightmost in the bundle.
+            # Therefore reverse the locations.
+            for end in bundle.tailLocs[::-1]:
+                if end in streetGenerator.majorIntersections:
+                    endIsect = streetGenerator.majorIntersections[end]
+                    # The iterator of Intersection runs counter-clockwise
+                    for intSec in endIsect:
+                        if intSec.item not in bundle.streetsHead:
+                            connector = IntConnector(intersection)
+                            connector.item = intSec.item
+                            connector.leaving = intSec.item.src==end
+                            if connector.leaving:
+                                intSec.item.pred = connector
+                            else:
+                                intSec.item.succ = connector
+                            intersection.insertConnector(connector)
+
+            # Remove intersections???
+            for end in bundle.tailLocs:
+                if end in streetGenerator.majorIntersections:
+                    del streetGenerator.majorIntersections[end]
 

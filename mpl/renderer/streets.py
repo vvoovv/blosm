@@ -125,26 +125,26 @@ class StreetRenderer(Renderer):
                 #     if self.debug:
                 #         plt.text(c[0]+2,c[1]-2,' S '+str(street.id),color=color,fontsize=width,zorder=130,ha='left', va='top', clip_on=True)
 
-            elif isinstance(street,Bundle):
-                bundle = street
-                vertices = []
-                for street in bundle.streetsHead:
-                    p = street.head.polyline[1]
-                    plt.text(p[0],p[1]+1.5,'   S'+str(street.id),fontsize=10,color='green',ha='right', va='bottom')
-                    for item in street.iterItems():
-                        if isinstance(item,Section):
-                            section = item
-                            if section.valid:
-                                color = 'gray' if isSmallestCategory(section) else 'g' if isMinorCategory(section) else 'g'
-                                width = 1 if isSmallestCategory(section) else 1.1 if isMinorCategory(section) else 1.5
-                                style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
-                                section.polyline.plotWithArrows(color,width,0.5,style,False,950)
-                                vertices.extend(section.centerline)
-                c = sum(vertices,Vector((0,0)))/len(vertices)
-                plt.text(c[0],c[1],str(bundle.id),fontsize=18,color='red',ha='center', va='center')
-            
             else:
                 print('Unknown object: ', type(street))
+
+        for bundle in manager.iterBundles():
+            vertices = []
+            for street in bundle.streetsHead:
+                p = street.head.polyline[1]
+                plt.text(p[0],p[1]+1.5,'   S'+str(street.id),fontsize=10,color='green',ha='right', va='bottom')
+                for item in street.iterItems():
+                    if isinstance(item,Section):
+                        section = item
+                        if section.valid:
+                            color = 'gray' if isSmallestCategory(section) else 'g' if isMinorCategory(section) else 'g'
+                            width = 1 if isSmallestCategory(section) else 1.1 if isMinorCategory(section) else 1.5
+                            style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
+                            section.polyline.plotWithArrows(color,width,0.5,style,False,950)
+                            vertices.extend(section.centerline)
+            c = sum(vertices,Vector((0,0)))/len(vertices)
+            plt.text(c[0],c[1],str(bundle.id),fontsize=18,color='red',ha='center', va='center')
+            
 
 
 
