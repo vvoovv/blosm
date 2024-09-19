@@ -60,6 +60,7 @@ class Intersection(Item):
         self.id = Intersection.ID
         Intersection.ID += 1
         self._location = location
+        self._location.freeze()
         self.leaveWays = []
 
         # Reference to first connector of circular doubly-linked list of IntConnectors.
