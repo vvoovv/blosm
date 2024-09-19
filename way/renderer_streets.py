@@ -12,6 +12,8 @@ from util.blender import createMeshObject, createCollection, getBmesh, setBmesh,
 from .asset_store import AssetStore, AssetType, AssetPart
 
 
+_location = Vector((0., 0., 0.))
+
 #from renderer.curve_renderer import CurveRenderer
 sidewalkWidth = 5.
 crosswalkWidth = 3.6
@@ -102,65 +104,29 @@ class StreetRenderer:
         gnMeshToCurve = "blosm_mesh_to_curve"
     
     def render(self, manager, data):
-        location = Vector((0., 0., 0.))
-        
         # split neighbor street sections for the side lane transitions
         for sideLane in manager.transitionSideLanes:
             sideLane.splitAffectedSection()
         
-        # render instances of the class <Street> 
+        # render instances of the class <Bundle>
+        for bundle in manager.iterBundles():
+            for street in bundle.streetsHead:
+                self.initStreet(street)
+        
+        # render instances of the class <Street>
         for street in manager.iterStreets():
-            street.edgeIndexOffset = 0
-            
-            # Create a Blender object and BMesh for the <street> centeline. An instance of <Street> contains
-            # at least one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
-            street.obj = self.getStreetCenterlineObj(street, location)
-            street.bm = getBmesh(street.obj)
-            
-            #if self.terrainObj:
-            #    m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetCenterline, "Streets on terrain")
-            #    m["Input_2"] = self.terrainObj
-            
-            # Initialization is performed in two passes:
-            # In the first pass we create a Blender mesh
-            # in the second pass we set attributes
-            
-            #
-            # (1) the first pass
-            #
-            if street.head is street.tail:
-                self.initItemCenterline1(street.head, True)
-            else:
-                # the first BMesh vertex for the current street section
-                street.bmVert = None
-                for item in street.iterItems():
-                    self.initItemCenterline1(item, False)
-            
-            setBmesh(street.obj, street.bm)
-            
-            #
-            # (2) the second pass
-            #
-            if street.head is street.tail:
-                self.initItemCenterline2(street.head, 0)
-            else:
-                itemIndex = 1
-                for item in street.iterItems():
-                    self.initItemCenterline2(item, itemIndex)
-                    itemIndex += 1
-            
-            addGeometryNodesModifier(street.obj, self.gnInitCenterline, "Init Centerline")
+            self.initStreet(street)
 
         # render instances of class <Intersection>
         intersectionRenderer = self.itemRenderers["Intersection"]
-        for intersection in manager.majorIntersections:
+        for intersection in manager.majorIntersections.values():
             intersectionRenderer.renderItem(intersection)
         
         #
         # Finalize items: apply modifiers
         #
         for street in manager.iterStreets():
-            street.obj3d = self.get3dStreetObj(street, location)
+            street.obj3d = self.get3dStreetObj(street, _location)
             
             if street.head is street.tail:
                 self.finalizeItem(street.head, 0)
@@ -176,6 +142,48 @@ class StreetRenderer:
         
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.finalize()
+    
+    def initStreet(self, street):
+        street.edgeIndexOffset = 0
+        
+        # Create a Blender object and BMesh for the <street> centeline. An instance of <Street> contains
+        # at least one instance of <Section>, so <street.obj> and <street.bm> will be needed anyway.
+        street.obj = self.getStreetCenterlineObj(street, _location)
+        street.bm = getBmesh(street.obj)
+        
+        #if self.terrainObj:
+        #    m = addGeometryNodesModifier(street.obj, self.gnTerrainStreetCenterline, "Streets on terrain")
+        #    m["Input_2"] = self.terrainObj
+        
+        # Initialization is performed in two passes:
+        # In the first pass we create a Blender mesh
+        # in the second pass we set attributes
+        
+        #
+        # (1) the first pass
+        #
+        if street.head is street.tail:
+            self.initItemCenterline1(street.head, True)
+        else:
+            # the first BMesh vertex for the current street section
+            street.bmVert = None
+            for item in street.iterItems():
+                self.initItemCenterline1(item, False)
+        
+        setBmesh(street.obj, street.bm)
+        
+        #
+        # (2) the second pass
+        #
+        if street.head is street.tail:
+            self.initItemCenterline2(street.head, 0)
+        else:
+            itemIndex = 1
+            for item in street.iterItems():
+                self.initItemCenterline2(item, itemIndex)
+                itemIndex += 1
+        
+        addGeometryNodesModifier(street.obj, self.gnInitCenterline, "Init Centerline")
     
     def initItemCenterline1(self, item, singleItem):
         itemRenderer = self.itemRenderers.get(item.__class__.__name__)
