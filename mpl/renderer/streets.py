@@ -60,8 +60,11 @@ class StreetRenderer(Renderer):
                 if self.debug:
                     color = 'gray' if isSmallestCategory(street.head) else 'b' if isMinorCategory(street.head) else 'r'
                     fontsize = 6 if isSmallestCategory(street.head) else 8 if isMinorCategory(street.head) else 10
+                    upset = 0 if isSmallestCategory(street.head) else 1 if isMinorCategory(street.head) else 2
+                    srcVec, _ = street.endVectors()
+                    vu = srcVec/srcVec.length * (1+upset)
                     p = street.src
-                    plt.text(p[0],p[1],'   S'+str(street.id),fontsize=fontsize,color=color)
+                    plt.text(p[0]+vu[0],p[1]+vu[1],'   S'+str(street.id),fontsize=fontsize,color=color)
                 for item in street.iterItems():
 
                     if isinstance(item,Section):
@@ -140,10 +143,11 @@ class StreetRenderer(Renderer):
                             color = 'gray' if isSmallestCategory(section) else 'g' if isMinorCategory(section) else 'g'
                             width = 1 if isSmallestCategory(section) else 1.1 if isMinorCategory(section) else 1.5
                             style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
+                            upset = 0 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 2
                             section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                             vertices.extend(section.centerline)
             c = sum(vertices,Vector((0,0)))/len(vertices)
-            plt.text(c[0],c[1],str(bundle.id),fontsize=18,color='red',ha='center', va='center')
+            plt.text(c[0],c[1]+upset,str(bundle.id),fontsize=18,color='red',ha='center', va='center')
             
 
 
