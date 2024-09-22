@@ -88,7 +88,10 @@ class Intersection(Item):
     
     @property
     def order(self):
-        if self.startConnector:
+        if self.isMinor:
+            return len([c for c in self.iterate_from(self.leftHead)]) + \
+                   len([c for c in self.iterate_from(self.leftHead)]) + 2 # leaving + arriving
+        elif self.startConnector:
             return len([c for c in self])
         else:
             return len(self.leaveWays)
