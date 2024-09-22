@@ -9,7 +9,7 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist, dbScanDist
 
 from way.item import Intersection, IntConnector, Section, Street, SideLane, SymLane
-from way.item.bundle import Bundle, mergePseudoMinors, removeIntermediateSections, orderHeadTail, \
+from way.item.bundle import Bundle, mergePseudoMinors, removeSplittingStreets, orderHeadTail, \
                                     findInnerStreets, canBeMerged, mergeBundles, intersectBundles, endBundleIntersection
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
@@ -716,7 +716,7 @@ class StreetGenerator():
 
 
         # Find intersections between streets of different groups.
-        # The dictionary key is the position of the intersection
+        # The dictionary key is the location of the intersection
         # and its  lists contain the indices of the groups that
         # intersect there.
         groupIntersections = defaultdict(list)
@@ -728,31 +728,57 @@ class StreetGenerator():
         newGroups = []
         delGroups = []
         for gIndex,streetGroup in enumerate(streetGroups):
-            if doDebug:
-                plotQualifiedNetwork(self.sectionNetwork)
-                plotStreetGroup(streetGroup)  
-                plotEnd()
+            # Sometimes, createParallelStreets() is not stopped by intersections with
+            # other bundles and delivers streets, that pass these intersections. In
+            # such a situation, its  proposed group has to be split into two groups, while
+            # the splitting streets at the intersection have to be removed.
+            wasSplitted, splittedGroups, splittingStreets = removeSplittingStreets(self,gIndex,streetGroup,groupIntersections)
+            # if doDebug:
+            #     if wasSplitted:
+            #         for group in splittedGroups:
+            #             plotStreetGroup(streetGroup, 'blue', False)
+            #             plotStreetGroup(splittingStreets, 'whitesmoke', False)
+            #             plotStreetGroup(group,'red',True)   
 
-            wasSplitted, srcGroup, dstGroup = removeIntermediateSections(gIndex,streetGroup,groupIntersections)
+
             if wasSplitted:
-                if doDebug:
-                    plotQualifiedNetwork(self.sectionNetwork)
-                    plotStreetGroup(srcGroup,'blue')  
-                    plotStreetGroup(dstGroup,'red')
-                    plotEnd()
-                newGroups.extend([srcGroup, dstGroup])
+                newGroups.extend(splittedGroups)
                 delGroups.append(streetGroup)
-        
+                for street in splittingStreets:
+                    if street.id in self.streets:
+                        del self.streets[street.id]      
         streetGroups.extend(newGroups)
         for group in delGroups:
             streetGroups.remove(group)
 
+        # if doDebug:
+        #     for group in streetGroups:
+        #         plotStreetGroup(group,'red',True)
+
+
 
 
         for gIndex,streetGroup in enumerate(streetGroups):
-            if not streetGroup:
-                continue
             head, tail = orderHeadTail(streetGroup)
+
+            if doDebug:
+                plotQualifiedNetwork(self.sectionNetwork)
+                plotStreetGroup(streetGroup)  
+                for indx in range(len(head)):  
+                    item = head[indx]
+                    p = item['firstVert']
+                    # plt.text(p[0],p[1],'  '+str(item['i']),fontsize=12)
+                    plt.plot(p[0],p[1],'coral',marker='o',markersize=14,zorder=998)
+                    plt.text(p[0],p[1],'H'+str(indx),fontsize=10,zorder=999,horizontalalignment='center',verticalalignment='center')
+
+                for indx in range(len(tail)):
+                    item = tail[indx]
+                    p = item['firstVert']
+                    # plt.text(p[0],p[1],'  '+str(item['i']),fontsize=12)
+                    plt.plot(p[0],p[1],'skyblue',marker='o',markersize=14,zorder=998)
+                    plt.text(p[0],p[1],'T'+str(indx),fontsize=10,zorder=999,horizontalalignment='center',verticalalignment='center')
+
+                plotEnd()
 
             innerStreets = findInnerStreets(streetGroup,self.leftHandTraffic)
 

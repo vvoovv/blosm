@@ -88,7 +88,10 @@ class Intersection(Item):
     
     @property
     def order(self):
-        return len(self.leaveWays)
+        if self.startConnector:
+            return len([c for c in self])
+        else:
+            return len(self.leaveWays)
 
     def update(self, inStreets, outStreets):
         for street in inStreets:

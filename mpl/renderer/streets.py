@@ -57,6 +57,7 @@ class StreetRenderer(Renderer):
         for street in manager.iterStreets():
             if isinstance(street,Street):
                 allVertices = []
+                interiorOfBundle = street.bundle is not None
                 if self.debug:
                     color = 'gray' if isSmallestCategory(street.head) else 'b' if isMinorCategory(street.head) else 'r'
                     fontsize = 6 if isSmallestCategory(street.head) else 8 if isMinorCategory(street.head) else 10
@@ -74,6 +75,10 @@ class StreetRenderer(Renderer):
                             color = 'gray' if isSmallestCategory(section) else 'b' if isMinorCategory(section) else 'r'
                             width = 0.8 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 1.2
                             style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
+                            if interiorOfBundle:
+                                color = 'green'
+                                style='dotted'
+                                width = width+0.5
                             section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                             # if self.debug:
                             #     p = section.src
