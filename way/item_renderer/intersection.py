@@ -47,19 +47,12 @@ class Intersection(ItemRenderer):
         # Generate an intersection polygon
         #
         m = addGeometryNodesModifier(intersection.obj, self.gnIntersection[intersection.order], "Intersection: Generate Polygon")
-        i = 0
-        connector = intersection.startConnector
-        while True:
+        for i, connector in enumerate(intersection):
             street = connector.item
             
             m[ self.inputCenterlines[order][i][0] ] = street.obj
             m[ self.inputWidths[order][i][0] ] = street.head.width if connector.leaving else street.tail.width
             m[ self.inputLocations[order][i][0] ] = connector.leaving
-            
-            connector = connector.succ
-            if connector is intersection.startConnector:
-                break
-            i += 1
         
         #
         # Set UV-coordinates and material for the intersection polygon
