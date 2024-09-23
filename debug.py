@@ -126,3 +126,18 @@ def saveAxisContent(file):
     # ax.set_clip_path(patch)
     fig.savefig(file,bbox_inches=bbox_inches)
 
+def plotStreetGroup(streetGroup,color='blue',doEnd=False):
+    from way.item import Section
+    for street in streetGroup:
+        allVertices = []
+        # color = next(colorIter)
+        for item in street.iterItems():
+            if isinstance(item, Section):
+                item.polyline.plotWithArrows(color,1,0.5,'solid',False,950)
+                allVertices.extend(item.centerline)
+        if len(allVertices):
+            c = sum(allVertices,Vector((0,0))) / len(allVertices)
+            plt.text(c[0],c[1],'S '+str(street.id),color='k',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+
+    if doEnd:
+        plotEnd()
