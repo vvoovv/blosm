@@ -1,4 +1,3 @@
-from renderer import Renderer
 from util.blender import createMeshObject, getBmesh, setBmesh, addGeometryNodesModifier
 from ..asset_store import AssetType, AssetPart
 from . import ItemRenderer
@@ -31,6 +30,13 @@ class Intersection(ItemRenderer):
             ( ("Socket_10", "Socket_19"), ("Socket_11", "Socket_24"), ("Socket_12", "Socket_29"), ("Socket_13", "Socket_34") )
         )
     
+    def init(self, globalRenderer):
+        super().init(globalRenderer)
+        self.renderers = dict(
+            Street = globalRenderer.itemRenderers["Street"],
+            Bundle = globalRenderer.itemRenderers["Bundle"]
+        )
+    
     def prepare(self):
         return
     
@@ -48,11 +54,9 @@ class Intersection(ItemRenderer):
         #
         m = addGeometryNodesModifier(intersection.obj, self.gnIntersection[intersection.order], "Intersection: Generate Polygon")
         for i, connector in enumerate(intersection):
-            street = connector.item
-            
-            m[ self.inputCenterlines[order][i][0] ] = street.obj
-            m[ self.inputWidths[order][i][0] ] = street.head.width if connector.leaving else street.tail.width
-            m[ self.inputLocations[order][i][0] ] = connector.leaving
+            item = connector.item
+            if item.__class__.__name__ in self.renderers:
+                self.renderers[item.__class__.__name__].renderNeighborIntersection(intersection, connector, i, m)
         
         #
         # Set UV-coordinates and material for the intersection polygon

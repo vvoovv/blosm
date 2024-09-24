@@ -25,6 +25,8 @@ def setup(app, osm):
             from action.generate_streets import StreetGenerator
             from way.renderer_streets import StreetRenderer
             
+            from way.item_renderer.street import Street
+            from way.item_renderer.bundle import Bundle
             from way.item_renderer.section import Section
             from way.item_renderer.intersection import Intersection
             from way.item_renderer.side_lane import SideLane
@@ -32,6 +34,8 @@ def setup(app, osm):
             wayManager.addAction(StreetGenerator(wayManager.styleStore, getStyle=wayManager.getStyle))
             
             itemRenderers = {
+                "Street": Street(),
+                "Bundle": Bundle(),
                 "Section": Section(),
                 "Intersection": Intersection(),
                 "SideLane": SideLane()
