@@ -9,7 +9,7 @@ from defs.road_polygons import ExcludedWayTags
 from defs.way_cluster_params import minTemplateLength, minNeighborLength, searchDist, dbScanDist
 
 from way.item import Intersection, IntConnector, Section, Street, SideLane, SymLane
-from way.item.bundle import Bundle, mergePseudoMinors, removeSplittingStreets, orderHeadTail, \
+from way.item.bundle import Bundle, StreetGroup, mergePseudoMinors, removeSplittingStreets, orderHeadTail, \
                                     findInnerStreets, canBeMerged, mergeBundles, intersectBundles, endBundleIntersection
 from way.way_network import WayNetwork, NetSection
 from way.way_algorithms import createSectionNetwork
@@ -74,6 +74,8 @@ class StreetGenerator():
         self.bundles = manager.bundles
         self.wayClusters = manager.wayClusters
         self.waySectionLines = manager.waySectionLines
+
+        self.allSplittingStreets = []
 
         NetSection.ID = 0   # This class variable of NetSection is not reset with new instance of StreetGenerator!!
 
@@ -706,7 +708,7 @@ class StreetGenerator():
         # the streets group. Mainly, modified streets cannot be stored there.
         streetGroups = []
         for streetGroup in self.parallelStreets:
-            streetGroups.append(streetGroup)
+            streetGroups.append(StreetGroup(streetGroup))
 
         for streetGroup in streetGroups:
             # see https://github.com/prochitecture/blosm/issues/104#issuecomment-2322836476
@@ -733,12 +735,14 @@ class StreetGenerator():
             # such a situation, its  proposed group has to be split into two groups, while
             # the splitting streets at the intersection have to be removed.
             wasSplitted, splittedGroups, splittingStreets = removeSplittingStreets(self,gIndex,streetGroup,groupIntersections)
-            # if doDebug:
-            #     if wasSplitted:
-            #         for group in splittedGroups:
-            #             plotStreetGroup(streetGroup, 'blue', False)
-            #             plotStreetGroup(splittingStreets, 'whitesmoke', False)
-            #             plotStreetGroup(group,'red',True)   
+            self.allSplittingStreets.extend(splittingStreets)
+            if doDebug:
+                if wasSplitted:
+                    for group in splittedGroups:
+                        plotStreetGroup(streetGroup.group, 'blue', False)
+                        plotStreetGroup(splittingStreets.group, 'whitesmoke', False)
+                        plotStreetGroup(group.inner, 'green', False)
+                        plotStreetGroup(group,'red',True)   
 
 
             if wasSplitted:
@@ -904,6 +908,16 @@ class StreetGenerator():
                     bundleIDs = [b.id for b,_ in involvedBundles.items()]
                     print('Single common bundle end between bundles', bundleIDs)
                     continue
+
+                # If there are no common endpoints between these two bundles,
+                # these are ends of bundles. They are processed at the end of this method.                
+                bundleInfo = list(involvedBundles.items()) 
+                bundleEnds0 = {e for e in (bundleInfo[0][0].headLocs if bundleInfo[0][1][0]['type']=='head' else bundleInfo[0][0].tailLocs) }
+                bundleEnds1 = {e for e in (bundleInfo[1][0].headLocs if bundleInfo[1][1][0]['type']=='head' else bundleInfo[1][0].tailLocs) }
+                commonEnds = bundleEnds0.intersection(bundleEnds1)
+                if not commonEnds:
+                    continue
+
 
                 toBeIntersected.append(involvedBundles)
                 if doDebug:

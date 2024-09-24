@@ -135,6 +135,15 @@ class Street(Item):
         dstVec = self.tail.centerline[-2] - self.tail.centerline[-1]
         return srcVec, dstVec
     
+    def endUnitVecAt(self,end):
+        # The unit vector at the given end points into the street
+        if end == self.src:
+            srcVec = self.head.centerline[1] - self.head.centerline[0]
+            return srcVec/srcVec.length
+        else:
+            dstVec = self.tail.centerline[-2] - self.tail.centerline[-1]
+            return dstVec/dstVec.length
+    
     def getName(self):
         return self.head.getName()
     

@@ -76,8 +76,8 @@ class StreetRenderer(Renderer):
                             width = 0.8 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 1.2
                             style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
                             if interiorOfBundle:
-                                color = 'green'
-                                style='dotted'
+                                color = 'gold'
+                                style='solid'
                                 width = width+0.5
                             section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                             # if self.debug:
