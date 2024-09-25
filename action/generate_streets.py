@@ -896,7 +896,7 @@ class StreetGenerator():
                 involvedBundleTypes.extend( [d['type'] for d in data] )
 
             if nrOfBundles==1:
-                # These are ends of bundles. Because these ar not detected reliably
+                # These are ends of bundles. Because these are not detected reliably
                 # here, they are processed at the end of this method.
                 pass
 

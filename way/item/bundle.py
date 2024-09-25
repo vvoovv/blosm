@@ -818,8 +818,18 @@ def twoBundleIntersection(streetGenerator,involvedBundles):
     connector.leaving = type=='head'
     if connector.leaving:
         bundle0.pred = connector
+        for street,p in zip(bundle0.streetsHead,bundle0.headLocs):
+            if street.src==p:
+                street.pred = connector
+            else:
+                street.succ = connector
     else:
         bundle0.succ = connector
+        for street,p in zip(bundle0.streetsTail,bundle0.tailLocs):
+            if street.src==p:
+                street.pred = connector
+            else:
+                street.succ = connector
     intersection.insertConnector(connector)
 
     # To be counter-clockwise, we insert now the left streets.
@@ -857,8 +867,18 @@ def twoBundleIntersection(streetGenerator,involvedBundles):
     connector.leaving = type=='head'
     if connector.leaving:
         bundle1.pred = connector
+        for street,p in zip(bundle1.streetsHead,bundle1.headLocs):
+            if street.src==p:
+                street.pred = connector
+            else:
+                street.succ = connector
     else:
         bundle1.succ = connector
+        for street,p in zip(bundle1.streetsTail,bundle1.tailLocs):
+            if street.src==p:
+                street.pred = connector
+            else:
+                street.succ = connector
     intersection.insertConnector(connector)
 
 
@@ -1011,10 +1031,22 @@ def multiBundleIntersection(streetGenerator,involvedBundles):
                 connector = IntConnector(intersection)
                 connector.item = bundle
                 connector.leaving = type=='head'
+
                 if connector.leaving:
                     bundle.pred = connector
+                    for street,p in zip(bundle.streetsHead,bundle.headLocs):
+                        if street.src==p:
+                            street.pred = connector
+                        else:
+                            street.succ = connector
                 else:
                     bundle.succ = connector
+                    for street,p in zip(bundle.streetsTail,bundle.tailLocs):
+                        if street.src==p:
+                            street.pred = connector
+                        else:
+                            street.succ = connector
+
                 intersection.insertConnector(connector)
                 processedBundles.add(bundle)
 
@@ -1051,7 +1083,13 @@ def endBundleIntersection(streetGenerator, bundle):
             connector = IntConnector(intersection)
             connector.item = bundle
             connector.leaving = True
+
             bundle.pred = connector
+            for street,p in zip(bundle.streetsHead,bundle.headLocs):
+                if street.src==p:
+                    street.pred = connector
+                else:
+                    street.succ = connector
             intersection.insertConnector(connector)
 
             # A counter-clockwise rotation of the intersections starts
@@ -1091,6 +1129,11 @@ def endBundleIntersection(streetGenerator, bundle):
                         externalStreets.add(intSec.item)
         if not externalStreets:
             bundle.succ = None  # Void end of bundle
+            for street,p in zip(bundle.streetsTail,bundle.tailLocs):
+                if street.src==p:
+                    street.pred = None
+                else:
+                    street.succ = None
         else:
             # We have an end-intersection at the head of this bundle
             location = sum(bundle.tailLocs,Vector((0,0)))/len(bundle.tailLocs)
@@ -1102,7 +1145,14 @@ def endBundleIntersection(streetGenerator, bundle):
             connector = IntConnector(intersection)
             connector.item = bundle
             connector.leaving = False
+
             bundle.succ = connector
+            for street,p in zip(bundle.streetsTail,bundle.tailLocs):
+                if street.src==p:
+                    street.pred = connector
+                else:
+                    street.succ = connector
+
             intersection.insertConnector(connector)
 
             # A counter-clockwise rotation of the intersections starts
