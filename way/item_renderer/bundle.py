@@ -22,8 +22,8 @@ class Bundle(ItemRenderer):
             if connector.leaving else \
             (bundle.streetsTail[0], bundle.streetsTail[-1])
         
-        streetL_leaving = streetL.pred and streetL.pred.item is bundle
-        streetR_leaving = streetR.pred and streetR.pred.item is bundle
+        streetL_leaving = bool(streetL.pred and streetL.pred.intersection is intersection)
+        streetR_leaving = bool(streetR.pred and streetR.pred.intersection is intersection)
             
         modifier[ self.intersectionRenderer.inputCenterlines[order][index][0] ] = streetL.obj
         modifier[ self.intersectionRenderer.inputCenterlines[order][index][1] ] = streetR.obj
