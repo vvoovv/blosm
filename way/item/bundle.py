@@ -66,7 +66,7 @@ class Bundle(Item):
 
 def makePseudoMinor(streetGenerator, intersection, arriving, leaving):
     intersection.isMinor = True
-    if intersection.location in streetGenerator.minorIntersections:
+    if intersection.location in streetGenerator.majorIntersections:
         del streetGenerator.majorIntersections[intersection.location]
     streetGenerator.minorIntersections[intersection.location] = intersection
 
@@ -122,6 +122,35 @@ class StreetGroup():
     
     def __bool__(self):
         return len(self.group)>0
+    
+    def plot(self,color='blue',width=1,doEnd=False):
+        from debug import plt, plotEnd
+        for street in self.group:
+            allVertices = []
+            for item in street.iterItems():
+                if isinstance(item, Section):
+                    item.polyline.plotWithArrows(color,width,0.5,'solid',False,950)
+                    allVertices.extend(item.centerline)
+            if len(allVertices):
+                c = sum(allVertices,Vector((0,0))) / len(allVertices)
+                plt.text(c[0],c[1],'S '+str(street.id),color='k',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+        if doEnd:
+            plotEnd()
+
+    def innerPlot(self,color='blue',doEnd=False):
+        from debug import plt, plotEnd
+        for street in self.inner:
+            allVertices = []
+            for item in street.iterItems():
+                if isinstance(item, Section):
+                    item.polyline.plotWithArrows(color,2,0.5,'solid',False,950)
+                    allVertices.extend(item.centerline)
+            if len(allVertices):
+                c = sum(allVertices,Vector((0,0))) / len(allVertices)
+                plt.text(c[0],c[1],'S '+str(street.id),color='k',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+        if doEnd:
+            plotEnd()
+
 
 # The order is given first by the x-coordinate of the location and then by the
 # y-coordinate, if the difference in x-direction is larger than in y-direction
@@ -353,19 +382,35 @@ def removeSplittingStreets(streetGenerator,gIndex, streetGroup, groupIntersectio
     # Two new groups <srcGroup> and <dstGroup> are created.
     srcGroup = StreetGroup([])
     dstGroup = StreetGroup([])
-    wasSplitted = False
+    wasSplit = False
     # Do not remove the complete group, only part of it
     if splittingStreets and len(splittingStreets) < len(streetGroup):
-        wasSplitted = True
+        wasSplit = True
         for street in splittingStreets:
             fwd = forwardOrder(street.src,street.dst)
             h, t = (street.src, street.dst) if fwd else (street.dst, street.src)
             srcGroup.extend([s for s in streetGroup if s not in splittingStreets and h in [s.src, s.dst]])
             dstGroup.extend([s for s in streetGroup if s not in splittingStreets and t in [s.src, s.dst]])
 
+    # If split, access all streets that are connected to the streets in the groups
+    if wasSplit:
+        remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
+        connected = []
+        for street in srcGroup:
+            connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
+            connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
+        srcGroup.extend(connected)
+
+        remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
+        connected = []
+        for street in dstGroup:
+            connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
+            connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
+        dstGroup.extend(connected)
+
     # Sometimes (often at the scene border), short tails remain between the
     # last intersection and the border. These ends are removed from the group.
-    for group in ([srcGroup, dstGroup] if wasSplitted else [streetGroup]):
+    for group in ([srcGroup, dstGroup] if wasSplit else [streetGroup]):
         # Check if intermediate intersections exist
         streetEnds, _, hairpins = locationsInGroup(group)
         hasIntermediates = any(len(end)>1 for end in streetEnds.values())
@@ -387,7 +432,7 @@ def removeSplittingStreets(streetGenerator,gIndex, streetGroup, groupIntersectio
     # attribute <bundle> of Street, which references the bundle they belong to.
 
     remainingStreets = set()
-    if wasSplitted:
+    if wasSplit:
         # Find the streets and their ends of streetGroup, that are not in srcGroup, 
         # dstGroup or splittingStreets.
         remainingStreets = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
@@ -459,7 +504,7 @@ def removeSplittingStreets(streetGenerator,gIndex, streetGroup, groupIntersectio
                                 s.dst in innerCommonEnds) and s not in dstGroup.inner]
         dstGroup.inner.extend(extendedEnds)
 
-    return wasSplitted, [srcGroup, dstGroup], splittingStreets
+    return wasSplit, [srcGroup, dstGroup], splittingStreets
 
 def orderHeadTail(streetGroup):
     streetEnds, _, hairpins = locationsInGroup(streetGroup)
@@ -799,7 +844,8 @@ def twoBundleIntersection(streetGenerator,involvedBundles):
         # plotEnd()
         if o_isRightOfLeft and o_isLeftOfRight:
             # The street is inside the bundle, remove it
-            del streetGenerator.streets[street.id]
+            if street.id in streetGenerator.streets:
+                del streetGenerator.streets[street.id]
         elif o_isLeftOfRight:
             # The street is left of the bundle
             streetsLeftOfBundle.append(street)

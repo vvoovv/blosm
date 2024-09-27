@@ -6,6 +6,7 @@ from matplotlib.patches import Polygon
 from . import Renderer
 from lib.CompGeom.BoolPolyOps import _isectSegSeg
 from lib.CompGeom.PolyLine import PolyLine
+from lib.CompGeom.algorithms import circumCircle
 from way.item import Street, Bundle, Intersection, Section, SideLane, SymLane
 
 def cyclePair(iterable):
@@ -35,6 +36,20 @@ class StreetRenderer(Renderer):
             plt.plot(p[0],p[1],'ro',markersize=5,zorder=999,markeredgecolor='red', markerfacecolor='orange')
             if self.debug:
                 plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
+            if isect.connectsBundles:
+                ends = []
+                nrOfBundles = 0
+                for intSec in isect:
+                    if isinstance(intSec.item,Street):
+                        ends.append( intSec.item.src if intSec.leaving else intSec.item.dst )
+                    elif isinstance(intSec.item,Bundle):
+                        ends.extend( intSec.item.headLocs if intSec.leaving else intSec.item.tailLocs)
+                        nrOfBundles += 1
+                center,radius = circumCircle(list(ends))
+                color = 'green' if nrOfBundles>1 else 'orange'
+                circle = plt.Circle(center, radius*1.1, color=color, alpha=0.6)
+                plt.gca().add_patch(circle)
+                
 
         for location,isect in manager.minorIntersections.items():
             p = location
@@ -151,6 +166,23 @@ class StreetRenderer(Renderer):
                             upset = 0 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 2
                             section.polyline.plotWithArrows(color,width,0.5,style,False,950)
                             vertices.extend(section.centerline)
+
+            for street in bundle.streetsTail:
+                if street in bundle.streetsHead:
+                    continue# already drawn
+                p = street.head.polyline[1]
+                plt.text(p[0],p[1]+1.5,'   S'+str(street.id),fontsize=10,color='green',ha='right', va='bottom')
+                for item in street.iterItems():
+                    if isinstance(item,Section):
+                        section = item
+                        if section.valid:
+                            color = 'gray' if isSmallestCategory(section) else 'g' if isMinorCategory(section) else 'g'
+                            width = 1 if isSmallestCategory(section) else 1.1 if isMinorCategory(section) else 1.5
+                            style = 'dotted' if isSmallestCategory(section) else '--' if isMinorCategory(section) else 'solid'
+                            upset = 0 if isSmallestCategory(section) else 1 if isMinorCategory(section) else 2
+                            section.polyline.plotWithArrows(color,width,0.5,style,False,950)
+                            vertices.extend(section.centerline)
+
             c = sum(vertices,Vector((0,0)))/len(vertices)
             plt.text(c[0],c[1]+upset,str(bundle.id),fontsize=18,color='red',ha='center', va='center')
             
