@@ -392,21 +392,21 @@ def removeSplittingStreets(streetGenerator,gIndex, streetGroup, groupIntersectio
             srcGroup.extend([s for s in streetGroup if s not in splittingStreets and h in [s.src, s.dst]])
             dstGroup.extend([s for s in streetGroup if s not in splittingStreets and t in [s.src, s.dst]])
 
-    # If split, access all streets that are connected to the streets in the groups
-    if wasSplit:
-        remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
-        connected = []
-        for street in srcGroup:
-            connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
-            connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
-        srcGroup.extend(connected)
+    # # If split, access all streets that are connected to the streets in the groups
+    # if wasSplit:
+    #     remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
+    #     connected = []
+    #     for street in srcGroup:
+    #         connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
+    #         connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
+    #     srcGroup.extend(connected)
 
-        remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
-        connected = []
-        for street in dstGroup:
-            connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
-            connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
-        dstGroup.extend(connected)
+    #     remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
+    #     connected = []
+    #     for street in dstGroup:
+    #         connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
+    #         connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
+    #     dstGroup.extend(connected)
 
     # Sometimes (often at the scene border), short tails remain between the
     # last intersection and the border. These ends are removed from the group.
