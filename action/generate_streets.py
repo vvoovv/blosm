@@ -638,71 +638,6 @@ class StreetGenerator():
             from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
             colorIter = randomColor(19)
 
-            def plotStreetGroup(streetGroup,color='blue',doEnd=False):
-                for street in streetGroup:
-                    allVertices = []
-                    # color = next(colorIter)
-                    for item in street.iterItems():
-                        if isinstance(item, Section):
-                            item.polyline.plotWithArrows(color,2,0.5,'solid',False,950)
-                            allVertices.extend(item.centerline)
-                    if len(allVertices):
-                        c = sum(allVertices,Vector((0,0))) / len(allVertices)
-                        plt.text(c[0]+2,c[1]-2,'S '+str(street.id),color='k',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
-
-                if doEnd:
-                    plotEnd()
-
-            def plotStreets(streets,doEnd=True):
-                for street in streets:
-                    allVertices = []
-                    color = next(colorIter)
-                    for item in street.iterItems():
-                        if isinstance(item, Section):
-                            item.polyline.plotWithArrows(color,1,0.5,'solid',False,950)
-                            allVertices.extend(item.centerline)
-                    if len(allVertices):
-                        c = sum(allVertices,Vector((0,0))) / len(allVertices)
-                        plt.text(c[0]+2,c[1]-2,'S '+str(street.id),color='k',fontsize=8,zorder=130,ha='left', va='top', clip_on=True)
-
-                streetsThatEndHere = defaultdict(list)  # The streets that end at the key location
-                intersectionOfThisEnd = dict()          # The intersection at the key location
-                for street in streets:
-                    streetsThatEndHere[street.src].append(street)
-                    streetsThatEndHere[street.dst].append(street)
-                    intersectionOfThisEnd[street.src] = street.pred.intersection if street.pred else None
-                    intersectionOfThisEnd[street.dst] = street.succ.intersection if street.succ else None
-
-                innerOrder = dict()     # number of leaving streets, that belong to the bundle
-                outerOrder = dict()     # number of leaving streets, that do not belong to the bundle
-                isectOrder = dict()
-                for location, intersection in intersectionOfThisEnd.items():
-                    innerOrder[location] = len(streetsThatEndHere[location])
-                    outerOrder[location] = sum(1 for connector in intersection if connector.item not in streets) if intersection else 0
-                    isectOrder[location] = intersection.order if intersection else None
-
-                    p = location
-                    if innerOrder[location]==1:   # endpoint
-                        plt.plot(p[0],p[1],'rx',markersize=8,zorder=999)
-                    elif innerOrder[location]==2 and outerOrder[location]==1: # major to minor and connect
-                        plt.plot(p[0],p[1],'bo',markersize=8,zorder=999)
-                    elif outerOrder[location]==0: # inner intersection, split/merge
-                        plt.plot(p[0],p[1],'cs',markersize=8,zorder=999)
-                        plt.text(p[0],p[1]+2,str(isectOrder[location]),color='red',zorder=999)
-                        plt.text(p[0],p[1],' '+str(innerOrder[location]),color='red',zorder=999)
-                        plt.text(p[0],p[1],'     '+str(outerOrder[location]),color='blue',zorder=999)
-                    else:
-                        plt.plot(p[0],p[1],'mo',markersize=8,zorder=999)
-                        plt.text(p[0],p[1]+2,str(isectOrder[location]),color='red',zorder=999)
-                        plt.text(p[0],p[1],' '+str(innerOrder[location]),color='red',zorder=999)
-                        plt.text(p[0],p[1],'     '+str(outerOrder[location]),color='blue',zorder=999)
-
-                    # plt.text(p[0],p[1]+5,str(isectOrder[location]),color='red',zorder=999)
-                    # plt.text(p[0],p[1],'    '+str(innerOrder[location]),color='red',zorder=999)
-                    # plt.text(p[0],p[1],'        '+str(outerOrder[location]),color='blue',zorder=999)
-
-                if doEnd:
-                    plotEnd()
 
         # The disjoint set <self.parallelStreets> is not a convenient container for
         # the streets group. Mainly, modified streets cannot be stored there.
@@ -734,18 +669,18 @@ class StreetGenerator():
             # other bundles and delivers streets, that pass these intersections. In
             # such a situation, its  proposed group has to be split into two groups, while
             # the splitting streets at the intersection have to be removed.
-            wasSplitted, splittedGroups, splittingStreets = removeSplittingStreets(self,gIndex,streetGroup,groupIntersections)
+            wasSplit, splittedGroups, splittingStreets = removeSplittingStreets(self,gIndex,streetGroup,groupIntersections)
             self.allSplittingStreets.extend(splittingStreets)
             if doDebug:
-                if wasSplitted:
+                if wasSplit:
                     for group in splittedGroups:
-                        plotStreetGroup(streetGroup.group, 'blue', False)
-                        plotStreetGroup(splittingStreets.group, 'whitesmoke', False)
-                        plotStreetGroup(group.inner, 'green', False)
-                        plotStreetGroup(group,'red',True)   
+                        streetGroup.plot('blue', False)
+                        splittingStreets.plot('whitesmoke', False)
+                        group.innerPlot('green', False)
+                        group.plot('red',True)
 
 
-            if wasSplitted:
+            if wasSplit:
                 newGroups.extend(splittedGroups)
                 delGroups.append(streetGroup)
                 for street in splittingStreets:
@@ -763,11 +698,13 @@ class StreetGenerator():
 
 
         for gIndex,streetGroup in enumerate(streetGroups):
+            if not streetGroup:
+                continue
             head, tail = orderHeadTail(streetGroup)
 
             if doDebug:
                 plotQualifiedNetwork(self.sectionNetwork)
-                plotStreetGroup(streetGroup)  
+                streetGroup.plot()
                 for indx in range(len(head)):  
                     item = head[indx]
                     p = item['firstVert']
@@ -788,7 +725,7 @@ class StreetGenerator():
 
             if doDebug:
                 plotQualifiedNetwork(self.sectionNetwork)
-                plotStreetGroup(streetGroup)  
+                streetGroup.plot()
                 for indx in range(len(head)):  
                     item = head[indx]
                     p = item['firstVert']
@@ -817,7 +754,6 @@ class StreetGenerator():
                 # plt.title(str(indxG))
                 plotEnd()
 
-            # ToDo: street.pred, street.succ ??
             bundle = Bundle()
             for item in head:
                 street = item['street']
@@ -865,7 +801,7 @@ class StreetGenerator():
             mergeBundles(self,involvedBundles)
 
     def createBundleIntersections(self):
-        doDebug = True and self.app.type == AppType.commandLine
+        doDebug = False and self.app.type == AppType.commandLine
         if doDebug:
             from debug import plt, plotQualifiedNetwork, randomColor, plotEnd
 
