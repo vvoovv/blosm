@@ -49,6 +49,7 @@ class StreetRenderer(Renderer):
                 color = 'green' if nrOfBundles>1 else 'orange'
                 circle = plt.Circle(center, radius*1.1, color=color, alpha=0.6)
                 plt.gca().add_patch(circle)
+                plt.text(p[0],p[1],' '+str(isect.id),color='r',fontsize=10,zorder=130,ha='left', va='top', clip_on=True)
                 
 
         for location,isect in manager.minorIntersections.items():
