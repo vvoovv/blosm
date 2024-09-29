@@ -674,10 +674,10 @@ class StreetGenerator():
             if doDebug:
                 if wasSplit:
                     for group in splittedGroups:
-                        streetGroup.plot('blue', False)
-                        splittingStreets.plot('whitesmoke', False)
-                        group.innerPlot('green', False)
-                        group.plot('red',True)
+                        streetGroup.plot('blue', 1, False)
+                        splittingStreets.plot('whitesmoke', 1, False)
+                        group.innerPlot('green', 1, False)
+                        group.plot('red',1, True)
 
 
             if wasSplit:

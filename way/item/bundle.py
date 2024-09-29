@@ -137,13 +137,13 @@ class StreetGroup():
         if doEnd:
             plotEnd()
 
-    def innerPlot(self,color='blue',doEnd=False):
+    def innerPlot(self,color='blue',width=1,doEnd=False):
         from debug import plt, plotEnd
         for street in self.inner:
             allVertices = []
             for item in street.iterItems():
                 if isinstance(item, Section):
-                    item.polyline.plotWithArrows(color,2,0.5,'solid',False,950)
+                    item.polyline.plotWithArrows(color,width,0.5,'dotted',False,950)
                     allVertices.extend(item.centerline)
             if len(allVertices):
                 c = sum(allVertices,Vector((0,0))) / len(allVertices)
@@ -392,22 +392,6 @@ def removeSplittingStreets(streetGenerator,gIndex, streetGroup, groupIntersectio
             srcGroup.extend([s for s in streetGroup if s not in splittingStreets and h in [s.src, s.dst]])
             dstGroup.extend([s for s in streetGroup if s not in splittingStreets and t in [s.src, s.dst]])
 
-    # # If split, access all streets that are connected to the streets in the groups
-    # if wasSplit:
-    #     remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
-    #     connected = []
-    #     for street in srcGroup:
-    #         connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
-    #         connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
-    #     srcGroup.extend(connected)
-
-    #     remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
-    #     connected = []
-    #     for street in dstGroup:
-    #         connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
-    #         connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
-    #     dstGroup.extend(connected)
-
     # Sometimes (often at the scene border), short tails remain between the
     # last intersection and the border. These ends are removed from the group.
     for group in ([srcGroup, dstGroup] if wasSplit else [streetGroup]):
@@ -503,6 +487,27 @@ def removeSplittingStreets(streetGenerator,gIndex, streetGroup, groupIntersectio
         extendedEnds = [s for s in remainingStreets if (s.src in innerCommonEnds or 
                                 s.dst in innerCommonEnds) and s not in dstGroup.inner]
         dstGroup.inner.extend(extendedEnds)
+
+
+
+    # If split, access all remaining streets, that are connected to the streets in the groups
+    if wasSplit:
+        remaining = set(streetGroup).difference(srcGroup).difference(dstGroup).difference(splittingStreets)
+        remaining = remaining.difference(srcGroup.inner).difference(dstGroup.inner)
+
+        connected = []
+        for street in srcGroup:
+            connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
+            connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
+        srcGroup.extend(connected)
+
+        remaining = remaining.difference(srcGroup)
+        connected = []
+        for street in dstGroup:
+            connected.extend([s for s in remaining if s.src in [street.src, street.dst]])
+            connected.extend([s for s in remaining if s.dst in [street.src, street.dst]])
+        dstGroup.extend(connected)
+
 
     return wasSplit, [srcGroup, dstGroup], splittingStreets
 
