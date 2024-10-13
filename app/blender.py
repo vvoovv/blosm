@@ -30,7 +30,7 @@ if "bpy" in sys.modules:
     from renderer.curve_layer import CurveLayer
     from renderer import Renderer
     from terrain import Terrain
-    from util.blender import makeActive
+    from util.blender import makeActive, appendNodeGroupFromFile, addGeometryNodesModifier
 
 
 _setAssetsDirStr = "Please set a directory with assets (building_materials.blend, vegetation.blend) in the addon preferences!"
@@ -68,6 +68,8 @@ class BlenderApp(BaseApp):
     terrainSubDir = "terrain"
     
     overlaySubDir = "overlay"
+    
+    baseAssetPath = "assets/base.blend"
     
     bldgMaterialsFileName = "building_materials.blend"
     
@@ -117,10 +119,12 @@ class BlenderApp(BaseApp):
         super().__init__()
         
         # path to the top directory of the addon
-        self.basePath = os.path.join(
+        self.basePath = os.path.realpath(os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             os.pardir
-        )
+        ))
+        self.baseAssetPath = os.path.realpath(os.path.join(self.basePath, BlenderApp.baseAssetPath))
+        
         # a cache for the license keys
         self._keys = {}
         # fill in the cache <self._keys> for the license keys
@@ -550,8 +554,17 @@ class BlenderApp(BaseApp):
         obj["height_offset"] = minHeight
         context.scene.collection.objects.link(obj)
         context.scene.blosm.terrainObject = obj.name
-        # force smooth shading
+        
         makeActive(obj, context)
+        
+        # Load a Geometry Nodes setup with the name <"Blosm Terrrain Base">
+        nodeGroupName = "Blosm Terrain Base"
+        if not nodeGroupName in bpy.data.node_groups:
+            appendNodeGroupFromFile(self.baseAssetPath, nodeGroupName)
+        addGeometryNodesModifier(obj, bpy.data.node_groups[nodeGroupName], "Terrain Base")
+        
+        
+        # force smooth shading
         bpy.ops.object.shade_smooth()
 
     def buildTerrain(self, verts, indices, heightOffset):

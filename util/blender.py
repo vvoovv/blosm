@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import os
 import bpy, bmesh
 
 
@@ -117,6 +118,16 @@ def loadCollectionFromFile(filepath, name):
     return data_to.collections[0]
 
 
+def linkCollectionFromFile(filepath, name):
+    """
+    Links a Blender collection with the given <name> from the .blend file with the given <filepath>
+    """
+    with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.meshes>
+        data_to.collections = [name]
+    return data_to.collections[0]
+
+
 def loadSceneFromFile(filepath, name):
     """
     Loads a Blender scene with the given <name> from the .blend file with the given <filepath>
@@ -161,6 +172,16 @@ def loadNodeGroupsFromFile(filepath, *names):
         ]
 
 
+def appendNodeGroupFromFile(filepath, name):
+    """
+    Appends node groups with <name> from the .blend file with the given <filepath>.
+    """
+    with bpy.data.libraries.load(filepath) as (_, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.node_groups>
+        data_to.node_groups = [name]
+    return data_to.node_groups[0]
+
+
 def loadTextFromFile(filepath, name):
     """
     Loads a Blender text with the given <name> from the .blend file with the given <filepath>
@@ -183,6 +204,19 @@ def appendObjectsFromFile(filepath, collection, *names):
                     obj.select_set(False)
     # return the appended Blender objects
     return data_to.objects
+
+
+def linkObjectFromFile(filepath, collection, name):
+    with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
+        # a Python list (not a Python tuple!) must be set to <data_to.objects>
+        data_to.objects = [name]
+    obj = data_to.objects[0]
+    if collection:
+        # link <obj> to <collection>
+        collection.objects.link(obj)
+        obj.select_set(False)
+    # return the appended Blender objects
+    return obj
 
 
 def getMaterialIndexByName(obj, name, filepath):
@@ -255,3 +289,46 @@ def addShrinkwrapModifier(obj, target, offset):
     m.use_project_z = True
     m.target = target
     m.offset = offset
+
+
+def addGeometryNodesModifier(obj, nodeGroup, modifierName=''):
+    m = obj.modifiers.new(modifierName, "NODES")
+    m.node_group = nodeGroup
+    return m
+
+
+def loadImage(fileName, directory):
+    image = bpy.data.images.get(fileName if directory else os.path.basename(fileName))
+    if not image:
+        # absolute path!
+        imagePath = os.path.join(directory, fileName) if directory else fileName
+        try:
+            image = bpy.data.images.load(imagePath)
+        except Exception:
+            print("Unable to load the image %s" % imagePath)
+    return image
+
+
+def useAttributeForGnInput(modifier, inputId, attributeName):
+    # Set "_use_attribute" to 1 to use geometry attributes instead of
+    # using manually entered input values
+    modifier[inputId + "_use_attribute"] = 1
+    # set "_attribute_name" to the related mesh attribute of the Blender object
+    modifier[inputId + "_attribute_name"] = attributeName
+
+
+def createPolylineMesh(obj, bm, polyline, prevVert):
+    if obj:
+        bm = getBmesh(obj)
+    
+    if not prevVert:
+        prevVert = bm.verts.new((polyline[0][0], polyline[0][1], 0.))
+    for i in range(1, len(polyline)):
+        vert = bm.verts.new((polyline[i][0], polyline[i][1], 0.))
+        bm.edges.new((prevVert, vert))
+        prevVert = vert
+    
+    if obj:
+        setBmesh(obj, bm)
+    else:
+        return prevVert
