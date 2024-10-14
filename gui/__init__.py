@@ -887,6 +887,12 @@ class BlosmProperties(bpy.types.PropertyGroup):
         default = 3.
     )
     
+    customName: bpy.props.StringProperty(
+        name = "Custom name",
+        description = "Custom name for the imported objects",
+        default = ""
+    )
+    
     defaultLevels: bpy.props.CollectionProperty(type = BlosmDefaultLevelsEntry)
     
     defaultLevelsIndex: bpy.props.IntProperty(
@@ -945,6 +951,12 @@ class BlosmProperties(bpy.types.PropertyGroup):
         items=(("quad","quad","quad"),("triangle","triangle","triangle")),
         description="Primitive type used for the terrain mesh: quad or triangle",
         default="quad"
+    )
+    
+    terrainName: bpy.props.StringProperty(
+        name="Terrain name",
+        description="Name for the terrain object",
+        default="Terrain"
     )
 
     # Number of vertex reduction

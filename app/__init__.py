@@ -71,15 +71,18 @@ class BaseApp:
             f.write(u.read())
         print("Saving the file to %s..." % filepath)
     
-    def downloadOsmFile(self, osmDir, minLon, minLat, maxLon, maxLat):
+    def downloadOsmFile(self, osmDir, minLon, minLat, maxLon, maxLat, customName):
         # find a file name for the OSM file
         osmFileName = BaseApp.osmFileName % ""
         counter = 1
         while True:
             osmFilepath = os.path.realpath( os.path.join(osmDir, osmFileName) )
             if os.path.isfile(osmFilepath):
-                counter += 1
-                osmFileName = BaseApp.osmFileName % "_%s" % counter
+                if customName != "":
+                    osmFileName = BaseApp.osmFileName % "_%s" % customName
+                else:
+                    counter += 1
+                    osmFileName = BaseApp.osmFileName % "_%s" % counter
             else:
                 break
         self.osmFilepath = osmFilepath
