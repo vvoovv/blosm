@@ -1,14 +1,14 @@
 # Blosm for Blender: OpenStreetMap, Google 3D cities, terrain
 **Blosm** addon for Blender (formerly known as Blender-OSM) provides a few clicks download and import of OpenStreetMap, Google 3D cities and real world terrain data with global coverage. Two versions of the addon are available:
-* [Blosm (premium)](https://prochitecture.gumroad.com/l/blosm)
+* [Blosm (Pro)](https://prochitecture.gumroad.com/l/blosm)
 * [Blosm](https://prochitecture.gumroad.com/l/blender-osm) (the base version, it can be downloaded for free)
 
 They are briefly described below.
 
-## [Blosm (premium)](https://prochitecture.gumroad.com/l/blosm)
+## [Blosm (Pro)](https://prochitecture.gumroad.com/l/blosm)
 [![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm.png)](https://prochitecture.gumroad.com/l/blosm)
 
-In addition to the features of the base version, the premium one provides:
+In addition to all the features of the base version, the Pro version offers:
 * Import of buildings from OpenStreetMap with default materials, tileable building textures and UV-mapping applied
 * Default materials and textures to mimic lit windows for a late evening setting
 * Import of forests and single trees as 3D objects
@@ -34,8 +34,8 @@ The detailed documentation is available [here](https://github.com/vvoovv/blender
 
 
 ## Links and contacts
-* Purchase: [premium version](https://prochitecture.gumroad.com/l/blosm), [base version](https://prochitecture.gumroad.com/l/blender-osm)
-* Documentation: [premium version](https://github.com/vvoovv/blender-osm/wiki/Premium-Version), [base version](https://github.com/vvoovv/blender-osm/wiki/Documentation)
+* Purchase: [Pro version](https://prochitecture.gumroad.com/l/blosm), [base version](https://prochitecture.gumroad.com/l/blender-osm)
+* Documentation: [Pro version](https://github.com/vvoovv/blender-osm/wiki/Premium-Version), [base version](https://github.com/vvoovv/blender-osm/wiki/Documentation)
 * e-mail: [prokitektura+support@gmail.com](mailto:prokitektura+support@gmail.com)
 * facebook: [@prochitecture](https://www.facebook.com/prochitecture)
 * twitter: [@prochitecture](https://twitter.com/prochitecture)
