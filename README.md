@@ -9,6 +9,7 @@ They are briefly described below.
 [![](https://raw.githubusercontent.com/wiki/vvoovv/blender-osm/images/blosm.png)](https://prochitecture.gumroad.com/l/blosm)
 
 In addition to all the features of the base version, the Pro version offers:
+* One-click baking of multiple textures into a single texture for 3D Tiles
 * Import of buildings from OpenStreetMap with default materials, tileable building textures and UV-mapping applied
 * Default materials and textures to mimic lit windows for a late evening setting
 * Import of forests and single trees as 3D objects
