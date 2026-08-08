@@ -77,6 +77,8 @@ class Osm:
         self.minLon = 0.
         self.maxLon = 0.
     
+        self.customName = ""
+        
     def addCondition(self, condition, layerId=None, manager=None, renderer=None):
         self.conditions.append(
             (condition, manager, renderer, layerId)

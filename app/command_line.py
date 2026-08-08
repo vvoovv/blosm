@@ -42,6 +42,7 @@ class CommandLineApp(BaseApp):
         argParser.add_argument("--osmFilepath", help="Path to an OSM file")
         argParser.add_argument("--osmDir", help="A directory for the downloaded OSM files")
         argParser.add_argument("--setupScript", help="The path to a custom setup script")
+        argParser.add_argument("--customName", help="A custom name for the downloaded OSM file", default="")
         
         argParser.add_argument("--buildings", action='store_true', help="Import buildings", default=False)
         argParser.add_argument("--highways", action='store_true', help="Import roads and paths", default=False)
@@ -76,7 +77,7 @@ class CommandLineApp(BaseApp):
         if self.osmFilepath:
             self.osmFilepath = os.path.realpath(self.osmFilepath)
         else:
-            self.downloadOsmFile(self.osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat)
+            self.downloadOsmFile(self.osmDir, self.minLon, self.minLat, self.maxLon, self.maxLat, self.customName)
 
     def render(self):
         logger = self.logger
