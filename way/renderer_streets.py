@@ -1,3 +1,4 @@
+from ..util.geometry_nodes import setGnInput
 import os
 
 from mathutils import Vector
@@ -145,7 +146,7 @@ class StreetRenderer:
               
             if self.terrainObj:
                 m = addGeometryNodesModifier(street.obj3d, self.gnTerrainStreetFull, "Streets on terrain")
-                m["Input_2"] = self.terrainObj
+                setGnInput(m, "Input_2", self.terrainObj)
         
         for itemRenderer in self.itemRenderers.values():
             itemRenderer.finalize()
@@ -246,7 +247,7 @@ class StreetRenderer:
         terrainObj = self.getTerrainObj()
         if terrainObj:
             m = addGeometryNodesModifier(obj, gnModifier, "Project on terrain")
-            m["Input_2"] = terrainObj
+            setGnInput(m, "Input_2", terrainObj)
         return terrainObj
     
     def getTerrainObj(self):
@@ -458,9 +459,9 @@ class StreetRenderer:
     
     def setTrimLength(self, streetSection, trimLength, left, start):
         if left:
-            streetSection.sidewalkL["Input_6" if start else "Input_7"] = trimLength
+            setGnInput(streetSection.sidewalkL, "Input_6" if start else "Input_7", trimLength)
         else:
-            streetSection.sidewalkR["Input_6" if start else "Input_7"] = trimLength
+            setGnInput(streetSection.sidewalkR, "Input_6" if start else "Input_7", trimLength)
     
     def setOffsetWeights(self, obj, streetSection, pointIndexOffset):
         # Set offset weights. An offset weight is equal to
@@ -572,7 +573,7 @@ class StreetRenderer:
             # set material
             material = self.getMaterial(assetInfo)
             if material:
-                modifier[modifierAttr] = material
+                setGnInput(modifier, modifierAttr, material)
     
     def getMaterial(self, assetInfo):
         materialName = assetInfo["material"]
@@ -607,15 +608,15 @@ class StreetRenderer:
             collection = self.collection3dStreets
         )
         m = addGeometryNodesModifier(obj, self.gnInitPolyline3d)
-        m["Socket_3"] = street.obj
+        setGnInput(m, "Socket_3", street.obj)
         # setting offset for points where two street sections share a position of their end points
-        m["Socket_2"] = 4.
+        setGnInput(m, "Socket_2", 4.)
         # intersection at the start of the street
         if street.pred and street.pred.intersection.order == 4 and not street.pred.intersection.isMinor:
-            m["Socket_4"] = street.pred.intersection.obj
+            setGnInput(m, "Socket_4", street.pred.intersection.obj)
         # intersection at the end of the street
         if street.succ and street.succ.intersection.order == 4 and not street.succ.intersection.isMinor:
-            m["Socket_5"] = street.succ.intersection.obj
+            setGnInput(m, "Socket_5", street.succ.intersection.obj)
         return obj
     
     def debugIntersectionArea(self, manager):
@@ -735,17 +736,17 @@ class StreetRenderer:
             (transition.outgoing, transition.incoming)
         
         m = addGeometryNodesModifier(obj, self.gnSideLaneTransition, "Side-Lane Transition")
-        m["Input_2"] = transition.length
-        m["Input_3"] = streetSectionMoreLanes.width - streetSection.width
-        m["Input_4"] = streetSection.width
-        m["Input_5"] = streetSection.offset
+        setGnInput(m, "Input_2", transition.length)
+        setGnInput(m, "Input_3", streetSectionMoreLanes.width - streetSection.width)
+        setGnInput(m, "Input_4", streetSection.width)
+        setGnInput(m, "Input_5", streetSection.offset)
         # Reverse the position of the transition lane from right to left or from left to right
         # if the total number of lanes is decreased
-        m["Input_6"] = laneOnRight if transition.totalLanesIncreased else not laneOnRight
+        setGnInput(m, "Input_6", laneOnRight if transition.totalLanesIncreased else not laneOnRight)
         self.setMaterial(m, "Input_7", AssetType.material, "demo", AssetPart.side_lane_transition, "default")
-        m["Input_8"] = streetSection.streetSectionIndex
+        setGnInput(m, "Input_8", streetSection.streetSectionIndex)
         useAttributeForGnInput(m, "Input_9", "offset_weight")
-        m["Input_10"] = transition.totalLanesIncreased
+        setGnInput(m, "Input_10", transition.totalLanesIncreased)
 
 
 class TerrainPatchesRenderer:
@@ -769,7 +770,7 @@ class TerrainPatchesRenderer:
         terrainObj = streetRenderer.getTerrainObj()
         if terrainObj:
             m = addGeometryNodesModifier(obj, streetRenderer.gnProjectTerrainPatches, "Project terrain patches")
-            m["Input_2"] = terrainObj
+            setGnInput(m, "Input_2", terrainObj)
         
         self.bm = getBmesh(obj)
     

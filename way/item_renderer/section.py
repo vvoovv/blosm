@@ -1,3 +1,4 @@
+from ...util.geometry_nodes import setGnInput
 from . import ItemRenderer
 from util.blender import addGeometryNodesModifier, useAttributeForGnInput, createPolylineMesh
 from ..asset_store import AssetType, AssetPart
@@ -33,13 +34,13 @@ class Section(ItemRenderer):
 
     def setModifierSection(self, section, itemIndex):
         m = addGeometryNodesModifier(section.street.obj3d, self.gnSection, "Street Section")
-        m["Input_2"] = section.offset
-        m["Input_3"] = section.width
+        setGnInput(m, "Input_2", section.offset)
+        setGnInput(m, "Input_3", section.width)
         # Offset weights are now calculated in the Geometry Nodes
         #useAttributeForGnInput(m, "Input_4", "offset_weight")
         self.setMaterial(m, "Input_5", AssetType.material, "demo", AssetPart.section, section.getClass())
         if itemIndex:
-            m["Input_9"] = itemIndex
+            setGnInput(m, "Input_9", itemIndex)
     
     def requestNodeGroups(self, nodeGroupNames):
         #nodeGroupNames.add("Blosm Street Section")

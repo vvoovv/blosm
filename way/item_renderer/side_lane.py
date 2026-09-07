@@ -1,3 +1,4 @@
+from ...util.geometry_nodes import setGnInput
 from .section import Section
 from util.blender import addGeometryNodesModifier
 from ..asset_store import AssetType, AssetPart
@@ -22,21 +23,21 @@ class SideLane(Section):
         
         m = addGeometryNodesModifier(section.street.obj3d, self.gnSideLaneTransition, "Side Lane Transition")
         # Length of the Transition Lane
-        m["Input_2"] = section.length
+        setGnInput(m, "Input_2", section.length)
         # Width of the Transition Lane
-        m["Input_3"] = sectionWider.width - sectionNarrower.width
+        setGnInput(m, "Input_3", sectionWider.width - sectionNarrower.width)
         # Width of the Street Section
-        m["Input_4"] = sectionNarrower.width
+        setGnInput(m, "Input_4", sectionNarrower.width)
         # Offset of the Street Section
-        m["Input_5"] = sectionNarrower.offset
+        setGnInput(m, "Input_5", sectionNarrower.offset)
         # Lane on the Right
-        m["Input_6"] = section.laneR
+        setGnInput(m, "Input_6", section.laneR)
         # Material
         self.setMaterial(m, "Input_7", AssetType.material, None, AssetPart.side_lane_transition, section.getStyleBlockAttr("cl"))
         if itemIndex:
-            m["Input_8"] = itemIndex
+            setGnInput(m, "Input_8", itemIndex)
         # Number of Lanes is Increased
-        m["Input_10"] = section.totalLanesIncreased
+        setGnInput(m, "Input_10", section.totalLanesIncreased)
         
         super().finalizeItem(section, itemIndex)
     

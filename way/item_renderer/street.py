@@ -1,3 +1,4 @@
+from ...util.geometry_nodes import setGnInput
 from . import ItemRenderer
 from ..way_properties import wayCategoryProps
 
@@ -16,21 +17,21 @@ class Street(ItemRenderer):
         return
     
     def setPolyline1ParamsForCorner(self, modifier, connector, setRadius):
-        modifier["Socket_3"] = connector.item.obj
-        modifier["Socket_4"] = connector.leaving
+        setGnInput(modifier, "Socket_3", connector.item.obj)
+        setGnInput(modifier, "Socket_4", connector.leaving)
         if setRadius:
-            modifier["Socket_8"] = wayCategoryProps[ (connector.item.head if connector.leaving else connector.item.tail).tags["highway"] ]["radius"]
+            setGnInput(modifier, "Socket_8", wayCategoryProps[ (connector.item.head if connector.leaving else connector.item.tail).tags["highway"] ]["radius"])
 
     def setPolyline2ParamsForCorner(self, modifier, connector, setRadius):
-        modifier["Socket_6"] = connector.item.obj
-        modifier["Socket_7"] = connector.leaving
+        setGnInput(modifier, "Socket_6", connector.item.obj)
+        setGnInput(modifier, "Socket_7", connector.leaving)
         if setRadius:
-            modifier["Socket_8"] = wayCategoryProps[ (connector.item.head if connector.leaving else connector.item.tail).tags["highway"] ]["radius"]
+            setGnInput(modifier, "Socket_8", wayCategoryProps[ (connector.item.head if connector.leaving else connector.item.tail).tags["highway"] ]["radius"])
     
     def renderNeighborIntersection(self, intersection, connector, index, modifier):
         street = connector.item
         order = intersection.order
             
-        modifier[ self.intersectionRenderer.inputCenterlines[order][index][0] ] = street.obj
-        modifier[ self.intersectionRenderer.inputWidths[order][index][0] ] = street.head.width if connector.leaving else street.tail.width
-        modifier[ self.intersectionRenderer.inputLocations[order][index][0] ] = connector.leaving
+        setGnInput(modifier, self.intersectionRenderer.inputCenterlines[order][index][0], street.obj)
+        setGnInput(modifier, self.intersectionRenderer.inputWidths[order][index][0], street.head.width if connector.leaving else street.tail.width)
+        setGnInput(modifier, self.intersectionRenderer.inputLocations[order][index][0], connector.leaving)

@@ -5,6 +5,7 @@ from grammar.arrangement import Horizontal, Vertical
 from grammar.symmetry import MiddleOfLast, RightmostOfLast
 from util import rgbToHex
 from util.blender import createMeshObject, addGeometryNodesModifier, useAttributeForGnInput
+from util.geometry_nodes import getGnInput, setGnInput, iterGnInputs, getGnInputAttribute
 
 
 def _getTileWidthM(facadeTextureInfo):
@@ -73,23 +74,25 @@ def getParamValue(param, item, obj):
 
 def getParamValueGn(gnInput, item, obj):
     # isPmlParamater, mAttr, (pmlParameter, inputType) = gnInput
-    return item.getStyleBlockAttrDeep(gnInput[2][0]) or obj.modifiers[0][gnInput[1]]
+    value = item.getStyleBlockAttrDeep(gnInput[2][0])
+    return getGnInput(obj.modifiers[0], gnInput[1]) if value is None else value
 
 
 def getStringForGnKey(gnInput, item, obj):
     gnInputType = gnInput[2][1]
     value = getParamValueGn(gnInput, item, obj)
     
-    if gnInputType == 'VALUE':
+    if gnInputType.startswith('NodeSocketFloat'):
         return str(round( value, 3 ))
-    elif gnInputType == 'STRING':
+    elif gnInputType == 'NodeSocketString':
         return value
-    elif gnInputType == 'RGBA':
+    elif gnInputType == 'NodeSocketColor':
         return rgbToHex(value)
-    elif gnInputType == 'BOOLEAN':
+    elif gnInputType == 'NodeSocketBool':
         return "1" if value else '0'
-    elif gnInputType == 'INT':
-        return str(value)
+    elif gnInputType.startswith('NodeSocketVector'):
+        return str(tuple(round(component, 3) for component in value))
+    return str(value)
 
 
 class Container(ItemRendererTexture):
@@ -370,29 +373,18 @@ class Container(ItemRendererTexture):
                             # pmlParameter = extraData[0]
                             #
                             itemAttrValue = item.getStyleBlockAttrDeep(extraData[0])
-                            if itemAttrValue:
-                                if extraData[1] == 'RGBA':
-                                    # At the moment  it isn't possible to set a color for
-                                    # a Geometry Nodes attribute through
-                                    # _m[mAttr] = itemAttrValue
-                                    # We have to set the color like it's done below:
-                                    _m[mAttr][0], _m[mAttr][1], _m[mAttr][2], _m[mAttr][3] =\
-                                    itemAttrValue[0], itemAttrValue[1], itemAttrValue[2], itemAttrValue[3]
-                                else:
-                                    _m[mAttr] = itemAttrValue
-                            else:
-                                _m[mAttr] = m[mAttr]
+                            setGnInput(_m, mAttr, getGnInput(m, mAttr) if itemAttrValue is None else itemAttrValue)
                         else:
                             #
                             # useDataAttribute = dataAttribute = extraData
                             #
-                            if extraData:
+                            if extraData is not None:
                                 # If <mAttr> in <obj> uses an <obj>'s attribute defined in <obj>'s data, than
                                 # <mAttr> in <_obj> also uses the <_obj>'s attribute defined in <_obj>'s data.
                                 # Note, that <obj> and <_obj> use the same data.
                                 useAttributeForGnInput(_m, mAttr, extraData)
                             else:
-                                _m[mAttr] = m[mAttr]
+                                setGnInput(_m, mAttr, getGnInput(m, mAttr))
                          
             obj = instances[key]
         
@@ -420,34 +412,27 @@ class Container(ItemRendererTexture):
         
         # now get the properties from the Geometry Nodes modifier
         gnInputs = []
-        if obj.modifiers:
+        if obj.modifiers and obj.modifiers[0].type == 'NODES':
             # only a single Geometry Nodes modifier is allowed!
             m = obj.modifiers[0]
-            inputs = m.node_group.inputs
-            
-            mAttrs = list(obj.modifiers[0].keys())
-            attrIndex = 0
+            inputs = list(iterGnInputs(m))
             # the number of inputs with the name starting with <_p>
-            numGnParams = sum(inputs[inputIndex].name.startswith("p_") for inputIndex in range(1, len(inputs)))
+            numGnParams = sum(inp.name.startswith("p_") for inp in inputs)
             if numGnParams:
-                for inputIndex in range(1, len(inputs)):
-                    inp = inputs[inputIndex]
-                    mAttr = mAttrs[attrIndex]
+                for inp in inputs:
+                    mAttr = inp.identifier
                     if inp.name.startswith("p_"):
                         gnInputs.append((
                             True, # <True> since it represents PML parameter, because it starts with <p_>
                             mAttr, # the related modifier's attribute
-                            (inp.name[2:], inp.type) # PML parameter, input type
+                            (inp.name[2:], getattr(inp, "socket_type", None) or inp.bl_socket_idname)
                         ))
-                        attrIndex += 3 if mAttr + "_use_attribute" in m else 1
                     else:
-                        useDataAttribute = m.get(mAttr + "_use_attribute")
                         gnInputs.append((
                             False, # <False> since it doesn't represent a PML parameter, i.e. it doesn't start with <p_>
                             mAttr, # the related modifier's attribute
-                            m[mAttr + "_attribute_name"] if useDataAttribute else None # the name of the data attribute or None
+                            getGnInputAttribute(m, mAttr) # the name of the data attribute or None
                         ))
-                        attrIndex += 1 if useDataAttribute is None else 3
         
         self.r.meshAssets[objName] = (obj, objParams, gnInputs, {} if objParams or gnInputs else None)
         

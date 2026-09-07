@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import bpy, bmesh
+from .geometry_nodes import useAttributeForGnInput
 
 
 def makeActive(obj, context=None):
@@ -307,14 +308,6 @@ def loadImage(fileName, directory):
         except Exception:
             print("Unable to load the image %s" % imagePath)
     return image
-
-
-def useAttributeForGnInput(modifier, inputId, attributeName):
-    # Set "_use_attribute" to 1 to use geometry attributes instead of
-    # using manually entered input values
-    modifier[inputId + "_use_attribute"] = True
-    # set "_attribute_name" to the related mesh attribute of the Blender object
-    modifier[inputId + "_attribute_name"] = attributeName
 
 
 def createPolylineMesh(obj, bm, polyline, prevVert):

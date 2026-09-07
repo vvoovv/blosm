@@ -1,3 +1,4 @@
+from ...util.geometry_nodes import setGnInput
 import bpy
 
 from ...util.blender import loadMaterialsFromFile
@@ -25,7 +26,7 @@ class ItemRenderer:
             # set material
             material = self.getMaterial(assetInfo)
             if material:
-                modifier[modifierAttr] = material
+                setGnInput(modifier, modifierAttr, material)
     
     def getMaterial(self, assetInfo):
         materialName = assetInfo["material"]

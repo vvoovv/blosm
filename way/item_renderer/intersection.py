@@ -1,3 +1,4 @@
+from ...util.geometry_nodes import setGnInput
 from util.blender import createMeshObject, getBmesh, setBmesh, addGeometryNodesModifier
 from ..asset_store import AssetType, AssetPart
 from . import ItemRenderer
@@ -104,7 +105,7 @@ class Intersection(ItemRenderer):
         #
         if self.r.terrainObj:
             m = addGeometryNodesModifier(intersection.obj, self.gnTerrainArea, "Project on terrain")
-            m["Input_2"] = self.r.terrainObj
+            setGnInput(m, "Input_2", self.r.terrainObj)
     
     def finalize(self):
         return
