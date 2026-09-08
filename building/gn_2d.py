@@ -5,6 +5,7 @@ from ..renderer import Renderer2d
 from ..renderer.layer import MeshLayer
 from ..util.osm import parseNumber
 from ..util.random import RandomWeighted
+from ..util.geometry_nodes import iterGnInputs, setGnInput
 
 
 class GnBldg2dLayer(MeshLayer):
@@ -29,18 +30,8 @@ class GnBldg2dLayer(MeshLayer):
         m.node_group = bpy.data.node_groups[self.app.gnSetup2d]
         # The first input in the modifier <m> serves as a switch between the "Blosm" mode of
         # the Geometry Nodes setup and its manual editing mode
-        if bpy.app.version < (5, 2, 0):
-            m[ list(m.keys())[0] ] = False
-        else:
-            firstInput = next(
-                item for item in m.node_group.interface.items_tree
-                if (
-                    item.item_type == "SOCKET" and
-                    item.in_out == "INPUT" and
-                    hasattr(getattr(m.properties.inputs, item.identifier), "value")
-                )
-            )
-            getattr(m.properties.inputs, firstInput.identifier).value = False
+        firstInput = next(iterGnInputs(m))
+        setGnInput(m, firstInput.identifier, False)
 
 
 class GnBldg2dManager:
