@@ -261,9 +261,18 @@ class Terrain:
                 vertsCounter += 1
         
         # create a mesh object in Blender
-        mesh = bpy.data.meshes.new("Terrain")
+        if context.scene.blosm.terrainName != "Terrain":
+            mesh = bpy.data.meshes.new(context.scene.blosm.terrainName)
+        else:
+            mesh = bpy.data.meshes.new("Terrain")
+
         mesh.from_pydata(verts, [], indices)
         mesh.update()
-        obj = bpy.data.objects.new("Terrain", mesh)
+
+        if context.scene.blosm.terrainName != "Terrain":
+            obj = bpy.data.objects.new(context.scene.blosm.terrainName, mesh)
+        else:
+            obj = bpy.data.objects.new("Terrain", mesh)
+
         bpy.context.scene.collection.objects.link(obj)
         return obj.name
