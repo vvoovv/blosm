@@ -47,6 +47,8 @@ def endpoint_request(token, asset_id=GOOGLE_ASSET_ID):
 
 
 def parse_endpoint(content, asset_id=GOOGLE_ASSET_ID):
+    if isinstance(content, (str, bytes, bytearray)) and len(content) > 1024 * 1024:
+        raise AssetResolutionError('Cesium ion endpoint response exceeds the 1 MiB size limit')
     try:
         data = json.loads(content)
     except (ValueError, UnicodeError, RecursionError, TypeError):

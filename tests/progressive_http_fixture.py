@@ -12,6 +12,7 @@ payloads = {name: base64.b64decode(value) for name, value in configuration['payl
 guard = threading.Lock()
 active = peak = 0
 requests = []
+request_headers = []
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -22,7 +23,8 @@ class Handler(BaseHTTPRequestHandler):
         global active, peak
         if self.path == '/stats':
             with guard:
-                content = json.dumps({'peak': peak, 'requests': requests}).encode()
+                content = json.dumps({'peak': peak, 'requests': requests,
+                                      'request_headers': request_headers}).encode()
             self.send_response(200)
             self.send_header('Content-Length', str(len(content)))
             self.end_headers()
@@ -32,6 +34,8 @@ class Handler(BaseHTTPRequestHandler):
             active += 1
             peak = max(peak, active)
             requests.append(self.path)
+            request_headers.append({name: self.headers.get(name)
+                                    for name in configuration.get('record_headers', ())})
         try:
             status, content, length = self.prepare_payload()
         except BaseException:

@@ -45,6 +45,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class ResolutionChecks(unittest.TestCase):
+    def test_endpoint_response_size_is_bounded(self):
+        with self.assertRaisesRegex(ion.AssetResolutionError, '1 MiB'):
+            ion.parse_endpoint(b' ' * (1024 * 1024 + 1))
+
     def test_request_uses_ion_bearer_header_and_verified_tls(self):
         request = ion.endpoint_request('  ' + TOKEN + '\n')
         self.assertEqual(request.url, 'https://api.cesium.com/v1/assets/2275207/endpoint')

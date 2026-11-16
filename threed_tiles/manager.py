@@ -31,6 +31,7 @@ _radiiSquared = _wgs84RadiiSquared = (
 
 
 class BaseManager:
+    useDownloadTransport = False
     
     geometricErrors = {
         'lod1': 200.,
@@ -62,9 +63,9 @@ class BaseManager:
     
     def render(self, minLon, minLat, maxLon, maxLat):
         steps = self.iterRender(minLon, minLat, maxLon, maxLat)
-        if self.concurrentDownloads:
+        if self.concurrentDownloads or self.useDownloadTransport:
             try:
-                transport = DownloadTransport(max_requests=self.downloadWorkers)
+                transport = DownloadTransport(max_requests=self.downloadWorkers if self.concurrentDownloads else 1)
             except Exception as exc:
                 return ('Unable to start the download helper: %s' % redact_text(exc),)
             job = Job(steps, transport)
@@ -131,10 +132,10 @@ class BaseManager:
                     pass
                 finally:
                     e.close()
-            return (redact_text(error_message, self.rootUri),)
+            return (self.redactError(error_message, self.rootUri),)
         except Exception as e:
             # return only a critical error
-            return ("Unable to process the root URI of the 3D Tiles: %s" % redact_text(e, self.rootUri),)
+            return ("Unable to process the root URI of the 3D Tiles: %s" % self.redactError(e, self.rootUri),)
     
     def renderTileset(self, tileset, baseUri, transformMatrix):
         yield from self.renderTile(tileset["root"], baseUri, transformMatrix)
@@ -311,6 +312,9 @@ class BaseManager:
             response = gzip.decompress(response)
         
         return response
+
+    def redactError(self, error, uri):
+        return redact_text(error, uri)
     
     @staticmethod
     def initMatrixFromTransform(transform):
@@ -568,5 +572,5 @@ class BaseManager:
     
     def processError(self, e, uri):
         self.errors.append(
-            "There was an error when processing the URI %s: %s" % (redact_url(uri), redact_text(e, uri))
+            "There was an error when processing the URI %s: %s" % (redact_url(uri), self.redactError(e, uri))
         )

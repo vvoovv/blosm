@@ -84,8 +84,7 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
 
     cesiumIonAccessToken: bpy.props.StringProperty(
         name = "Cesium ion access token",
-        description = "Cesium ion token with assets:read permission for Google Photorealistic 3D Tiles",
-        subtype = 'PASSWORD'
+        description = "Cesium ion token with assets:read permission for Google Photorealistic 3D Tiles"
     )
     
     osmServer: bpy.props.EnumProperty(
@@ -404,8 +403,9 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         addon = context.scene.blosm
         google3dTiles = addon.threedTilesSource == "google"
-        if google3dTiles and addon.google3dTilesAccessVia == 'cesium_ion':
-            return self.resolveIonAccess(context)
+        viaIon = google3dTiles and addon.google3dTilesAccessVia == 'cesium_ion'
+        if viaIon:
+            from .threed_tiles.ion_access import CesiumIonManager
         progressive = addon.progressiveImport and not addon.commandLineMode
         if progressive:
             if bpy.app.background or context.window is None:
@@ -435,7 +435,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             addon.instanceName,
             report=(lambda levels, message: progressiveImport.notify(next(iter(levels)), message)) if progressive else self.report
         )
-        manager = BaseManager(
+        manager = (CesiumIonManager if viaIon else BaseManager)(
             "https://tile.googleapis.com/v1/3dtiles/root.json" if google3dTiles else addon.threedTilesUrl,
             renderer
         )
@@ -501,39 +501,6 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         return {'FINISHED'} if numImportedTiles else {'CANCELLED'}
     
-    def resolveIonAccess(self, context):
-        from .threed_tiles.cesium_ion import endpoint_request
-        from .threed_tiles.ion_access import IonAccessResolution
-
-        preferences = context.preferences.addons.get(blenderApp.app.addonName)
-        token = preferences.preferences.cesiumIonAccessToken.strip() if preferences else ''
-        if not token:
-            self.report({'ERROR'}, 'A Cesium ion access token is not set in the addon preferences')
-            return {'CANCELLED'}
-
-        blocking = (bpy.app.background or context.window is None or
-                    context.scene.blosm.commandLineMode)
-        if not blocking and context.mode != 'OBJECT':
-            self.report({'ERROR'}, 'Start Cesium ion access resolution in Object Mode')
-            return {'CANCELLED'}
-
-        task = None
-        try:
-            endpoint_request(token)  # Reject malformed credentials before starting a helper.
-            task = IonAccessResolution(token, context)
-            if not blocking:
-                progressiveImport.start(task, context)
-                return {'FINISHED'}
-            level, message = task.run_blocking()
-        except Exception as exc:
-            if task is not None and not task.job.done:
-                task.cancel()
-            self.report({'ERROR'}, str(exc))
-            return {'CANCELLED'}
-
-        self.report({level}, message)
-        return {'CANCELLED'} if level == 'ERROR' else {'FINISHED'}
-
     def importGpx(self, context):
         from .parse.gpx import Gpx
         from .gpx import GpxRenderer

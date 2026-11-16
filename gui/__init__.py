@@ -1045,7 +1045,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
         name = "Access via",
         items = (
             ("google", "Google", "Access Google 3D Tiles directly using your Google 3D Tiles key"),
-            ("cesium_ion", "Cesium ion", "Resolve Google 3D Tiles access using your Cesium ion token; tile import is not implemented yet")
+            ("cesium_ion", "Cesium ion", "Import Google 3D Tiles using your Cesium ion access token")
         ),
         description = "Service used to access Google 3D Tiles",
         default = "google"

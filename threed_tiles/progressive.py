@@ -142,6 +142,8 @@ class TilesImport:
 
     @property
     def status(self):
+        if getattr(self.manager, 'resolvingIon', False):
+            return 'Resolving Google 3D Tiles access through Cesium ion'
         return '%s tiles imported, %s errors%s' % (
             self.renderer.num_imported_tiles, len(self.manager.errors),
             ' — downloading' if self.job.waiting else '')
