@@ -78,8 +78,14 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
     )
     
     googleMapsApiKey: bpy.props.StringProperty(
-        name = "Google 3D Tiles Key",
+        name = "Google 3D Tiles key",
         description = "A string token (API Key) to access 3D Tiles by Google"
+    )
+
+    cesiumIonAccessToken: bpy.props.StringProperty(
+        name = "Cesium ion access token",
+        description = "Cesium ion token with assets:read permission for Google Photorealistic 3D Tiles",
+        subtype = 'PASSWORD'
     )
     
     osmServer: bpy.props.EnumProperty(
@@ -121,7 +127,18 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "assetsDir")
             
             layout.separator()
-            layout.label(text="Paste one or more access tokens to get satellite imagery:")
+            layout.label(text="3D Tiles:")
+
+            split = layout.split(factor=0.9)
+            split.prop(self, "googleMapsApiKey")
+            split.operator("blosm.get_google_maps_api_key", text="Get it!")
+
+            split = layout.split(factor=0.9)
+            split.prop(self, "cesiumIonAccessToken")
+            split.operator("blosm.get_cesium_ion_token", text="Get it!")
+
+            layout.separator()
+            layout.label(text="Overlays:")
             
             split = layout.split(factor=0.9)
             split.prop(self, "arcgisAccessToken")
@@ -130,10 +147,6 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             split = layout.split(factor=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
-            
-            split = layout.split(factor=0.9)
-            split.prop(self, "googleMapsApiKey")
-            split.operator("blosm.get_google_maps_api_key", text="Get it!")
             
             layout.separator()
             layout.box().label(text="Advanced settings:")
@@ -183,6 +196,20 @@ class BLOSM_OT_GetGoogleMapsApiKey(bpy.types.Operator):
     
     url = "https://developers.google.com/maps/documentation/tile/get-api-key"
     
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
+
+
+class BLOSM_OT_GetCesiumIonToken(bpy.types.Operator):
+    bl_idname = "blosm.get_cesium_ion_token"
+    bl_label = ""
+    bl_description = "Get Cesium ion access token"
+    bl_options = {'INTERNAL'}
+
+    url = "https://ion.cesium.com/tokens"
+
     def execute(self, context):
         import webbrowser
         webbrowser.open_new_tab(self.url)
@@ -377,6 +404,8 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         addon = context.scene.blosm
         google3dTiles = addon.threedTilesSource == "google"
+        if google3dTiles and addon.google3dTilesAccessVia == 'cesium_ion':
+            return self.resolveIonAccess(context)
         progressive = addon.progressiveImport and not addon.commandLineMode
         if progressive:
             if bpy.app.background or context.window is None:
@@ -472,6 +501,39 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         return {'FINISHED'} if numImportedTiles else {'CANCELLED'}
     
+    def resolveIonAccess(self, context):
+        from .threed_tiles.cesium_ion import endpoint_request
+        from .threed_tiles.ion_access import IonAccessResolution
+
+        preferences = context.preferences.addons.get(blenderApp.app.addonName)
+        token = preferences.preferences.cesiumIonAccessToken.strip() if preferences else ''
+        if not token:
+            self.report({'ERROR'}, 'A Cesium ion access token is not set in the addon preferences')
+            return {'CANCELLED'}
+
+        blocking = (bpy.app.background or context.window is None or
+                    context.scene.blosm.commandLineMode)
+        if not blocking and context.mode != 'OBJECT':
+            self.report({'ERROR'}, 'Start Cesium ion access resolution in Object Mode')
+            return {'CANCELLED'}
+
+        task = None
+        try:
+            endpoint_request(token)  # Reject malformed credentials before starting a helper.
+            task = IonAccessResolution(token, context)
+            if not blocking:
+                progressiveImport.start(task, context)
+                return {'FINISHED'}
+            level, message = task.run_blocking()
+        except Exception as exc:
+            if task is not None and not task.job.done:
+                task.cancel()
+            self.report({'ERROR'}, str(exc))
+            return {'CANCELLED'}
+
+        self.report({level}, message)
+        return {'CANCELLED'} if level == 'ERROR' else {'FINISHED'}
+
     def importGpx(self, context):
         from .parse.gpx import Gpx
         from .gpx import GpxRenderer
@@ -615,6 +677,7 @@ _classes = (
     BLOSM_OT_GetArcgisToken,
     BLOSM_OT_GetMapboxToken,
     BLOSM_OT_GetGoogleMapsApiKey,
+    BLOSM_OT_GetCesiumIonToken,
     BLOSM_OT_GetProVersion,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,

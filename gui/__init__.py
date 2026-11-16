@@ -643,6 +643,7 @@ class BLOSM_PT_Settings(bpy.types.Panel):
             box.prop(addon, "threedTilesUrl")
             box.prop(addon, "geometricError")
         else:
+            box.row().prop(addon, "google3dTilesAccessVia", text="Access via")
             box.label(text="Level of details:")
             box.prop(addon, "lodOf3dTiles", text='')
         
@@ -1040,6 +1041,16 @@ class BlosmProperties(bpy.types.PropertyGroup):
         default = "google"   
     )
     
+    google3dTilesAccessVia: bpy.props.EnumProperty(
+        name = "Access via",
+        items = (
+            ("google", "Google", "Access Google 3D Tiles directly using your Google 3D Tiles key"),
+            ("cesium_ion", "Cesium ion", "Resolve Google 3D Tiles access using your Cesium ion token; tile import is not implemented yet")
+        ),
+        description = "Service used to access Google 3D Tiles",
+        default = "google"
+    )
+
     threedTilesUrl: bpy.props.StringProperty(
         name = '',
         description = "URL of the root tile"
