@@ -127,8 +127,7 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             
             layout.separator()
             credentials = layout.box()
-            credentials.label(text="Access tokens and keys")
-            credentials.separator(type='LINE')
+            credentials.row().label(text="Access tokens and keys")
             credentials.label(text="3D Tiles:")
 
             split = credentials.split(factor=0.9)
