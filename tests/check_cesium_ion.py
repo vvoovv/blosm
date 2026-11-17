@@ -149,7 +149,7 @@ class BlenderChecks(unittest.TestCase):
         self.assertEqual(self.settings.google3dTilesAccessVia, 'google')
         layout = Layout()
         addon.gui.BLOSM_PT_Settings.draw3dTiles(SimpleNamespace(layout=layout), bpy.context)
-        self.assertIn(('prop', 'google3dTilesAccessVia', 'Access via'), layout.events)
+        self.assertIn(('prop', 'google3dTilesAccessVia', ''), layout.events)
         self.settings.threedTilesSource = 'custom'
         layout.events.clear()
         addon.gui.BLOSM_PT_Settings.draw3dTiles(SimpleNamespace(layout=layout), bpy.context)

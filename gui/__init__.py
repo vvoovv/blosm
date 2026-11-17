@@ -637,14 +637,18 @@ class BLOSM_PT_Settings(bpy.types.Panel):
         
         box = layout.box()
         
-        box.row().prop(addon, "threedTilesSource", text="Source")
+        split = box.split(factor=0.35)
+        split.label(text="Source:")
+        split.prop(addon, "threedTilesSource", text='')
         
         if addon.threedTilesSource == "custom":
             box.label(text="Paste URL of root tile here:")
             box.prop(addon, "threedTilesUrl")
             box.prop(addon, "geometricError")
         else:
-            box.row().prop(addon, "google3dTilesAccessVia", text="Access via")
+            split = box.split(factor=0.35)
+            split.label(text="Access via:")
+            split.prop(addon, "google3dTilesAccessVia", text='')
             box.label(text="Level of details:")
             box.prop(addon, "lodOf3dTiles", text='')
         
