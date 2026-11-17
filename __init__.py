@@ -126,24 +126,26 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "assetsDir")
             
             layout.separator()
-            layout.label(text="3D Tiles:")
+            credentials = layout.box()
+            credentials.label(text="Access tokens and keys")
+            credentials.label(text="3D Tiles:")
 
-            split = layout.split(factor=0.9)
+            split = credentials.split(factor=0.9)
             split.prop(self, "googleMapsApiKey")
             split.operator("blosm.get_google_maps_api_key", text="Get it!")
 
-            split = layout.split(factor=0.9)
+            split = credentials.split(factor=0.9)
             split.prop(self, "cesiumIonAccessToken")
             split.operator("blosm.get_cesium_ion_token", text="Get it!")
 
-            layout.separator()
-            layout.label(text="Overlays:")
+            credentials.separator()
+            credentials.label(text="Overlays:")
             
-            split = layout.split(factor=0.9)
+            split = credentials.split(factor=0.9)
             split.prop(self, "arcgisAccessToken")
             split.operator("blosm.get_arcgis_token", text="Get it!")
             
-            split = layout.split(factor=0.9)
+            split = credentials.split(factor=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
             
