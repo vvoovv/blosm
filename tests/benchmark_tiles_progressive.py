@@ -216,7 +216,11 @@ def direct_finalize(self, manager):
         assert obj.type in ('EMPTY','MESH')
         if obj.type=='EMPTY':
             bpy.data.objects.remove(obj,do_unlink=True)
-    bpy.context.scene.blosm.copyright = '; '.join(sorted(self.copyrightHolders))
+    if hasattr(self, 'recordAttribution'):
+        if self.recordAttribution and self.num_imported_tiles:
+            self._attribution()
+    else:
+        bpy.context.scene.blosm.copyright = '; '.join(sorted(self.copyrightHolders))
     self.collection = None
 
 

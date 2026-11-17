@@ -11,6 +11,10 @@ downloads and compares possible optimizations without changing addon runtime cod
   The newer `cesium_ion_access` checkout has the same measured glTF/update,
   collection, transform-operator and checkpoint paths; its newer attribution
   registry is not included in this release-baseline measurement.
+  The reference advanced during profiling to `371be39` (Blosm 2.8.1); unfinished
+  profiling work was committed and that reference merged into this isolated
+  development branch. The prototype recognizes both attribution APIs. Final
+  parity and paired current-release checks are recorded separately below.
 - Blender 5.2.0 LTS, build `fbe6228777e7`, GUI processes, solid shading, moving
   view and redraw requests. Each process starts with factory settings and all
   five user-resource directories inside this chat's isolated profile. The
@@ -134,6 +138,27 @@ output is buffered, so these totals are not assigned to individual Python
 markers or reported as exact per-tile build counts. Removing operators reduces
 repeated evaluations as well as some relation rebuilds; it does not eliminate
 the dependency graph or all of its scaling cost.
+
+### Verification against release 2.8.1
+
+After synchronizing the isolated branch with reference `371be39`, the paired
+Helsinki test was repeated with the newer attribution code, again starting from
+the same prepared scene and adding 30 tiles:
+
+| Import path | Total | Mean UI timer gap | 95th-percentile gap |
+| --- | ---: | ---: | ---: |
+| Current release | 23.61 s | 757 ms | 898 ms |
+| Current release plus benchmark prototype | 15.32 s | 490 ms | 569 ms |
+
+This is about 35% less import time and a 37% shorter 95th-percentile timer gap.
+The final scene fingerprints are identical. The four-fixture parity check also
+passes against this reference, with zero world-coordinate differences. The
+release runner's `progressive` and `attribution` suites pass in isolated Blender
+5.2 processes. Absolute timings shifted across the investigation; the matched
+comparisons consistently support reducing operator-induced scene work.
+
+The prototype remains confined to the profiling harness. No runtime optimization
+has been transferred to the main checkout or to `release`.
 
 ## Priorities
 
