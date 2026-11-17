@@ -86,6 +86,7 @@ their original JSON reports. Both exit code and report status are checked.
 | `preflight` | SHA-256 verification of selected OSM files, companions, real GPX and Buildify |
 | `standalone` | Download/transport and extension-policy checks, Windows process-tree cleanup, profile routing and checkout isolation |
 | `direct` | Existing GLB/B3DM correctness, historical/native glTF parity and no dataset caching |
+| `tile_transforms` | Direct positioning versus the operator fallback: hierarchy/RTC, applied rotations, normals/UVs/colors, scale/shared-data/animation/modifier fallbacks, joining, rollback and context restoration; optional Helsinki fixtures |
 | `operator` | Registered 3D Tiles operator, nested tilesets, partial/all-failed imports and reports |
 | `progressive` | Stepped import, lifecycle/cancellation and error handling |
 | `concurrent` | Blocking/progressive and serial/concurrent parity, **joining on/off**, retries and partial failures |

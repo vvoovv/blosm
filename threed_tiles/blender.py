@@ -1,5 +1,5 @@
 from os.path import basename
-from math import radians, atan, sqrt, pi
+from math import radians, atan, sqrt, pi, isfinite
 import sys
 
 import bpy
@@ -69,6 +69,12 @@ class BlenderRenderer:
             bpy.data.collections.remove(self.collection)
             self.collection = None
 
+            return
+
+        if not self.join3dTilesObjects and self._finalize_direct(manager):
+            if self.recordAttribution and self.num_imported_tiles:
+                self._attribution()
+            self.collection = None
             return
         
         bpy.ops.object.select_all(action='DESELECT')
@@ -153,6 +159,93 @@ class BlenderRenderer:
             self._attribution()
 
         self.collection = None
+
+    def _finalize_direct(self, manager):
+        """Position ordinary static tiles without selection/transform operators.
+
+        Return False before changing anything when the original operator path
+        is needed. Errors after transformation starts propagate to the existing
+        tile rollback; never retry a partly transformed tile with operators.
+        """
+        objects = tuple(self.collection.objects)
+        imported = set(objects)
+        meshes = tuple(obj for obj in objects if obj.type == 'MESH')
+        parents = any(obj.parent for obj in objects)
+        if not meshes:
+            return False
+        if parents:
+            # RTC/tile transforms can change a parent's matrix after the glTF
+            # update. Match the old first operator's refresh before flattening,
+            # then check eligibility after any dependency-graph handlers ran.
+            bpy.context.view_layer.update()
+        # Restrict the fast path to static, private mesh data and simple
+        # hierarchies. In particular, mesh -> empty chains retain the legacy
+        # flattening order, and no outside child may inherit a changed basis.
+        for obj in objects:
+            if (obj.type not in {'MESH', 'EMPTY'} or
+                    (obj.type == 'EMPTY' and not parents) or
+                    obj.parent_type != 'OBJECT' or
+                    (obj.parent is not None and obj.parent not in imported) or
+                    any(child not in imported or (obj.type == 'MESH' and child.type != 'MESH')
+                        for child in obj.children) or
+                    obj.animation_data is not None or obj.constraints or obj.modifiers or
+                    obj.library is not None or obj.hide_viewport or obj.hide_select or obj.hide_get() or
+                    obj.rotation_mode == 'AXIS_ANGLE' or
+                    tuple(obj.delta_location) != (0., 0., 0.) or
+                    tuple(obj.delta_rotation_euler) != (0., 0., 0.) or
+                    tuple(obj.delta_rotation_quaternion) != (1., 0., 0., 0.) or
+                    tuple(obj.delta_scale) != (1., 1., 1.)):
+                return False
+            if obj.type == 'MESH' and (
+                    obj.mode != 'OBJECT' or obj.data.users != 1 or
+                    obj.data.library is not None or obj.data.shape_keys is not None or
+                    obj.data.animation_data is not None):
+                return False
+        matrices = tuple((obj, obj.matrix_world.copy()) for obj in meshes)
+        for obj, matrix in matrices:
+            axes = matrix.to_3x3()
+            if (not all(isfinite(value) for row in matrix for value in row) or
+                    any(abs(axis.length - 1.) > 1e-5 for axis in axes.col) or
+                    any(abs(axes.col[i].dot(axes.col[j])) > 1e-5
+                        for i, j in ((0, 1), (0, 2), (1, 2))) or
+                    axes.determinant() < 0.):
+                return False
+        center = self.centerCoords
+        latitude = atan(center[2]/sqrt(center[0]*center[0] + center[1]*center[1]))
+        rotation = Matrix.Rotation(latitude-pi/2., 4, 'X') @ Matrix.Rotation(
+            radians(-90. - manager.centerLon), 4, 'Z')
+        locations = []
+        for obj, matrix in matrices:
+            if obj.parent is not None:
+                obj.parent = None
+                obj.matrix_world = matrix
+            self._apply_rotation(obj)
+            location = rotation @ obj.location
+            locations.append(location)
+            obj.matrix_local = Matrix.Translation(location) @ rotation
+            self._apply_rotation(obj)
+        for obj in objects:
+            if obj.type == 'EMPTY':
+                bpy.data.objects.remove(obj)
+        if self.calculateHeightOffset:
+            self.heightOffset = min(location.z for location in locations)
+        # Match the blocking path too; progressive preserve_context restores
+        # the user's selection after this synchronous tile operation.
+        for obj in bpy.context.selected_objects:
+            obj.select_set(False)
+        return True
+
+    @staticmethod
+    def _apply_rotation(obj):
+        # Match Apply Rotation's scale correction, including tiny scale values
+        # introduced by matrix decomposition. Leave location and scale intact.
+        rotation = (obj.rotation_quaternion.to_matrix() if obj.rotation_mode == 'QUATERNION'
+                    else obj.rotation_euler.to_matrix())
+        scale = Matrix.Diagonal(obj.scale)
+        obj.data.transform((scale.inverted() @ rotation @ scale).to_4x4())
+        obj.rotation_euler = (0., 0., 0.)
+        obj.rotation_quaternion = (1., 0., 0., 0.)
+        obj.rotation_axis_angle = (0., 0., 1., 0.)
 
     def _attribution(self):
         record_import(bpy.context.scene.blosm, self.collection,

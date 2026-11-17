@@ -5,11 +5,13 @@ static, unit-scale fixtures used by the profiling experiment, not arbitrary glTF
 """
 import argparse
 import ast
+from contextlib import nullcontext
 import importlib
 import json
 from math import atan, sqrt, pi, radians
 from pathlib import Path
 import sys
+from unittest.mock import patch
 
 sys.dont_write_bytecode=True
 sys.path.insert(0,str(Path(__file__).resolve().parent))
@@ -53,8 +55,11 @@ def collect(name,content,finalize):
     manager.centerLat,manager.centerLon=60.17,24.94
     renderer.prepare(manager)
     method=renderer.renderB3dm if name.endswith('.b3dm') else renderer.renderGlb
-    method(manager,name,name,None,content=content)
-    renderer.finalize(manager)
+    legacy = (patch.object(render.BlenderRenderer,'_finalize_direct',return_value=False)
+              if finalize is original and hasattr(render.BlenderRenderer,'_finalize_direct') else nullcontext())
+    with legacy:
+        method(manager,name,name,None,content=content)
+        renderer.finalize(manager)
     assert renderer.num_imported_tiles==1
     bpy.context.view_layer.update()
     geometry=[[(tuple(obj.matrix_world @ vertex.co)) for vertex in obj.data.vertices]

@@ -13,7 +13,7 @@ class ReleaseProfileChecks(unittest.TestCase):
         self.assertEqual(selected[:2], ['package', 'base'])
         self.assertEqual(set(selected[2:]), set(CORE) - PRO_ONLY)
         self.assertTrue({'osm', 'gpx', 'buildify', 'overlay', 'concurrent',
-                         'cesium_ion', 'attribution'} <= set(selected))
+                         'cesium_ion', 'attribution', 'tile_transforms'} <= set(selected))
         self.assertEqual({row['suite'] for row in excluded}, PRO_ONLY)
         self.assertTrue(all(row['status'] == 'not_applicable' for row in excluded))
 

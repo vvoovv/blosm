@@ -77,6 +77,48 @@ Both import modes rebase private parsed node transforms before Blender converts
 them to single-precision values. Selection is controlled through import settings.
 Neither path changes Blender's shared importer classes or other add-ons.
 
+## Applying tile rotations without operators
+
+`BlenderRenderer.finalize()` uses a data API path for ordinary static tiles when
+its renderer is not joining objects. This covers progressive imports regardless
+of the final join option: progressive finalization positions each tile separately
+and joins only once at the end. Blocking separate-object imports use it too.
+
+The original two rotation stages are retained: the imported object's rotation,
+then the rotation from Earth coordinates into the local scene. Each is baked
+into mesh data with `Mesh.transform()`, and the object's rotation is cleared.
+Location and scale channels are retained exactly as in Apply Rotation; the scale
+correction is `S^-1 R S`. The geographic/RTC rebasing and height-offset logic are
+unchanged. The two stages are not fused, avoiding extra rounding on real tiles.
+
+Before changing mesh data, the renderer checks that all inputs are local static
+mesh objects, or supported empty-parent hierarchies, with private mesh data and
+rigid unit-scale world matrices. Simple parent hierarchies receive one explicit
+view-layer refresh so parent RTC/tile transforms reach their children before
+the existing flattening behavior is reproduced. Unparented tiles need no extra
+explicit update beyond the glTF adapter's existing post-creation update.
+
+Joined blocking imports, shared or linked data, shape keys, animation, modifiers,
+constraints, non-unit/mirrored/sheared transforms, delta transforms, hidden or
+unselectable objects, axis-angle rotation and more complex/external hierarchies
+use the retained operator path. Eligibility failure returns before modifying
+meshes. An error after direct transformation starts propagates to the existing
+tile rollback; a partly transformed tile is never retried with operators.
+
+The fast path uses no selection or rotation-application operators. Its data API
+deselection matches the blocking result; progressive context restoration keeps
+the user's selection, active object, collection and cursor. Undo checkpoints,
+concurrent downloads, final joining, cancellation, attribution and error reports
+remain managed by their existing code.
+
+The `tile_transforms` release suite compares against the actual operator path,
+including custom normals, UV/color/integer attributes, nested mesh/empty parents,
+fresh parent RTC, unsupported-case fallbacks, joining and injected mid-transform
+failure cleanup. It can include the three approved Helsinki B3DM fixtures through
+the release runner's `--helsinki` argument. See the
+[large-scene profiling report](../../docs/THREED_TILES_PROGRESSIVE_PROFILE.md)
+for measurements and remaining scene-update costs.
+
 ## Validation and benchmark
 
 Run these scripts in factory-startup background Blender, with all generated

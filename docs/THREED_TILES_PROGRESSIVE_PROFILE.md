@@ -259,3 +259,46 @@ instead of the GUI benchmark. Summarize successful runs with:
 
 Generated scenes, JSON, logs and profiles are not committed. The benchmark,
 launcher, parity check and this report are source/documentation in the repository.
+
+## Production implementation qualification
+
+The subsequent `optimize_tile_transforms` development branch implements the
+data API path in the renderer, with preflight checks and the original operator
+fallback. See [DirectImport.md](../threed_tiles/doc/DirectImport.md#applying-tile-rotations-without-operators)
+for eligibility, applied-rotation behavior and failure handling. Joining in the
+blocking renderer retains its operator implementation; progressive tiles are
+positioned through the fast path before the existing optional final join.
+
+The same 2,100-object prepared scene and 30 replayed Helsinki tiles measured:
+
+| Path | Import time | Mean UI timer gap | 95th-percentile gap |
+| --- | ---: | ---: | ---: |
+| Retained operator path | 22.50 s | 721 ms | 852 ms |
+| Production data API path | 15.69 s | 502 ms | 629 ms |
+| Production path repeat | 16.58 s | 530 ms | 634 ms |
+
+That is 26–30% less total time in these observations. The normal path performed
+60 selection and 60 transform-application calls; the optimized path performed
+none of those calls. The positioning phase fell from about 290 to 11 ms per
+tile. Main scene updates and checkpoints still dominate the remaining cost.
+All three final scene fingerprints are identical. This is a controlled replay,
+not a full new city download, and timings are not universal guarantees.
+
+The new `tile_transforms` suite is part of the release core catalog and passes
+on Blender 4.5, 5.0, 5.1 and 5.2, including the optional Helsinki fixtures.
+Existing direct-import, operator, progressive, concurrent-download and
+attribution checks pass on 5.2, as do the GUI history/cancellation/joining and
+attribution suites. The concurrent/UI tests needed localhost permission outside
+the default sandbox; their first socket-restricted failure was rerun successfully.
+
+Blender 3.6 could not load the current reference addon's `__init__.py` because
+its Python lacks `tomllib`. This happens before the transform code executes and
+is not introduced by this change; the release's declared minimum is 4.5. No
+bundled Python or normal Blender profile was modified to bypass that limitation.
+
+Production qualification reports and logs are under
+`C:/dev/workspace/artifacts/tiles_direct_transform/20261117/`.
+Use the benchmark's `--operator-finalize` to force the retained path for paired
+comparisons; the default now measures the production path. `--direct-finalize`
+remains the historical diagnostic prototype. No runtime change is transferred
+to the main checkout or reference branch until requested.

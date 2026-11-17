@@ -14,6 +14,7 @@ NEW = {
     'base': 'check_release_base.py', 'pro': 'check_release_pro.py',
 }
 EXISTING = {
+    'tile_transforms': ('check_tile_transforms.py', 'results.json'),
     'osm_progressive_ui': ('check_osm_progressive_ui.py', 'osm_ui_checks.json'),
     'direct': ('check_direct_gltf_import.py', 'correctness.json'),
     'operator': ('check_direct_gltf_operator.py', 'operator_check.json'),
@@ -26,7 +27,7 @@ EXISTING = {
     'attribution_ui': ('check_attribution_ui.py', 'results.json'),
 }
 CORE = ['preflight', 'standalone', 'direct', 'operator', 'progressive', 'concurrent', 'osm_progressive',
-        'cesium_ion', 'attribution',
+        'cesium_ion', 'attribution', 'tile_transforms',
         'osm', 'roofs', 'gpx', 'geometry_nodes', 'buildify', 'terrain', 'overlay',
         'validation', 'baking', 'export', 'pml']
 PRO_ONLY = frozenset(('baking', 'export', 'pml'))

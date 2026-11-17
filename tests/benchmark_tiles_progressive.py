@@ -41,8 +41,11 @@ parser.add_argument('--operators', action='store_true')
 parser.add_argument('--seed-scene', type=Path)
 parser.add_argument('--save-scene', action='store_true')
 parser.add_argument('--direct-finalize', action='store_true')
+parser.add_argument('--operator-finalize', action='store_true',
+                    help='Force the retained operator path for production comparisons')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 assert args.count > 0 and args.checkpoint_every > 0
+assert not (args.direct_finalize and args.operator_finalize)
 args.artifacts.mkdir(parents=True, exist_ok=True)
 if args.seed_scene:
     assert Path(bpy.data.filepath).resolve() == args.seed_scene.resolve(), 'Launcher must load the seed before the script'
@@ -52,6 +55,8 @@ tiles = importlib.import_module(PACKAGE + '.threed_tiles.progressive')
 render = importlib.import_module(PACKAGE + '.threed_tiles.blender')
 gltf = importlib.import_module(PACKAGE + '.threed_tiles.gltf_import')
 manager_module = importlib.import_module(PACKAGE + '.threed_tiles.manager')
+if args.operator_finalize:
+    render.BlenderRenderer._finalize_direct = lambda self, manager: False
 driver.show_result = lambda *a: None
 if not args.seed_scene:
     reset_scene()

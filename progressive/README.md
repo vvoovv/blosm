@@ -9,6 +9,8 @@ in the import box directly above the data-type selector. Disable it to use
 blocking mode. Progressive mode keeps the viewport responsive between tile imports.
 Both GLB and B3DM are supported. Root and nested JSON manifests and tile content
 are downloaded into memory; no dataset caches or temporary tile files are used.
+Ordinary static tiles use [direct mesh rotation](../threed_tiles/doc/DirectImport.md#applying-tile-rotations-without-operators)
+to reduce repeated scene updates; complex inputs retain the operator path.
 **Concurrent downloads** is independently enabled by default, with four requests.
 It also serves blocking mode; see [shared downloads](../downloads/README.md).
 

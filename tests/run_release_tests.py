@@ -116,7 +116,7 @@ def main():
                         extra += ['--candidate-zip', str(args.candidate_zip)]
                     if args.extended:
                         extra.append('--extended')
-                if args.helsinki and name in ('direct', 'progressive', 'concurrent'):
+                if args.helsinki and name in ('direct', 'progressive', 'concurrent', 'tile_transforms'):
                     if len(list(args.helsinki.glob('*.b3dm'))) < 3:
                         raise FileNotFoundError('Helsinki fixture must contain at least three B3DM files')
                     extra += ['--helsinki', str(args.helsinki)]
