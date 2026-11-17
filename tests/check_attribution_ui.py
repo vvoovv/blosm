@@ -10,9 +10,10 @@ import traceback
 from urllib.parse import urlsplit
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT.parent))
-sys.path.insert(0, str(ROOT / 'tests'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from release_target import REPO as ROOT, PACKAGE, PROFILE, assert_target
+if PROFILE == 'general':
+    sys.path.insert(0, str(ROOT.parent))
 import bpy
 import addon_utils
 from gltf_test_support import fixture, make_glb, reset_scene
@@ -22,12 +23,13 @@ parser.add_argument('--artifacts', type=Path, required=True)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 args.artifacts.mkdir(parents=True, exist_ok=True)
 bpy.context.preferences.filepaths.temporary_directory = str(args.artifacts)
-addon_utils.enable(ROOT.name, default_set=True)
-addon = importlib.import_module(ROOT.name)
-attribution = importlib.import_module(ROOT.name + '.threed_tiles.attribution')
-manager_module = importlib.import_module(ROOT.name + '.threed_tiles.manager')
-progressive = importlib.import_module(ROOT.name + '.threed_tiles.progressive')
-runtime = importlib.import_module(ROOT.name + '.progressive.blender')
+addon_utils.enable(PACKAGE, default_set=True)
+assert_target(importlib.import_module(PACKAGE))
+addon = importlib.import_module(PACKAGE)
+attribution = importlib.import_module(PACKAGE + '.threed_tiles.attribution')
+manager_module = importlib.import_module(PACKAGE + '.threed_tiles.manager')
+progressive = importlib.import_module(PACKAGE + '.threed_tiles.progressive')
+runtime = importlib.import_module(PACKAGE + '.progressive.blender')
 
 region = {'region': [radians(24.93), radians(60.16), radians(24.95), radians(60.18), -100, 100]}
 root = json.dumps({'root': {'geometricError': 0, 'boundingVolume': region,
@@ -224,9 +226,9 @@ def steps():
     assert attribution.get_copyright(bpy.context.scene.blosm).count('Shared') == 1
     expected = attribution.get_copyright(bpy.context.scene.blosm)
     addon.gui.BLOSM_PT_Copyright.draw = original_draw
-    addon_utils.disable(ROOT.name, default_set=True)
+    addon_utils.disable(PACKAGE, default_set=True)
     assert not hasattr(bpy.types.Scene, 'blosm')
-    addon_utils.enable(ROOT.name, default_set=True)
+    addon_utils.enable(PACKAGE, default_set=True)
     assert attribution.get_copyright(bpy.context.scene.blosm) == expected
     checks.append('Completed imports aggregate and registered properties survive addon disable/enable')
 
@@ -238,7 +240,7 @@ def finish(success, error=''):
     if runtime.active is not None:
         runtime.active.close(silent=True)
     (args.artifacts / 'results.json').write_text(json.dumps({
-        'success': success, 'blender': bpy.app.version_string, 'checks': checks,
+        'success': success, 'status': 'passed' if success else 'failed', 'blender': bpy.app.version_string, 'checks': checks,
         'draws': draws, 'error': error}, indent=2), encoding='utf-8')
     bpy.ops.wm.quit_blender()
 

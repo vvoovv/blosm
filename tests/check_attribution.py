@@ -11,9 +11,10 @@ from unittest.mock import patch
 from urllib.parse import urlsplit
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT.parent))
-sys.path.insert(0, str(ROOT / 'tests'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from release_target import REPO as ROOT, PACKAGE, PROFILE, assert_target
+if PROFILE == 'general':
+    sys.path.insert(0, str(ROOT.parent))
 import bpy
 import addon_utils
 from gltf_test_support import fixture, make_glb, reset_scene
@@ -23,15 +24,16 @@ parser.add_argument('--artifacts', type=Path, required=True)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 args.artifacts.mkdir(parents=True, exist_ok=True)
 bpy.context.preferences.filepaths.temporary_directory = str(args.artifacts)
-addon_utils.enable(ROOT.name, default_set=True)
-assert ROOT.name in bpy.context.preferences.addons
-addon = importlib.import_module(ROOT.name)
-attribution = importlib.import_module(ROOT.name + '.threed_tiles.attribution')
-manager_module = importlib.import_module(ROOT.name + '.threed_tiles.manager')
-renderers = importlib.import_module(ROOT.name + '.threed_tiles.blender')
-progressive = importlib.import_module(ROOT.name + '.threed_tiles.progressive')
-ion = importlib.import_module(ROOT.name + '.threed_tiles.cesium_ion')
-access = importlib.import_module(ROOT.name + '.threed_tiles.ion_access')
+addon_utils.enable(PACKAGE, default_set=True)
+assert_target(importlib.import_module(PACKAGE))
+assert PACKAGE in bpy.context.preferences.addons
+addon = importlib.import_module(PACKAGE)
+attribution = importlib.import_module(PACKAGE + '.threed_tiles.attribution')
+manager_module = importlib.import_module(PACKAGE + '.threed_tiles.manager')
+renderers = importlib.import_module(PACKAGE + '.threed_tiles.blender')
+progressive = importlib.import_module(PACKAGE + '.threed_tiles.progressive')
+ion = importlib.import_module(PACKAGE + '.threed_tiles.cesium_ion')
+access = importlib.import_module(PACKAGE + '.threed_tiles.ion_access')
 
 BOUNDS = (24.93, 60.16, 24.95, 60.18)
 REGION = {'region': [radians(24.93), radians(60.16), radians(24.95), radians(60.18), -100, 100]}
@@ -90,7 +92,7 @@ class AttributionChecks(unittest.TestCase):
         reset_scene()
         bpy.context.scene.property_unset('blosm')
         self.settings = bpy.context.scene.blosm
-        prefs = bpy.context.preferences.addons[ROOT.name].preferences
+        prefs = bpy.context.preferences.addons[PACKAGE].preferences
         prefs.googleMapsApiKey = 'direct-key'
         prefs.cesiumIonAccessToken = 'ion-token'
 
@@ -325,6 +327,7 @@ class AttributionChecks(unittest.TestCase):
 
 result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(AttributionChecks))
 (args.artifacts / 'results.json').write_text(json.dumps({
+    'status': 'passed' if result.wasSuccessful() else 'failed',
     'success': result.wasSuccessful(), 'tests_run': result.testsRun,
     'failures': len(result.failures), 'errors': len(result.errors),
     'blender': bpy.app.version_string}, indent=2), encoding='utf-8')

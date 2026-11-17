@@ -35,12 +35,12 @@ comparison data remain in this checkout.
 ```powershell
 & '../tools/python/python.exe' -B tests/run_release_tests.py `
   --blender '../tools/blender/blender.exe' --profile base `
-  --candidate-zip ../artifacts/blosm_build/candidates/blosm-base-2.8.0.zip `
+  --candidate-zip ../artifacts/blosm_build/candidates/blosm-base-2.8.1.zip `
   --artifacts ../artifacts/blosm_release_tests/base_45
 
 & '../tools/python/python.exe' -B tests/run_release_tests.py `
   --blender '../tools/blender/blender.exe' --profile pro `
-  --candidate-zip ../artifacts/blosm_build/candidates/blosm-pro-2.8.0.zip `
+  --candidate-zip ../artifacts/blosm_build/candidates/blosm-pro-2.8.1.zip `
   --assets ../test-assets/blosm `
   --artifacts ../artifacts/blosm_release_tests/pro_45
 ```
@@ -71,7 +71,7 @@ generated inputs, exported textures, scenes and profiles go there. Do not add
 those outputs to Git. Source and documentation stay in this repository.
 
 Use repeated `--suite` arguments to select suites. Without them, the chosen
-profile runs its complete headless selection; `ui` is always explicit. Exit code
+profile runs its complete headless selection; GUI suites are always explicit. Exit code
 is nonzero if any selected suite fails or is blocked. `summary.json` records the
 profile, full/selected scope, exclusions, commands, Blender version, source commit,
 working-tree status, test-source hashes and durations.
@@ -89,6 +89,10 @@ their original JSON reports. Both exit code and report status are checked.
 | `operator` | Registered 3D Tiles operator, nested tilesets, partial/all-failed imports and reports |
 | `progressive` | Stepped import, lifecycle/cancellation and error handling |
 | `concurrent` | Blocking/progressive and serial/concurrent parity, **joining on/off**, retries and partial failures |
+| `cesium_ion` | Google/ion access choices, visible token preferences, endpoint resolution, provider credentials/session queries, actual tile imports, failures and cancellation |
+| `attribution` | Persistent per-collection credit registry, mixed access routes, duplicate removal, reference-only display, legacy text, save/reopen and partial-import behavior |
+| `cesium_ion_ui` | Explicit GUI suite: real local HTTP endpoint/tile requests, responsive imports, joining, cancellation, provider-key/session propagation and attribution |
+| `attribution_ui` | Explicit GUI suite: read-only panel callbacks, collection deletion, cleanup on import, Undo/Redo and retained partial-import credits |
 | `osm` | All 12 core extracts, 2D/simple 3D, **Single object on/off**, world geometry, road/rail curves, disabled layers, repeated import and save/reopen |
 | `osm_progressive` | Cooperative OSM sessions, real building/road parity, separate objects, per-object GN attributes, cancellation, owned bulk commits, RNG isolation; realistic forests and uncached asynchronous export with `--assets` |
 | `osm_progressive_ui` | Explicit GUI suite: actual OSM operator/timers, incremental visibility, grouped Undo/Redo, user edits, pause, cancellation, target deletion, staged bake history and disable |

@@ -14,7 +14,7 @@ sys.dont_write_bytecode = True
 from release_support import REPO, DEFAULT_ARTIFACTS, catalog, osm_path, real_fixture
 from release_process import owned_process
 
-from release_profiles import NEW, EXISTING, CORE, SUITES, select_suites, inspect_candidate
+from release_profiles import NEW, EXISTING, CORE, SUITES, GUI_SUITES, select_suites, inspect_candidate
 
 
 def main():
@@ -130,8 +130,8 @@ def main():
                     if name == 'standalone':
                         command = [str(args.python), '-B']
                     else:
-                        command = [str(args.blender)] + ([] if name in ('ui', 'osm_progressive_ui') else ['--background'])
-                        if name in ('concurrent', 'ui', 'overlay'):
+                        command = [str(args.blender)] + ([] if name in GUI_SUITES else ['--background'])
+                        if name in ('concurrent', 'ui', 'overlay', 'cesium_ion_ui'):
                             # Blender's extension policy governs localhost and
                             # the mocked imagery download path as well.
                             command.append('--online-mode')

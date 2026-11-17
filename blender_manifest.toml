@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "blosm"
-version = "2.8.0"
+version = "2.8.1"
 name = "Blosm"
 tagline = "Import Google 3D cities, OpenStreetMap, terrain and imagery"
 maintainer = "Vladimir Elistratov <prokitektura@gmail.com>"

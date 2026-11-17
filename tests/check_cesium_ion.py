@@ -11,8 +11,10 @@ import unittest
 from unittest.mock import patch
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from release_target import REPO as ROOT, PACKAGE, PROFILE, assert_target
+if PROFILE == 'general':
+    sys.path.insert(0, str(ROOT.parent))
 import bpy
 import addon_utils
 
@@ -21,15 +23,16 @@ parser.add_argument('--artifacts', type=Path, required=True)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 args.artifacts.mkdir(parents=True, exist_ok=True)
 bpy.context.preferences.filepaths.temporary_directory = str(args.artifacts)
-addon_utils.enable(ROOT.name, default_set=True)
-assert ROOT.name in bpy.context.preferences.addons, 'Addon registration failed'
-addon = importlib.import_module(ROOT.name)
-ion = importlib.import_module(ROOT.name + '.threed_tiles.cesium_ion')
-attribution = importlib.import_module(ROOT.name + '.threed_tiles.attribution')
-access = importlib.import_module(ROOT.name + '.threed_tiles.ion_access')
-manager = importlib.import_module(ROOT.name + '.threed_tiles.manager')
-renderer = importlib.import_module(ROOT.name + '.threed_tiles.blender')
-prefs = bpy.context.preferences.addons[ROOT.name].preferences
+addon_utils.enable(PACKAGE, default_set=True)
+assert_target(importlib.import_module(PACKAGE))
+assert PACKAGE in bpy.context.preferences.addons, 'Addon registration failed'
+addon = importlib.import_module(PACKAGE)
+ion = importlib.import_module(PACKAGE + '.threed_tiles.cesium_ion')
+attribution = importlib.import_module(PACKAGE + '.threed_tiles.attribution')
+access = importlib.import_module(PACKAGE + '.threed_tiles.ion_access')
+manager = importlib.import_module(PACKAGE + '.threed_tiles.manager')
+renderer = importlib.import_module(PACKAGE + '.threed_tiles.blender')
+prefs = bpy.context.preferences.addons[PACKAGE].preferences
 
 
 class MemoryTransport:
@@ -57,7 +60,6 @@ class MemoryTransport:
 
 
 def inputs(hosted=False):
-    sys.path.insert(0, str(ROOT / 'tests'))
     from gltf_test_support import fixture, make_glb
     doc, binary, _ = fixture()
     center = manager.BaseManager.fromGeographic(60.17, 24.94, 0)
@@ -257,7 +259,7 @@ class BlenderChecks(unittest.TestCase):
             self.assertTrue(transport.closed)
 
     def make_task(self, payloads, concurrent=False, wait=False):
-        progressive = importlib.import_module(ROOT.name + '.threed_tiles.progressive')
+        progressive = importlib.import_module(PACKAGE + '.threed_tiles.progressive')
         target = progressive.ProgressiveRenderer('Ion fixture', False, '')
         tile_manager = access.CesiumIonManager('', target)
         tile_manager.setToken('ion-token')
@@ -344,6 +346,7 @@ class BlenderChecks(unittest.TestCase):
 suite = unittest.defaultTestLoader.loadTestsFromTestCase(BlenderChecks)
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 (args.artifacts / 'results.json').write_text(json.dumps({
+    'status': 'passed' if result.wasSuccessful() else 'failed',
     'success': result.wasSuccessful(), 'tests_run': result.testsRun,
     'failures': len(result.failures), 'errors': len(result.errors),
     'blender': bpy.app.version_string, 'checkout': str(ROOT)}, indent=2), encoding='utf-8')

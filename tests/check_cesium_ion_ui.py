@@ -14,9 +14,10 @@ from urllib.parse import parse_qs, urlsplit
 from urllib.request import urlopen
 
 sys.dont_write_bytecode = True
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT.parent))
-sys.path.insert(0, str(ROOT / 'tests'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from release_target import REPO as ROOT, PACKAGE, PROFILE, assert_target
+if PROFILE == 'general':
+    sys.path.insert(0, str(ROOT.parent))
 import bpy
 import addon_utils
 from gltf_test_support import fixture, make_glb
@@ -26,15 +27,16 @@ parser.add_argument('--artifacts', type=Path, required=True)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 args.artifacts.mkdir(parents=True, exist_ok=True)
 bpy.context.preferences.filepaths.temporary_directory = str(args.artifacts)
-addon_utils.enable(ROOT.name, default_set=True)
-assert ROOT.name in bpy.context.preferences.addons
+addon_utils.enable(PACKAGE, default_set=True)
+assert_target(importlib.import_module(PACKAGE))
+assert PACKAGE in bpy.context.preferences.addons
 bpy.context.preferences.system.use_online_access = True  # Isolated process only; never saved.
-ion = importlib.import_module(ROOT.name + '.threed_tiles.cesium_ion')
-attribution = importlib.import_module(ROOT.name + '.threed_tiles.attribution')
-manager_module = importlib.import_module(ROOT.name + '.threed_tiles.manager')
-progressive = importlib.import_module(ROOT.name + '.threed_tiles.progressive')
-runtime = importlib.import_module(ROOT.name + '.progressive.blender')
-transport_module = importlib.import_module(ROOT.name + '.downloads.transport')
+ion = importlib.import_module(PACKAGE + '.threed_tiles.cesium_ion')
+attribution = importlib.import_module(PACKAGE + '.threed_tiles.attribution')
+manager_module = importlib.import_module(PACKAGE + '.threed_tiles.manager')
+progressive = importlib.import_module(PACKAGE + '.threed_tiles.progressive')
+runtime = importlib.import_module(PACKAGE + '.progressive.blender')
+transport_module = importlib.import_module(PACKAGE + '.downloads.transport')
 
 doc, binary, _ = fixture()
 center = manager_module.BaseManager.fromGeographic(60.17, 24.94, 0)
@@ -93,7 +95,7 @@ settings.concurrentDownloads = True
 settings.minLon, settings.maxLon = 24.93, 24.95
 settings.minLat, settings.maxLat = 60.16, 60.18
 settings.join3dTilesObjects = False
-prefs = bpy.context.preferences.addons[ROOT.name].preferences
+prefs = bpy.context.preferences.addons[PACKAGE].preferences
 prefs.googleMapsApiKey = ''
 prefs.cesiumIonAccessToken = 'ui-test-token'
 messages, checks, processes, waits = [], [], [], []
@@ -132,7 +134,7 @@ def finish(success, error=''):
     for process in processes:
         process.wait(timeout=5)
     (args.artifacts / 'results.json').write_text(json.dumps({
-        'success': success, 'checks': checks, 'waiting_timer_ticks': waits,
+        'success': success, 'status': 'passed' if success else 'failed', 'checks': checks, 'waiting_timer_ticks': waits,
         'blender': bpy.app.version_string, 'error': error}, indent=2), encoding='utf-8')
     bpy.ops.wm.quit_blender()
 
