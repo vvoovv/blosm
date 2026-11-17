@@ -107,6 +107,14 @@ their original JSON reports. Both exit code and report status are checked.
 | `pro` | Pro modules/setup scripts present and importable, realistic mode available and current Pro operators registered; functionality uses the general suites |
 | `ui` | Existing dedicated GUI process: progressive timers, Undo/Redo, cancellation, mode/scene changes and addon disable |
 
+The opt-in `run_tiles_profile.py` launcher profiles growing 3D Tiles scenes in
+an isolated GUI Blender. `benchmark_tiles_progressive.py` records per-tile phases,
+UI/draw intervals and controlled diagnostic comparisons; `--prototype-check`
+checks the restricted direct-transform experiment against the original renderer.
+See [the profiling report](../docs/THREED_TILES_PROGRESSIVE_PROFILE.md) for
+commands, measurements, restrictions and retained native failures. This slow
+investigation is separate from normal release gates and changes no addon runtime.
+
 The OSM catalog is `tests/fixtures/osm_catalog.toml`. Inputs are read directly from the
 separate `osm_extracts` repository. `--extended` adds Bratislava and Moscow;
 their companion files do not make the snapshots complete. The three cataloged
