@@ -70,7 +70,7 @@ class CesiumIonManager(BaseManager):
             self.resolvingIon = False
             for credit in endpoint.attributions:
                 text = self.redactError(CreditText(credit.html).text, endpoint.url)
-                self.renderer.processCopyrightInfo(text)
+                self.renderer.providerCredits.append(text)
             # Resolve before prepare(): endpoint failures/cancellation must not
             # create collections, objects or scene origin properties.
             return (yield from super().iterRender(*bounds))

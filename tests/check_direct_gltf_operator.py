@@ -22,6 +22,7 @@ args = parser.parse_args(sys.argv[sys.argv.index("--")+1:])
 args.artifacts.mkdir(parents=True, exist_ok=True)
 existing_json_files = set(args.artifacts.rglob("*.json"))
 package = PACKAGE
+attribution = importlib.import_module(package + '.threed_tiles.attribution')
 addon_utils.enable(package, default_set=True)
 try:
     assert package in bpy.context.preferences.addons
@@ -86,7 +87,7 @@ try:
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     assert len(meshes) == 2
     assert all(len(obj.data.vertices) == 3 and len(obj.data.polygons) == 1 for obj in meshes)
-    assert "City of Test" in settings.copyright and "Café Example" in settings.copyright
+    assert "City of Test" in attribution.get_copyright(settings) and "Café Example" in attribution.get_copyright(settings)
     assert requested == expected_requests
     assert forwarded == [(["WARNING"], "fixture glTF warning")] * 2
     successful_reports = list(forwarded)
@@ -182,7 +183,7 @@ try:
               "failed_tile_reports": forwarded, "continued_after_tile_error": True,
               "partial_import_reports": partial_import_reports,
               "all_failed_reports": ui_reports, "failed_tiles": len(tile_errors),
-              "copyright": settings.copyright}
+              "copyright": attribution.get_copyright(settings)}
     (args.artifacts / "operator_check.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print("BLOSM_OPERATOR_CHECK", json.dumps(report))
 finally:

@@ -50,6 +50,7 @@ assert result == {'FINISHED'}, result
 assert package in bpy.context.preferences.addons
 assert addon_utils.check(package)[1]
 addon = importlib.import_module(package)
+attribution = importlib.import_module(package + '.threed_tiles.attribution')
 assert addon.BlosmPreferences.bl_idname == package
 assert addon.blenderApp.app.isPro == (args.edition == 'pro')
 assert ('realistic/__init__.py' in names) == (args.edition == 'pro')
@@ -153,7 +154,7 @@ for kind, data in (('glb', glb), ('b3dm', b3dm)):
     meshes = [obj for obj in bpy.data.objects if obj.type == 'MESH']
     assert len(meshes) == 1 and len(meshes[0].data.vertices) == 3
     assert meshes[0].location.length < 10
-    assert 'City of Test' in bpy.context.scene.blosm.copyright
+    assert 'City of Test' in attribution.get_copyright(bpy.context.scene.blosm)
     assert BlenderGlTF.set_convert_functions is original_convert
     assert BlenderScene.select_imported_objects is original_select
     assert not hasattr(glTFImporter, '_patch_convert_functions')

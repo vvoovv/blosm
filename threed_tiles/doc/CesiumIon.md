@@ -38,7 +38,10 @@ own parameters and receive no inherited credentials. See
 [Google's renderer guide](https://developers.google.com/maps/documentation/tile/create-renderer).
 
 Endpoint credits (including image alt/title labels) and tile copyrights are
-combined in Blosm's existing attribution field. Provider credentials remain in
+stored with the import's collection reference in the scene's attribution
+registry. The Copyright panel combines all live imports without replacing
+earlier credits; see [persistent attribution management](Attribution.md).
+Provider credentials remain in
 memory for the import and are cleared when traversal completes or is cancelled.
 They are never stored in addon preferences or scene properties. Diagnostics
 redact credentials; malformed endpoint errors do not echo the response.

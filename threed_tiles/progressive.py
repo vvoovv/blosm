@@ -37,7 +37,8 @@ class ProgressiveRenderer(BlenderRenderer):
     def _tile(self, manager, uri, path, transform, content, method):
         destination = self._destination()
         with preserve_context():
-            tile = BlenderRenderer(self.threedTilesName, False, self.instanceName, report=self.report)
+            tile = BlenderRenderer(self.threedTilesName, False, self.instanceName,
+                                   report=self.report, recordAttribution=False)
             tile.heightOffset = self.heightOffset
             tile.calculateHeightOffset = self.calculateHeightOffset
             output = None
@@ -79,11 +80,6 @@ class ProgressiveRenderer(BlenderRenderer):
                         if block.users == 0:
                             blocks.remove(block)
                 raise
-
-    def _attribution(self):
-        bpy.context.scene.blosm.copyright = '; '.join(
-            holder for holder, count in sorted(self.copyrightHolders.items(),
-                                               key=lambda entry: entry[1], reverse=True))
 
     def finalize(self, manager):
         # Completed tiles are already positioned. Cancel never joins or

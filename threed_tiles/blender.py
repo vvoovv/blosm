@@ -1,6 +1,5 @@
 from os.path import basename
 from math import radians, atan, sqrt, pi
-from operator import itemgetter
 import sys
 
 import bpy
@@ -9,6 +8,7 @@ from mathutils import Vector, Matrix
 from ..util.blender import createCollection
 
 from .gltf_import import import_gltf
+from .attribution import record_import
 
 
 def find_layer_collection(layer_col: bpy.types.LayerCollection, target_col: bpy.types.Collection):
@@ -28,7 +28,7 @@ def find_layer_collection(layer_col: bpy.types.LayerCollection, target_col: bpy.
 
 class BlenderRenderer:
     
-    def __init__(self, threedTilesName, join3dTilesObjects, instanceName, report=None):
+    def __init__(self, threedTilesName, join3dTilesObjects, instanceName, report=None, *, recordAttribution=True):
         self.threedTilesName = threedTilesName
         self.join3dTilesObjects = join3dTilesObjects
         self.instanceName = instanceName
@@ -38,6 +38,8 @@ class BlenderRenderer:
         self.heightOffset = 0.
         
         self.copyrightHolders = {}
+        self.providerCredits = []
+        self.recordAttribution = recordAttribution
         
     
     def prepare(self, manager):
@@ -147,23 +149,22 @@ class BlenderRenderer:
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
         bpy.ops.object.select_all(action='DESELECT')
         
-        bpy.context.scene.blosm.copyright = "; ".join(
-            entry[0] for entry in reversed(
-                sorted(
-                    self.copyrightHolders.items(), key=itemgetter(1)
-                )
-            )
-        )
+        if self.recordAttribution and self.num_imported_tiles:
+            self._attribution()
 
         self.collection = None
+
+    def _attribution(self):
+        record_import(bpy.context.scene.blosm, self.collection,
+                      self.copyrightHolders, self.providerCredits)
     
     def renderGlb(self, manager, uri, path, transformMatrix, *, content=None):
         # The filename supplies the source identity; the tile stays in memory.
         result = import_gltf(basename(path), content=manager.download(uri) if content is None else content,
                              report=self.report, coordinate_offset=self.centerCoords)
-        self.processCopyrightInfo(result.copyright)
         if self.collection_import.objects or self.collection_import.children:
             self.finalize_glb_import(transformMatrix)
+            self.processCopyrightInfo(result.copyright)
 
     def renderB3dm(self, manager, uri, path, transformMatrix, *, content=None):
         import numpy
@@ -181,11 +182,11 @@ class BlenderRenderer:
         result = import_gltf(basename(path), content=b3dmContent.body.gltf.to_array(),
                              report=self.report, coordinate_offset=(0., 0., 0.) if hasRtc else self.centerCoords)
 
-        self.processCopyrightInfo(result.copyright)
         if self.collection_import.objects or self.collection_import.children:
             if hasRtc:
                 self.process_rtc(rtc_center)
             self.finalize_glb_import(transformMatrix)
+            self.processCopyrightInfo(result.copyright)
 
     def processCopyrightInfo(self, info):
         for copyrightHolder in info.split(';'):

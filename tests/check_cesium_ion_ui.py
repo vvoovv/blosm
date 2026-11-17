@@ -30,6 +30,7 @@ addon_utils.enable(ROOT.name, default_set=True)
 assert ROOT.name in bpy.context.preferences.addons
 bpy.context.preferences.system.use_online_access = True  # Isolated process only; never saved.
 ion = importlib.import_module(ROOT.name + '.threed_tiles.cesium_ion')
+attribution = importlib.import_module(ROOT.name + '.threed_tiles.attribution')
 manager_module = importlib.import_module(ROOT.name + '.threed_tiles.manager')
 progressive = importlib.import_module(ROOT.name + '.threed_tiles.progressive')
 runtime = importlib.import_module(ROOT.name + '.progressive.blender')
@@ -161,7 +162,7 @@ def tick():
             phase = 'success'
         elif phase == 'success' and runtime.active is None:
             assert messages[-1] == ('INFO', 'Successfully imported 2 3D Tiles.'), messages
-            assert 'Google Maps' in settings.copyright and 'UI fixture data' in settings.copyright
+            assert 'Google Maps' in attribution.get_copyright(settings) and 'UI fixture data' in attribution.get_copyright(settings)
             checks.append('Concurrent progressive import resolves ion and imports nested GLBs with attribution')
             settings.concurrentDownloads = False
             settings.join3dTilesObjects = True

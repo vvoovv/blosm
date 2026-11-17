@@ -23,6 +23,7 @@ from bpy.app.handlers import persistent
 from ..app.blender import app
 from ..defs import Keys
 from ..progressive import blender as progressiveImport
+from ..threed_tiles.attribution import BlosmImportAttribution, get_copyright
 
 _has3dRealistic = app.has(Keys.mode3dRealistic)
 
@@ -370,10 +371,10 @@ class BLOSM_PT_Copyright(bpy.types.Panel):
     
     @classmethod
     def poll(cls, context):
-        return context.scene.blosm.copyright
+        return bool(get_copyright(context.scene.blosm))
     
     def draw(self, context):
-        self.layout.label(text = context.scene.blosm.copyright)
+        self.layout.label(text = get_copyright(context.scene.blosm))
 
 
 class BLOSM_PT_Extent(bpy.types.Panel):
@@ -1107,12 +1108,13 @@ class BlosmProperties(bpy.types.PropertyGroup):
         options = {'HIDDEN'}
     )
     
-    copyright: bpy.props.StringProperty(
-        name = "Copyright message",
-        description = "Copyright for the imported content",
-        default = ''
+    importAttributions: bpy.props.CollectionProperty(
+        type = BlosmImportAttribution,
+        name = "Import attributions",
+        description = "Copyright and provider credits associated with imported collections",
+        options = {'HIDDEN'}
     )
-    
+
     replaceMaterialsWith: bpy.props.EnumProperty(
         name = "Replace materials with",
         items = (
@@ -1296,6 +1298,7 @@ class BlosmProperties(bpy.types.PropertyGroup):
 
 
 _classes = (
+    BlosmImportAttribution,
     BLOSM_UL_DefaultLevels,
     BlosmDefaultLevelsEntry,
     BLOSM_OT_ReloadAssetPackageList,
@@ -1326,7 +1329,7 @@ def register():
 def unregister():
     if bpy.app.timers.is_registered(_onRegister280):
         bpy.app.timers.unregister(_onRegister280)
-    for c in _classes:
-        bpy.utils.unregister_class(c)
     del bpy.types.Scene.blosm
+    for c in reversed(_classes):
+        bpy.utils.unregister_class(c)
     bpy.app.handlers.load_post.remove(_onFileLoaded)

@@ -21,6 +21,7 @@ parser.add_argument('--helsinki', type=Path)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 args.artifacts.mkdir(parents=True, exist_ok=True)
 package = PACKAGE
+attribution = importlib.import_module(package + '.threed_tiles.attribution')
 addon_utils.enable(package, default_set=True)
 manager_module = importlib.import_module(package + '.threed_tiles.manager')
 renderer_module = importlib.import_module(package + '.threed_tiles.blender')
@@ -152,7 +153,7 @@ try:
         assert geometry() == expected, (geometry(), expected)
         assert transport.closed and len(transport.requests) == 4
         assert operation.job.result == (2, [])
-        assert 'City of Test' in bpy.context.scene.blosm.copyright
+        assert 'City of Test' in attribution.get_copyright(bpy.context.scene.blosm)
         checks.append('incremental geometry/context/blocking parity, join=%s' % join)
 
     for join in (False, True):

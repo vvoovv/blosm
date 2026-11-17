@@ -23,6 +23,7 @@ sys.dont_write_bytecode = True
 if PROFILE == 'general' and PACKAGE == REPO.name:
     sys.path.insert(0, str(REPO.parent))
 BlenderRenderer = importlib.import_module(PACKAGE + '.threed_tiles.blender').BlenderRenderer
+get_copyright = importlib.import_module(PACKAGE + '.threed_tiles.attribution').get_copyright
 import_gltf = importlib.import_module(PACKAGE + '.threed_tiles.gltf_import').import_gltf
 BaseManager = importlib.import_module(PACKAGE + '.threed_tiles.manager').BaseManager
 read_array = importlib.import_module(PACKAGE + '.threed_tiles.py3dtiles.tileset.content.tile_content_reader').read_array
@@ -193,6 +194,9 @@ def baseline_renderer():
     # Adapt only the historical module's imports to the current package layout.
     source = source.replace('from util.blender import', 'from ..util.blender import')
     source = source.replace('from py3dtiles.', 'from .py3dtiles.')
+    # The historical renderer writes the removed RNA property. Preserve that
+    # baseline behavior in the legacy custom-property slot for this test only.
+    source = source.replace('blosm.copyright', 'blosm["copyright"]')
     name = PACKAGE + ".threed_tiles._release_renderer"
     spec = importlib.util.spec_from_loader(name, loader=None)
     module = importlib.util.module_from_spec(spec)
@@ -213,8 +217,10 @@ def manager_for(renderer, directory, content):
 
 def install_scene_settings():
     if not hasattr(bpy.types.Scene, "blosm"):
+        attribution = importlib.import_module(PACKAGE + '.threed_tiles.attribution')
+        bpy.utils.register_class(attribution.BlosmImportAttribution)
         class TestSettings(bpy.types.PropertyGroup):
-            copyright: bpy.props.StringProperty()
+            importAttributions: bpy.props.CollectionProperty(type=attribution.BlosmImportAttribution)
         bpy.utils.register_class(TestSettings)
         bpy.types.Scene.blosm = bpy.props.PointerProperty(type=TestSettings)
 
