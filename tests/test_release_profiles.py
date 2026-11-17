@@ -3,7 +3,7 @@ from io import BytesIO
 import unittest
 import zipfile
 
-from release_profiles import CORE, PRO_ONLY, inspect_candidate, select_suites
+from release_profiles import CORE, GUI_SUITES, RELEASE_UI_SUITES, PRO_ONLY, inspect_candidate, select_suites
 from run_candidate_suite import SourceIsolation, SOURCE, TESTS
 
 
@@ -12,7 +12,8 @@ class ReleaseProfileChecks(unittest.TestCase):
         selected, excluded = select_suites('base')
         self.assertEqual(selected[:2], ['package', 'base'])
         self.assertEqual(set(selected[2:]), set(CORE) - PRO_ONLY)
-        self.assertTrue({'osm', 'gpx', 'buildify', 'overlay', 'concurrent'} <= set(selected))
+        self.assertTrue({'osm', 'gpx', 'buildify', 'overlay', 'concurrent',
+                         'cesium_ion', 'attribution'} <= set(selected))
         self.assertEqual({row['suite'] for row in excluded}, PRO_ONLY)
         self.assertTrue(all(row['status'] == 'not_applicable' for row in excluded))
 
@@ -21,6 +22,14 @@ class ReleaseProfileChecks(unittest.TestCase):
         selected, excluded = select_suites('pro')
         self.assertEqual(selected, ['package', 'pro', *general])
         self.assertEqual(excluded, [])
+
+    def test_new_ui_checks_run_as_gui_suites_with_edition_gates(self):
+        self.assertTrue({'cesium_ion_ui', 'attribution_ui'} <= set(RELEASE_UI_SUITES))
+        self.assertTrue(set(RELEASE_UI_SUITES) <= set(GUI_SUITES))
+        for profile in ('base', 'pro'):
+            selected, excluded = select_suites(profile, RELEASE_UI_SUITES)
+            self.assertEqual(selected, ['package', profile, *RELEASE_UI_SUITES])
+            self.assertEqual(excluded, [])
 
     def test_selected_features_cannot_bypass_edition_gates(self):
         for profile in ('base', 'pro'):

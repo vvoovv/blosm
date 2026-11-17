@@ -359,6 +359,13 @@ class BlenderApp(BaseApp):
             raise Exception("Enable Blender's built-in glTF addon. It's used by the Blosm addon.")
         
         if addon.threedTilesSource == "google":
+            if addon.google3dTilesAccessVia == 'cesium_ion':
+                preferences = context.preferences.addons.get(addonName)
+                token = preferences.preferences.cesiumIonAccessToken.strip() if preferences else ''
+                if not token:
+                    raise Exception("A Cesium ion access token is not set in the addon preferences")
+                manager.setToken(token)
+                return
             prefs = bpy.context.preferences.addons
             if addonName in prefs:
                 googleMapsApiKey = prefs[addonName].preferences.googleMapsApiKey

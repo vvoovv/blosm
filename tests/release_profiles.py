@@ -19,13 +19,20 @@ EXISTING = {
     'operator': ('check_direct_gltf_operator.py', 'operator_check.json'),
     'progressive': ('check_progressive_import.py', 'checks.json'),
     'concurrent': ('check_concurrent_tiles.py', 'concurrent_checks.json'),
+    'cesium_ion': ('check_cesium_ion.py', 'results.json'),
+    'attribution': ('check_attribution.py', 'results.json'),
     'ui': ('check_progressive_ui.py', 'ui_checks.json'),
+    'cesium_ion_ui': ('check_cesium_ion_ui.py', 'results.json'),
+    'attribution_ui': ('check_attribution_ui.py', 'results.json'),
 }
 CORE = ['preflight', 'standalone', 'direct', 'operator', 'progressive', 'concurrent', 'osm_progressive',
+        'cesium_ion', 'attribution',
         'osm', 'roofs', 'gpx', 'geometry_nodes', 'buildify', 'terrain', 'overlay',
         'validation', 'baking', 'export', 'pml']
 PRO_ONLY = frozenset(('baking', 'export', 'pml'))
-SUITES = tuple(CORE + ['package', 'base', 'pro', 'ui', 'osm_progressive_ui'])
+GUI_SUITES = ('ui', 'osm_progressive_ui', 'cesium_ion_ui', 'attribution_ui')
+RELEASE_UI_SUITES = ('ui', 'cesium_ion_ui', 'attribution_ui')
+SUITES = tuple(CORE + ['package', 'base', 'pro', *GUI_SUITES])
 
 # Feature boundaries, not a second copy of the builder's exact file inventory.
 # Shared properties/APE utilities remain valid in Base. Imagery and GN are common.

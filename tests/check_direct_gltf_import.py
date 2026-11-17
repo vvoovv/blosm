@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gltf_test_support import (
     bpy, BlenderRenderer, fixture, make_glb, make_b3dm, convert_b3dm,
     reset_scene, fingerprint, no_tile_writes_or_operator, operator_import,
-    baseline_renderer, manager_for, install_scene_settings, import_gltf, handler_counts,
+    baseline_renderer, manager_for, install_scene_settings, import_gltf, handler_counts, get_copyright,
 )
 from mathutils import Matrix
 from io_scene_gltf2.io.imp.gltf2_io_gltf import glTFImporter
@@ -169,7 +169,7 @@ if bpy.app.version >= (4, 5, 0):
             assert renderer.num_imported_tiles == 1
         finally:
             renderer.finalize(manager)
-        return fingerprint(), bpy.context.scene.blosm.copyright
+        return fingerprint(), get_copyright(bpy.context.scene.blosm)
 
     # B3DM with/without RTC: placement matches the exact release renderer.
     for rtc in (None, [2877435.0, 1343478.0, 5512247.0], [0.0, 0.0, 0.0]):

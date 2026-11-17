@@ -78,8 +78,13 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
     )
     
     googleMapsApiKey: bpy.props.StringProperty(
-        name = "Google 3D Tiles Key",
+        name = "Google 3D Tiles key",
         description = "A string token (API Key) to access 3D Tiles by Google"
+    )
+
+    cesiumIonAccessToken: bpy.props.StringProperty(
+        name = "Cesium ion access token",
+        description = "Cesium ion token with assets:read permission for Google Photorealistic 3D Tiles"
     )
     
     osmServer: bpy.props.EnumProperty(
@@ -121,7 +126,18 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
                 layout.prop(self, "assetsDir")
             
             layout.separator()
-            layout.label(text="Paste one or more access tokens to get satellite imagery:")
+            layout.label(text="3D Tiles:")
+
+            split = layout.split(factor=0.9)
+            split.prop(self, "googleMapsApiKey")
+            split.operator("blosm.get_google_maps_api_key", text="Get it!")
+
+            split = layout.split(factor=0.9)
+            split.prop(self, "cesiumIonAccessToken")
+            split.operator("blosm.get_cesium_ion_token", text="Get it!")
+
+            layout.separator()
+            layout.label(text="Overlays:")
             
             split = layout.split(factor=0.9)
             split.prop(self, "arcgisAccessToken")
@@ -130,10 +146,6 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             split = layout.split(factor=0.9)
             split.prop(self, "mapboxAccessToken")
             split.operator("blosm.get_mapbox_token", text="Get it!")
-            
-            split = layout.split(factor=0.9)
-            split.prop(self, "googleMapsApiKey")
-            split.operator("blosm.get_google_maps_api_key", text="Get it!")
             
             layout.separator()
             layout.box().label(text="Advanced settings:")
@@ -183,6 +195,20 @@ class BLOSM_OT_GetGoogleMapsApiKey(bpy.types.Operator):
     
     url = "https://developers.google.com/maps/documentation/tile/get-api-key"
     
+    def execute(self, context):
+        import webbrowser
+        webbrowser.open_new_tab(self.url)
+        return {'FINISHED'}
+
+
+class BLOSM_OT_GetCesiumIonToken(bpy.types.Operator):
+    bl_idname = "blosm.get_cesium_ion_token"
+    bl_label = ""
+    bl_description = "Get Cesium ion access token"
+    bl_options = {'INTERNAL'}
+
+    url = "https://ion.cesium.com/tokens"
+
     def execute(self, context):
         import webbrowser
         webbrowser.open_new_tab(self.url)
@@ -377,6 +403,9 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
         
         addon = context.scene.blosm
         google3dTiles = addon.threedTilesSource == "google"
+        viaIon = google3dTiles and addon.google3dTilesAccessVia == 'cesium_ion'
+        if viaIon:
+            from .threed_tiles.ion_access import CesiumIonManager
         progressive = addon.progressiveImport and not addon.commandLineMode
         if progressive:
             if bpy.app.background or context.window is None:
@@ -406,7 +435,7 @@ class BLOSM_OT_ImportData(bpy.types.Operator):
             addon.instanceName,
             report=(lambda levels, message: progressiveImport.notify(next(iter(levels)), message)) if progressive else self.report
         )
-        manager = BaseManager(
+        manager = (CesiumIonManager if viaIon else BaseManager)(
             "https://tile.googleapis.com/v1/3dtiles/root.json" if google3dTiles else addon.threedTilesUrl,
             renderer
         )
@@ -615,6 +644,7 @@ _classes = (
     BLOSM_OT_GetArcgisToken,
     BLOSM_OT_GetMapboxToken,
     BLOSM_OT_GetGoogleMapsApiKey,
+    BLOSM_OT_GetCesiumIonToken,
     BLOSM_OT_GetProVersion,
     #BLOSM_OT_LoadExtensions,
     BLOSM_OT_ImportData,

@@ -39,6 +39,12 @@ Pro PML when applicable. The broader release tests under `tests/` can additional
 exercise real datasets, UI and external Pro asset packs; see the
 [General, Base and Pro test profiles](../tests/README.md).
 
+The 2.8.1 release notes are in [docs/releases/2.8.1.md](releases/2.8.1.md).
+Both build profiles include the `cesium_ion` and `attribution` headless suites.
+The release qualification entry point also selects `cesium_ion_ui` and
+`attribution_ui` alongside the existing 3D Tiles UI suite. These scripts use the
+installed candidate package under Base/Pro profiles, never checkout runtime code.
+
 ## Runtime conventions
 
 - Internal and vendored imports remain relative to the installed package.
