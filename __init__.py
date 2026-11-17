@@ -138,7 +138,6 @@ class BlosmPreferences(bpy.types.AddonPreferences, ape.AssetPackageEditor):
             split.prop(self, "cesiumIonAccessToken")
             split.operator("blosm.get_cesium_ion_token", text="Get it!")
 
-            credentials.separator()
             credentials.label(text="Overlays:")
             
             split = credentials.split(factor=0.9)
