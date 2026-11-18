@@ -52,16 +52,25 @@ class TextureExporter:
     def makeCommonPreparations(self, scene, textureFilename, textureDir):
         self.verifyPath(textureDir)
         self.setTmpTextureDir(textureDir)
+        # Descriptive final names can exceed the compositor's Windows path limit
+        # once the private directory (and pre-5.0 frame suffix) is included.
+        # Render to a compact name, then move it to the unchanged cache filename.
+        _, extention = os.path.splitext(textureFilename)
         if hasattr(scene, "compositing_node_group"): # Blender 5.0.0 and higher
             nodes = scene.compositing_node_group.nodes
             fileOutputNode = nodes["File Output"]
             fileOutputNode.directory = self.tmpTextureDir
-            fileOutputNode.file_output_items[0].name, extention = os.path.splitext(textureFilename)
+            fileOutputNode.file_output_items[0].name = 't'
         else: # before Blender 5.0.0
             nodes = scene.node_tree.nodes
             fileOutputNode = nodes["File Output"]
             fileOutputNode.base_path = self.tmpTextureDir
-            fileOutputNode.file_slots[0].path, extention = os.path.splitext(textureFilename)
+            fileOutputNode.file_slots[0].path = 't'
+        if os.name == 'nt':
+            frame = '' if hasattr(scene, 'compositing_node_group') else '%04d' % scene.frame_current
+            outputPath = os.path.join(self.tmpTextureDir, 't' + frame + '.jpeg')
+            if len(os.path.abspath(outputPath)) >= 260:
+                raise RuntimeError('Texture render path is too long; choose a shorter data directory: ' + outputPath)
         # Set the correct file format for rendering
         fileOutputNode.format.file_format = _renderFileFormats.get(
             extention.lower(), 'PNG'
@@ -78,12 +87,23 @@ class TextureExporter:
             self.bakeQueue.submit(scene, textureFilepath)
             return
         tmpTextureDir = self.tmpTextureDir
-        bpy.ops.render.render(scene=scene.name)
-        os.replace(
-            # the texture file is the only file in <tmpTextureDir>
-            os.path.join(tmpTextureDir, os.listdir(tmpTextureDir)[0]),
-            textureFilepath
-        )
+        context = 'scene "%s", destination "%s", temporary output "%s"' % (
+            scene.name, textureFilepath, tmpTextureDir)
+        if os.listdir(tmpTextureDir):
+            raise RuntimeError('Texture render directory is not empty: ' + context)
+        try:
+            result = bpy.ops.render.render(scene=scene.name)
+        except Exception as exc:
+            raise RuntimeError('Texture rendering failed for %s: %s' % (context, exc)) from exc
+        if result != {'FINISHED'}:
+            raise RuntimeError('Texture rendering did not finish for ' + context)
+        files = os.listdir(tmpTextureDir)
+        if len(files) != 1:
+            raise RuntimeError('Texture rendering produced %s files; expected exactly one for %s' % (len(files), context))
+        outputPath = os.path.join(tmpTextureDir, files[0])
+        if not os.path.isfile(outputPath) or not os.path.getsize(outputPath):
+            raise RuntimeError('Texture rendering produced no usable image for ' + context)
+        os.replace(outputPath, textureFilepath)
 
     def finish_steps(self):
         if self.bakeQueue:

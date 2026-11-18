@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import unittest
 import hashlib
 import random
+import importlib
 from unittest.mock import patch
 from types import SimpleNamespace
 import bpy
@@ -16,7 +17,7 @@ enable(args)
 
 
 class ExportChecks(unittest.TestCase):
-    def check_import(self, fixture_id, single, export, experimental=True):
+    def check_import(self, fixture_id, single, export, experimental=True, folder=None):
         self.assertIsNotNone(args.assets, 'Required Pro assets: supply --assets')
         for name in ('building_materials.blend', 'building_material_templates.blend', 'version.txt'):
             self.assertTrue((args.assets / name).is_file(), f'Required Pro asset missing: {name}')
@@ -26,8 +27,8 @@ class ExportChecks(unittest.TestCase):
         settings.importForExport = export
         bpy.context.preferences.addons[PACKAGE].preferences.enableExperimentalFeatures = experimental
         # Keep each case's texture cache separate so every export case renders.
-        folder = args.artifacts / f'{fixture_id}_single_{single}_export_{export}_experimental_{experimental}'
-        folder.mkdir(exist_ok=True)
+        folder = folder or args.artifacts / f'{fixture_id}_single_{single}_export_{export}_experimental_{experimental}'
+        folder.mkdir(parents=True, exist_ok=True)
         bpy.context.preferences.addons[PACKAGE].preferences.dataDir = str(folder)
         real_render = bpy.ops.render.render
         rendered = []
@@ -91,6 +92,43 @@ class ExportChecks(unittest.TestCase):
 
     def test_export_flag_requires_experimental_mode(self):
         self.check_import('rectangle', True, True, experimental=False)
+
+    def test_export_with_deep_data_directory(self):
+        # Reproduce the Windows failure: the old descriptive compositor filename
+        # exceeded 260 characters, while the final cache filename still fitted.
+        prefix = args.artifacts / 'deep-export'
+        folder = prefix / ('x' * max(1, 180 - len(str(prefix)) - 1))
+        self.check_import('rectangle', False, True, folder=folder)
+        self.assertFalse(list(folder.rglob('.blosm-textures-*')), 'Private render directory leaked')
+
+    def test_texture_render_errors_are_explicit_and_cleaned_up(self):
+        TextureExporter = importlib.import_module(PACKAGE + '.building2.texture_exporter').TextureExporter
+        for failure in ('cancelled', 'exception', 'missing', 'multiple', 'empty', 'stale'):
+            with self.subTest(failure=failure):
+                folder = args.artifacts / ('render-error-' + failure)
+                folder.mkdir(exist_ok=True)
+                exporter = TextureExporter(str(args.assets), str(args.assets))
+                exporter.setTmpTextureDir(str(folder))
+                private = Path(exporter.tmpTextureDir)
+                destination = folder / 'result.png'
+                def render(**kw):
+                    if failure == 'exception':
+                        raise RuntimeError('Injected compositor failure')
+                    if failure in ('multiple', 'empty'):
+                        (private / 't.png').write_bytes(b'image' if failure == 'multiple' else b'')
+                    if failure == 'multiple':
+                        (private / 'other.png').write_bytes(b'image')
+                    return {'CANCELLED'} if failure == 'cancelled' else {'FINISHED'}
+                if failure == 'stale':
+                    (private / 'stale.png').write_bytes(b'old image')
+                try:
+                    with patch.object(bpy.ops, 'render', SimpleNamespace(render=render)):
+                        with self.assertRaisesRegex(RuntimeError, 'scene "test scene".*destination .*temporary output'):
+                            exporter.renderTexture(SimpleNamespace(name='test scene'), str(destination))
+                    self.assertFalse(destination.exists(), 'Failed render published a texture')
+                finally:
+                    exporter.cleanup()
+                self.assertFalse(private.exists(), 'Failed render directory leaked')
 
 
 for fixture_id in ('rectangle', 'karl_marx_allee'):

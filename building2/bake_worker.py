@@ -18,9 +18,12 @@ def main():
         node.directory = output
     else:
         node.base_path = output
-    bpy.ops.render.render(scene=scene.name)
-    if not any(p.is_file() for p in Path(output).iterdir()):
-        raise RuntimeError('Compositor produced no texture')
+    result = bpy.ops.render.render(scene=scene.name)
+    if result != {'FINISHED'}:
+        raise RuntimeError('Texture rendering did not finish for scene "%s" in "%s"' % (scene.name, output))
+    files = list(Path(output).iterdir())
+    if len(files) != 1 or not files[0].is_file() or not files[0].stat().st_size:
+        raise RuntimeError('Compositor must produce exactly one nonempty texture for scene "%s" in "%s"' % (scene.name, output))
 
 
 if __name__ == '__main__':
